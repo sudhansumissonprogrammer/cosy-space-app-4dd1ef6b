@@ -19,7 +19,7 @@ const ShippingPolicy = () => (
     <p>Each merchant who uses ShopBanao to operate their own store is independently responsible for shipping their physical products to their customers. ShopBanao does not handle, fulfill, or ship orders placed on merchant stores. Please refer to the individual merchant's shipping policy.</p>
 
     <h2>5. Contact</h2>
-    <p>For questions about service activation:<br/>Email: shopbanaoofficial@gmail.com<br/>Phone/WhatsApp: +91 96922 82485</p>
+    <p>For questions about service activation:<br/>Email: sudhansusahoo313@gmail.com<br/>Phone/WhatsApp: +91 96922 82485</p>
   </LegalLayout>
 );
 

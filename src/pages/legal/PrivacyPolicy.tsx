@@ -38,7 +38,7 @@ const PrivacyPolicy = () => (
     <p>We retain your account data as long as your account is active. After account closure, we retain transactional records for up to 7 years to comply with Indian tax and accounting laws.</p>
 
     <h2>6. Your Rights</h2>
-    <p>You may request access, correction, or deletion of your personal data by emailing shopbanaoofficial@gmail.com. We will respond within 30 days.</p>
+    <p>You may request access, correction, or deletion of your personal data by emailing sudhansusahoo313@gmail.com. We will respond within 30 days.</p>
 
     <h2>7. Children's Privacy</h2>
     <p>ShopBanao is not intended for users under the age of 18. We do not knowingly collect data from minors.</p>
@@ -47,7 +47,7 @@ const PrivacyPolicy = () => (
     <p>We may update this policy from time to time. Material changes will be notified via email or in-app notice.</p>
 
     <h2>9. Contact</h2>
-    <p>ShopBanao<br/>Email: shopbanaoofficial@gmail.com<br/>Phone/WhatsApp: +91 96922 82485</p>
+    <p>ShopBanao<br/>Email: sudhansusahoo313@gmail.com<br/>Phone/WhatsApp: +91 96922 82485</p>
   </LegalLayout>
 );
 

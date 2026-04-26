@@ -33,8 +33,8 @@ const LegalLayout = ({ title, updatedOn = "20 April 2026", children }: LegalLayo
         </article>
         <div className="mt-12 pt-6 border-t text-sm text-muted-foreground">
           Questions? Email{" "}
-          <a href="mailto:shopbanaoofficial@gmail.com" className="text-primary underline">
-            shopbanaoofficial@gmail.com
+          <a href="mailto:sudhansusahoo313@gmail.com" className="text-primary underline">
+            sudhansusahoo313@gmail.com
           </a>{" "}
           or WhatsApp{" "}
           <a href="https://wa.me/919692282485" className="text-primary underline">+91 96922 82485</a>.

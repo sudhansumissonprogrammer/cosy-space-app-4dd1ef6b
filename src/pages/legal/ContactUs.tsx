@@ -14,11 +14,11 @@ const ContactUs = () => (
           <div className="text-xs text-muted-foreground mt-1">Fastest response</div>
         </div>
       </a>
-      <a href="mailto:shopbanaoofficial@gmail.com" className="flex items-start gap-3 p-5 border-2 border-border rounded-lg hover:border-primary transition-colors">
+      <a href="mailto:sudhansusahoo313@gmail.com" className="flex items-start gap-3 p-5 border-2 border-border rounded-lg hover:border-primary transition-colors">
         <Mail className="h-6 w-6 text-primary shrink-0 mt-0.5" />
         <div>
           <div className="font-bold text-foreground">Email</div>
-          <div className="text-sm text-muted-foreground break-all">shopbanaoofficial@gmail.com</div>
+          <div className="text-sm text-muted-foreground break-all">sudhansusahoo313@gmail.com</div>
           <div className="text-xs text-muted-foreground mt-1">Replies within 24 hours</div>
         </div>
       </a>

@@ -6,7 +6,7 @@ const RefundPolicy = () => (
 
     <h2>1. Subscription Cancellation</h2>
     <ul>
-      <li>You may cancel your subscription at any time from your dashboard or by emailing shopbanaoofficial@gmail.com.</li>
+      <li>You may cancel your subscription at any time from your dashboard or by emailing sudhansusahoo313@gmail.com.</li>
       <li>Upon cancellation, your account will remain active until the end of the current billing period.</li>
       <li>You will not be charged for subsequent billing cycles after cancellation.</li>
     </ul>
@@ -29,7 +29,7 @@ const RefundPolicy = () => (
 
     <h2>4. Refund Process</h2>
     <ul>
-      <li>To request a refund, email shopbanaoofficial@gmail.com with your registered email, payment ID, and reason.</li>
+      <li>To request a refund, email sudhansusahoo313@gmail.com with your registered email, payment ID, and reason.</li>
       <li>Approved refunds are processed within <strong>5–7 business days</strong> via the original payment method through Razorpay.</li>
       <li>Bank processing may take an additional 3–5 business days to reflect in your account.</li>
     </ul>
@@ -38,7 +38,7 @@ const RefundPolicy = () => (
     <p>We encourage you to contact us first to resolve any billing concerns. Initiating a chargeback without contacting us may result in immediate account suspension.</p>
 
     <h2>6. Contact</h2>
-    <p>For refund or cancellation inquiries:<br/>Email: shopbanaoofficial@gmail.com<br/>Phone/WhatsApp: +91 96922 82485</p>
+    <p>For refund or cancellation inquiries:<br/>Email: sudhansusahoo313@gmail.com<br/>Phone/WhatsApp: +91 96922 82485</p>
   </LegalLayout>
 );
 

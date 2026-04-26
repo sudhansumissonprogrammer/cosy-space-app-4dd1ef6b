@@ -54,7 +54,7 @@ const TermsAndConditions = () => (
     <p>These Terms are governed by the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts in Odisha, India.</p>
 
     <h2>12. Contact</h2>
-    <p>Email: shopbanaoofficial@gmail.com<br/>Phone/WhatsApp: +91 96922 82485</p>
+    <p>Email: sudhansusahoo313@gmail.com<br/>Phone/WhatsApp: +91 96922 82485</p>
   </LegalLayout>
 );
 
