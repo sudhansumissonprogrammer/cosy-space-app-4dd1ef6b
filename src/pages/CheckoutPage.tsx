@@ -310,7 +310,12 @@ export default function CheckoutPage() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_store_payment_config", { _store_id: store.id });
       if (error) throw error;
-      return data as { payment_methods: string[]; razorpay_key_id: string | null } | null;
+      return data as {
+        payment_methods: string[];
+        razorpay_key_id: string | null;
+        cashfree_app_id: string | null;
+        cashfree_env: string | null;
+      } | null;
     },
   });
 
@@ -367,27 +372,37 @@ export default function CheckoutPage() {
   const availableMethods = paymentConfig?.payment_methods || ["cod"];
   const hasCod = availableMethods.includes("cod");
   const hasRazorpay = availableMethods.includes("razorpay");
+  const hasCashfree = availableMethods.includes("cashfree");
+  const hasOnline = hasRazorpay || hasCashfree;
+  // Which gateway opens when "online" is selected (mutual exclusion enforced in dashboard)
+  const activeGateway: "razorpay" | "cashfree" | null = hasRazorpay ? "razorpay" : hasCashfree ? "cashfree" : null;
 
   useEffect(() => {
-    // When partial payment is enabled, always default to razorpay (COD is hidden)
-    if (hasAnyPartialPayment && hasRazorpay) {
+    // When partial payment is enabled, always default to online (COD is hidden)
+    if (hasAnyPartialPayment && hasOnline) {
       setPaymentMethod("razorpay");
       setPartialPaymentMode("partial");
     } else if (hasCod) {
       setPaymentMethod("cod");
-    } else if (hasRazorpay) {
+    } else if (hasOnline) {
       setPaymentMethod("razorpay");
     }
-  }, [hasCod, hasRazorpay, hasAnyPartialPayment]);
+  }, [hasCod, hasOnline, hasAnyPartialPayment]);
 
-  // Preload Razorpay script + pre-warm edge functions so everything is ready instantly when user clicks Pay
+  // Preload SDKs + pre-warm edge functions so everything is ready instantly when user clicks Pay
   useEffect(() => {
     if (hasRazorpay) {
       loadRazorpayScript();
       prewarmEdgeFunction("razorpay-order");
     }
+    if (hasCashfree) {
+      loadCashfree(((paymentConfig?.cashfree_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
+      prewarmEdgeFunction("store-cashfree-create-order");
+      prewarmEdgeFunction("store-cashfree-verify");
+      prewarmEdgeFunction("store-cashfree-status");
+    }
     prewarmEdgeFunction("place-order");
-  }, [hasRazorpay]);
+  }, [hasRazorpay, hasCashfree, paymentConfig?.cashfree_env]);
 
   const currency = store.currency || "USD";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : `${currency} `;
