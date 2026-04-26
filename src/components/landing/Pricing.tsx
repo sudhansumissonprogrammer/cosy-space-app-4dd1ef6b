@@ -2,9 +2,9 @@ import { Check, ArrowRight } from "lucide-react";
 import { useState } from "react";
 
 const monthly = [
-  { name: "Starter", price: 499, desc: "Perfect for getting started", features: ["100 Products", "Custom Domain", "UPI Payments", "WhatsApp Orders", "Basic Analytics", "Email Support"], color: "blue", popular: false, includesFrom: null as string | null },
-  { name: "Growth", price: 799, desc: "Best for serious sellers", features: ["500 Products", "Custom Domain", "All Payment Options", "WhatsApp + SMS", "Advanced Analytics Dashboard", "Facebook Pixel + Tracking", "Priority Support", "Coupons & Discounts", "SEO Tools", "App Integration", "Mobile App", "Payment Gateway Integration", "AI Product Descriptions", "AI Store Content Generator"], color: "red", popular: true, includesFrom: null as string | null },
-  { name: "Pro", price: 1499, desc: "For established brands", features: ["Unlimited Products", "Multiple Domains", "Custom Theme Design", "Sales Funnel Builder", "Dedicated Account Manager", "Priority WhatsApp Support", "API Access", "White-label Branding"], color: "yellow", popular: false, includesFrom: "Growth" },
+  { name: "Starter", price: 0, desc: "Perfect for getting started", features: ["10 Products", "7-day free trial included", "Custom Domain", "UPI Payments", "WhatsApp Orders", "Basic Analytics", "Email Support"], color: "blue", popular: false, includesFrom: null as string | null },
+  { name: "Pro", price: 399, desc: "Best for growing sellers", features: ["100 Products", "7-day free trial included", "Custom Domain", "All Payment Options", "WhatsApp + SMS", "Advanced Analytics Dashboard", "Facebook Pixel + Tracking", "Priority Support", "Coupons & Discounts", "SEO Tools", "AI Product Descriptions"], color: "yellow", popular: false, includesFrom: "Starter" },
+  { name: "Growth", price: 699, desc: "For established brands", features: ["Unlimited Products", "7-day free trial included", "Multiple Domains", "Custom Theme Design", "Sales Funnel Builder", "Dedicated Account Manager", "Priority WhatsApp Support", "API Access", "White-label Branding", "AI Store Content Generator"], color: "red", popular: true, includesFrom: "Pro" },
 ];
 
 const colorMap: Record<string, { bg: string; text: string }> = {
@@ -88,7 +88,7 @@ const Pricing = () => {
             );
           })}
         </div>
-        <p className="text-center font-medium text-sm text-muted-foreground mt-8">👉 Most users start with the Growth plan and upgrade later.</p>
+        <p className="text-center font-medium text-sm text-muted-foreground mt-8">👉 Start free with Starter and upgrade to Pro or Growth as you scale.</p>
         <p className="text-center font-medium text-xs text-muted-foreground mt-3 max-w-2xl mx-auto px-4">
           All prices are in INR and exclusive of 18% GST. Monthly plans are billed every 30 days; annual plans are billed once for 12 months. Cancel anytime from your dashboard — see our <a href="/refund-policy" className="underline font-bold">Refund Policy</a> and <a href="/terms" className="underline font-bold">Terms</a>.
         </p>
