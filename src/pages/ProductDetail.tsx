@@ -1478,6 +1478,68 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
   );
 }
 
+/* ── Lightbox image with optimized URL + raw fallback + loading state ── */
+function LightboxImage({
+  src,
+  alt,
+  translate,
+  scale,
+}: {
+  src: string;
+  alt: string;
+  translate: { x: number; y: number };
+  scale: number;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+  const [useRaw, setUseRaw] = useState(false);
+
+  useEffect(() => {
+    setLoaded(false);
+    setErrored(false);
+    setUseRaw(false);
+  }, [src]);
+
+  // First try the optimized URL (matches the gallery thumbs that we know load).
+  // If the optimizer URL fails (CDN hiccup / unsupported source), fall back to the raw URL.
+  const displaySrc = useRaw ? src : optimizeImageUrl(src, 1600, 92);
+
+  return (
+    <>
+      {!loaded && !errored && (
+        <div className="absolute inset-0 flex items-center justify-center text-white/70 text-sm">
+          Loading…
+        </div>
+      )}
+      {errored && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/70 text-sm px-6 text-center">
+          <span>Image couldn't be loaded.</span>
+          <span className="text-xs opacity-60 break-all">{src}</span>
+        </div>
+      )}
+      <img
+        src={displaySrc}
+        alt={alt}
+        className="max-h-full max-w-full object-contain transition-transform duration-100"
+        style={{
+          transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
+          opacity: loaded ? 1 : 0,
+        }}
+        draggable={false}
+        onLoad={() => setLoaded(true)}
+        onError={() => {
+          if (!useRaw) {
+            // optimizer failed → retry with raw original URL
+            setUseRaw(true);
+          } else {
+            setErrored(true);
+          }
+        }}
+      />
+    </>
+  );
+}
+
 /* ── Fullscreen Lightbox with Pinch-to-Zoom ── */
 function FullscreenLightbox({
   images,
