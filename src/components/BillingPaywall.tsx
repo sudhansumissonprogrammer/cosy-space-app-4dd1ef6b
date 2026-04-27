@@ -50,8 +50,10 @@ export default function BillingPaywall({ state, storeId }: Props) {
 
   const busy = stage === "creating" || stage === "checkout" || stage === "verifying";
 
-  // Verify a known order with retry — handles network / propagation delay
-  const verifyOrder = async (order_id: string, attempts = 4): Promise<"paid" | "pending" | "failed"> => {
+  // Verify a known order with retry — handles network / propagation delay.
+  // Schedule: 0.6s, 1.2s, 1.8s, 2.5s, 3.5s, 4.5s, 6s = ~20s total coverage.
+  const verifyOrder = async (order_id: string, attempts = 8): Promise<"paid" | "pending" | "failed"> => {
+    const delays = [600, 1200, 1800, 2500, 3500, 4500, 6000, 6000];
     for (let i = 0; i < attempts; i++) {
       try {
         const { data, error } = await supabase.functions.invoke("cashfree-verify-payment", {
@@ -62,9 +64,9 @@ export default function BillingPaywall({ state, storeId }: Props) {
         if (s === "paid") return "paid";
         if (s === "failed" || s === "expired" || s === "cancelled") return "failed";
         // pending → wait & retry (Cashfree may not have finalized yet)
-        if (i < attempts - 1) await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+        if (i < attempts - 1) await new Promise((r) => setTimeout(r, delays[i] ?? 3000));
       } catch {
-        if (i < attempts - 1) await new Promise((r) => setTimeout(r, 1500));
+        if (i < attempts - 1) await new Promise((r) => setTimeout(r, delays[i] ?? 3000));
       }
     }
     return "pending";
@@ -72,9 +74,10 @@ export default function BillingPaywall({ state, storeId }: Props) {
 
   const onSuccess = () => {
     setStage("success");
+    setStatusMsg("Payment successful! Your dashboard is unlocking…");
     toast.success("Payment successful! Reactivating store…");
     qc.invalidateQueries({ queryKey: ["billing-state"] });
-    setTimeout(() => window.location.reload(), 1200);
+    setTimeout(() => window.location.reload(), 1500);
   };
 
   // Auto-verify on tab focus / visibility change.
