@@ -157,7 +157,7 @@ export default function BillingPaywall({ state, storeId }: Props) {
       }
       if (verdict === "pending") {
         setStage("pending");
-        setStatusMsg("Payment is processing. Tap 'Check status' in a moment.");
+        setStatusMsg("Payment is processing. We are checking automatically — please keep this screen open.");
         toast.info("Payment processing. We'll confirm shortly.");
         return;
       }
@@ -227,7 +227,7 @@ export default function BillingPaywall({ state, storeId }: Props) {
       return;
     }
     setStage("pending");
-    setStatusMsg("Still processing. Please wait a moment and check again.");
+    setStatusMsg("Still processing. We are checking automatically — please keep this screen open.");
   };
 
   // Deterministic weekly counter
