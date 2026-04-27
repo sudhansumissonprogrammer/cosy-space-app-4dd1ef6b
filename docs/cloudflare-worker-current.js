@@ -2433,10 +2433,11 @@ function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
   const response = new Response(body, {
     headers: {
       "Content-Type": "application/json",
-      // Anonymous browser cache: 5 min fresh + 30 min stale-while-revalidate.
-      // Repeat visits in this window are served from the browser cache and
-      // never hit the Worker at all.
-      "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}, stale-while-revalidate=${PRODUCTS_KV_TTL}`,
+      // v8.2.0 Fix #5: Added s-maxage so Cloudflare's edge (not just the
+      // browser) caches this response for PRODUCTS_KV_TTL across all PoPs.
+      // Anonymous browser cache (max-age) keeps repeat visits Worker-free
+      // for 5 min; CF edge cache absorbs new visitors for 24h.
+      "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}, s-maxage=${PRODUCTS_KV_TTL}, stale-while-revalidate=${PRODUCTS_KV_TTL}`,
       "Vary": "Accept-Encoding",
     },
   });
