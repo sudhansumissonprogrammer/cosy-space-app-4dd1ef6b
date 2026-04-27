@@ -2517,6 +2517,9 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
   for (const d of domainsToPurge) {
     domainStoreIdCache.delete(d);
     _clearInflightProductRequestsForDomain(d);
+    // v8.1.0: also clear write-dedup so the next prewarm/save can re-write KV
+    _kvWriteRecent.delete(`store-id:${d}`);
+    _kvWriteRecent.delete(`domain:${d}`);
     purgeOps.push(cache.delete(getEarlyCacheKey(d)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-id:${d}`)).catch(() => {}));
     if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`store-id:${d}`).catch(() => {}));
@@ -2527,6 +2530,10 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
   }
 
   if (purgeSlug) {
+    // v8.1.0: clear write-dedup for slug-keyed entries
+    _kvWriteRecent.delete(`storefront:${purgeSlug}`);
+    _kvWriteRecent.delete(`theme-lite:${purgeSlug}`);
+    _kvWriteRecent.delete(`store-info:${purgeSlug}`);
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
