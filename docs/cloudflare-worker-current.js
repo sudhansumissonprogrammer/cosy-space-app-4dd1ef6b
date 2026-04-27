@@ -734,6 +734,37 @@ const SPA_SHELL_CACHE_TTL = 1800; // v8.1.0 cost-cut: 5min → 30min
 
 let inflightShellFetch = null;
 
+/* ============================================================
+   v8.1.0 KV WRITE COALESCING — in-isolate dedup
+   Suppresses duplicate KV.put() calls for the same key within a TTL window.
+   Together with the in-memory caches above, this collapses bursts of
+   redundant writes (e.g. theme-lite/storefront re-cached on every request).
+   ============================================================ */
+const _kvWriteRecent = new Map(); // key → expiresAt
+const KV_WRITE_DEDUP_TTL = 300_000; // 5 min — within this window, a 2nd put() is skipped
+const KV_WRITE_DEDUP_MAX = 10_000;
+function _shouldWriteKv(key) {
+  const now = Date.now();
+  const exp = _kvWriteRecent.get(key);
+  if (exp && now < exp) return false;
+  if (_kvWriteRecent.size > KV_WRITE_DEDUP_MAX) {
+    // simple eviction: drop oldest 1k entries
+    let n = 1000;
+    for (const k of _kvWriteRecent.keys()) {
+      _kvWriteRecent.delete(k);
+      if (--n <= 0) break;
+    }
+  }
+  _kvWriteRecent.set(key, now + KV_WRITE_DEDUP_TTL);
+  return true;
+}
+function kvPutDedup(env, key, value, opts) {
+  if (!env?.STORE_KV) return Promise.resolve();
+  if (!_shouldWriteKv(key)) return Promise.resolve();
+  return env.STORE_KV.put(key, value, opts).catch(() => {});
+}
+
+
 async function getSpaShell(request, ctx, env) {
   // FIX #1 + #6: In-memory first — zero I/O on warm isolates
   if (_memShell && Date.now() < _memShellTs) {
