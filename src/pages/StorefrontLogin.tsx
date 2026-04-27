@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Loader2, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
 import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { useLoginRateLimit } from "@/hooks/useLoginRateLimit";
@@ -67,7 +68,9 @@ export default function StorefrontLogin() {
         recordFailedAttempt();
         throw new Error(error?.message || data?.error || "Login failed");
       }
-      const { error: sessErr } = await supabase.auth.setSession({
+      // Use the storefront-isolated client so this session does NOT overwrite
+      // the merchant/admin session that may exist in the same browser.
+      const { error: sessErr } = await supabaseStorefront.auth.setSession({
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
       });

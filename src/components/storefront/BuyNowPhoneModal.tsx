@@ -20,6 +20,7 @@ import { toast } from "sonner";
 
 import { storefrontPath } from "@/lib/subdomain";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 
 interface Props {
@@ -72,7 +73,9 @@ async function autoLoginByPhone(storeId: string | undefined, phone: string) {
     }
     const result = data as { session?: { access_token?: string; refresh_token?: string } } | null;
     if (result?.session?.access_token && result?.session?.refresh_token) {
-      await supabase.auth.setSession({
+      // Storefront-isolated client — keeps customer session separate from
+      // merchant/admin dashboard session in the same browser.
+      await supabaseStorefront.auth.setSession({
         access_token: result.session.access_token,
         refresh_token: result.session.refresh_token,
       });
