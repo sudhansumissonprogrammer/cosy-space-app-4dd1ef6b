@@ -65,7 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // scope: 'local' → only signs out THIS device.
+    // Without this, signing out on one device revokes refresh tokens on all
+    // devices, causing other devices to fail with "refresh_token_not_found"
+    // on their next token refresh and forcing unexpected logouts.
+    await supabase.auth.signOut({ scope: 'local' });
   };
 
   return (
