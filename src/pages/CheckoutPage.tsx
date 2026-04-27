@@ -1137,15 +1137,35 @@ export default function CheckoutPage() {
     }
   };
 
+  const focusField = (id: string) => {
+    // Wait one frame so any collapsed section (express mode) has time to expand
+    requestAnimationFrame(() => {
+      const el = document.getElementById(id) as HTMLInputElement | null;
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Brief delay so the scroll starts before focus (prevents jump on iOS)
+      setTimeout(() => {
+        try { el.focus({ preventScroll: true }); } catch { el.focus(); }
+        // Flash a red ring so the user sees which field is missing
+        el.classList.add("ring-2", "ring-destructive", "ring-offset-2");
+        setTimeout(() => el.classList.remove("ring-2", "ring-destructive", "ring-offset-2"), 2000);
+      }, 250);
+    });
+  };
+
   const handlePlaceOrder = async () => {
-    if (!fullName.trim()) { toast.error(t("Please enter your full name", "कृपया अपना पूरा नाम दर्ज करें")); return; }
+    // Make sure the address section is open so the inputs exist in the DOM
+    if (!expressMode) setExpressMode(true);
+
+    if (!fullName.trim()) { toast.error(t("Please fill your details — name is required", "कृपया अपनी जानकारी भरें — नाम आवश्यक है")); focusField("fullName"); return; }
     const normalizedPhone = normalizePhone(phone);
-    if (!isValidIndianPhone(normalizedPhone)) { toast.error(t("Please enter a valid 10-digit mobile number", "कृपया एक वैध 10-अंकीय मोबाइल नंबर दर्ज करें")); return; }
+    if (!isValidIndianPhone(normalizedPhone)) { toast.error(t("Please enter a valid 10-digit mobile number", "कृपया एक वैध 10-अंकीय मोबाइल नंबर दर्ज करें")); focusField("phone"); return; }
     if (normalizedPhone !== phone.trim()) setPhone(normalizedPhone);
-    if (!streetAddress.trim()) { toast.error(t("Please enter your street address", "कृपया अपना पता दर्ज करें")); return; }
-    if (!city.trim()) { toast.error(t("Please enter your city", "कृपया अपना शहर दर्ज करें")); return; }
-    if (!state.trim()) { toast.error(t("Please enter your state", "कृपया अपना राज्य दर्ज करें")); return; }
-    if (!pincode.trim()) { toast.error(t("Please enter your pincode", "कृपया अपना पिनकोड दर्ज करें")); return; }
+    if (!pincode.trim()) { toast.error(t("Please enter your pincode", "कृपया अपना पिनकोड दर्ज करें")); focusField("pincode"); return; }
+    if (!streetAddress.trim()) { toast.error(t("Please enter your street address", "कृपया अपना पता दर्ज करें")); focusField("street"); return; }
+    if (!city.trim()) { toast.error(t("Please enter your city", "कृपया अपना शहर दर्ज करें")); focusField("city"); return; }
+    if (!state.trim()) { toast.error(t("Please enter your state", "कृपया अपना राज्य दर्ज करें")); focusField("state"); return; }
+
 
     setPlacing(true);
     setPlacingStep(1);
