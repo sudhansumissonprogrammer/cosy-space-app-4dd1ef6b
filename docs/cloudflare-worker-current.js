@@ -2325,24 +2325,23 @@ async function handleProductsApi(request, url, ctx, env) {
     try {
       const kvData = await env.STORE_KV.get(kvKey, { type: "text" });
       if (kvData) {
-        ctx.waitUntil(
-          cache
-            .put(
-              cacheKey,
-              new Response(kvData, {
-                headers: {
-                  "Content-Type": "application/json",
-                  "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}`,
-                },
-              }),
-            )
-            .catch(() => {}),
-        );
+        // v8.2.0 Fix #5: Synchronously seed Cache API on the KV-hit path
+        // (was waitUntil → next request still missed cache). Also assert
+        // Vary so CF edge stores per-encoding variants.
+        const cacheBody = new Response(kvData, {
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}, s-maxage=${PRODUCTS_KV_TTL}`,
+            "Vary": "Accept-Encoding",
+          },
+        });
+        ctx.waitUntil(cache.put(cacheKey, cacheBody.clone()).catch(() => {}));
         return addCorsHeaders(
           new Response(kvData, {
             headers: {
               "Content-Type": "application/json",
-              "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}, stale-while-revalidate=${PRODUCTS_KV_TTL}`,
+              "Cache-Control": `public, max-age=${PRODUCTS_CACHE_TTL}, s-maxage=${PRODUCTS_KV_TTL}, stale-while-revalidate=${PRODUCTS_KV_TTL}`,
+              "Vary": "Accept-Encoding",
             },
           }),
           "kv",
