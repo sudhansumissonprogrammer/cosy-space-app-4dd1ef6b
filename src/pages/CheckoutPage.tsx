@@ -103,6 +103,8 @@ export default function CheckoutPage() {
   // Payment retry state: store created order for retry
   const [pendingOrder, setPendingOrder] = useState<{ id: string; number: string | null; profit: number | null } | null>(null);
   const [paymentFailed, setPaymentFailed] = useState(false);
+  // Confirming-payment state: shown while we wait for UPI/Cashfree to settle after user returns from GPay/PhonePe
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
   // Cashfree order id (per-store gateway): kept in a ref so visibility/focus listeners can re-check status
   const pendingCfOrderRef = useRef<string | null>(null);
 
