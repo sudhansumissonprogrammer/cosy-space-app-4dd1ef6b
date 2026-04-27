@@ -109,7 +109,22 @@ function nextAnchoredPeriodEnd(from: Date, anchorDay: number): Date {
   return next;
 }
 
-async function markPaid(supabase: any, payment: any, cfOrder: any) {
+async function getSuccessfulPayment(orderId: string): Promise<any | null> {
+  const res = await fetch(`${CF_BASE}/orders/${orderId}/payments`, {
+    headers: {
+      "x-api-version": "2023-08-01",
+      "x-client-id": CASHFREE_APP_ID,
+      "x-client-secret": CASHFREE_SECRET_KEY,
+    },
+  });
+  if (!res.ok) return null;
+  const payments = await res.json().catch(() => []);
+  return Array.isArray(payments)
+    ? payments.find((p) => String(p?.payment_status || "").toUpperCase() === "SUCCESS") || null
+    : null;
+}
+
+async function markPaid(supabase: any, payment: any, cfOrder: any, cfPayment: any | null) {
   // Idempotent: update only if not already paid
   const periodStart = new Date();
   const defaultPeriodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
