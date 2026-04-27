@@ -98,7 +98,7 @@ export default function BillingPaywall({ state, storeId }: Props) {
         return;
       }
       setStage("pending");
-      setStatusMsg("Payment is processing. Tap 'Check status' in a moment.");
+      setStatusMsg("Payment is processing. We are checking automatically — please keep this screen open.");
     };
 
     const onVisible = () => { if (document.visibilityState === "visible") recheck(); };
