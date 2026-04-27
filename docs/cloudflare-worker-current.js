@@ -2441,9 +2441,7 @@ async function _refreshProductsBackground(domain, filters, version, env) {
           }),
         )
         .catch(() => {}),
-      env?.STORE_KV
-        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
-        : Promise.resolve(),
+      kvPutDedup(env, kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }),
     ]);
   } catch {}
 }
