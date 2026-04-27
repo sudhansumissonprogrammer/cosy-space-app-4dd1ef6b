@@ -1171,8 +1171,10 @@ export default function CheckoutPage() {
       setPlacingStep(3);
       finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
     } catch (err: any) {
+      console.error("[checkout] handlePlaceOrder failed:", err);
       setPlacingStep(0);
-      toast.error(err.message || "Failed to place order");
+      setPlacing(false);
+      toast.error(err?.message || "Failed to place order. Please try again.");
     } finally {
       if (!isOnline) setPlacing(false);
     }
