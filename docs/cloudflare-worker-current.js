@@ -596,7 +596,7 @@ window.__STOREFRONT_PREFETCH__=fetch("/?__sf_data=1",{cache:"no-store",headers:{
 
 const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
 // v6.9.1: Derived from the SPA shell, so it must expire on the same short window.
-const PREBUILT_HEAD_KV_TTL = 21600; // v8.0.0 cost-cut: 30m → 6h (purge bumps version)
+const PREBUILT_HEAD_KV_TTL = 86400; // v8.1.0 cost-cut: 6h → 24h (purge bumps version)
 const PREBUILT_HEAD_CACHE_TTL = 300; // v7.7.0 Fix 4: 1m → 5m
 
 function _buildPrebuiltHead(html) {
