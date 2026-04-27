@@ -1515,9 +1515,8 @@ async function _resolveStoreInfo(slug, hostname, env) {
       cache
         .put(infoCacheKey, new Response(JSON.stringify(nfData), { headers: { "Cache-Control": "public, max-age=15" } }))
         .catch(() => {});
-      if (env?.STORE_KV) {
-        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 1800 }).catch(() => {}); // v8.0.0: 30s → 30m (NOT_FOUND rarely flips)
-      }
+      kvPutDedup(env, `store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 1800 }); // v8.1.0 dedup
+
       return { storeId: null, customDomain: null };
     }
 
