@@ -831,7 +831,36 @@ async function getSpaShell(request, ctx, env) {
 }
 
 async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
-  const response = await proxyToOrigin(request);
+  // v8.2.0 Fix #1: Bypass proxyToOrigin's cacheTtl:0 — fetch the shell
+  // DIRECTLY with cacheEverything:true so Cloudflare's global edge caches
+  // the Lovable origin response for 24h. KV is per-colo; this makes the
+  // shell shared across ALL 300+ Cloudflare PoPs → ~60% fewer origin hits.
+  const shellUrl = new URL(request.url);
+  shellUrl.hostname = ORIGIN_HOST;
+  const shellHeaders = new Headers(request.headers);
+  shellHeaders.set("Host", ORIGIN_HOST);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ORIGIN_TIMEOUT_MS);
+
+  let response;
+  try {
+    response = await fetch(shellUrl.toString(), {
+      method: "GET",
+      headers: shellHeaders,
+      signal: controller.signal,
+      cf: {
+        cacheEverything: true,
+        cacheTtl: 86400,                 // 24h success TTL at edge
+        cacheTtlByStatus: { "200-299": 86400, "404": 60, "500-599": 0 },
+      },
+    });
+    clearTimeout(timeout);
+  } catch {
+    clearTimeout(timeout);
+    return null;
+  }
+
   const contentType = response.headers.get("content-type") || "";
   if (!response.ok || !contentType.includes("text/html")) return null;
 
