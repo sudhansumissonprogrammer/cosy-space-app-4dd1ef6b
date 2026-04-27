@@ -923,9 +923,11 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
     )
     .catch(() => {});
 
-  if (env?.STORE_KV) {
-    env.STORE_KV.put(`theme-lite:${slug}`, liteStr, { expirationTtl: THEME_LITE_KV_TTL }).catch(() => {});
+  // v8.1.0: skip KV write for bot traffic + dedup repeat writes within 5min window
+  if (!ctx?.__skipKvWarm) {
+    kvPutDedup(env, `theme-lite:${slug}`, liteStr, { expirationTtl: THEME_LITE_KV_TTL });
   }
+
 }
 
 async function _getThemeLite(slug, env) {
