@@ -131,10 +131,11 @@ async function markPaid(supabase: any, payment: any, cfOrder: any) {
     .update({
       status: "paid",
       paid_at: new Date().toISOString(),
-      cashfree_payment_id: cfOrder.cf_order_id ? String(cfOrder.cf_order_id) : null,
+      cashfree_payment_id: cfPayment?.cf_payment_id ? String(cfPayment.cf_payment_id) : (cfOrder.cf_order_id ? String(cfOrder.cf_order_id) : null),
+      payment_method: cfPayment?.payment_group || cfPayment?.payment_method || null,
       period_start: periodStart.toISOString(),
       period_end: periodEnd.toISOString(),
-      raw_payload: cfOrder,
+      raw_payload: { order: cfOrder, payment: cfPayment },
     })
     .eq("id", payment.id)
     .neq("status", "paid"); // race-safe
