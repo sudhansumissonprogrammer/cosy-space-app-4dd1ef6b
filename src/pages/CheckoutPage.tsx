@@ -1497,7 +1497,7 @@ export default function CheckoutPage() {
         </div>
 
         {/* Partial Payment Option */}
-        {hasAnyPartialPayment && hasRazorpay && (
+        {hasAnyPartialPayment && hasOnline && (
           <div className="space-y-2">
             <button
               type="button"
