@@ -1000,23 +1000,39 @@ export default function CheckoutPage() {
 
     pendingCfOrderRef.current = cfData.cf_order_id;
 
-    const verifyAndFinalize = async () => {
-      try {
-        const verdict = await callEdgeFunction("store-cashfree-verify", {
-          store_id: store.id, order_id: order.id, cf_order_id: cfData.cf_order_id,
-        });
-        if (verdict?.status === "PAID") {
-          setPlacingStep(3);
-          setPlacing(false);
-          setPaymentFailed(false);
-          setPendingOrder(null);
-          pendingCfOrderRef.current = null;
-          finalizeOrder(order.id, order.number, order.profit);
-          return true;
+    // Verify with retry — UPI (GPay/PhonePe) takes 3–15s to confirm to Cashfree after user
+    // approves in the UPI app. A single verify call right when the modal closes will return
+    // PENDING and we'd wrongly show "Payment Failed". Retry with backoff to catch the late confirm.
+    const verifyAndFinalize = async (opts?: { attempts?: number; intervalMs?: number; showConfirming?: boolean }) => {
+      const attempts = opts?.attempts ?? 8;
+      const intervalMs = opts?.intervalMs ?? 2000;
+      if (opts?.showConfirming) setConfirmingPayment(true);
+      for (let i = 0; i < attempts; i++) {
+        try {
+          const verdict = await callEdgeFunction("store-cashfree-verify", {
+            store_id: store.id, order_id: order.id, cf_order_id: cfData.cf_order_id,
+          });
+          if (verdict?.status === "PAID") {
+            setConfirmingPayment(false);
+            setPlacingStep(3);
+            setPlacing(false);
+            setPaymentFailed(false);
+            setPendingOrder(null);
+            pendingCfOrderRef.current = null;
+            finalizeOrder(order.id, order.number, order.profit);
+            return true;
+          }
+          // Hard-fail states stop the loop early
+          if (verdict?.status === "FAILED" || verdict?.status === "CANCELLED") {
+            setConfirmingPayment(false);
+            return false;
+          }
+        } catch (e) {
+          console.warn(`Cashfree verify attempt ${i + 1} failed:`, e);
         }
-      } catch (e) {
-        console.warn("Cashfree verify failed:", e);
+        if (i < attempts - 1) await new Promise((r) => setTimeout(r, intervalMs));
       }
+      setConfirmingPayment(false);
       return false;
     };
 
@@ -1027,8 +1043,9 @@ export default function CheckoutPage() {
       });
       // Cashfree SDK returns when modal closes (success / fail / cancel)
       if (result?.error) {
-        // user cancelled or payment failed — try server-side verify in case of UPI race
-        const ok = await verifyAndFinalize();
+        // user cancelled OR UPI race (modal closed before GPay/PhonePe confirmed back).
+        // Show "Confirming…" UI and poll for up to ~16s before declaring failure.
+        const ok = await verifyAndFinalize({ attempts: 8, intervalMs: 2000, showConfirming: true });
         if (!ok) {
           setPlacingStep(0);
           setPendingOrder(order);
@@ -1041,7 +1058,7 @@ export default function CheckoutPage() {
         return;
       }
       // paymentDetails / redirect path → verify with backend (single source of truth)
-      const ok = await verifyAndFinalize();
+      const ok = await verifyAndFinalize({ attempts: 8, intervalMs: 2000, showConfirming: true });
       if (!ok) {
         setPlacingStep(0);
         setPendingOrder(order);
@@ -1050,8 +1067,8 @@ export default function CheckoutPage() {
         toast.error("Payment not confirmed. You can retry below.");
       }
     } catch (err: any) {
-      // SDK threw — try one more verify before failing
-      const ok = await verifyAndFinalize();
+      // SDK threw — try retry-verify before failing (covers Android UPI deep-link aborts)
+      const ok = await verifyAndFinalize({ attempts: 8, intervalMs: 2000, showConfirming: true });
       if (!ok) {
         setPlacingStep(0);
         setPendingOrder(order);
