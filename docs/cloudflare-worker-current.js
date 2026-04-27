@@ -585,11 +585,13 @@ setTimeout(function(){ try { location.reload(); } catch(e) {} }, 1500);
    No document.write. No double skeleton.
    ============================================================ */
 function _buildPrefetchPromiseScript(slug) {
+  // v8.2.0 Fix #2: Eliminated the browser-side fetch("/?__sf_data=1") call.
+  // It was responsible for ~15-20% of Worker requests (one self-call per
+  // cold-shell-only render). React's StorefrontLayout.logic.ts already
+  // falls back to a direct Supabase RPC (rpcGetStorefrontShell) when
+  // __STOREFRONT_PREFETCH__ is absent — same UX, no Worker hop.
   const safeSlug = (slug || "").replace(/[<>"'&]/g, "");
-  return `<script>
-window.__STORE_SLUG__="${safeSlug}";
-window.__STOREFRONT_PREFETCH__=fetch("/?__sf_data=1",{cache:"no-store",headers:{"x-sf-data-only":"1"}}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});
-</script>`;
+  return `<script>window.__STORE_SLUG__="${safeSlug}";</script>`;
 }
 
 
