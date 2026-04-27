@@ -65,9 +65,10 @@ Deno.serve(async (req) => {
     }
 
     const status = String(cfOrder.order_status || "").toUpperCase();
+    const paidPayment = await getSuccessfulPayment(order_id);
 
-    if (status === "PAID") {
-      await markPaid(supabase, payment, cfOrder);
+    if (status === "PAID" || paidPayment) {
+      await markPaid(supabase, payment, cfOrder, paidPayment);
       return jsonRes({ status: "paid" });
     }
 
@@ -108,7 +109,22 @@ function nextAnchoredPeriodEnd(from: Date, anchorDay: number): Date {
   return next;
 }
 
-async function markPaid(supabase: any, payment: any, cfOrder: any) {
+async function getSuccessfulPayment(orderId: string): Promise<any | null> {
+  const res = await fetch(`${CF_BASE}/orders/${orderId}/payments`, {
+    headers: {
+      "x-api-version": "2023-08-01",
+      "x-client-id": CASHFREE_APP_ID,
+      "x-client-secret": CASHFREE_SECRET_KEY,
+    },
+  });
+  if (!res.ok) return null;
+  const payments = await res.json().catch(() => []);
+  return Array.isArray(payments)
+    ? payments.find((p) => String(p?.payment_status || "").toUpperCase() === "SUCCESS") || null
+    : null;
+}
+
+async function markPaid(supabase: any, payment: any, cfOrder: any, cfPayment: any | null) {
   // Idempotent: update only if not already paid
   const periodStart = new Date();
   const defaultPeriodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -130,10 +146,11 @@ async function markPaid(supabase: any, payment: any, cfOrder: any) {
     .update({
       status: "paid",
       paid_at: new Date().toISOString(),
-      cashfree_payment_id: cfOrder.cf_order_id ? String(cfOrder.cf_order_id) : null,
+      cashfree_payment_id: cfPayment?.cf_payment_id ? String(cfPayment.cf_payment_id) : (cfOrder.cf_order_id ? String(cfOrder.cf_order_id) : null),
+      payment_method: cfPayment?.payment_group || cfPayment?.payment_method || null,
       period_start: periodStart.toISOString(),
       period_end: periodEnd.toISOString(),
-      raw_payload: cfOrder,
+      raw_payload: { order: cfOrder, payment: cfPayment },
     })
     .eq("id", payment.id)
     .neq("status", "paid"); // race-safe

@@ -98,7 +98,7 @@ export default function BillingPaywall({ state, storeId }: Props) {
         return;
       }
       setStage("pending");
-      setStatusMsg("Payment is processing. Tap 'Check status' in a moment.");
+      setStatusMsg("Payment is processing. We are checking automatically — please keep this screen open.");
     };
 
     const onVisible = () => { if (document.visibilityState === "visible") recheck(); };
@@ -107,6 +107,29 @@ export default function BillingPaywall({ state, storeId }: Props) {
     return () => {
       window.removeEventListener("focus", recheck);
       document.removeEventListener("visibilitychange", onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage]);
+
+  // Keep checking automatically after UPI return instead of leaving the user stuck on pending.
+  useEffect(() => {
+    if (stage !== "pending" || !pendingOrderRef.current) return;
+    let stopped = false;
+    const timer = window.setInterval(async () => {
+      const order = pendingOrderRef.current;
+      if (!order || stopped) return;
+      const verdict = await verifyOrder(order.order_id, 1);
+      if (stopped) return;
+      if (verdict === "paid") return onSuccess();
+      if (verdict === "failed") {
+        pendingOrderRef.current = null;
+        setStage("failed");
+        setStatusMsg("Payment failed. Please try again.");
+      }
+    }, 5000);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
@@ -134,7 +157,7 @@ export default function BillingPaywall({ state, storeId }: Props) {
       }
       if (verdict === "pending") {
         setStage("pending");
-        setStatusMsg("Payment is processing. Tap 'Check status' in a moment.");
+        setStatusMsg("Payment is processing. We are checking automatically — please keep this screen open.");
         toast.info("Payment processing. We'll confirm shortly.");
         return;
       }
@@ -204,7 +227,7 @@ export default function BillingPaywall({ state, storeId }: Props) {
       return;
     }
     setStage("pending");
-    setStatusMsg("Still processing. Please wait a moment and check again.");
+    setStatusMsg("Still processing. We are checking automatically — please keep this screen open.");
   };
 
   // Deterministic weekly counter
