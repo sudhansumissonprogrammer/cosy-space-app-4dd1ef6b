@@ -105,8 +105,19 @@ export default function CheckoutPage() {
   const [paymentFailed, setPaymentFailed] = useState(false);
   // Confirming-payment state: shown while we wait for UPI/Cashfree to settle after user returns from GPay/PhonePe
   const [confirmingPayment, setConfirmingPayment] = useState(false);
-  // Cashfree order id (per-store gateway): kept in a ref so visibility/focus listeners can re-check status
+  // Cashfree order id (per-store gateway): kept in a ref so visibility/focus listeners can re-check status.
+  // Also persisted to sessionStorage so a mobile-browser tab-reload (after returning from UPI app) can recover.
   const pendingCfOrderRef = useRef<string | null>(null);
+  const CF_PENDING_KEY = `cf_pending_${store.id}`;
+  const persistCfPending = (cfId: string | null, order: { id: string; number: string | null; profit: number | null } | null) => {
+    try {
+      if (cfId && order) {
+        sessionStorage.setItem(CF_PENDING_KEY, JSON.stringify({ cf_order_id: cfId, order, ts: Date.now() }));
+      } else {
+        sessionStorage.removeItem(CF_PENDING_KEY);
+      }
+    } catch {}
+  };
 
   // Form — pre-fill from localStorage for returning users
   // Theme-16 BuyNowPhoneModal stores checkout_phone & checkout_address
@@ -602,13 +613,11 @@ export default function CheckoutPage() {
     saveAbandonedCart();
   }, []);
 
-  // Auto-recheck pending Cashfree payment when user returns to the tab (UPI completed in another app)
-  // Keep this hook before any conditional return to prevent React hook-order crashes on checkout.
+  // Auto-recheck pending Cashfree payment when user returns to the tab (UPI completed in another app).
+  // Also recovers from sessionStorage on fresh mount/reload — mobile browsers often kill the tab
+  // while user is in the UPI app, then reload it on return, wiping pendingOrder/pendingCfOrderRef.
   useEffect(() => {
-    const recheck = async () => {
-      const cfId = pendingCfOrderRef.current;
-      const order = pendingOrder;
-      if (!cfId || !order || !paymentFailed) return;
+    const recheckWith = async (cfId: string, order: { id: string; number: string | null; profit: number | null }) => {
       try {
         const verdict = await callEdgeFunction("store-cashfree-status", {
           store_id: store.id, order_id: order.id, cf_order_id: cfId,
@@ -619,12 +628,44 @@ export default function CheckoutPage() {
           setPaymentFailed(false);
           setPendingOrder(null);
           pendingCfOrderRef.current = null;
+          persistCfPending(null, null);
           finalizeOrder(order.id, order.number, order.profit);
+          return true;
+        }
+        if (verdict?.status === "FAILED" || verdict?.status === "CANCELLED" || verdict?.status === "TERMINATED") {
+          persistCfPending(null, null);
         }
       } catch {}
+      return false;
     };
-    const onFocus = () => recheck();
-    const onVis = () => { if (document.visibilityState === "visible") recheck(); };
+
+    // 1. Recovery on mount: if sessionStorage has a pending cf order from a previous tab life
+    try {
+      const raw = sessionStorage.getItem(CF_PENDING_KEY);
+      if (raw && !pendingCfOrderRef.current) {
+        const saved = JSON.parse(raw) as { cf_order_id: string; order: any; ts: number };
+        // Only recover if recent (< 30 min) — avoids stale state
+        if (saved && Date.now() - (saved.ts || 0) < 30 * 60 * 1000 && saved.cf_order_id && saved.order?.id) {
+          pendingCfOrderRef.current = saved.cf_order_id;
+          setPendingOrder(saved.order);
+          setPaymentFailed(true); // shows the retry/check-status UI
+          // Immediate recheck — the user may have already paid in UPI app
+          recheckWith(saved.cf_order_id, saved.order);
+        } else {
+          sessionStorage.removeItem(CF_PENDING_KEY);
+        }
+      }
+    } catch {}
+
+    // 2. Tab-focus / visibility recheck while pending
+    const recheckActive = () => {
+      const cfId = pendingCfOrderRef.current;
+      const order = pendingOrder;
+      if (!cfId || !order || !paymentFailed) return;
+      recheckWith(cfId, order);
+    };
+    const onFocus = () => recheckActive();
+    const onVis = () => { if (document.visibilityState === "visible") recheckActive(); };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVis);
     return () => {
@@ -1037,6 +1078,7 @@ export default function CheckoutPage() {
     ]);
 
     pendingCfOrderRef.current = cfData.cf_order_id;
+    persistCfPending(cfData.cf_order_id, order);
 
     // Verify with retry — UPI (GPay/PhonePe) takes 3–15s to confirm to Cashfree after user
     // approves in the UPI app. A single verify call right when the modal closes will return
@@ -1057,6 +1099,7 @@ export default function CheckoutPage() {
             setPaymentFailed(false);
             setPendingOrder(null);
             pendingCfOrderRef.current = null;
+            persistCfPending(null, null);
             finalizeOrder(order.id, order.number, order.profit);
             return true;
           }
