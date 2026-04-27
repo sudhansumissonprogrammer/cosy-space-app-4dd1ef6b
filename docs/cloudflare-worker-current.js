@@ -2182,7 +2182,7 @@ const inflightDomainResolutions = new Map();
 
 // In-memory version cache: domain → { version, ts }
 const _memProductVersion = new Map();
-const MEM_PV_TTL = 300_000; // v7.6.0: 60s → 5min. /api/purge bumps version on save.
+const MEM_PV_TTL = 1_800_000; // v8.2.0 Fix #4: 5min → 30min. /api/purge bumps version on save → no staleness risk.
 const MEM_PV_MAX = 5_000;
 
 async function _getProductVersion(domain, env) {
