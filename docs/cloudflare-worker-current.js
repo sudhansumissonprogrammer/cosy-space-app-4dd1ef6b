@@ -1073,7 +1073,7 @@ async function prefetchStorefrontDataWithDeadline(slug, ctx, env, deadlineMs) {
    ============================================================ */
 
 const PRODUCTS_CACHE_TTL = 300;
-const PRODUCTS_KV_TTL = 7200; // v8.0.0 cost-cut: 30min → 2h (purge bumps version)
+const PRODUCTS_KV_TTL = 86400; // v8.1.0 cost-cut: 2h → 24h (purge bumps version)
 // Bumped 20 → 50 (2025-04): bigger initial batch means most visitors
 // never trigger a second /api/products page request. Inline products
 // also get the larger set, so first paint shows more cards.
