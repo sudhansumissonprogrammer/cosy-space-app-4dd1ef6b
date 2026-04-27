@@ -65,9 +65,10 @@ Deno.serve(async (req) => {
     }
 
     const status = String(cfOrder.order_status || "").toUpperCase();
+    const paidPayment = await getSuccessfulPayment(order_id);
 
-    if (status === "PAID") {
-      await markPaid(supabase, payment, cfOrder);
+    if (status === "PAID" || paidPayment) {
+      await markPaid(supabase, payment, cfOrder, paidPayment);
       return jsonRes({ status: "paid" });
     }
 
