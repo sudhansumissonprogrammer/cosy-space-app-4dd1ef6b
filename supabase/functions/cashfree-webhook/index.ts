@@ -66,7 +66,19 @@ Deno.serve(async (req) => {
     if (eventType === "PAYMENT_SUCCESS_WEBHOOK") {
       const paymentInfo = event?.data?.payment || {};
       const periodStart = new Date();
-      const periodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const defaultPeriodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+      // Fetch assignment first to honor billing anchor day
+      const { data: assignment } = await supabase
+        .from("store_plan_assignments")
+        .select("*")
+        .eq("store_id", payment.store_id)
+        .single();
+
+      const anchorDay = getAnchorDay(assignment?.notes);
+      const periodEnd = anchorDay
+        ? nextAnchoredPeriodEnd(periodStart, anchorDay)
+        : defaultPeriodEnd;
 
       await supabase
         .from("subscription_payments")
@@ -82,17 +94,11 @@ Deno.serve(async (req) => {
         .eq("id", payment.id)
         .neq("status", "paid");
 
-      // Update assignment
-      const { data: assignment } = await supabase
-        .from("store_plan_assignments")
-        .select("*")
-        .eq("store_id", payment.store_id)
-        .single();
-
       if (assignment) {
         const updates: any = {
           last_payment_at: new Date().toISOString(),
           grace_period_ends_at: null,
+          next_billing_amount: null,
         };
         if (assignment.is_one_time) {
           updates.billing_status = "one_time_paid";
