@@ -2417,9 +2417,8 @@ function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
   ctx.waitUntil(
     Promise.all([
       cache.put(cacheKey, response.clone()).catch(() => {}),
-      env?.STORE_KV
-        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
-        : Promise.resolve(),
+      // v8.1.0: bots skip KV; dedup collapses repeats
+      ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }),
     ]),
   );
   return addCorsHeaders(response, source);
