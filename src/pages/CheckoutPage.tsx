@@ -1078,6 +1078,7 @@ export default function CheckoutPage() {
     ]);
 
     pendingCfOrderRef.current = cfData.cf_order_id;
+    persistCfPending(cfData.cf_order_id, order);
 
     // Verify with retry — UPI (GPay/PhonePe) takes 3–15s to confirm to Cashfree after user
     // approves in the UPI app. A single verify call right when the modal closes will return
