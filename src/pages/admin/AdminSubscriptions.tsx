@@ -306,6 +306,25 @@ function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any
   const handleSave = async () => {
     setLoading(true);
     try {
+      // Derive correct billing_status + current_period_end based on plan type
+      let billingStatus: string;
+      let currentPeriodEnd: string | null = null;
+      let trialEndsAt: string | null = assignment.trial_ends_at || null;
+
+      if (isFreeLifetime) {
+        billingStatus = "lifetime";
+      } else if (isOneTime) {
+        billingStatus = "one_time_paid";
+      } else {
+        // Recurring monthly plan — mark active and set/extend period to 30 days from now
+        billingStatus = "active";
+        const base = assignment.current_period_end && new Date(assignment.current_period_end) > new Date()
+          ? new Date(assignment.current_period_end)
+          : new Date();
+        currentPeriodEnd = new Date(base.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        trialEndsAt = null;
+      }
+
       const payload: any = {
         store_id: assignment.store_id,
         plan_id: planId,
@@ -316,6 +335,10 @@ function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any
         custom_product_limit: customLimit ? parseInt(customLimit) : null,
         notes: notes.trim() || null,
         status: "active",
+        billing_status: billingStatus,
+        current_period_end: currentPeriodEnd,
+        trial_ends_at: trialEndsAt,
+        grace_period_ends_at: null,
       };
 
       if (isFreeLifetime) {
