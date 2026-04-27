@@ -258,7 +258,7 @@ export default function CheckoutPage() {
     return () => { cancelled = true; };
   }, [phone, store.id, savedAddresses, returningDismissed, returningUsed]);
 
-  const useReturningOrder = () => {
+  const applyReturningOrder = () => {
     if (!returningOrder) return;
     setFullName(returningOrder.customer_name || "");
     setStreetAddress(returningOrder.street_address || "");
@@ -1424,7 +1424,7 @@ export default function CheckoutPage() {
                       {[returningOrder.street_address, returningOrder.city, returningOrder.state, returningOrder.pincode].filter(Boolean).join(", ")}
                     </p>
                     <div className="mt-2.5 flex items-center gap-2">
-                      <Button size="sm" className="h-8 text-xs px-3" onClick={useReturningOrder}>
+                      <Button size="sm" className="h-8 text-xs px-3" onClick={applyReturningOrder}>
                         <Check className="h-3.5 w-3.5 mr-1" /> Use this address
                       </Button>
                       <Button size="sm" variant="ghost" className="h-8 text-xs px-2 text-muted-foreground" onClick={() => setReturningDismissed(true)}>
