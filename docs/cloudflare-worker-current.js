@@ -1551,11 +1551,7 @@ async function _resolveStoreInfo(slug, hostname, env) {
           new Response(result.storeId, { headers: { "Cache-Control": "public, max-age=600" } }),
         )
         .catch(() => {}),
-      env?.STORE_KV
-        ? env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(cachePayload), {
-            expirationTtl: STORE_INFO_KV_TTL,
-          }).catch(() => {})
-        : Promise.resolve(),
+      kvPutDedup(env, `store-info:${slug}`, JSON.stringify(cachePayload), { expirationTtl: STORE_INFO_KV_TTL }),
     ]);
 
     return result;
