@@ -111,6 +111,29 @@ export default function BillingPaywall({ state, storeId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
+  // Keep checking automatically after UPI return instead of leaving the user stuck on pending.
+  useEffect(() => {
+    if (stage !== "pending" || !pendingOrderRef.current) return;
+    let stopped = false;
+    const timer = window.setInterval(async () => {
+      const order = pendingOrderRef.current;
+      if (!order || stopped) return;
+      const verdict = await verifyOrder(order.order_id, 1);
+      if (stopped) return;
+      if (verdict === "paid") return onSuccess();
+      if (verdict === "failed") {
+        pendingOrderRef.current = null;
+        setStage("failed");
+        setStatusMsg("Payment failed. Please try again.");
+      }
+    }, 5000);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage]);
+
   // Open Cashfree for an existing session (initial OR retry)
   const openCashfreeForSession = async (order_id: string, payment_session_id: string) => {
     setStage("checkout");
