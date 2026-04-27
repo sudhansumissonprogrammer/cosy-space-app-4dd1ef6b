@@ -23,10 +23,10 @@ Deno.serve(async (req) => {
       return jsonRes({ error: "Missing authorization" }, 401);
     }
 
+    // Service-role client for DB writes (bypasses RLS — ownership is verified below)
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
     );
 
     // Identify caller
@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
     const periodStart = new Date();
     const periodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    await supabase.from("subscription_payments").insert({
+    const { error: insertErr } = await supabase.from("subscription_payments").insert({
       store_id: storeId,
       plan_id: state.plan_id,
       cashfree_order_id: orderId,
@@ -139,6 +139,10 @@ Deno.serve(async (req) => {
       period_end: periodEnd.toISOString(),
       raw_payload: cfData,
     });
+    if (insertErr) {
+      console.error("subscription_payments insert error", insertErr);
+      return jsonRes({ error: "Failed to record order", details: insertErr.message }, 500);
+    }
 
     return jsonRes({
       order_id: orderId,
