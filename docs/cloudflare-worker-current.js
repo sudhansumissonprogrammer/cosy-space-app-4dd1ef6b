@@ -1198,8 +1198,11 @@ const PV_DEDUP_MAX = 5000;
 const _pvDedup = new Map(); // key -> expiresAt
 
 // Batching config
-const PV_BATCH_MAX_SIZE = 25;          // flush when buffer hits this many rows
-const PV_BATCH_MAX_AGE_MS = 5_000;     // or when oldest row is this old (ms)
+// v8.2.0 Fix #4: Larger batches + longer flush window cut Supabase
+// page_views INSERT subrequests by ~70% (one bulk write per minute
+// per Worker instance instead of every 5s).
+const PV_BATCH_MAX_SIZE = 100;         // flush when buffer hits this many rows (was 25)
+const PV_BATCH_MAX_AGE_MS = 60_000;    // or when oldest row is this old (was 5s)
 const _pvBuffer = [];                  // pending rows
 let _pvBufferOldestAt = 0;             // timestamp of first row in current buffer
 
