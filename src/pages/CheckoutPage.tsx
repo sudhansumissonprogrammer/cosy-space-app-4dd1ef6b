@@ -3,6 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams, useOutletContext, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
 import { sendOrderWhatsApp } from "@/lib/whatsappAutomation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -702,7 +703,9 @@ export default function CheckoutPage() {
 
       // Auto-login with session tokens if returned
       if (result?.session?.access_token && result?.session?.refresh_token) {
-        await supabase.auth.setSession({
+        // Storefront-isolated client — does NOT clobber the merchant/admin
+        // session that may exist in the same browser.
+        await supabaseStorefront.auth.setSession({
           access_token: result.session.access_token,
           refresh_token: result.session.refresh_token,
         });
