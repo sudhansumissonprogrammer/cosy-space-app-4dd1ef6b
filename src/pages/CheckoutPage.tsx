@@ -483,7 +483,7 @@ export default function CheckoutPage() {
     return Math.max(50, Math.round(advance));
   })();
   const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
-  const isPartialOrder = hasAnyPartialPayment && partialPaymentMode === "partial" && hasRazorpay;
+  const isPartialOrder = hasAnyPartialPayment && partialPaymentMode === "partial" && hasOnline;
   const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
 
   // Coupon logic
