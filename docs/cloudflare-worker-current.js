@@ -865,7 +865,7 @@ async function _batchKvRead(slug, env) {
    FIX #8 — LIGHTWEIGHT THEME CACHE (in-memory → Cache API → KV)
    ============================================================ */
 
-const THEME_LITE_KV_TTL = 21600; // v8.0.0 cost-cut: 1h → 6h
+const THEME_LITE_KV_TTL = 86400; // v8.1.0 cost-cut: 6h → 24h
 const THEME_LITE_CACHE_TTL = 600;
 
 function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
