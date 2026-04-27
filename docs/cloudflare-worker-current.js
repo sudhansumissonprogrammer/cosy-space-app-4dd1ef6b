@@ -729,8 +729,8 @@ function _buildLinkPreloadHeader(html) {
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
 // v6.9.1: Shell HTML must refresh quickly after frontend publishes; long TTLs caused
 // custom domains/subdomains to keep serving old JS bundle references after deploy.
-const SPA_SHELL_KV_TTL = 21600; // v8.0.0 cost-cut: 30min → 6h
-const SPA_SHELL_CACHE_TTL = 300; // v7.6.0: 1min → 5min
+const SPA_SHELL_KV_TTL = 86400; // v8.1.0 cost-cut: 6h → 24h. Shell only changes on deploy → /api/purge bumps key.
+const SPA_SHELL_CACHE_TTL = 1800; // v8.1.0 cost-cut: 5min → 30min
 
 let inflightShellFetch = null;
 
