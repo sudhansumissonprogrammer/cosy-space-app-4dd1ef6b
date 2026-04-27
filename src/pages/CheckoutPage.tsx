@@ -385,7 +385,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     // When partial payment is enabled, always default to online (COD is hidden)
     if (hasAnyPartialPayment && hasOnline) {
-      setPaymentMethod("razorpay");
+      setPaymentMethod("razorpay"); // generic "online" flag — actual gateway resolved via activeGateway
       setPartialPaymentMode("partial");
     } else if (hasCod) {
       setPaymentMethod("cod");
@@ -483,7 +483,7 @@ export default function CheckoutPage() {
     return Math.max(50, Math.round(advance));
   })();
   const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
-  const isPartialOrder = hasAnyPartialPayment && partialPaymentMode === "partial" && hasRazorpay;
+  const isPartialOrder = hasAnyPartialPayment && partialPaymentMode === "partial" && hasOnline;
   const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
 
   // Coupon logic
@@ -1171,8 +1171,10 @@ export default function CheckoutPage() {
       setPlacingStep(3);
       finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
     } catch (err: any) {
+      console.error("[checkout] handlePlaceOrder failed:", err);
       setPlacingStep(0);
-      toast.error(err.message || "Failed to place order");
+      setPlacing(false);
+      toast.error(err?.message || "Failed to place order. Please try again.");
     } finally {
       if (!isOnline) setPlacing(false);
     }
@@ -1495,7 +1497,7 @@ export default function CheckoutPage() {
         </div>
 
         {/* Partial Payment Option */}
-        {hasAnyPartialPayment && hasRazorpay && (
+        {hasAnyPartialPayment && hasOnline && (
           <div className="space-y-2">
             <button
               type="button"
