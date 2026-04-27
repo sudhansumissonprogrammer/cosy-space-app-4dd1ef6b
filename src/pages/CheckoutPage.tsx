@@ -613,13 +613,11 @@ export default function CheckoutPage() {
     saveAbandonedCart();
   }, []);
 
-  // Auto-recheck pending Cashfree payment when user returns to the tab (UPI completed in another app)
-  // Keep this hook before any conditional return to prevent React hook-order crashes on checkout.
+  // Auto-recheck pending Cashfree payment when user returns to the tab (UPI completed in another app).
+  // Also recovers from sessionStorage on fresh mount/reload — mobile browsers often kill the tab
+  // while user is in the UPI app, then reload it on return, wiping pendingOrder/pendingCfOrderRef.
   useEffect(() => {
-    const recheck = async () => {
-      const cfId = pendingCfOrderRef.current;
-      const order = pendingOrder;
-      if (!cfId || !order || !paymentFailed) return;
+    const recheckWith = async (cfId: string, order: { id: string; number: string | null; profit: number | null }) => {
       try {
         const verdict = await callEdgeFunction("store-cashfree-status", {
           store_id: store.id, order_id: order.id, cf_order_id: cfId,
@@ -630,12 +628,44 @@ export default function CheckoutPage() {
           setPaymentFailed(false);
           setPendingOrder(null);
           pendingCfOrderRef.current = null;
+          persistCfPending(null, null);
           finalizeOrder(order.id, order.number, order.profit);
+          return true;
+        }
+        if (verdict?.status === "FAILED" || verdict?.status === "CANCELLED" || verdict?.status === "TERMINATED") {
+          persistCfPending(null, null);
         }
       } catch {}
+      return false;
     };
-    const onFocus = () => recheck();
-    const onVis = () => { if (document.visibilityState === "visible") recheck(); };
+
+    // 1. Recovery on mount: if sessionStorage has a pending cf order from a previous tab life
+    try {
+      const raw = sessionStorage.getItem(CF_PENDING_KEY);
+      if (raw && !pendingCfOrderRef.current) {
+        const saved = JSON.parse(raw) as { cf_order_id: string; order: any; ts: number };
+        // Only recover if recent (< 30 min) — avoids stale state
+        if (saved && Date.now() - (saved.ts || 0) < 30 * 60 * 1000 && saved.cf_order_id && saved.order?.id) {
+          pendingCfOrderRef.current = saved.cf_order_id;
+          setPendingOrder(saved.order);
+          setPaymentFailed(true); // shows the retry/check-status UI
+          // Immediate recheck — the user may have already paid in UPI app
+          recheckWith(saved.cf_order_id, saved.order);
+        } else {
+          sessionStorage.removeItem(CF_PENDING_KEY);
+        }
+      }
+    } catch {}
+
+    // 2. Tab-focus / visibility recheck while pending
+    const recheckActive = () => {
+      const cfId = pendingCfOrderRef.current;
+      const order = pendingOrder;
+      if (!cfId || !order || !paymentFailed) return;
+      recheckWith(cfId, order);
+    };
+    const onFocus = () => recheckActive();
+    const onVis = () => { if (document.visibilityState === "visible") recheckActive(); };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVis);
     return () => {
