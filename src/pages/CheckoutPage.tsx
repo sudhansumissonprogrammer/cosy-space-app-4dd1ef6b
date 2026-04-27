@@ -1099,6 +1099,7 @@ export default function CheckoutPage() {
             setPaymentFailed(false);
             setPendingOrder(null);
             pendingCfOrderRef.current = null;
+            persistCfPending(null, null);
             finalizeOrder(order.id, order.number, order.profit);
             return true;
           }
