@@ -602,6 +602,37 @@ export default function CheckoutPage() {
     saveAbandonedCart();
   }, []);
 
+  // Auto-recheck pending Cashfree payment when user returns to the tab (UPI completed in another app)
+  // Keep this hook before any conditional return to prevent React hook-order crashes on checkout.
+  useEffect(() => {
+    const recheck = async () => {
+      const cfId = pendingCfOrderRef.current;
+      const order = pendingOrder;
+      if (!cfId || !order || !paymentFailed) return;
+      try {
+        const verdict = await callEdgeFunction("store-cashfree-status", {
+          store_id: store.id, order_id: order.id, cf_order_id: cfId,
+        });
+        if (verdict?.status === "PAID") {
+          setPlacingStep(3);
+          setPlacing(false);
+          setPaymentFailed(false);
+          setPendingOrder(null);
+          pendingCfOrderRef.current = null;
+          finalizeOrder(order.id, order.number, order.profit);
+        }
+      } catch {}
+    };
+    const onFocus = () => recheck();
+    const onVis = () => { if (document.visibilityState === "visible") recheck(); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [pendingOrder, paymentFailed, store.id]);
+
   if (isLoading && isSingleMode) return <CheckoutSkeleton />;
 
   if (isSingleMode && !product) {
@@ -1078,36 +1109,6 @@ export default function CheckoutPage() {
       }
     }
   };
-
-  // Auto-recheck pending Cashfree payment when user returns to the tab (UPI completed in another app)
-  useEffect(() => {
-    const recheck = async () => {
-      const cfId = pendingCfOrderRef.current;
-      const order = pendingOrder;
-      if (!cfId || !order || !paymentFailed) return;
-      try {
-        const verdict = await callEdgeFunction("store-cashfree-status", {
-          store_id: store.id, order_id: order.id, cf_order_id: cfId,
-        });
-        if (verdict?.status === "PAID") {
-          setPlacingStep(3);
-          setPlacing(false);
-          setPaymentFailed(false);
-          setPendingOrder(null);
-          pendingCfOrderRef.current = null;
-          finalizeOrder(order.id, order.number, order.profit);
-        }
-      } catch {}
-    };
-    const onFocus = () => recheck();
-    const onVis = () => { if (document.visibilityState === "visible") recheck(); };
-    window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onVis);
-    return () => {
-      window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onVis);
-    };
-  }, [pendingOrder, paymentFailed, store.id]);
 
   // Retry payment for a pending order
   const handleRetryPayment = async () => {
