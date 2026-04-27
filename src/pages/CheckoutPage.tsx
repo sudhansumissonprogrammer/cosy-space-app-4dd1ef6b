@@ -385,7 +385,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     // When partial payment is enabled, always default to online (COD is hidden)
     if (hasAnyPartialPayment && hasOnline) {
-      setPaymentMethod("razorpay");
+      setPaymentMethod("razorpay"); // generic "online" flag — actual gateway resolved via activeGateway
       setPartialPaymentMode("partial");
     } else if (hasCod) {
       setPaymentMethod("cod");
