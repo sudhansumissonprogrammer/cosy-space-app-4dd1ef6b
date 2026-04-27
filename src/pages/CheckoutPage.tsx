@@ -1616,6 +1616,17 @@ export default function CheckoutPage() {
           <span className="font-semibold text-foreground">{t("Total", "कुल")}</span>
           <span className="text-lg font-bold text-foreground">{currency} {total.toFixed(2)}</span>
         </div>
+        {/* Confirming payment overlay — shown after UPI app (GPay/PhonePe) returns,
+            while we poll Cashfree for the final status (3–15s typical for UPI). */}
+        {confirmingPayment && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="mx-4 max-w-sm rounded-2xl border border-border bg-card p-6 text-center shadow-2xl">
+              <Loader2 className="mx-auto mb-3 h-10 w-10 animate-spin text-primary" />
+              <p className="text-base font-bold text-foreground">{t("Confirming your payment…", "भुगतान की पुष्टि हो रही है…")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("Please don't close this page. UPI payments take a few seconds to confirm.", "कृपया यह पेज बंद न करें। UPI भुगतान की पुष्टि में कुछ सेकंड लगते हैं।")}</p>
+            </div>
+          </div>
+        )}
         {/* Payment retry banner */}
         {paymentFailed && pendingOrder && (
           <div className="mb-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-center">
