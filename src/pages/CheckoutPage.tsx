@@ -1740,48 +1740,7 @@ export default function CheckoutPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Sticky mobile bottom bar — total + view summary */}
-      {!orderPlaced && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/95 px-4 py-2.5 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur sm:hidden">
-          <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setSummaryOpen(true);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className="flex flex-col items-start text-left"
-            >
-              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                {t("Total", "कुल")} · {itemCount} {itemCount === 1 ? t("item", "आइटम") : t("items", "आइटम")}
-              </span>
-              <span className="text-base font-bold leading-tight text-foreground">
-                {currencySymbol}{total.toFixed(0)}
-                <span className="ml-1.5 text-[11px] font-medium text-primary underline-offset-2 hover:underline">
-                  {t("View", "देखें")}
-                </span>
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={handlePlaceOrder}
-              disabled={placing || paymentFailed}
-              className="flex h-11 flex-1 max-w-[60%] items-center justify-center gap-2 rounded-lg text-xs font-bold btn-gold disabled:opacity-50"
-              style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
-            >
-              {placing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                isPartialOrder
-                  ? `${t("Confirm", "कन्फर्म")} · ${currencySymbol}${chargeAmount.toFixed(0)}`
-                  : paymentMethod === "razorpay"
-                    ? `${t("Pay", "भुगतान")} ${currencySymbol}${total.toFixed(0)}`
-                    : `${t("Place Order", "ऑर्डर करें")}`
-              )}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Sticky mobile bottom bar removed — using inline Confirm Order button only */}
     </div>
   );
 }
