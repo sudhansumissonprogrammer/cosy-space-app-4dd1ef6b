@@ -250,8 +250,14 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
                         <BillingCell assignment={assignment} />
                       </TableCell>
                       <TableCell>
-                        <Badge variant={assignment.status === "active" ? "default" : "secondary"}>
-                          {assignment.billing_status || assignment.status}
+                        <Badge variant={assignment.billing_status === "active" || assignment.billing_status === "lifetime" || assignment.billing_status === "one_time_paid" ? "default" : "secondary"}>
+                          {assignment.is_free_lifetime
+                            ? "lifetime"
+                            : assignment.is_one_time
+                              ? "one-time"
+                              : assignment.billing_status === "lifetime"
+                                ? "active" /* legacy data fix: show monthly plans as active */
+                                : (assignment.billing_status || assignment.status)}
                         </Badge>
                       </TableCell>
                       <TableCell>
