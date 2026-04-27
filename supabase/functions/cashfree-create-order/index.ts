@@ -23,10 +23,10 @@ Deno.serve(async (req) => {
       return jsonRes({ error: "Missing authorization" }, 401);
     }
 
+    // Service-role client for DB writes (bypasses RLS — ownership is verified below)
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
     );
 
     // Identify caller
