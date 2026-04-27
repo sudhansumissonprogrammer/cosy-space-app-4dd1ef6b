@@ -1363,8 +1363,8 @@ async function resolveDomain(hostname, env) {
     const writes = [
       cache.put(key, new Response(cacheData, { headers: { "Cache-Control": `public, max-age=${ttl}` } })),
     ];
-    if (env?.STORE_KV && slug) {
-      writes.push(env.STORE_KV.put(`domain:${domain}`, cacheData, { expirationTtl: KV_DOMAIN_TTL }));
+    if (slug) {
+      writes.push(kvPutDedup(env, `domain:${domain}`, cacheData, { expirationTtl: KV_DOMAIN_TTL })); // v8.1.0 dedup
     }
     await Promise.all(writes);
     return slug;
