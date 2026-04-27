@@ -1,10 +1,17 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 
-/** Lazy-load supabase client — keeps the 45KB chunk off the storefront critical path */
-let _supabasePromise: Promise<typeof import("@/integrations/supabase/client")> | null = null;
-function getSupabase() {
-  if (!_supabasePromise) _supabasePromise = import("@/integrations/supabase/client");
+/**
+ * Lazy-load the STOREFRONT supabase client — keeps the supabase chunk off the
+ * storefront critical path for anonymous visitors.
+ *
+ * Important: this is the dedicated storefront auth client (separate storageKey),
+ * NOT the dashboard/admin client. This isolation means a customer logging into a
+ * storefront will NOT touch the merchant/admin session in the same browser.
+ */
+let _supabasePromise: Promise<typeof import("@/integrations/supabase/storefrontClient")> | null = null;
+function getStorefrontSupabase() {
+  if (!_supabasePromise) _supabasePromise = import("@/integrations/supabase/storefrontClient");
   return _supabasePromise;
 }
 
@@ -31,6 +38,10 @@ interface StorefrontAuthContextType {
 
 const StorefrontAuthContext = createContext<StorefrontAuthContextType | undefined>(undefined);
 
+// Storage key used by the dedicated storefront supabase client.
+// Must match the `storageKey` in src/integrations/supabase/storefrontClient.ts
+const STOREFRONT_AUTH_STORAGE_KEY = "sb-storefront-auth-token";
+
 export function StorefrontAuthProvider({
   children,
   storeId,
@@ -46,8 +57,10 @@ export function StorefrontAuthProvider({
 
   const fetchOrCreateCustomer = useCallback(
     async (userId: string, email?: string): Promise<StorefrontCustomer | null> => {
-      const { supabase } = await getSupabase();
-      const { data } = await supabase
+      // Use the storefront client so the JWT (auth.uid()) matches RLS on
+      // storefront_customers — the dashboard client never sees this session.
+      const { supabaseStorefront } = await getStorefrontSupabase();
+      const { data } = await supabaseStorefront
         .from("storefront_customers")
         .select("*")
         .eq("user_id", userId)
@@ -59,7 +72,7 @@ export function StorefrontAuthProvider({
         return data as StorefrontCustomer;
       }
 
-      const { data: newCustomer, error: insertErr } = await supabase
+      const { data: newCustomer, error: insertErr } = await supabaseStorefront
         .from("storefront_customers")
         .insert({ user_id: userId, store_id: storeId, email: email || null })
         .select()
@@ -89,12 +102,12 @@ export function StorefrontAuthProvider({
   }, [customer, user, fetchOrCreateCustomer]);
 
   useEffect(() => {
-    // Fast-path: if no Supabase auth token in localStorage, skip auth entirely.
-    // This avoids loading the 45KB supabase chunk for anonymous visitors.
+    // Fast-path: if no STOREFRONT auth token in localStorage, skip auth entirely.
+    // This intentionally checks the storefront-specific key so the merchant/admin
+    // session in the same browser is ignored here (and vice-versa).
     const hasAuthToken = (() => {
       try {
-        const storageKey = `sb-dqepeywgftbpxeeqfuwt-auth-token`;
-        return !!localStorage.getItem(storageKey);
+        return !!localStorage.getItem(STOREFRONT_AUTH_STORAGE_KEY);
       } catch {
         return false;
       }
@@ -110,12 +123,12 @@ export function StorefrontAuthProvider({
     let cancelled = false;
 
     const initAuth = async () => {
-      const { supabase } = await getSupabase();
+      const { supabaseStorefront } = await getStorefrontSupabase();
       if (cancelled) return;
 
       const {
         data: { subscription: sub },
-      } = supabase.auth.onAuthStateChange((_event, sess) => {
+      } = supabaseStorefront.auth.onAuthStateChange((_event, sess) => {
         setSession(sess);
         setUser(sess?.user ?? null);
         if (!sess?.user) {
@@ -132,7 +145,7 @@ export function StorefrontAuthProvider({
       });
       subscription = sub;
 
-      supabase.auth.getSession().then(({ data: { session: sess } }) => {
+      supabaseStorefront.auth.getSession().then(({ data: { session: sess } }) => {
         setSession(sess);
         setUser(sess?.user ?? null);
         setLoading(false);
@@ -162,8 +175,8 @@ export function StorefrontAuthProvider({
   }, []);
 
   const signUp = async (email: string, password: string, name?: string) => {
-    const { supabase } = await getSupabase();
-    const { error } = await supabase.auth.signUp({
+    const { supabaseStorefront } = await getStorefrontSupabase();
+    const { error } = await supabaseStorefront.auth.signUp({
       email,
       password,
       options: { data: { full_name: name, user_type: "customer" } },
@@ -172,14 +185,14 @@ export function StorefrontAuthProvider({
   };
 
   const signIn = async (email: string, password: string) => {
-    const { supabase } = await getSupabase();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { supabaseStorefront } = await getStorefrontSupabase();
+    const { error } = await supabaseStorefront.auth.signInWithPassword({ email, password });
     return { error };
   };
 
   const signOut = async () => {
-    const { supabase } = await getSupabase();
-    await supabase.auth.signOut();
+    const { supabaseStorefront } = await getStorefrontSupabase();
+    await supabaseStorefront.auth.signOut();
     setCustomer(null);
   };
 
