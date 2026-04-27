@@ -447,12 +447,26 @@ function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any
 
             <div className="flex items-center justify-between">
               <Label htmlFor="free-lifetime" className="text-sm">Free Lifetime</Label>
-              <Switch id="free-lifetime" checked={isFreeLifetime} onCheckedChange={setIsFreeLifetime} />
+              <Switch
+                id="free-lifetime"
+                checked={isFreeLifetime}
+                onCheckedChange={(checked) => {
+                  setIsFreeLifetime(checked);
+                  if (checked) setIsOneTime(false);
+                }}
+              />
             </div>
 
             <div className="flex items-center justify-between">
               <Label htmlFor="one-time" className="text-sm">One-time Payment</Label>
-              <Switch id="one-time" checked={isOneTime} onCheckedChange={setIsOneTime} />
+              <Switch
+                id="one-time"
+                checked={isOneTime}
+                onCheckedChange={(checked) => {
+                  setIsOneTime(checked);
+                  if (checked) setIsFreeLifetime(false);
+                }}
+              />
             </div>
 
             {!isFreeLifetime && (
