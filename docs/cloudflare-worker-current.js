@@ -2242,9 +2242,7 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
           }),
         )
         .catch(() => {}),
-      env?.STORE_KV
-        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
-        : Promise.resolve(),
+      kvPutDedup(env, kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }),
     ];
 
     if (customDomain) {
@@ -2259,12 +2257,8 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
             }),
           )
           .catch(() => {}),
+        kvPutDedup(env, _buildProductsKvKey(cleanCustom, {}, cvVersion), body, { expirationTtl: PRODUCTS_KV_TTL }),
       );
-      if (env?.STORE_KV) {
-        cacheOps.push(
-          env.STORE_KV.put(_buildProductsKvKey(cleanCustom, {}, cvVersion), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {}),
-        );
-      }
     }
 
     await Promise.all(cacheOps);
