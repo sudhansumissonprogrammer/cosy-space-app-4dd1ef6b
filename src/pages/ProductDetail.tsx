@@ -1520,7 +1520,7 @@ function LightboxImage({
       <img
         src={displaySrc}
         alt={alt}
-        className="max-h-full max-w-full object-contain transition-transform duration-100"
+        className="absolute inset-0 m-auto max-h-full max-w-full w-auto h-auto object-contain transition-transform duration-100"
         style={{
           transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
           opacity: loaded ? 1 : 0,
