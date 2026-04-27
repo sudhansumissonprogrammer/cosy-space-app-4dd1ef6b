@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.0.1-tier1-tier2-verified";
+const WORKER_VERSION = "8.1.0-kv-write-cut";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -596,7 +596,7 @@ window.__STOREFRONT_PREFETCH__=fetch("/?__sf_data=1",{cache:"no-store",headers:{
 
 const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
 // v6.9.1: Derived from the SPA shell, so it must expire on the same short window.
-const PREBUILT_HEAD_KV_TTL = 21600; // v8.0.0 cost-cut: 30m → 6h (purge bumps version)
+const PREBUILT_HEAD_KV_TTL = 86400; // v8.1.0 cost-cut: 6h → 24h (purge bumps version)
 const PREBUILT_HEAD_CACHE_TTL = 300; // v7.7.0 Fix 4: 1m → 5m
 
 function _buildPrebuiltHead(html) {
@@ -729,10 +729,41 @@ function _buildLinkPreloadHeader(html) {
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
 // v6.9.1: Shell HTML must refresh quickly after frontend publishes; long TTLs caused
 // custom domains/subdomains to keep serving old JS bundle references after deploy.
-const SPA_SHELL_KV_TTL = 21600; // v8.0.0 cost-cut: 30min → 6h
-const SPA_SHELL_CACHE_TTL = 300; // v7.6.0: 1min → 5min
+const SPA_SHELL_KV_TTL = 86400; // v8.1.0 cost-cut: 6h → 24h. Shell only changes on deploy → /api/purge bumps key.
+const SPA_SHELL_CACHE_TTL = 1800; // v8.1.0 cost-cut: 5min → 30min
 
 let inflightShellFetch = null;
+
+/* ============================================================
+   v8.1.0 KV WRITE COALESCING — in-isolate dedup
+   Suppresses duplicate KV.put() calls for the same key within a TTL window.
+   Together with the in-memory caches above, this collapses bursts of
+   redundant writes (e.g. theme-lite/storefront re-cached on every request).
+   ============================================================ */
+const _kvWriteRecent = new Map(); // key → expiresAt
+const KV_WRITE_DEDUP_TTL = 300_000; // 5 min — within this window, a 2nd put() is skipped
+const KV_WRITE_DEDUP_MAX = 10_000;
+function _shouldWriteKv(key) {
+  const now = Date.now();
+  const exp = _kvWriteRecent.get(key);
+  if (exp && now < exp) return false;
+  if (_kvWriteRecent.size > KV_WRITE_DEDUP_MAX) {
+    // simple eviction: drop oldest 1k entries
+    let n = 1000;
+    for (const k of _kvWriteRecent.keys()) {
+      _kvWriteRecent.delete(k);
+      if (--n <= 0) break;
+    }
+  }
+  _kvWriteRecent.set(key, now + KV_WRITE_DEDUP_TTL);
+  return true;
+}
+function kvPutDedup(env, key, value, opts) {
+  if (!env?.STORE_KV) return Promise.resolve();
+  if (!_shouldWriteKv(key)) return Promise.resolve();
+  return env.STORE_KV.put(key, value, opts).catch(() => {});
+}
+
 
 async function getSpaShell(request, ctx, env) {
   // FIX #1 + #6: In-memory first — zero I/O on warm isolates
@@ -844,8 +875,8 @@ async function getFreshSpaShell(request, ctx, env) {
 
 // FIX #20 + Phase 2 #6: Storefront data changes rarely — push TTLs higher.
 // Auto-purge on store update keeps freshness; SWR serves stale instantly.
-const KV_STOREFRONT_TTL = 21_600; // was 14400 → 6h (Phase 2 #6)
-const CACHE_STOREFRONT_TTL = 3_600; // was 1200 → 1h (Phase 2 #6)
+const KV_STOREFRONT_TTL = 86_400; // v8.1.0 cost-cut: 6h → 24h (purge invalidates on save)
+const CACHE_STOREFRONT_TTL = 7_200; // v8.1.0 cost-cut: 1h → 2h
 
 // v7.6.0 Fix D: Reduced from 3 KV reads to 1. `storefront` is already fetched
 // by earlyStorefrontPromise (prefetchStorefrontDataWithDeadline) and `storeInfo`
@@ -865,7 +896,7 @@ async function _batchKvRead(slug, env) {
    FIX #8 — LIGHTWEIGHT THEME CACHE (in-memory → Cache API → KV)
    ============================================================ */
 
-const THEME_LITE_KV_TTL = 21600; // v8.0.0 cost-cut: 1h → 6h
+const THEME_LITE_KV_TTL = 86400; // v8.1.0 cost-cut: 6h → 24h
 const THEME_LITE_CACHE_TTL = 600;
 
 function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
@@ -892,9 +923,11 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
     )
     .catch(() => {});
 
-  if (env?.STORE_KV) {
-    env.STORE_KV.put(`theme-lite:${slug}`, liteStr, { expirationTtl: THEME_LITE_KV_TTL }).catch(() => {});
+  // v8.1.0: skip KV write for bot traffic + dedup repeat writes within 5min window
+  if (!ctx?.__skipKvWarm) {
+    kvPutDedup(env, `theme-lite:${slug}`, liteStr, { expirationTtl: THEME_LITE_KV_TTL });
   }
+
 }
 
 async function _getThemeLite(slug, env) {
@@ -1040,14 +1073,16 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
         const storeId = data?.store?.id;
         const storeSlug = data?.store?.slug;
 
+        // v8.1.0: bots skip KV writes; dedup collapses bursts within 5min
+        const skipKv = !!ctx?.__skipKvWarm;
         ctx.waitUntil(
           Promise.all([
-            env?.STORE_KV ? env.STORE_KV.put(kvKey, dataStr, { expirationTtl: KV_STOREFRONT_TTL }) : Promise.resolve(),
+            skipKv ? Promise.resolve() : kvPutDedup(env, kvKey, dataStr, { expirationTtl: KV_STOREFRONT_TTL }),
             cache.put(
               dataCacheKey,
               new Response(dataStr, { headers: { "Cache-Control": `public, max-age=${CACHE_STOREFRONT_TTL}` } }),
             ),
-            storeId ? _prewarmProducts(storeId, storeSlug, ctx, env, data?.store?.custom_domain) : Promise.resolve(),
+            !skipKv && storeId ? _prewarmProducts(storeId, storeSlug, ctx, env, data?.store?.custom_domain) : Promise.resolve(),
           ]).catch(() => {}),
         );
       }
@@ -1073,7 +1108,7 @@ async function prefetchStorefrontDataWithDeadline(slug, ctx, env, deadlineMs) {
    ============================================================ */
 
 const PRODUCTS_CACHE_TTL = 300;
-const PRODUCTS_KV_TTL = 7200; // v8.0.0 cost-cut: 30min → 2h (purge bumps version)
+const PRODUCTS_KV_TTL = 86400; // v8.1.0 cost-cut: 2h → 24h (purge bumps version)
 // Bumped 20 → 50 (2025-04): bigger initial batch means most visitors
 // never trigger a second /api/products page request. Inline products
 // also get the larger set, so first paint shows more cards.
@@ -1328,8 +1363,8 @@ async function resolveDomain(hostname, env) {
     const writes = [
       cache.put(key, new Response(cacheData, { headers: { "Cache-Control": `public, max-age=${ttl}` } })),
     ];
-    if (env?.STORE_KV && slug) {
-      writes.push(env.STORE_KV.put(`domain:${domain}`, cacheData, { expirationTtl: KV_DOMAIN_TTL }));
+    if (slug) {
+      writes.push(kvPutDedup(env, `domain:${domain}`, cacheData, { expirationTtl: KV_DOMAIN_TTL })); // v8.1.0 dedup
     }
     await Promise.all(writes);
     return slug;
@@ -1480,9 +1515,8 @@ async function _resolveStoreInfo(slug, hostname, env) {
       cache
         .put(infoCacheKey, new Response(JSON.stringify(nfData), { headers: { "Cache-Control": "public, max-age=15" } }))
         .catch(() => {});
-      if (env?.STORE_KV) {
-        env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 1800 }).catch(() => {}); // v8.0.0: 30s → 30m (NOT_FOUND rarely flips)
-      }
+      kvPutDedup(env, `store-info:${slug}`, JSON.stringify(nfData), { expirationTtl: 1800 }); // v8.1.0 dedup
+
       return { storeId: null, customDomain: null };
     }
 
@@ -1517,11 +1551,7 @@ async function _resolveStoreInfo(slug, hostname, env) {
           new Response(result.storeId, { headers: { "Cache-Control": "public, max-age=600" } }),
         )
         .catch(() => {}),
-      env?.STORE_KV
-        ? env.STORE_KV.put(`store-info:${slug}`, JSON.stringify(cachePayload), {
-            expirationTtl: STORE_INFO_KV_TTL,
-          }).catch(() => {})
-        : Promise.resolve(),
+      kvPutDedup(env, `store-info:${slug}`, JSON.stringify(cachePayload), { expirationTtl: STORE_INFO_KV_TTL }),
     ]);
 
     return result;
@@ -1573,9 +1603,7 @@ async function _resolveStoreId(domain, env) {
     cache
       .put(storeIdCacheKey, new Response(storeId, { headers: { "Cache-Control": "public, max-age=600" } }))
       .catch(() => {});
-    if (env?.STORE_KV) {
-      env.STORE_KV.put(`store-id:${domain}`, storeId, { expirationTtl: 86400 }).catch(() => {}); // v8.0.0: 1h → 24h
-    }
+    kvPutDedup(env, `store-id:${domain}`, storeId, { expirationTtl: 86400 }); // v8.1.0 dedup
   } else {
     _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
     domainStoreIdCache.set(domain, { storeId: null, expiresAt: Date.now() + 60_000 });
@@ -2207,9 +2235,7 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
           }),
         )
         .catch(() => {}),
-      env?.STORE_KV
-        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
-        : Promise.resolve(),
+      kvPutDedup(env, kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }),
     ];
 
     if (customDomain) {
@@ -2224,12 +2250,8 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
             }),
           )
           .catch(() => {}),
+        kvPutDedup(env, _buildProductsKvKey(cleanCustom, {}, cvVersion), body, { expirationTtl: PRODUCTS_KV_TTL }),
       );
-      if (env?.STORE_KV) {
-        cacheOps.push(
-          env.STORE_KV.put(_buildProductsKvKey(cleanCustom, {}, cvVersion), body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {}),
-        );
-      }
     }
 
     await Promise.all(cacheOps);
@@ -2388,9 +2410,8 @@ function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
   ctx.waitUntil(
     Promise.all([
       cache.put(cacheKey, response.clone()).catch(() => {}),
-      env?.STORE_KV
-        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
-        : Promise.resolve(),
+      // v8.1.0: bots skip KV; dedup collapses repeats
+      ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }),
     ]),
   );
   return addCorsHeaders(response, source);
@@ -2413,9 +2434,7 @@ async function _refreshProductsBackground(domain, filters, version, env) {
           }),
         )
         .catch(() => {}),
-      env?.STORE_KV
-        ? env.STORE_KV.put(kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }).catch(() => {})
-        : Promise.resolve(),
+      kvPutDedup(env, kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }),
     ]);
   } catch {}
 }
@@ -2498,6 +2517,9 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
   for (const d of domainsToPurge) {
     domainStoreIdCache.delete(d);
     _clearInflightProductRequestsForDomain(d);
+    // v8.1.0: also clear write-dedup so the next prewarm/save can re-write KV
+    _kvWriteRecent.delete(`store-id:${d}`);
+    _kvWriteRecent.delete(`domain:${d}`);
     purgeOps.push(cache.delete(getEarlyCacheKey(d)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-id:${d}`)).catch(() => {}));
     if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`store-id:${d}`).catch(() => {}));
@@ -2508,6 +2530,10 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
   }
 
   if (purgeSlug) {
+    // v8.1.0: clear write-dedup for slug-keyed entries
+    _kvWriteRecent.delete(`storefront:${purgeSlug}`);
+    _kvWriteRecent.delete(`theme-lite:${purgeSlug}`);
+    _kvWriteRecent.delete(`store-info:${purgeSlug}`);
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
@@ -2731,12 +2757,18 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     cache.delete(new Request("https://cache/prebuilt-head")).catch(() => {}),
   ];
 
+  // v8.1.0: clear write-dedup so the next save can re-write KV
+  _kvWriteRecent.delete(SPA_SHELL_KV_KEY);
+  _kvWriteRecent.delete(PREBUILT_HEAD_KV_KEY);
   if (env?.STORE_KV) {
     purgeOps.push(env.STORE_KV.delete(SPA_SHELL_KV_KEY).catch(() => {}));
     purgeOps.push(env.STORE_KV.delete(PREBUILT_HEAD_KV_KEY).catch(() => {}));
   }
 
   if (purgeSlug) {
+    _kvWriteRecent.delete(`storefront:${purgeSlug}`);
+    _kvWriteRecent.delete(`theme-lite:${purgeSlug}`);
+    _kvWriteRecent.delete(`store-info:${purgeSlug}`);
     purgeOps.push(cache.delete(getEarlyCacheKey(`${purgeSlug}.${ROOT_DOMAIN}`)).catch(() => {}));
     purgeOps.push(cache.delete(getEarlyCacheKey(hostname)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
@@ -3168,25 +3200,26 @@ export default {
       });
     }
 
-    // v8.0.0 cost-cut: Non-blocked SEO/social bots (Googlebot, Bingbot, etc.) trigger
-    // the same warm/lock/KV write cascade as humans. For storefront HTML routes,
-    // serve cached HTML if present and otherwise mark the request so the warm
-    // pipeline skips KV writes. Cuts ~15-20% of writes from crawler traffic.
+    // v8.1.0 cost-cut: ANY bot request (HTML or API) suppresses KV writes.
+    // Bots don't benefit from KV warming for human visitors and they generate
+    // huge tail-traffic. Previously only storefront HTML routes set the flag —
+    // now all bot traffic skips the warm/lock/KV cascade.
     const earlyIsBot = BOT_UA_REGEX.test(earlyUA);
-    const earlyIsStorefrontHtml =
-      earlyMethod === "GET" &&
-      (earlyPath === "/" || /^\/[a-zA-Z0-9_-]+\/?$/.test(earlyPath)) &&
-      !earlyPath.startsWith("/api/") &&
-      !earlyPath.startsWith("/cf-img") &&
-      !earlyPath.includes(".");
-    if (earlyIsBot && earlyIsStorefrontHtml) {
-      try {
-        const earlyHostname = earlyUrl.hostname.toLowerCase().replace(/^www\./, "");
-        const cached = await cache.match(getEarlyCacheKey(earlyHostname));
-        if (cached) return cached;
-      } catch {}
-      // No cached HTML — let pipeline proceed but suppress all KV warm writes.
+    if (earlyIsBot) {
       ctx.__skipKvWarm = true;
+      const earlyIsStorefrontHtml =
+        earlyMethod === "GET" &&
+        (earlyPath === "/" || /^\/[a-zA-Z0-9_-]+\/?$/.test(earlyPath)) &&
+        !earlyPath.startsWith("/api/") &&
+        !earlyPath.startsWith("/cf-img") &&
+        !earlyPath.includes(".");
+      if (earlyIsStorefrontHtml) {
+        try {
+          const earlyHostname = earlyUrl.hostname.toLowerCase().replace(/^www\./, "");
+          const cached = await cache.match(getEarlyCacheKey(earlyHostname));
+          if (cached) return cached;
+        } catch {}
+      }
     }
 
     // v6.9.4: OPTIONS preflight short-circuit — never needs origin or pipeline.

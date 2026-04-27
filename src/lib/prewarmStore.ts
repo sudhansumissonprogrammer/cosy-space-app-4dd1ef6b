@@ -1,8 +1,8 @@
-// Cooldown bumped 30s → 90s (2026-04): merchants editing themes/products
-// often Save in rapid succession. Each prewarm fans out to 2-3 Worker requests
-// + KV writes. A 90s window collapses bursts into one warm with zero shopper-
-// visible cost — Worker KV TTLs (shell 6h, products 2h) absorb the gap easily.
-const PREWARM_COOLDOWN_MS = 90_000;
+// v8.1.0 cost-cut: cooldown bumped 90s → 5min. Each prewarm fans out to 2-3
+// Worker requests + KV writes. Storefront KV/Cache TTLs are now 24h, so
+// merchants editing in bursts no longer need second-by-second warm refreshes —
+// the trailing-edge debounce still ensures the LAST save in a burst propagates.
+const PREWARM_COOLDOWN_MS = 300_000;
 const TRAILING_DELAY_MS = 1_500; // batch trailing-edge: collapse multi-saves within 1.5s
 
 const inflightPrewarms = new Map<string, Promise<void>>();
