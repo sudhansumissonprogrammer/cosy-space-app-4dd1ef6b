@@ -931,6 +931,11 @@ export default function CheckoutPage() {
     ]);
     if (!loaded) throw new Error("Failed to load payment gateway");
 
+    const contactDigits = normalizePhone(phone).replace(/\D/g, "");
+    const razorpayContact = contactDigits.length === 12 && contactDigits.startsWith("91")
+      ? contactDigits.slice(2)
+      : contactDigits;
+
     const handlePaymentSuccess = async (response: any) => {
       try {
         try {
@@ -971,7 +976,9 @@ export default function CheckoutPage() {
       image: store.logo_url || undefined,
       order_id: rzpData.razorpay_order_id,
       handler: handlePaymentSuccess,
-      prefill: { name: fullName, email: email || undefined, contact: phone },
+      prefill: { name: fullName.trim(), email: email.trim() || undefined, contact: razorpayContact || undefined },
+      readonly: { contact: !!razorpayContact },
+      hidden: { contact: !!razorpayContact },
       notes: { order_id: order.id, store_id: store.id },
       theme: { color: "#6366f1" },
       remember_customer: true,
