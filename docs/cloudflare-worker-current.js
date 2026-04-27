@@ -2757,12 +2757,18 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     cache.delete(new Request("https://cache/prebuilt-head")).catch(() => {}),
   ];
 
+  // v8.1.0: clear write-dedup so the next save can re-write KV
+  _kvWriteRecent.delete(SPA_SHELL_KV_KEY);
+  _kvWriteRecent.delete(PREBUILT_HEAD_KV_KEY);
   if (env?.STORE_KV) {
     purgeOps.push(env.STORE_KV.delete(SPA_SHELL_KV_KEY).catch(() => {}));
     purgeOps.push(env.STORE_KV.delete(PREBUILT_HEAD_KV_KEY).catch(() => {}));
   }
 
   if (purgeSlug) {
+    _kvWriteRecent.delete(`storefront:${purgeSlug}`);
+    _kvWriteRecent.delete(`theme-lite:${purgeSlug}`);
+    _kvWriteRecent.delete(`store-info:${purgeSlug}`);
     purgeOps.push(cache.delete(getEarlyCacheKey(`${purgeSlug}.${ROOT_DOMAIN}`)).catch(() => {}));
     purgeOps.push(cache.delete(getEarlyCacheKey(hostname)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
