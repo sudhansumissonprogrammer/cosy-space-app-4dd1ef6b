@@ -1073,14 +1073,16 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
         const storeId = data?.store?.id;
         const storeSlug = data?.store?.slug;
 
+        // v8.1.0: bots skip KV writes; dedup collapses bursts within 5min
+        const skipKv = !!ctx?.__skipKvWarm;
         ctx.waitUntil(
           Promise.all([
-            env?.STORE_KV ? env.STORE_KV.put(kvKey, dataStr, { expirationTtl: KV_STOREFRONT_TTL }) : Promise.resolve(),
+            skipKv ? Promise.resolve() : kvPutDedup(env, kvKey, dataStr, { expirationTtl: KV_STOREFRONT_TTL }),
             cache.put(
               dataCacheKey,
               new Response(dataStr, { headers: { "Cache-Control": `public, max-age=${CACHE_STOREFRONT_TTL}` } }),
             ),
-            storeId ? _prewarmProducts(storeId, storeSlug, ctx, env, data?.store?.custom_domain) : Promise.resolve(),
+            !skipKv && storeId ? _prewarmProducts(storeId, storeSlug, ctx, env, data?.store?.custom_domain) : Promise.resolve(),
           ]).catch(() => {}),
         );
       }
