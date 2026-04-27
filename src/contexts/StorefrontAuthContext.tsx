@@ -192,7 +192,9 @@ export function StorefrontAuthProvider({
 
   const signOut = async () => {
     const { supabaseStorefront } = await getStorefrontSupabase();
-    await supabaseStorefront.auth.signOut();
+    // scope: 'local' → only sign out THIS device. Without this, a customer
+    // signing out on one device would force-logout all their other devices.
+    await supabaseStorefront.auth.signOut({ scope: 'local' });
     setCustomer(null);
   };
 

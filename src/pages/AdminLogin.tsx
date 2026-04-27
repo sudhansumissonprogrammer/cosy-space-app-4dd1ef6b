@@ -48,7 +48,7 @@ export default function AdminLogin() {
     });
 
     if (roleError || !isAdmin) {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' });
       setLoading(false);
       recordFailedAttempt();
       toast.error("Access denied. Admin privileges required.");
