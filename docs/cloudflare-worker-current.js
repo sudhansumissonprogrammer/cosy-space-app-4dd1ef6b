@@ -1603,9 +1603,7 @@ async function _resolveStoreId(domain, env) {
     cache
       .put(storeIdCacheKey, new Response(storeId, { headers: { "Cache-Control": "public, max-age=600" } }))
       .catch(() => {});
-    if (env?.STORE_KV) {
-      env.STORE_KV.put(`store-id:${domain}`, storeId, { expirationTtl: 86400 }).catch(() => {}); // v8.0.0: 1h → 24h
-    }
+    kvPutDedup(env, `store-id:${domain}`, storeId, { expirationTtl: 86400 }); // v8.1.0 dedup
   } else {
     _capMapSize(domainStoreIdCache, DOMAIN_STORE_ID_CACHE_MAX);
     domainStoreIdCache.set(domain, { storeId: null, expiresAt: Date.now() + 60_000 });
