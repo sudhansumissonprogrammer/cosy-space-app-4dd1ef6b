@@ -9,6 +9,25 @@ const corsHeaders = {
 
 const CASHFREE_SECRET_KEY = Deno.env.get("CASHFREE_SECRET_KEY")!;
 
+// Parses an anchor day (1-28) from assignment.notes via tag like [billing_anchor_day:5]
+function getAnchorDay(notes: string | null | undefined): number | null {
+  if (!notes) return null;
+  const m = notes.match(/\[billing_anchor_day:(\d{1,2})\]/);
+  if (!m) return null;
+  const d = parseInt(m[1], 10);
+  if (isNaN(d) || d < 1 || d > 28) return null;
+  return d;
+}
+
+// Returns the next occurrence of `anchorDay` strictly after `from` (UTC).
+function nextAnchoredPeriodEnd(from: Date, anchorDay: number): Date {
+  const next = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), anchorDay, 0, 0, 0));
+  if (next.getTime() <= from.getTime()) {
+    next.setUTCMonth(next.getUTCMonth() + 1);
+  }
+  return next;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
