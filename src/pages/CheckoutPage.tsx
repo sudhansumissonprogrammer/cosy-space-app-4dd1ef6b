@@ -105,8 +105,19 @@ export default function CheckoutPage() {
   const [paymentFailed, setPaymentFailed] = useState(false);
   // Confirming-payment state: shown while we wait for UPI/Cashfree to settle after user returns from GPay/PhonePe
   const [confirmingPayment, setConfirmingPayment] = useState(false);
-  // Cashfree order id (per-store gateway): kept in a ref so visibility/focus listeners can re-check status
+  // Cashfree order id (per-store gateway): kept in a ref so visibility/focus listeners can re-check status.
+  // Also persisted to sessionStorage so a mobile-browser tab-reload (after returning from UPI app) can recover.
   const pendingCfOrderRef = useRef<string | null>(null);
+  const CF_PENDING_KEY = `cf_pending_${store.id}`;
+  const persistCfPending = (cfId: string | null, order: { id: string; number: string | null; profit: number | null } | null) => {
+    try {
+      if (cfId && order) {
+        sessionStorage.setItem(CF_PENDING_KEY, JSON.stringify({ cf_order_id: cfId, order, ts: Date.now() }));
+      } else {
+        sessionStorage.removeItem(CF_PENDING_KEY);
+      }
+    } catch {}
+  };
 
   // Form — pre-fill from localStorage for returning users
   // Theme-16 BuyNowPhoneModal stores checkout_phone & checkout_address
