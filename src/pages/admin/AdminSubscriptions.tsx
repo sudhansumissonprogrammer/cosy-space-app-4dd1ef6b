@@ -310,17 +310,38 @@ function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any
   const store = assignment.stores as any;
 
   const handleSave = async () => {
+    // Validation
+    if (useCustomPlan && !customPlanName.trim()) {
+      toast.error("Custom plan name is required");
+      return;
+    }
+    if (useCustomPlan && !isFreeLifetime && !isOneTime && (!customPrice || parseFloat(customPrice) <= 0)) {
+      toast.error("Monthly price is required for a custom monthly plan");
+      return;
+    }
+    if (isOneTime && !isFreeLifetime && (!customPrice || parseFloat(customPrice) <= 0)) {
+      toast.error("One-time payment requires a price");
+      return;
+    }
+
     setLoading(true);
     try {
       // Derive correct billing_status + current_period_end based on plan type
       let billingStatus: string;
       let currentPeriodEnd: string | null = null;
       let trialEndsAt: string | null = assignment.trial_ends_at || null;
+      let finalPrice: number | null = null;
 
       if (isFreeLifetime) {
         billingStatus = "lifetime";
+        currentPeriodEnd = null;
+        trialEndsAt = null;
+        finalPrice = 0;
       } else if (isOneTime) {
         billingStatus = "one_time_paid";
+        currentPeriodEnd = null;
+        trialEndsAt = null;
+        finalPrice = customPrice ? parseFloat(customPrice) : null;
       } else {
         // Recurring monthly plan — mark active and set/extend period to 30 days from now
         billingStatus = "active";
@@ -329,13 +350,15 @@ function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any
           : new Date();
         currentPeriodEnd = new Date(base.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
         trialEndsAt = null;
+        // For custom plan: required price. For global override: optional (null = use plan default)
+        finalPrice = customPrice ? parseFloat(customPrice) : null;
       }
 
       const payload: any = {
         store_id: assignment.store_id,
         plan_id: planId,
-        custom_plan_name: useCustomPlan ? customPlanName.trim() || null : null,
-        custom_price: useCustomPlan || !isFreeLifetime ? (customPrice ? parseFloat(customPrice) : null) : 0,
+        custom_plan_name: useCustomPlan ? customPlanName.trim() : null,
+        custom_price: finalPrice,
         is_free_lifetime: isFreeLifetime,
         is_one_time: isOneTime,
         custom_product_limit: customLimit ? parseInt(customLimit) : null,
@@ -346,10 +369,6 @@ function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any
         trial_ends_at: trialEndsAt,
         grace_period_ends_at: null,
       };
-
-      if (isFreeLifetime) {
-        payload.custom_price = 0;
-      }
 
       const query = hasPersistedAssignment
         ? supabase.from("store_plan_assignments" as any).update(payload).eq("id", assignment.id)
