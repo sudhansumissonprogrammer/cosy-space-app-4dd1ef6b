@@ -88,10 +88,42 @@ Deno.serve(async (req) => {
   }
 });
 
+// Parses an anchor day (1-28) from assignment.notes via tag like [billing_anchor_day:5]
+function getAnchorDay(notes: string | null | undefined): number | null {
+  if (!notes) return null;
+  const m = notes.match(/\[billing_anchor_day:(\d{1,2})\]/);
+  if (!m) return null;
+  const d = parseInt(m[1], 10);
+  if (isNaN(d) || d < 1 || d > 28) return null;
+  return d;
+}
+
+// Computes the next period end anchored to a specific day-of-month.
+// Always returns the NEXT occurrence of `anchorDay` after `from` (strictly future).
+function nextAnchoredPeriodEnd(from: Date, anchorDay: number): Date {
+  const next = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), anchorDay, 0, 0, 0));
+  if (next.getTime() <= from.getTime()) {
+    next.setUTCMonth(next.getUTCMonth() + 1);
+  }
+  return next;
+}
+
 async function markPaid(supabase: any, payment: any, cfOrder: any) {
   // Idempotent: update only if not already paid
   const periodStart = new Date();
-  const periodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const defaultPeriodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+  // Get assignment FIRST so we can compute correct period end (anchor day support)
+  const { data: assignment } = await supabase
+    .from("store_plan_assignments")
+    .select("*")
+    .eq("store_id", payment.store_id)
+    .single();
+
+  const anchorDay = getAnchorDay(assignment?.notes);
+  const periodEnd = anchorDay
+    ? nextAnchoredPeriodEnd(periodStart, anchorDay)
+    : defaultPeriodEnd;
 
   const { error: payErr } = await supabase
     .from("subscription_payments")
@@ -108,18 +140,12 @@ async function markPaid(supabase: any, payment: any, cfOrder: any) {
 
   if (payErr) console.error("payment update err", payErr);
 
-  // Get assignment to honor admin overrides
-  const { data: assignment } = await supabase
-    .from("store_plan_assignments")
-    .select("*")
-    .eq("store_id", payment.store_id)
-    .single();
-
   if (!assignment) return;
 
   const updates: any = {
     last_payment_at: new Date().toISOString(),
     grace_period_ends_at: null,
+    next_billing_amount: null,
   };
 
   if (assignment.is_one_time) {
