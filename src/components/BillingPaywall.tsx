@@ -224,6 +224,40 @@ export default function BillingPaywall({ state, storeId }: Props) {
     return `Pay ₹${state.price} & Unlock Dashboard`;
   })();
 
+  // Success view — payment confirmed
+  if (stage === "success") {
+    const nextDate = state.current_period_end
+      ? new Date(state.current_period_end).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+      : null;
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-6 space-y-5 text-center">
+            <div className="mx-auto h-16 w-16 rounded-full flex items-center justify-center bg-green-500/10">
+              <CheckCircle2 className="h-9 w-9 text-green-600" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-foreground">Payment successful 🎉</h1>
+              <p className="text-sm text-muted-foreground mt-2">
+                Thank you! Your subscription has been renewed and your dashboard is unlocking now.
+              </p>
+            </div>
+            <div className="rounded-lg border bg-muted/40 p-4 text-left text-sm space-y-1.5">
+              <div className="flex justify-between"><span className="text-muted-foreground">Plan</span><span className="font-medium">{state.plan_name}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Amount paid</span><span className="font-semibold">₹{state.price}</span></div>
+              {nextDate && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Next billing</span><span className="font-medium">{nextDate}</span></div>
+              )}
+            </div>
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Reloading dashboard…
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-4">
       <Card className="max-w-md w-full">
