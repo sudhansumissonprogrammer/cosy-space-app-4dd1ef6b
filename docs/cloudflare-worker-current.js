@@ -176,6 +176,49 @@ const PRODUCTS_DB_TIMEOUT_MS = 3_000;
 const cache = caches.default;
 
 /* ============================================================
+   v8.3.0 — EDGE-CACHE SYNTHESIZED RESPONSES (cache rate fix)
+   ============================================================
+   Worker-generated Response objects (Response.redirect, new Response with
+   status 4xx/410, synthesized 204s) are NOT automatically stored in the
+   Cloudflare edge cache, even when they carry Cache-Control headers. The
+   only auto-cached responses are those returned via fetch() with
+   cf.cacheEverything. As a result, every redirect/error invokes the Worker
+   on every request and shows as 0% cache rate in the dashboard.
+
+   We fix this by:
+     1) `cacheableResponse(ctx, request, response, ttl)` — clones the
+        response, sets a strong Cache-Control + Date header, and stores it
+        in caches.default keyed on the request URL + method. Background.
+     2) Early `cache.match(request)` at the very top of fetch() — returns
+        the prior synthesized response in <1ms with zero pipeline work.
+
+   Net effect: redirects, 410s, 403s, 405s, 404s are served straight from
+   the colocated edge cache after the first hit, so CF reports them as
+   cache hits and Worker subrequests drop to ~one per TTL window per edge.
+   ============================================================ */
+function cacheableResponse(ctx, request, response, ttl) {
+  try {
+    if (!ctx?.waitUntil || !response) return response;
+    // Only cache safe methods. POST/HEAD vary too much.
+    if (request.method !== "GET") return response;
+    const cloned = response.clone();
+    // Force a deterministic Cache-Control so cache.match honours TTL.
+    const headers = new Headers(cloned.headers);
+    if (!headers.has("cache-control")) {
+      headers.set("Cache-Control", `public, max-age=${ttl}`);
+    }
+    headers.set("X-Edge-Cached", "synth");
+    const toStore = new Response(cloned.body, {
+      status: cloned.status,
+      statusText: cloned.statusText,
+      headers,
+    });
+    ctx.waitUntil(cache.put(request, toStore).catch(() => {}));
+  } catch {}
+  return response;
+}
+
+/* ============================================================
    FIX #1 — IN-MEMORY SPA SHELL (zero I/O on warm isolates)
    ============================================================ */
 
