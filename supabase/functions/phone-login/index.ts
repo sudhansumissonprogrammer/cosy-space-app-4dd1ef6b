@@ -128,6 +128,7 @@ Deno.serve(async (req) => {
     }
 
     // Ensure a storefront_customers row exists for this store (if store_id given)
+    let storefrontCustomerId: string | null = null;
     if (store_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(store_id)) {
       const { data: existingCustomer } = await adminClient
         .from("storefront_customers")
@@ -136,13 +137,49 @@ Deno.serve(async (req) => {
         .eq("store_id", store_id)
         .maybeSingle();
 
-      if (!existingCustomer) {
-        await adminClient.from("storefront_customers").insert({
+      if (existingCustomer) {
+        storefrontCustomerId = existingCustomer.id;
+      } else {
+        const { data: created } = await adminClient.from("storefront_customers").insert({
           user_id: userId,
           store_id,
           phone: normalizedPhone,
           name: name || null,
-        });
+        }).select("id").single();
+        storefrontCustomerId = created?.id ?? null;
+      }
+    }
+
+    // Optionally claim a guest order placed seconds ago — verify the order's
+    // customer_phone matches the phone we just authenticated, then link it to
+    // the storefront customer so it shows up in /account.
+    if (
+      claim_order_id &&
+      storefrontCustomerId &&
+      store_id &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(claim_order_id)
+    ) {
+      try {
+        const { data: order } = await adminClient
+          .from("orders")
+          .select("id, customer_phone, store_id, storefront_customer_id")
+          .eq("id", claim_order_id)
+          .maybeSingle();
+        if (order && order.store_id === store_id && !order.storefront_customer_id) {
+          const orderPhoneDigits = (order.customer_phone || "").replace(/\D/g, "");
+          // Match either exact 10-digit or with country-code suffix
+          const matches =
+            orderPhoneDigits.endsWith(normalizedPhone) ||
+            normalizedPhone.endsWith(orderPhoneDigits);
+          if (matches && orderPhoneDigits.length >= 10) {
+            await adminClient
+              .from("orders")
+              .update({ storefront_customer_id: storefrontCustomerId })
+              .eq("id", claim_order_id);
+          }
+        }
+      } catch (_e) {
+        // non-fatal — login should still succeed
       }
     }
 
