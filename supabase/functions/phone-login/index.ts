@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { phone, store_id, name } = await req.json();
+    const { phone, store_id, name, claim_order_id } = await req.json();
 
     if (!phone || typeof phone !== "string") {
       return new Response(
