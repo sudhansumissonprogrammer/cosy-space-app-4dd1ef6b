@@ -2664,6 +2664,9 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     _kvWriteRecent.delete(`store-id:${d}`);
     _kvWriteRecent.delete(`domain:${d}`);
     purgeOps.push(cache.delete(getEarlyCacheKey(d)).catch(() => {}));
+    // v8.4.0: also purge the CF Cache API mirror entries for SPA root paths.
+    purgeOps.push(cache.delete(new Request(`https://${d}/`)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://www.${d}/`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-id:${d}`)).catch(() => {}));
     if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`store-id:${d}`).catch(() => {}));
     if (d !== ROOT_DOMAIN && !d.endsWith(`.${ROOT_DOMAIN}`)) {
