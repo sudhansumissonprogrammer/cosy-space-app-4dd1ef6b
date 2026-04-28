@@ -3901,14 +3901,17 @@ export default {
 
       if (!storeInfo.storeId) {
         const safeSlug = slug.replace(/[<>"'&]/g, "");
-        return new Response(buildNotFoundHtml(safeSlug, ROOT_DOMAIN), {
+        // v8.3.0: bumped to 5min and edge-cached so unknown-slug attacks
+        // (which inflate 4xx counts and tank the cache rate) cost ~zero.
+        const r = new Response(buildNotFoundHtml(safeSlug, ROOT_DOMAIN), {
           status: 404,
           headers: {
             "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "public, max-age=10",
+            "Cache-Control": "public, max-age=300",
             ...SECURITY_HEADERS,
           },
         });
+        return cacheableResponse(ctx, request, r, 300);
       }
 
       if (storeInfo.customDomain) {
