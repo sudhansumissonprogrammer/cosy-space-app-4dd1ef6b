@@ -2917,6 +2917,9 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     _kvWriteRecent.delete(`store-info:${purgeSlug}`);
     purgeOps.push(cache.delete(getEarlyCacheKey(`${purgeSlug}.${ROOT_DOMAIN}`)).catch(() => {}));
     purgeOps.push(cache.delete(getEarlyCacheKey(hostname)).catch(() => {}));
+    // v8.4.0: also purge the CF Cache API mirror for the slug's hostnames.
+    purgeOps.push(cache.delete(new Request(`https://${purgeSlug}.${ROOT_DOMAIN}/`)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://${hostname}/`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
