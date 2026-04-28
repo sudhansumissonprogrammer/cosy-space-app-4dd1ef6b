@@ -3260,7 +3260,7 @@ export default {
 
     // v6.9.4: Short-circuit common attack/probe paths (wp-admin, .env, .git, etc.)
     if (ATTACK_PATH_REGEX.test(earlyPath)) {
-      return new Response("Gone", {
+      const r = new Response("Gone", {
         status: 410,
         headers: {
           "content-type": "text/plain",
@@ -3268,6 +3268,7 @@ export default {
           "x-blocked-by": "shopbanao-attack-filter",
         },
       });
+      return cacheableResponse(ctx, request, r, 2592000);
     }
 
     // v6.9.4: Favicon / apple-touch-icon polling — 204 cached for 30 days.
@@ -3278,18 +3279,19 @@ export default {
       earlyPath === "/browserconfig.xml" ||
       earlyPath === "/crossdomain.xml"
     ) {
-      return new Response(null, {
+      const r = new Response(null, {
         status: 204,
         headers: {
           "cache-control": "public, max-age=2592000, immutable",
           "x-served-by": "edge-204",
         },
       });
+      return cacheableResponse(ctx, request, r, 2592000);
     }
 
     // v6.9.4: Block aggressive crawlers + empty/short UAs (almost always scrapers).
     if (BLOCKED_BOT_REGEX.test(earlyUA) || !earlyUA || earlyUA.length < 10) {
-      return new Response("Forbidden", {
+      const r = new Response("Forbidden", {
         status: 403,
         headers: {
           "content-type": "text/plain",
@@ -3297,6 +3299,7 @@ export default {
           "x-blocked-by": "shopbanao-bot-policy",
         },
       });
+      return cacheableResponse(ctx, request, r, 86400);
     }
 
     // v8.1.0 cost-cut: ANY bot request (HTML or API) suppresses KV writes.
