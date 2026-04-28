@@ -102,9 +102,10 @@ export function StorefrontAuthProvider({
   }, [customer, user, fetchOrCreateCustomer]);
 
   useEffect(() => {
-    // Fast-path: if no STOREFRONT auth token in localStorage, skip auth entirely.
-    // This intentionally checks the storefront-specific key so the merchant/admin
-    // session in the same browser is ignored here (and vice-versa).
+    // Fast-path: if no STOREFRONT auth token in localStorage, mark loading=false
+    // immediately so anonymous visitors don't see a spinner. We STILL subscribe
+    // to onAuthStateChange below so that a later phone-login (which writes the
+    // token via setSession) propagates without a page refresh.
     const hasAuthToken = (() => {
       try {
         return !!localStorage.getItem(STOREFRONT_AUTH_STORAGE_KEY);
@@ -115,10 +116,8 @@ export function StorefrontAuthProvider({
 
     if (!hasAuthToken) {
       setLoading(false);
-      return;
     }
 
-    // Only load supabase when user has an auth token
     let subscription: any;
     let cancelled = false;
 
@@ -135,8 +134,6 @@ export function StorefrontAuthProvider({
           setCustomer(null);
         }
         setLoading(false);
-        // Prefetch account-related route chunks once a user is logged in,
-        // so navigating to /account, /wishlist, /cart feels instant.
         if (sess?.user) {
           import("@/lib/prefetchAccountRoutes")
             .then((m) => m.prefetchAccountRoutes())
@@ -145,22 +142,37 @@ export function StorefrontAuthProvider({
       });
       subscription = sub;
 
-      supabaseStorefront.auth.getSession().then(({ data: { session: sess } }) => {
-        setSession(sess);
-        setUser(sess?.user ?? null);
-        setLoading(false);
-        if (sess?.user) {
-          import("@/lib/prefetchAccountRoutes")
-            .then((m) => m.prefetchAccountRoutes())
-            .catch(() => {});
-        }
-      });
+      // Only call getSession if we had a stored token (avoids a needless network
+      // hit on cold loads for anonymous visitors).
+      if (hasAuthToken) {
+        supabaseStorefront.auth.getSession().then(({ data: { session: sess } }) => {
+          setSession(sess);
+          setUser(sess?.user ?? null);
+          setLoading(false);
+          if (sess?.user) {
+            import("@/lib/prefetchAccountRoutes")
+              .then((m) => m.prefetchAccountRoutes())
+              .catch(() => {});
+          }
+        });
+      }
     };
 
-    const schedule = typeof requestIdleCallback !== "undefined" ? requestIdleCallback : (cb: () => void) => setTimeout(cb, 100);
-    const handle = schedule(() => {
+    // For users with a stored token, init immediately so /account doesn't bounce.
+    // For anonymous users, defer until idle so initial paint isn't blocked.
+    if (hasAuthToken) {
       initAuth();
-    });
+    } else {
+      const schedule = typeof requestIdleCallback !== "undefined" ? requestIdleCallback : (cb: () => void) => setTimeout(cb, 200);
+      const handle = schedule(() => { initAuth(); });
+      return () => {
+        cancelled = true;
+        subscription?.unsubscribe();
+        if (typeof cancelIdleCallback !== "undefined" && typeof handle === "number") {
+          cancelIdleCallback(handle);
+        }
+      };
+    }
 
     const safetyTimeout = setTimeout(() => setLoading(false), 2000);
 
@@ -168,9 +180,6 @@ export function StorefrontAuthProvider({
       cancelled = true;
       subscription?.unsubscribe();
       clearTimeout(safetyTimeout);
-      if (typeof cancelIdleCallback !== "undefined" && typeof handle === "number") {
-        cancelIdleCallback(handle);
-      }
     };
   }, []);
 
