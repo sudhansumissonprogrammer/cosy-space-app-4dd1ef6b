@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { useOutletContext, Navigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+// Use the storefront-isolated client so the customer JWT (auth.uid()) is sent
+// with every query — required for RLS policies on customer_addresses,
+// customer_wishlists, orders, and storefront_customers. The dashboard
+// `supabase` client uses a different storageKey and would send the merchant
+// (or anon) token here, causing customers to see 0 rows on a clean browser.
+import { supabaseStorefront as supabase } from "@/integrations/supabase/storefrontClient";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
