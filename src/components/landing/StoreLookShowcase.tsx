@@ -1,20 +1,31 @@
-import jewelryHome from "@/assets/showcase-jewelry-home.webp";
-import jewelryProduct from "@/assets/showcase-jewelry-product.webp";
-import jewelryCart from "@/assets/showcase-jewelry-cart.webp";
-import jewelryShop from "@/assets/showcase-jewelry-shop.webp";
-import fashionHome from "@/assets/showcase-fashion-home.webp";
-import fashionCategory from "@/assets/showcase-fashion-category.webp";
-import fashionAllCategories from "@/assets/showcase-fashion-allcategories.webp";
-import fashionSearch from "@/assets/showcase-fashion-search.webp";
-import overlaysHome from "@/assets/showcase-overlays-home.webp";
-import overlaysProduct from "@/assets/showcase-overlays-product.webp";
-import overlaysWishlist from "@/assets/showcase-overlays-wishlist.webp";
-import arrokHome from "@/assets/showcase-arrok-home.webp";
-import arrokShop from "@/assets/showcase-arrok-shop.webp";
-import arrokCategories from "@/assets/showcase-arrok-categories.webp";
-import medivaHome from "@/assets/showcase-mediva-home.webp";
-import medivaShop from "@/assets/showcase-mediva-shop.webp";
-import medivaCategories from "@/assets/showcase-mediva-categories.webp";
+// Eager glob — Vite resolves all matching assets at build time as a single
+// module entry, avoiding 17 parallel preload requests that occasionally
+// trigger "Failed to fetch dynamically imported module" in the dev sandbox.
+const _showcaseAssets = import.meta.glob("@/assets/showcase-*.webp", {
+  eager: true,
+  import: "default",
+}) as Record<string, string>;
+const _img = (name: string): string => {
+  const key = Object.keys(_showcaseAssets).find((k) => k.endsWith(`/${name}`));
+  return key ? _showcaseAssets[key] : "";
+};
+const jewelryHome = _img("showcase-jewelry-home.webp");
+const jewelryProduct = _img("showcase-jewelry-product.webp");
+const jewelryCart = _img("showcase-jewelry-cart.webp");
+const jewelryShop = _img("showcase-jewelry-shop.webp");
+const fashionHome = _img("showcase-fashion-home.webp");
+const fashionCategory = _img("showcase-fashion-category.webp");
+const fashionAllCategories = _img("showcase-fashion-allcategories.webp");
+const fashionSearch = _img("showcase-fashion-search.webp");
+const overlaysHome = _img("showcase-overlays-home.webp");
+const overlaysProduct = _img("showcase-overlays-product.webp");
+const overlaysWishlist = _img("showcase-overlays-wishlist.webp");
+const arrokHome = _img("showcase-arrok-home.webp");
+const arrokShop = _img("showcase-arrok-shop.webp");
+const arrokCategories = _img("showcase-arrok-categories.webp");
+const medivaHome = _img("showcase-mediva-home.webp");
+const medivaShop = _img("showcase-mediva-shop.webp");
+const medivaCategories = _img("showcase-mediva-categories.webp");
 
 const stores = [
   {
