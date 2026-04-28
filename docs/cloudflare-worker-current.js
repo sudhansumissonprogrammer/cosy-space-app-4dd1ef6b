@@ -369,6 +369,42 @@ function getEarlyCacheKey(hostname) {
   return new Request(`https://edge-html/${hostname.toLowerCase()}/`);
 }
 
+/* v8.4.0: Mirror the warmed HTML into Cloudflare's automatic Cache API
+   keyed on the ACTUAL request URL. The early-key cache (above) is what
+   the Worker reads on warm hits; mirroring to the request URL is what
+   makes Cloudflare's dashboard report `cf-cache-status: HIT` and counts
+   as a real edge cache hit (the early key is invisible to CF metrics).
+   Stripping Set-Cookie + forcing public Cache-Control prevents CF's
+   default auto-bypass on cookie/auth responses. */
+async function mirrorToCfCache(ctx, request, response) {
+  try {
+    if (!ctx?.waitUntil || !response || request.method !== "GET") return;
+    // Skip authenticated paths to avoid leaking user-specific HTML
+    const cookie = request.headers.get("cookie") || "";
+    if (cookie.includes("auth") || cookie.includes("sb-")) return;
+    const url = new URL(request.url);
+    if (
+      url.pathname.startsWith("/api/") ||
+      url.pathname.startsWith("/dashboard") ||
+      url.pathname.startsWith("/admin")
+    ) return;
+    const cloned = response.clone();
+    const headers = new Headers(cloned.headers);
+    headers.delete("Set-Cookie");
+    // Force a deterministic, public Cache-Control so CF stores it.
+    if (!headers.has("Cache-Control") || /no-store|private/i.test(headers.get("Cache-Control") || "")) {
+      headers.set("Cache-Control", "public, max-age=600, stale-while-revalidate=86400");
+    }
+    headers.set("X-Edge-Mirror", "1");
+    const toStore = new Response(cloned.body, {
+      status: cloned.status,
+      statusText: cloned.statusText,
+      headers,
+    });
+    ctx.waitUntil(cache.put(request, toStore).catch(() => {}));
+  } catch {}
+}
+
 function addDiagnosticHeaders(response, { slug, cacheStatus, dataSource }) {
   const res = new Response(response.body, response);
   res.headers.set("X-Worker-Version", WORKER_VERSION);
