@@ -2268,9 +2268,13 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
   } catch {}
 }
 
-function storeInEdgeCache(ctx, hostname, slug, response) {
+function storeInEdgeCache(ctx, hostname, slug, response, request = null) {
   const earlyKey = getEarlyCacheKey(hostname);
   ctx.waitUntil(cache.put(earlyKey, response.clone()).catch(() => {}));
+  // v8.4.0: when caller passes request, also mirror to CF Cache API for HIT metric.
+  if (request) {
+    mirrorToCfCache(ctx, request, response);
+  }
 }
 
 /* ============================================================
