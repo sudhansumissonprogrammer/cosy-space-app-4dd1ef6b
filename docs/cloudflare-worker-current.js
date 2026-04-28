@@ -4122,18 +4122,22 @@ export default {
     }
 
     // ─── UNKNOWN DOMAIN → 404 ───
-    return new Response(
-      `<!DOCTYPE html><html><head><title>Store Not Found</title></head><body style="font-family:sans-serif;text-align:center;padding:60px"><h1>Store Not Found</h1><p>No store is configured for this domain.</p></body></html>`,
-      {
-        status: 404,
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=60",
-          "X-Worker-Version": WORKER_VERSION,
-          ...SECURITY_HEADERS,
+    // v8.3.0: edge-cached for 1h so probes don't re-invoke the Worker.
+    {
+      const r = new Response(
+        `<!DOCTYPE html><html><head><title>Store Not Found</title></head><body style="font-family:sans-serif;text-align:center;padding:60px"><h1>Store Not Found</h1><p>No store is configured for this domain.</p></body></html>`,
+        {
+          status: 404,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "public, max-age=3600",
+            "X-Worker-Version": WORKER_VERSION,
+            ...SECURITY_HEADERS,
+          },
         },
-      },
-    );
+      );
+      return cacheableResponse(ctx, request, r, 3600);
+    }
   },
 
   /* ============================================================
