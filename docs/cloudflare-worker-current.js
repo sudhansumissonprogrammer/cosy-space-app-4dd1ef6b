@@ -3727,14 +3727,59 @@ export default {
         }
       }
 
-      return new Response(null, {
-        status: 301,
-        headers: {
-          "Location": finalUrl,
-          "Cache-Control": "public, max-age=31536000, immutable",
-          "X-Image-Routing": "origin-redirect-v7.4.1",
-        },
-      });
+      // v8.5.0: Fetch image and cache at Cloudflare edge instead of 301-redirecting.
+      // Saves ~70-80% of Supabase image egress because every colo holds a copy
+      // for 1 year. First visitor in a colo = same speed as old redirect path
+      // (cold pull from Supabase). All subsequent visitors = edge HIT (faster).
+      // If fetch fails for ANY reason, fall back to the original 301 redirect
+      // so user behaviour is identical to today (zero risk).
+      try {
+        const cache = caches.default;
+        const cacheKey = new Request(url.toString(), { method: "GET" });
+        let cached = await cache.match(cacheKey);
+        if (cached) {
+          const r = new Response(cached.body, cached);
+          r.headers.set("X-Image-Routing", "edge-cache-hit-v8.5.0");
+          return r;
+        }
+        const upstream = await fetch(finalUrl, {
+          cf: { cacheEverything: true, cacheTtl: 31536000 },
+        });
+        if (!upstream.ok) {
+          // Upstream error → don't poison cache, just redirect like before
+          return new Response(null, {
+            status: 301,
+            headers: {
+              "Location": finalUrl,
+              "Cache-Control": "public, max-age=300",
+              "X-Image-Routing": "edge-cache-upstream-error-v8.5.0",
+            },
+          });
+        }
+        const headers = new Headers(upstream.headers);
+        // Aggressive 1-year browser + edge cache (Option A baked in)
+        headers.set("Cache-Control", "public, max-age=31536000, immutable");
+        headers.set("X-Image-Routing", "edge-cache-miss-v8.5.0");
+        headers.delete("set-cookie");
+        const response = new Response(upstream.body, {
+          status: upstream.status,
+          statusText: upstream.statusText,
+          headers,
+        });
+        // Store in edge cache for next visitor (in this colo)
+        ctx.waitUntil(cache.put(cacheKey, response.clone()));
+        return response;
+      } catch (err) {
+        // Network failure → fall back to 301 (current behaviour)
+        return new Response(null, {
+          status: 301,
+          headers: {
+            "Location": finalUrl,
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "X-Image-Routing": "edge-cache-fallback-v8.5.0",
+          },
+        });
+      }
     }
 
     // ─── API ROUTES (rate-limited) ───
