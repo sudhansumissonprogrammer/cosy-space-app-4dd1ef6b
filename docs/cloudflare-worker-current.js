@@ -3966,7 +3966,12 @@ export default {
     // ─── CUSTOM DOMAIN ───
     if (hostname.startsWith("www.")) {
       const apex = hostname.slice(4);
-      return Response.redirect(`https://${apex}${url.pathname}${url.search}`, 301);
+      const target = `https://${apex}${url.pathname}${url.search}`;
+      const r = new Response(null, {
+        status: 301,
+        headers: { Location: target, "Cache-Control": "public, max-age=86400" },
+      });
+      return cacheableResponse(ctx, request, r, 86400);
     }
 
     const clientIP = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for");
