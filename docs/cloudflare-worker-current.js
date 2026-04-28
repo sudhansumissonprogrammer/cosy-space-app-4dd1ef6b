@@ -3790,11 +3790,24 @@ export default {
         const redirectSlug = storeMatch[1];
         const remainingPath = storeMatch[2] || "";
         const customDomain = await getCustomDomainForSlug(redirectSlug);
-        if (customDomain) return Response.redirect(`https://${customDomain}${remainingPath}${url.search}`, 301);
-        return Response.redirect(`https://${redirectSlug}.${ROOT_DOMAIN}${remainingPath}${url.search}`, 301);
+        const target = customDomain
+          ? `https://${customDomain}${remainingPath}${url.search}`
+          : `https://${redirectSlug}.${ROOT_DOMAIN}${remainingPath}${url.search}`;
+        // v8.3.0: cacheable 301 (1 day) so repeat hits skip the Worker.
+        const r = new Response(null, {
+          status: 301,
+          headers: { Location: target, "Cache-Control": "public, max-age=86400" },
+        });
+        return cacheableResponse(ctx, request, r, 86400);
       }
-      if (hostname === `www.${ROOT_DOMAIN}`)
-        return Response.redirect(`https://${ROOT_DOMAIN}${url.pathname}${url.search}`, 301);
+      if (hostname === `www.${ROOT_DOMAIN}`) {
+        const target = `https://${ROOT_DOMAIN}${url.pathname}${url.search}`;
+        const r = new Response(null, {
+          status: 301,
+          headers: { Location: target, "Cache-Control": "public, max-age=86400" },
+        });
+        return cacheableResponse(ctx, request, r, 86400);
+      }
       return cachedFetch(request, "", ctx, false, env, requestStart);
     }
 
