@@ -3912,7 +3912,13 @@ export default {
       }
 
       if (storeInfo.customDomain) {
-        return Response.redirect(`https://${storeInfo.customDomain}${url.pathname}${url.search}`, 301);
+        // v8.3.0: cacheable 301 — fixes the 0% cache rate on subdomain hosts.
+        const target = `https://${storeInfo.customDomain}${url.pathname}${url.search}`;
+        const r = new Response(null, {
+          status: 301,
+          headers: { Location: target, "Cache-Control": "public, max-age=86400" },
+        });
+        return cacheableResponse(ctx, request, r, 86400);
       }
 
       const seoResponse = await handleSeoFiles(url, slug);
