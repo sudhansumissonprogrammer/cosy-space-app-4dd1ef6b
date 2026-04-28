@@ -1254,6 +1254,53 @@ export default function CheckoutPage() {
 
 
 
+  // Handle "View My Orders" on the thank-you screen.
+  // - If the customer is logged in (or storefront token already exists), go straight to /account.
+  // - Otherwise, run a phone-login using the phone they typed at checkout, claim the
+  //   just-placed order to their account so it's visible immediately, then route.
+  const handleViewMyOrders = async () => {
+    if (viewingOrders) return;
+    setViewingOrders(true);
+    try {
+      // Already authenticated → just go.
+      const { data: existing } = await supabaseStorefront.auth.getSession();
+      if (existing?.session?.user) {
+        navigate(storefrontPath(store.slug, "account"));
+        return;
+      }
+
+      const normalized = normalizePhone(phone);
+      if (!normalized || normalized.length < 10) {
+        toast.error("Please enter your mobile number to view your orders");
+        navigate(storefrontPath(store.slug, "login"));
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("phone-login", {
+        body: {
+          phone: normalized,
+          store_id: store.id,
+          name: fullName || null,
+          claim_order_id: orderId || undefined,
+        },
+      });
+      if (error || !data?.session) {
+        throw new Error(error?.message || data?.error || "Login failed");
+      }
+      const { error: sessErr } = await supabaseStorefront.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+      if (sessErr) throw sessErr;
+      toast.success("Logged in! Loading your orders…");
+      navigate(storefrontPath(store.slug, "account"));
+    } catch (err: any) {
+      toast.error(err?.message || "Could not open your orders. Please try again.");
+    } finally {
+      setViewingOrders(false);
+    }
+  };
+
   if (orderPlaced) {
     // Show post-purchase upsell first, then confirmation
     if (showUpsell && orderId) {
