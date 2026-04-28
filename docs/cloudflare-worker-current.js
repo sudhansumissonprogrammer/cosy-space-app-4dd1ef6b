@@ -3636,7 +3636,7 @@ export default {
                     fullHeaders.set("X-Cache-Timestamp", new Date().toISOString());
                     for (const [k, v] of Object.entries(SECURITY_HEADERS)) fullHeaders.set(k, v);
                     const fullResponse = new Response(result.html, { status: 200, headers: fullHeaders });
-                    storeInEdgeCache(ctx, hostname, revalSlug, fullResponse);
+                    storeInEdgeCache(ctx, hostname, revalSlug, fullResponse, request);
                   }
                 }
               } catch {}
