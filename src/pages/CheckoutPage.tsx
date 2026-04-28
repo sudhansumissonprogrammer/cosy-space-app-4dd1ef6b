@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSearchParams, useOutletContext, Link } from "react-router-dom";
+import { useSearchParams, useOutletContext, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
@@ -84,6 +84,8 @@ export default function CheckoutPage() {
   const { items: cartItems, clearCart } = useCart();
   const { customer, ensureCustomer } = useStorefrontAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [viewingOrders, setViewingOrders] = useState(false);
 
   const [placing, setPlacing] = useState(false);
   const [placingStep, setPlacingStep] = useState<0 | 1 | 2 | 3>(0); // 0 idle, 1 creating, 2 confirming, 3 sending whatsapp
@@ -1252,6 +1254,53 @@ export default function CheckoutPage() {
 
 
 
+  // Handle "View My Orders" on the thank-you screen.
+  // - If the customer is logged in (or storefront token already exists), go straight to /account.
+  // - Otherwise, run a phone-login using the phone they typed at checkout, claim the
+  //   just-placed order to their account so it's visible immediately, then route.
+  const handleViewMyOrders = async () => {
+    if (viewingOrders) return;
+    setViewingOrders(true);
+    try {
+      // Already authenticated → just go.
+      const { data: existing } = await supabaseStorefront.auth.getSession();
+      if (existing?.session?.user) {
+        navigate(storefrontPath(store.slug, "account"));
+        return;
+      }
+
+      const normalized = normalizePhone(phone);
+      if (!normalized || normalized.length < 10) {
+        toast.error("Please enter your mobile number to view your orders");
+        navigate(storefrontPath(store.slug, "login"));
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("phone-login", {
+        body: {
+          phone: normalized,
+          store_id: store.id,
+          name: fullName || null,
+          claim_order_id: orderId || undefined,
+        },
+      });
+      if (error || !data?.session) {
+        throw new Error(error?.message || data?.error || "Login failed");
+      }
+      const { error: sessErr } = await supabaseStorefront.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+      if (sessErr) throw sessErr;
+      toast.success("Logged in! Loading your orders…");
+      navigate(storefrontPath(store.slug, "account"));
+    } catch (err: any) {
+      toast.error(err?.message || "Could not open your orders. Please try again.");
+    } finally {
+      setViewingOrders(false);
+    }
+  };
+
   if (orderPlaced) {
     // Show post-purchase upsell first, then confirmation
     if (showUpsell && orderId) {
@@ -1298,7 +1347,16 @@ export default function CheckoutPage() {
           </div>
         )}
         <div className="mt-6 flex flex-col gap-2 items-center">
-          <Link to={storefrontPath(store.slug, "account")} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-medium border border-border bg-card hover:bg-accent transition-colors" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>{t("View My Orders", "मेरे ऑर्डर देखें")}</Link>
+          <button
+            type="button"
+            onClick={handleViewMyOrders}
+            disabled={viewingOrders}
+            className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-medium border border-border bg-card hover:bg-accent transition-colors disabled:opacity-60"
+            style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
+          >
+            {viewingOrders && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {t("View My Orders", "मेरे ऑर्डर देखें")}
+          </button>
           <Link to={storefrontPath(store.slug)} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-bold btn-gold" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>{t("Continue Shopping", "शॉपिंग जारी रखें")}</Link>
         </div>
       </div>
