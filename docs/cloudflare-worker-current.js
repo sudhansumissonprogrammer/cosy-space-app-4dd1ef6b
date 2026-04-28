@@ -2261,6 +2261,9 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     if (hostname) {
       const earlyKey = getEarlyCacheKey(hostname);
       await cache.put(earlyKey, fullResponse.clone()).catch(() => {});
+      // v8.4.0: ALSO mirror under the real request URL so Cloudflare's
+      // automatic edge cache (and the dashboard cache-rate metric) sees a HIT.
+      await mirrorToCfCache(ctx, request, fullResponse).catch?.(() => {});
     }
   } catch {}
 }
