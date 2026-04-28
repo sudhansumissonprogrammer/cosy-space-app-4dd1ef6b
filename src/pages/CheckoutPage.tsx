@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSearchParams, useOutletContext, Link } from "react-router-dom";
+import { useSearchParams, useOutletContext, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
