@@ -807,7 +807,10 @@ export default function CheckoutPage() {
   const saveAddressToAccount = async () => {
     if (!customer?.id) return;
     try {
-      const { data: existing } = await supabase
+      // Use the storefront-isolated client so the customer JWT (auth.uid())
+      // satisfies the customer_addresses RLS policy. The dashboard `supabase`
+      // client uses a different storageKey and would send the wrong token.
+      const { data: existing } = await supabaseStorefront
         .from("customer_addresses")
         .select("id")
         .eq("storefront_customer_id", customer.id)
@@ -815,11 +818,11 @@ export default function CheckoutPage() {
         .eq("pincode", pincode.trim())
         .maybeSingle();
       if (existing) return;
-      const { count } = await supabase
+      const { count } = await supabaseStorefront
         .from("customer_addresses")
         .select("id", { count: "exact", head: true })
         .eq("storefront_customer_id", customer.id);
-      await supabase.from("customer_addresses").insert({
+      await supabaseStorefront.from("customer_addresses").insert({
         storefront_customer_id: customer.id,
         label: "Home",
         full_name: fullName.trim(),

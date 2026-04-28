@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { useOutletContext, Navigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+// Use the storefront-isolated client so the customer JWT (auth.uid()) is sent
+// with every query — required for RLS policies on customer_addresses,
+// customer_wishlists, orders, and storefront_customers. The dashboard
+// `supabase` client uses a different storageKey and would send the merchant
+// (or anon) token here, causing customers to see 0 rows on a clean browser.
+import { supabaseStorefront as supabase } from "@/integrations/supabase/storefrontClient";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -369,6 +374,14 @@ export default function StorefrontAccount() {
     return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }} /></div>;
   }
 
+  // Synthetic emails (e.g. "919999999999@phone.guest") are an internal
+  // implementation detail of phone-login — never expose them in the UI.
+  const isSyntheticEmail = (e?: string | null) =>
+    !!e && /@(phone\.guest|whatsapp)$/i.test(e);
+  const realEmail = isSyntheticEmail(user.email) ? null : user.email;
+  const displayPrimary = customer.name || customer.phone || realEmail || "My Account";
+  const displaySecondary = customer.phone || realEmail || "";
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between gap-3">
@@ -377,10 +390,12 @@ export default function StorefrontAccount() {
             <User className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-semibold truncate">{customer.name || customer.phone || user.email}</h1>
-            <p className="text-sm truncate" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>
-              {customer.phone || user.email}
-            </p>
+            <h1 className="text-lg font-semibold truncate">{displayPrimary}</h1>
+            {displaySecondary && (
+              <p className="text-sm truncate" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>
+                {displaySecondary}
+              </p>
+            )}
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={signOut} className="shrink-0">
@@ -388,6 +403,7 @@ export default function StorefrontAccount() {
           <span className="hidden sm:inline">Sign Out</span>
         </Button>
       </div>
+
 
       <Tabs defaultValue="orders">
         <TabsList className="w-full overflow-x-auto">
