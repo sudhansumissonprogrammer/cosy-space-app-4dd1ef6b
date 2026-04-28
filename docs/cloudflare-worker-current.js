@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.4.0-static-asset-cache";
+const WORKER_VERSION = "8.4.0-cf-cache-rate";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -367,6 +367,42 @@ function buildSubdomainUrl(slug, path, search = "") {
 // Normalized early-cache key: ALL SPA routes share ONE entry per hostname.
 function getEarlyCacheKey(hostname) {
   return new Request(`https://edge-html/${hostname.toLowerCase()}/`);
+}
+
+/* v8.4.0: Mirror the warmed HTML into Cloudflare's automatic Cache API
+   keyed on the ACTUAL request URL. The early-key cache (above) is what
+   the Worker reads on warm hits; mirroring to the request URL is what
+   makes Cloudflare's dashboard report `cf-cache-status: HIT` and counts
+   as a real edge cache hit (the early key is invisible to CF metrics).
+   Stripping Set-Cookie + forcing public Cache-Control prevents CF's
+   default auto-bypass on cookie/auth responses. */
+async function mirrorToCfCache(ctx, request, response) {
+  try {
+    if (!ctx?.waitUntil || !response || request.method !== "GET") return;
+    // Skip authenticated paths to avoid leaking user-specific HTML
+    const cookie = request.headers.get("cookie") || "";
+    if (cookie.includes("auth") || cookie.includes("sb-")) return;
+    const url = new URL(request.url);
+    if (
+      url.pathname.startsWith("/api/") ||
+      url.pathname.startsWith("/dashboard") ||
+      url.pathname.startsWith("/admin")
+    ) return;
+    const cloned = response.clone();
+    const headers = new Headers(cloned.headers);
+    headers.delete("Set-Cookie");
+    // Force a deterministic, public Cache-Control so CF stores it.
+    if (!headers.has("Cache-Control") || /no-store|private/i.test(headers.get("Cache-Control") || "")) {
+      headers.set("Cache-Control", "public, max-age=600, stale-while-revalidate=86400");
+    }
+    headers.set("X-Edge-Mirror", "1");
+    const toStore = new Response(cloned.body, {
+      status: cloned.status,
+      statusText: cloned.statusText,
+      headers,
+    });
+    ctx.waitUntil(cache.put(request, toStore).catch(() => {}));
+  } catch {}
 }
 
 function addDiagnosticHeaders(response, { slug, cacheStatus, dataSource }) {
@@ -2225,13 +2261,20 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     if (hostname) {
       const earlyKey = getEarlyCacheKey(hostname);
       await cache.put(earlyKey, fullResponse.clone()).catch(() => {});
+      // v8.4.0: ALSO mirror under the real request URL so Cloudflare's
+      // automatic edge cache (and the dashboard cache-rate metric) sees a HIT.
+      await mirrorToCfCache(ctx, request, fullResponse).catch?.(() => {});
     }
   } catch {}
 }
 
-function storeInEdgeCache(ctx, hostname, slug, response) {
+function storeInEdgeCache(ctx, hostname, slug, response, request = null) {
   const earlyKey = getEarlyCacheKey(hostname);
   ctx.waitUntil(cache.put(earlyKey, response.clone()).catch(() => {}));
+  // v8.4.0: when caller passes request, also mirror to CF Cache API for HIT metric.
+  if (request) {
+    mirrorToCfCache(ctx, request, response);
+  }
 }
 
 /* ============================================================
@@ -2621,6 +2664,9 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     _kvWriteRecent.delete(`store-id:${d}`);
     _kvWriteRecent.delete(`domain:${d}`);
     purgeOps.push(cache.delete(getEarlyCacheKey(d)).catch(() => {}));
+    // v8.4.0: also purge the CF Cache API mirror entries for SPA root paths.
+    purgeOps.push(cache.delete(new Request(`https://${d}/`)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://www.${d}/`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-id:${d}`)).catch(() => {}));
     if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`store-id:${d}`).catch(() => {}));
     if (d !== ROOT_DOMAIN && !d.endsWith(`.${ROOT_DOMAIN}`)) {
@@ -2871,6 +2917,9 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     _kvWriteRecent.delete(`store-info:${purgeSlug}`);
     purgeOps.push(cache.delete(getEarlyCacheKey(`${purgeSlug}.${ROOT_DOMAIN}`)).catch(() => {}));
     purgeOps.push(cache.delete(getEarlyCacheKey(hostname)).catch(() => {}));
+    // v8.4.0: also purge the CF Cache API mirror for the slug's hostnames.
+    purgeOps.push(cache.delete(new Request(`https://${purgeSlug}.${ROOT_DOMAIN}/`)).catch(() => {}));
+    purgeOps.push(cache.delete(new Request(`https://${hostname}/`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
@@ -3225,7 +3274,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
   // Root-domain (no slug) responses still get cached here.
   const contentType = res.headers.get("content-type") || "";
   if (res.status === 200 && contentType.includes("text/html") && !slug) {
-    storeInEdgeCache(ctx, hostname, "", res);
+    storeInEdgeCache(ctx, hostname, "", res, request);
   }
 
   return addDiagnosticHeaders(res, { slug, cacheStatus: "MISS", dataSource });
@@ -3593,7 +3642,7 @@ export default {
                     fullHeaders.set("X-Cache-Timestamp", new Date().toISOString());
                     for (const [k, v] of Object.entries(SECURITY_HEADERS)) fullHeaders.set(k, v);
                     const fullResponse = new Response(result.html, { status: 200, headers: fullHeaders });
-                    storeInEdgeCache(ctx, hostname, revalSlug, fullResponse);
+                    storeInEdgeCache(ctx, hostname, revalSlug, fullResponse, request);
                   }
                 }
               } catch {}
