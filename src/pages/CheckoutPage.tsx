@@ -84,6 +84,8 @@ export default function CheckoutPage() {
   const { items: cartItems, clearCart } = useCart();
   const { customer, ensureCustomer } = useStorefrontAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [viewingOrders, setViewingOrders] = useState(false);
 
   const [placing, setPlacing] = useState(false);
   const [placingStep, setPlacingStep] = useState<0 | 1 | 2 | 3>(0); // 0 idle, 1 creating, 2 confirming, 3 sending whatsapp
