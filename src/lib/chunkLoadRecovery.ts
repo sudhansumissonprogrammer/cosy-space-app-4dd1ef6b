@@ -16,6 +16,9 @@ const PRIMARY_CHUNK_ERROR_PATTERNS = [
   /Unable to preload CSS/i,
   /Loading CSS chunk \d+ failed/i,
   /ChunkLoadError/i,
+  /Cannot destructure property ['"]default['"] of ['"]undefined['"] as it is undefined/i,
+  /Cannot destructure property ['"]default['"] of undefined/i,
+  /Cannot read properties of undefined \(reading ['"]default['"]\)/i,
   /_result is undefined/i,
   /reading ['"]default['"]/i,
 ];
