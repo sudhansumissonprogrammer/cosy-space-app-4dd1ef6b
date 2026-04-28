@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.3.0-cache-rate";
+const WORKER_VERSION = "8.4.0-static-asset-cache";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -1773,10 +1773,27 @@ async function proxyToOrigin(request) {
 }
 
 async function proxyToOriginCached(request) {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return proxyToOrigin(request);
+  }
+
+  const cached = await cache.match(request).catch(() => null);
+  if (cached) {
+    const hit = new Response(request.method === "HEAD" ? null : cached.body, cached);
+    hit.headers.set("X-Static-Asset-Cache", "HIT");
+    hit.headers.set("X-Worker-Version", WORKER_VERSION);
+    return hit;
+  }
+
   const url = new URL(request.url);
   url.hostname = ORIGIN_HOST;
   const headers = new Headers(request.headers);
   headers.set("Host", ORIGIN_HOST);
+  // Static assets are content-hashed and public. Forwarding cookies makes the
+  // origin emit Set-Cookie, which Cloudflare correctly marks as BYPASS and is
+  // why the Worker dashboard showed 0% cache rate for asset subrequests.
+  headers.delete("Cookie");
+  headers.delete("Authorization");
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ORIGIN_TIMEOUT_MS);
@@ -1789,8 +1806,14 @@ async function proxyToOriginCached(request) {
       cf: { cacheTtl: 2592000, cacheEverything: true },
     });
     clearTimeout(timeout);
-    const newRes = new Response(res.body, res);
-    if (newRes.ok) newRes.headers.set("Cache-Control", "public, max-age=2592000, immutable");
+    const newRes = new Response(request.method === "HEAD" ? null : res.body, res);
+    if (newRes.ok) {
+      newRes.headers.set("Cache-Control", "public, max-age=2592000, immutable");
+      newRes.headers.delete("Set-Cookie");
+      newRes.headers.delete("set-cookie");
+      newRes.headers.set("X-Static-Asset-Cache", "MISS");
+      ctx?.waitUntil?.(cache.put(request, newRes.clone()).catch(() => {}));
+    }
     for (const [k, v] of Object.entries(SECURITY_HEADERS)) newRes.headers.set(k, v);
     return newRes;
   } catch {
