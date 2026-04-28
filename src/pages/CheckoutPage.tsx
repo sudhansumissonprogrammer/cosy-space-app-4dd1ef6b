@@ -1347,7 +1347,16 @@ export default function CheckoutPage() {
           </div>
         )}
         <div className="mt-6 flex flex-col gap-2 items-center">
-          <Link to={storefrontPath(store.slug, "account")} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-medium border border-border bg-card hover:bg-accent transition-colors" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>{t("View My Orders", "मेरे ऑर्डर देखें")}</Link>
+          <button
+            type="button"
+            onClick={handleViewMyOrders}
+            disabled={viewingOrders}
+            className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-medium border border-border bg-card hover:bg-accent transition-colors disabled:opacity-60"
+            style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
+          >
+            {viewingOrders && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {t("View My Orders", "मेरे ऑर्डर देखें")}
+          </button>
           <Link to={storefrontPath(store.slug)} className="inline-flex items-center justify-center h-10 px-6 rounded-md text-sm font-bold btn-gold" style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}>{t("Continue Shopping", "शॉपिंग जारी रखें")}</Link>
         </div>
       </div>
