@@ -392,7 +392,8 @@ async function mirrorToCfCache(ctx, request, response) {
     if (
       url.pathname.startsWith("/api/") ||
       url.pathname.startsWith("/dashboard") ||
-      url.pathname.startsWith("/admin")
+      url.pathname.startsWith("/admin") ||
+      isCheckoutHtmlPath(url.pathname)
     ) return;
     const cloned = response.clone();
     const headers = new Headers(cloned.headers);
