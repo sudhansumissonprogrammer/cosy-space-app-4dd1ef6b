@@ -1822,7 +1822,7 @@ async function proxyToOrigin(request) {
   }
 }
 
-async function proxyToOriginCached(request) {
+async function proxyToOriginCached(request, ctx) {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return proxyToOrigin(request);
   }
@@ -3535,7 +3535,7 @@ export default {
       // (not just /assets/* and /static/*). Icons, manifests, SW files, favicons,
       // and any extensioned file are immutable in practice — cache them at the
       // edge with 30-day TTL so repeat visitors never re-execute worker logic.
-      return proxyToOriginCached(request);
+      return proxyToOriginCached(request, ctx);
     }
 
     // ─── PHASE 1 FIX #1: SUPABASE STORAGE IMAGE EDGE CACHE (1yr immutable) ───
