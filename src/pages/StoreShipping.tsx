@@ -16,6 +16,7 @@ export default function StoreShipping() {
   const { storeId } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const purgeStore = useStorePurge(storeId);
 
   const [flatRate, setFlatRate] = useState("0");
   const [freeAbove, setFreeAbove] = useState("");
