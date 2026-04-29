@@ -35,6 +35,7 @@ export default function BestSellerManagement() {
   const store = routeNeedsAdminStore ? adminStore : ownStore;
   const storeId = store?.id;
   const queryClient = useQueryClient();
+  const purgeStore = useStorePurge(storeId);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
 
   const { data: products, isLoading } = useQuery({
