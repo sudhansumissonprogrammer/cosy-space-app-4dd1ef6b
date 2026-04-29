@@ -108,6 +108,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
 
   // Load store
   const { data: store } = useStoreData(storeId);
+  const purgeStore = useStorePurge(storeId);
 
   // Categories
   const { data: categories } = useQuery({
