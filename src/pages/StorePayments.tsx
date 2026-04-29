@@ -382,10 +382,18 @@ export default function StorePayments() {
                         <Label htmlFor="rzp-key">Razorpay Key ID *</Label>
                         <Input
                           id="rzp-key"
+                          name="rzp-key-id"
                           placeholder="rzp_live_xxxxxxxxxxxxx"
                           value={razorpayKeyId}
                           onChange={(e) => setRazorpayKeyId(e.target.value)}
                           maxLength={50}
+                          autoComplete="off"
+                          autoCorrect="off"
+                          autoCapitalize="off"
+                          spellCheck={false}
+                          data-lpignore="true"
+                          data-form-type="other"
+                          data-1p-ignore="true"
                         />
                       </div>
 
@@ -393,11 +401,19 @@ export default function StorePayments() {
                         <Label htmlFor="rzp-secret">Razorpay Key Secret *</Label>
                         <Input
                           id="rzp-secret"
+                          name="rzp-key-secret"
                           type="password"
                           placeholder="••••••••••••••••••••"
                           value={razorpayKeySecret}
                           onChange={(e) => setRazorpayKeySecret(e.target.value)}
                           maxLength={100}
+                          autoComplete="new-password"
+                          autoCorrect="off"
+                          autoCapitalize="off"
+                          spellCheck={false}
+                          data-lpignore="true"
+                          data-form-type="other"
+                          data-1p-ignore="true"
                         />
                       </div>
                     </div>
