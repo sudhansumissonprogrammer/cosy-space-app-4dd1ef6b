@@ -75,12 +75,13 @@ export default function CategoryManagement() {
         supabase.from("categories").update({ display_order: index } as any).eq("id", b.id),
       ]);
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
+      purgeStore();
     } catch {
       toast.error("Failed to reorder");
     } finally {
       setReordering(false);
     }
-  }, [categories, reordering, storeId, queryClient]);
+  }, [categories, reordering, storeId, queryClient, purgeStore]);
 
   const openCreate = () => {
     setEditingId(null);
