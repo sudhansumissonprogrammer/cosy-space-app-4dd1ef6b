@@ -26,6 +26,7 @@ import {
   Send,
   MessageCircle,
   ArrowRight,
+  Mail,
 } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
