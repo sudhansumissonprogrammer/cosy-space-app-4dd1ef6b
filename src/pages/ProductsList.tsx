@@ -189,6 +189,7 @@ export default function ProductsList() { // v2
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       toast.success("Product deleted");
+      purgeStore();
     },
     onError: (err: any) => toast.error(err.message || "Failed to delete product"),
   });
