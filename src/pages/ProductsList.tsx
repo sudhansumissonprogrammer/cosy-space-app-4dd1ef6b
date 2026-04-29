@@ -118,6 +118,7 @@ export default function ProductsList() { // v2
   }, []);
 
   const { data: store } = useStoreData(storeId);
+  const purgeStore = useStorePurge(storeId);
 
   const { data: limitInfo } = useQuery({
     queryKey: ["product-limit", user?.id],
