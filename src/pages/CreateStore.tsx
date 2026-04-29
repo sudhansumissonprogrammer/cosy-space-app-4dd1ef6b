@@ -983,7 +983,7 @@ export default function CreateStore() {
                     <span className="flex-shrink-0 px-3 text-muted-foreground"><Globe className="h-4 w-4" /></span>
                     <Input id="owner-email" type="email" placeholder="you@example.com" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} maxLength={200} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
                   </div>
-                  <p className="text-xs text-muted-foreground">You'll receive order notification emails at this address</p>
+                  <p className="text-xs text-muted-foreground">Used for order notifications and shown on your storefront's footer & contact page so customers can reach you.</p>
                 </div>
 
                 <div className="rounded-xl border bg-accent/30 p-4">

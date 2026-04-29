@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Clock, MessageCircle, Instagram, Facebook, Send } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { MapPin, Clock, MessageCircle, Instagram, Facebook, Send, Mail } from "lucide-react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.png";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface StorefrontFooterProps {
@@ -33,6 +35,17 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
   const hasHours = hours && Object.values(hours).some((v) => v?.trim());
   const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
   const [email, setEmail] = useState("");
+
+  // Public contact email (set by store owner). Fetched via secure RPC.
+  const { data: ownerEmail } = useQuery({
+    queryKey: ["store-public-email", store.id],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_store_public_email", { _store_id: store.id });
+      return ((data as string) || "").trim();
+    },
+    enabled: !!store.id,
+    staleTime: 10 * 60 * 1000,
+  });
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,6 +216,28 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   {address}
                 </p>
+              )}
+              {ownerEmail && (
+                <a
+                  href={`mailto:${ownerEmail}`}
+                  className="flex items-start gap-2 text-sm opacity-75 hover:opacity-100 transition-opacity break-all"
+                  style={{ color: "inherit" }}
+                >
+                  <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>{ownerEmail}</span>
+                </a>
+              )}
+              {store.whatsapp_number && (
+                <a
+                  href={`https://wa.me/${store.whatsapp_number.replace(/[^0-9+]/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-2 text-sm opacity-75 hover:opacity-100 transition-opacity"
+                  style={{ color: "inherit" }}
+                >
+                  <MessageCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>{store.whatsapp_number}</span>
+                </a>
               )}
             </div>
           </div>

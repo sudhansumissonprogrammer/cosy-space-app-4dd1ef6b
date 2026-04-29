@@ -26,6 +26,7 @@ import {
   Send,
   MessageCircle,
   ArrowRight,
+  Mail,
 } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
@@ -63,6 +64,17 @@ export default function StorefrontContact() {
   });
 
   const customHtml = (contactPage as any)?.custom_html as string | null;
+
+  // Public contact email (set by store owner). Fetched via secure RPC.
+  const { data: ownerEmail } = useQuery({
+    queryKey: ["store-public-email", store.id],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_store_public_email", { _store_id: store.id });
+      return ((data as string) || "").trim();
+    },
+    enabled: !!store.id,
+    staleTime: 10 * 60 * 1000,
+  });
 
   const features: Feature[] = (store.features as unknown as Feature[]) || [];
   const businessHours = (store.business_hours as Record<string, string>) || {};
@@ -259,6 +271,23 @@ export default function StorefrontContact() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* Email Card */}
+            {ownerEmail && (
+              <a
+                href={`mailto:${ownerEmail}`}
+                className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-all hover:border-primary/30 hover:shadow-md"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                  <Mail className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground">Email</p>
+                  <p className="text-sm text-muted-foreground break-all">{ownerEmail}</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 shrink-0" />
+              </a>
             )}
 
             {/* WhatsApp Card */}
