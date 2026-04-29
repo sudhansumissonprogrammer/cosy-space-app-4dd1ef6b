@@ -1224,8 +1224,7 @@ export default function CheckoutPage() {
     setPlacingStep(1);
     setPaymentFailed(false);
     // Fire pre-warm pings the instant user clicks — runs in parallel with createOrder
-    // "Pay Online" maps to whichever gateway is active (razorpay or cashfree).
-    const isOnline = paymentMethod === "razorpay" || paymentMethod === "cashfree" || isPartialOrder;
+    const isOnline = paymentMethod === "razorpay" || isPartialOrder;
     if (isOnline) {
       if (activeGateway === "cashfree") {
         prewarmEdgeFunction("store-cashfree-create-order");
