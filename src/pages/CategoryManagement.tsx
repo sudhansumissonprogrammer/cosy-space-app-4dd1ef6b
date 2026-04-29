@@ -32,6 +32,7 @@ export default function CategoryManagement() {
   const { storeId } = useStoreSlugParam();
   const queryClient = useQueryClient();
   const { data: store } = useStoreData(storeId);
+  const purgeStore = useStorePurge(storeId);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
