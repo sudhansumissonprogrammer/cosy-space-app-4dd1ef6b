@@ -213,6 +213,7 @@ export default function BulkUpload() {
   });
 
   const { data: store } = useStoreData(storeId);
+  const purgeStore = useStorePurge(storeId);
 
   const { data: categories } = useQuery({
     queryKey: ["categories", storeId],
