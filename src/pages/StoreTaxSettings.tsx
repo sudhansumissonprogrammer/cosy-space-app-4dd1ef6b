@@ -16,6 +16,7 @@ export default function StoreTaxSettings() {
   const { storeId } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const purgeStore = useStorePurge(storeId);
 
   const [taxName, setTaxName] = useState("GST");
   const [taxRate, setTaxRate] = useState("0");
