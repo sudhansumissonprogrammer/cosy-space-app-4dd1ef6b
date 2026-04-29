@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useStoreData } from "@/hooks/useStoreData";
+import { useStorePurge } from "@/hooks/useStorePurge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getDefaultContent } from "@/lib/defaultPageContent";
