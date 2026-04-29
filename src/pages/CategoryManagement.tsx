@@ -168,6 +168,7 @@ export default function CategoryManagement() {
 
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
       setDialogOpen(false);
+      purgeStore();
     } catch (err: any) {
       toast.error(err.message || "Failed to save category");
     } finally {
@@ -183,6 +184,7 @@ export default function CategoryManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
       toast.success("Category deleted");
+      purgeStore();
     },
     onError: (err: any) => toast.error(err.message || "Failed to delete"),
   });
