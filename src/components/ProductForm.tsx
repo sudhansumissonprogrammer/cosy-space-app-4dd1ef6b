@@ -578,6 +578,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                         if (error) throw error;
                         queryClient.invalidateQueries({ queryKey: ["products", storeId] });
                         toast.success("Product deleted");
+                        purgeStore();
                         if (onClose) { onClose(); } else { navigate(`/dashboard/stores/${storeSlug}/products`); }
                       } catch (err: any) {
                         toast.error(err.message || "Failed to delete product");
