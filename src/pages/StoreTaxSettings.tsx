@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
+import { useStorePurge } from "@/hooks/useStorePurge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,7 @@ export default function StoreTaxSettings() {
   const { storeId } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const purgeStore = useStorePurge(storeId);
 
   const [taxName, setTaxName] = useState("GST");
   const [taxRate, setTaxRate] = useState("0");
@@ -66,6 +68,7 @@ export default function StoreTaxSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tax-config", storeId] });
       toast.success("Tax settings saved");
+      purgeStore();
     },
     onError: (e: any) => toast.error(e.message),
   });

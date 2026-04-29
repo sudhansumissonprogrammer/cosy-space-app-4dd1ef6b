@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
+import { useStorePurge } from "@/hooks/useStorePurge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +21,7 @@ export default function StoreCoupons() {
   const { storeId } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const purgeStore = useStorePurge(storeId);
   const [open, setOpen] = useState(false);
 
   // Form state
@@ -64,6 +66,7 @@ export default function StoreCoupons() {
       toast.success("Coupon created");
       resetForm();
       setOpen(false);
+      purgeStore();
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -73,7 +76,10 @@ export default function StoreCoupons() {
       const { error } = await supabase.from("coupons").update({ is_active }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["coupons", storeId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["coupons", storeId] });
+      purgeStore();
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -85,6 +91,7 @@ export default function StoreCoupons() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["coupons", storeId] });
       toast.success("Coupon deleted");
+      purgeStore();
     },
     onError: (e: any) => toast.error(e.message),
   });

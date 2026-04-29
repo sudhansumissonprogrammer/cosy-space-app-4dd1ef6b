@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
+import { useStorePurge } from "@/hooks/useStorePurge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStoreData } from "@/hooks/useStoreData";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +32,7 @@ export default function CategoryManagement() {
   const { storeId } = useStoreSlugParam();
   const queryClient = useQueryClient();
   const { data: store } = useStoreData(storeId);
+  const purgeStore = useStorePurge(storeId);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -73,12 +75,13 @@ export default function CategoryManagement() {
         supabase.from("categories").update({ display_order: index } as any).eq("id", b.id),
       ]);
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
+      purgeStore();
     } catch {
       toast.error("Failed to reorder");
     } finally {
       setReordering(false);
     }
-  }, [categories, reordering, storeId, queryClient]);
+  }, [categories, reordering, storeId, queryClient, purgeStore]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -166,6 +169,7 @@ export default function CategoryManagement() {
 
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
       setDialogOpen(false);
+      purgeStore();
     } catch (err: any) {
       toast.error(err.message || "Failed to save category");
     } finally {
@@ -181,6 +185,7 @@ export default function CategoryManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
       toast.success("Category deleted");
+      purgeStore();
     },
     onError: (err: any) => toast.error(err.message || "Failed to delete"),
   });

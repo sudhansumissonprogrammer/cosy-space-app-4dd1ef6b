@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useStoreData } from "@/hooks/useStoreData";
+import { useStorePurge } from "@/hooks/useStorePurge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getDefaultContent } from "@/lib/defaultPageContent";
@@ -32,6 +33,7 @@ export default function StorePages() {
   const { storeId, storeSlug } = useStoreSlugParam();
   const { data: store } = useStoreData(storeId);
   const queryClient = useQueryClient();
+  const purgeStore = useStorePurge(storeId);
   const [seeded, setSeeded] = useState(false);
 
   const { data: pages, isLoading } = useQuery({
@@ -96,6 +98,7 @@ export default function StorePages() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store-pages", storeId] });
       toast.success("Page status updated");
+      purgeStore();
     },
     onError: () => toast.error("Failed to update status"),
   });
@@ -108,6 +111,7 @@ export default function StorePages() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store-pages", storeId] });
       toast.success("Page deleted");
+      purgeStore();
     },
     onError: () => toast.error("Failed to delete page"),
   });

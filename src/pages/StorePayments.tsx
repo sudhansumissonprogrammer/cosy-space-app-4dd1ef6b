@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
+import { useStorePurge } from "@/hooks/useStorePurge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
@@ -24,6 +25,7 @@ export default function StorePayments() {
   const { storeId } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const purgeStore = useStorePurge(storeId);
 
   const [orderMode, setOrderMode] = useState<OrderMode>("whatsapp");
   const [codEnabled, setCodEnabled] = useState(true);
@@ -200,6 +202,8 @@ export default function StorePayments() {
       queryClient.invalidateQueries({ queryKey: ["my-store"] });
       queryClient.invalidateQueries({ queryKey: ["store-payment-config"] });
       toast.success("Payment settings saved!");
+      // Auto-purge edge cache so storefront reflects changes instantly
+      purgeStore();
     },
     onError: (err: any) => toast.error(err.message || "Failed to save"),
   });

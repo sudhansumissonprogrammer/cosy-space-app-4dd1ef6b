@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useStoreData } from "@/hooks/useStoreData";
+import { useStorePurge } from "@/hooks/useStorePurge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,6 +66,7 @@ export default function StorePageEditor() {
   const [showPreview, setShowPreview] = useState(false);
 
   const { data: store } = useStoreData(storeId);
+  const purgeStore = useStorePurge(storeId);
 
   const { data: page, isLoading } = useQuery({
     queryKey: ["store-page", pageId],
@@ -206,6 +208,7 @@ export default function StorePageEditor() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store-pages", storeId] });
       toast.success(isNew ? "Page created!" : "Page updated!");
+      purgeStore();
       navigate(`/dashboard/stores/${storeSlug}/pages`);
     },
     onError: (err: any) => toast.error(err.message || "Failed to save"),

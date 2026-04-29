@@ -4,6 +4,7 @@ import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
+import { useStorePurge } from "@/hooks/useStorePurge";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,6 +108,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
 
   // Load store
   const { data: store } = useStoreData(storeId);
+  const purgeStore = useStorePurge(storeId);
 
   // Categories
   const { data: categories } = useQuery({
@@ -512,6 +514,8 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       import("@/lib/prewarmStore").then(({ prewarmStore }) => {
         if (storeSlug) prewarmStore(storeSlug, undefined, { hidden: !isActive });
       }).catch(() => {});
+      // Also purge edge cache so changes propagate immediately on storefront
+      purgeStore();
 
       if (onClose) {
         onClose();
@@ -574,6 +578,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                         if (error) throw error;
                         queryClient.invalidateQueries({ queryKey: ["products", storeId] });
                         toast.success("Product deleted");
+                        purgeStore();
                         if (onClose) { onClose(); } else { navigate(`/dashboard/stores/${storeSlug}/products`); }
                       } catch (err: any) {
                         toast.error(err.message || "Failed to delete product");

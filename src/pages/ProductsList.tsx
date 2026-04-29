@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
+import { useStorePurge } from "@/hooks/useStorePurge";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -117,6 +118,7 @@ export default function ProductsList() { // v2
   }, []);
 
   const { data: store } = useStoreData(storeId);
+  const purgeStore = useStorePurge(storeId);
 
   const { data: limitInfo } = useQuery({
     queryKey: ["product-limit", user?.id],
@@ -187,6 +189,7 @@ export default function ProductsList() { // v2
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       toast.success("Product deleted");
+      purgeStore();
     },
     onError: (err: any) => toast.error(err.message || "Failed to delete product"),
   });
@@ -219,6 +222,7 @@ export default function ProductsList() { // v2
       queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       toast.success(`${bulkSelected.size} products updated`);
       exitBulkMode();
+      purgeStore();
     },
     onError: (err: any) => toast.error(err.message || "Bulk update failed"),
   });
@@ -240,6 +244,7 @@ export default function ProductsList() { // v2
       queryClient.invalidateQueries({ queryKey: ["product-limit"] });
       toast.success(`${bulkSelected.size} products deleted`);
       exitBulkMode();
+      purgeStore();
     },
     onError: (err: any) => toast.error(err.message || "Bulk delete failed"),
   });
@@ -255,6 +260,7 @@ export default function ProductsList() { // v2
       queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       toast.success(`${bulkSelected.size} products ${value ? "marked as" : "removed from"} best sellers`);
       exitBulkMode();
+      purgeStore();
     },
     onError: (err: any) => toast.error(err.message || "Failed to update best seller status"),
   });

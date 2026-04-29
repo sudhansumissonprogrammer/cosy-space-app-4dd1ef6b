@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
+import { useStorePurge } from "@/hooks/useStorePurge";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -212,6 +213,7 @@ export default function BulkUpload() {
   });
 
   const { data: store } = useStoreData(storeId);
+  const purgeStore = useStorePurge(storeId);
 
   const { data: categories } = useQuery({
     queryKey: ["categories", storeId],
@@ -476,6 +478,7 @@ export default function BulkUpload() {
       if (importResult.created > 0) msg.push(`${importResult.created} created`);
       if (importResult.updated > 0) msg.push(`${importResult.updated} updated`);
       toast.success(`Import complete: ${msg.join(", ")}`);
+      purgeStore();
     },
     onError: (err: any) => toast.error(err.message || "Import failed"),
   });

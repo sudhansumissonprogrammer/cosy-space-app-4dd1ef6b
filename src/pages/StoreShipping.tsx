@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
+import { useStorePurge } from "@/hooks/useStorePurge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,7 @@ export default function StoreShipping() {
   const { storeId } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const purgeStore = useStorePurge(storeId);
 
   const [flatRate, setFlatRate] = useState("0");
   const [freeAbove, setFreeAbove] = useState("");
@@ -63,6 +65,7 @@ export default function StoreShipping() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shipping-config", storeId] });
       toast.success("Shipping settings saved");
+      purgeStore();
     },
     onError: (e: any) => toast.error(e.message),
   });

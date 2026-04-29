@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMyStore } from "@/hooks/useMyStore";
 import { useAdminStoreView } from "@/hooks/useAdminStoreView";
 import { ArrowUp, ArrowDown, GripVertical, Star, Trash2 } from "lucide-react";
+import { useStorePurge } from "@/hooks/useStorePurge";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ export default function BestSellerManagement() {
   const store = routeNeedsAdminStore ? adminStore : ownStore;
   const storeId = store?.id;
   const queryClient = useQueryClient();
+  const purgeStore = useStorePurge(storeId);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
 
   const { data: products, isLoading } = useQuery({
@@ -65,6 +67,7 @@ export default function BestSellerManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["best-sellers-manage", storeId] });
       toast.success("Order saved!");
+      purgeStore();
     },
     onError: () => toast.error("Failed to save order"),
   });
@@ -81,6 +84,7 @@ export default function BestSellerManagement() {
       queryClient.invalidateQueries({ queryKey: ["best-sellers-manage", storeId] });
       queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       toast.success("Removed from best sellers");
+      purgeStore();
     },
   });
 
