@@ -1701,7 +1701,7 @@ export default function CheckoutPage() {
         )}
 
         {/* Pay Online */}
-        {!hasAnyPartialPayment && hasRazorpay && (
+        {!hasAnyPartialPayment && hasOnline && (
           <button
             type="button"
             onClick={() => { setPaymentMethod("razorpay"); }}
