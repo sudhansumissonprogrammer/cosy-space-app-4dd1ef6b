@@ -33,6 +33,7 @@ export default function StorePages() {
   const { storeId, storeSlug } = useStoreSlugParam();
   const { data: store } = useStoreData(storeId);
   const queryClient = useQueryClient();
+  const purgeStore = useStorePurge(storeId);
   const [seeded, setSeeded] = useState(false);
 
   const { data: pages, isLoading } = useQuery({
