@@ -36,6 +36,17 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
   const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
   const [email, setEmail] = useState("");
 
+  // Public contact email (set by store owner). Fetched via secure RPC.
+  const { data: ownerEmail } = useQuery({
+    queryKey: ["store-public-email", store.id],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_store_public_email", { _store_id: store.id });
+      return ((data as string) || "").trim();
+    },
+    enabled: !!store.id,
+    staleTime: 10 * 60 * 1000,
+  });
+
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
