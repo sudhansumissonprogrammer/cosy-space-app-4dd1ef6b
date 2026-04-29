@@ -40,19 +40,25 @@ export function useStorefront(slugOverride?: string) {
   const slug = slugOverride || paramSlug || getSubdomainSlug() || undefined;
   const queryClient = useQueryClient();
   const seeded = useRef(false);
+  const initialInjectedRef = useRef(false);
 
   // Try to grab pre-fetched data (from Worker or index.html script)
   const injected = (window as any).__STOREFRONT_DATA__;
+  const useInjectedInitialData = !!(injected?.store && slug && !seeded.current);
+  if (useInjectedInitialData && !initialInjectedRef.current) initialInjectedRef.current = true;
 
   const { data, isLoading } = useQuery({
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
       // 1. Check synchronous injected data first (Worker already set it)
       const syncData = (window as any).__STOREFRONT_DATA__;
-      if (syncData?.store) {
+      if (syncData?.store && !initialInjectedRef.current) {
         delete (window as any).__STOREFRONT_DATA__;
         delete (window as any).__STOREFRONT_PREFETCH__;
         return syncData as any;
+      }
+      if (syncData?.store && initialInjectedRef.current) {
+        delete (window as any).__STOREFRONT_DATA__;
       }
 
       // 2. Await the index.html prefetch promise if still in flight,
@@ -86,7 +92,7 @@ export function useStorefront(slugOverride?: string) {
     // immediate background refetch. This guarantees that if the merchant
     // changed the theme/colors, a refresh on the storefront picks up the
     // new values within ~1 RTT (instead of waiting 2 minutes for staleTime).
-    ...(injected?.store && slug && !seeded.current
+    ...(useInjectedInitialData
       ? { initialData: injected, initialDataUpdatedAt: 0 }
       : {}),
   });
