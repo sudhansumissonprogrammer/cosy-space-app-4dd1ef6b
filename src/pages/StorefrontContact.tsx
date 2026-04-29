@@ -65,6 +65,17 @@ export default function StorefrontContact() {
 
   const customHtml = (contactPage as any)?.custom_html as string | null;
 
+  // Public contact email (set by store owner). Fetched via secure RPC.
+  const { data: ownerEmail } = useQuery({
+    queryKey: ["store-public-email", store.id],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_store_public_email", { _store_id: store.id });
+      return ((data as string) || "").trim();
+    },
+    enabled: !!store.id,
+    staleTime: 10 * 60 * 1000,
+  });
+
   const features: Feature[] = (store.features as unknown as Feature[]) || [];
   const businessHours = (store.business_hours as Record<string, string>) || {};
   const hasHours = Object.values(businessHours).some((v) => v?.trim());
