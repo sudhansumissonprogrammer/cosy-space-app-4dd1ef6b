@@ -217,6 +217,28 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   {address}
                 </p>
               )}
+              {ownerEmail && (
+                <a
+                  href={`mailto:${ownerEmail}`}
+                  className="flex items-start gap-2 text-sm opacity-75 hover:opacity-100 transition-opacity break-all"
+                  style={{ color: "inherit" }}
+                >
+                  <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>{ownerEmail}</span>
+                </a>
+              )}
+              {store.whatsapp_number && (
+                <a
+                  href={`https://wa.me/${store.whatsapp_number.replace(/[^0-9+]/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-2 text-sm opacity-75 hover:opacity-100 transition-opacity"
+                  style={{ color: "inherit" }}
+                >
+                  <MessageCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>{store.whatsapp_number}</span>
+                </a>
+              )}
             </div>
           </div>
         </div>
