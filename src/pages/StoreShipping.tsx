@@ -65,6 +65,7 @@ export default function StoreShipping() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shipping-config", storeId] });
       toast.success("Shipping settings saved");
+      purgeStore();
     },
     onError: (e: any) => toast.error(e.message),
   });
