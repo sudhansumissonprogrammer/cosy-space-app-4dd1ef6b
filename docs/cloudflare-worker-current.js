@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.6.1-asset-cache-ctx-fix";
+const WORKER_VERSION = "8.6.2-checkout-cache-bypass";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -368,6 +368,12 @@ function buildSubdomainUrl(slug, path, search = "") {
 function getEarlyCacheKey(hostname) {
   return new Request(`https://edge-html/${hostname.toLowerCase()}/`);
 }
+
+function isCheckoutHtmlPath(pathname) {
+  return pathname === "/checkout" || pathname.startsWith("/checkout/");
+}
+
+const STOREFRONT_HTML_MIRROR_PATHS = ["/", "/checkout", "/cart"];
 
 /* v8.4.0: Mirror the warmed HTML into Cloudflare's automatic Cache API
    keyed on the ACTUAL request URL. The early-key cache (above) is what
