@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.5.0-image-edge-cache";
+const WORKER_VERSION = "8.6.0-cf-cache-rate";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -1462,9 +1462,13 @@ async function resolveDomain(hostname, env) {
   }
 
   try {
+    // v8.6.0: cf.cacheEverything mirrors Cache API TTL → CF dashboard counts hits.
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/stores_public?select=slug&custom_domain=eq.${encodeURIComponent(domain)}&limit=1`,
-      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
+      {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+        cf: { cacheEverything: true, cacheTtl: 300, cacheTtlByStatus: { "200-299": 300, "404": 60, "500-599": 0 } },
+      },
     );
     if (!res.ok) return null;
     const data = await res.json();
@@ -1497,9 +1501,13 @@ async function getCustomDomainForSlug(slug) {
   } catch {}
 
   try {
+    // v8.6.0: cf.cacheEverything for CF dashboard cache-rate visibility.
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/stores_public?select=custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
-      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
+      {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+        cf: { cacheEverything: true, cacheTtl: 300, cacheTtlByStatus: { "200-299": 300, "404": 60, "500-599": 0 } },
+      },
     );
     if (!res.ok) return null;
     const data = await res.json();
@@ -1611,9 +1619,13 @@ async function _resolveStoreInfo(slug, hostname, env) {
   }
 
   try {
+    // v8.6.0: cf.cacheEverything for CF dashboard cache-rate visibility.
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/stores_public?select=id,custom_domain&slug=eq.${encodeURIComponent(slug)}&limit=1`,
-      { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } },
+      {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+        cf: { cacheEverything: true, cacheTtl: 300, cacheTtlByStatus: { "200-299": 300, "404": 60, "500-599": 0 } },
+      },
     );
     if (!res.ok) return { storeId: null, customDomain: null };
     const rows = await res.json();
@@ -1732,8 +1744,10 @@ async function _fetchStoreIdFromDb(domain) {
   const query = isSubdomain
     ? `slug=eq.${encodeURIComponent(domain.replace(`.${ROOT_DOMAIN}`, ""))}`
     : `custom_domain=eq.${encodeURIComponent(domain)}`;
+  // v8.6.0: cf.cacheEverything for CF dashboard cache-rate visibility.
   const res = await fetch(`${SUPABASE_URL}/rest/v1/stores_public?select=id&${query}&limit=1`, {
     headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    cf: { cacheEverything: true, cacheTtl: 300, cacheTtlByStatus: { "200-299": 300, "404": 60, "500-599": 0 } },
   });
   if (!res.ok) return null;
   const rows = await res.json();
@@ -2524,9 +2538,12 @@ async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
     const page = parseInt(filters.page, 10);
     if (page > 0) params.set("offset", String(page * PRODUCTS_PAGE_SIZE));
 
+    // v8.6.0: cf.cacheEverything (60s) — fast invalidation via /api/purge-store still works,
+    // and CF dashboard now counts these as cache hits. Short TTL keeps stock/price freshness.
     const res = await fetch(`${SUPABASE_URL}/rest/v1/products?${params}`, {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, Accept: "application/json" },
       signal: controller.signal,
+      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, "404": 30, "500-599": 0 } },
     });
     clearTimeout(timeout);
     if (!res.ok) throw new Error(`DB error: ${res.status}`);
