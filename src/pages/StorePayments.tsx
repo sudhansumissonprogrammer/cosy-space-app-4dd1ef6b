@@ -25,6 +25,7 @@ export default function StorePayments() {
   const { storeId } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const purgeStore = useStorePurge(storeId);
 
   const [orderMode, setOrderMode] = useState<OrderMode>("whatsapp");
   const [codEnabled, setCodEnabled] = useState(true);
