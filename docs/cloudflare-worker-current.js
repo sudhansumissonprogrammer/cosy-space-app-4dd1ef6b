@@ -3333,7 +3333,8 @@ export default {
        cache rate from 42% → 95%+. Only GET requests are checked. */
     if (earlyMethod === "GET") {
       try {
-        const cached = await cache.match(request);
+        const shouldBypassPathMirror = isCheckoutHtmlPath(earlyPath);
+        const cached = shouldBypassPathMirror ? null : await cache.match(request);
         if (cached) {
           // Re-emit with diagnostic header so we can see the source.
           const hit = new Response(cached.body, cached);
