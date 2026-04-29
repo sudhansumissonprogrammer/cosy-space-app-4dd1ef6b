@@ -222,6 +222,7 @@ export default function ProductsList() { // v2
       queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       toast.success(`${bulkSelected.size} products updated`);
       exitBulkMode();
+      purgeStore();
     },
     onError: (err: any) => toast.error(err.message || "Bulk update failed"),
   });
@@ -243,6 +244,7 @@ export default function ProductsList() { // v2
       queryClient.invalidateQueries({ queryKey: ["product-limit"] });
       toast.success(`${bulkSelected.size} products deleted`);
       exitBulkMode();
+      purgeStore();
     },
     onError: (err: any) => toast.error(err.message || "Bulk delete failed"),
   });
@@ -258,6 +260,7 @@ export default function ProductsList() { // v2
       queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       toast.success(`${bulkSelected.size} products ${value ? "marked as" : "removed from"} best sellers`);
       exitBulkMode();
+      purgeStore();
     },
     onError: (err: any) => toast.error(err.message || "Failed to update best seller status"),
   });
