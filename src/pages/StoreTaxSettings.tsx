@@ -68,6 +68,7 @@ export default function StoreTaxSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tax-config", storeId] });
       toast.success("Tax settings saved");
+      purgeStore();
     },
     onError: (e: any) => toast.error(e.message),
   });
