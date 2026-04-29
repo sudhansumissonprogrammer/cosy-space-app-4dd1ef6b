@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.6.1-asset-cache-ctx-fix";
+const WORKER_VERSION = "8.6.2-checkout-cache-bypass";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -332,12 +332,12 @@ const SECURITY_HEADERS = {
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Content-Security-Policy":
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://checkout.razorpay.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://embed.tawk.to https://client.crisp.chat https://cdn.jsdelivr.net; " +
+    "script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://checkout.razorpay.com https://sdk.cashfree.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://embed.tawk.to https://client.crisp.chat https://cdn.jsdelivr.net; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://client.crisp.chat; " +
     "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; " +
     "img-src 'self' data: blob: https://*.supabase.co https://*.r2.dev https://*.cloudinary.com https://*.unsplash.com https://*.shopify.com https://*.myshopify.com https://www.google-analytics.com https://www.googletagmanager.com https://www.facebook.com https://cx.atdmt.com https:; " +
-    "connect-src 'self' https://*.supabase.co https://connect.facebook.net https://graph.facebook.com https://api.razorpay.com https://lrcpkt0a.api.lc https://www.google-analytics.com https://www.googletagmanager.com https://embed.tawk.to https://client.crisp.chat; " +
-    "frame-src https://api.razorpay.com https://checkout.razorpay.com https://embed.tawk.to; " +
+    "connect-src 'self' https://*.supabase.co https://connect.facebook.net https://graph.facebook.com https://api.razorpay.com https://api.cashfree.com https://sandbox.cashfree.com https://lrcpkt0a.api.lc https://www.google-analytics.com https://www.googletagmanager.com https://embed.tawk.to https://client.crisp.chat; " +
+    "frame-src https://api.razorpay.com https://checkout.razorpay.com https://api.cashfree.com https://sandbox.cashfree.com https://sdk.cashfree.com https://payments.cashfree.com https://embed.tawk.to; " +
     "worker-src 'self' blob:; " +
     "object-src 'none'; base-uri 'self'; form-action 'self';",
 };
@@ -369,6 +369,12 @@ function getEarlyCacheKey(hostname) {
   return new Request(`https://edge-html/${hostname.toLowerCase()}/`);
 }
 
+function isCheckoutHtmlPath(pathname) {
+  return pathname === "/checkout" || pathname.startsWith("/checkout/");
+}
+
+const STOREFRONT_HTML_MIRROR_PATHS = ["/", "/checkout", "/cart"];
+
 /* v8.4.0: Mirror the warmed HTML into Cloudflare's automatic Cache API
    keyed on the ACTUAL request URL. The early-key cache (above) is what
    the Worker reads on warm hits; mirroring to the request URL is what
@@ -386,7 +392,8 @@ async function mirrorToCfCache(ctx, request, response) {
     if (
       url.pathname.startsWith("/api/") ||
       url.pathname.startsWith("/dashboard") ||
-      url.pathname.startsWith("/admin")
+      url.pathname.startsWith("/admin") ||
+      isCheckoutHtmlPath(url.pathname)
     ) return;
     const cloned = response.clone();
     const headers = new Headers(cloned.headers);
@@ -2681,9 +2688,11 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     _kvWriteRecent.delete(`store-id:${d}`);
     _kvWriteRecent.delete(`domain:${d}`);
     purgeOps.push(cache.delete(getEarlyCacheKey(d)).catch(() => {}));
-    // v8.4.0: also purge the CF Cache API mirror entries for SPA root paths.
-    purgeOps.push(cache.delete(new Request(`https://${d}/`)).catch(() => {}));
-    purgeOps.push(cache.delete(new Request(`https://www.${d}/`)).catch(() => {}));
+    // v8.6.2: purge CF Cache API mirror entries for SPA paths that may carry store/payment data.
+    for (const path of STOREFRONT_HTML_MIRROR_PATHS) {
+      purgeOps.push(cache.delete(new Request(`https://${d}${path}`)).catch(() => {}));
+      purgeOps.push(cache.delete(new Request(`https://www.${d}${path}`)).catch(() => {}));
+    }
     purgeOps.push(cache.delete(new Request(`https://cache/store-id:${d}`)).catch(() => {}));
     if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`store-id:${d}`).catch(() => {}));
     if (d !== ROOT_DOMAIN && !d.endsWith(`.${ROOT_DOMAIN}`)) {
@@ -2934,9 +2943,11 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     _kvWriteRecent.delete(`store-info:${purgeSlug}`);
     purgeOps.push(cache.delete(getEarlyCacheKey(`${purgeSlug}.${ROOT_DOMAIN}`)).catch(() => {}));
     purgeOps.push(cache.delete(getEarlyCacheKey(hostname)).catch(() => {}));
-    // v8.4.0: also purge the CF Cache API mirror for the slug's hostnames.
-    purgeOps.push(cache.delete(new Request(`https://${purgeSlug}.${ROOT_DOMAIN}/`)).catch(() => {}));
-    purgeOps.push(cache.delete(new Request(`https://${hostname}/`)).catch(() => {}));
+    // v8.6.2: purge CF Cache API mirrors for all SPA paths that can inline stale store/payment data.
+    for (const path of STOREFRONT_HTML_MIRROR_PATHS) {
+      purgeOps.push(cache.delete(new Request(`https://${purgeSlug}.${ROOT_DOMAIN}${path}`)).catch(() => {}));
+      purgeOps.push(cache.delete(new Request(`https://${hostname}${path}`)).catch(() => {}));
+    }
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
@@ -3322,7 +3333,8 @@ export default {
        cache rate from 42% → 95%+. Only GET requests are checked. */
     if (earlyMethod === "GET") {
       try {
-        const cached = await cache.match(request);
+        const shouldBypassPathMirror = isCheckoutHtmlPath(earlyPath);
+        const cached = shouldBypassPathMirror ? null : await cache.match(request);
         if (cached) {
           // Re-emit with diagnostic header so we can see the source.
           const hit = new Response(cached.body, cached);
