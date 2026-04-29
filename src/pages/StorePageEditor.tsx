@@ -208,6 +208,7 @@ export default function StorePageEditor() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store-pages", storeId] });
       toast.success(isNew ? "Page created!" : "Page updated!");
+      purgeStore();
       navigate(`/dashboard/stores/${storeSlug}/pages`);
     },
     onError: (err: any) => toast.error(err.message || "Failed to save"),
