@@ -277,8 +277,9 @@ export default function StoreSettings() {
                 <Input id="whatsapp" placeholder="+1234567890" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="owner-email">Notification Email</Label>
+                <Label htmlFor="owner-email">Contact Email</Label>
                 <Input id="owner-email" type="email" placeholder="you@example.com" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} maxLength={200} />
+                <p className="text-xs text-muted-foreground">Receives order notifications and is shown on your storefront's footer & contact page.</p>
               </div>
             </div>
             <div className="space-y-2">
