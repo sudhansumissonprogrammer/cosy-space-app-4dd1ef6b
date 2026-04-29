@@ -66,6 +66,7 @@ export default function StoreCoupons() {
       toast.success("Coupon created");
       resetForm();
       setOpen(false);
+      purgeStore();
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -75,7 +76,10 @@ export default function StoreCoupons() {
       const { error } = await supabase.from("coupons").update({ is_active }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["coupons", storeId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["coupons", storeId] });
+      purgeStore();
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -87,6 +91,7 @@ export default function StoreCoupons() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["coupons", storeId] });
       toast.success("Coupon deleted");
+      purgeStore();
     },
     onError: (e: any) => toast.error(e.message),
   });
