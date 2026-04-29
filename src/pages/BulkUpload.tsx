@@ -478,6 +478,7 @@ export default function BulkUpload() {
       if (importResult.created > 0) msg.push(`${importResult.created} created`);
       if (importResult.updated > 0) msg.push(`${importResult.updated} updated`);
       toast.success(`Import complete: ${msg.join(", ")}`);
+      purgeStore();
     },
     onError: (err: any) => toast.error(err.message || "Import failed"),
   });
