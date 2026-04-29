@@ -67,6 +67,7 @@ export default function BestSellerManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["best-sellers-manage", storeId] });
       toast.success("Order saved!");
+      purgeStore();
     },
     onError: () => toast.error("Failed to save order"),
   });
@@ -83,6 +84,7 @@ export default function BestSellerManagement() {
       queryClient.invalidateQueries({ queryKey: ["best-sellers-manage", storeId] });
       queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       toast.success("Removed from best sellers");
+      purgeStore();
     },
   });
 
