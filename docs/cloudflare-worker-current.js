@@ -2688,9 +2688,11 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     _kvWriteRecent.delete(`store-id:${d}`);
     _kvWriteRecent.delete(`domain:${d}`);
     purgeOps.push(cache.delete(getEarlyCacheKey(d)).catch(() => {}));
-    // v8.4.0: also purge the CF Cache API mirror entries for SPA root paths.
-    purgeOps.push(cache.delete(new Request(`https://${d}/`)).catch(() => {}));
-    purgeOps.push(cache.delete(new Request(`https://www.${d}/`)).catch(() => {}));
+    // v8.6.2: purge CF Cache API mirror entries for SPA paths that may carry store/payment data.
+    for (const path of STOREFRONT_HTML_MIRROR_PATHS) {
+      purgeOps.push(cache.delete(new Request(`https://${d}${path}`)).catch(() => {}));
+      purgeOps.push(cache.delete(new Request(`https://www.${d}${path}`)).catch(() => {}));
+    }
     purgeOps.push(cache.delete(new Request(`https://cache/store-id:${d}`)).catch(() => {}));
     if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`store-id:${d}`).catch(() => {}));
     if (d !== ROOT_DOMAIN && !d.endsWith(`.${ROOT_DOMAIN}`)) {
@@ -2941,9 +2943,11 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     _kvWriteRecent.delete(`store-info:${purgeSlug}`);
     purgeOps.push(cache.delete(getEarlyCacheKey(`${purgeSlug}.${ROOT_DOMAIN}`)).catch(() => {}));
     purgeOps.push(cache.delete(getEarlyCacheKey(hostname)).catch(() => {}));
-    // v8.4.0: also purge the CF Cache API mirror for the slug's hostnames.
-    purgeOps.push(cache.delete(new Request(`https://${purgeSlug}.${ROOT_DOMAIN}/`)).catch(() => {}));
-    purgeOps.push(cache.delete(new Request(`https://${hostname}/`)).catch(() => {}));
+    // v8.6.2: purge CF Cache API mirrors for all SPA paths that can inline stale store/payment data.
+    for (const path of STOREFRONT_HTML_MIRROR_PATHS) {
+      purgeOps.push(cache.delete(new Request(`https://${purgeSlug}.${ROOT_DOMAIN}${path}`)).catch(() => {}));
+      purgeOps.push(cache.delete(new Request(`https://${hostname}${path}`)).catch(() => {}));
+    }
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
