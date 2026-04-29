@@ -714,7 +714,7 @@ export default function CheckoutPage() {
         order: {
           total,
           currency,
-          // COD = confirmed immediately. Razorpay (full/partial) stays pending until razorpay-verify upgrades to confirmed/partially_paid.
+          // COD = confirmed immediately. Online (Razorpay/Cashfree, full/partial) stays pending until verify upgrades to confirmed/partially_paid.
           status: paymentMethod === "cod" && !isPartialOrder ? "confirmed" : "pending",
           customer_name: fullName.trim(),
           customer_phone: normalizePhone(phone),
@@ -722,7 +722,12 @@ export default function CheckoutPage() {
           city: city.trim(),
           state: state.trim(),
           pincode: pincode.trim(),
-          payment_method: isPartialOrder ? "razorpay" : paymentMethod,
+          // Save the actual gateway name (cashfree / razorpay) when paying online,
+          // so dashboard order list shows the correct payment label.
+          payment_method:
+            paymentMethod === "cod" && !isPartialOrder
+              ? "cod"
+              : (activeGateway || "razorpay"),
           notes: orderNotes,
           storefront_customer_id: customer?.id ?? null,
           payment_type: isPartialOrder ? "partial" : "full",
