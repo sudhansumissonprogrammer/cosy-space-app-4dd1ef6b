@@ -203,11 +203,7 @@ export default function StorePayments() {
       queryClient.invalidateQueries({ queryKey: ["store-payment-config"] });
       toast.success("Payment settings saved!");
       // Auto-purge edge cache so storefront reflects changes instantly
-      if (store?.slug) {
-        import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
-          purgeStoreCache(store.slug, (store as any).custom_domain)
-        );
-      }
+      purgeStore();
     },
     onError: (err: any) => toast.error(err.message || "Failed to save"),
   });
