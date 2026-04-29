@@ -21,6 +21,7 @@ export default function StoreCoupons() {
   const { storeId } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const purgeStore = useStorePurge(storeId);
   const [open, setOpen] = useState(false);
 
   // Form state
