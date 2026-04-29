@@ -514,6 +514,8 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       import("@/lib/prewarmStore").then(({ prewarmStore }) => {
         if (storeSlug) prewarmStore(storeSlug, undefined, { hidden: !isActive });
       }).catch(() => {});
+      // Also purge edge cache so changes propagate immediately on storefront
+      purgeStore();
 
       if (onClose) {
         onClose();
