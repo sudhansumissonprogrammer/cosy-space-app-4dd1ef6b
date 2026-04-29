@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMyStore } from "@/hooks/useMyStore";
 import { useAdminStoreView } from "@/hooks/useAdminStoreView";
 import { ArrowUp, ArrowDown, GripVertical, Star, Trash2 } from "lucide-react";
+import { useStorePurge } from "@/hooks/useStorePurge";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
