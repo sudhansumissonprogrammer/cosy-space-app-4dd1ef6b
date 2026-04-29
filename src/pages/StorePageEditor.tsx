@@ -66,6 +66,7 @@ export default function StorePageEditor() {
   const [showPreview, setShowPreview] = useState(false);
 
   const { data: store } = useStoreData(storeId);
+  const purgeStore = useStorePurge(storeId);
 
   const { data: page, isLoading } = useQuery({
     queryKey: ["store-page", pageId],
