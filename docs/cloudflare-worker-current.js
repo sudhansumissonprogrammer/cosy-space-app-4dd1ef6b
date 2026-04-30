@@ -4015,10 +4015,12 @@ export default {
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          // v7.6.0 Fix A: warm call removed — cold-data path already serves
-          // fully injected HTML; warming again immediately was redundant.
+          // v8.6.3: store cold full HTML too; otherwise first isolate hits keep
+          // returning MISS/no CF metric until the background warmer succeeds.
+          const coldResponse = new Response(injected.html, { status: 200, headers });
+          storeInEdgeCache(ctx, hostname, slug, coldResponse.clone(), request);
           ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
-          return new Response(injected.html, { status: 200, headers });
+          return coldResponse;
         }
 
         // Shell ready but data not — inject a Promise so React awaits it (one skeleton)
@@ -4179,10 +4181,12 @@ export default {
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          // v7.6.0 Fix A: warm call removed — cold-data path already serves
-          // fully injected HTML; warming again immediately was redundant.
+          // v8.6.3: store cold full HTML too; otherwise first isolate hits keep
+          // returning MISS/no CF metric until the background warmer succeeds.
+          const coldResponse = new Response(injected.html, { status: 200, headers });
+          storeInEdgeCache(ctx, hostname, resolvedSlugCD, coldResponse.clone(), request);
           ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
-          return new Response(injected.html, { status: 200, headers });
+          return coldResponse;
         }
 
         if (shellResult?.html) {
