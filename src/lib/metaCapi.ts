@@ -36,6 +36,7 @@ interface CAPIEventParams {
   zipCode?: string;
   customData?: {
     content_ids?: string[];
+    content_name?: string;
     content_type?: string;
     contents?: { id: string; quantity: number; item_price?: number }[];
     currency?: string;
