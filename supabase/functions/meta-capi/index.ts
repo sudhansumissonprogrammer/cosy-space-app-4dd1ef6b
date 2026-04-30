@@ -29,6 +29,7 @@ interface CAPIEvent {
   };
   custom_data?: {
     content_ids?: string[];
+    content_name?: string;
     content_type?: string;
     contents?: { id: string; quantity: number; item_price?: number }[];
     currency?: string;
@@ -104,8 +105,12 @@ Deno.serve(async (req) => {
     const pixelId = store.facebook_pixel_id;
     const accessToken = store.meta_access_token;
 
+    // Extract first IP from x-forwarded-for (rest are proxy/CDN IPs)
+    const rawForwardedFor = req.headers.get("x-forwarded-for");
+    const firstIp = rawForwardedFor ? rawForwardedFor.split(",")[0].trim() : undefined;
+
     const userData: CAPIEvent["user_data"] = {
-      client_ip_address: client_ip || req.headers.get("x-forwarded-for") || undefined,
+      client_ip_address: client_ip || firstIp || undefined,
       client_user_agent: user_agent || req.headers.get("user-agent") || undefined,
       fbc: fbc || undefined,
       fbp: fbp || undefined,
