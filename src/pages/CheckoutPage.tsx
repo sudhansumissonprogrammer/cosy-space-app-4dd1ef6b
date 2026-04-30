@@ -578,6 +578,9 @@ export default function CheckoutPage() {
       storeId: store.id,
       eventName: "InitiateCheckout",
       eventId: eid,
+      userEmail: email.trim() || undefined,
+      userPhone: normalizePhone(phone) || undefined,
+      externalId: customer?.id || undefined,
       customData: {
         content_ids: eventData.content_ids,
         contents: eventData.contents,
