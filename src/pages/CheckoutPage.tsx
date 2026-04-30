@@ -927,7 +927,7 @@ export default function CheckoutPage() {
     try { localStorage.removeItem("checkout_phone"); localStorage.removeItem("checkout_address"); } catch {}
     window.dispatchEvent(new CustomEvent("order-placed"));
     const purchaseEid = generateEventId();
-    fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), content_type: "product", value: total, currency, num_items: checkoutItems.length }, purchaseEid);
+    fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), content_type: "product", content_name: checkoutItems.map((i) => i.name).join(", "), value: total, currency, num_items: checkoutItems.length }, purchaseEid);
     // Split fullName into first/last for enhanced CAPI matching
     const nameParts = fullName.trim().split(/\s+/);
     const firstName = nameParts[0] || undefined;
@@ -948,7 +948,7 @@ export default function CheckoutPage() {
         content_ids: checkoutItems.map((i) => i.productId),
         content_type: "product",
         contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
-        value: profit !== null && profit !== undefined ? profit : total,
+        value: total,
         currency,
         num_items: checkoutItems.length,
         order_id: newOrderId,
