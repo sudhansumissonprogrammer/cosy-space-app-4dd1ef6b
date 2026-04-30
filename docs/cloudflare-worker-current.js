@@ -57,7 +57,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.6.2-checkout-cache-bypass";
+const WORKER_VERSION = "8.6.3-root-cache-rate-fix";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -369,6 +369,25 @@ function getEarlyCacheKey(hostname) {
   return new Request(`https://edge-html/${hostname.toLowerCase()}/`);
 }
 
+function forcePublicHtmlCacheControl(headers, ttl = 3600) {
+  const current = headers.get("Cache-Control") || "";
+  if (!current || /no-store|no-cache|private|max-age=0|must-revalidate/i.test(current)) {
+    headers.set("Cache-Control", `public, max-age=${ttl}, stale-while-revalidate=86400`);
+  }
+}
+
+function makePublicHtmlResponse(response, ttl = 3600) {
+  const headers = new Headers(response.headers);
+  headers.delete("Set-Cookie");
+  headers.delete("set-cookie");
+  forcePublicHtmlCacheControl(headers, ttl);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 function isCheckoutHtmlPath(pathname) {
   return pathname === "/checkout" || pathname.startsWith("/checkout/");
 }
@@ -398,10 +417,10 @@ async function mirrorToCfCache(ctx, request, response) {
     const cloned = response.clone();
     const headers = new Headers(cloned.headers);
     headers.delete("Set-Cookie");
-    // Force a deterministic, public Cache-Control so CF stores it.
-    if (!headers.has("Cache-Control") || /no-store|private/i.test(headers.get("Cache-Control") || "")) {
-      headers.set("Cache-Control", "public, max-age=600, stale-while-revalidate=86400");
-    }
+    headers.delete("set-cookie");
+    // Force a deterministic, public Cache-Control so CF stores it. Lovable origin
+    // sends `no-cache, max-age=0`; leaving that intact makes CF cache rate stay 0%.
+    forcePublicHtmlCacheControl(headers, 3600);
     headers.set("X-Edge-Mirror", "1");
     const toStore = new Response(cloned.body, {
       status: cloned.status,
@@ -3302,6 +3321,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
   // Root-domain (no slug) responses still get cached here.
   const contentType = res.headers.get("content-type") || "";
   if (res.status === 200 && contentType.includes("text/html") && !slug) {
+    res = makePublicHtmlResponse(res, 3600);
     storeInEdgeCache(ctx, hostname, "", res, request);
   }
 
@@ -3995,10 +4015,12 @@ export default {
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          // v7.6.0 Fix A: warm call removed — cold-data path already serves
-          // fully injected HTML; warming again immediately was redundant.
+          // v8.6.3: store cold full HTML too; otherwise first isolate hits keep
+          // returning MISS/no CF metric until the background warmer succeeds.
+          const coldResponse = new Response(injected.html, { status: 200, headers });
+          storeInEdgeCache(ctx, hostname, slug, coldResponse.clone(), request);
           ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
-          return new Response(injected.html, { status: 200, headers });
+          return coldResponse;
         }
 
         // Shell ready but data not — inject a Promise so React awaits it (one skeleton)
@@ -4159,10 +4181,12 @@ export default {
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          // v7.6.0 Fix A: warm call removed — cold-data path already serves
-          // fully injected HTML; warming again immediately was redundant.
+          // v8.6.3: store cold full HTML too; otherwise first isolate hits keep
+          // returning MISS/no CF metric until the background warmer succeeds.
+          const coldResponse = new Response(injected.html, { status: 200, headers });
+          storeInEdgeCache(ctx, hostname, resolvedSlugCD, coldResponse.clone(), request);
           ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
-          return new Response(injected.html, { status: 200, headers });
+          return coldResponse;
         }
 
         if (shellResult?.html) {
