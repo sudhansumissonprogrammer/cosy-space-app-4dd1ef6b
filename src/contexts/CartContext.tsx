@@ -56,6 +56,7 @@ function fireAddToCartAnalytics(
         eventId: eid,
         customData: {
           content_ids: [item.productId],
+          content_name: item.name,
           content_type: "product",
           value: item.price,
           currency,
