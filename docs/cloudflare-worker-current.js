@@ -1,5 +1,14 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v6.3.1 — COLD START OPTIMIZATION + BUG FIXES
+ * SHOPBANAO PRODUCTION ROUTER v8.5.0 — CRON KV WRITE COST CUT
+ *
+ * Changes from v8.4.1:
+ *  v8.5.0 — Cron full-sync now reads ALL store-id/domain KV keys before
+ *           writing and skips unchanged values (was only checking store-info).
+ *           All cron writes now route through kvPutDedup (5-min in-isolate
+ *           dedup) so multi-colo fan-out collapses identical writes.
+ *           all-active-slugs gains read-before-write skip.
+ *           Expected: ~80% reduction in cron-driven KV writes (~2,900/day → ~600/day).
+ *
  *
  * Changes from v6.1.0:
  *  FIX #20 — TTL increases: Shell KV 3600→86400, Cache 600→3600, Mem 10→30min.
