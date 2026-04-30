@@ -144,7 +144,6 @@ Deno.serve(async (req) => {
     }
     // All ShopBanao stores are India-based
     userData.country = [await hashSHA256("in")];
-    }
 
     const event: CAPIEvent = {
       event_name,
