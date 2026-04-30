@@ -3321,6 +3321,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
   // Root-domain (no slug) responses still get cached here.
   const contentType = res.headers.get("content-type") || "";
   if (res.status === 200 && contentType.includes("text/html") && !slug) {
+    res = makePublicHtmlResponse(res, 3600);
     storeInEdgeCache(ctx, hostname, "", res, request);
   }
 
