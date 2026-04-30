@@ -1,5 +1,14 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v6.3.1 — COLD START OPTIMIZATION + BUG FIXES
+ * SHOPBANAO PRODUCTION ROUTER v8.5.0 — CRON KV WRITE COST CUT
+ *
+ * Changes from v8.4.1:
+ *  v8.5.0 — Cron full-sync now reads ALL store-id/domain KV keys before
+ *           writing and skips unchanged values (was only checking store-info).
+ *           All cron writes now route through kvPutDedup (5-min in-isolate
+ *           dedup) so multi-colo fan-out collapses identical writes.
+ *           all-active-slugs gains read-before-write skip.
+ *           Expected: ~80% reduction in cron-driven KV writes (~2,900/day → ~600/day).
+ *
  *
  * Changes from v6.1.0:
  *  FIX #20 — TTL increases: Shell KV 3600→86400, Cache 600→3600, Mem 10→30min.
@@ -4388,53 +4397,90 @@ export default {
               const readPromises = allSlugs.map((slug) => env.STORE_KV.get(`store-info:${slug}`).catch(() => null));
               const existingValues = await Promise.all(readPromises);
 
+              // v8.5.0 cost-cut: route all cron KV writes through kvPutDedup
+              // (5-min in-isolate dedup) so multi-colo cron fan-out collapses
+              // identical writes. store-info already has read-before-write;
+              // also gate the related store-id/domain writes by their own
+              // existing-value check (not just store-info change) so a slug
+              // rename or custom_domain change still propagates correctly.
               const kvWrites = [];
               let kvWriteCount = 0,
                 kvSkipCount = 0;
+
+              // Pre-read store-id keys we'll potentially touch (one extra Promise.all
+              // round-trip but cuts ~80% of writes on steady-state cron ticks).
+              const subDomainKeys = allSlugs.map((slug) => `store-id:${slug}.${ROOT_DOMAIN}`);
+              const customDomainPairs = allStores
+                .filter((s) => s.custom_domain && s.slug)
+                .map((s) => ({
+                  slug: s.slug,
+                  cleanCustom: s.custom_domain.replace(/^www\./, "").toLowerCase().trim(),
+                }));
+              const customIdKeys = customDomainPairs.map((p) => `store-id:${p.cleanCustom}`);
+              const customDomainKeys = customDomainPairs.map((p) => `domain:${p.cleanCustom}`);
+
+              const [existingSubIds, existingCustomIds, existingDomainMaps] = await Promise.all([
+                Promise.all(subDomainKeys.map((k) => env.STORE_KV.get(k).catch(() => null))),
+                Promise.all(customIdKeys.map((k) => env.STORE_KV.get(k).catch(() => null))),
+                Promise.all(customDomainKeys.map((k) => env.STORE_KV.get(k).catch(() => null))),
+              ]);
 
               for (let i = 0; i < allSlugs.length; i++) {
                 const s = allStores.find((st) => st.slug === allSlugs[i]);
                 if (!s) continue;
                 const payload = JSON.stringify({ id: s.id, cd: s.custom_domain || null });
+                let storeChanged = false;
+
                 if (existingValues[i] !== payload) {
                   kvWrites.push(
-                    env.STORE_KV.put(`store-info:${s.slug}`, payload, { expirationTtl: STORE_INFO_KV_TTL }).catch(
-                      () => {},
-                    ),
+                    kvPutDedup(env, `store-info:${s.slug}`, payload, { expirationTtl: STORE_INFO_KV_TTL }),
                   );
+                  storeChanged = true;
+                }
+
+                // store-id:{subDomain} — write only if missing or changed
+                if (existingSubIds[i] !== s.id) {
                   const subDomain = `${s.slug}.${ROOT_DOMAIN}`;
+                  kvWrites.push(kvPutDedup(env, `store-id:${subDomain}`, s.id, { expirationTtl: 86400 }));
+                  storeChanged = true;
+                }
+
+                if (storeChanged) kvWriteCount++;
+                else kvSkipCount++;
+              }
+
+              // Custom domain writes — gated by their own existing-value checks
+              for (let j = 0; j < customDomainPairs.length; j++) {
+                const { slug, cleanCustom } = customDomainPairs[j];
+                const s = allStores.find((st) => st.slug === slug);
+                if (!s) continue;
+                if (existingCustomIds[j] !== s.id) {
+                  kvWrites.push(kvPutDedup(env, `store-id:${cleanCustom}`, s.id, { expirationTtl: 86400 }));
+                }
+                const domainPayload = JSON.stringify({ slug: s.slug });
+                if (existingDomainMaps[j] !== domainPayload) {
                   kvWrites.push(
-                    env.STORE_KV.put(`store-id:${subDomain}`, s.id, { expirationTtl: 86400 }).catch(() => {}),
+                    kvPutDedup(env, `domain:${cleanCustom}`, domainPayload, { expirationTtl: KV_DOMAIN_TTL }),
                   );
-                  if (s.custom_domain) {
-                    const cleanCustom = s.custom_domain
-                      .replace(/^www\./, "")
-                      .toLowerCase()
-                      .trim();
-                    kvWrites.push(
-                      env.STORE_KV.put(`store-id:${cleanCustom}`, s.id, { expirationTtl: 86400 }).catch(() => {}),
-                    );
-                    kvWrites.push(
-                      env.STORE_KV.put(`domain:${cleanCustom}`, JSON.stringify({ slug: s.slug }), {
-                        expirationTtl: KV_DOMAIN_TTL,
-                      }).catch(() => {}),
-                    );
-                  }
-                  kvWriteCount++;
-                } else {
-                  kvSkipCount++;
                 }
               }
 
-              kvWrites.push(
-                env.STORE_KV.put("all-active-slugs", JSON.stringify(allSlugs), { expirationTtl: 3_600 }).catch(() => {}),
-              );
+              // all-active-slugs — read-before-write (skip if unchanged)
+              try {
+                const slugsPayload = JSON.stringify(allSlugs);
+                const existingSlugs = await env.STORE_KV.get("all-active-slugs").catch(() => null);
+                if (existingSlugs !== slugsPayload) {
+                  kvWrites.push(
+                    kvPutDedup(env, "all-active-slugs", slugsPayload, { expirationTtl: 3_600 }),
+                  );
+                }
+              } catch {}
               _slugIndexSet = new Set(allSlugs);
               _slugIndexExpiresAt = Date.now() + 1_800_000;
 
               if (kvWrites.length > 0) await Promise.all(kvWrites);
               console.log(
-                `[keepalive] warmed ${allStores.length} stores — KV: ${kvWriteCount} changed, ${kvSkipCount} skipped`,
+                `[keepalive] warmed ${allStores.length} stores — KV: ${kvWriteCount} changed, ${kvSkipCount} skipped, ${kvWrites.length} total writes`,
               );
             }
 
