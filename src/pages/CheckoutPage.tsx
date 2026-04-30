@@ -949,6 +949,7 @@ export default function CheckoutPage() {
       zipCode: pincode.trim() || undefined,
       customData: {
         content_ids: checkoutItems.map((i) => i.productId),
+        content_name: checkoutItems.map((i) => i.name).join(", "),
         content_type: "product",
         contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
         value: total,
