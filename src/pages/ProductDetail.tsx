@@ -343,6 +343,7 @@ export default function ProductDetail() {
       eventId: eid,
       customData: {
         content_ids: [product.id],
+        content_name: product.name,
         content_type: "product",
         value: Number(eventData.value),
         currency: eventData.currency,

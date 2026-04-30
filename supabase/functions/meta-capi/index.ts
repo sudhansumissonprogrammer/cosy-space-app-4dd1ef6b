@@ -21,6 +21,7 @@ interface CAPIEvent {
     ct?: string[];
     st?: string[];
     zp?: string[];
+    country?: string[];
     client_ip_address?: string;
     client_user_agent?: string;
     fbc?: string;
@@ -141,6 +142,8 @@ Deno.serve(async (req) => {
     if (zip_code) {
       userData.zp = [await hashSHA256(zip_code)];
     }
+    // All ShopBanao stores are India-based
+    userData.country = [await hashSHA256("in")];
 
     const event: CAPIEvent = {
       event_name,
