@@ -107,10 +107,30 @@ async function handleView(req: Request) {
     });
   }
 
+  // Filter out non-page paths so analytics only counts real visitor pageviews.
+  // Drops: internal API beacons (~api/*, /api/*), image proxy (/cf-img),
+  // static assets (.js/.css/images), and worker probes. Without this, ~94%
+  // of page_views rows were beacon noise, polluting visitor graphs and
+  // inflating row counts.
+  const cleanPath = (path || "/").toString().slice(0, 500);
+  const isNonPage =
+    cleanPath.startsWith("/~api/") ||
+    cleanPath.startsWith("/api/") ||
+    cleanPath.startsWith("/cf-img") ||
+    cleanPath.startsWith("/_") ||
+    /\.(js|css|map|png|jpe?g|gif|svg|webp|avif|ico|woff2?|ttf|otf|json|xml|txt)(\?|$)/i.test(cleanPath);
+
+  if (isNonPage) {
+    return new Response(JSON.stringify({ ok: true, dropped: "non_page" }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabase = getSupabase();
   await supabase.from("page_views").insert({
     store_id,
-    path: path || "/",
+    path: cleanPath,
     visitor_ip: ip,
   });
 
