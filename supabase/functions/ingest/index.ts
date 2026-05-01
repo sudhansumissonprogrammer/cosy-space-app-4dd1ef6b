@@ -6,9 +6,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Shared in-memory rate limiter
+// Shared in-memory rate limiter.
+// IMPORTANT: real ad traffic from mobile carriers and Cloudflare often shares
+// IPs across many users (NAT). A low global per-IP limit silently drops real
+// pageviews and undercounts analytics by 70-90%. Keep this generous; it only
+// exists to block obvious abuse, not to throttle real visitors.
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 30;
+const RATE_LIMIT = 600; // ~10/sec sustained per IP+store
 const WINDOW_MS = 60_000;
 
 function isRateLimited(key: string): boolean {
@@ -92,17 +96,20 @@ async function handleView(req: Request) {
     req.headers.get("cf-connecting-ip") ||
     "unknown";
 
-  if (isRateLimited(ip)) {
-    return new Response(JSON.stringify({ error: "Rate limited" }), {
-      status: 429,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   const { store_id, path } = await req.json();
   if (!store_id) {
     return new Response(JSON.stringify({ error: "store_id required" }), {
       status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Rate limit per IP+store so a shared mobile/CF NAT IP visiting one store
+  // doesn't block other stores' analytics. Returns 200 (silent drop) instead
+  // of 429 so the client never retries or logs noise.
+  if (isRateLimited(`${ip}:${store_id}`)) {
+    return new Response(JSON.stringify({ ok: true, dropped: "rate_limited" }), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
