@@ -66,7 +66,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.6.4-bot-cache-poison-fix";
+const WORKER_VERSION = "8.6.5-no-human-ua-forbidden";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -3426,10 +3426,10 @@ export default {
       return cacheableResponse(ctx, request, r, 2592000);
     }
 
-    // v6.9.4 / v8.6.4: Block aggressive crawlers + empty/short UAs, but do NOT
-    // store this 403 in the URL-only edge cache. Otherwise one bot hit to `/`
-    // can make real mobile visitors on the same URL see Forbidden.
-    if (BLOCKED_BOT_REGEX.test(earlyUA) || !earlyUA || earlyUA.length < 10) {
+    // v6.9.4 / v8.6.5: Block only known bad crawler UAs. Do NOT block empty
+    // or short UAs because some mobile apps, proxies, and ISP browsers strip
+    // User-Agent and were incorrectly seeing Forbidden.
+    if (BLOCKED_BOT_REGEX.test(earlyUA)) {
       return new Response("Forbidden", {
         status: 403,
         headers: {
