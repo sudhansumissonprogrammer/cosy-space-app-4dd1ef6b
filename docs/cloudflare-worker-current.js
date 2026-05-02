@@ -66,7 +66,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.6.3-root-cache-rate-fix";
+const WORKER_VERSION = "8.6.4-bot-cache-poison-fix";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -3365,11 +3365,18 @@ export default {
         const shouldBypassPathMirror = isCheckoutHtmlPath(earlyPath);
         const cached = shouldBypassPathMirror ? null : await cache.match(request);
         if (cached) {
+          // v8.6.4: Safety fix — old bot-policy 403s were cached by URL only.
+          // A crawler/empty-UA request to / could poison the normal mobile/IP
+          // response for that same URL. Delete and ignore those legacy entries.
+          if (cached.status === 403 && cached.headers.get("x-blocked-by") === "shopbanao-bot-policy") {
+            ctx.waitUntil(cache.delete(request).catch(() => {}));
+          } else {
           // Re-emit with diagnostic header so we can see the source.
           const hit = new Response(cached.body, cached);
           hit.headers.set("X-Edge-Cache", "HIT-EARLY");
           hit.headers.set("X-Worker-Version", WORKER_VERSION);
           return hit;
+          }
         }
       } catch {}
     }
@@ -3419,17 +3426,18 @@ export default {
       return cacheableResponse(ctx, request, r, 2592000);
     }
 
-    // v6.9.4: Block aggressive crawlers + empty/short UAs (almost always scrapers).
+    // v6.9.4 / v8.6.4: Block aggressive crawlers + empty/short UAs, but do NOT
+    // store this 403 in the URL-only edge cache. Otherwise one bot hit to `/`
+    // can make real mobile visitors on the same URL see Forbidden.
     if (BLOCKED_BOT_REGEX.test(earlyUA) || !earlyUA || earlyUA.length < 10) {
-      const r = new Response("Forbidden", {
+      return new Response("Forbidden", {
         status: 403,
         headers: {
           "content-type": "text/plain",
-          "cache-control": "public, max-age=86400, immutable",
+          "cache-control": "private, no-store",
           "x-blocked-by": "shopbanao-bot-policy",
         },
       });
-      return cacheableResponse(ctx, request, r, 86400);
     }
 
     // v8.1.0 cost-cut: ANY bot request (HTML or API) suppresses KV writes.
