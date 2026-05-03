@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
