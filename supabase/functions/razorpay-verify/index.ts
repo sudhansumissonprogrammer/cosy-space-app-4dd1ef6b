@@ -97,6 +97,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Payment confirmed — fire Meta CAPI Purchase (server-to-server, idempotent).
+    void firePurchaseCapi(supabase, order_id, { source: "razorpay" });
+
     return new Response(
       JSON.stringify({ success: true, payment_id: razorpay_payment_id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
