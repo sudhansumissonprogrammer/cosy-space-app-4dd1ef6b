@@ -110,6 +110,11 @@ export default function CheckoutPage() {
   // Cashfree order id (per-store gateway): kept in a ref so visibility/focus listeners can re-check status.
   // Also persisted to sessionStorage so a mobile-browser tab-reload (after returning from UPI app) can recover.
   const pendingCfOrderRef = useRef<string | null>(null);
+  // Stable Meta tracking signals captured once per checkout session.
+  // Same event_id is sent to place-order (server CAPI) and the browser Pixel —
+  // Meta dedupes Pixel ↔ CAPI Purchase events using this id.
+  const purchaseEventIdRef = useRef<string>(generateEventId());
+  const metaCookiesRef = useRef<{ fbc: string; fbp: string }>(getMetaCookies());
   const CF_PENDING_KEY = `cf_pending_${store.id}`;
   const persistCfPending = (cfId: string | null, order: { id: string; number: string | null; profit: number | null } | null) => {
     try {
