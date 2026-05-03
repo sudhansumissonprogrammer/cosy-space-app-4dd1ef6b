@@ -750,6 +750,15 @@ export default function CheckoutPage() {
         },
         coupon_id: appliedCoupon?.id ?? null,
         abandoned_cart_id: abandonedCartId ?? null,
+        // Meta tracking signals — server stores these on the order row and uses
+        // them for the server-side Purchase CAPI event (with the SAME event_id as
+        // the browser Pixel call below, so Meta dedupes them automatically).
+        meta: {
+          event_id: purchaseEventIdRef.current,
+          fbc: metaCookiesRef.current.fbc || undefined,
+          fbp: metaCookiesRef.current.fbp || undefined,
+          event_source_url: window.location.href,
+        },
       },
     });
 
