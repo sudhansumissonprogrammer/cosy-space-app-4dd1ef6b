@@ -929,35 +929,44 @@ export default function CheckoutPage() {
     // Clean up theme-16 BuyNow modal localStorage after order
     try { localStorage.removeItem("checkout_phone"); localStorage.removeItem("checkout_address"); } catch {}
     window.dispatchEvent(new CustomEvent("order-placed"));
-    const purchaseEid = generateEventId();
-    fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), content_type: "product", content_name: checkoutItems.map((i) => i.name).join(", "), value: total, currency, num_items: checkoutItems.length }, purchaseEid);
-    // Split fullName into first/last for enhanced CAPI matching
-    const nameParts = fullName.trim().split(/\s+/);
-    const firstName = nameParts[0] || undefined;
-    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined;
-    fireMetaCAPI({
-      storeId: store.id,
-      eventName: "Purchase",
-      eventId: purchaseEid,
-      userEmail: email.trim() || undefined,
-      userPhone: normalizePhone(phone) || undefined,
-      externalId: customer?.id || undefined,
-      firstName,
-      lastName,
-      city: city.trim() || undefined,
-      state: state.trim() || undefined,
-      zipCode: pincode.trim() || undefined,
-      customData: {
-        content_ids: checkoutItems.map((i) => i.productId),
-        content_name: checkoutItems.map((i) => i.name).join(", "),
-        content_type: "product",
-        contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
-        value: total,
-        currency,
-        num_items: checkoutItems.length,
-        order_id: newOrderId,
-      },
-    });
+    // Dedup guard: fire Purchase (Pixel + CAPI) at most once per order_id.
+    // Prevents bot/refresh-triggered duplicate Purchase events that Meta flags as
+    // "scaled conversion abuse" — a major ban-risk signal for new ad accounts.
+    const purchaseDedupKey = `meta_purchase_fired_${newOrderId}`;
+    let alreadyFired = false;
+    try { alreadyFired = sessionStorage.getItem(purchaseDedupKey) === "1"; } catch {}
+    if (!alreadyFired) {
+      try { sessionStorage.setItem(purchaseDedupKey, "1"); } catch {}
+      const purchaseEid = generateEventId();
+      fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), content_type: "product", content_name: checkoutItems.map((i) => i.name).join(", "), value: total, currency, num_items: checkoutItems.length }, purchaseEid);
+      // Split fullName into first/last for enhanced CAPI matching
+      const nameParts = fullName.trim().split(/\s+/);
+      const firstName = nameParts[0] || undefined;
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined;
+      fireMetaCAPI({
+        storeId: store.id,
+        eventName: "Purchase",
+        eventId: purchaseEid,
+        userEmail: email.trim() || undefined,
+        userPhone: normalizePhone(phone) || undefined,
+        externalId: customer?.id || newOrderId, // ensure every Purchase has an external_id (hashed server-side)
+        firstName,
+        lastName,
+        city: city.trim() || undefined,
+        state: state.trim() || undefined,
+        zipCode: pincode.trim() || undefined,
+        customData: {
+          content_ids: checkoutItems.map((i) => i.productId),
+          content_name: checkoutItems.map((i) => i.name).join(", "),
+          content_type: "product",
+          contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+          value: total,
+          currency,
+          num_items: checkoutItems.length,
+          order_id: newOrderId,
+        },
+      });
+    }
     // Fire all post-order tasks in parallel (non-blocking)
     // Auto-login (createGuestAccount) is awaited inside finalizeOrder via the effect below
     if (!customer) { void createGuestAccount(newOrderId); } else saveAddressToAccount();
