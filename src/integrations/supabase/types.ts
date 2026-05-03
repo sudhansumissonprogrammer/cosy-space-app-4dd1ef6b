@@ -621,6 +621,10 @@ export type Database = {
         Row: {
           advance_paid: number
           balance_due: number
+          buyer_fbc: string | null
+          buyer_fbp: string | null
+          buyer_ip: string | null
+          buyer_user_agent: string | null
           checkout_token: string | null
           city: string | null
           created_at: string
@@ -629,6 +633,8 @@ export type Database = {
           customer_name: string | null
           customer_phone: string | null
           id: string
+          meta_event_id: string | null
+          meta_purchase_fired_at: string | null
           notes: string | null
           order_number: number
           payment_method: string
@@ -647,6 +653,10 @@ export type Database = {
         Insert: {
           advance_paid?: number
           balance_due?: number
+          buyer_fbc?: string | null
+          buyer_fbp?: string | null
+          buyer_ip?: string | null
+          buyer_user_agent?: string | null
           checkout_token?: string | null
           city?: string | null
           created_at?: string
@@ -655,6 +665,8 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           id?: string
+          meta_event_id?: string | null
+          meta_purchase_fired_at?: string | null
           notes?: string | null
           order_number?: number
           payment_method?: string
@@ -673,6 +685,10 @@ export type Database = {
         Update: {
           advance_paid?: number
           balance_due?: number
+          buyer_fbc?: string | null
+          buyer_fbp?: string | null
+          buyer_ip?: string | null
+          buyer_user_agent?: string | null
           checkout_token?: string | null
           city?: string | null
           created_at?: string
@@ -681,6 +697,8 @@ export type Database = {
           customer_name?: string | null
           customer_phone?: string | null
           id?: string
+          meta_event_id?: string | null
+          meta_purchase_fired_at?: string | null
           notes?: string | null
           order_number?: number
           payment_method?: string
