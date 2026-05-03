@@ -325,6 +325,17 @@ Deno.serve(async (req) => {
       ? `#${1000 + orderRow.order_number}`
       : `#${createdOrder.id.slice(0, 8).toUpperCase()}`;
 
+    // For COD orders the order is "complete" the moment it's placed — fire Purchase CAPI
+    // server-to-server now (matches Shopify default behaviour). Razorpay/Cashfree orders
+    // get their Purchase fired from the verify/webhook step instead. Fire-and-forget:
+    // helper is idempotent and never throws, so a failure here can't break checkout.
+    if (order.payment_method === "cod") {
+      void firePurchaseCapi(supabase, createdOrder.id, {
+        source: "cod",
+        eventSourceUrl: meta?.event_source_url,
+      });
+    }
+
     return new Response(JSON.stringify({ success: true, order_id: createdOrder.id, order_number: orderNumber, profit: totalProfit }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
