@@ -184,6 +184,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Capture real buyer signals for Meta CAPI (forwarded by Cloudflare/Vercel/SB edge).
+    // We store these on the order row so the Purchase event sent to Meta carries the
+    // visitor's real IP + UA — never the edge runtime's datacenter IP.
+    const buyerIp =
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      null;
+    const buyerUa = req.headers.get("user-agent") || null;
+
     const { data: createdOrder, error: orderErr } = await supabase
       .from("orders")
       .insert({
@@ -204,6 +213,11 @@ Deno.serve(async (req) => {
         advance_paid: advancePaid,
         balance_due: balanceDue,
         checkout_token: checkout_token || null,
+        buyer_ip: buyerIp,
+        buyer_user_agent: buyerUa,
+        buyer_fbc: meta?.fbc || null,
+        buyer_fbp: meta?.fbp || null,
+        meta_event_id: meta?.event_id || null,
       })
       .select("id")
       .single();
