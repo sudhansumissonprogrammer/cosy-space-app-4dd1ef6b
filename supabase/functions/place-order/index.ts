@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
       coupon_id,
       abandoned_cart_id,
       checkout_token,
+      meta,
     }: {
       store_id: string;
       order: {
@@ -87,6 +88,13 @@ Deno.serve(async (req) => {
       coupon_id?: string | null;
       abandoned_cart_id?: string | null;
       checkout_token?: string | null;
+      // Meta tracking signals captured from the browser. Used for safe CAPI Purchase reporting.
+      meta?: {
+        event_id?: string;
+        fbc?: string;
+        fbp?: string;
+        event_source_url?: string;
+      };
     } = await req.json();
 
     if (!store_id || !order || !Array.isArray(items) || items.length === 0) {
