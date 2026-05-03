@@ -106,16 +106,24 @@ Deno.serve(async (req) => {
     const pixelId = store.facebook_pixel_id;
     const accessToken = store.meta_access_token;
 
-    // Extract first IP from x-forwarded-for (rest are proxy/CDN IPs)
-    const rawForwardedFor = req.headers.get("x-forwarded-for");
-    const firstIp = rawForwardedFor ? rawForwardedFor.split(",")[0].trim() : undefined;
+    // IMPORTANT: Do NOT derive client_ip_address from the edge runtime.
+    // Supabase/Deno edge IPs are datacenter IPs (US/EU) that mismatch the visitor's
+    // User-Agent locale. Meta's fraud models flag this as bot/scraped traffic, which
+    // contributed to ad-account bans on the platform. Only use an IP that the caller
+    // explicitly passed in (e.g. cf-connecting-ip forwarded by a Cloudflare Worker
+    // running on the store's own domain). Otherwise omit the field — Meta accepts
+    // events without it and will rely on fbp/fbc/email/phone for matching.
+    const cfIp = req.headers.get("cf-connecting-ip") || undefined;
+    const realIp = client_ip || cfIp || undefined;
 
     const userData: CAPIEvent["user_data"] = {
-      client_ip_address: client_ip || firstIp || undefined,
       client_user_agent: user_agent || req.headers.get("user-agent") || undefined,
       fbc: fbc || undefined,
       fbp: fbp || undefined,
     };
+    if (realIp) {
+      userData.client_ip_address = realIp;
+    }
 
     if (user_email) {
       userData.em = [await hashSHA256(user_email)];
