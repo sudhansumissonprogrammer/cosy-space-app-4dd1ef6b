@@ -18,7 +18,7 @@ import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
-import { fireMetaCAPI } from "@/lib/metaCapi";
+import { fireMetaCAPI, getMetaCookies } from "@/lib/metaCapi";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import { estimateDelivery, type DeliveryEstimate } from "@/lib/deliveryEstimate";
@@ -110,6 +110,11 @@ export default function CheckoutPage() {
   // Cashfree order id (per-store gateway): kept in a ref so visibility/focus listeners can re-check status.
   // Also persisted to sessionStorage so a mobile-browser tab-reload (after returning from UPI app) can recover.
   const pendingCfOrderRef = useRef<string | null>(null);
+  // Stable Meta tracking signals captured once per checkout session.
+  // Same event_id is sent to place-order (server CAPI) and the browser Pixel —
+  // Meta dedupes Pixel ↔ CAPI Purchase events using this id.
+  const purchaseEventIdRef = useRef<string>(generateEventId());
+  const metaCookiesRef = useRef<{ fbc: string; fbp: string }>(getMetaCookies());
   const CF_PENDING_KEY = `cf_pending_${store.id}`;
   const persistCfPending = (cfId: string | null, order: { id: string; number: string | null; profit: number | null } | null) => {
     try {
@@ -750,6 +755,15 @@ export default function CheckoutPage() {
         },
         coupon_id: appliedCoupon?.id ?? null,
         abandoned_cart_id: abandonedCartId ?? null,
+        // Meta tracking signals — server stores these on the order row and uses
+        // them for the server-side Purchase CAPI event (with the SAME event_id as
+        // the browser Pixel call below, so Meta dedupes them automatically).
+        meta: {
+          event_id: purchaseEventIdRef.current,
+          fbc: metaCookiesRef.current.fbc || undefined,
+          fbp: metaCookiesRef.current.fbp || undefined,
+          event_source_url: window.location.href,
+        },
       },
     });
 
@@ -929,44 +943,35 @@ export default function CheckoutPage() {
     // Clean up theme-16 BuyNow modal localStorage after order
     try { localStorage.removeItem("checkout_phone"); localStorage.removeItem("checkout_address"); } catch {}
     window.dispatchEvent(new CustomEvent("order-placed"));
-    // Dedup guard: fire Purchase (Pixel + CAPI) at most once per order_id.
-    // Prevents bot/refresh-triggered duplicate Purchase events that Meta flags as
-    // "scaled conversion abuse" — a major ban-risk signal for new ad accounts.
+    // Browser Pixel Purchase fires once per order (sessionStorage guard).
+    // Server-side CAPI Purchase is fired by the edge functions:
+    //   - COD             → place-order
+    //   - Razorpay        → razorpay-verify
+    //   - Cashfree        → cashfree-webhook
+    // All four use the SAME event_id (purchaseEventIdRef) so Meta dedupes Pixel↔CAPI.
+    // Server side has its own DB-stamp idempotency (orders.meta_purchase_fired_at)
+    // so refresh / webhook retries / multi-gateway races never double-fire.
     const purchaseDedupKey = `meta_purchase_fired_${newOrderId}`;
     let alreadyFired = false;
     try { alreadyFired = sessionStorage.getItem(purchaseDedupKey) === "1"; } catch {}
     if (!alreadyFired) {
       try { sessionStorage.setItem(purchaseDedupKey, "1"); } catch {}
-      const purchaseEid = generateEventId();
-      fbPixelTrack("Purchase", { content_ids: checkoutItems.map((i) => i.productId), content_type: "product", content_name: checkoutItems.map((i) => i.name).join(", "), value: total, currency, num_items: checkoutItems.length }, purchaseEid);
-      // Split fullName into first/last for enhanced CAPI matching
-      const nameParts = fullName.trim().split(/\s+/);
-      const firstName = nameParts[0] || undefined;
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined;
-      fireMetaCAPI({
-        storeId: store.id,
-        eventName: "Purchase",
-        eventId: purchaseEid,
-        userEmail: email.trim() || undefined,
-        userPhone: normalizePhone(phone) || undefined,
-        externalId: customer?.id || newOrderId, // ensure every Purchase has an external_id (hashed server-side)
-        firstName,
-        lastName,
-        city: city.trim() || undefined,
-        state: state.trim() || undefined,
-        zipCode: pincode.trim() || undefined,
-        customData: {
+      fbPixelTrack(
+        "Purchase",
+        {
           content_ids: checkoutItems.map((i) => i.productId),
-          content_name: checkoutItems.map((i) => i.name).join(", "),
           content_type: "product",
-          contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+          content_name: checkoutItems.map((i) => i.name).join(", "),
           value: total,
           currency,
           num_items: checkoutItems.length,
-          order_id: newOrderId,
         },
-      });
+        purchaseEventIdRef.current,
+      );
     }
+    // Suppress unused-import warning — fireMetaCAPI is still used elsewhere on this page
+    // (InitiateCheckout, AddToCart). Keep import.
+    void fireMetaCAPI;
     // Fire all post-order tasks in parallel (non-blocking)
     // Auto-login (createGuestAccount) is awaited inside finalizeOrder via the effect below
     if (!customer) { void createGuestAccount(newOrderId); } else saveAddressToAccount();

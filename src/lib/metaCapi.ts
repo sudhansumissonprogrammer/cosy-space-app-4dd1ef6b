@@ -1,9 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Get Meta cookie values (fbc, fbp) for deduplication
+ * Get Meta cookie values (fbc, fbp) for deduplication.
+ * Exported so the checkout flow can forward them to the place-order edge function,
+ * which stores them on the order row and uses them for server-side CAPI Purchase.
  */
-function getMetaCookies() {
+export function getMetaCookies() {
   const cookies = document.cookie.split("; ");
   let fbc = "";
   let fbp = "";

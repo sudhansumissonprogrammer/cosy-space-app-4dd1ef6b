@@ -8,6 +8,7 @@
 //
 // This is a public endpoint (verify_jwt = false) — security comes from HMAC verification.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -109,6 +110,9 @@ Deno.serve(async (req) => {
 
       if (eventType === "PAYMENT_SUCCESS_WEBHOOK") {
         if (orderRow.status === "confirmed" || orderRow.status === "partially_paid") {
+          // Already marked paid, but still try CAPI in case the previous attempt failed —
+          // helper is idempotent (DB stamp on orders.meta_purchase_fired_at).
+          void firePurchaseCapi(supabase, localOrderId, { source: "cashfree" });
           return new Response("OK (already paid)", { status: 200 });
         }
         const isPartial = orderRow.payment_type === "partial";
@@ -120,6 +124,8 @@ Deno.serve(async (req) => {
             notes: `Cashfree Order ID: ${cfOrderId}`,
           })
           .eq("id", localOrderId);
+        // Payment confirmed — fire Meta CAPI Purchase (idempotent, fire-and-forget).
+        void firePurchaseCapi(supabase, localOrderId, { source: "cashfree" });
       } else if (eventType === "PAYMENT_FAILED_WEBHOOK" || eventType === "PAYMENT_USER_DROPPED_WEBHOOK") {
         // Don't overwrite a confirmed order — only mark fresh failures
         if (orderRow.status === "pending") {

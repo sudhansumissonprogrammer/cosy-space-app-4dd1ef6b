@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -58,6 +59,7 @@ Deno.serve(async (req) => {
       coupon_id,
       abandoned_cart_id,
       checkout_token,
+      meta,
     }: {
       store_id: string;
       order: {
@@ -86,6 +88,13 @@ Deno.serve(async (req) => {
       coupon_id?: string | null;
       abandoned_cart_id?: string | null;
       checkout_token?: string | null;
+      // Meta tracking signals captured from the browser. Used for safe CAPI Purchase reporting.
+      meta?: {
+        event_id?: string;
+        fbc?: string;
+        fbp?: string;
+        event_source_url?: string;
+      };
     } = await req.json();
 
     if (!store_id || !order || !Array.isArray(items) || items.length === 0) {
@@ -175,6 +184,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Capture real buyer signals for Meta CAPI (forwarded by Cloudflare/Vercel/SB edge).
+    // We store these on the order row so the Purchase event sent to Meta carries the
+    // visitor's real IP + UA — never the edge runtime's datacenter IP.
+    const buyerIp =
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      null;
+    const buyerUa = req.headers.get("user-agent") || null;
+
     const { data: createdOrder, error: orderErr } = await supabase
       .from("orders")
       .insert({
@@ -195,6 +213,11 @@ Deno.serve(async (req) => {
         advance_paid: advancePaid,
         balance_due: balanceDue,
         checkout_token: checkout_token || null,
+        buyer_ip: buyerIp,
+        buyer_user_agent: buyerUa,
+        buyer_fbc: meta?.fbc || null,
+        buyer_fbp: meta?.fbp || null,
+        meta_event_id: meta?.event_id || null,
       })
       .select("id")
       .single();
@@ -301,6 +324,17 @@ Deno.serve(async (req) => {
     const orderNumber = orderRow?.order_number
       ? `#${1000 + orderRow.order_number}`
       : `#${createdOrder.id.slice(0, 8).toUpperCase()}`;
+
+    // For COD orders the order is "complete" the moment it's placed — fire Purchase CAPI
+    // server-to-server now (matches Shopify default behaviour). Razorpay/Cashfree orders
+    // get their Purchase fired from the verify/webhook step instead. Fire-and-forget:
+    // helper is idempotent and never throws, so a failure here can't break checkout.
+    if (order.payment_method === "cod") {
+      void firePurchaseCapi(supabase, createdOrder.id, {
+        source: "cod",
+        eventSourceUrl: meta?.event_source_url,
+      });
+    }
 
     return new Response(JSON.stringify({ success: true, order_id: createdOrder.id, order_number: orderNumber, profit: totalProfit }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
