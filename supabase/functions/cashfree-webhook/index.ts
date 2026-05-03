@@ -8,6 +8,7 @@
 //
 // This is a public endpoint (verify_jwt = false) — security comes from HMAC verification.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
