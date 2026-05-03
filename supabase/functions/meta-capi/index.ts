@@ -150,8 +150,12 @@ Deno.serve(async (req) => {
     if (zip_code) {
       userData.zp = [await hashSHA256(zip_code)];
     }
-    // All ShopBanao stores are India-based
-    userData.country = [await hashSHA256("in")];
+    // Only set country when we have a real address signal (city/state/zip).
+    // Hardcoding country=in on every event (incl. PageView/AddToCart with no other
+    // user data) creates an inconsistent fingerprint that Meta's fraud models flag.
+    if (city || state || zip_code) {
+      userData.country = [await hashSHA256("in")];
+    }
 
     const event: CAPIEvent = {
       event_name,
