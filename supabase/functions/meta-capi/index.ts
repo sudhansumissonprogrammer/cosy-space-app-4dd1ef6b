@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
       user_email,
       user_phone,
       user_agent,
-      client_ip,
+      // client_ip intentionally ignored — see zero-ban policy below
       fbc,
       fbp,
       external_id,
