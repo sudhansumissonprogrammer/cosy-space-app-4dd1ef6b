@@ -41,9 +41,18 @@ interface CAPIEvent {
   action_source: string;
 }
 
+// Normalization helpers per Meta CAPI spec.
+// https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/customer-information-parameters
+// Mismatched normalization = the hash on our side ≠ Meta's hash = no match = low EMQ.
+const normEmail = (v: string) => v.trim().toLowerCase();
+const normName = (v: string) => v.trim().toLowerCase().replace(/[^a-zà-ÿ\u0080-\uffff]/g, "");
+const normCityState = (v: string) => v.trim().toLowerCase().replace(/[^a-z]/g, "");
+const normZip = (v: string) => v.trim().toLowerCase().replace(/\s+/g, "");
+const normCountry = (v: string) => v.trim().toLowerCase().slice(0, 2);
+
 async function hashSHA256(value: string): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(value.trim().toLowerCase());
+  const data = encoder.encode(value);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
