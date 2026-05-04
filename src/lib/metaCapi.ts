@@ -82,13 +82,25 @@ export function fireMetaCAPI(params: CAPIEventParams) {
   const { fbc, fbp } = getMetaCookies();
 
   // Fire and forget — don't block the UI
+  // Sanitize event_source_url — strip ALL query params and fragments.
+  // URL params can contain PII (?email=, ?phone=, ?coupon=) or junk (?fbclid, utm_*)
+  // which Meta's URL hygiene rules forbid in event_source_url and use as a fraud signal.
+  // Sending only origin+pathname is the safe canonical form Meta recommends.
+  let safeUrl = "";
+  try {
+    const u = new URL(window.location.href);
+    safeUrl = `${u.origin}${u.pathname}`;
+  } catch {
+    safeUrl = window.location.origin;
+  }
+
   supabase.functions
     .invoke("meta-capi", {
       body: {
         store_id: params.storeId,
         event_name: params.eventName,
         event_id: params.eventId || undefined,
-        event_source_url: window.location.href,
+        event_source_url: safeUrl,
         user_email: params.userEmail || undefined,
         user_phone: params.userPhone || undefined,
         user_agent: navigator.userAgent,
