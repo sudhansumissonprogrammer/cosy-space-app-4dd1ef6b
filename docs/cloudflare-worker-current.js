@@ -2202,7 +2202,7 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
   // v7.7.0 Fix 2: Skip _getInlineProductsOrNull if caller already fetched it.
   // FIX #4: Batch KV reads in one Promise.all
   const [shellResult, kvBatch, cachedHeadMem, inlineProducts] = await Promise.all([
-    getSpaShell(request, ctx, env),
+    getNavigationSpaShell(request, ctx, env),
     _batchKvRead(slug, env),
     _getCachedPrebuiltHead(env),
     prefetchedInlineProducts !== null
@@ -2234,7 +2234,7 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
   newHeaders.set("Content-Type", "text/html; charset=utf-8");
   // v7.4.0 #1: Streaming HTML TTL bumped 1800→3600s (1h). Storefront data
   // is injected inline; merchants see edits within 1h or via purge button.
-  newHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+  setNoStoreHtmlHeaders(newHeaders);
   newHeaders.set("X-Store-Slug", slug);
   newHeaders.set("X-Shell-Source", shellResult.source);
   newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
@@ -2316,7 +2316,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     // v7.4.0 #1: Warm HTML max-age bumped 3600→7200s (2h) with SWR=7d.
     // Cache hit rate jumps from ~95% → ~98%, cutting Worker invocations
     // for repeat anonymous visitors.
-    fullHeaders.set("Cache-Control", "public, max-age=7200, stale-while-revalidate=604800");
+    setNoStoreHtmlHeaders(fullHeaders);
     // v7.3.0 #5: ETag for 304 Not Modified responses on repeat visits.
     const etag = `W/"${slug}-${Date.now().toString(36)}"`;
     fullHeaders.set("ETag", etag);
