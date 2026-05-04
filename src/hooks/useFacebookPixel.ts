@@ -124,7 +124,9 @@ export function generateEventId(): string {
 
 /** Standalone helper — call from anywhere (e.g. CartContext) */
 export function fbPixelTrack(eventName: string, params?: Record<string, any>, eventId?: string) {
-  if (typeof window !== "undefined" && typeof window.fbq === "function") {
+  if (typeof window === "undefined") return;
+  if (isNonProductionHost()) return;
+  if (typeof window.fbq === "function") {
     if (eventId) {
       window.fbq("track", eventName, params, { eventID: eventId });
     } else {
