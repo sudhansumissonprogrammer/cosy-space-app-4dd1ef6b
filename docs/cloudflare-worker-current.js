@@ -1,12 +1,11 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.6.6 — FRESH SHELL ORIGIN FETCH
+ * SHOPBANAO PRODUCTION ROUTER v8.7.0 — PUBLISH-FRESH HTML
  *
- * Changes from v8.6.5:
- *  v8.6.6 — SPA shell origin fetch no longer uses Cloudflare's opaque
- *           24h fetch() cache. That cache could survive /api/purge-shell
- *           and re-save old index.html with stale JS chunk names after a
- *           Lovable publish. Worker Cache/KV still cache the shell; purge now
- *           guarantees the next origin fetch sees the latest deployment.
+ * Changes from v8.6.6:
+ *  v8.7.0 — Storefront HTML now fetches the latest Lovable shell on every
+ *           human navigation and sends no-store HTML headers. This prevents
+ *           Cloudflare Worker Cache/KV/in-memory/browser HTML from pinning old
+ *           Vite JS chunk names after a Lovable Publish → Update.
  *
  * Changes from v8.4.1:
  *  v8.5.0 — Cron full-sync now reads ALL store-id/domain KV keys before
@@ -73,7 +72,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.6.6-fresh-shell-origin-fetch";
+const WORKER_VERSION = "8.7.0-publish-fresh-html";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -143,7 +142,7 @@ const WORKER_VERSION = "8.6.6-fresh-shell-origin-fetch";
    ============================================================ */
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
-const HTML_CACHE_SCHEMA_VERSION = "html-v2-2026-05-04";
+const HTML_CACHE_SCHEMA_VERSION = "html-v3-publish-fresh-2026-05-04";
 
 const SUPABASE_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
 const SUPABASE_ANON_KEY =
