@@ -1,5 +1,12 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.5.0 — CRON KV WRITE COST CUT
+ * SHOPBANAO PRODUCTION ROUTER v8.6.6 — FRESH SHELL ORIGIN FETCH
+ *
+ * Changes from v8.6.5:
+ *  v8.6.6 — SPA shell origin fetch no longer uses Cloudflare's opaque
+ *           24h fetch() cache. That cache could survive /api/purge-shell
+ *           and re-save old index.html with stale JS chunk names after a
+ *           Lovable publish. Worker Cache/KV still cache the shell; purge now
+ *           guarantees the next origin fetch sees the latest deployment.
  *
  * Changes from v8.4.1:
  *  v8.5.0 — Cron full-sync now reads ALL store-id/domain KV keys before
@@ -66,7 +73,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.6.5-no-human-ua-forbidden";
+const WORKER_VERSION = "8.6.6-fresh-shell-origin-fetch";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -136,6 +143,7 @@ const WORKER_VERSION = "8.6.5-no-human-ua-forbidden";
    ============================================================ */
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
+const HTML_CACHE_SCHEMA_VERSION = "html-v2-2026-05-04";
 
 const SUPABASE_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
 const SUPABASE_ANON_KEY =
@@ -375,7 +383,11 @@ function buildSubdomainUrl(slug, path, search = "") {
 
 // Normalized early-cache key: ALL SPA routes share ONE entry per hostname.
 function getEarlyCacheKey(hostname) {
-  return new Request(`https://edge-html/${hostname.toLowerCase()}/`);
+  return new Request(`https://edge-html/${HTML_CACHE_SCHEMA_VERSION}/${hostname.toLowerCase()}/`);
+}
+
+function isHtmlNavigationPath(pathname) {
+  return !pathname.startsWith("/api/") && !pathname.startsWith("/assets/") && !pathname.includes(".");
 }
 
 function forcePublicHtmlCacheControl(headers, ttl = 3600) {
@@ -947,10 +959,12 @@ async function getSpaShell(request, ctx, env) {
 }
 
 async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
-  // v8.2.0 Fix #1: Bypass proxyToOrigin's cacheTtl:0 — fetch the shell
-  // DIRECTLY with cacheEverything:true so Cloudflare's global edge caches
-  // the Lovable origin response for 24h. KV is per-colo; this makes the
-  // shell shared across ALL 300+ Cloudflare PoPs → ~60% fewer origin hits.
+  // v8.6.6: Fetch the deployment shell fresh from origin. Do NOT use
+  // `cf.cacheEverything` here: Cloudflare's implicit fetch cache is not
+  // addressable by our `/api/purge-shell` handler, so it can keep returning
+  // old index.html with stale JS chunk names after a Lovable publish. The
+  // explicit Worker Cache + KV writes below still cache the fresh shell and
+  // are fully purgeable.
   const shellUrl = new URL(request.url);
   shellUrl.hostname = ORIGIN_HOST;
   const shellHeaders = new Headers(request.headers);
@@ -965,11 +979,7 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
       method: "GET",
       headers: shellHeaders,
       signal: controller.signal,
-      cf: {
-        cacheEverything: true,
-        cacheTtl: 86400,                 // 24h success TTL at edge
-        cacheTtlByStatus: { "200-299": 86400, "404": 60, "500-599": 0 },
-      },
+      cf: { cacheTtl: 0, cacheEverything: false },
     });
     clearTimeout(timeout);
   } catch {
@@ -3362,7 +3372,7 @@ export default {
        cache rate from 42% → 95%+. Only GET requests are checked. */
     if (earlyMethod === "GET") {
       try {
-        const shouldBypassPathMirror = isCheckoutHtmlPath(earlyPath);
+        const shouldBypassPathMirror = isHtmlNavigationPath(earlyPath);
         const cached = shouldBypassPathMirror ? null : await cache.match(request);
         if (cached) {
           // v8.6.4: Safety fix — old bot-policy 403s were cached by URL only.
