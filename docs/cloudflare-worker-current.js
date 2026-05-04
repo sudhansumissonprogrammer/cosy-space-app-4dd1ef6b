@@ -143,6 +143,7 @@ const WORKER_VERSION = "8.6.6-fresh-shell-origin-fetch";
    ============================================================ */
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
+const HTML_CACHE_SCHEMA_VERSION = "html-v2-2026-05-04";
 
 const SUPABASE_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
 const SUPABASE_ANON_KEY =
@@ -382,7 +383,11 @@ function buildSubdomainUrl(slug, path, search = "") {
 
 // Normalized early-cache key: ALL SPA routes share ONE entry per hostname.
 function getEarlyCacheKey(hostname) {
-  return new Request(`https://edge-html/${hostname.toLowerCase()}/`);
+  return new Request(`https://edge-html/${HTML_CACHE_SCHEMA_VERSION}/${hostname.toLowerCase()}/`);
+}
+
+function isHtmlNavigationPath(pathname) {
+  return !pathname.startsWith("/api/") && !pathname.startsWith("/assets/") && !pathname.includes(".");
 }
 
 function forcePublicHtmlCacheControl(headers, ttl = 3600) {
