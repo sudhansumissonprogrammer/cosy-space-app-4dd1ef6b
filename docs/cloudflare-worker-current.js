@@ -3888,7 +3888,7 @@ export default {
         return handlePurgeStore(request, url, ctx, env, hostname);
       if (url.pathname === "/api/purge-products" && request.method === "POST")
         return handlePurgeProducts(request, url, ctx, env);
-      if (url.pathname === "/api/purge-shell" && request.method === "POST")
+      if (url.pathname === "/api/purge-shell" && (request.method === "POST" || request.method === "GET"))
         return handlePurgeShell(request, url, ctx, env, hostname);
       if (url.pathname === "/api/prewarm") {
         if (request.method === "OPTIONS") return addCorsHeaders(new Response(null, { status: 204 }), "preflight");
