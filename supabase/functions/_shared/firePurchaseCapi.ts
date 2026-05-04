@@ -64,7 +64,7 @@ export async function firePurchaseCapi(
     // flag the account for inflated conversion data. Only fire on real conversions.
     const status = String(order.status || "").toLowerCase();
     const PAID_STATUSES = new Set([
-      "paid", "confirmed", "processing", "shipped", "delivered", "completed",
+      "paid", "confirmed", "partially_paid", "processing", "shipped", "delivered", "completed",
     ]);
     if (!PAID_STATUSES.has(status)) {
       console.log(`[capi:${opts.source}] skip — status=${status}`, orderId);
