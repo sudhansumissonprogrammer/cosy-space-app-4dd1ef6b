@@ -73,16 +73,19 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
       setAddedIds((prev) => new Set(prev).add(product.id));
       toast.success(`${product.name} added to your order!`);
 
-      // Fire CAPI event
+      // Fire CAPI as AddToCart (NOT Purchase) — this is an upsell add to an
+      // already-completed order, not a new purchase. Firing a second Purchase
+      // with no event_id / no PII would look like duplicate/inflated conversions
+      // to Meta's fraud models and risks ad-account quality drops.
       fireMetaCAPI({
         storeId,
-        eventName: "Purchase",
+        eventName: "AddToCart",
         customData: {
           content_ids: [product.id],
+          content_name: product.name,
           content_type: "product",
           value: Number(price),
           currency,
-          order_id: orderId,
         },
       });
     } catch (err) {
