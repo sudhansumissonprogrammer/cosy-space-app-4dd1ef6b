@@ -4205,7 +4205,7 @@ export default {
         // v6.7.0: Same fix as subdomain path — eliminate self-call subrequest.
         const COLD_DATA_DEADLINE = 1300;
         const [shellResult, prefetchResult, inlineProductsCdCold] = await Promise.all([
-          getSpaShell(request, ctx, env),
+          getNavigationSpaShell(request, ctx, env),
           prefetchStorefrontDataWithDeadline(resolvedSlugCD, ctx, env, COLD_DATA_DEADLINE).catch(() => ({ data: null, source: "none" })),
           _getInlineProductsOrNull(hostname, resolvedSlugCD, env, ctx),
         ]);
@@ -4214,7 +4214,7 @@ export default {
           const injected = injectIntoHtml(shellResult.html, resolvedSlugCD, prefetchResult.data, prefetchResult.source, inlineProductsCdCold);
           const headers = new Headers();
           headers.set("Content-Type", "text/html; charset=utf-8");
-          headers.set("Cache-Control", "public, max-age=600, stale-while-revalidate=1800");
+          setNoStoreHtmlHeaders(headers);
           headers.set("X-Store-Slug", resolvedSlugCD);
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
@@ -4298,7 +4298,7 @@ export default {
 
       const responseHeadersCD = new Headers();
       responseHeadersCD.set("Content-Type", "text/html; charset=utf-8");
-      responseHeadersCD.set("Cache-Control", "public, max-age=600, stale-while-revalidate=1800");
+      setNoStoreHtmlHeaders(responseHeadersCD);
       responseHeadersCD.set("X-Store-Slug", resolvedSlug);
       responseHeadersCD.set("X-Shell-Source", shellResultCD.source);
       responseHeadersCD.set("X-Cache-Timestamp", new Date().toISOString());
