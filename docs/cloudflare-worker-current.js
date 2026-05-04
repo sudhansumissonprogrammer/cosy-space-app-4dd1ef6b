@@ -3663,7 +3663,7 @@ export default {
     const ua = request.headers.get("User-Agent") || "";
     const isBot = BOT_UA_REGEX.test(ua);
 
-    if (isCacheableRequest && !isBot) {
+    if (isCacheableRequest && !isBot && request.headers.get("x-sf-allow-html-cache") === "1") {
       const earlyKey = getEarlyCacheKey(hostname);
       const earlyHit = await cache.match(earlyKey);
 
@@ -4038,7 +4038,7 @@ export default {
         // mysterious "Unknown 557ms" subrequest doubling request counts.
         const COLD_DATA_DEADLINE = 1300;
         const [shellResult, prefetchResult, inlineProductsCold] = await Promise.all([
-          getSpaShell(request, ctx, env),
+          getNavigationSpaShell(request, ctx, env),
           prefetchStorefrontDataWithDeadline(slug, ctx, env, COLD_DATA_DEADLINE).catch(() => ({ data: null, source: "none" })),
           _getInlineProductsOrNull(hostname, slug, env, ctx),
         ]);
@@ -4088,7 +4088,7 @@ export default {
 
       // FIX #4: Batch KV read + shell in parallel
       const [shellResult, storeInfo, kvBatch, cachedHead, inlineProducts] = await Promise.all([
-        getSpaShell(request, ctx, env),
+        getNavigationSpaShell(request, ctx, env),
         _resolveStoreInfo(slug, hostname, env),
         _batchKvRead(slug, env),
         _getCachedPrebuiltHead(env),
@@ -4256,7 +4256,7 @@ export default {
     // but we don't know slug yet — kick off domain resolution + shell in parallel first
     const [resolvedSlug, shellResultCD] = await Promise.all([
       resolveDomain(cleanDomain, env),
-      getSpaShell(request, ctx, env),
+      getNavigationSpaShell(request, ctx, env),
     ]);
 
     if (resolvedSlug) {
