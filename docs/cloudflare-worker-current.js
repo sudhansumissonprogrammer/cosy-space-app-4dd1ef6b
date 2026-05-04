@@ -3710,7 +3710,7 @@ export default {
                 }
                 if (revalSlug) {
                   const [shellResult, prefetchResult] = await Promise.all([
-                    getSpaShell(request, ctx, env),
+                    getNavigationSpaShell(request, ctx, env),
                     prefetchStorefrontData(revalSlug, ctx, env),
                   ]);
                   if (shellResult?.html && prefetchResult.data) {
