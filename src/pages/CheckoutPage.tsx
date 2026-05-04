@@ -870,8 +870,8 @@ export default function CheckoutPage() {
         const data = await res.json();
         if (data?.[0]?.Status === "Success" && data[0].PostOffice?.length > 0) {
           const po = data[0].PostOffice[0];
-          if (!city) setCity(po.District || "");
-          if (!state) setState(po.State || "");
+          setCity(po.District || "");
+          setState(po.State || "");
         }
       } catch {} finally { setPincodeLoading(false); }
     }
