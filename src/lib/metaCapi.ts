@@ -72,6 +72,9 @@ interface CAPIEventParams {
  * Non-blocking — errors are silently logged.
  */
 export function fireMetaCAPI(params: CAPIEventParams) {
+  // Guard: never fire from Lovable preview/editor/dev domains.
+  if (isNonProductionHost()) return;
+
   // Skip if store has no pixel configured (cached per store)
   const cacheKey = `meta_pixel_${params.storeId}`;
   if (sessionStorage.getItem(cacheKey) === "0") return;
