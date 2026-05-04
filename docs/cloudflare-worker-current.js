@@ -3721,7 +3721,7 @@ export default {
                     const fullHeaders = new Headers();
                     fullHeaders.set("Content-Type", "text/html; charset=utf-8");
                     // v7.3.0 #1+#2: matched bumped TTL/SWR
-                    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+                    setNoStoreHtmlHeaders(fullHeaders);
                     fullHeaders.set("ETag", `W/"${revalSlug}-${Date.now().toString(36)}"`);
                     fullHeaders.set("X-Store-Slug", revalSlug);
                     fullHeaders.set("X-Data-Source", prefetchResult.source);
@@ -4048,7 +4048,7 @@ export default {
           const injected = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source, inlineProductsCold);
           const headers = new Headers();
           headers.set("Content-Type", "text/html; charset=utf-8");
-          headers.set("Cache-Control", "public, max-age=600, stale-while-revalidate=1800");
+          setNoStoreHtmlHeaders(headers);
           headers.set("X-Store-Slug", slug);
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
@@ -4146,7 +4146,7 @@ export default {
 
       const responseHeaders = new Headers();
       responseHeaders.set("Content-Type", "text/html; charset=utf-8");
-      responseHeaders.set("Cache-Control", "public, max-age=600, stale-while-revalidate=1800");
+      setNoStoreHtmlHeaders(responseHeaders);
       responseHeaders.set("X-Store-Slug", slug);
       responseHeaders.set("X-Shell-Source", shellResult.source);
       responseHeaders.set("X-Cache-Timestamp", new Date().toISOString());
