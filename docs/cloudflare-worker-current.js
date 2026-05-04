@@ -424,6 +424,7 @@ const STOREFRONT_HTML_MIRROR_PATHS = ["/", "/checkout", "/cart"];
 async function mirrorToCfCache(ctx, request, response) {
   try {
     if (!ctx?.waitUntil || !response || request.method !== "GET") return;
+    if (/no-store|no-cache|max-age=0/i.test(response.headers.get("Cache-Control") || "")) return;
     // Skip authenticated paths to avoid leaking user-specific HTML
     const cookie = request.headers.get("cookie") || "";
     if (cookie.includes("auth") || cookie.includes("sb-")) return;
@@ -2339,6 +2340,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
 }
 
 function storeInEdgeCache(ctx, hostname, slug, response, request = null) {
+  if (/no-store|no-cache|max-age=0/i.test(response?.headers?.get("Cache-Control") || "")) return;
   const earlyKey = getEarlyCacheKey(hostname);
   ctx.waitUntil(cache.put(earlyKey, response.clone()).catch(() => {}));
   // v8.4.0: when caller passes request, also mirror to CF Cache API for HIT metric.
