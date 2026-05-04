@@ -171,7 +171,6 @@ export default function CheckoutPage() {
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
   const [pincodeLoading, setPincodeLoading] = useState(false);
-  const [showCityStateEdit, setShowCityStateEdit] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
 
   // Coupon
@@ -870,8 +869,8 @@ export default function CheckoutPage() {
         const data = await res.json();
         if (data?.[0]?.Status === "Success" && data[0].PostOffice?.length > 0) {
           const po = data[0].PostOffice[0];
-          if (!city) setCity(po.District || "");
-          if (!state) setState(po.State || "");
+          setCity(po.District || "");
+          setState(po.State || "");
         }
       } catch {} finally { setPincodeLoading(false); }
     }
