@@ -35,9 +35,27 @@ ensureFbqShim();
  * so events queued via fbPixelTrack() before the script loads
  * are buffered and flushed automatically.
  */
+/**
+ * Returns true when running on a Lovable preview/editor/dev domain.
+ * Pixel + CAPI must NOT fire there — only on real customer-facing
+ * custom domains (e.g. serdiyajewellers.shop) or *.lovable.app published URLs.
+ */
+function isNonProductionHost(): boolean {
+  if (typeof window === "undefined") return true;
+  const host = window.location.hostname;
+  return (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host.endsWith(".lovableproject.com") ||
+    host.endsWith(".lovable.dev") ||
+    host.endsWith(".sandbox.lovable.dev")
+  );
+}
+
 export function useFacebookPixel(pixelId: string | null | undefined) {
   useEffect(() => {
     if (!pixelId) return;
+    if (isNonProductionHost()) return;
 
     // Phase 1: If index.html inline script already initialized this pixel,
     // skip — avoids duplicate init + duplicate PageView.
@@ -106,7 +124,9 @@ export function generateEventId(): string {
 
 /** Standalone helper — call from anywhere (e.g. CartContext) */
 export function fbPixelTrack(eventName: string, params?: Record<string, any>, eventId?: string) {
-  if (typeof window !== "undefined" && typeof window.fbq === "function") {
+  if (typeof window === "undefined") return;
+  if (isNonProductionHost()) return;
+  if (typeof window.fbq === "function") {
     if (eventId) {
       window.fbq("track", eventName, params, { eventID: eventId });
     } else {
