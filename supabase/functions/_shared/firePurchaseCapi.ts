@@ -47,7 +47,7 @@ export async function firePurchaseCapi(
     const { data: order, error: orderErr } = await supabase
       .from("orders")
       .select(
-        "id, store_id, total, currency, customer_phone, customer_name, city, state, pincode, " +
+        "id, store_id, status, total, currency, customer_phone, customer_name, city, state, pincode, " +
         "storefront_customer_id, buyer_ip, buyer_user_agent, buyer_fbc, buyer_fbp, " +
         "meta_event_id, meta_purchase_fired_at",
       )
@@ -57,6 +57,18 @@ export async function firePurchaseCapi(
     if (orderErr || !order) {
       console.warn(`[capi:${opts.source}] order not found`, orderId, orderErr);
       return { ok: false, reason: "order_not_found" };
+    }
+
+    // 🚫 Never report Purchase for orders that aren't actually paid/confirmed.
+    // pending / cancelled / refunded / failed → Meta would count phantom revenue and
+    // flag the account for inflated conversion data. Only fire on real conversions.
+    const status = String(order.status || "").toLowerCase();
+    const PAID_STATUSES = new Set([
+      "paid", "confirmed", "partially_paid", "processing", "shipped", "delivered", "completed",
+    ]);
+    if (!PAID_STATUSES.has(status)) {
+      console.log(`[capi:${opts.source}] skip — status=${status}`, orderId);
+      return { ok: true, reason: `skipped_status_${status}` };
     }
 
     if (order.meta_purchase_fired_at) {
