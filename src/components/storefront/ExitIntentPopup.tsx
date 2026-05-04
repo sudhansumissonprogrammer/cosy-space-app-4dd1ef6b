@@ -78,10 +78,13 @@ export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupP
       setCopied(true);
       toast.success("Coupon code copied!");
       
-      // Fire CAPI Lead event
+      // Fire as a custom event — NOT the standard "Lead" event.
+      // Standard Lead expects buyer-intent with PII (form submit). Firing it for
+      // a clipboard copy with no email/phone inflates Lead count with low-quality
+      // conversions and degrades EMQ score → Meta scrutiny.
       fireMetaCAPI({
         storeId,
-        eventName: "Lead",
+        eventName: "CouponCopied",
         customData: {
           content_type: "coupon",
           content_ids: [coupon.id],
