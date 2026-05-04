@@ -1,12 +1,11 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.6.6 — FRESH SHELL ORIGIN FETCH
+ * SHOPBANAO PRODUCTION ROUTER v8.7.0 — PUBLISH-FRESH HTML
  *
- * Changes from v8.6.5:
- *  v8.6.6 — SPA shell origin fetch no longer uses Cloudflare's opaque
- *           24h fetch() cache. That cache could survive /api/purge-shell
- *           and re-save old index.html with stale JS chunk names after a
- *           Lovable publish. Worker Cache/KV still cache the shell; purge now
- *           guarantees the next origin fetch sees the latest deployment.
+ * Changes from v8.6.6:
+ *  v8.7.0 — Storefront HTML now fetches the latest Lovable shell on every
+ *           human navigation and sends no-store HTML headers. This prevents
+ *           Cloudflare Worker Cache/KV/in-memory/browser HTML from pinning old
+ *           Vite JS chunk names after a Lovable Publish → Update.
  *
  * Changes from v8.4.1:
  *  v8.5.0 — Cron full-sync now reads ALL store-id/domain KV keys before
@@ -73,7 +72,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.6.6-fresh-shell-origin-fetch";
+const WORKER_VERSION = "8.7.0-publish-fresh-html";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -143,7 +142,7 @@ const WORKER_VERSION = "8.6.6-fresh-shell-origin-fetch";
    ============================================================ */
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
-const HTML_CACHE_SCHEMA_VERSION = "html-v2-2026-05-04";
+const HTML_CACHE_SCHEMA_VERSION = "html-v3-publish-fresh-2026-05-04";
 
 const SUPABASE_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
 const SUPABASE_ANON_KEY =
@@ -425,6 +424,7 @@ const STOREFRONT_HTML_MIRROR_PATHS = ["/", "/checkout", "/cart"];
 async function mirrorToCfCache(ctx, request, response) {
   try {
     if (!ctx?.waitUntil || !response || request.method !== "GET") return;
+    if (/no-store|no-cache|max-age=0/i.test(response.headers.get("Cache-Control") || "")) return;
     // Skip authenticated paths to avoid leaking user-specific HTML
     const cookie = request.headers.get("cookie") || "";
     if (cookie.includes("auth") || cookie.includes("sb-")) return;
@@ -857,8 +857,14 @@ function _buildLinkPreloadHeader(html) {
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
 // v6.9.1: Shell HTML must refresh quickly after frontend publishes; long TTLs caused
 // custom domains/subdomains to keep serving old JS bundle references after deploy.
-const SPA_SHELL_KV_TTL = 86400; // v8.1.0 cost-cut: 6h → 24h. Shell only changes on deploy → /api/purge bumps key.
-const SPA_SHELL_CACHE_TTL = 1800; // v8.1.0 cost-cut: 5min → 30min
+const SPA_SHELL_KV_TTL = 300; // v8.7.0: publish-fresh safety; shell can change on every Lovable publish.
+const SPA_SHELL_CACHE_TTL = 60; // v8.7.0: short safety net only; human navigations use fresh origin shell.
+
+function setNoStoreHtmlHeaders(headers) {
+  headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  headers.set("Pragma", "no-cache");
+  headers.set("Expires", "0");
+}
 
 let inflightShellFetch = null;
 
@@ -1022,6 +1028,12 @@ async function getFreshSpaShell(request, ctx, env) {
   const shellCacheKey = new Request("https://cache/spa-shell");
   const html = await _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey);
   return html ? { html, source: "origin-fresh" } : null;
+}
+
+async function getNavigationSpaShell(request, ctx, env) {
+  const fresh = await getFreshSpaShell(request, ctx, env);
+  if (fresh?.html) return fresh;
+  return getSpaShell(request, ctx, env);
 }
 
 /* ============================================================
@@ -2191,7 +2203,7 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
   // v7.7.0 Fix 2: Skip _getInlineProductsOrNull if caller already fetched it.
   // FIX #4: Batch KV reads in one Promise.all
   const [shellResult, kvBatch, cachedHeadMem, inlineProducts] = await Promise.all([
-    getSpaShell(request, ctx, env),
+    getNavigationSpaShell(request, ctx, env),
     _batchKvRead(slug, env),
     _getCachedPrebuiltHead(env),
     prefetchedInlineProducts !== null
@@ -2223,7 +2235,7 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
   newHeaders.set("Content-Type", "text/html; charset=utf-8");
   // v7.4.0 #1: Streaming HTML TTL bumped 1800→3600s (1h). Storefront data
   // is injected inline; merchants see edits within 1h or via purge button.
-  newHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+  setNoStoreHtmlHeaders(newHeaders);
   newHeaders.set("X-Store-Slug", slug);
   newHeaders.set("X-Shell-Source", shellResult.source);
   newHeaders.set("X-Cache-Timestamp", new Date().toISOString());
@@ -2305,7 +2317,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     // v7.4.0 #1: Warm HTML max-age bumped 3600→7200s (2h) with SWR=7d.
     // Cache hit rate jumps from ~95% → ~98%, cutting Worker invocations
     // for repeat anonymous visitors.
-    fullHeaders.set("Cache-Control", "public, max-age=7200, stale-while-revalidate=604800");
+    setNoStoreHtmlHeaders(fullHeaders);
     // v7.3.0 #5: ETag for 304 Not Modified responses on repeat visits.
     const etag = `W/"${slug}-${Date.now().toString(36)}"`;
     fullHeaders.set("ETag", etag);
@@ -2328,6 +2340,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
 }
 
 function storeInEdgeCache(ctx, hostname, slug, response, request = null) {
+  if (/no-store|no-cache|max-age=0/i.test(response?.headers?.get("Cache-Control") || "")) return;
   const earlyKey = getEarlyCacheKey(hostname);
   ctx.waitUntil(cache.put(earlyKey, response.clone()).catch(() => {}));
   // v8.4.0: when caller passes request, also mirror to CF Cache API for HIT metric.
@@ -3652,7 +3665,7 @@ export default {
     const ua = request.headers.get("User-Agent") || "";
     const isBot = BOT_UA_REGEX.test(ua);
 
-    if (isCacheableRequest && !isBot) {
+    if (isCacheableRequest && !isBot && request.headers.get("x-sf-allow-html-cache") === "1") {
       const earlyKey = getEarlyCacheKey(hostname);
       const earlyHit = await cache.match(earlyKey);
 
@@ -3697,7 +3710,7 @@ export default {
                 }
                 if (revalSlug) {
                   const [shellResult, prefetchResult] = await Promise.all([
-                    getSpaShell(request, ctx, env),
+                    getNavigationSpaShell(request, ctx, env),
                     prefetchStorefrontData(revalSlug, ctx, env),
                   ]);
                   if (shellResult?.html && prefetchResult.data) {
@@ -3710,7 +3723,7 @@ export default {
                     const fullHeaders = new Headers();
                     fullHeaders.set("Content-Type", "text/html; charset=utf-8");
                     // v7.3.0 #1+#2: matched bumped TTL/SWR
-                    fullHeaders.set("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+                    setNoStoreHtmlHeaders(fullHeaders);
                     fullHeaders.set("ETag", `W/"${revalSlug}-${Date.now().toString(36)}"`);
                     fullHeaders.set("X-Store-Slug", revalSlug);
                     fullHeaders.set("X-Data-Source", prefetchResult.source);
@@ -3877,7 +3890,7 @@ export default {
         return handlePurgeStore(request, url, ctx, env, hostname);
       if (url.pathname === "/api/purge-products" && request.method === "POST")
         return handlePurgeProducts(request, url, ctx, env);
-      if (url.pathname === "/api/purge-shell" && request.method === "POST")
+      if (url.pathname === "/api/purge-shell" && (request.method === "POST" || request.method === "GET"))
         return handlePurgeShell(request, url, ctx, env, hostname);
       if (url.pathname === "/api/prewarm") {
         if (request.method === "OPTIONS") return addCorsHeaders(new Response(null, { status: 204 }), "preflight");
@@ -4027,7 +4040,7 @@ export default {
         // mysterious "Unknown 557ms" subrequest doubling request counts.
         const COLD_DATA_DEADLINE = 1300;
         const [shellResult, prefetchResult, inlineProductsCold] = await Promise.all([
-          getSpaShell(request, ctx, env),
+          getNavigationSpaShell(request, ctx, env),
           prefetchStorefrontDataWithDeadline(slug, ctx, env, COLD_DATA_DEADLINE).catch(() => ({ data: null, source: "none" })),
           _getInlineProductsOrNull(hostname, slug, env, ctx),
         ]);
@@ -4037,7 +4050,7 @@ export default {
           const injected = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source, inlineProductsCold);
           const headers = new Headers();
           headers.set("Content-Type", "text/html; charset=utf-8");
-          headers.set("Cache-Control", "public, max-age=600, stale-while-revalidate=1800");
+          setNoStoreHtmlHeaders(headers);
           headers.set("X-Store-Slug", slug);
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
@@ -4077,7 +4090,7 @@ export default {
 
       // FIX #4: Batch KV read + shell in parallel
       const [shellResult, storeInfo, kvBatch, cachedHead, inlineProducts] = await Promise.all([
-        getSpaShell(request, ctx, env),
+        getNavigationSpaShell(request, ctx, env),
         _resolveStoreInfo(slug, hostname, env),
         _batchKvRead(slug, env),
         _getCachedPrebuiltHead(env),
@@ -4135,7 +4148,7 @@ export default {
 
       const responseHeaders = new Headers();
       responseHeaders.set("Content-Type", "text/html; charset=utf-8");
-      responseHeaders.set("Cache-Control", "public, max-age=600, stale-while-revalidate=1800");
+      setNoStoreHtmlHeaders(responseHeaders);
       responseHeaders.set("X-Store-Slug", slug);
       responseHeaders.set("X-Shell-Source", shellResult.source);
       responseHeaders.set("X-Cache-Timestamp", new Date().toISOString());
@@ -4194,7 +4207,7 @@ export default {
         // v6.7.0: Same fix as subdomain path — eliminate self-call subrequest.
         const COLD_DATA_DEADLINE = 1300;
         const [shellResult, prefetchResult, inlineProductsCdCold] = await Promise.all([
-          getSpaShell(request, ctx, env),
+          getNavigationSpaShell(request, ctx, env),
           prefetchStorefrontDataWithDeadline(resolvedSlugCD, ctx, env, COLD_DATA_DEADLINE).catch(() => ({ data: null, source: "none" })),
           _getInlineProductsOrNull(hostname, resolvedSlugCD, env, ctx),
         ]);
@@ -4203,7 +4216,7 @@ export default {
           const injected = injectIntoHtml(shellResult.html, resolvedSlugCD, prefetchResult.data, prefetchResult.source, inlineProductsCdCold);
           const headers = new Headers();
           headers.set("Content-Type", "text/html; charset=utf-8");
-          headers.set("Cache-Control", "public, max-age=600, stale-while-revalidate=1800");
+          setNoStoreHtmlHeaders(headers);
           headers.set("X-Store-Slug", resolvedSlugCD);
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
@@ -4245,7 +4258,7 @@ export default {
     // but we don't know slug yet — kick off domain resolution + shell in parallel first
     const [resolvedSlug, shellResultCD] = await Promise.all([
       resolveDomain(cleanDomain, env),
-      getSpaShell(request, ctx, env),
+      getNavigationSpaShell(request, ctx, env),
     ]);
 
     if (resolvedSlug) {
@@ -4287,7 +4300,7 @@ export default {
 
       const responseHeadersCD = new Headers();
       responseHeadersCD.set("Content-Type", "text/html; charset=utf-8");
-      responseHeadersCD.set("Cache-Control", "public, max-age=600, stale-while-revalidate=1800");
+      setNoStoreHtmlHeaders(responseHeadersCD);
       responseHeadersCD.set("X-Store-Slug", resolvedSlug);
       responseHeadersCD.set("X-Shell-Source", shellResultCD.source);
       responseHeadersCD.set("X-Cache-Timestamp", new Date().toISOString());
