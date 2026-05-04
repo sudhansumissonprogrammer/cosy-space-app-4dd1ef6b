@@ -14,8 +14,16 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0
 
 const META_GRAPH_URL = "https://graph.facebook.com/v21.0";
 
+// Normalization helpers per Meta CAPI spec — must match the rules in meta-capi/index.ts.
+// Wrong normalization = our hash ≠ Meta's hash = no match = degraded EMQ score.
+const normEmail = (v: string) => v.trim().toLowerCase();
+const normName = (v: string) => v.trim().toLowerCase().replace(/[^a-zà-ÿ\u0080-\uffff]/g, "");
+const normCityState = (v: string) => v.trim().toLowerCase().replace(/[^a-z]/g, "");
+const normZip = (v: string) => v.trim().toLowerCase().replace(/\s+/g, "");
+const normCountry = (v: string) => v.trim().toLowerCase().slice(0, 2);
+
 async function sha256Hex(value: string): Promise<string> {
-  const data = new TextEncoder().encode(value.trim().toLowerCase());
+  const data = new TextEncoder().encode(value);
   const buf = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(buf))
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -102,26 +110,37 @@ export async function firePurchaseCapi(
       userData.client_ip_address = order.buyer_ip;
     }
 
-    if (customerEmail) userData.em = [await sha256Hex(customerEmail)];
+    if (customerEmail) userData.em = [await sha256Hex(normEmail(customerEmail))];
     if (order.customer_phone) {
       const cleaned = String(order.customer_phone).replace(/\D/g, "");
       if (cleaned) userData.ph = [await sha256Hex(cleaned)];
     }
     // external_id: prefer storefront customer id, fall back to order id.
     userData.external_id = [
-      await sha256Hex(order.storefront_customer_id || order.id),
+      await sha256Hex(normEmail(order.storefront_customer_id || order.id)),
     ];
     if (order.customer_name) {
       const parts = String(order.customer_name).trim().split(/\s+/);
-      if (parts[0]) userData.fn = [await sha256Hex(parts[0])];
-      if (parts.length > 1) userData.ln = [await sha256Hex(parts.slice(1).join(" "))];
+      const fn = parts[0] ? normName(parts[0]) : "";
+      const ln = parts.length > 1 ? normName(parts.slice(1).join(" ")) : "";
+      if (fn) userData.fn = [await sha256Hex(fn)];
+      if (ln) userData.ln = [await sha256Hex(ln)];
     }
-    if (order.city) userData.ct = [await sha256Hex(String(order.city))];
-    if (order.state) userData.st = [await sha256Hex(String(order.state))];
-    if (order.pincode) userData.zp = [await sha256Hex(String(order.pincode))];
+    if (order.city) {
+      const v = normCityState(String(order.city));
+      if (v) userData.ct = [await sha256Hex(v)];
+    }
+    if (order.state) {
+      const v = normCityState(String(order.state));
+      if (v) userData.st = [await sha256Hex(v)];
+    }
+    if (order.pincode) {
+      const v = normZip(String(order.pincode));
+      if (v) userData.zp = [await sha256Hex(v)];
+    }
     // Country only when we have a real address signal.
     if (order.city || order.state || order.pincode) {
-      userData.country = [await sha256Hex("in")];
+      userData.country = [await sha256Hex(normCountry("in"))];
     }
 
     // 6. Build event.
