@@ -164,35 +164,38 @@ Deno.serve(async (req) => {
     }
 
     if (user_email) {
-      userData.em = [await hashSHA256(user_email)];
+      userData.em = [await hashSHA256(normEmail(user_email))];
     }
     if (user_phone) {
       const cleaned = user_phone.replace(/\D/g, "");
-      userData.ph = [await hashSHA256(cleaned)];
+      if (cleaned) userData.ph = [await hashSHA256(cleaned)];
     }
     if (external_id) {
-      userData.external_id = [await hashSHA256(external_id)];
+      userData.external_id = [await hashSHA256(normEmail(external_id))];
     }
     if (first_name) {
-      userData.fn = [await hashSHA256(first_name)];
+      const v = normName(first_name);
+      if (v) userData.fn = [await hashSHA256(v)];
     }
     if (last_name) {
-      userData.ln = [await hashSHA256(last_name)];
+      const v = normName(last_name);
+      if (v) userData.ln = [await hashSHA256(v)];
     }
     if (city) {
-      userData.ct = [await hashSHA256(city)];
+      const v = normCityState(city);
+      if (v) userData.ct = [await hashSHA256(v)];
     }
     if (state) {
-      userData.st = [await hashSHA256(state)];
+      const v = normCityState(state);
+      if (v) userData.st = [await hashSHA256(v)];
     }
     if (zip_code) {
-      userData.zp = [await hashSHA256(zip_code)];
+      const v = normZip(zip_code);
+      if (v) userData.zp = [await hashSHA256(v)];
     }
     // Only set country when we have a real address signal (city/state/zip).
-    // Hardcoding country=in on every event (incl. PageView/AddToCart with no other
-    // user data) creates an inconsistent fingerprint that Meta's fraud models flag.
     if (city || state || zip_code) {
-      userData.country = [await hashSHA256("in")];
+      userData.country = [await hashSHA256(normCountry("in"))];
     }
 
     const event: CAPIEvent = {
