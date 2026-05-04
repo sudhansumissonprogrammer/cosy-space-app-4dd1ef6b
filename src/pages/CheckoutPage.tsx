@@ -1599,29 +1599,17 @@ export default function CheckoutPage() {
               <Label htmlFor="street" className="text-xs">{tCritical("Street Address", "पता")} *</Label>
               <Input id="street" placeholder="House/Flat No., Building, Street" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
             </div>
-            {/* City + State — appear after pincode is filled (auto-filled from pincode lookup, editable) */}
-            {pincode.length === 6 && city && state && !showCityStateEdit ? (
-              <div className="flex items-center justify-between rounded-lg border border-border bg-accent/30 px-3 py-2 text-xs">
-                <div className="flex items-center gap-1.5 text-foreground">
-                  <Check className="h-3.5 w-3.5 text-primary" />
-                  <span className="font-medium">{city}, {state}</span>
-                </div>
-                <button type="button" onClick={() => setShowCityStateEdit(true)} className="text-[11px] font-medium text-primary hover:underline">
-                  {t("Change", "बदलें")}
-                </button>
+            {/* City + State — always visible, auto-filled from pincode when possible */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="city" className="text-xs">{t("City", "शहर")} *</Label>
+                <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
               </div>
-            ) : pincode.length === 6 || city || state || showCityStateEdit ? (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <Label htmlFor="city" className="text-xs">{t("City", "शहर")} *</Label>
-                  <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="state" className="text-xs">{t("State", "राज्य")} *</Label>
-                  <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
-                </div>
+              <div className="space-y-1">
+                <Label htmlFor="state" className="text-xs">{t("State", "राज्य")} *</Label>
+                <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
               </div>
-            ) : null}
+            </div>
             {/* Email optional — collapsible */}
             <Collapsible>
               <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
