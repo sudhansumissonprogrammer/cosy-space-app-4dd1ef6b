@@ -856,8 +856,14 @@ function _buildLinkPreloadHeader(html) {
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
 // v6.9.1: Shell HTML must refresh quickly after frontend publishes; long TTLs caused
 // custom domains/subdomains to keep serving old JS bundle references after deploy.
-const SPA_SHELL_KV_TTL = 86400; // v8.1.0 cost-cut: 6h → 24h. Shell only changes on deploy → /api/purge bumps key.
-const SPA_SHELL_CACHE_TTL = 1800; // v8.1.0 cost-cut: 5min → 30min
+const SPA_SHELL_KV_TTL = 300; // v8.7.0: publish-fresh safety; shell can change on every Lovable publish.
+const SPA_SHELL_CACHE_TTL = 60; // v8.7.0: short safety net only; human navigations use fresh origin shell.
+
+function setNoStoreHtmlHeaders(headers) {
+  headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  headers.set("Pragma", "no-cache");
+  headers.set("Expires", "0");
+}
 
 let inflightShellFetch = null;
 
@@ -1021,6 +1027,12 @@ async function getFreshSpaShell(request, ctx, env) {
   const shellCacheKey = new Request("https://cache/spa-shell");
   const html = await _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey);
   return html ? { html, source: "origin-fresh" } : null;
+}
+
+async function getNavigationSpaShell(request, ctx, env) {
+  const fresh = await getFreshSpaShell(request, ctx, env);
+  if (fresh?.html) return fresh;
+  return getSpaShell(request, ctx, env);
 }
 
 /* ============================================================
