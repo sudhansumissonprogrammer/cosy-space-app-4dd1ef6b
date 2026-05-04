@@ -49,9 +49,38 @@ async function hashSHA256(value: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+// Simple in-memory rate limiter — 30 events per IP per minute.
+// Prevents bad actors from spamming garbage events at a store's pixel,
+// which would drop the EMQ score and trigger Meta scrutiny.
+const RL_WINDOW_MS = 60_000;
+const RL_MAX = 30;
+const rlMap = new Map<string, { count: number; resetAt: number }>();
+function rateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = rlMap.get(ip);
+  if (!entry || entry.resetAt < now) {
+    rlMap.set(ip, { count: 1, resetAt: now + RL_WINDOW_MS });
+    return false;
+  }
+  entry.count++;
+  return entry.count > RL_MAX;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limit by client IP (cf-connecting-ip when behind Worker, else x-forwarded-for).
+  const rlIp =
+    req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    "unknown";
+  if (rateLimited(rlIp)) {
+    return new Response(
+      JSON.stringify({ error: "rate_limited" }),
+      { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 
   try {
