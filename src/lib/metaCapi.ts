@@ -1,6 +1,24 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
+ * Returns true on Lovable preview/editor/dev hosts.
+ * Must mirror the guard in useFacebookPixel.ts so that browser Pixel and
+ * server-side CAPI are silenced together — never one without the other,
+ * which would produce un-deduplicated events Meta flags as suspicious.
+ */
+function isNonProductionHost(): boolean {
+  if (typeof window === "undefined") return true;
+  const host = window.location.hostname;
+  return (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host.endsWith(".lovableproject.com") ||
+    host.endsWith(".lovable.dev") ||
+    host.endsWith(".sandbox.lovable.dev")
+  );
+}
+
+/**
  * Get Meta cookie values (fbc, fbp) for deduplication.
  * Exported so the checkout flow can forward them to the place-order edge function,
  * which stores them on the order row and uses them for server-side CAPI Purchase.
@@ -54,6 +72,9 @@ interface CAPIEventParams {
  * Non-blocking — errors are silently logged.
  */
 export function fireMetaCAPI(params: CAPIEventParams) {
+  // Guard: never fire from Lovable preview/editor/dev domains.
+  if (isNonProductionHost()) return;
+
   // Skip if store has no pixel configured (cached per store)
   const cacheKey = `meta_pixel_${params.storeId}`;
   if (sessionStorage.getItem(cacheKey) === "0") return;
