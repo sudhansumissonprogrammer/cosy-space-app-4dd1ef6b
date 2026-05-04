@@ -3372,7 +3372,7 @@ export default {
        cache rate from 42% → 95%+. Only GET requests are checked. */
     if (earlyMethod === "GET") {
       try {
-        const shouldBypassPathMirror = isCheckoutHtmlPath(earlyPath);
+        const shouldBypassPathMirror = isHtmlNavigationPath(earlyPath);
         const cached = shouldBypassPathMirror ? null : await cache.match(request);
         if (cached) {
           // v8.6.4: Safety fix — old bot-policy 403s were cached by URL only.
