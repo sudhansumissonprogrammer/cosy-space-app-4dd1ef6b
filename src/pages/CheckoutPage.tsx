@@ -1507,24 +1507,8 @@ export default function CheckoutPage() {
           <span className="text-sm font-medium text-foreground">{t("Delivery Details", "डिलीवरी विवरण")}</span>
         </div>
 
-        {/* Express mode for returning users with localStorage data (not logged in with saved addresses) */}
-        {expressMode && !selectedAddr && savedInfo.fullName && savedInfo.phone && savedInfo.streetAddress && savedInfo.pincode ? (
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Badge variant="secondary" className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">⚡ Express</Badge>
-                </div>
-                <p className="text-sm font-medium text-foreground">{savedInfo.fullName}</p>
-                <p className="text-xs text-muted-foreground">{[savedInfo.streetAddress, savedInfo.city, savedInfo.state, savedInfo.pincode].filter(Boolean).join(", ")}</p>
-                <p className="text-xs text-muted-foreground">{savedInfo.phone}</p>
-              </div>
-              <Button size="sm" variant="ghost" className="text-xs h-7 px-2" onClick={() => setExpressMode(false)}>
-                <Pencil className="h-3 w-3 mr-1" /> Edit
-              </Button>
-            </div>
-          </div>
-        ) : savedAddresses && savedAddresses.length > 0 && selectedAddr ? (
+        {/* Saved-address card (only when shopper is logged in with saved addresses) */}
+        {savedAddresses && savedAddresses.length > 0 && selectedAddr ? (
           <div className="rounded-lg border border-border bg-accent/30 p-3">
             <div className="flex items-start justify-between">
               <div>
