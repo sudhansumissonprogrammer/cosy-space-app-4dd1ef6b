@@ -14,8 +14,16 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0
 
 const META_GRAPH_URL = "https://graph.facebook.com/v21.0";
 
+// Normalization helpers per Meta CAPI spec — must match the rules in meta-capi/index.ts.
+// Wrong normalization = our hash ≠ Meta's hash = no match = degraded EMQ score.
+const normEmail = (v: string) => v.trim().toLowerCase();
+const normName = (v: string) => v.trim().toLowerCase().replace(/[^a-zà-ÿ\u0080-\uffff]/g, "");
+const normCityState = (v: string) => v.trim().toLowerCase().replace(/[^a-z]/g, "");
+const normZip = (v: string) => v.trim().toLowerCase().replace(/\s+/g, "");
+const normCountry = (v: string) => v.trim().toLowerCase().slice(0, 2);
+
 async function sha256Hex(value: string): Promise<string> {
-  const data = new TextEncoder().encode(value.trim().toLowerCase());
+  const data = new TextEncoder().encode(value);
   const buf = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(buf))
     .map((b) => b.toString(16).padStart(2, "0"))
