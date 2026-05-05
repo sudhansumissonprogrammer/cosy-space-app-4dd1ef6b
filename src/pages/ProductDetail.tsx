@@ -206,13 +206,14 @@ export default function ProductDetail() {
   const { data: product, isLoading } = useQuery({
     queryKey: ["storefront-product", store.id, productSlug],
     queryFn: async () => {
-      // Single-round-trip RPC: returns product + images + variants + shipping
-      const { data: rpc, error: rpcErr } = await (supabase as any).rpc("get_product_page", {
+      // Phase A: try Worker edge cache first (KV + CF cache)
+      const edge = await fetchPdpEdge(productSlug!);
+      const rpc = edge ?? (await (supabase as any).rpc("get_product_page", {
         _store_slug: store.slug,
         _product_slug: productSlug!,
-      });
+      })).data;
 
-      if (!rpcErr && rpc?.product) {
+      if (rpc?.product) {
         // Hydrate sibling queries so they don't refetch
         if (rpc.images) queryClient.setQueryData(["product-images", rpc.product.id], rpc.images);
         if (rpc.variants) queryClient.setQueryData(["product-variants", rpc.product.id], rpc.variants);
