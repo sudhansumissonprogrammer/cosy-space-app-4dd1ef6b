@@ -3902,7 +3902,7 @@ export default {
       if (earlyIsStorefrontHtml) {
         try {
           const earlyHostname = earlyUrl.hostname.toLowerCase().replace(/^www\./, "");
-          const cached = await cache.match(getEarlyCacheKey(earlyHostname));
+          const cached = await cache.match(getEarlyCacheKey(earlyHostname, earlyPath));
           if (cached) return cached;
         } catch {}
       }
