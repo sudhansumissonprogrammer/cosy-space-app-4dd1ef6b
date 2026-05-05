@@ -72,7 +72,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.8.1-pdp-cron-prewarm";
+const WORKER_VERSION = "8.9.0-pdp-html-inline";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -2080,6 +2080,7 @@ async function serveStreamedHtml(
   inlineProducts,
   storefrontPromise,
   responseHeaders,
+  pdpCategoryInline = null, // v8.9.0 { kind, json } | null
 ) {
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
@@ -2103,7 +2104,14 @@ async function serveStreamedHtml(
         ? `window.__PRODUCTS_INLINE__=${inlineProducts.replace(/<\/script/gi, "<\\/script")};`
         : "";
       const themeHint = themeLite ? `window.__THEME__=${JSON.stringify(themeLite)};` : "";
-      const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";${themeHint}${productsHint}</script>`;
+      // v8.9.0: inline PDP/category JSON so the React page boots WITHOUT a fetch
+      let pdpCatHint = "";
+      if (pdpCategoryInline?.json) {
+        const safeJson = pdpCategoryInline.json.replace(/<\/script/gi, "<\\/script");
+        const varName = pdpCategoryInline.kind === "product" ? "__PRODUCT_INLINE__" : "__CATEGORY_INLINE__";
+        pdpCatHint = `window.${varName}=${safeJson};`;
+      }
+      const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";${themeHint}${productsHint}${pdpCatHint}</script>`;
 
       // v6.4.0: Preload-scanner image fast-path — emit <link rel="preload">
       // tags for the first 6 product images directly in <head>. The browser
@@ -2568,6 +2576,59 @@ async function _resolveStoreSlugForDomain(domain, env) {
       }
     } catch {}
   }
+  return null;
+}
+
+/* v8.9.0 — Detect /product/<slug> and /category/<slug> for HTML inlining.
+   Returns { kind: 'product'|'category', slug } or null. */
+function _parsePdpCategoryPath(pathname) {
+  if (!pathname) return null;
+  let m = pathname.match(/^\/product\/([a-zA-Z0-9_-]+)\/?$/);
+  if (m) return { kind: "product", slug: m[1] };
+  m = pathname.match(/^\/category\/([a-zA-Z0-9_-]+)\/?$/);
+  if (m) return { kind: "category", slug: m[1] };
+  return null;
+}
+
+/* v8.9.0 — Read PDP / category JSON from edge cache or KV WITHOUT touching DB.
+   Critical render path must stay cache-only; DB hit happens via /api/* fallback
+   if neither layer has it warm. Returns the raw JSON string or null. */
+async function _getInlinePdpCategoryOrNull(hostname, route, env, ctx) {
+  if (!route) return null;
+  try {
+    const version = await _getProductVersion(hostname, env);
+    let cacheKey, kvKey;
+    if (route.kind === "product") {
+      cacheKey = _buildPdpCacheKey(hostname, route.slug, version);
+      kvKey = _buildPdpKvKey(hostname, route.slug, version);
+    } else {
+      cacheKey = _buildCategoryCacheKey(hostname, `${route.slug}:l50`, version);
+      kvKey = _buildCategoryKvKey(hostname, `${route.slug}:l50`, version);
+    }
+    const cached = await cache.match(cacheKey);
+    if (cached) return await cached.text();
+    if (env?.STORE_KV) {
+      const kvVal = await env.STORE_KV.get(kvKey, { type: "text" });
+      if (kvVal) {
+        ctx.waitUntil(
+          cache
+            .put(
+              cacheKey,
+              new Response(kvVal, {
+                headers: {
+                  "Content-Type": "application/json",
+                  "Cache-Control": route.kind === "product"
+                    ? `public, max-age=${PDP_CACHE_TTL}`
+                    : `public, max-age=${CATEGORY_CACHE_TTL}`,
+                },
+              }),
+            )
+            .catch(() => {}),
+        );
+        return kvVal;
+      }
+    }
+  } catch {}
   return null;
 }
 
@@ -4439,13 +4500,17 @@ export default {
       const earlyStorefrontPromise = prefetchStorefrontDataWithDeadline(slug, ctx, env, storefrontDeadline);
 
       // FIX #4: Batch KV read + shell in parallel
-      const [shellResult, storeInfo, kvBatch, cachedHead, inlineProducts] = await Promise.all([
+      // v8.9.0: also fetch inline PDP/category payload for /product/* and /category/*
+      const pdpCategoryRoute = _parsePdpCategoryPath(url.pathname);
+      const [shellResult, storeInfo, kvBatch, cachedHead, inlineProducts, pdpCategoryJson] = await Promise.all([
         getNavigationSpaShell(request, ctx, env),
         _resolveStoreInfo(slug, hostname, env),
         _batchKvRead(slug, env),
         _getCachedPrebuiltHead(env),
         _getInlineProductsOrNull(hostname, slug, env, ctx),
+        _getInlinePdpCategoryOrNull(hostname, pdpCategoryRoute, env, ctx),
       ]);
+      const pdpCategoryInline = pdpCategoryJson ? { kind: pdpCategoryRoute.kind, json: pdpCategoryJson } : null;
 
       // Hydrate in-memory caches from batch
       if (kvBatch.theme && !(_memThemeCache.get(slug)?.expiresAt > Date.now())) {
@@ -4515,6 +4580,7 @@ export default {
         inlineProducts,
         earlyStorefrontPromise,
         responseHeaders,
+        pdpCategoryInline,
       );
 
       // v7.7.0 Fix 2: pass already-resolved inlineProducts to skip 3rd fetch.
@@ -4618,13 +4684,17 @@ export default {
       const earlyStorefrontPromiseCD = prefetchStorefrontDataWithDeadline(resolvedSlug, ctx, env, storefrontDeadlineCD);
 
       // FIX #4: Batch remaining slug-dependent data
-      const [seoResponse, botResponse, kvBatchCD, cachedHeadCDReal, inlineProductsCDReal] = await Promise.all([
+      // v8.9.0: also fetch inline PDP/category payload for /product/* and /category/*
+      const pdpCategoryRouteCD = _parsePdpCategoryPath(url.pathname);
+      const [seoResponse, botResponse, kvBatchCD, cachedHeadCDReal, inlineProductsCDReal, pdpCategoryJsonCD] = await Promise.all([
         handleSeoFiles(url, resolvedSlug),
         handleBot(request, resolvedSlug, url, true),
         _batchKvRead(resolvedSlug, env),
         _getCachedPrebuiltHead(env),
         _getInlineProductsOrNull(hostname, resolvedSlug, env, ctx),
+        _getInlinePdpCategoryOrNull(hostname, pdpCategoryRouteCD, env, ctx),
       ]);
+      const pdpCategoryInlineCD = pdpCategoryJsonCD ? { kind: pdpCategoryRouteCD.kind, json: pdpCategoryJsonCD } : null;
 
       // Hydrate in-memory from batch
       if (kvBatchCD.theme && !(_memThemeCache.get(resolvedSlug)?.expiresAt > Date.now())) {
@@ -4667,6 +4737,7 @@ export default {
         inlineProductsCDReal,
         earlyStorefrontPromiseCD,
         responseHeadersCD,
+        pdpCategoryInlineCD,
       );
 
       // v7.7.0 Fix 2: pass already-resolved inlineProducts to skip 3rd fetch.
