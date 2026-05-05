@@ -4684,13 +4684,17 @@ export default {
       const earlyStorefrontPromiseCD = prefetchStorefrontDataWithDeadline(resolvedSlug, ctx, env, storefrontDeadlineCD);
 
       // FIX #4: Batch remaining slug-dependent data
-      const [seoResponse, botResponse, kvBatchCD, cachedHeadCDReal, inlineProductsCDReal] = await Promise.all([
+      // v8.9.0: also fetch inline PDP/category payload for /product/* and /category/*
+      const pdpCategoryRouteCD = _parsePdpCategoryPath(url.pathname);
+      const [seoResponse, botResponse, kvBatchCD, cachedHeadCDReal, inlineProductsCDReal, pdpCategoryJsonCD] = await Promise.all([
         handleSeoFiles(url, resolvedSlug),
         handleBot(request, resolvedSlug, url, true),
         _batchKvRead(resolvedSlug, env),
         _getCachedPrebuiltHead(env),
         _getInlineProductsOrNull(hostname, resolvedSlug, env, ctx),
+        _getInlinePdpCategoryOrNull(hostname, pdpCategoryRouteCD, env, ctx),
       ]);
+      const pdpCategoryInlineCD = pdpCategoryJsonCD ? { kind: pdpCategoryRouteCD.kind, json: pdpCategoryJsonCD } : null;
 
       // Hydrate in-memory from batch
       if (kvBatchCD.theme && !(_memThemeCache.get(resolvedSlug)?.expiresAt > Date.now())) {
