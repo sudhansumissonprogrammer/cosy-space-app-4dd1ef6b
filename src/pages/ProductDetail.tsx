@@ -194,9 +194,33 @@ export default function ProductDetail() {
 
   const existingData = queryClient.getQueryData(["storefront-product", store.id, productSlug]);
 
+  // ── Worker-inlined PDP payload (Phase A): { product, images, variants, shipping_config } ──
+  const getInlinePdp = () => {
+    try {
+      const inline = (window as any).__PRODUCT_INLINE__;
+      if (inline && inline.product && inline.product.slug === productSlug) return inline;
+    } catch { /* ignore */ }
+    return null;
+  };
+
   const { data: product, isLoading } = useQuery({
     queryKey: ["storefront-product", store.id, productSlug],
     queryFn: async () => {
+      // Single-round-trip RPC: returns product + images + variants + shipping
+      const { data: rpc, error: rpcErr } = await (supabase as any).rpc("get_product_page", {
+        _store_slug: store.slug,
+        _product_slug: productSlug!,
+      });
+
+      if (!rpcErr && rpc?.product) {
+        // Hydrate sibling queries so they don't refetch
+        if (rpc.images) queryClient.setQueryData(["product-images", rpc.product.id], rpc.images);
+        if (rpc.variants) queryClient.setQueryData(["product-variants", rpc.product.id], rpc.variants);
+        if (rpc.shipping_config) queryClient.setQueryData(["storefront-shipping-config", store.id], rpc.shipping_config);
+        return rpc.product;
+      }
+
+      // Fallback: legacy direct query (covers UUID-as-slug case + RPC failures)
       let { data, error } = await supabase
         .from("products")
         .select("*")
@@ -206,7 +230,6 @@ export default function ProductDetail() {
         .maybeSingle();
 
       if (!data && !error) {
-        // Only attempt UUID lookup if slug looks like a UUID — prevents PostgREST 400 errors
         if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productSlug!)) {
           if (error) throw error;
           return data;
@@ -225,7 +248,18 @@ export default function ProductDetail() {
       if (error) throw error;
       return data;
     },
-    initialData: existingData ? undefined : getCachedProduct,
+    initialData: () => {
+      if (existingData) return undefined as any;
+      const inline = getInlinePdp();
+      if (inline?.product) {
+        // Seed sibling caches from inline payload too
+        if (inline.images) queryClient.setQueryData(["product-images", inline.product.id], inline.images);
+        if (inline.variants) queryClient.setQueryData(["product-variants", inline.product.id], inline.variants);
+        if (inline.shipping_config) queryClient.setQueryData(["storefront-shipping-config", store.id], inline.shipping_config);
+        return inline.product;
+      }
+      return getCachedProduct();
+    },
     enabled: !!store.id && !!productSlug,
     staleTime: 2 * 60 * 1000,
   });
