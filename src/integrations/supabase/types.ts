@@ -640,6 +640,7 @@ export type Database = {
           payment_method: string
           payment_type: string
           pincode: string | null
+          razorpay_order_id: string | null
           state: string | null
           status: string
           store_id: string
@@ -672,6 +673,7 @@ export type Database = {
           payment_method?: string
           payment_type?: string
           pincode?: string | null
+          razorpay_order_id?: string | null
           state?: string | null
           status?: string
           store_id: string
@@ -704,6 +706,7 @@ export type Database = {
           payment_method?: string
           payment_type?: string
           pincode?: string | null
+          razorpay_order_id?: string | null
           state?: string | null
           status?: string
           store_id?: string
