@@ -2473,6 +2473,264 @@ async function _prewarmProducts(storeId, slug, ctx, env, customDomain) {
   } catch {}
 }
 
+/* ============================================================
+   v8.8.0 — PDP + CATEGORY API (single-RPC, edge-cached)
+   ============================================================
+   Phase A: Eliminates 5+ DB roundtrips on cold product/category
+   page opens by proxying the new get_product_page /
+   get_category_page RPCs at the edge with KV + Cache API.
+   Version-keyed under the same `pv:{domain}` counter so a single
+   /api/purge-store call invalidates products + PDP + category. */
+
+const PDP_CACHE_TTL = 300;          // 5min browser
+const PDP_KV_TTL = 86400;           // 24h KV / s-maxage
+const CATEGORY_CACHE_TTL = 300;
+const CATEGORY_KV_TTL = 86400;
+const PDP_DB_TIMEOUT_MS = 1500;
+
+const inflightPdpRequests = new Map();
+const inflightCategoryRequests = new Map();
+
+function _buildPdpCacheKey(domain, productSlug, version) {
+  return new Request(`https://cache/pdp:v${version}:${domain}:${productSlug}`);
+}
+function _buildPdpKvKey(domain, productSlug, version) {
+  return `pdp:v${version}:${domain}:${productSlug}`;
+}
+function _buildCategoryCacheKey(domain, categorySlug, version) {
+  return new Request(`https://cache/category:v${version}:${domain}:${categorySlug}`);
+}
+function _buildCategoryKvKey(domain, categorySlug, version) {
+  return `category:v${version}:${domain}:${categorySlug}`;
+}
+
+async function _fetchPdpFromDb(storeSlug, productSlug, timeoutMs) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_product_page`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ _store_slug: storeSlug, _product_slug: productSlug }),
+      signal: controller.signal,
+      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, "404": 30, "500-599": 0 } },
+    });
+    clearTimeout(timeout);
+    if (!res.ok) throw new Error(`PDP RPC error: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    clearTimeout(timeout);
+    throw err;
+  }
+}
+
+async function _fetchCategoryFromDb(storeSlug, categorySlug, limit, timeoutMs) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_category_page`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ _store_slug: storeSlug, _category_slug: categorySlug, _limit: limit }),
+      signal: controller.signal,
+      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, "404": 30, "500-599": 0 } },
+    });
+    clearTimeout(timeout);
+    if (!res.ok) throw new Error(`Category RPC error: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    clearTimeout(timeout);
+    throw err;
+  }
+}
+
+async function _resolveStoreSlugForDomain(domain, env) {
+  // domain might already be `<slug>.<root>` or a custom domain mapped via KV
+  const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim();
+  if (cleanDomain.endsWith(`.${ROOT_DOMAIN}`)) {
+    return cleanDomain.slice(0, -1 - ROOT_DOMAIN.length);
+  }
+  if (env?.STORE_KV) {
+    try {
+      const slug = await env.STORE_KV.get(`domain:${cleanDomain}`, { type: "text" });
+      if (slug) {
+        try { const j = JSON.parse(slug); if (j?.slug) return j.slug; } catch { return slug; }
+      }
+    } catch {}
+  }
+  return null;
+}
+
+async function handlePdpApi(request, url, ctx, env) {
+  const domain = (request.headers.get("host") || url.hostname).toLowerCase().trim();
+  const productSlug = (url.searchParams.get("slug") || "").trim();
+  if (!productSlug) {
+    return addCorsHeaders(new Response(JSON.stringify({ error: "missing slug" }), { status: 400, headers: { "Content-Type": "application/json" } }), "bad-request");
+  }
+  const version = await _getProductVersion(domain, env);
+  const cacheKey = _buildPdpCacheKey(domain, productSlug, version);
+  const kvKey = _buildPdpKvKey(domain, productSlug, version);
+
+  try {
+    const cached = await cache.match(cacheKey);
+    if (cached) {
+      const fresh = new Response(cached.body, cached);
+      fresh.headers.set("Cache-Control", `public, max-age=${PDP_CACHE_TTL}, s-maxage=${PDP_KV_TTL}, stale-while-revalidate=${PDP_KV_TTL}`);
+      fresh.headers.set("Vary", "Accept-Encoding");
+      return addCorsHeaders(fresh, "pdp-cache-api");
+    }
+  } catch {}
+
+  if (env?.STORE_KV) {
+    try {
+      const kvData = await env.STORE_KV.get(kvKey, { type: "text" });
+      if (kvData) {
+        const resp = new Response(kvData, {
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": `public, max-age=${PDP_CACHE_TTL}, s-maxage=${PDP_KV_TTL}, stale-while-revalidate=${PDP_KV_TTL}`,
+            "Vary": "Accept-Encoding",
+          },
+        });
+        ctx.waitUntil(cache.put(cacheKey, resp.clone()).catch(() => {}));
+        return addCorsHeaders(resp, "pdp-kv");
+      }
+    } catch {}
+  }
+
+  const storeSlug = await _resolveStoreSlugForDomain(domain, env);
+  if (!storeSlug) {
+    return addCorsHeaders(new Response(JSON.stringify({ error: "unknown domain" }), { status: 404, headers: { "Content-Type": "application/json" } }), "no-store");
+  }
+
+  const coalesceKey = `${domain}:${productSlug}`;
+  if (inflightPdpRequests.has(coalesceKey)) {
+    try {
+      const data = await inflightPdpRequests.get(coalesceKey);
+      return _buildPdpResponse(data, cacheKey, kvKey, ctx, env, "pdp-coalesced");
+    } catch {}
+  }
+  const fetchPromise = _fetchPdpFromDb(storeSlug, productSlug, PDP_DB_TIMEOUT_MS);
+  inflightPdpRequests.set(coalesceKey, fetchPromise);
+  try {
+    const data = await fetchPromise;
+    return _buildPdpResponse(data, cacheKey, kvKey, ctx, env, "pdp-origin");
+  } catch {
+    return addCorsHeaders(new Response(JSON.stringify({ product: null, error: "upstream" }), { status: 502, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }), "pdp-error");
+  } finally {
+    inflightPdpRequests.delete(coalesceKey);
+  }
+}
+
+function _buildPdpResponse(data, cacheKey, kvKey, ctx, env, source) {
+  const body = JSON.stringify(data || { product: null });
+  const response = new Response(body, {
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": `public, max-age=${PDP_CACHE_TTL}, s-maxage=${PDP_KV_TTL}, stale-while-revalidate=${PDP_KV_TTL}`,
+      "Vary": "Accept-Encoding",
+    },
+  });
+  // Only cache successful payloads (avoid cementing nulls forever)
+  if (data && data.product) {
+    ctx.waitUntil(Promise.all([
+      cache.put(cacheKey, response.clone()).catch(() => {}),
+      ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: PDP_KV_TTL }),
+    ]));
+  }
+  return addCorsHeaders(response, source);
+}
+
+async function handleCategoryApi(request, url, ctx, env) {
+  const domain = (request.headers.get("host") || url.hostname).toLowerCase().trim();
+  const categorySlug = (url.searchParams.get("slug") || "").trim();
+  const limit = Math.min(parseInt(url.searchParams.get("limit") || "50", 10) || 50, 100);
+  if (!categorySlug) {
+    return addCorsHeaders(new Response(JSON.stringify({ error: "missing slug" }), { status: 400, headers: { "Content-Type": "application/json" } }), "bad-request");
+  }
+  const version = await _getProductVersion(domain, env);
+  const cacheKey = _buildCategoryCacheKey(domain, `${categorySlug}:l${limit}`, version);
+  const kvKey = _buildCategoryKvKey(domain, `${categorySlug}:l${limit}`, version);
+
+  try {
+    const cached = await cache.match(cacheKey);
+    if (cached) {
+      const fresh = new Response(cached.body, cached);
+      fresh.headers.set("Cache-Control", `public, max-age=${CATEGORY_CACHE_TTL}, s-maxage=${CATEGORY_KV_TTL}, stale-while-revalidate=${CATEGORY_KV_TTL}`);
+      fresh.headers.set("Vary", "Accept-Encoding");
+      return addCorsHeaders(fresh, "category-cache-api");
+    }
+  } catch {}
+
+  if (env?.STORE_KV) {
+    try {
+      const kvData = await env.STORE_KV.get(kvKey, { type: "text" });
+      if (kvData) {
+        const resp = new Response(kvData, {
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": `public, max-age=${CATEGORY_CACHE_TTL}, s-maxage=${CATEGORY_KV_TTL}, stale-while-revalidate=${CATEGORY_KV_TTL}`,
+            "Vary": "Accept-Encoding",
+          },
+        });
+        ctx.waitUntil(cache.put(cacheKey, resp.clone()).catch(() => {}));
+        return addCorsHeaders(resp, "category-kv");
+      }
+    } catch {}
+  }
+
+  const storeSlug = await _resolveStoreSlugForDomain(domain, env);
+  if (!storeSlug) {
+    return addCorsHeaders(new Response(JSON.stringify({ error: "unknown domain" }), { status: 404, headers: { "Content-Type": "application/json" } }), "no-store");
+  }
+
+  const coalesceKey = `${domain}:${categorySlug}:${limit}`;
+  if (inflightCategoryRequests.has(coalesceKey)) {
+    try {
+      const data = await inflightCategoryRequests.get(coalesceKey);
+      return _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, "category-coalesced");
+    } catch {}
+  }
+  const fetchPromise = _fetchCategoryFromDb(storeSlug, categorySlug, limit, PDP_DB_TIMEOUT_MS);
+  inflightCategoryRequests.set(coalesceKey, fetchPromise);
+  try {
+    const data = await fetchPromise;
+    return _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, "category-origin");
+  } catch {
+    return addCorsHeaders(new Response(JSON.stringify({ category: null, products: [], error: "upstream" }), { status: 502, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } }), "category-error");
+  } finally {
+    inflightCategoryRequests.delete(coalesceKey);
+  }
+}
+
+function _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, source) {
+  const body = JSON.stringify(data || { category: null, products: [] });
+  const response = new Response(body, {
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": `public, max-age=${CATEGORY_CACHE_TTL}, s-maxage=${CATEGORY_KV_TTL}, stale-while-revalidate=${CATEGORY_KV_TTL}`,
+      "Vary": "Accept-Encoding",
+    },
+  });
+  if (data && data.category) {
+    ctx.waitUntil(Promise.all([
+      cache.put(cacheKey, response.clone()).catch(() => {}),
+      ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: CATEGORY_KV_TTL }),
+    ]));
+  }
+  return addCorsHeaders(response, source);
+}
+
 async function handleProductsApi(request, url, ctx, env) {
   const domain = (request.headers.get("host") || url.hostname).toLowerCase().trim();
   const filters = {
