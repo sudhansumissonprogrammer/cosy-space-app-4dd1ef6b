@@ -4891,6 +4891,10 @@ export default {
                     // NOTE: Products are NOT warmed here. They are warmed lazily
                     // by _fetchShellFromSupabase via ctx.waitUntil on first visit,
                     // which happens within milliseconds of the HTML cold load.
+
+                    // v8.8.1 Fix #1: prewarm top PDP + category edge caches so the
+                    // first visitor to /product/* or /category/* doesn't pay full DB cost.
+                    ctx.waitUntil(_prewarmPdpAndCategory(s, dataResult.data, env, ctx).catch(() => {}));
                   } catch {}
                 }),
               );
