@@ -72,7 +72,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.9.0-pdp-html-inline";
+const WORKER_VERSION = "8.9.1-pdp-cache-key-fix";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -380,9 +380,16 @@ function buildSubdomainUrl(slug, path, search = "") {
   return `https://${slug}.${ROOT_DOMAIN}${path}${search}`;
 }
 
-// Normalized early-cache key: ALL SPA routes share ONE entry per hostname.
-function getEarlyCacheKey(hostname) {
-  return new Request(`https://edge-html/${HTML_CACHE_SCHEMA_VERSION}/${hostname.toLowerCase()}/`);
+// Normalized early-cache key. v8.9.1: PDP and Category routes get their own
+// per-slug bucket so they receive HTML with __PRODUCT_INLINE__ /
+// __CATEGORY_INLINE__ instead of the home-page HTML on cache HIT.
+function getEarlyCacheKey(hostname, pathname = "/") {
+  let bucket = "/";
+  if (pathname) {
+    const m = pathname.match(/^\/(product|category)\/([a-zA-Z0-9_-]+)\/?$/);
+    if (m) bucket = `/${m[1]}/${m[2]}/`;
+  }
+  return new Request(`https://edge-html/${HTML_CACHE_SCHEMA_VERSION}/${hostname.toLowerCase()}${bucket}`);
 }
 
 function isHtmlNavigationPath(pathname) {
@@ -2285,9 +2292,16 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     // v8.0.0 cost-cut: bots that fall through to the warm path skip all KV writes.
     if (ctx?.__skipKvWarm) return;
 
+    // v8.9.1: PDP and Category routes need __PRODUCT_INLINE__/__CATEGORY_INLINE__
+    // injection which only happens in the streaming path. Skip warm-html here
+    // and rely on mirrorToCfCache (per-URL CF cache) populated during streaming.
+    if (pathname && /^\/(product|category)\/[a-zA-Z0-9_-]+\/?$/.test(pathname)) {
+      return;
+    }
+
     // skip the warm-lock write entirely (avoids ~30% of warm-lock KV writes).
     if (hostname) {
-      const earlyKey = getEarlyCacheKey(hostname);
+      const earlyKey = getEarlyCacheKey(hostname, pathname);
       const existing = await cache.match(earlyKey);
       if (existing) {
         const ds = existing.headers.get("X-Data-Source") || "";
@@ -2338,7 +2352,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     const fullResponse = new Response(result.html, { status: 200, headers: fullHeaders });
 
     if (hostname) {
-      const earlyKey = getEarlyCacheKey(hostname);
+      const earlyKey = getEarlyCacheKey(hostname, pathname);
       await cache.put(earlyKey, fullResponse.clone()).catch(() => {});
       // v8.4.0: ALSO mirror under the real request URL so Cloudflare's
       // automatic edge cache (and the dashboard cache-rate metric) sees a HIT.
@@ -3888,7 +3902,7 @@ export default {
       if (earlyIsStorefrontHtml) {
         try {
           const earlyHostname = earlyUrl.hostname.toLowerCase().replace(/^www\./, "");
-          const cached = await cache.match(getEarlyCacheKey(earlyHostname));
+          const cached = await cache.match(getEarlyCacheKey(earlyHostname, earlyPath));
           if (cached) return cached;
         } catch {}
       }
@@ -4075,7 +4089,7 @@ export default {
     const isBot = BOT_UA_REGEX.test(ua);
 
     if (isCacheableRequest && !isBot && request.headers.get("x-sf-allow-html-cache") === "1") {
-      const earlyKey = getEarlyCacheKey(hostname);
+      const earlyKey = getEarlyCacheKey(hostname, url.pathname);
       const earlyHit = await cache.match(earlyKey);
 
       if (earlyHit) {
