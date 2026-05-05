@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -93,6 +94,8 @@ Deno.serve(async (req) => {
                 body: JSON.stringify({ amount: captured.amount, currency: captured.currency }),
               });
             }
+            // Fire Meta CAPI Purchase (idempotent via meta_purchase_fired_at stamp)
+            void firePurchaseCapi(supabase, order_id, { source: "razorpay" });
             return new Response(
               JSON.stringify({ status: "captured", payment_id: captured.id }),
               { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -142,6 +145,8 @@ Deno.serve(async (req) => {
           body: JSON.stringify({ amount: payment.amount, currency: payment.currency }),
         });
       }
+      // Fire Meta CAPI Purchase (idempotent via meta_purchase_fired_at stamp)
+      void firePurchaseCapi(supabase, order_id, { source: "razorpay" });
     }
 
     return new Response(
