@@ -145,6 +145,8 @@ Deno.serve(async (req) => {
           body: JSON.stringify({ amount: payment.amount, currency: payment.currency }),
         });
       }
+      // Fire Meta CAPI Purchase (idempotent via meta_purchase_fired_at stamp)
+      void firePurchaseCapi(supabase, order_id, { source: "razorpay" });
     }
 
     return new Response(
