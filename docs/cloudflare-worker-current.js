@@ -2647,6 +2647,12 @@ function _buildPdpResponse(data, cacheKey, kvKey, ctx, env, source) {
       cache.put(cacheKey, response.clone()).catch(() => {}),
       ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: PDP_KV_TTL }),
     ]));
+  } else {
+    // v8.8.1 Fix #4: cache "not found" briefly so DoS via random slugs can't hammer DB.
+    const negResp = new Response(body, {
+      headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60, s-maxage=60" },
+    });
+    ctx.waitUntil(cache.put(cacheKey, negResp).catch(() => {}));
   }
   return addCorsHeaders(response, source);
 }
