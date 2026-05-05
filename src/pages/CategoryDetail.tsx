@@ -1,5 +1,5 @@
 import { useOutletContext, useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -20,6 +20,7 @@ export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
   const { slug, categorySlug } = useParams<{ slug: string; categorySlug: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const themeConfig = useStorefrontThemeConfig(store.id);
   const storeTheme = (store as any)?.theme || "starter";
   const cardStyle = themeConfig?.product_card_style || (storeTheme === "theme-13" ? "style-4" : "style-1");
@@ -27,9 +28,34 @@ export default function CategoryDetail() {
 
   const [sort, setSort] = useState<SortKey>("default");
 
+  // Worker-inlined category payload (Phase A): { category, products, total }
+  const getInlineCategory = () => {
+    try {
+      const inline = (window as any).__CATEGORY_INLINE__;
+      if (inline?.category && inline.category.slug === categorySlug) return inline;
+    } catch { /* ignore */ }
+    return null;
+  };
+
   const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ["category", store.id, categorySlug],
     queryFn: async () => {
+      // Single round-trip: category + first products page
+      const { data: rpc, error: rpcErr } = await (supabase as any).rpc("get_category_page", {
+        _store_slug: store.slug,
+        _category_slug: categorySlug!,
+        _limit: PAGE_SIZE,
+      });
+      if (!rpcErr && rpc?.category) {
+        if (Array.isArray(rpc.products)) {
+          queryClient.setQueryData(
+            ["cat-detail-v3", store.id, rpc.category.name, "default", PAGE_SIZE],
+            { pages: [{ products: rpc.products, page: 0 }], pageParams: [0] }
+          );
+        }
+        return rpc.category as { id: string; name: string; slug: string; image_url: string | null };
+      }
+      // Fallback: legacy direct lookup
       const { data, error } = await (supabase as any)
         .from("categories")
         .select("*")
@@ -39,7 +65,20 @@ export default function CategoryDetail() {
       if (error) throw error;
       return data as { id: string; name: string; slug: string; image_url: string | null } | null;
     },
-    enabled: !!store.id && !!categorySlug,
+    initialData: () => {
+      const inline = getInlineCategory();
+      if (inline?.category) {
+        if (Array.isArray(inline.products)) {
+          queryClient.setQueryData(
+            ["cat-detail-v3", store.id, inline.category.name, "default", PAGE_SIZE],
+            { pages: [{ products: inline.products, page: 0 }], pageParams: [0] }
+          );
+        }
+        return inline.category;
+      }
+      return undefined;
+    },
+    enabled: !!store.id && !!store.slug && !!categorySlug,
   });
 
   const {
