@@ -4144,6 +4144,8 @@ export default {
       }
 
       if (url.pathname === "/api/products" && request.method === "GET") return handleProductsApi(request, url, ctx, env);
+      if (url.pathname === "/api/pdp" && request.method === "GET") return handlePdpApi(request, url, ctx, env);
+      if (url.pathname === "/api/category" && request.method === "GET") return handleCategoryApi(request, url, ctx, env);
       if (url.pathname === "/api/purge-store" && request.method === "POST")
         return handlePurgeStore(request, url, ctx, env, hostname);
       if (url.pathname === "/api/purge-products" && request.method === "POST")
