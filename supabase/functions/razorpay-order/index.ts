@@ -104,6 +104,13 @@ Deno.serve(async (req) => {
 
     const rzpOrder = await rzpRes.json();
 
+    // Persist razorpay_order_id so we can later reconcile captured payments
+    // even if the browser callback is missed (UPI / network drop).
+    await supabase
+      .from("orders")
+      .update({ razorpay_order_id: rzpOrder.id })
+      .eq("id", order_id);
+
     return new Response(
       JSON.stringify({
         razorpay_order_id: rzpOrder.id,
