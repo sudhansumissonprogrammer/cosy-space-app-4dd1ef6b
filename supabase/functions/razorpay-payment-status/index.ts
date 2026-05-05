@@ -94,6 +94,8 @@ Deno.serve(async (req) => {
                 body: JSON.stringify({ amount: captured.amount, currency: captured.currency }),
               });
             }
+            // Fire Meta CAPI Purchase (idempotent via meta_purchase_fired_at stamp)
+            void firePurchaseCapi(supabase, order_id, { source: "razorpay" });
             return new Response(
               JSON.stringify({ status: "captured", payment_id: captured.id }),
               { headers: { ...corsHeaders, "Content-Type": "application/json" } }
