@@ -4580,6 +4580,7 @@ export default {
         inlineProducts,
         earlyStorefrontPromise,
         responseHeaders,
+        pdpCategoryInline,
       );
 
       // v7.7.0 Fix 2: pass already-resolved inlineProducts to skip 3rd fetch.
