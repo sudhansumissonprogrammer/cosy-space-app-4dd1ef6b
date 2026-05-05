@@ -2464,6 +2464,10 @@ export type Database = {
       get_admin_analytics: { Args: never; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
       get_admin_users_stores: { Args: never; Returns: Json }
+      get_category_page: {
+        Args: { _category_slug: string; _limit?: number; _store_slug: string }
+        Returns: Json
+      }
       get_co_purchased_products: {
         Args: { _limit?: number; _product_id: string }
         Returns: string[]
@@ -2479,6 +2483,10 @@ export type Database = {
           id: string
           platform_name: string
         }[]
+      }
+      get_product_page: {
+        Args: { _product_slug: string; _store_slug: string }
+        Returns: Json
       }
       get_store_as_admin: { Args: { _slug: string }; Returns: Json }
       get_store_billing_state: { Args: { _store_id: string }; Returns: Json }
