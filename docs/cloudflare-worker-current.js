@@ -2080,6 +2080,7 @@ async function serveStreamedHtml(
   inlineProducts,
   storefrontPromise,
   responseHeaders,
+  pdpCategoryInline = null, // v8.9.0 { kind, json } | null
 ) {
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
@@ -2103,7 +2104,14 @@ async function serveStreamedHtml(
         ? `window.__PRODUCTS_INLINE__=${inlineProducts.replace(/<\/script/gi, "<\\/script")};`
         : "";
       const themeHint = themeLite ? `window.__THEME__=${JSON.stringify(themeLite)};` : "";
-      const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";${themeHint}${productsHint}</script>`;
+      // v8.9.0: inline PDP/category JSON so the React page boots WITHOUT a fetch
+      let pdpCatHint = "";
+      if (pdpCategoryInline?.json) {
+        const safeJson = pdpCategoryInline.json.replace(/<\/script/gi, "<\\/script");
+        const varName = pdpCategoryInline.kind === "product" ? "__PRODUCT_INLINE__" : "__CATEGORY_INLINE__";
+        pdpCatHint = `window.${varName}=${safeJson};`;
+      }
+      const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";${themeHint}${productsHint}${pdpCatHint}</script>`;
 
       // v6.4.0: Preload-scanner image fast-path — emit <link rel="preload">
       // tags for the first 6 product images directly in <head>. The browser
