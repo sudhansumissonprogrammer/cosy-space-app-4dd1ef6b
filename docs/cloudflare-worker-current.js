@@ -4500,13 +4500,17 @@ export default {
       const earlyStorefrontPromise = prefetchStorefrontDataWithDeadline(slug, ctx, env, storefrontDeadline);
 
       // FIX #4: Batch KV read + shell in parallel
-      const [shellResult, storeInfo, kvBatch, cachedHead, inlineProducts] = await Promise.all([
+      // v8.9.0: also fetch inline PDP/category payload for /product/* and /category/*
+      const pdpCategoryRoute = _parsePdpCategoryPath(url.pathname);
+      const [shellResult, storeInfo, kvBatch, cachedHead, inlineProducts, pdpCategoryJson] = await Promise.all([
         getNavigationSpaShell(request, ctx, env),
         _resolveStoreInfo(slug, hostname, env),
         _batchKvRead(slug, env),
         _getCachedPrebuiltHead(env),
         _getInlineProductsOrNull(hostname, slug, env, ctx),
+        _getInlinePdpCategoryOrNull(hostname, pdpCategoryRoute, env, ctx),
       ]);
+      const pdpCategoryInline = pdpCategoryJson ? { kind: pdpCategoryRoute.kind, json: pdpCategoryJson } : null;
 
       // Hydrate in-memory caches from batch
       if (kvBatch.theme && !(_memThemeCache.get(slug)?.expiresAt > Date.now())) {
