@@ -31,6 +31,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { lazy, Suspense } from "react";
+import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
 
 const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
