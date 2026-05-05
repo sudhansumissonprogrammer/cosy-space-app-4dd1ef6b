@@ -72,7 +72,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.8.0-pdp-category-edge-cache";
+const WORKER_VERSION = "8.8.1-pdp-cron-prewarm";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -2647,6 +2647,12 @@ function _buildPdpResponse(data, cacheKey, kvKey, ctx, env, source) {
       cache.put(cacheKey, response.clone()).catch(() => {}),
       ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: PDP_KV_TTL }),
     ]));
+  } else {
+    // v8.8.1 Fix #4: cache "not found" briefly so DoS via random slugs can't hammer DB.
+    const negResp = new Response(body, {
+      headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60, s-maxage=60" },
+    });
+    ctx.waitUntil(cache.put(cacheKey, negResp).catch(() => {}));
   }
   return addCorsHeaders(response, source);
 }
@@ -2727,8 +2733,92 @@ function _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, source) {
       cache.put(cacheKey, response.clone()).catch(() => {}),
       ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: CATEGORY_KV_TTL }),
     ]));
+  } else {
+    // v8.8.1 Fix #4: short negative cache for unknown categories.
+    const negResp = new Response(body, {
+      headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60, s-maxage=60" },
+    });
+    ctx.waitUntil(cache.put(cacheKey, negResp).catch(() => {}));
   }
   return addCorsHeaders(response, source);
+}
+
+/* v8.8.1 — Cron prewarm helper for PDP + category edge caches.
+   Limits: top 8 products + all categories per store, fire-and-forget. */
+async function _prewarmPdpAndCategory(store, storefrontData, env, ctx) {
+  if (!store?.slug) return;
+  const domain = `${store.slug}.${ROOT_DOMAIN}`.toLowerCase();
+  const customDomain = store.custom_domain ? store.custom_domain.replace(/^www\./, "").toLowerCase().trim() : null;
+  const products = Array.isArray(storefrontData?.products) ? storefrontData.products : [];
+  const categories = Array.isArray(storefrontData?.categories) ? storefrontData.categories : [];
+
+  const topProducts = products.slice(0, 8).map((p) => p?.slug).filter(Boolean);
+  const topCategories = categories.slice(0, 12).map((c) => c?.slug).filter(Boolean);
+
+  const version = await _getProductVersion(domain, env);
+  const customVersion = customDomain ? await _getProductVersion(customDomain, env) : null;
+
+  // Helper: prewarm one PDP slug for one domain
+  async function warmPdp(d, ver, slug) {
+    const cacheKey = _buildPdpCacheKey(d, slug, ver);
+    try {
+      const existing = await cache.match(cacheKey);
+      if (existing) return;
+    } catch {}
+    try {
+      const data = await _fetchPdpFromDb(store.slug, slug, PDP_DB_TIMEOUT_MS);
+      if (!data?.product) return;
+      const body = JSON.stringify(data);
+      const resp = new Response(body, {
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": `public, max-age=${PDP_CACHE_TTL}, s-maxage=${PDP_KV_TTL}`,
+        },
+      });
+      await Promise.all([
+        cache.put(cacheKey, resp.clone()).catch(() => {}),
+        kvPutDedup(env, _buildPdpKvKey(d, slug, ver), body, { expirationTtl: PDP_KV_TTL }),
+      ]);
+    } catch {}
+  }
+
+  async function warmCategory(d, ver, slug) {
+    const cacheKey = _buildCategoryCacheKey(d, `${slug}:l50`, ver);
+    try {
+      const existing = await cache.match(cacheKey);
+      if (existing) return;
+    } catch {}
+    try {
+      const data = await _fetchCategoryFromDb(store.slug, slug, 50, PDP_DB_TIMEOUT_MS);
+      if (!data?.category) return;
+      const body = JSON.stringify(data);
+      const resp = new Response(body, {
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": `public, max-age=${CATEGORY_CACHE_TTL}, s-maxage=${CATEGORY_KV_TTL}`,
+        },
+      });
+      await Promise.all([
+        cache.put(cacheKey, resp.clone()).catch(() => {}),
+        kvPutDedup(env, _buildCategoryKvKey(d, `${slug}:l50`, ver), body, { expirationTtl: CATEGORY_KV_TTL }),
+      ]);
+    } catch {}
+  }
+
+  // Concurrency-limited fan-out (3 at a time to stay polite to DB)
+  const tasks = [];
+  for (const slug of topProducts) {
+    tasks.push(() => warmPdp(domain, version, slug));
+    if (customDomain) tasks.push(() => warmPdp(customDomain, customVersion, slug));
+  }
+  for (const slug of topCategories) {
+    tasks.push(() => warmCategory(domain, version, slug));
+    if (customDomain) tasks.push(() => warmCategory(customDomain, customVersion, slug));
+  }
+  const C = 3;
+  for (let i = 0; i < tasks.length; i += C) {
+    await Promise.all(tasks.slice(i, i + C).map((fn) => fn()));
+  }
 }
 
 async function handleProductsApi(request, url, ctx, env) {
@@ -4879,6 +4969,10 @@ export default {
                     // NOTE: Products are NOT warmed here. They are warmed lazily
                     // by _fetchShellFromSupabase via ctx.waitUntil on first visit,
                     // which happens within milliseconds of the HTML cold load.
+
+                    // v8.8.1 Fix #1: prewarm top PDP + category edge caches so the
+                    // first visitor to /product/* or /category/* doesn't pay full DB cost.
+                    ctx.waitUntil(_prewarmPdpAndCategory(s, dataResult.data, env, ctx).catch(() => {}));
                   } catch {}
                 }),
               );
