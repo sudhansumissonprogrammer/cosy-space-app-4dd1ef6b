@@ -4089,7 +4089,7 @@ export default {
     const isBot = BOT_UA_REGEX.test(ua);
 
     if (isCacheableRequest && !isBot && request.headers.get("x-sf-allow-html-cache") === "1") {
-      const earlyKey = getEarlyCacheKey(hostname);
+      const earlyKey = getEarlyCacheKey(hostname, url.pathname);
       const earlyHit = await cache.match(earlyKey);
 
       if (earlyHit) {
