@@ -327,9 +327,11 @@ Deno.serve(async (req) => {
 
     // For COD orders the order is "complete" the moment it's placed — fire Purchase CAPI
     // server-to-server now (matches Shopify default behaviour). Razorpay/Cashfree orders
-    // get their Purchase fired from the verify/webhook step instead. Fire-and-forget:
-    // helper is idempotent and never throws, so a failure here can't break checkout.
-    if (order.payment_method === "cod") {
+    // get their Purchase fired from the verify/webhook step instead.
+    // ⚠️ Skip Meta CAPI for manual / admin-created orders (no browser session signals).
+    // Sending those tanks Event Match Quality and adds noise without attribution value.
+    const isStorefrontOrder = !!(meta?.fbp || meta?.fbc || meta?.event_id);
+    if (order.payment_method === "cod" && isStorefrontOrder) {
       void firePurchaseCapi(supabase, createdOrder.id, {
         source: "cod",
         eventSourceUrl: meta?.event_source_url,
