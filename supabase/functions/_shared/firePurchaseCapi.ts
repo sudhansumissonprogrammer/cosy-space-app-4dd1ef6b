@@ -76,6 +76,25 @@ export async function firePurchaseCapi(
       return { ok: true, reason: "already_fired" };
     }
 
+    // 🚫 Skip MANUAL / admin-created orders (Shopify-style behaviour).
+    // A real storefront purchase always carries at least one browser signal:
+    //   buyer_user_agent, buyer_fbp, buyer_fbc, or meta_event_id.
+    // Manual orders entered from the admin dashboard have none of these →
+    // sending them tanks Event Match Quality, gives no attribution, and risks
+    // double-counting if the same buyer also placed online.
+    const hasBrowserSignals =
+      !!order.buyer_user_agent || !!order.buyer_fbp || !!order.buyer_fbc || !!order.meta_event_id;
+    if (!hasBrowserSignals) {
+      // Stamp so we don't re-evaluate on every status change.
+      await supabase
+        .from("orders")
+        .update({ meta_purchase_fired_at: new Date().toISOString() })
+        .eq("id", orderId)
+        .is("meta_purchase_fired_at", null);
+      console.log(`[capi:${opts.source}] skip — manual order (no browser signals)`, orderId);
+      return { ok: true, reason: "manual_order" };
+    }
+
     // 2. Load store pixel config.
     const { data: store } = await supabase
       .from("stores")
