@@ -2743,6 +2743,84 @@ function _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, source) {
   return addCorsHeaders(response, source);
 }
 
+/* v8.8.1 — Cron prewarm helper for PDP + category edge caches.
+   Limits: top 8 products + all categories per store, fire-and-forget. */
+async function _prewarmPdpAndCategory(store, storefrontData, env, ctx) {
+  if (!store?.slug) return;
+  const domain = `${store.slug}.${ROOT_DOMAIN}`.toLowerCase();
+  const customDomain = store.custom_domain ? store.custom_domain.replace(/^www\./, "").toLowerCase().trim() : null;
+  const products = Array.isArray(storefrontData?.products) ? storefrontData.products : [];
+  const categories = Array.isArray(storefrontData?.categories) ? storefrontData.categories : [];
+
+  const topProducts = products.slice(0, 8).map((p) => p?.slug).filter(Boolean);
+  const topCategories = categories.slice(0, 12).map((c) => c?.slug).filter(Boolean);
+
+  const version = await _getProductVersion(domain, env);
+  const customVersion = customDomain ? await _getProductVersion(customDomain, env) : null;
+
+  // Helper: prewarm one PDP slug for one domain
+  async function warmPdp(d, ver, slug) {
+    const cacheKey = _buildPdpCacheKey(d, slug, ver);
+    try {
+      const existing = await cache.match(cacheKey);
+      if (existing) return;
+    } catch {}
+    try {
+      const data = await _fetchPdpFromDb(store.slug, slug, PDP_DB_TIMEOUT_MS);
+      if (!data?.product) return;
+      const body = JSON.stringify(data);
+      const resp = new Response(body, {
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": `public, max-age=${PDP_CACHE_TTL}, s-maxage=${PDP_KV_TTL}`,
+        },
+      });
+      await Promise.all([
+        cache.put(cacheKey, resp.clone()).catch(() => {}),
+        kvPutDedup(env, _buildPdpKvKey(d, slug, ver), body, { expirationTtl: PDP_KV_TTL }),
+      ]);
+    } catch {}
+  }
+
+  async function warmCategory(d, ver, slug) {
+    const cacheKey = _buildCategoryCacheKey(d, `${slug}:l50`, ver);
+    try {
+      const existing = await cache.match(cacheKey);
+      if (existing) return;
+    } catch {}
+    try {
+      const data = await _fetchCategoryFromDb(store.slug, slug, 50, PDP_DB_TIMEOUT_MS);
+      if (!data?.category) return;
+      const body = JSON.stringify(data);
+      const resp = new Response(body, {
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": `public, max-age=${CATEGORY_CACHE_TTL}, s-maxage=${CATEGORY_KV_TTL}`,
+        },
+      });
+      await Promise.all([
+        cache.put(cacheKey, resp.clone()).catch(() => {}),
+        kvPutDedup(env, _buildCategoryKvKey(d, `${slug}:l50`, ver), body, { expirationTtl: CATEGORY_KV_TTL }),
+      ]);
+    } catch {}
+  }
+
+  // Concurrency-limited fan-out (3 at a time to stay polite to DB)
+  const tasks = [];
+  for (const slug of topProducts) {
+    tasks.push(() => warmPdp(domain, version, slug));
+    if (customDomain) tasks.push(() => warmPdp(customDomain, customVersion, slug));
+  }
+  for (const slug of topCategories) {
+    tasks.push(() => warmCategory(domain, version, slug));
+    if (customDomain) tasks.push(() => warmCategory(customDomain, customVersion, slug));
+  }
+  const C = 3;
+  for (let i = 0; i < tasks.length; i += C) {
+    await Promise.all(tasks.slice(i, i + C).map((fn) => fn()));
+  }
+}
+
 async function handleProductsApi(request, url, ctx, env) {
   const domain = (request.headers.get("host") || url.hostname).toLowerCase().trim();
   const filters = {
