@@ -2292,9 +2292,16 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     // v8.0.0 cost-cut: bots that fall through to the warm path skip all KV writes.
     if (ctx?.__skipKvWarm) return;
 
+    // v8.9.1: PDP and Category routes need __PRODUCT_INLINE__/__CATEGORY_INLINE__
+    // injection which only happens in the streaming path. Skip warm-html here
+    // and rely on mirrorToCfCache (per-URL CF cache) populated during streaming.
+    if (pathname && /^\/(product|category)\/[a-zA-Z0-9_-]+\/?$/.test(pathname)) {
+      return;
+    }
+
     // skip the warm-lock write entirely (avoids ~30% of warm-lock KV writes).
     if (hostname) {
-      const earlyKey = getEarlyCacheKey(hostname);
+      const earlyKey = getEarlyCacheKey(hostname, pathname);
       const existing = await cache.match(earlyKey);
       if (existing) {
         const ds = existing.headers.get("X-Data-Source") || "";
@@ -2345,7 +2352,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     const fullResponse = new Response(result.html, { status: 200, headers: fullHeaders });
 
     if (hostname) {
-      const earlyKey = getEarlyCacheKey(hostname);
+      const earlyKey = getEarlyCacheKey(hostname, pathname);
       await cache.put(earlyKey, fullResponse.clone()).catch(() => {});
       // v8.4.0: ALSO mirror under the real request URL so Cloudflare's
       // automatic edge cache (and the dashboard cache-rate metric) sees a HIT.
