@@ -2571,6 +2571,59 @@ async function _resolveStoreSlugForDomain(domain, env) {
   return null;
 }
 
+/* v8.9.0 — Detect /product/<slug> and /category/<slug> for HTML inlining.
+   Returns { kind: 'product'|'category', slug } or null. */
+function _parsePdpCategoryPath(pathname) {
+  if (!pathname) return null;
+  let m = pathname.match(/^\/product\/([a-zA-Z0-9_-]+)\/?$/);
+  if (m) return { kind: "product", slug: m[1] };
+  m = pathname.match(/^\/category\/([a-zA-Z0-9_-]+)\/?$/);
+  if (m) return { kind: "category", slug: m[1] };
+  return null;
+}
+
+/* v8.9.0 — Read PDP / category JSON from edge cache or KV WITHOUT touching DB.
+   Critical render path must stay cache-only; DB hit happens via /api/* fallback
+   if neither layer has it warm. Returns the raw JSON string or null. */
+async function _getInlinePdpCategoryOrNull(hostname, route, env, ctx) {
+  if (!route) return null;
+  try {
+    const version = await _getProductVersion(hostname, env);
+    let cacheKey, kvKey;
+    if (route.kind === "product") {
+      cacheKey = _buildPdpCacheKey(hostname, route.slug, version);
+      kvKey = _buildPdpKvKey(hostname, route.slug, version);
+    } else {
+      cacheKey = _buildCategoryCacheKey(hostname, `${route.slug}:l50`, version);
+      kvKey = _buildCategoryKvKey(hostname, `${route.slug}:l50`, version);
+    }
+    const cached = await cache.match(cacheKey);
+    if (cached) return await cached.text();
+    if (env?.STORE_KV) {
+      const kvVal = await env.STORE_KV.get(kvKey, { type: "text" });
+      if (kvVal) {
+        ctx.waitUntil(
+          cache
+            .put(
+              cacheKey,
+              new Response(kvVal, {
+                headers: {
+                  "Content-Type": "application/json",
+                  "Cache-Control": route.kind === "product"
+                    ? `public, max-age=${PDP_CACHE_TTL}`
+                    : `public, max-age=${CATEGORY_CACHE_TTL}`,
+                },
+              }),
+            )
+            .catch(() => {}),
+        );
+        return kvVal;
+      }
+    }
+  } catch {}
+  return null;
+}
+
 async function handlePdpApi(request, url, ctx, env) {
   const domain = (request.headers.get("host") || url.hostname).toLowerCase().trim();
   const productSlug = (url.searchParams.get("slug") || "").trim();
