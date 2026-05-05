@@ -2733,6 +2733,12 @@ function _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, source) {
       cache.put(cacheKey, response.clone()).catch(() => {}),
       ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: CATEGORY_KV_TTL }),
     ]));
+  } else {
+    // v8.8.1 Fix #4: short negative cache for unknown categories.
+    const negResp = new Response(body, {
+      headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60, s-maxage=60" },
+    });
+    ctx.waitUntil(cache.put(cacheKey, negResp).catch(() => {}));
   }
   return addCorsHeaders(response, source);
 }
