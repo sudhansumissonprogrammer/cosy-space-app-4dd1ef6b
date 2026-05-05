@@ -72,7 +72,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.8.0-pdp-category-edge-cache";
+const WORKER_VERSION = "8.8.1-pdp-cron-prewarm";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
