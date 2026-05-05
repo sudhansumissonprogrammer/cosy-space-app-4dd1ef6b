@@ -4737,6 +4737,7 @@ export default {
         inlineProductsCDReal,
         earlyStorefrontPromiseCD,
         responseHeadersCD,
+        pdpCategoryInlineCD,
       );
 
       // v7.7.0 Fix 2: pass already-resolved inlineProducts to skip 3rd fetch.
