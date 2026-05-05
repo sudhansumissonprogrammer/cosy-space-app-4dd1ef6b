@@ -380,9 +380,16 @@ function buildSubdomainUrl(slug, path, search = "") {
   return `https://${slug}.${ROOT_DOMAIN}${path}${search}`;
 }
 
-// Normalized early-cache key: ALL SPA routes share ONE entry per hostname.
-function getEarlyCacheKey(hostname) {
-  return new Request(`https://edge-html/${HTML_CACHE_SCHEMA_VERSION}/${hostname.toLowerCase()}/`);
+// Normalized early-cache key. v8.9.1: PDP and Category routes get their own
+// per-slug bucket so they receive HTML with __PRODUCT_INLINE__ /
+// __CATEGORY_INLINE__ instead of the home-page HTML on cache HIT.
+function getEarlyCacheKey(hostname, pathname = "/") {
+  let bucket = "/";
+  if (pathname) {
+    const m = pathname.match(/^\/(product|category)\/([a-zA-Z0-9_-]+)\/?$/);
+    if (m) bucket = `/${m[1]}/${m[2]}/`;
+  }
+  return new Request(`https://edge-html/${HTML_CACHE_SCHEMA_VERSION}/${hostname.toLowerCase()}${bucket}`);
 }
 
 function isHtmlNavigationPath(pathname) {
