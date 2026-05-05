@@ -50,20 +50,57 @@ Deno.serve(async (req) => {
 
     const authHeader = "Basic " + btoa(`${config.razorpay_key_id}:${config.razorpay_key_secret}`);
 
-    // If no real payment_id, check the order status in our DB
+    // If no real payment_id (modal dismissed / UPI flow lost), reconcile via Razorpay
     if (!razorpay_payment_id || razorpay_payment_id === "check_order") {
       const { data: order } = await supabase
         .from("orders")
-        .select("status, notes")
+        .select("status, notes, razorpay_order_id")
         .eq("id", order_id)
         .single();
 
+      // Already settled in our DB
       if (order?.status === "confirmed" || order?.status === "partially_paid") {
         return new Response(
           JSON.stringify({ status: "captured", payment_id: order.notes }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      // Ask Razorpay if any payment was captured for this rzp order
+      if (order?.razorpay_order_id) {
+        const rzpRes = await fetch(
+          `https://api.razorpay.com/v1/orders/${order.razorpay_order_id}/payments`,
+          { headers: { Authorization: authHeader } }
+        );
+        if (rzpRes.ok) {
+          const body = await rzpRes.json();
+          const items: any[] = Array.isArray(body?.items) ? body.items : [];
+          const captured = items.find((p) => p.status === "captured" || p.status === "authorized");
+          if (captured) {
+            const newStatus = isPartialOrder ? "partially_paid" : "confirmed";
+            await supabase
+              .from("orders")
+              .update({
+                status: newStatus,
+                payment_method: "razorpay",
+                notes: `Razorpay Payment ID: ${captured.id}`,
+              })
+              .eq("id", order_id);
+            if (captured.status === "authorized") {
+              await fetch(`https://api.razorpay.com/v1/payments/${captured.id}/capture`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: authHeader },
+                body: JSON.stringify({ amount: captured.amount, currency: captured.currency }),
+              });
+            }
+            return new Response(
+              JSON.stringify({ status: "captured", payment_id: captured.id }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        }
+      }
+
       return new Response(
         JSON.stringify({ status: "pending" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
