@@ -15,6 +15,7 @@ import ShopFilterBar, { applySort, type SortKey } from "@/components/storefront/
 import CategoryHeroBanner from "@/components/storefront/CategoryHeroBanner";
 import ShopEmptyState from "@/components/storefront/ShopEmptyState";
 import BackToTop from "@/components/storefront/BackToTop";
+import { fetchCategoryEdge } from "@/lib/storefrontEdgeApi";
 
 export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
