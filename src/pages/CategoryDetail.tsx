@@ -15,6 +15,7 @@ import ShopFilterBar, { applySort, type SortKey } from "@/components/storefront/
 import CategoryHeroBanner from "@/components/storefront/CategoryHeroBanner";
 import ShopEmptyState from "@/components/storefront/ShopEmptyState";
 import BackToTop from "@/components/storefront/BackToTop";
+import { fetchCategoryEdge } from "@/lib/storefrontEdgeApi";
 
 export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
@@ -40,13 +41,15 @@ export default function CategoryDetail() {
   const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ["category", store.id, categorySlug],
     queryFn: async () => {
-      // Single round-trip: category + first products page
-      const { data: rpc, error: rpcErr } = await (supabase as any).rpc("get_category_page", {
+      // Phase A: try Worker edge cache first (KV + CF cache)
+      const edge = await fetchCategoryEdge(categorySlug!, PAGE_SIZE);
+      const rpc = edge ?? (await (supabase as any).rpc("get_category_page", {
         _store_slug: store.slug,
         _category_slug: categorySlug!,
         _limit: PAGE_SIZE,
-      });
-      if (!rpcErr && rpc?.category) {
+      })).data;
+
+      if (rpc?.category) {
         if (Array.isArray(rpc.products)) {
           queryClient.setQueryData(
             ["cat-detail-v3", store.id, rpc.category.name, "default", PAGE_SIZE],
