@@ -27,6 +27,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
   const { wishlisted, cartQty, effectivePrice, handleAddToCart, handleToggleWishlist, heartBursting, updateQuantity } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const [hoverLoaded, setHoverLoaded] = useState(false);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const bilingualCta = (store as any).theme === "theme-16" && !!themeConfig?.bilingual_cta;
 
@@ -53,7 +54,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
     <div
       className="card-tilt group relative overflow-hidden rounded-2xl transition-all duration-300 ease-out cursor-pointer"
       style={{ boxShadow: cardShadow, contain: priority ? undefined : "layout style", contentVisibility: priority ? undefined : "auto", backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 10%, transparent)" }}
-      onMouseEnter={(e) => { prefetchProductDetail(); e.currentTarget.style.boxShadow = cardHoverShadow; }}
+      onMouseEnter={(e) => { prefetchProductDetail(); setHoverLoaded(true); e.currentTarget.style.boxShadow = cardHoverShadow; }}
       onTouchStart={prefetchProductDetail}
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = cardShadow; }}
     >
@@ -83,9 +84,9 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
             const hasSecond = images.length > 1;
             return (
               <>
-                <img src={optimizeImageUrl(images[0], 400, 80)} srcSet={getImageSrcSet(images[0], [400, 800], 80)} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} width={400} height={533} data-no-crop="true" className={`absolute inset-0 h-full w-full object-cover object-center transition-all duration-500 ease-out ${hasSecond ? "group-hover:opacity-0" : ""}`} loading={priority ? "eager" : "lazy"} decoding={priority ? "sync" : "async"} fetchPriority={priority ? "high" : "auto"} />
-                {hasSecond && (
-                  <img src={optimizeImageUrl(images[1], 400, 80)} srcSet={getImageSrcSet(images[1], [400, 800], 80)} sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" alt={product.name} width={400} height={533} data-no-crop="true" className="absolute inset-0 h-full w-full object-cover object-center opacity-0 transition-all duration-500 ease-out group-hover:opacity-100" loading="lazy" decoding="async" />
+                <img src={optimizeImageUrl(images[0], 400, 72)} srcSet={getImageSrcSet(images[0], [300, 500, 700, 900], 72)} sizes="(max-width: 640px) 45vw, (max-width: 1024px) 28vw, (max-width: 1440px) 20vw, 16vw" alt={product.name} width={400} height={533} data-no-crop="true" className={`absolute inset-0 h-full w-full object-cover object-center transition-all duration-500 ease-out ${hasSecond && hoverLoaded ? "group-hover:opacity-0" : ""}`} loading={priority ? "eager" : "lazy"} decoding={priority ? "sync" : "async"} fetchPriority={priority ? "high" : "low"} />
+                {hasSecond && hoverLoaded && (
+                  <img src={optimizeImageUrl(images[1], 400, 72)} srcSet={getImageSrcSet(images[1], [300, 500, 700, 900], 72)} sizes="(max-width: 640px) 45vw, (max-width: 1024px) 28vw, (max-width: 1440px) 20vw, 16vw" alt={product.name} width={400} height={533} data-no-crop="true" className="absolute inset-0 h-full w-full object-cover object-center opacity-0 transition-all duration-500 ease-out group-hover:opacity-100" loading="lazy" decoding="async" fetchPriority="low" />
                 )}
               </>
             );

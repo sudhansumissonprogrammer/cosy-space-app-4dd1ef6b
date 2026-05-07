@@ -171,8 +171,8 @@ export function resolveProductImages(product: any): string[] {
  */
 export function getImageSrcSet(
   url: string | null | undefined,
-  sizes: number[] = [400, 800],
-  quality: number = 85,
+  sizes: number[] = [300, 500, 700, 900],
+  quality: number = 72,
 ): string {
   if (!url) return "";
 
@@ -193,7 +193,7 @@ export function getImageSrcSet(
  * srcSet entry (200w/400w) instead of the 800w desktop variant.
  */
 export const PRODUCT_CARD_SIZES =
-  "(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 22vw";
+  "(max-width: 640px) 45vw, (max-width: 1024px) 28vw, (max-width: 1440px) 20vw, 16vw";
 
 /**
  * Standard `sizes` attribute for hero/banner images (full-width).
