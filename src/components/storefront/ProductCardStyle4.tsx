@@ -79,7 +79,6 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
         if (images.length === 0) return null;
         const hasSecond = images.length > 1;
         return (
-          <div className="group/img relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
           <div onMouseEnter={() => setHoverLoaded(true)} className="group/img relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
             <img
               src={optimizeImageUrl(images[0], 400, 72)}
