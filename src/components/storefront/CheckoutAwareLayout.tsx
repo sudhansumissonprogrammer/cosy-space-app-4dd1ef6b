@@ -85,15 +85,23 @@ export default function CheckoutAwareLayout({
 
   useEffect(() => {
     const handler = () => setOrderPlaced(true);
+    const startHandler = () => setPaymentInProgress(true);
+    const endHandler = () => setPaymentInProgress(false);
     window.addEventListener("order-placed", handler);
-    return () => window.removeEventListener("order-placed", handler);
+    window.addEventListener("payment-in-progress", startHandler);
+    window.addEventListener("payment-ended", endHandler);
+    return () => {
+      window.removeEventListener("order-placed", handler);
+      window.removeEventListener("payment-in-progress", startHandler);
+      window.removeEventListener("payment-ended", endHandler);
+    };
   }, []);
 
-  useEffect(() => { if (!isCheckout) setOrderPlaced(false); }, [isCheckout]);
+  useEffect(() => { if (!isCheckout) { setOrderPlaced(false); setPaymentInProgress(false); } }, [isCheckout]);
 
   // ShipRocket-style checkout lock: prevent refresh, back button, and tab close
   useEffect(() => {
-    if (!isCheckout || orderPlaced) return;
+    if (!isCheckout || orderPlaced || paymentInProgress) return;
 
     // 1. Warn on refresh / tab close
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
