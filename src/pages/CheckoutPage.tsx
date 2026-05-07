@@ -1145,14 +1145,14 @@ export default function CheckoutPage() {
     };
 
     try {
+      console.log("[Cashfree] Opening checkout", { env, sessionId: cfData.payment_session_id?.slice(0, 20) });
       const result = await cashfree.checkout({
         paymentSessionId: cfData.payment_session_id,
         redirectTarget: "_modal",
       });
-      // Cashfree SDK returns when modal closes (success / fail / cancel)
+      console.log("[Cashfree] Checkout returned", result);
       if (result?.error) {
-        // user cancelled OR UPI race (modal closed before GPay/PhonePe confirmed back).
-        // Show "Confirming…" UI and poll for up to ~16s before declaring failure.
+        console.warn("[Cashfree] Checkout error", result.error);
         const ok = await verifyAndFinalize({ attempts: 8, intervalMs: 2000, showConfirming: true });
         if (!ok) {
           setPlacingStep(0);
@@ -1160,7 +1160,8 @@ export default function CheckoutPage() {
           setPaymentFailed(true);
           setPlacing(false);
           if (result.error.code !== "user_cancelled") {
-            toast.error(result.error.message || "Payment failed. You can retry below.");
+            const msg = result.error.message || result.error.code || "Payment failed. You can retry below.";
+            toast.error(msg);
           }
         }
         return;
