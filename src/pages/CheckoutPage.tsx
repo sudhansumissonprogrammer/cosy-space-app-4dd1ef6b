@@ -1188,6 +1188,8 @@ export default function CheckoutPage() {
         setPlacing(false);
         toast.error(err?.message || "Payment failed. You can retry below.");
       }
+    } finally {
+      window.dispatchEvent(new CustomEvent("payment-ended"));
     }
   };
 
