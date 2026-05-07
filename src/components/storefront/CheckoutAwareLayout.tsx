@@ -67,6 +67,7 @@ export default function CheckoutAwareLayout({
   const isCheckout = location.pathname.includes("/checkout");
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [paymentInProgress, setPaymentInProgress] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const queryClient = useQueryClient();
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
