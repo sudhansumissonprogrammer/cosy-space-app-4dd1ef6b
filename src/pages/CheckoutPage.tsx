@@ -1146,6 +1146,9 @@ export default function CheckoutPage() {
 
     try {
       console.log("[Cashfree] Opening checkout", { env, sessionId: cfData.payment_session_id?.slice(0, 20) });
+      // Disable beforeunload lock — Cashfree triggers UPI deep links from top window
+      // which would otherwise show the browser's "Leave site?" confirmation popup.
+      window.dispatchEvent(new CustomEvent("payment-in-progress"));
       const result = await cashfree.checkout({
         paymentSessionId: cfData.payment_session_id,
         redirectTarget: "_modal",
