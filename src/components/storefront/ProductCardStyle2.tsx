@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Heart, ShoppingCart, Tag } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
@@ -18,12 +19,13 @@ interface Props {
 }
 
 export default function ProductCardStyle2({ product, slug, store, priority = false, onVariantRequired }: Props) {
+  const [hoverLoaded, setHoverLoaded] = useState(false);
   const { wishlisted, effectivePrice, handleAddToCart, handleToggleWishlist } = useProductCardActions(product);
   const discount = getDiscountPercent(product.price, product.sale_price);
   const rating = getProductRating(product.id);
 
   return (
-    <div className="card-tilt group relative overflow-hidden transition-all active:scale-[0.98]" style={{ borderRadius: "12px", backgroundColor: "hsl(var(--card, 0 0% 100%))" }}>
+    <div onMouseEnter={() => setHoverLoaded(true)} className="card-tilt group relative overflow-hidden transition-all active:scale-[0.98]" style={{ borderRadius: "12px", backgroundColor: "hsl(var(--card, 0 0% 100%))" }}>
       <Link
         to={storefrontPath(slug, `product/${product.slug || product.id}`)}
         className="block"
@@ -42,19 +44,19 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
             return (
               <>
                 <img
-                  src={optimizeImageUrl(images[0], 400, 80)}
-                  srcSet={getImageSrcSet(images[0], [400, 800], 80)}
+                  src={optimizeImageUrl(images[0], 400, 72)}
+                  srcSet={getImageSrcSet(images[0], [300, 500, 700, 900], 72)}
                   sizes={PRODUCT_CARD_SIZES}
                   alt={product.name}
                   width={400}
                   height={533}
-                  className={`h-full w-full object-cover transition-all duration-500 group-hover:scale-105 ${hasSecond ? "group-hover:opacity-0" : ""}`}
+                  className={`h-full w-full object-cover transition-all duration-500 group-hover:scale-105 ${hasSecond && hoverLoaded ? "group-hover:opacity-0" : ""}`}
                   loading={priority ? "eager" : "lazy"}
-                  fetchPriority={priority ? "high" : "auto"}
+                  fetchPriority={priority ? "high" : "low"}
                   decoding={priority ? "sync" : "async"}
                 />
-                {hasSecond && (
-                  <img src={optimizeImageUrl(images[1], 400, 80)} srcSet={getImageSrcSet(images[1], [400, 800], 80)} sizes={PRODUCT_CARD_SIZES} alt={product.name} width={400} height={533} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-105" loading="lazy" decoding="async" />
+                {hasSecond && hoverLoaded && (
+                  <img src={optimizeImageUrl(images[1], 400, 72)} srcSet={getImageSrcSet(images[1], [300, 500, 700, 900], 72)} sizes={PRODUCT_CARD_SIZES} alt={product.name} width={400} height={533} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-105" loading="lazy" decoding="async" fetchPriority="low" />
                 )}
               </>
             );

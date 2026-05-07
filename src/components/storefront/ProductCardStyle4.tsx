@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { Tables } from "@/integrations/supabase/types";
@@ -35,6 +35,7 @@ interface Props {
 }
 
 export default function ProductCardStyle4({ product, slug, store, onVariantRequired }: Props) {
+  const [hoverLoaded, setHoverLoaded] = useState(false);
   const { items, addToCart, updateQuantity } = useCart();
   const existing = items.find(
     (i) => i.productId === product.id && !i.variantId
@@ -79,19 +80,21 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
         const hasSecond = images.length > 1;
         return (
           <div className="group/img relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
+          <div onMouseEnter={() => setHoverLoaded(true)} className="group/img relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
             <img
-              src={optimizeImageUrl(images[0], 400, 80)}
-              srcSet={getImageSrcSet(images[0], [200, 400], 80)}
+              src={optimizeImageUrl(images[0], 400, 72)}
+              srcSet={getImageSrcSet(images[0], [200, 300, 400], 72)}
               sizes="96px"
               alt={product.name}
               width={200}
               height={200}
-              className={`h-full w-full object-cover transition-all duration-500 ${hasSecond ? "group-hover/img:opacity-0" : ""}`}
+              className={`h-full w-full object-cover transition-all duration-500 ${hasSecond && hoverLoaded ? "group-hover/img:opacity-0" : ""}`}
               loading="lazy"
               decoding="async"
+              fetchPriority="low"
             />
-            {hasSecond && (
-              <img src={optimizeImageUrl(images[1], 400, 80)} alt={product.name} width={400} height={400} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover/img:opacity-100" loading="lazy" />
+            {hasSecond && hoverLoaded && (
+              <img src={optimizeImageUrl(images[1], 400, 72)} alt={product.name} width={400} height={400} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover/img:opacity-100" loading="lazy" fetchPriority="low" />
             )}
             {hasDiscount && (
               <div className="absolute left-1 top-1 rounded-md bg-destructive px-1.5 py-0.5 text-[10px] font-bold text-destructive-foreground">
