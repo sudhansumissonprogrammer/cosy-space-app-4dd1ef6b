@@ -127,7 +127,7 @@ export default function CheckoutAwareLayout({
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [isCheckout, orderPlaced]);
+  }, [isCheckout, orderPlaced, paymentInProgress]);
 
   const handleBackClick = () => { if (orderPlaced) { navigate(storefrontPath(store.slug)); return; } setShowExitDialog(true); };
   const handleExitConfirm = () => { setShowExitDialog(false); navigate(storefrontPath(store.slug, "cart")); };
