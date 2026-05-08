@@ -146,13 +146,15 @@ export default function StoreAnalytics() {
     return { current, prior };
   }, [pageViews, dateRange, customFrom, customTo]);
 
-  // Metrics
-  const totalRevenue = filtered.current.filter((o: any) => o.status !== "cancelled").reduce((s: number, o: any) => s + Number(o.total || 0), 0);
-  const priorRevenue = filtered.prior.filter((o: any) => o.status !== "cancelled").reduce((s: number, o: any) => s + Number(o.total || 0), 0);
+  // Metrics — only count confirmed revenue (exclude pending & cancelled)
+  const REVENUE_STATUSES = new Set(["confirmed", "shipped", "delivered", "partially_paid"]);
+  const isRevenue = (o: any) => REVENUE_STATUSES.has(o.status);
+  const totalRevenue = filtered.current.filter(isRevenue).reduce((s: number, o: any) => s + Number(o.total || 0), 0);
+  const priorRevenue = filtered.prior.filter(isRevenue).reduce((s: number, o: any) => s + Number(o.total || 0), 0);
   const revenueChange = priorRevenue > 0 ? ((totalRevenue - priorRevenue) / priorRevenue) * 100 : undefined;
 
-  const totalOrders = filtered.current.filter((o: any) => o.status !== "cancelled").length;
-  const priorOrders = filtered.prior.filter((o: any) => o.status !== "cancelled").length;
+  const totalOrders = filtered.current.filter(isRevenue).length;
+  const priorOrders = filtered.prior.filter(isRevenue).length;
   const ordersChange = priorOrders > 0 ? ((totalOrders - priorOrders) / priorOrders) * 100 : undefined;
 
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
@@ -174,7 +176,7 @@ export default function StoreAnalytics() {
   // Charts data
   const salesByDay = useMemo(() => {
     const map: Record<string, { date: string; revenue: number; orders: number }> = {};
-    filtered.current.filter((o: any) => o.status !== "cancelled").forEach((o: any) => {
+    filtered.current.filter(isRevenue).forEach((o: any) => {
       const day = o.created_at.slice(0, 10);
       if (!map[day]) map[day] = { date: day, revenue: 0, orders: 0 };
       map[day].revenue += Number(o.total || 0);
@@ -185,7 +187,7 @@ export default function StoreAnalytics() {
 
   const topProducts = useMemo(() => {
     const map: Record<string, { name: string; units: number; revenue: number }> = {};
-    filtered.current.filter((o: any) => o.status !== "cancelled").forEach((o: any) => {
+    filtered.current.filter(isRevenue).forEach((o: any) => {
       o.order_items?.forEach((item: any) => {
         const key = item.product_name;
         if (!map[key]) map[key] = { name: key, units: 0, revenue: 0 };
