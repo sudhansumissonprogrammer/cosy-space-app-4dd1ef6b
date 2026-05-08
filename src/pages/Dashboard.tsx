@@ -121,11 +121,12 @@ export default function Dashboard() {
     queryKey: ["dashboard-orders-analytics", storeId],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
+      const REVENUE_STATUSES = ["confirmed", "shipped", "delivered", "partially_paid"];
       const { data, error } = await supabase
         .from("orders")
         .select("created_at, total, status, order_items(product_name, quantity, total)")
         .eq("store_id", storeId!)
-        .neq("status", "cancelled")
+        .in("status", REVENUE_STATUSES)
         .order("created_at", { ascending: true })
         .limit(200);
       if (error) throw error;
