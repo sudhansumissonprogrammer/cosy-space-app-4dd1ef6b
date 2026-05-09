@@ -126,6 +126,7 @@ export default function CreateStore() {
   // Step 5
   const [instagramUrl, setInstagramUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
+  const [partnerCode, setPartnerCode] = useState("");
 
   const theme = "theme-1";
 
@@ -390,6 +391,26 @@ export default function CreateStore() {
       } catch {
         // Non-critical — store still works, just first visit may be slower
       }
+
+      // Attach partner referral code if user entered one (non-blocking)
+      const code = partnerCode.trim().toUpperCase();
+      if (code) {
+        try {
+          const { data: refData, error: refError } = await supabase.functions.invoke(
+            "attach-referral",
+            { body: { partner_code: code } }
+          );
+          const payload = refData as { error?: string; backfilled_stores?: number } | null;
+          if (refError || payload?.error) {
+            toast.error(payload?.error || refError?.message || "Couldn't apply partner code (you can add it later in Settings)");
+          } else {
+            toast.success("Partner code applied! 🎉");
+          }
+        } catch {
+          toast.error("Couldn't apply partner code (you can add it later in Settings)");
+        }
+      }
+
 
       setCreatingAnimation(false);
       setStoreCreated(true);
@@ -1036,6 +1057,27 @@ export default function CreateStore() {
                     <span className="flex-shrink-0 px-3 text-muted-foreground"><Facebook className="h-4 w-4" /></span>
                     <Input id="facebook" placeholder="https://facebook.com/yourstore" value={facebookUrl} onChange={(e) => setFacebookUrl(e.target.value)} maxLength={200} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
                   </div>
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <Label htmlFor="partnerCode" className="flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    Partner referral code <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+                  </Label>
+                  <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
+                    <span className="flex-shrink-0 px-3 text-muted-foreground text-xs font-mono">SBP</span>
+                    <Input
+                      id="partnerCode"
+                      placeholder="e.g. SBP1023"
+                      value={partnerCode}
+                      onChange={(e) => setPartnerCode(e.target.value.toUpperCase())}
+                      maxLength={20}
+                      className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0 uppercase"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Did a partner refer you? Enter their code here. If you signed up via their link, leave blank — it's already tracked.
+                  </p>
                 </div>
 
                 {/* Plan summary before launching */}
