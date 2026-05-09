@@ -116,7 +116,7 @@ const Hero = () => {
             <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-bauhaus-white/5 border-2 border-white/10" />
             <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-bauhaus-white/5 border-2 border-white/10" />
             <div className="relative z-10 flex items-end gap-5 xl:gap-7 px-6">
-              <PhoneMockup img={liveStores[0].img} label={liveStores[0].label} url={liveStores[0].url} className="w-[190px] xl:w-[210px] -rotate-3 translate-y-3" />
+              <PhoneMockup img={liveStores[0].img} label={liveStores[0].label} url={liveStores[0].url} priority className="w-[190px] xl:w-[210px] -rotate-3 translate-y-3" />
               <PhoneMockup img={liveStores[1].img} label={liveStores[1].label} url={liveStores[1].url} className="w-[190px] xl:w-[210px] rotate-3 -translate-y-3" />
             </div>
             <div className="absolute bottom-5 left-5 bg-bauhaus-white border-3 border-foreground shadow-bauhaus-lg p-3 w-44 z-20">
