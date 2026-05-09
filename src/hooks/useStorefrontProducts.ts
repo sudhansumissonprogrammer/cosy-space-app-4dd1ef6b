@@ -100,20 +100,21 @@ export function useStorefrontProducts(storeId: string | undefined) {
     enabled: !!storeId,
   });
 
-  // Signal content-ready once products arrive — removes Worker #sf-skel.
-  // Wait TWO animation frames so React has actually committed + painted the
-  // real content to the screen BEFORE we fade the skeleton. Without this,
-  // the skeleton fades while the home-page chunks/images are still mounting,
-  // producing a brief blank white flash between skeleton and content.
+  // Note: storefront:content-ready is now fired from StorefrontShell as soon
+  // as shell data loads (not waiting for products). The Worker's skeleton
+  // cleanup still polls for a real painted <img>, so users never see a flash.
+  // We keep a backup dispatch here for pages that mount StorefrontShell but
+  // don't render shell-level imagery — fires only if Shell didn't already.
   const signalled = useRef(false);
   useEffect(() => {
     if (!signalled.current && data !== undefined && !isLoading) {
       signalled.current = true;
-      requestAnimationFrame(() => {
+      if (typeof window !== "undefined" && !(window as any).__SF_READY_FIRED__) {
+        (window as any).__SF_READY_FIRED__ = true;
         requestAnimationFrame(() => {
           window.dispatchEvent(new Event("storefront:content-ready"));
         });
-      });
+      }
     }
   }, [data, isLoading]);
 

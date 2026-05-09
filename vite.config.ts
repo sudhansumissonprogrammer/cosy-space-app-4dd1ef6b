@@ -261,7 +261,18 @@ export default defineConfig(({ mode }) => ({
             id.includes("/src/components/storefront/OptimizedImage") ||
             id.includes("/src/components/storefront/PageTransition") ||
             id.includes("/src/components/storefront/StorefrontTrustStrip") ||
-            id.includes("/src/components/storefront/ScrollProgressBar")
+            id.includes("/src/components/storefront/ScrollProgressBar") ||
+            // v8.4 — absorb the universal product card + variant counts +
+            // marquee + categories into storefront-shell. Saves ~5 round trips
+            // on cold load (each was a ~1-2KB chunk that spawned its own
+            // <script> + Worker hit).
+            id.includes("/src/components/storefront/UniversalProductCard") ||
+            id.includes("/src/components/storefront/UniversalCategories") ||
+            id.includes("/src/components/storefront/StorefrontMarquee") ||
+            id.includes("/src/components/storefront/StorefrontMobileHero") ||
+            id.includes("/src/hooks/useVariantCounts") ||
+            id.includes("/src/hooks/useStorefrontProducts") ||
+            id.includes("/src/hooks/useFacebookPixel")
           ) {
             return "storefront-shell";
           }
