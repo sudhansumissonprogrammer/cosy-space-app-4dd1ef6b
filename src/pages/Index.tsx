@@ -58,6 +58,7 @@ const Index = () => {
         <LazyMount minHeight={300}><Footer /></LazyMount>
         <LazyMount minHeight={0}><LandingWhatsApp /></LazyMount>
         <LazyMount minHeight={0}><ExitIntentPopup /></LazyMount>
+        {seoReady && <LandingJsonLd />}
       </Suspense>
     </div>
   );
