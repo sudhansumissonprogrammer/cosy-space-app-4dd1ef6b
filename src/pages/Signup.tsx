@@ -44,6 +44,8 @@ export default function Signup() {
       });
       if (error) {
         toast.error(error.message || "Google sign-in failed");
+      } else {
+        attachReferralAfterSignup().catch(() => {});
       }
     } catch (err) {
       toast.error("Google sign-in failed. Please try again.");
