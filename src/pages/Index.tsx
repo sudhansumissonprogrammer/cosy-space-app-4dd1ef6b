@@ -24,15 +24,12 @@ const LandingWhatsApp = lazy(() => import("@/components/landing/LandingWhatsApp"
 const ExitIntentPopup = lazy(() => import("@/components/landing/ExitIntentPopup"));
 
 const Index = () => {
-  // Mount JSON-LD only after the browser is idle — SEO crawlers wait for full
-  // load anyway, so it doesn't need to be on the critical path.
+  // Mount JSON-LD only after the browser is idle — crawlers wait for full
+  // load anyway, so it shouldn't sit on the critical path.
+  const [seoReady, setSeoReady] = useState(false);
   useEffect(() => {
     let cancelled = false;
-    const run = () => {
-      if (cancelled) return;
-      // Tiny dynamic import so it doesn't ship in the entry chunk.
-      import("@/components/landing/LandingJsonLd").catch(() => {});
-    };
+    const run = () => { if (!cancelled) setSeoReady(true); };
     if ("requestIdleCallback" in window) {
       const id = (window as any).requestIdleCallback(run, { timeout: 4000 });
       return () => { cancelled = true; (window as any).cancelIdleCallback?.(id); };
