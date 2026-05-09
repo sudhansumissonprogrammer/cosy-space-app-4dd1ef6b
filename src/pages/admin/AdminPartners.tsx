@@ -225,10 +225,10 @@ function PartnerControlsDrawer({ partner, onClose, onChanged }: { partner: Partn
           <TabsContent value="overrides" className="space-y-4 pt-4">
             <Card className="p-4 space-y-3">
               <Label>Add commission override</Label>
-              <Select value={overrideForm.plan_id} onValueChange={(v) => setOverrideForm((s) => ({ ...s, plan_id: v }))}>
+              <Select value={overrideForm.plan_id || "__all__"} onValueChange={(v) => setOverrideForm((s) => ({ ...s, plan_id: v === "__all__" ? "" : v }))}>
                 <SelectTrigger><SelectValue placeholder="All plans (global)" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All plans (global)</SelectItem>
+                  <SelectItem value="__all__">All plans (global)</SelectItem>
                   {plans.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} ({inr(p.price)})</SelectItem>)}
                 </SelectContent>
               </Select>
