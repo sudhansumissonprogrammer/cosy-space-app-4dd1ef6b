@@ -16,18 +16,12 @@ const PRIMARY_CHUNK_ERROR_PATTERNS = [
   /Unable to preload CSS/i,
   /Loading CSS chunk \d+ failed/i,
   /ChunkLoadError/i,
-  /Cannot destructure property ['"]default['"] of ['"]undefined['"] as it is undefined/i,
-  /Cannot destructure property ['"]default['"] of undefined/i,
-  /Cannot read properties of undefined \(reading ['"]default['"]\)/i,
-  /_result is undefined/i,
-  /reading ['"]default['"]/i,
 ];
 
 const FOLLOW_UP_RECOVERY_PATTERNS = [
-  /Cannot read properties of undefined \(reading ['"]default['"]\)/i,
-  /Cannot read property ['"]default['"] of undefined/i,
-  /does not provide an export named ['"]default['"]/i,
-  /_result is undefined/i,
+  /Importing a module script failed/i,
+  /Failed to fetch dynamically imported module/i,
+  /error loading dynamically imported module/i,
 ];
 
 function getErrorMessage(error: unknown): string {
