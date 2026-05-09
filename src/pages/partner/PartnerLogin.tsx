@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, ArrowRight, Sparkles, AlertTriangle } from "lucide-react";
-import PartnerNav from "@/components/partner/PartnerNav";
+import { Loader2, Sparkles } from "lucide-react";
 
 export default function PartnerLogin() {
   const navigate = useNavigate();
@@ -16,6 +19,9 @@ export default function PartnerLogin() {
 
   useEffect(() => {
     if (authLoading || !session) return;
+    // If signed in, check whether this user is already a partner.
+    // If yes → straight to dashboard. If no → warn instead of silently
+    // overwriting their store-owner session.
     (async () => {
       const { data: p } = await supabase
         .from("partners")
@@ -49,90 +55,53 @@ export default function PartnerLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-bauhaus-canvas flex flex-col">
-      <PartnerNav />
-
-      <div className="flex-1 flex items-center justify-center px-4 py-10 sm:py-14">
-        <div className="w-full max-w-md">
-          <div className="mb-6 text-center">
-            <div className="inline-flex h-12 w-12 items-center justify-center bg-bauhaus-blue border-2 border-foreground shadow-bauhaus mb-4">
-              <Sparkles className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <h1 className="font-black text-3xl sm:text-4xl tracking-tight text-foreground">Partner Login</h1>
-            <p className="mt-2 font-medium text-sm text-muted-foreground">Sign in to your partner dashboard.</p>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 flex flex-col items-center gap-2">
+          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary">
+            <Sparkles className="h-6 w-6 text-primary-foreground" />
           </div>
-
-          {otherAccount && (
-            <div className="mb-5 bg-bauhaus-yellow border-3 border-foreground shadow-bauhaus p-4">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="h-5 w-5 text-foreground flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="font-bold uppercase tracking-wider text-xs text-foreground">Another account is signed in</p>
-                  <p className="mt-1 font-medium text-sm text-foreground/80">
-                    You're signed in as <span className="font-black">{otherAccount}</span>. Sign out first to log into a partner account.
-                  </p>
-                  <button
-                    onClick={async () => { await signOut(); setOtherAccount(null); }}
-                    className="mt-3 inline-flex items-center justify-center gap-2 bg-foreground text-primary-foreground font-bold uppercase tracking-wider text-xs px-4 py-2 border-2 border-foreground shadow-bauhaus-sm hover:bg-foreground/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
-                  >
-                    Sign out
-                  </button>
-                </div>
+          <h1 className="text-xl font-semibold text-foreground">Partner login</h1>
+          <p className="text-sm text-muted-foreground">Sign in to your partner dashboard</p>
+        </div>
+        {otherAccount && (
+          <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+            You're signed in as <span className="font-medium">{otherAccount}</span>. Sign out first to log into a partner account.
+            <Button size="sm" variant="outline" className="mt-2 w-full" onClick={async () => { await signOut(); setOtherAccount(null); }}>
+              Sign out
+            </Button>
+          </div>
+        )}
+        <Card>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4 pt-6">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
               </div>
-            </div>
-          )}
-
-          <div className="bg-bauhaus-white border-3 border-foreground shadow-bauhaus-lg p-6 sm:p-7">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Field id="email" label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" />
-              <div>
-                <Field id="password" label="Password" type="password" value={password} onChange={setPassword} autoComplete="current-password" />
-                <Link to="/forgot-password" className="mt-2 block text-right font-bold uppercase tracking-widest text-[10px] text-muted-foreground hover:text-bauhaus-red">
-                  Forgot password?
-                </Link>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
               </div>
-
-              <button
-                type="submit"
-                disabled={loading || !!otherAccount}
-                className="w-full inline-flex items-center justify-center gap-2 bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-xs sm:text-sm px-6 py-3.5 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Login <ArrowRight className="h-4 w-4" /></>}
-              </button>
-
-              <p className="pt-2 text-center text-sm text-muted-foreground">
+              <Link to="/forgot-password" className="block text-right text-xs text-muted-foreground hover:text-foreground">
+                Forgot password?
+              </Link>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-3">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Login
+              </Button>
+              <p className="text-sm text-muted-foreground">
                 New here?{" "}
-                <Link to="/partners/signup" className="font-bold uppercase tracking-wider text-xs text-foreground hover:text-bauhaus-red">
-                  Become a partner →
+                <Link to="/partners/signup" className="font-medium text-primary hover:underline">
+                  Become a partner
                 </Link>
               </p>
-            </form>
-          </div>
-        </div>
+            </CardFooter>
+          </form>
+        </Card>
       </div>
-    </div>
-  );
-}
-
-function Field({
-  id, label, value, onChange, type = "text", autoComplete,
-}: {
-  id: string; label: string; value: string; onChange: (v: string) => void;
-  type?: string; autoComplete?: string;
-}) {
-  return (
-    <div>
-      <label htmlFor={id} className="block font-bold uppercase tracking-widest text-[10px] text-foreground mb-1.5">
-        {label}
-      </label>
-      <input
-        id={id}
-        type={type}
-        autoComplete={autoComplete}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-bauhaus-white text-foreground border-2 border-foreground px-3 py-2.5 font-medium text-sm focus:outline-none focus:shadow-bauhaus-sm focus:-translate-x-[1px] focus:-translate-y-[1px] transition-all duration-150"
-      />
     </div>
   );
 }

@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, ArrowRight, Rocket } from "lucide-react";
-import PartnerNav from "@/components/partner/PartnerNav";
+import { Loader2, Sparkles } from "lucide-react";
 
 export default function PartnerSignup() {
   const navigate = useNavigate();
@@ -16,6 +19,7 @@ export default function PartnerSignup() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // If already a partner, send to dashboard
     if (!authLoading && session) {
       (async () => {
         const { data } = await supabase.from("partners").select("id").eq("user_id", session.user.id).maybeSingle();
@@ -51,6 +55,7 @@ export default function PartnerSignup() {
         if (error) throw error;
         userId = data.user?.id ?? null;
         if (!data.session) {
+          // Email confirmation required path
           toast.success("Account created! Please check your email, then sign in.");
           navigate("/partners/login");
           return;
@@ -79,68 +84,50 @@ export default function PartnerSignup() {
   };
 
   return (
-    <div className="min-h-screen bg-bauhaus-canvas flex flex-col">
-      <PartnerNav />
-
-      <div className="flex-1 flex items-center justify-center px-4 py-10 sm:py-14">
-        <div className="w-full max-w-md">
-          <div className="mb-6 text-center">
-            <div className="inline-flex h-12 w-12 items-center justify-center bg-bauhaus-red border-2 border-foreground shadow-bauhaus mb-4">
-              <Rocket className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <h1 className="font-black text-3xl sm:text-4xl tracking-tight text-foreground">Join the Partner Program</h1>
-            <p className="mt-2 font-medium text-sm text-muted-foreground">Earn recurring commission on every store you refer.</p>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 flex flex-col items-center gap-2">
+          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary">
+            <Sparkles className="h-6 w-6 text-primary-foreground" />
           </div>
-
-          <div className="bg-bauhaus-white border-3 border-foreground shadow-bauhaus-lg p-6 sm:p-7">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Field id="name" label="Full name" value={name} onChange={setName} maxLength={100} />
-              <Field id="email" label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" />
-              <Field id="mobile" label="Mobile (optional)" type="tel" value={mobile} onChange={setMobile} maxLength={20} />
-              <Field id="password" label="Password" type="password" value={password} onChange={setPassword} autoComplete="new-password" />
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full inline-flex items-center justify-center gap-2 bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-xs sm:text-sm px-6 py-3.5 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Create Partner Account <ArrowRight className="h-4 w-4" /></>}
-              </button>
-
-              <p className="pt-2 text-center text-sm text-muted-foreground">
-                Already a partner?{" "}
-                <Link to="/partners/login" className="font-bold uppercase tracking-wider text-xs text-foreground hover:text-bauhaus-red">
-                  Login →
-                </Link>
-              </p>
-            </form>
-          </div>
+          <h1 className="text-xl font-semibold text-foreground">Join the Partner Program</h1>
+          <p className="text-center text-sm text-muted-foreground">
+            Earn recurring commission on every store you refer
+          </p>
         </div>
+        <Card>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4 pt-6">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full name</Label>
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="mobile">Mobile (optional)</Label>
+                <Input id="mobile" type="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength={20} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-3">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Create partner account
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                Already a partner?{" "}
+                <Link to="/partners/login" className="font-medium text-primary hover:underline">Login</Link>
+              </p>
+            </CardFooter>
+          </form>
+        </Card>
       </div>
-    </div>
-  );
-}
-
-function Field({
-  id, label, value, onChange, type = "text", autoComplete, maxLength,
-}: {
-  id: string; label: string; value: string; onChange: (v: string) => void;
-  type?: string; autoComplete?: string; maxLength?: number;
-}) {
-  return (
-    <div>
-      <label htmlFor={id} className="block font-bold uppercase tracking-widest text-[10px] text-foreground mb-1.5">
-        {label}
-      </label>
-      <input
-        id={id}
-        type={type}
-        autoComplete={autoComplete}
-        maxLength={maxLength}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-bauhaus-white text-foreground border-2 border-foreground px-3 py-2.5 font-medium text-sm focus:outline-none focus:shadow-bauhaus-sm focus:-translate-x-[1px] focus:-translate-y-[1px] transition-all duration-150"
-      />
     </div>
   );
 }
