@@ -37,7 +37,7 @@ const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneM
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
 const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
-import PdpTrustRow from "@/components/storefront/PdpTrustRow";
+
 import PdpAskWhatsApp from "@/components/storefront/PdpAskWhatsApp";
 
 interface Variant {
