@@ -25,8 +25,6 @@ export interface UploadResult {
   mainUrl: string;
   /** Map of width → public URL (now contains only 800w) */
   variantUrls: Map<VariantWidth, string>;
-  /** Optional AVIF variant URL (best-effort; null if browser can't encode AVIF) */
-  avifUrl: string | null;
   /** Human-readable compression message */
   compressionMessage: string | null;
 }
@@ -67,34 +65,9 @@ export async function uploadOptimizedImage(
   const mainUrl = supabase.storage.from(bucket).getPublicUrl(data.path).data.publicUrl;
   variantUrls.set(800, mainUrl);
 
-  // ── Best-effort AVIF sibling (~25–35% smaller than WebP) ──
-  // Generated from the SAME source file; uploaded alongside the WebP at
-  // {basePath}-800w.avif. Any failure (unsupported browser, encode error,
-  // upload error) is swallowed — the WebP upload above is the source of truth.
-  let avifUrl: string | null = null;
-  try {
-    const avifFile = await processImageToAvif(file, 1200, 0.6);
-    if (avifFile && avifFile.size > 0 && avifFile.size < variantFile.size) {
-      const avifPath = `${basePath}-800w.avif`;
-      const { data: avifData, error: avifErr } = await supabase.storage
-        .from(bucket)
-        .upload(avifPath, avifFile, {
-          cacheControl: "31536000",
-          upsert: true,
-          contentType: "image/avif",
-        });
-      if (!avifErr && avifData) {
-        avifUrl = supabase.storage.from(bucket).getPublicUrl(avifData.path).data.publicUrl;
-      }
-    }
-  } catch {
-    // Silently swallow — AVIF is purely additive
-  }
-
   return {
     mainUrl,
     variantUrls,
-    avifUrl,
     compressionMessage: getCompressionMessage(result.main),
   };
 }
