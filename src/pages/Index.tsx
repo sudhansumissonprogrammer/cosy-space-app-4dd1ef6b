@@ -4,6 +4,7 @@ import Hero from "@/components/landing/Hero";
 import PaymentTrustStrip from "@/components/landing/PaymentTrustStrip";
 import StatsBar from "@/components/landing/StatsBar";
 import LandingJsonLd from "@/components/landing/LandingJsonLd";
+import LazyMount from "@/components/landing/LazyMount";
 
 /** Prefetch auth chunks during idle time so /login and /signup load instantly */
 let idlePrefetched = false;
@@ -11,14 +12,12 @@ function prefetchAuthOnIdle() {
   if (idlePrefetched) return;
   idlePrefetched = true;
   const start = () => {
-    // DashboardProviders bundle (AuthContext + Radix)
     Promise.all([
       import("@/components/ui/toaster"),
       import("@/components/ui/tooltip"),
       import("@/contexts/AuthContext"),
       import("@/components/ui/sonner"),
     ]).catch(() => {});
-    // Auth pages
     import("@/pages/Login").catch(() => {});
     import("@/pages/Signup").catch(() => {});
     import("@/routes/AuthRoutes").catch(() => {});
@@ -30,7 +29,9 @@ function prefetchAuthOnIdle() {
   }
 }
 
-// Below-fold: lazy load to keep initial bundle small & fast
+// Below-fold lazy chunks — each wrapped in LazyMount so its chunk only
+// downloads when the user scrolls near it. This removes the all-at-once
+// waterfall (~7 chunks fetched simultaneously after first paint).
 const ProblemAwareness = lazy(() => import("@/components/landing/ProblemAwareness"));
 const CommissionCalculator = lazy(() => import("@/components/landing/CommissionCalculator"));
 const WhoUses = lazy(() => import("@/components/landing/WhoUses"));
@@ -56,19 +57,19 @@ const Index = () => {
       <PaymentTrustStrip />
       <StatsBar />
       <Suspense fallback={null}>
-        <ProblemAwareness />
-        <CommissionCalculator />
-        <WhoUses />
-        <SolutionFlow />
-        <StoreLookShowcase showOverlays={false} />
-        <Testimonials />
-        <ComparisonTable />
-        <Pricing />
-        <FAQ />
-        <FinalCTA />
-        <Footer />
-        <LandingWhatsApp />
-        <ExitIntentPopup />
+        <LazyMount minHeight={500}><ProblemAwareness /></LazyMount>
+        <LazyMount minHeight={600}><CommissionCalculator /></LazyMount>
+        <LazyMount minHeight={500}><WhoUses /></LazyMount>
+        <LazyMount minHeight={500}><SolutionFlow /></LazyMount>
+        <LazyMount minHeight={700}><StoreLookShowcase showOverlays={false} /></LazyMount>
+        <LazyMount minHeight={500}><Testimonials /></LazyMount>
+        <LazyMount minHeight={600}><ComparisonTable /></LazyMount>
+        <LazyMount minHeight={700}><Pricing /></LazyMount>
+        <LazyMount minHeight={500}><FAQ /></LazyMount>
+        <LazyMount minHeight={400}><FinalCTA /></LazyMount>
+        <LazyMount minHeight={300}><Footer /></LazyMount>
+        <LazyMount minHeight={0}><LandingWhatsApp /></LazyMount>
+        <LazyMount minHeight={0}><ExitIntentPopup /></LazyMount>
       </Suspense>
     </div>
   );
