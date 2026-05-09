@@ -52,7 +52,7 @@ export default function PartnerLayout() {
           </div>
           <div className="flex items-center gap-2">
             <NotificationsBell partnerId={partner.id} />
-            <Button variant="ghost" size="sm" onClick={signOut}>
+            <Button variant="ghost" size="sm" onClick={async () => { navigate("/partners/login", { replace: true }); await signOut(); }}>
               <LogOut className="mr-2 h-4 w-4" />Sign out
             </Button>
           </div>
