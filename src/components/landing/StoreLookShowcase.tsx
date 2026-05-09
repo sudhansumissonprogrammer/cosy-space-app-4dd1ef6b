@@ -108,7 +108,8 @@ function StoreRow({ store, storeIdx }: { store: (typeof stores)[0]; storeIdx: nu
                       src={screen.img}
                       alt={`${store.name} - ${screen.label}`}
                       className="w-full h-auto block"
-                      loading={storeIdx === 0 && i === 0 ? "eager" : "lazy"}
+                      loading="lazy"
+                      decoding="async"
                     />
                   </div>
                 </div>
