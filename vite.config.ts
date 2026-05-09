@@ -5,6 +5,8 @@ import fs from "fs";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 import Beasties from "beasties";
+import { compression } from "vite-plugin-compression2";
+import { visualizer } from "rollup-plugin-visualizer";
 
 /**
  * Inline critical CSS from dist/index.html and async-load the rest.
