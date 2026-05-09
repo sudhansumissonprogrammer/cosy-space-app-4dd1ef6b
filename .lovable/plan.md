@@ -1,124 +1,142 @@
-# Referral Partner Program — Phase 1
+# Phase 2 — Wallet, Recurring Commissions, Withdrawals & Payouts
 
-Building the core MVP of the ShopBanao Partner Program: tracking, attribution, basic commissions, partner dashboard, and admin panel. Phase 2 (payouts/wallet/withdrawal automation, KYC) and Phase 3 (fraud engine, leaderboard, advanced analytics) come later.
+## 1. Recurring commissions (already mostly in place)
 
-## What ships in Phase 1
+Phase 1's trigger `create_partner_commission_on_paid` fires on **every** `subscription_payments` row that turns `paid`. That already covers monthly + yearly renewals (each renewal = new payment row). Phase 2 just needs:
 
-1. **Partner landing page** — `/partners` with hero, benefits, how-it-works, commission explanation, FAQ, Join + Login CTAs.
-2. **Partner auth** — signup / login / forgot-password using existing Supabase auth, segregated by user role `partner`.
-3. **Partner dashboard** — `/partners/dashboard` with totals (clicks, signups, paid customers, estimated earnings), referral link, copy / WhatsApp share / QR code, recent referrals + commissions tables.
-4. **Referral tracking** — `?ref=SBP1023` query param captured anywhere on the site, saved as `sb_ref` cookie (90 days), and a click row inserted via edge function.
-5. **Attribution** — on signup, the cookie's referral code is read and a `partner_referrals` row is created locking the user (and later their store/subscription) to that partner.
-6. **Basic commission engine** — when a `subscription_payments` row transitions to `status = 'paid'`, a Postgres trigger inserts a `commissions` row using the partner's `commission_percentage` (with plan-wise override fallback).
-7. **Admin panel** — new `/admin/partners` section: list partners, edit %, suspend, view referred stores, view commissions ledger.
+- **Cancellation stop**: extend `link_store_to_partner_referral` logic so commissions stop when `store_plan_assignments.billing_status = 'cancelled'` (trigger checks before insert).
+- **Refund reversal**: when a `subscription_payments` row goes `paid → refunded`, mark its commission `status='reversed'` and roll back `partners.total_earnings`.
 
-## Out of scope for Phase 1
-- Wallet states, withdrawal workflow, payout marking, KYC capture, bank/UPI fields beyond basics
-- Recurring webhook integration with Razorpay/Stripe (commissions will be created off the existing internal `subscription_payments`/billing events; we'll wire real webhooks in Phase 2)
-- Fraud detection, leaderboard, badges, exports
-- Email + in-app notifications (will be added in Phase 2 alongside payouts)
+## 2. Webhook handling
 
-## Database schema (new tables)
+Cashfree is the only active subscription-billing webhook in the project (`cashfree-webhook`). We harden it to:
+
+- Insert/update `subscription_payments` with `status='paid' | 'failed' | 'refunded'`
+- On `paid` → existing trigger creates commission (Phase 1)
+- On `refunded` → new trigger reverses commission
+
+Razorpay/Stripe webhooks: not currently used for ShopBanao plan billing — out of Phase 2 scope. We'll structure the wallet ledger so any future provider just needs to insert into `subscription_payments`.
+
+## 3. Wallet system + ledger
+
+New tables:
+
+- `partner_wallets` — `partner_id (PK FK unique)`, `pending`, `approved`, `paid`, `updated_at`. "Withdrawable" = `approved - paid_pending_withdraw` (computed view).
+- `partner_wallet_ledger` — `id`, `partner_id`, `direction ('credit'|'debit')`, `amount`, `kind ('commission'|'reversal'|'approval'|'withdrawal_request'|'withdrawal_paid'|'withdrawal_refund'|'adjustment')`, `commission_id?`, `withdrawal_id?`, `notes?`, `created_at`. Append-only.
+- View `partner_wallet_balance` — single row per partner with computed `withdrawable = approved - locked_in_open_withdrawals`.
+
+All wallet mutations go through SECURITY DEFINER functions: `wallet_credit_commission`, `wallet_approve_commission`, `wallet_reverse_commission`, `wallet_lock_for_withdrawal`, `wallet_settle_withdrawal`, `wallet_refund_withdrawal`. The commission trigger calls `wallet_credit_commission`. Direct ledger inserts from the client are blocked by RLS.
+
+## 4. Hold period (14 days)
+
+- `partner_settings.hold_days` already exists (default 14).
+- New cron-driven edge function `partner-approve-commissions` runs daily:
+  - finds `partner_commissions` with `status='pending'` AND `created_at < now() - hold_days` AND linked payment is still `paid`
+  - moves each to `status='approved'`, calls `wallet_approve_commission` (debits pending, credits approved)
+- Scheduled via `pg_cron` (already enabled per project conventions).
+
+## 5. Withdrawal system
+
+New table `partner_withdrawals`:
+
+- `id`, `partner_id`, `amount`, `method ('upi'|'bank')`, `upi_id?`, `bank_account_no?`, `bank_ifsc?`, `bank_account_name?`,
+- `status ('pending'|'approved'|'rejected'|'paid')`, `admin_note?`, `payout_ref?` (UTR), `requested_at`, `processed_at?`.
+
+Partner self-service:
+- `POST /partner-request-withdrawal` (edge fn): validates min amount (`partner_settings.minimum_withdrawal`), withdrawable balance, single open request rule. Locks funds via `wallet_lock_for_withdrawal`.
+- Partner can cancel own `pending` withdrawal → `wallet_refund_withdrawal`.
+
+## 6. Admin payout management
+
+Admin actions, all via edge fn `admin-withdrawal-action` (admin-only, JWT + has_role check):
+- `approve` → status `approved` (funds remain locked)
+- `reject` → status `rejected` + `wallet_refund_withdrawal`
+- `mark_paid` → status `paid`, requires `payout_ref`, calls `wallet_settle_withdrawal`
+
+Admin UI page `/admin/partners/payouts` lists all withdrawals filtered by status, with action buttons + CSV export.
+
+## 7. Analytics
+
+`partner-analytics` edge fn returns:
+- MRR contributed by referred stores (sum of latest paid `subscription_payments.amount` per active store)
+- Active referrals (status `paid` + `store_plan_assignments.billing_status in (active, trialing)`)
+- Churned referrals (`billing_status = cancelled` or `suspended`)
+- Earnings 30/90/365-day series (sum of `partner_commissions.commission_amount` grouped by day)
+- Click → signup → paid funnel %
+
+Admin gets a global version, partner gets their scoped slice.
+
+## 8. Notifications
+
+Lightweight in-app notification system:
+
+New table `partner_notifications` — `id`, `partner_id`, `type`, `title`, `body`, `read_at?`, `created_at`. 
+
+DB triggers and wallet functions insert rows for:
+- commission earned (on credit)
+- commission approved (on approval)
+- withdrawal requested / approved / rejected / paid
+
+Frontend bell in partner dashboard with unread badge.
+
+Email is out of Phase 2 scope (would need Resend templates) — backlog.
+
+## 9. UI/UX
+
+New partner pages:
+- `/partners/dashboard/wallet` — fintech-style: 4 balance tiles (Pending, Approved, Withdrawable, Paid), ledger feed, big "Request Withdrawal" CTA.
+- `/partners/dashboard/withdrawals` — request form (UPI/bank), list of past requests with status.
+- `/partners/dashboard/analytics` — MRR card, earnings chart (recharts), funnel.
+- Bell icon + notifications drawer.
+
+New admin pages:
+- `/admin/partners/payouts` — withdrawal queue with approve/reject/mark-paid actions and CSV export.
+- Existing `/admin/partners` gets sub-tabs: Partners | Commissions | Payouts | Analytics.
+
+Layout: convert `PartnerDashboard` to `PartnerLayout` + `<Outlet/>` with sidebar nav (Overview, Wallet, Withdrawals, Analytics).
+
+---
+
+## Technical details
+
+### New tables (full SQL in migration)
 
 ```text
-partners
-  id uuid pk, user_id uuid (auth.users) unique
-  partner_code text unique           -- e.g. SBP1023
-  name, email, mobile
-  commission_percentage numeric default 40
-  status text default 'active'       -- active | suspended
-  created_at, updated_at
-
-partner_referral_clicks
-  id, partner_id fk, ip, user_agent, referrer, landing_path, created_at
-
-partner_referrals
-  id, partner_id fk
-  referred_user_id uuid (auth.users) -- set on signup
-  store_id uuid null                 -- set when store is created
-  status text default 'signup'       -- signup | trial | paid | churned
-  first_paid_at timestamptz null
-  locked boolean default false       -- true after first paid payment
-  created_at
-
-partner_commissions
-  id, partner_id fk, referral_id fk
-  store_id, subscription_id, payment_id
-  amount_paid numeric, percentage numeric, commission_amount numeric
-  status text default 'pending'      -- pending | approved | paid | reversed
-  created_at
-
-partner_settings (singleton row, admin-tunable)
-  default_percentage numeric default 40
-  cookie_days int default 90
-  hold_days int default 14
-  minimum_withdrawal numeric default 500
+partner_wallets(partner_id PK FK→partners, pending numeric, approved numeric, paid numeric, updated_at)
+partner_wallet_ledger(id, partner_id, direction, amount, kind, commission_id?, withdrawal_id?, notes?, created_at)
+partner_withdrawals(id, partner_id, amount, method, upi_id?, bank_*?, status, admin_note?, payout_ref?, requested_at, processed_at?)
+partner_notifications(id, partner_id, type, title, body, read_at?, created_at)
 ```
 
-Plus: add nullable `referred_by_partner_id` to `stores` for fast joins, and a `partner` value to the existing `app_role` enum.
+### Schema changes to existing tables
 
-## Attribution flow
+- `partner_commissions.status` whitelist extended: `pending|approved|reversed|paid|locked` (locked = inside an open withdrawal). Add CHECK via trigger (matching project convention to avoid CHECK on enum-like text columns).
 
-```text
-Visitor → /signup?ref=SBP1023
-   ↓ ReferralCapture component reads ?ref, sets sb_ref cookie (90d),
-     fires edge fn track-referral-click → partner_referral_clicks row
-   ↓
-Signup → after auth.signUp success, client calls edge fn attach-referral
-     which validates sb_ref, finds partner by code, inserts partner_referrals
-   ↓
-Store creation → trigger updates partner_referrals.store_id + stores.referred_by_partner_id
-   ↓
-First successful subscription payment → DB trigger fn create_partner_commission()
-     inserts partner_commissions, marks referral.status='paid' + locked=true
-```
+### RLS
 
-## Edge functions
+All four new tables: partner sees own rows, admin sees all. Inserts/updates blocked from clients — only SECURITY DEFINER wallet functions and admin role write.
 
-- `track-referral-click` (public, no JWT) — validates `ref` code, records click, returns 200.
-- `attach-referral` (auth required) — runs after signup, links the new auth user to a partner via cookie/header value, idempotent.
-- `partner-stats` (auth required, partner role) — returns aggregated dashboard numbers from a single SQL call.
+### Edge functions
 
-## Routes
+- `partner-approve-commissions` (cron, public, internal-secret-protected)
+- `partner-request-withdrawal` (auth)
+- `partner-cancel-withdrawal` (auth)
+- `admin-withdrawal-action` (auth + admin)
+- `partner-analytics` (auth)
+- `admin-partners-analytics` (auth + admin)
 
-```text
-/partners                       public landing
-/partners/login                 partner login
-/partners/signup                partner signup (no referral capture here)
-/partners/forgot-password
-/partners/dashboard             overview + referral tools
-/partners/referrals             referrals table
-/partners/commissions           commissions ledger
-/partners/profile               basic profile edit
+### Cron
 
-/admin/partners                 list + filters
-/admin/partners/:id             detail (edit %, suspend, see stores+commissions)
-/admin/partners/commissions     global commissions ledger
-/admin/partners/settings        defaults (%, cookie days, hold days)
-```
+`pg_cron` job daily at 02:00 IST → calls `partner-approve-commissions`.
 
-## RLS summary
+### Concurrency
 
-- `partners`: partner can select/update own row (by `user_id`); admin full access.
-- `partner_referrals`, `partner_commissions`: partner can only `select` rows where `partner_id` matches their own; admin full access; service role inserts via triggers / edge functions.
-- `partner_referral_clicks`: insert allowed via edge function (service role); partner select own; admin full.
-- `partner_settings`: admin only.
+All wallet functions use `SELECT ... FOR UPDATE` on `partner_wallets` row to prevent double-spend on concurrent withdrawal requests.
 
-## Implementation order
+### Out of scope (explicit)
 
-1. Migration for tables, enum extension, RLS, trigger, helper SQL fn `is_partner_owner(partner_id)`.
-2. Landing page + partner auth pages (reusing existing auth UI patterns).
-3. Referral capture util + `track-referral-click` edge fn.
-4. Partner dashboard shell + `partner-stats` edge fn + referral/commission tables.
-5. `attach-referral` edge fn wired into signup flow + storefront signup flow.
-6. Admin partner pages plugged into existing AdminSidebar/AdminLayout.
-7. Smoke test: open `/signup?ref=…`, complete flow with a fake `subscription_payments` insert, confirm commission row appears with correct math.
-
-## Open question — confirm before I migrate
-
-The existing app has a `subscriptions` table tied to `user_id` (merchant) and `plan_id`, but I don't see a `subscription_payments` table in the schema dump above. **Where does a successful paid subscription currently get recorded?** Options:
-
-1. There's already a payments/invoices table I should hook the trigger into — tell me its name.
-2. There isn't one yet — I'll add a minimal `subscription_payments(store_id, plan_id, amount, status, paid_at)` table as part of this migration so the commission trigger has something to fire on.
-
-Reply with the table name (or "create it") and I'll start with the migration.
+- Stripe/Razorpay subscription webhooks (no plan billing through them)
+- Email notifications (in-app only)
+- TDS / GST handling
+- Multi-currency (INR only)
+- KYC docs upload

@@ -24,12 +24,17 @@ const AdminUsageMonitoring = lazy(() => import("@/pages/admin/AdminUsageMonitori
 const AdminErrorLogs = lazy(() => import("@/pages/admin/AdminErrorLogs"));
 const AdminMenuConfig = lazy(() => import("@/pages/admin/AdminMenuConfig"));
 const AdminPartners = lazy(() => import("@/pages/admin/AdminPartners"));
+const AdminPartnerPayouts = lazy(() => import("@/pages/admin/AdminPartnerPayouts"));
 
 // Partner program
 const PartnerLanding = lazy(() => import("@/pages/partner/PartnerLanding"));
 const PartnerSignup = lazy(() => import("@/pages/partner/PartnerSignup"));
 const PartnerLogin = lazy(() => import("@/pages/partner/PartnerLogin"));
-const PartnerDashboard = lazy(() => import("@/pages/partner/PartnerDashboard"));
+const PartnerLayout = lazy(() => import("@/layouts/PartnerLayout"));
+const PartnerOverview = lazy(() => import("@/pages/partner/PartnerOverview"));
+const PartnerWallet = lazy(() => import("@/pages/partner/PartnerWallet"));
+const PartnerWithdrawals = lazy(() => import("@/pages/partner/PartnerWithdrawals"));
+const PartnerAnalytics = lazy(() => import("@/pages/partner/PartnerAnalytics"));
 
 // Dashboard
 const DashboardLayout = lazy(() => import("@/layouts/DashboardLayout"));
@@ -85,10 +90,15 @@ export default function AuthRoutes() {
           path="/partners/dashboard"
           element={
             <ProtectedRoute>
-              <PartnerDashboard />
+              <PartnerLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<PartnerOverview />} />
+          <Route path="wallet" element={<PartnerWallet />} />
+          <Route path="withdrawals" element={<PartnerWithdrawals />} />
+          <Route path="analytics" element={<PartnerAnalytics />} />
+        </Route>
 
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route
@@ -110,6 +120,7 @@ export default function AuthRoutes() {
           <Route path="settings" element={<AdminSettings />} />
           <Route path="menu-config" element={<AdminMenuConfig />} />
           <Route path="partners" element={<AdminPartners />} />
+          <Route path="partners/payouts" element={<AdminPartnerPayouts />} />
         </Route>
 
         <Route
