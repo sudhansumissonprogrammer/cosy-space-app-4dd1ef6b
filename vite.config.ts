@@ -1,8 +1,42 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import fs from "fs";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
+import Beasties from "beasties";
+
+/**
+ * Inline critical CSS from dist/index.html and async-load the rest.
+ * Runs only in production builds (post-bundle). Dev server is untouched.
+ */
+function beastiesPlugin() {
+  return {
+    name: "beasties-inline-critical",
+    apply: "build" as const,
+    async closeBundle() {
+      const outDir = path.resolve(__dirname, "dist");
+      const htmlPath = path.join(outDir, "index.html");
+      if (!fs.existsSync(htmlPath)) return;
+      try {
+        const beasties = new Beasties({
+          path: outDir,
+          publicPath: "/",
+          preload: "swap",
+          inlineFonts: false,
+          pruneSource: false,
+          reduceInlineStyles: false,
+          logLevel: "silent",
+        });
+        const html = fs.readFileSync(htmlPath, "utf8");
+        const out = await beasties.process(html);
+        fs.writeFileSync(htmlPath, out, "utf8");
+      } catch (e) {
+        console.warn("[beasties] skipped:", (e as Error).message);
+      }
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -16,6 +50,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
+    beastiesPlugin(),
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: null,
