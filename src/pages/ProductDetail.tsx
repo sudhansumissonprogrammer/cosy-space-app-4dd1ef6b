@@ -1703,7 +1703,7 @@ function FullscreenLightbox({
         onDoubleClick={handleDoubleClick}
         style={{ cursor: scale > 1 ? "grab" : "default" }}
       >
-        <div className="relative flex items-center justify-center w-full h-full rounded-2xl bg-white overflow-hidden shadow-2xl">
+        <div className="relative flex items-center justify-center w-full h-full overflow-hidden">
           <LightboxImage
             src={images[activeIndex]}
             alt={productName}
