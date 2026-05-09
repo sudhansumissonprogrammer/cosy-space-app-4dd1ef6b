@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.billing-cron]
 verify_jwt = false
+
+[functions.track-referral-click]
+verify_jwt = false
