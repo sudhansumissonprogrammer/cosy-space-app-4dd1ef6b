@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 const COOKIE_NAME = "sb_ref";
 const COOKIE_DAYS = 90;
+const COOKIE_AT_KEY = "sb_ref_at"; // localStorage timestamp (ms)
+const STALE_HOURS = 24; // drop cookie if older than this on auth events
 
 export function getReferralCode(): string | null {
   if (typeof document === "undefined") return null;
@@ -26,6 +28,9 @@ function setReferralCookie(code: string) {
     if (host.endsWith("shopbanao.in")) domainPart = "; Domain=.shopbanao.in";
   } catch {}
   document.cookie = `${COOKIE_NAME}=${encodeURIComponent(code)}; Path=/; Expires=${expires}; SameSite=Lax${domainPart}`;
+  try {
+    localStorage.setItem(COOKIE_AT_KEY, String(Date.now()));
+  } catch {}
 }
 
 /** Call from any landing route — reads ?ref=, persists, fires click. Idempotent. */
@@ -57,7 +62,7 @@ export async function captureReferralFromURL(): Promise<void> {
   }
 }
 
-function clearReferralCookie() {
+export function clearReferralCookie() {
   if (typeof document === "undefined") return;
   let domainPart = "";
   try {
@@ -65,6 +70,41 @@ function clearReferralCookie() {
     if (host.endsWith("shopbanao.in")) domainPart = "; Domain=.shopbanao.in";
   } catch {}
   document.cookie = `${COOKIE_NAME}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${domainPart}`;
+  try {
+    localStorage.removeItem(COOKIE_AT_KEY);
+  } catch {}
+}
+
+/**
+ * Drop the referral cookie if it's stale (>24h) or if the currently signed-in
+ * user is themselves a partner. Call on every auth state change so a stale
+ * cookie can't credit a brand-new signup on a shared/public browser.
+ */
+export async function maybeClearStaleReferralCookie(userId: string | null): Promise<void> {
+  if (typeof window === "undefined") return;
+  const code = getReferralCode();
+  if (!code) return;
+
+  // Stale cookie → drop
+  try {
+    const at = Number(localStorage.getItem(COOKIE_AT_KEY) || 0);
+    if (at && Date.now() - at > STALE_HOURS * 60 * 60 * 1000) {
+      clearReferralCookie();
+      return;
+    }
+  } catch {}
+
+  // Logged-in user is a partner → never let them earn from their own browser
+  if (userId) {
+    try {
+      const { data } = await supabase
+        .from("partners")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (data) clearReferralCookie();
+    } catch {}
+  }
 }
 
 /** Called after a successful signup to attach the new user to the referring partner. */

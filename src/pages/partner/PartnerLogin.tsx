@@ -11,17 +11,34 @@ import { Loader2, Sparkles } from "lucide-react";
 
 export default function PartnerLogin() {
   const navigate = useNavigate();
-  const { session, loading: authLoading } = useAuth();
+  const { session, loading: authLoading, signOut } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [otherAccount, setOtherAccount] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && session) navigate("/partners/dashboard", { replace: true });
+    if (authLoading || !session) return;
+    // If signed in, check whether this user is already a partner.
+    // If yes → straight to dashboard. If no → warn instead of silently
+    // overwriting their store-owner session.
+    (async () => {
+      const { data: p } = await supabase
+        .from("partners")
+        .select("id")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      if (p) navigate("/partners/dashboard", { replace: true });
+      else setOtherAccount(session.user.email || "another account");
+    })();
   }, [authLoading, session, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (otherAccount) {
+      toast.error("Sign out first to log into a partner account");
+      return;
+    }
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -47,6 +64,14 @@ export default function PartnerLogin() {
           <h1 className="text-xl font-semibold text-foreground">Partner login</h1>
           <p className="text-sm text-muted-foreground">Sign in to your partner dashboard</p>
         </div>
+        {otherAccount && (
+          <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+            You're signed in as <span className="font-medium">{otherAccount}</span>. Sign out first to log into a partner account.
+            <Button size="sm" variant="outline" className="mt-2 w-full" onClick={async () => { await signOut(); setOtherAccount(null); }}>
+              Sign out
+            </Button>
+          </div>
+        )}
         <Card>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4 pt-6">
