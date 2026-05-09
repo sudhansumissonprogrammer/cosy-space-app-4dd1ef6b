@@ -76,9 +76,21 @@ Deno.serve(async (req) => {
       await admin.from("partner_withdrawals").update({
         status: "paid", payout_ref, paid_at: now, admin_note: note ?? w.admin_note,
       }).eq("id", w.id);
-      // Mark associated commissions paid
-      await admin.from("partner_commissions").update({ status: "paid" })
-        .eq("partner_id", w.partner_id).eq("status", "approved");
+      // Mark associated commissions paid — FIFO up to withdrawal amount only
+      const { data: approvedRows } = await admin.from("partner_commissions")
+        .select("id, commission_amount")
+        .eq("partner_id", w.partner_id).eq("status", "approved")
+        .order("created_at", { ascending: true });
+      let remaining = Number(w.amount);
+      const toMark: string[] = [];
+      for (const r of approvedRows ?? []) {
+        if (remaining <= 0) break;
+        toMark.push(r.id);
+        remaining -= Number(r.commission_amount);
+      }
+      if (toMark.length > 0) {
+        await admin.from("partner_commissions").update({ status: "paid" }).in("id", toMark);
+      }
       await admin.from("partner_notifications").insert({
         partner_id: w.partner_id, type: "withdrawal_paid",
         title: `Payout received: ₹${w.amount}`,
