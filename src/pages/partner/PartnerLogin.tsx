@@ -64,6 +64,14 @@ export default function PartnerLogin() {
           <h1 className="text-xl font-semibold text-foreground">Partner login</h1>
           <p className="text-sm text-muted-foreground">Sign in to your partner dashboard</p>
         </div>
+        {otherAccount && (
+          <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+            You're signed in as <span className="font-medium">{otherAccount}</span>. Sign out first to log into a partner account.
+            <Button size="sm" variant="outline" className="mt-2 w-full" onClick={async () => { await signOut(); setOtherAccount(null); }}>
+              Sign out
+            </Button>
+          </div>
+        )}
         <Card>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4 pt-6">
