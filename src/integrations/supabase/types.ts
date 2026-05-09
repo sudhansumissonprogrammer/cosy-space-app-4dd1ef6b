@@ -787,6 +787,48 @@ export type Database = {
           },
         ]
       }
+      partner_audit_logs: {
+        Row: {
+          action: string
+          actor_role: string | null
+          actor_user_id: string | null
+          created_at: string
+          id: string
+          ip: string | null
+          new_value: Json | null
+          note: string | null
+          old_value: Json | null
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          actor_role?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          ip?: string | null
+          new_value?: Json | null
+          note?: string | null
+          old_value?: Json | null
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action?: string
+          actor_role?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          ip?: string | null
+          new_value?: Json | null
+          note?: string | null
+          old_value?: Json | null
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: []
+      }
       partner_clawbacks: {
         Row: {
           admin_note: string | null
@@ -831,6 +873,63 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_commission_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          note: string | null
+          partner_id: string
+          percentage: number
+          plan_id: string | null
+          starts_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          note?: string | null
+          partner_id: string
+          percentage: number
+          plan_id?: string | null
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          note?: string | null
+          partner_id?: string
+          percentage?: number
+          plan_id?: string | null
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_commission_overrides_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_commission_overrides_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
             referencedColumns: ["id"]
           },
         ]
@@ -932,6 +1031,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      partner_rate_limits: {
+        Row: {
+          action: string
+          count: number
+          last_at: string
+          partner_id: string
+        }
+        Insert: {
+          action: string
+          count?: number
+          last_at?: string
+          partner_id: string
+        }
+        Update: {
+          action?: string
+          count?: number
+          last_at?: string
+          partner_id?: string
+        }
+        Relationships: []
       }
       partner_referral_clicks: {
         Row: {
@@ -1212,6 +1332,7 @@ export type Database = {
           mobile: string | null
           name: string
           partner_code: string
+          payouts_paused: boolean
           status: string
           total_earnings: number
           updated_at: string
@@ -1225,6 +1346,7 @@ export type Database = {
           mobile?: string | null
           name: string
           partner_code?: string
+          payouts_paused?: boolean
           status?: string
           total_earnings?: number
           updated_at?: string
@@ -1238,6 +1360,7 @@ export type Database = {
           mobile?: string | null
           name?: string
           partner_code?: string
+          payouts_paused?: boolean
           status?: string
           total_earnings?: number
           updated_at?: string
@@ -2333,6 +2456,27 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_events: {
+        Row: {
+          event_id: string
+          payload: Json | null
+          processed_at: string
+          provider: string
+        }
+        Insert: {
+          event_id: string
+          payload?: Json | null
+          processed_at?: string
+          provider: string
+        }
+        Update: {
+          event_id?: string
+          payload?: Json | null
+          processed_at?: string
+          provider?: string
+        }
+        Relationships: []
+      }
       whatsapp_bulk_campaigns: {
         Row: {
           admin_campaign: boolean | null
@@ -2995,6 +3139,17 @@ export type Database = {
         Returns: boolean
       }
       is_user_blocked: { Args: never; Returns: boolean }
+      log_partner_audit: {
+        Args: {
+          _action: string
+          _new: Json
+          _note?: string
+          _old: Json
+          _target_id: string
+          _target_type: string
+        }
+        Returns: string
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -3011,6 +3166,20 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      resolve_partner_commission_pct: {
+        Args: { _partner_id: string; _store_id: string }
+        Returns: number
+      }
+      wallet_adjust: {
+        Args: {
+          _amount: number
+          _bucket: string
+          _direction: string
+          _note: string
+          _partner_id: string
+        }
+        Returns: undefined
       }
       wallet_approve_commission: {
         Args: { _commission_id: string }

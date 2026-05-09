@@ -3,8 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Settings2, Search } from "lucide-react";
 
 interface Partner {
   id: string;
@@ -15,99 +21,267 @@ interface Partner {
   commission_percentage: number;
   status: string;
   total_earnings: number;
+  payouts_paused?: boolean;
   created_at: string;
 }
 
+const inr = (n: any) => `₹${Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+
 export default function AdminPartners() {
   const [partners, setPartners] = useState<Partner[]>([]);
-  const [commissions, setCommissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingPct, setEditingPct] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState("");
+  const [active, setActive] = useState<Partner | null>(null);
 
   const load = async () => {
     setLoading(true);
-    const [{ data: ps }, { data: cs }] = await Promise.all([
-      supabase.from("partners").select("*").order("created_at", { ascending: false }),
-      supabase.from("partner_commissions").select("id,partner_id,amount_paid,commission_amount,percentage,status,created_at").order("created_at", { ascending: false }).limit(50),
-    ]);
+    const { data: ps } = await supabase.from("partners").select("*").order("created_at", { ascending: false });
     setPartners((ps as Partner[]) || []);
-    setCommissions(cs || []);
     setLoading(false);
   };
-
   useEffect(() => { load(); }, []);
 
-  const updatePct = async (id: string) => {
-    const v = Number(editingPct[id]);
-    if (!Number.isFinite(v) || v < 0 || v > 100) { toast.error("Enter 0-100"); return; }
-    const { error } = await supabase.from("partners").update({ commission_percentage: v }).eq("id", id);
-    if (error) toast.error(error.message); else { toast.success("Updated"); load(); }
-  };
-
-  const toggleStatus = async (p: Partner) => {
-    const next = p.status === "active" ? "suspended" : "active";
-    const { error } = await supabase.from("partners").update({ status: next }).eq("id", p.id);
-    if (error) toast.error(error.message); else { toast.success(`Partner ${next}`); load(); }
-  };
-
-  if (loading) return <div className="flex items-center justify-center p-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  const filtered = partners.filter((p) => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return p.name?.toLowerCase().includes(s) || p.email?.toLowerCase().includes(s) || p.partner_code?.toLowerCase().includes(s);
+  });
 
   return (
     <div className="space-y-6 p-4">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Referral Partners</h1>
-        <p className="text-sm text-muted-foreground">Manage partner accounts and view commissions</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Referral Partners</h1>
+          <p className="text-sm text-muted-foreground">Manage partner accounts, commissions, and payouts</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild><a href="/admin/partners/payouts">Payouts</a></Button>
+          <Button variant="outline" asChild><a href="/admin/partners/audit">Audit log</a></Button>
+          <Button variant="outline" asChild><a href="/admin/partners/exports">Exports</a></Button>
+        </div>
       </div>
 
-      <Card className="p-5">
-        <h3 className="mb-3 text-sm font-semibold">Partners ({partners.length})</h3>
-        <div className="space-y-2">
-          {partners.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No partners yet.</p>
-          ) : partners.map((p) => (
-            <div key={p.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-border/60 p-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">{p.name} <span className="font-mono text-xs text-muted-foreground">({p.partner_code})</span></p>
-                <p className="truncate text-xs text-muted-foreground">{p.email} · ₹{Number(p.total_earnings).toLocaleString("en-IN")} earned</p>
-              </div>
-              <div className="flex items-center gap-1">
-                <Input
-                  type="number"
-                  className="h-8 w-20 text-sm"
-                  defaultValue={p.commission_percentage}
-                  onChange={(e) => setEditingPct((s) => ({ ...s, [p.id]: e.target.value }))}
-                />
-                <span className="text-xs text-muted-foreground">%</span>
-                <Button size="sm" variant="outline" onClick={() => updatePct(p.id)}>Save</Button>
-              </div>
-              <Button
-                size="sm"
-                variant={p.status === "active" ? "outline" : "destructive"}
-                onClick={() => toggleStatus(p)}
-              >
-                {p.status === "active" ? "Suspend" : "Reactivate"}
-              </Button>
-            </div>
-          ))}
+      <Card className="p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search by name, email, or code…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
+          <span className="ml-auto text-xs text-muted-foreground">{filtered.length} partners</span>
         </div>
+        {loading ? (
+          <div className="flex items-center justify-center p-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 text-left">Partner</th>
+                  <th className="px-3 py-2 text-left">Code</th>
+                  <th className="px-3 py-2 text-left">Status</th>
+                  <th className="px-3 py-2 text-right">Commission</th>
+                  <th className="px-3 py-2 text-right">Earned</th>
+                  <th className="px-3 py-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p) => (
+                  <tr key={p.id} className="border-b hover:bg-muted/20">
+                    <td className="px-3 py-2">
+                      <div className="font-medium">{p.name}</div>
+                      <div className="text-xs text-muted-foreground">{p.email}</div>
+                    </td>
+                    <td className="px-3 py-2 font-mono text-xs">{p.partner_code}</td>
+                    <td className="px-3 py-2">
+                      <Badge variant={p.status === "active" ? "default" : "secondary"} className="capitalize">{p.status}</Badge>
+                      {p.payouts_paused && <Badge variant="destructive" className="ml-1">Payouts paused</Badge>}
+                    </td>
+                    <td className="px-3 py-2 text-right">{p.commission_percentage}%</td>
+                    <td className="px-3 py-2 text-right">{inr(p.total_earnings)}</td>
+                    <td className="px-3 py-2 text-right">
+                      <Button size="sm" variant="outline" onClick={() => setActive(p)}>
+                        <Settings2 className="mr-1 h-3.5 w-3.5" /> Manage
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr><td colSpan={6} className="py-8 text-center text-sm text-muted-foreground">No partners</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
-      <Card className="p-5">
-        <h3 className="mb-3 text-sm font-semibold">Recent commissions</h3>
-        <div className="space-y-2">
-          {commissions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No commissions yet.</p>
-          ) : commissions.map((c) => (
-            <div key={c.id} className="flex items-center justify-between rounded-md bg-muted/30 px-3 py-2 text-sm">
-              <div>
-                <p className="font-semibold">₹{Number(c.commission_amount).toLocaleString("en-IN")}</p>
-                <p className="text-xs text-muted-foreground">{c.percentage}% of ₹{Number(c.amount_paid).toLocaleString("en-IN")} · {new Date(c.created_at).toLocaleDateString()}</p>
-              </div>
-              <span className="rounded-full bg-background px-2 py-0.5 text-xs font-medium capitalize">{c.status}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
+      <PartnerControlsDrawer partner={active} onClose={() => setActive(null)} onChanged={load} />
     </div>
+  );
+}
+
+function PartnerControlsDrawer({ partner, onClose, onChanged }: { partner: Partner | null; onClose: () => void; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [overrides, setOverrides] = useState<any[]>([]);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [walletForm, setWalletForm] = useState({ direction: "credit", bucket: "approved", amount: "", note: "" });
+  const [overrideForm, setOverrideForm] = useState({ plan_id: "", percentage: "", starts_at: "", ends_at: "", note: "" });
+  const [pctValue, setPctValue] = useState("");
+
+  useEffect(() => {
+    if (!partner) return;
+    setPctValue(String(partner.commission_percentage));
+    (async () => {
+      const [{ data: ovs }, { data: ps }] = await Promise.all([
+        supabase.from("partner_commission_overrides").select("*").eq("partner_id", partner.id).order("created_at", { ascending: false }),
+        supabase.from("plans").select("id,name,slug,price").eq("is_active", true).order("price"),
+      ]);
+      setOverrides(ovs || []); setPlans(ps || []);
+    })();
+  }, [partner?.id]);
+
+  if (!partner) return null;
+
+  const call = async (action: string, args: Record<string, any> = {}) => {
+    setBusy(true);
+    const { data, error } = await supabase.functions.invoke("admin-partner-controls", { body: { action, partner_id: partner.id, ...args } });
+    setBusy(false);
+    if (error || data?.error) { toast.error(error?.message || data?.error); return false; }
+    toast.success("Done"); onChanged(); return true;
+  };
+
+  return (
+    <Sheet open={!!partner} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
+        <SheetHeader>
+          <SheetTitle>{partner.name}</SheetTitle>
+          <SheetDescription className="font-mono">{partner.partner_code} · {partner.email}</SheetDescription>
+        </SheetHeader>
+
+        <Tabs defaultValue="status" className="mt-4">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="status">Status</TabsTrigger>
+            <TabsTrigger value="commission">Commission</TabsTrigger>
+            <TabsTrigger value="wallet">Wallet</TabsTrigger>
+            <TabsTrigger value="overrides">Overrides</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="status" className="space-y-4 pt-4">
+            <Card className="p-4 space-y-2">
+              <Label>Account status</Label>
+              <div className="flex gap-2 flex-wrap">
+                {["active", "suspended", "banned", "rejected"].map((s) => (
+                  <Button key={s} size="sm" variant={partner.status === s ? "default" : "outline"} disabled={busy}
+                    onClick={() => call("set_partner_status", { status: s })} className="capitalize">{s}</Button>
+                ))}
+              </div>
+            </Card>
+            <Card className="p-4 space-y-2">
+              <Label>Payouts</Label>
+              <p className="text-xs text-muted-foreground">{partner.payouts_paused ? "Currently paused — partner cannot request withdrawals." : "Active — partner can request withdrawals."}</p>
+              <Button size="sm" variant={partner.payouts_paused ? "default" : "destructive"} disabled={busy}
+                onClick={() => call(partner.payouts_paused ? "resume_payouts" : "pause_payouts")}>
+                {partner.payouts_paused ? "Resume payouts" : "Pause payouts"}
+              </Button>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="commission" className="space-y-4 pt-4">
+            <Card className="p-4 space-y-2">
+              <Label>Default commission %</Label>
+              <div className="flex gap-2">
+                <Input type="number" value={pctValue} onChange={(e) => setPctValue(e.target.value)} className="max-w-[120px]" />
+                <Button disabled={busy} onClick={() => call("set_commission_percentage", { percentage: Number(pctValue) })}>Save</Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Used as fallback when no override applies.</p>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="wallet" className="space-y-4 pt-4">
+            <Card className="p-4 space-y-3">
+              <Label>Manual wallet adjustment</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={walletForm.direction} onValueChange={(v) => setWalletForm((s) => ({ ...s, direction: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="credit">Credit</SelectItem>
+                    <SelectItem value="debit">Debit</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={walletForm.bucket} onValueChange={(v) => setWalletForm((s) => ({ ...s, bucket: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="approved">Approved (withdrawable)</SelectItem>
+                    <SelectItem value="pending">Pending (on hold)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Input type="number" placeholder="Amount" value={walletForm.amount} onChange={(e) => setWalletForm((s) => ({ ...s, amount: e.target.value }))} />
+              <Textarea placeholder="Reason / note (recommended)" value={walletForm.note} onChange={(e) => setWalletForm((s) => ({ ...s, note: e.target.value }))} rows={2} />
+              <Button disabled={busy || !walletForm.amount} className="w-full" onClick={async () => {
+                const ok = await call("wallet_adjustment", { direction: walletForm.direction, bucket: walletForm.bucket, amount: Number(walletForm.amount), note: walletForm.note });
+                if (ok) setWalletForm({ direction: "credit", bucket: "approved", amount: "", note: "" });
+              }}>Apply adjustment</Button>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="overrides" className="space-y-4 pt-4">
+            <Card className="p-4 space-y-3">
+              <Label>Add commission override</Label>
+              <Select value={overrideForm.plan_id || "__all__"} onValueChange={(v) => setOverrideForm((s) => ({ ...s, plan_id: v === "__all__" ? "" : v }))}>
+                <SelectTrigger><SelectValue placeholder="All plans (global)" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All plans (global)</SelectItem>
+                  {plans.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} ({inr(p.price)})</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <div className="grid grid-cols-3 gap-2">
+                <Input type="number" placeholder="%" value={overrideForm.percentage} onChange={(e) => setOverrideForm((s) => ({ ...s, percentage: e.target.value }))} />
+                <Input type="datetime-local" value={overrideForm.starts_at} onChange={(e) => setOverrideForm((s) => ({ ...s, starts_at: e.target.value }))} />
+                <Input type="datetime-local" value={overrideForm.ends_at} onChange={(e) => setOverrideForm((s) => ({ ...s, ends_at: e.target.value }))} />
+              </div>
+              <Textarea placeholder="Note" rows={2} value={overrideForm.note} onChange={(e) => setOverrideForm((s) => ({ ...s, note: e.target.value }))} />
+              <Button disabled={busy || !overrideForm.percentage} onClick={async () => {
+                const ok = await call("create_override", {
+                  plan_id: overrideForm.plan_id || null,
+                  percentage: Number(overrideForm.percentage),
+                  starts_at: overrideForm.starts_at || null,
+                  ends_at: overrideForm.ends_at || null,
+                  note: overrideForm.note || null,
+                });
+                if (ok) {
+                  setOverrideForm({ plan_id: "", percentage: "", starts_at: "", ends_at: "", note: "" });
+                  const { data: ovs } = await supabase.from("partner_commission_overrides").select("*").eq("partner_id", partner.id).order("created_at", { ascending: false });
+                  setOverrides(ovs || []);
+                }
+              }}>Create override</Button>
+            </Card>
+
+            <Card className="p-4 space-y-2">
+              <Label>Existing overrides</Label>
+              {overrides.length === 0 ? (
+                <p className="text-xs text-muted-foreground">None yet.</p>
+              ) : overrides.map((o) => (
+                <div key={o.id} className="flex items-center justify-between rounded-md border p-2 text-sm">
+                  <div>
+                    <div className="font-medium">{o.percentage}% {o.plan_id ? `· plan ${plans.find((p) => p.id === o.plan_id)?.name ?? o.plan_id.slice(0, 8)}` : "· all plans"}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {o.starts_at ? new Date(o.starts_at).toLocaleDateString() : "—"} → {o.ends_at ? new Date(o.ends_at).toLocaleDateString() : "∞"}
+                      {!o.is_active && " · inactive"}
+                    </div>
+                  </div>
+                  {o.is_active && (
+                    <Button size="sm" variant="ghost" disabled={busy} onClick={async () => {
+                      const ok = await call("deactivate_override", { override_id: o.id });
+                      if (ok) {
+                        const { data: ovs } = await supabase.from("partner_commission_overrides").select("*").eq("partner_id", partner.id).order("created_at", { ascending: false });
+                        setOverrides(ovs || []);
+                      }
+                    }}>Deactivate</Button>
+                  )}
+                </div>
+              ))}
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </SheetContent>
+    </Sheet>
   );
 }
