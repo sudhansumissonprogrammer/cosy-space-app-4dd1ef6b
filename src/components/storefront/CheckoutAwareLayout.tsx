@@ -261,7 +261,11 @@ export default function CheckoutAwareLayout({
 
       <main className={mobileNavEnabled ? "pb-16 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><PageTransition><Outlet context={store} /></PageTransition></Suspense></main>
       {mobileNavEnabled && mobileNav}
-      <Suspense fallback={null}><LazyStorefrontFooter store={store} /></Suspense>
+      {/* Reserve footer space to prevent CLS when LazyStorefrontFooter mounts.
+          Approx heights: ~900px mobile / ~600px desktop incl. mt-16 spacing. */}
+      <Suspense fallback={<div aria-hidden className="mt-16" style={{ minHeight: "600px" }} />}>
+        <LazyStorefrontFooter store={store} />
+      </Suspense>
 
       <Suspense fallback={null}>
         <LazyCheckoutExitDialog

@@ -72,7 +72,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.9.1-pdp-cache-key-fix";
+const WORKER_VERSION = "8.9.2-fonts-nonblock-cache";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -640,7 +640,12 @@ function buildThemeCssFromConfig(tc) {
     // parallel with HTML parsing — regardless of which font the merchant chose.
     // Saves ~200-400ms FOUT on cold loads for ALL stores (not just Poppins).
     css += `<link rel="preload" as="style" href="${googleFontsHref}" fetchpriority="high" data-sf-font="1" />\n`;
-    css += `<link id="storefront-google-fonts" rel="stylesheet" href="${googleFontsHref}" data-loaded="false" data-sf-font="1" />\n`;
+    // v8.9.2 — non-render-blocking stylesheet via media-print swap.
+    // Eliminates the Google Fonts CSS from the FCP critical chain (saves
+    // 1-3s on slow 4G). font-display:swap inside the CSS still prevents
+    // FOIT, so text paints in the system fallback while gstatic woff2
+    // downloads in the background.
+    css += `<link id="storefront-google-fonts" rel="stylesheet" href="${googleFontsHref}" media="print" onload="this.media='all';this.dataset.loaded='true'" data-loaded="false" data-sf-font="1" />\n`;
     css += `<noscript><link rel="stylesheet" href="${googleFontsHref}" /></noscript>\n`;
     css += `<style>:root{--storefront-heading-font:'${fonts[0] || "Inter"}';--storefront-body-font:'${fonts[fonts.length > 1 ? 1 : 0] || "Inter"}'}</style>\n`;
   }
@@ -4202,6 +4207,34 @@ export default {
 
         return addDiagnosticHeaders(earlyHit, { slug: cachedSlug, cacheStatus: "HIT", dataSource: cachedDataSource });
       }
+    }
+
+    // ─── /fonts/* — long-cache self-hosted fonts (v8.9.2) ───
+    // Origin returned default cache headers (~1h). woff2 files are
+    // content-stable; serve as immutable for 1y so repeat visits skip
+    // network entirely. Edge-cache via cache.match for cold visitors too.
+    if (url.pathname.startsWith("/fonts/")) {
+      const fontCache = caches.default;
+      const fontCacheKey = new Request(url.toString(), { method: "GET" });
+      let fontHit = await fontCache.match(fontCacheKey);
+      if (fontHit) {
+        const h = new Headers(fontHit.headers);
+        h.set("X-Worker-Version", WORKER_VERSION);
+        h.set("X-Font-Cache", "HIT");
+        return new Response(fontHit.body, { status: fontHit.status, headers: h });
+      }
+      const fontResp = await fetch(request);
+      if (fontResp.ok) {
+        const h = new Headers(fontResp.headers);
+        h.set("Cache-Control", "public, max-age=31536000, immutable");
+        h.set("Access-Control-Allow-Origin", "*");
+        h.set("X-Worker-Version", WORKER_VERSION);
+        h.set("X-Font-Cache", "MISS");
+        const cached = new Response(fontResp.body, { status: 200, headers: h });
+        ctx.waitUntil(fontCache.put(fontCacheKey, cached.clone()));
+        return cached;
+      }
+      return fontResp;
     }
 
     // ─── CLOUDFLARE IMAGE RESIZING (/cf-img) ───
