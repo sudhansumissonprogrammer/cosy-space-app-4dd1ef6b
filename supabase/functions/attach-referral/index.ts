@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
       });
     }
     const userId = userData.user.id;
+    const userEmail = (userData.user.email || "").trim().toLowerCase();
 
     const body = await req.json().catch(() => ({}));
     const ref = String(body?.ref ?? "").trim().toUpperCase();
@@ -47,7 +48,7 @@ Deno.serve(async (req) => {
 
     const { data: partner } = await admin
       .from("partners")
-      .select("id, user_id, status")
+      .select("id, user_id, status, email")
       .eq("partner_code", ref)
       .maybeSingle();
 
@@ -58,12 +59,41 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Prevent self-referral
-    if (partner.user_id === userId) {
+    // Self-referral guards: same user_id OR same email
+    const partnerEmail = (partner.email || "").trim().toLowerCase();
+    if (
+      partner.user_id === userId ||
+      (userEmail && partnerEmail && userEmail === partnerEmail)
+    ) {
       return new Response(JSON.stringify({ ok: false, reason: "self_referral" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Capture signup IP/UA for fraud review
+    const signupIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("cf-connecting-ip") ||
+      null;
+    const signupUa = req.headers.get("user-agent") || null;
+
+    // Check if a recent click from this same IP came from this same partner —
+    // strong signal of self-referral (partner clicking own link then signing
+    // up a fake account on the same network).
+    let flaggedReason: string | null = null;
+    if (signupIp) {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: matchClicks } = await admin
+        .from("partner_referral_clicks")
+        .select("id")
+        .eq("partner_id", partner.id)
+        .eq("ip", signupIp)
+        .gte("created_at", since)
+        .limit(1);
+      if (matchClicks && matchClicks.length > 0) {
+        flaggedReason = "ip_match_partner_click";
+      }
     }
 
     // Check existing referral — referred_user_id is UNIQUE so only one row ever
@@ -88,6 +118,9 @@ Deno.serve(async (req) => {
           partner_id: partner.id,
           referred_user_id: userId,
           status: "signup",
+          signup_ip: signupIp,
+          signup_user_agent: signupUa,
+          flagged_reason: flaggedReason,
         })
         .select("id")
         .single();
@@ -132,6 +165,7 @@ Deno.serve(async (req) => {
         ok: true,
         partner_code: ref,
         backfilled_stores: untaggedStoreIds.length,
+        flagged: !!flaggedReason,
       }),
       {
         status: 200,
