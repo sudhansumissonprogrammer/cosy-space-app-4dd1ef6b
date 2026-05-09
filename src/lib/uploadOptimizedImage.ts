@@ -103,20 +103,5 @@ export function resolveVariantUrl(
  * Check if a URL was produced by our optimization pipeline.
  */
 export function isOptimizedUrl(url: string): boolean {
-  return /^.+-\d+w\.(webp|jpg|jpeg|avif)$/i.test(url);
-}
-
-/**
- * Derive the sibling AVIF URL for a pipeline-optimized image.
- * Returns null if the URL doesn't look like one we produced.
- *
- * NOTE: This URL is "best-effort" — older uploads predating AVIF support
- * will not have an AVIF sibling. Callers using <picture><source type="image/avif">
- * should be aware that AVIF may 404 for legacy images. Only enable AVIF
- * sources behind a flag once back-fill is complete.
- */
-export function resolveAvifUrl(mainUrl: string): string | null {
-  const match = mainUrl.match(/^(.+)-(\d+)w\.(webp|jpg|jpeg)$/i);
-  if (!match) return null;
-  return `${match[1]}-${match[2]}w.avif`;
+  return /^.+-\d+w\.(webp|jpg|jpeg)$/i.test(url);
 }
