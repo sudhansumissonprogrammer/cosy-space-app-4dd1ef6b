@@ -4204,6 +4204,34 @@ export default {
       }
     }
 
+    // ─── /fonts/* — long-cache self-hosted fonts (v8.9.2) ───
+    // Origin returned default cache headers (~1h). woff2 files are
+    // content-stable; serve as immutable for 1y so repeat visits skip
+    // network entirely. Edge-cache via cache.match for cold visitors too.
+    if (url.pathname.startsWith("/fonts/")) {
+      const fontCache = caches.default;
+      const fontCacheKey = new Request(url.toString(), { method: "GET" });
+      let fontHit = await fontCache.match(fontCacheKey);
+      if (fontHit) {
+        const h = new Headers(fontHit.headers);
+        h.set("X-Worker-Version", WORKER_VERSION);
+        h.set("X-Font-Cache", "HIT");
+        return new Response(fontHit.body, { status: fontHit.status, headers: h });
+      }
+      const fontResp = await fetch(request);
+      if (fontResp.ok) {
+        const h = new Headers(fontResp.headers);
+        h.set("Cache-Control", "public, max-age=31536000, immutable");
+        h.set("Access-Control-Allow-Origin", "*");
+        h.set("X-Worker-Version", WORKER_VERSION);
+        h.set("X-Font-Cache", "MISS");
+        const cached = new Response(fontResp.body, { status: 200, headers: h });
+        ctx.waitUntil(fontCache.put(fontCacheKey, cached.clone()));
+        return cached;
+      }
+      return fontResp;
+    }
+
     // ─── CLOUDFLARE IMAGE RESIZING (/cf-img) ───
     // v7.4.1 HOTFIX: Previous version redirected to /cdn-cgi/image/ which
     // requires Cloudflare Image Resizing (paid add-on). When not enabled,
