@@ -530,7 +530,7 @@ export default function CheckoutPage() {
       if (data.starts_at && new Date(data.starts_at) > now) { autoAppliedCouponRef.current = false; toast.error("Coupon not yet active"); setCouponLoading(false); return; }
       if (data.expires_at && new Date(data.expires_at) < now) { autoAppliedCouponRef.current = false; toast.error("Coupon has expired"); setCouponLoading(false); return; }
       if (data.max_uses && data.used_count >= data.max_uses) { autoAppliedCouponRef.current = false; toast.error("Coupon usage limit reached"); setCouponLoading(false); return; }
-      if (subtotal < (data.min_order_amount || 0)) { autoAppliedCouponRef.current = false; toast.error(`Minimum order amount is ${currency} ${data.min_order_amount}`); setCouponLoading(false); return; }
+      if (subtotal < (data.min_order_amount || 0)) { autoAppliedCouponRef.current = false; toast.error(`Minimum order amount is ${formatPrice(data.min_order_amount, currency)}`); setCouponLoading(false); return; }
 
       let discount = 0;
       if (data.discount_type === "percentage") {
