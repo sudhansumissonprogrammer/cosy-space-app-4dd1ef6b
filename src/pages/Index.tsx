@@ -1,37 +1,14 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
-import PaymentTrustStrip from "@/components/landing/PaymentTrustStrip";
-import StatsBar from "@/components/landing/StatsBar";
-import LandingJsonLd from "@/components/landing/LandingJsonLd";
 import LazyMount from "@/components/landing/LazyMount";
 
-/** Prefetch auth chunks during idle time so /login and /signup load instantly */
-let idlePrefetched = false;
-function prefetchAuthOnIdle() {
-  if (idlePrefetched) return;
-  idlePrefetched = true;
-  const start = () => {
-    Promise.all([
-      import("@/components/ui/toaster"),
-      import("@/components/ui/tooltip"),
-      import("@/contexts/AuthContext"),
-      import("@/components/ui/sonner"),
-    ]).catch(() => {});
-    import("@/pages/Login").catch(() => {});
-    import("@/pages/Signup").catch(() => {});
-    import("@/routes/AuthRoutes").catch(() => {});
-  };
-  if ("requestIdleCallback" in window) {
-    requestIdleCallback(start, { timeout: 3000 });
-  } else {
-    setTimeout(start, 2000);
-  }
-}
+const LandingJsonLd = lazy(() => import("@/components/landing/LandingJsonLd"));
 
 // Below-fold lazy chunks — each wrapped in LazyMount so its chunk only
-// downloads when the user scrolls near it. This removes the all-at-once
-// waterfall (~7 chunks fetched simultaneously after first paint).
+// downloads when the user scrolls near it.
+const PaymentTrustStrip = lazy(() => import("@/components/landing/PaymentTrustStrip"));
+const StatsBar = lazy(() => import("@/components/landing/StatsBar"));
 const ProblemAwareness = lazy(() => import("@/components/landing/ProblemAwareness"));
 const CommissionCalculator = lazy(() => import("@/components/landing/CommissionCalculator"));
 const WhoUses = lazy(() => import("@/components/landing/WhoUses"));
@@ -47,16 +24,27 @@ const LandingWhatsApp = lazy(() => import("@/components/landing/LandingWhatsApp"
 const ExitIntentPopup = lazy(() => import("@/components/landing/ExitIntentPopup"));
 
 const Index = () => {
-  useEffect(() => { prefetchAuthOnIdle(); }, []);
+  // Mount JSON-LD only after the browser is idle — crawlers wait for full
+  // load anyway, so it shouldn't sit on the critical path.
+  const [seoReady, setSeoReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    const run = () => { if (!cancelled) setSeoReady(true); };
+    if ("requestIdleCallback" in window) {
+      const id = (window as any).requestIdleCallback(run, { timeout: 4000 });
+      return () => { cancelled = true; (window as any).cancelIdleCallback?.(id); };
+    }
+    const t = setTimeout(run, 2500);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background font-outfit">
-      <LandingJsonLd />
       <Navbar />
       <Hero />
-      <PaymentTrustStrip />
-      <StatsBar />
       <Suspense fallback={null}>
+        <LazyMount minHeight={80}><PaymentTrustStrip /></LazyMount>
+        <LazyMount minHeight={300}><StatsBar /></LazyMount>
         <LazyMount minHeight={500}><ProblemAwareness /></LazyMount>
         <LazyMount minHeight={600}><CommissionCalculator /></LazyMount>
         <LazyMount minHeight={500}><WhoUses /></LazyMount>
@@ -70,6 +58,7 @@ const Index = () => {
         <LazyMount minHeight={300}><Footer /></LazyMount>
         <LazyMount minHeight={0}><LandingWhatsApp /></LazyMount>
         <LazyMount minHeight={0}><ExitIntentPopup /></LazyMount>
+        {seoReady && <LandingJsonLd />}
       </Suspense>
     </div>
   );

@@ -1,6 +1,7 @@
 import { ArrowRight, ShieldCheck, CreditCard, Globe, Package, TrendingUp, ExternalLink } from "lucide-react";
 import overlaysMobile from "@/assets/showcase-overlays-mobile.webp";
 import serdiyaMobile from "@/assets/showcase-serdiya-mobile.webp";
+import { onAuthCtaIntent } from "@/lib/prefetchLandingAuth";
 
 // Native phone screenshot ratio (~9:19.5). Reserve space to prevent CLS.
 const PHONE_ASPECT = "9 / 19.5";
@@ -10,7 +11,7 @@ const liveStores = [
   { img: serdiyaMobile, label: "Serdiya Jewellers", url: "https://serdiyajewellers.shop" },
 ];
 
-const PhoneMockup = ({ img, label, url, className = "" }: { img: string; label: string; url: string; className?: string }) => (
+const PhoneMockup = ({ img, label, url, className = "", priority = false }: { img: string; label: string; url: string; className?: string; priority?: boolean }) => (
   <a
     href={url}
     target="_blank"
@@ -22,7 +23,16 @@ const PhoneMockup = ({ img, label, url, className = "" }: { img: string; label: 
       <div className="bg-foreground rounded-[22px] sm:rounded-[26px] lg:rounded-[28px] p-[3px] sm:p-[3px] shadow-2xl transition-transform duration-500 group-hover:scale-[1.03] group-hover:-translate-y-1">
         <div className="absolute top-[3px] left-1/2 -translate-x-1/2 w-10 sm:w-12 lg:w-14 h-2.5 sm:h-3 bg-foreground rounded-b-lg z-20" />
         <div className="rounded-[19px] sm:rounded-[23px] lg:rounded-[25px] overflow-hidden" style={{ aspectRatio: PHONE_ASPECT }}>
-          <img src={img} alt={`${label} live store`} width="190" height="411" className="w-full h-full object-cover block" loading="eager" decoding="async" fetchPriority="high" />
+          <img
+            src={img}
+            alt={`${label} live store`}
+            width="190"
+            height="411"
+            className="w-full h-full object-cover block"
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            {...(priority ? ({ fetchpriority: "high" } as any) : {})}
+          />
         </div>
       </div>
       {/* Hover overlay */}
@@ -77,7 +87,7 @@ const Hero = () => {
             </p>
 
             <div className="flex flex-row gap-3 mb-6 sm:mb-7">
-              <a href="/signup" className="inline-flex items-center justify-center gap-2 bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-xs sm:text-sm px-5 sm:px-8 py-3 sm:py-3.5 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">
+              <a href="/signup" {...onAuthCtaIntent} className="inline-flex items-center justify-center gap-2 bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-xs sm:text-sm px-5 sm:px-8 py-3 sm:py-3.5 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">
                 Start Free Trial <ArrowRight className="h-4 w-4" />
               </a>
               <a href="/theme" className="inline-flex items-center justify-center gap-2 bg-bauhaus-white text-foreground font-bold uppercase tracking-wider text-xs sm:text-sm px-5 sm:px-8 py-3 sm:py-3.5 border-2 border-foreground shadow-bauhaus hover:bg-muted active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">
@@ -106,7 +116,7 @@ const Hero = () => {
             <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-bauhaus-white/5 border-2 border-white/10" />
             <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-bauhaus-white/5 border-2 border-white/10" />
             <div className="relative z-10 flex items-end gap-5 xl:gap-7 px-6">
-              <PhoneMockup img={liveStores[0].img} label={liveStores[0].label} url={liveStores[0].url} className="w-[190px] xl:w-[210px] -rotate-3 translate-y-3" />
+              <PhoneMockup img={liveStores[0].img} label={liveStores[0].label} url={liveStores[0].url} priority className="w-[190px] xl:w-[210px] -rotate-3 translate-y-3" />
               <PhoneMockup img={liveStores[1].img} label={liveStores[1].label} url={liveStores[1].url} className="w-[190px] xl:w-[210px] rotate-3 -translate-y-3" />
             </div>
             <div className="absolute bottom-5 left-5 bg-bauhaus-white border-3 border-foreground shadow-bauhaus-lg p-3 w-44 z-20">
