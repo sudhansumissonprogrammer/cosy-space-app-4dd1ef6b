@@ -287,7 +287,21 @@ const LoadingSpinner = () => {
     return <div className="min-h-screen bg-background" />;
   }
 
-  // Dashboard/admin/auth/landing — skeleton instead of black spinner
+  // Only show the animated skeleton on dashboard / admin / partner dashboard
+  // routes (deep app shells where chunks are heavier and the user expects
+  // loading feedback). Everything else — landing page, /theme, /partners
+  // landing, auth pages, legal pages — gets a blank background so it appears
+  // instantly without a skeleton flash.
+  const isDashboardLike =
+    path.startsWith("/dashboard") ||
+    path.startsWith("/admin") ||
+    path.startsWith("/partners/dashboard");
+
+  if (!isDashboardLike) {
+    return <div className="min-h-screen bg-background" />;
+  }
+
+  // Dashboard/admin — skeleton instead of black spinner
   return (
     <div className="min-h-screen bg-background animate-pulse">
       {/* Navbar skeleton */}
