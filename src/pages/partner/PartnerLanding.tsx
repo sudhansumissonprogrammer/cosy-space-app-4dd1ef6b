@@ -11,7 +11,7 @@ import logo from "@/assets/shopbanao-logo.webp";
 
 export default function PartnerLanding() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background font-dashboard">
       {/* Top nav */}
       <header className="sticky top-0 z-30 border-b border-border/50 bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
