@@ -49,7 +49,7 @@ export default function UserSettings() {
   const applyPartnerCode = useMutation({
     mutationFn: async () => {
       const cleaned = partnerCode.trim().toUpperCase();
-      if (!/^SBP\d{3,8}$/.test(cleaned)) {
+      if (!/^SBP\d{2,}$/.test(cleaned)) {
         throw new Error("Code should look like SBP1234");
       }
       const { data, error } = await supabase.functions.invoke("attach-referral", {
