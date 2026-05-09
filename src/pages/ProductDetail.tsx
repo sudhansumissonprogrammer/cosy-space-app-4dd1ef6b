@@ -1562,7 +1562,7 @@ function LightboxImage({
   return (
     <>
       {!loaded && !errored && (
-        <div className="absolute inset-0 flex items-center justify-center text-neutral-500 text-sm">
+        <div className="absolute inset-0 flex items-center justify-center text-white/60 text-sm">
           Loading…
         </div>
       )}
@@ -1682,7 +1682,7 @@ function FullscreenLightbox({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-neutral-900/98 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-black animate-in fade-in duration-200">
       <div className="flex items-center justify-between px-4 py-3 text-white bg-black/40">
         <span className="text-sm font-medium opacity-80">
           {images.length > 1 ? `${activeIndex + 1} / ${images.length}` : productName}
@@ -1703,7 +1703,7 @@ function FullscreenLightbox({
         onDoubleClick={handleDoubleClick}
         style={{ cursor: scale > 1 ? "grab" : "default" }}
       >
-        <div className="relative flex items-center justify-center w-full h-full rounded-2xl bg-white overflow-hidden shadow-2xl">
+        <div className="relative flex items-center justify-center w-full h-full overflow-hidden">
           <LightboxImage
             src={images[activeIndex]}
             alt={productName}
