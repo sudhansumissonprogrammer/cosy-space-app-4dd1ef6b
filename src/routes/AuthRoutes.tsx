@@ -26,7 +26,6 @@ const AdminMenuConfig = lazy(() => import("@/pages/admin/AdminMenuConfig"));
 const AdminPartners = lazy(() => import("@/pages/admin/AdminPartners"));
 const AdminPartnerPayouts = lazy(() => import("@/pages/admin/AdminPartnerPayouts"));
 const AdminPartnerAudit = lazy(() => import("@/pages/admin/AdminPartnerAudit"));
-const AdminPartnerExports = lazy(() => import("@/pages/admin/AdminPartnerExports"));
 
 // Partner program
 const PartnerLanding = lazy(() => import("@/pages/partner/PartnerLanding"));
@@ -36,7 +35,6 @@ const PartnerLayout = lazy(() => import("@/layouts/PartnerLayout"));
 const PartnerOverview = lazy(() => import("@/pages/partner/PartnerOverview"));
 const PartnerWallet = lazy(() => import("@/pages/partner/PartnerWallet"));
 const PartnerWithdrawals = lazy(() => import("@/pages/partner/PartnerWithdrawals"));
-const PartnerAnalytics = lazy(() => import("@/pages/partner/PartnerAnalytics"));
 
 // Dashboard
 const DashboardLayout = lazy(() => import("@/layouts/DashboardLayout"));
@@ -99,7 +97,6 @@ export default function AuthRoutes() {
           <Route index element={<PartnerOverview />} />
           <Route path="wallet" element={<PartnerWallet />} />
           <Route path="withdrawals" element={<PartnerWithdrawals />} />
-          <Route path="analytics" element={<PartnerAnalytics />} />
         </Route>
 
         <Route path="/admin/login" element={<AdminLogin />} />
@@ -124,7 +121,6 @@ export default function AuthRoutes() {
           <Route path="partners" element={<AdminPartners />} />
           <Route path="partners/payouts" element={<AdminPartnerPayouts />} />
           <Route path="partners/audit" element={<AdminPartnerAudit />} />
-          <Route path="partners/exports" element={<AdminPartnerExports />} />
         </Route>
 
         <Route

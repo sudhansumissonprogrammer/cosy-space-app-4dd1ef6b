@@ -57,7 +57,6 @@ export default function AdminPartners() {
         <div className="flex gap-2">
           <Button variant="outline" asChild><a href="/admin/partners/payouts">Payouts</a></Button>
           <Button variant="outline" asChild><a href="/admin/partners/audit">Audit log</a></Button>
-          <Button variant="outline" asChild><a href="/admin/partners/exports">Exports</a></Button>
         </div>
       </div>
 
@@ -119,22 +118,12 @@ export default function AdminPartners() {
 
 function PartnerControlsDrawer({ partner, onClose, onChanged }: { partner: Partner | null; onClose: () => void; onChanged: () => void }) {
   const [busy, setBusy] = useState(false);
-  const [overrides, setOverrides] = useState<any[]>([]);
-  const [plans, setPlans] = useState<any[]>([]);
   const [walletForm, setWalletForm] = useState({ direction: "credit", bucket: "approved", amount: "", note: "" });
-  const [overrideForm, setOverrideForm] = useState({ plan_id: "", percentage: "", starts_at: "", ends_at: "", note: "" });
   const [pctValue, setPctValue] = useState("");
 
   useEffect(() => {
     if (!partner) return;
     setPctValue(String(partner.commission_percentage));
-    (async () => {
-      const [{ data: ovs }, { data: ps }] = await Promise.all([
-        supabase.from("partner_commission_overrides").select("*").eq("partner_id", partner.id).order("created_at", { ascending: false }),
-        supabase.from("plans").select("id,name,slug,price").eq("is_active", true).order("price"),
-      ]);
-      setOverrides(ovs || []); setPlans(ps || []);
-    })();
   }, [partner?.id]);
 
   if (!partner) return null;
@@ -156,11 +145,10 @@ function PartnerControlsDrawer({ partner, onClose, onChanged }: { partner: Partn
         </SheetHeader>
 
         <Tabs defaultValue="status" className="mt-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="status">Status</TabsTrigger>
             <TabsTrigger value="commission">Commission</TabsTrigger>
             <TabsTrigger value="wallet">Wallet</TabsTrigger>
-            <TabsTrigger value="overrides">Overrides</TabsTrigger>
           </TabsList>
 
           <TabsContent value="status" className="space-y-4 pt-4">
@@ -185,12 +173,12 @@ function PartnerControlsDrawer({ partner, onClose, onChanged }: { partner: Partn
 
           <TabsContent value="commission" className="space-y-4 pt-4">
             <Card className="p-4 space-y-2">
-              <Label>Default commission %</Label>
+              <Label>Commission %</Label>
               <div className="flex gap-2">
                 <Input type="number" value={pctValue} onChange={(e) => setPctValue(e.target.value)} className="max-w-[120px]" />
                 <Button disabled={busy} onClick={() => call("set_commission_percentage", { percentage: Number(pctValue) })}>Save</Button>
               </div>
-              <p className="text-xs text-muted-foreground">Used as fallback when no override applies.</p>
+              <p className="text-xs text-muted-foreground">Applied to every paid subscription payment from this partner's referrals.</p>
             </Card>
           </TabsContent>
 
@@ -219,65 +207,6 @@ function PartnerControlsDrawer({ partner, onClose, onChanged }: { partner: Partn
                 const ok = await call("wallet_adjustment", { direction: walletForm.direction, bucket: walletForm.bucket, amount: Number(walletForm.amount), note: walletForm.note });
                 if (ok) setWalletForm({ direction: "credit", bucket: "approved", amount: "", note: "" });
               }}>Apply adjustment</Button>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="overrides" className="space-y-4 pt-4">
-            <Card className="p-4 space-y-3">
-              <Label>Add commission override</Label>
-              <Select value={overrideForm.plan_id || "__all__"} onValueChange={(v) => setOverrideForm((s) => ({ ...s, plan_id: v === "__all__" ? "" : v }))}>
-                <SelectTrigger><SelectValue placeholder="All plans (global)" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All plans (global)</SelectItem>
-                  {plans.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} ({inr(p.price)})</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <div className="grid grid-cols-3 gap-2">
-                <Input type="number" placeholder="%" value={overrideForm.percentage} onChange={(e) => setOverrideForm((s) => ({ ...s, percentage: e.target.value }))} />
-                <Input type="datetime-local" value={overrideForm.starts_at} onChange={(e) => setOverrideForm((s) => ({ ...s, starts_at: e.target.value }))} />
-                <Input type="datetime-local" value={overrideForm.ends_at} onChange={(e) => setOverrideForm((s) => ({ ...s, ends_at: e.target.value }))} />
-              </div>
-              <Textarea placeholder="Note" rows={2} value={overrideForm.note} onChange={(e) => setOverrideForm((s) => ({ ...s, note: e.target.value }))} />
-              <Button disabled={busy || !overrideForm.percentage} onClick={async () => {
-                const ok = await call("create_override", {
-                  plan_id: overrideForm.plan_id || null,
-                  percentage: Number(overrideForm.percentage),
-                  starts_at: overrideForm.starts_at || null,
-                  ends_at: overrideForm.ends_at || null,
-                  note: overrideForm.note || null,
-                });
-                if (ok) {
-                  setOverrideForm({ plan_id: "", percentage: "", starts_at: "", ends_at: "", note: "" });
-                  const { data: ovs } = await supabase.from("partner_commission_overrides").select("*").eq("partner_id", partner.id).order("created_at", { ascending: false });
-                  setOverrides(ovs || []);
-                }
-              }}>Create override</Button>
-            </Card>
-
-            <Card className="p-4 space-y-2">
-              <Label>Existing overrides</Label>
-              {overrides.length === 0 ? (
-                <p className="text-xs text-muted-foreground">None yet.</p>
-              ) : overrides.map((o) => (
-                <div key={o.id} className="flex items-center justify-between rounded-md border p-2 text-sm">
-                  <div>
-                    <div className="font-medium">{o.percentage}% {o.plan_id ? `· plan ${plans.find((p) => p.id === o.plan_id)?.name ?? o.plan_id.slice(0, 8)}` : "· all plans"}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {o.starts_at ? new Date(o.starts_at).toLocaleDateString() : "—"} → {o.ends_at ? new Date(o.ends_at).toLocaleDateString() : "∞"}
-                      {!o.is_active && " · inactive"}
-                    </div>
-                  </div>
-                  {o.is_active && (
-                    <Button size="sm" variant="ghost" disabled={busy} onClick={async () => {
-                      const ok = await call("deactivate_override", { override_id: o.id });
-                      if (ok) {
-                        const { data: ovs } = await supabase.from("partner_commission_overrides").select("*").eq("partner_id", partner.id).order("created_at", { ascending: false });
-                        setOverrides(ovs || []);
-                      }
-                    }}>Deactivate</Button>
-                  )}
-                </div>
-              ))}
             </Card>
           </TabsContent>
         </Tabs>
