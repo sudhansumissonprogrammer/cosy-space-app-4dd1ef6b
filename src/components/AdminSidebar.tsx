@@ -37,6 +37,8 @@ export function AdminSidebar() {
     { title: "Subscriptions", url: "/admin/subscriptions", icon: CreditCard },
     { title: "Referral Partners", url: "/admin/partners", icon: Handshake },
     { title: "Partner Payouts", url: "/admin/partners/payouts", icon: Handshake },
+    { title: "Partner Audit", url: "/admin/partners/audit", icon: Handshake },
+    { title: "Partner Exports", url: "/admin/partners/exports", icon: Handshake },
   ];
 
   const marketingItems = [
