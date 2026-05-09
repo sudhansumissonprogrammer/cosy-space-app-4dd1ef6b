@@ -11,17 +11,34 @@ import { Loader2, Sparkles } from "lucide-react";
 
 export default function PartnerLogin() {
   const navigate = useNavigate();
-  const { session, loading: authLoading } = useAuth();
+  const { session, loading: authLoading, signOut } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [otherAccount, setOtherAccount] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && session) navigate("/partners/dashboard", { replace: true });
+    if (authLoading || !session) return;
+    // If signed in, check whether this user is already a partner.
+    // If yes → straight to dashboard. If no → warn instead of silently
+    // overwriting their store-owner session.
+    (async () => {
+      const { data: p } = await supabase
+        .from("partners")
+        .select("id")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      if (p) navigate("/partners/dashboard", { replace: true });
+      else setOtherAccount(session.user.email || "another account");
+    })();
   }, [authLoading, session, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (otherAccount) {
+      toast.error("Sign out first to log into a partner account");
+      return;
+    }
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
