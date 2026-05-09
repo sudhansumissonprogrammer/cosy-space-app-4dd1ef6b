@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
+import { formatPrice } from "@/lib/productUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams, useOutletContext, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -529,7 +530,7 @@ export default function CheckoutPage() {
       if (data.starts_at && new Date(data.starts_at) > now) { autoAppliedCouponRef.current = false; toast.error("Coupon not yet active"); setCouponLoading(false); return; }
       if (data.expires_at && new Date(data.expires_at) < now) { autoAppliedCouponRef.current = false; toast.error("Coupon has expired"); setCouponLoading(false); return; }
       if (data.max_uses && data.used_count >= data.max_uses) { autoAppliedCouponRef.current = false; toast.error("Coupon usage limit reached"); setCouponLoading(false); return; }
-      if (subtotal < (data.min_order_amount || 0)) { autoAppliedCouponRef.current = false; toast.error(`Minimum order amount is ${currency} ${data.min_order_amount}`); setCouponLoading(false); return; }
+      if (subtotal < (data.min_order_amount || 0)) { autoAppliedCouponRef.current = false; toast.error(`Minimum order amount is ${formatPrice(data.min_order_amount, currency)}`); setCouponLoading(false); return; }
 
       let discount = 0;
       if (data.discount_type === "percentage") {
@@ -541,7 +542,7 @@ export default function CheckoutPage() {
 
       setAppliedCoupon(data);
       setCouponDiscount(discount);
-      toast.success(`Coupon applied! You save ${currency} ${discount.toFixed(2)}`);
+      toast.success(`Coupon applied! You save ${formatPrice(discount, currency)}`);
     } catch {
       autoAppliedCouponRef.current = false;
       toast.error("Failed to validate coupon");
@@ -711,7 +712,7 @@ export default function CheckoutPage() {
 
   const createOrder = async () => {
     const orderNotes = appliedCoupon
-      ? `Coupon: ${appliedCoupon.code} (-${currency} ${couponDiscount.toFixed(2)})`
+      ? `Coupon: ${appliedCoupon.code} (-${formatPrice(couponDiscount, currency)})`
       : undefined;
 
     const { data, error } = await supabase.functions.invoke("place-order", {
@@ -1368,11 +1369,11 @@ export default function CheckoutPage() {
             <div className="mt-1.5 space-y-1">
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{t("Advance Paid Online", "अग्रिम भुगतान")}</span>
-                <span className="font-semibold text-emerald-600">{currency} {orderAdvancePaid.toFixed(2)}</span>
+                <span className="font-semibold text-emerald-600">{formatPrice(orderAdvancePaid, currency)}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{t("Balance on Delivery (COD)", "डिलीवरी पर शेष")}</span>
-                <span className="font-semibold text-foreground">{currency} {orderBalanceDue.toFixed(2)}</span>
+                <span className="font-semibold text-foreground">{formatPrice(orderBalanceDue, currency)}</span>
               </div>
             </div>
           </div>
@@ -1444,7 +1445,7 @@ export default function CheckoutPage() {
             <span className="text-sm font-medium text-foreground">{t("Order Summary", "ऑर्डर सारांश")} ({itemCount} {itemCount === 1 ? t("item", "आइटम") : t("items", "आइटम")})</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">{currency} {subtotal.toFixed(2)}</span>
+            <span className="text-sm font-semibold text-foreground">{formatPrice(subtotal, currency)}</span>
             <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${summaryOpen ? "rotate-180" : ""}`} />
           </div>
         </CollapsibleTrigger>
@@ -1463,7 +1464,7 @@ export default function CheckoutPage() {
                   <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
                   <p className="text-xs text-muted-foreground">{t("Qty", "मात्रा")}: {item.quantity}</p>
                 </div>
-                <p className="text-sm font-semibold text-foreground whitespace-nowrap">{currency} {(item.price * item.quantity).toFixed(2)}</p>
+                <p className="text-sm font-semibold text-foreground whitespace-nowrap">{formatPrice((item.price * item.quantity), currency)}</p>
               </div>
             ))}
           </div>
@@ -1478,7 +1479,7 @@ export default function CheckoutPage() {
             <div className="flex items-center gap-2">
               <Tag className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-primary">{appliedCoupon.code}</span>
-              <Badge variant="secondary" className="text-xs">-{currency} {couponDiscount.toFixed(2)}</Badge>
+              <Badge variant="secondary" className="text-xs">-{formatPrice(couponDiscount, currency)}</Badge>
             </div>
             <button onClick={removeCoupon} className="text-muted-foreground hover:text-foreground transition-colors">
               <X className="h-4 w-4" />
@@ -1621,9 +1622,9 @@ export default function CheckoutPage() {
           </div>
           <div className="flex items-center gap-1.5">
             {couponDiscount > 0 && (
-              <span className="text-xs text-muted-foreground line-through">{currency} {subtotal.toFixed(2)}</span>
+              <span className="text-xs text-muted-foreground line-through">{formatPrice(subtotal, currency)}</span>
             )}
-            <span className="text-sm font-bold text-foreground">{currency} {total.toFixed(2)}</span>
+            <span className="text-sm font-bold text-foreground">{formatPrice(total, currency)}</span>
           </div>
         </div>
 
@@ -1667,7 +1668,7 @@ export default function CheckoutPage() {
               <CreditCard className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium text-foreground">{tCritical("Pay Full Amount Online", "पूरा ऑनलाइन भुगतान")}</p>
-                <p className="text-xs text-muted-foreground">{currency} {total.toFixed(2)} — UPI, Cards, Net Banking</p>
+                <p className="text-xs text-muted-foreground">{formatPrice(total, currency)} — UPI, Cards, Net Banking</p>
               </div>
             </button>
             {/* COD disabled when partial payment products are in cart */}
@@ -1718,7 +1719,7 @@ export default function CheckoutPage() {
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">{t("Subtotal", "उप-कुल")}</span>
-          <span className="text-foreground">{currency} {subtotal.toFixed(2)}</span>
+          <span className="text-foreground">{formatPrice(subtotal, currency)}</span>
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">{t("Shipping", "शिपिंग")}</span>
@@ -1736,19 +1737,19 @@ export default function CheckoutPage() {
         {taxActive && (
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">{taxName} ({taxRate}%){taxInclusive ? " (incl.)" : ""}</span>
-            <span className="text-foreground">{currency} {taxAmount.toFixed(2)}</span>
+            <span className="text-foreground">{formatPrice(taxAmount, currency)}</span>
           </div>
         )}
         {couponDiscount > 0 && (
           <div className="flex items-center justify-between text-sm">
             <span className="text-primary">{t("Coupon Discount", "कूपन छूट")}</span>
-            <span className="text-primary font-medium">-{currency} {couponDiscount.toFixed(2)}</span>
+            <span className="text-primary font-medium">-{formatPrice(couponDiscount, currency)}</span>
           </div>
         )}
         <Separator />
         <div className="flex items-center justify-between">
           <span className="font-semibold text-foreground">{t("Total", "कुल")}</span>
-          <span className="text-lg font-bold text-foreground">{currency} {total.toFixed(2)}</span>
+          <span className="text-lg font-bold text-foreground">{formatPrice(total, currency)}</span>
         </div>
         {/* Confirming payment overlay — shown after UPI app (GPay/PhonePe) returns,
             while we poll Cashfree for the final status (3–15s typical for UPI). */}

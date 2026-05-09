@@ -1,4 +1,5 @@
 import { Link, useOutletContext, useNavigate } from "react-router-dom";
+import { formatPrice } from "@/lib/productUtils";
 import { Suspense, lazy, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,9 +46,9 @@ export default function CartPage() {
     if (!store.whatsapp_number) return;
     const phone = store.whatsapp_number.replace(/[^0-9+]/g, "");
     const itemLines = items
-      .map((i, idx) => `${idx + 1}. ${i.name}${i.variantName ? ` (${i.variantName})` : ""} x${i.quantity} — ${currency} ${(i.price * i.quantity).toFixed(2)}`)
+      .map((i, idx) => `${idx + 1}. ${i.name}${i.variantName ? ` (${i.variantName})` : ""} x${i.quantity} — ${formatPrice((i.price * i.quantity), currency)}`)
       .join("\n");
-    const text = `Hello, I want to order from ${store.name}:\n\n${itemLines}\n\nTotal: ${currency} ${cartTotal.toFixed(2)}`;
+    const text = `Hello, I want to order from ${store.name}:\n\n${itemLines}\n\nTotal: ${formatPrice(cartTotal, currency)}`;
     window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -85,7 +86,7 @@ export default function CartPage() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs sm:text-sm font-semibold text-emerald-600 flex items-center gap-1.5">
                   <Truck className="h-4 w-4" />
-                  Add {currency} {shippingRemaining.toFixed(0)} more for FREE delivery!
+                  Add {formatPrice(shippingRemaining, currency)} more for FREE delivery!
                 </span>
                 <span className="text-[10px] sm:text-xs font-medium" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>{Math.round(shippingProgress)}%</span>
               </div>
@@ -125,7 +126,7 @@ export default function CartPage() {
                 <div className="flex flex-1 flex-col min-w-0">
                   <p className="text-xs sm:text-sm font-semibold text-foreground truncate">{item.name}</p>
                   {item.variantName && <p className="text-[10px] sm:text-xs text-muted-foreground">{item.variantName}</p>}
-                  <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm font-bold text-foreground">{currency} {item.price.toFixed(2)}</p>
+                  <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm font-bold text-foreground">{formatPrice(item.price, currency)}</p>
                   <div className="mt-auto flex items-center gap-1.5 sm:gap-2 pt-1.5 sm:pt-2">
                     <Button variant="outline" size="icon" className="h-6 w-6 sm:h-7 sm:w-7" onClick={() => updateQuantity(item.productId, item.variantId, item.quantity - 1)}>
                       <Minus className="h-3 w-3" />
@@ -159,13 +160,13 @@ export default function CartPage() {
                   <span className="text-muted-foreground truncate flex-1 min-w-0">
                     {item.name} x{item.quantity}
                   </span>
-                  <span className="font-medium whitespace-nowrap">{currency} {(item.price * item.quantity).toFixed(2)}</span>
+                  <span className="font-medium whitespace-nowrap">{formatPrice((item.price * item.quantity), currency)}</span>
                 </div>
               ))}
               <Separator />
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-foreground">Total</span>
-                <span className="text-base sm:text-lg font-bold text-foreground">{currency} {cartTotal.toFixed(2)}</span>
+                <span className="text-base sm:text-lg font-bold text-foreground">{formatPrice(cartTotal, currency)}</span>
               </div>
 
               <div className="space-y-2">

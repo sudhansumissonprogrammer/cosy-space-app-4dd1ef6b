@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useParams, Link, useOutletContext, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getProductStats as getProductStatsUtil, getDiscountPercent } from "@/lib/productUtils";
+import { getProductStats as getProductStatsUtil, getDiscountPercent, formatPrice } from "@/lib/productUtils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -634,12 +634,12 @@ export default function ProductDetail() {
           <div className="mt-4">
             <div className="flex items-baseline gap-2.5 flex-wrap">
               <span className={`text-2xl font-extrabold sm:text-3xl ${isV18 ? '' : 'text-foreground'}`} style={isV18 ? { color: "#ffffff", ...v18Font, fontWeight: 400 } : {}}>
-                {isV18 ? `Rs. ${Number(variantPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${currency} ${Number(variantPrice).toFixed(2)}`}
+                {isV18 ? `Rs. ${Number(variantPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(variantPrice), currency)}`}
               </span>
               {hasDiscount && (
                 <>
                   <span className={`text-sm line-through ${isV18 ? '' : 'text-muted-foreground'}`} style={isV18 ? { color: "#666666", ...v18Font } : {}}>
-                    {isV18 ? `Rs. ${Number(product.price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${currency} ${Number(product.price).toFixed(2)}`}
+                    {isV18 ? `Rs. ${Number(product.price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(product.price), currency)}`}
                   </span>
                   {!isV18 && (
                     <Badge className="bg-emerald-600 text-white text-[11px] font-bold border-0 px-2 py-0.5">
@@ -654,7 +654,7 @@ export default function ProductDetail() {
             )}
             {!isV18 && hasDiscount && (
               <p className="mt-1 text-xs font-semibold text-emerald-600">
-                You save {currency} {(product.price - product.sale_price!).toFixed(2)} on this order
+                You save {formatPrice((product.price - product.sale_price!), currency)} on this order
               </p>
            )}
           </div>
@@ -823,7 +823,7 @@ export default function ProductDetail() {
                     const phone = store.whatsapp_number!.replace(/[^0-9+]/g, "");
                     const variantInfo = selectedVariant ? ` (${selectedVariant.name})` : "";
                     const productUrl = `${window.location.origin}${window.location.pathname}`;
-                    const text = `Hi ${store.name}! 👋\n\nI want to buy *${product.name}${variantInfo}* x${quantity}\n\n💰 Price: ${currency} ${(variantPrice * quantity).toFixed(0)}\n\n🔗 ${productUrl}\n\nPlease share availability, delivery time & payment options.`;
+                    const text = `Hi ${store.name}! 👋\n\nI want to buy *${product.name}${variantInfo}* x${quantity}\n\n💰 Price: ${formatPrice((variantPrice * quantity), currency)}\n\n🔗 ${productUrl}\n\nPlease share availability, delivery time & payment options.`;
                     window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
                   }}
                 >
@@ -1011,7 +1011,7 @@ export default function ProductDetail() {
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">{product.name}</p>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-extrabold text-foreground">{currency} {(variantPrice * quantity).toFixed(2)}</span>
+                        <span className="text-sm font-extrabold text-foreground">{formatPrice((variantPrice * quantity), currency)}</span>
                         {hasDiscount && (
                           <span className="text-[10px] text-emerald-600 font-semibold">{discountPct}% OFF</span>
                         )}
@@ -1021,7 +1021,7 @@ export default function ProductDetail() {
                   {/* Mobile price */}
                   <div className="shrink-0 min-w-0 sm:hidden">
                     <p className="text-sm font-extrabold text-foreground leading-tight">
-                      {currency} {(variantPrice * quantity).toFixed(2)}
+                      {formatPrice((variantPrice * quantity), currency)}
                     </p>
                     {hasDiscount && (
                       <p className="text-[10px] text-emerald-600 font-semibold">{discountPct}% OFF</p>
@@ -1074,7 +1074,7 @@ export default function ProductDetail() {
                           <Zap className="inline h-3 w-3 text-warning mr-0.5" />
                           Deliver to <strong className="text-foreground">{saved.fullName}</strong> · {saved.pincode}
                         </p>
-                        <p className="text-lg font-extrabold text-foreground">{currency} {(variantPrice * quantity).toFixed(2)}</p>
+                        <p className="text-lg font-extrabold text-foreground">{formatPrice((variantPrice * quantity), currency)}</p>
                       </div>
                       <button
                         onClick={() => {

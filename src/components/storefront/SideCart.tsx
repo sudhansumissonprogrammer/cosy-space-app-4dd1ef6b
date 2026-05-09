@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { formatPrice } from "@/lib/productUtils";
 import { Suspense, lazy, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,9 +49,9 @@ export default function SideCart({ store }: SideCartProps) {
     if (!store.whatsapp_number) return;
     const phone = store.whatsapp_number.replace(/[^0-9+]/g, "");
     const itemLines = items
-      .map((i, idx) => `${idx + 1}. ${i.name}${i.variantName ? ` (${i.variantName})` : ""} x${i.quantity} — ${currency} ${(i.price * i.quantity).toFixed(2)}`)
+      .map((i, idx) => `${idx + 1}. ${i.name}${i.variantName ? ` (${i.variantName})` : ""} x${i.quantity} — ${formatPrice((i.price * i.quantity), currency)}`)
       .join("\n");
-    const text = `Hello, I want to order from ${store.name}:\n\n${itemLines}\n\nTotal: ${currency} ${cartTotal.toFixed(2)}`;
+    const text = `Hello, I want to order from ${store.name}:\n\n${itemLines}\n\nTotal: ${formatPrice(cartTotal, currency)}`;
     window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -104,7 +105,7 @@ export default function SideCart({ store }: SideCartProps) {
                         <p className="text-xs" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 60%, transparent)" }}>{item.variantName}</p>
                       )}
                       <p className="mt-0.5 text-sm font-bold" style={{ color: "var(--storefront-text, inherit)" }}>
-                        {currency} {(item.price * item.quantity).toFixed(2)}
+                        {formatPrice((item.price * item.quantity), currency)}
                       </p>
                       <div className="mt-auto flex items-center gap-2 pt-1.5">
                         <div className="flex items-center rounded-lg" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, inherit) 12%, transparent)" }}>
@@ -157,7 +158,7 @@ export default function SideCart({ store }: SideCartProps) {
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
                           <Truck className="h-3 w-3" />
-                          Add {currency} {shippingRemaining.toFixed(0)} more for FREE delivery!
+                          Add {formatPrice(shippingRemaining, currency)} more for FREE delivery!
                         </span>
                         <span className="text-[9px]" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 50%, transparent)" }}>{Math.round(shippingProgress)}%</span>
                       </div>
@@ -181,7 +182,7 @@ export default function SideCart({ store }: SideCartProps) {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 60%, transparent)" }}>Subtotal</span>
                 <span className="text-sm font-bold" style={{ color: "var(--storefront-text, inherit)" }}>
-                  {currency} {cartTotal.toFixed(2)}
+                  {formatPrice(cartTotal, currency)}
                 </span>
               </div>
               <div className="space-y-1.5">
