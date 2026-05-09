@@ -1,5 +1,5 @@
 const partners = [
-  { name: "UPI", src: "/icons/upi.svg" },
+  { name: "UPI", src: "/icons/upi.png" },
   { name: "GPay", src: "/icons/gpay.svg" },
   { name: "PhonePe", src: "/icons/phonepe.svg" },
   { name: "Paytm", src: "/icons/paytm.svg" },

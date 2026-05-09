@@ -88,6 +88,12 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: "es2020",
     cssCodeSplit: true,
+    // Disable Vite's automatic modulepreload of dynamic-import dependency
+    // chunks. Without this, Vite injects <link rel="modulepreload"> for chunks
+    // reached only via lazy() / import() — pulling supabase, radix, auth, etc.
+    // (~150KB) onto the landing critical path even though landing never
+    // executes them. The chunks still load fine on demand when navigated to.
+    modulePreload: { polyfill: false, resolveDependencies: () => [] },
     rollupOptions: {
       output: {
         /**
