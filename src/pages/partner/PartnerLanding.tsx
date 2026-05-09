@@ -5,8 +5,9 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  TrendingUp, Wallet, Users, Share2, Repeat, ShieldCheck, Rocket, IndianRupee, ArrowRight, Sparkles,
+  TrendingUp, Wallet, Users, Share2, Repeat, ShieldCheck, Rocket, IndianRupee, ArrowRight,
 } from "lucide-react";
+import logo from "@/assets/shopbanao-logo.webp";
 
 export default function PartnerLanding() {
   return (
@@ -14,11 +15,11 @@ export default function PartnerLanding() {
       {/* Top nav */}
       <header className="sticky top-0 z-30 border-b border-border/50 bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2 text-base font-semibold text-foreground">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-primary-foreground">
-              <Sparkles className="h-3.5 w-3.5" />
+          <Link to="/" className="flex items-center -space-x-1">
+            <img src={logo} alt="ShopBanao" width="64" height="64" className="h-10 md:h-12 w-auto" decoding="async" />
+            <span className="text-xl md:text-2xl text-foreground" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700 }}>
+              ShopBanao <span className="text-muted-foreground font-normal">· Partners</span>
             </span>
-            ShopBanao Partners
           </Link>
           <div className="flex items-center gap-2">
             <Link to="/partners/login">
