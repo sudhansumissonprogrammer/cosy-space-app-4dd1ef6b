@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useParams, Link, useOutletContext, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getProductStats as getProductStatsUtil, getDiscountPercent } from "@/lib/productUtils";
+import { getProductStats as getProductStatsUtil, getDiscountPercent, formatPrice } from "@/lib/productUtils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
