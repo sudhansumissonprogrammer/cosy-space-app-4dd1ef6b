@@ -36,9 +36,8 @@ export async function captureReferralFromURL(): Promise<void> {
     const ref = params.get("ref");
     if (!ref) return;
     const cleaned = ref.trim().toUpperCase();
-    if (!/^SBP\d{3,8}$/.test(cleaned)) return;
+    if (!/^SBP\d{2,}$/.test(cleaned)) return;
 
-    const existing = getReferralCode();
     setReferralCookie(cleaned);
 
     // Don't double-track on every navigation — only fire once per code per session
