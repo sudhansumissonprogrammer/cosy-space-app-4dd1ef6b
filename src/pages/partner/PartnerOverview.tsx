@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Copy, Share2, IndianRupee, Users, MousePointerClick, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { buildReferralLink } from "@/lib/referralTracking";
@@ -42,74 +39,137 @@ export default function PartnerOverview() {
   };
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(refLink)}`;
 
+  const tiles = [
+    { label: "Clicks", value: stats?.clicks ?? 0, icon: MousePointerClick, color: "bg-bauhaus-yellow" },
+    { label: "Signups", value: stats?.signups ?? 0, icon: Users, color: "bg-bauhaus-blue", text: "text-primary-foreground" },
+    { label: "Paid customers", value: stats?.paid ?? 0, icon: CheckCircle2, color: "bg-bauhaus-red", text: "text-primary-foreground" },
+    { label: "Total earned", value: `₹${(stats?.totalEarned ?? 0).toLocaleString("en-IN")}`, icon: IndianRupee, color: "bg-bauhaus-white" },
+  ];
+
   return (
     <>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "Clicks", value: stats?.clicks ?? 0, icon: MousePointerClick },
-          { label: "Signups", value: stats?.signups ?? 0, icon: Users },
-          { label: "Paid customers", value: stats?.paid ?? 0, icon: CheckCircle2 },
-          { label: "Total earned", value: `₹${(stats?.totalEarned ?? 0).toLocaleString("en-IN")}`, icon: IndianRupee },
-        ].map((s) => (
-          <Card key={s.label} className="p-4">
+      {/* Heading */}
+      <div>
+        <h1 className="font-black text-2xl sm:text-3xl tracking-tight text-foreground">
+          Welcome back, {partner.name?.split(" ")[0] || "Partner"}.
+        </h1>
+        <p className="mt-1 font-medium text-sm text-muted-foreground">Here's what's happening with your referrals.</p>
+      </div>
+
+      {/* Stat tiles */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {tiles.map((s) => (
+          <div key={s.label} className={`${s.color} border-3 border-foreground shadow-bauhaus p-5`}>
             <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">{s.label}</p>
-              <s.icon className="h-4 w-4 text-muted-foreground" />
+              <p className={`font-bold uppercase tracking-widest text-[10px] ${s.text === "text-primary-foreground" ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{s.label}</p>
+              <s.icon className={`h-4 w-4 ${s.text || "text-foreground"}`} />
             </div>
-            <p className="mt-2 text-2xl font-bold text-foreground">{s.value}</p>
-          </Card>
+            <p className={`mt-3 font-black text-3xl tabular-nums ${s.text || "text-foreground"}`}>{s.value}</p>
+          </div>
         ))}
       </div>
 
-      <Card className="p-5">
-        <h3 className="text-sm font-semibold text-foreground">Your referral link</h3>
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start">
-          <div className="flex-1 space-y-2">
+      {/* Referral link */}
+      <div className="bg-bauhaus-white border-3 border-foreground shadow-bauhaus-lg p-5 sm:p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="bg-bauhaus-red text-primary-foreground border-2 border-foreground px-2 py-0.5 font-bold uppercase tracking-widest text-[10px] shadow-bauhaus-sm">
+            Your Link
+          </div>
+          <p className="font-bold uppercase tracking-wider text-sm text-foreground">Share this referral link</p>
+        </div>
+
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="flex-1 space-y-3">
             <div className="flex gap-2">
-              <Input readOnly value={refLink} className="flex-1 font-mono text-xs" />
-              <Button size="sm" variant="outline" onClick={() => copy(refLink)}><Copy className="mr-1 h-4 w-4" />Copy</Button>
+              <input
+                readOnly
+                value={refLink}
+                className="flex-1 bg-bauhaus-canvas text-foreground border-2 border-foreground px-3 py-2 font-mono text-xs focus:outline-none"
+              />
+              <button
+                onClick={() => copy(refLink)}
+                className="inline-flex items-center gap-1.5 bg-bauhaus-yellow text-foreground font-bold uppercase tracking-wider text-[11px] px-3 py-2 border-2 border-foreground shadow-bauhaus-sm hover:bg-bauhaus-yellow/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+              >
+                <Copy className="h-3.5 w-3.5" /> Copy
+              </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" onClick={shareWhatsApp}><Share2 className="mr-1 h-4 w-4" />WhatsApp</Button>
-              <Button size="sm" variant="outline" onClick={() => copy(partner.partner_code)}>Code: {partner.partner_code}</Button>
+              <button
+                onClick={shareWhatsApp}
+                className="inline-flex items-center gap-1.5 bg-bauhaus-blue text-primary-foreground font-bold uppercase tracking-wider text-[11px] px-3 py-2 border-2 border-foreground shadow-bauhaus-sm hover:bg-bauhaus-blue/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+              >
+                <Share2 className="h-3.5 w-3.5" /> WhatsApp
+              </button>
+              <button
+                onClick={() => copy(partner.partner_code)}
+                className="inline-flex items-center gap-1.5 bg-bauhaus-white text-foreground font-bold uppercase tracking-wider text-[11px] px-3 py-2 border-2 border-foreground shadow-bauhaus-sm hover:bg-muted active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+              >
+                Code: <span className="font-mono">{partner.partner_code}</span>
+              </button>
             </div>
-            <p className="text-xs text-muted-foreground">Earning {partner.commission_percentage}% recurring on every payment from your referred stores.</p>
+            <p className="font-medium text-xs text-muted-foreground">
+              Earning <span className="font-black text-foreground">{partner.commission_percentage}%</span> recurring on every payment from your referred stores.
+            </p>
           </div>
-          <img src={qrUrl} alt="Referral QR" width={120} height={120} className="rounded-lg border border-border/60" />
-        </div>
-      </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="p-5">
-          <h3 className="text-sm font-semibold text-foreground">Recent referrals</h3>
-          <div className="mt-3 space-y-2 text-sm">
-            {referrals.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No referrals yet — share your link to get started.</p>
-            ) : referrals.map((r) => (
-              <div key={r.id} className="flex items-center justify-between rounded-md bg-muted/30 px-3 py-2">
-                <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</span>
-                <span className="rounded-full bg-background px-2 py-0.5 text-xs font-medium capitalize">{r.status}</span>
-              </div>
-            ))}
+          <div className="bg-bauhaus-white border-3 border-foreground shadow-bauhaus p-2 self-start">
+            <img src={qrUrl} alt="Referral QR" width={120} height={120} className="block" />
           </div>
-        </Card>
-        <Card className="p-5">
-          <h3 className="text-sm font-semibold text-foreground">Commission history</h3>
-          <div className="mt-3 space-y-2 text-sm">
-            {commissions.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No commissions yet.</p>
-            ) : commissions.map((c) => (
-              <div key={c.id} className="flex items-center justify-between rounded-md bg-muted/30 px-3 py-2">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">₹{Number(c.commission_amount).toLocaleString("en-IN")}</p>
-                  <p className="text-xs text-muted-foreground">{c.percentage}% of ₹{Number(c.amount_paid).toLocaleString("en-IN")}</p>
-                </div>
-                <span className="rounded-full bg-background px-2 py-0.5 text-xs font-medium capitalize">{c.status}</span>
+        </div>
+      </div>
+
+      {/* Two column lists */}
+      <div className="grid gap-5 lg:grid-cols-2">
+        <ListCard title="Recent Referrals" emptyText="No referrals yet — share your link to get started.">
+          {referrals.map((r) => (
+            <div key={r.id} className="flex items-center justify-between border-2 border-foreground bg-bauhaus-canvas px-3 py-2">
+              <span className="font-medium text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("en-IN")}</span>
+              <StatusPill status={r.status} />
+            </div>
+          ))}
+        </ListCard>
+
+        <ListCard title="Commission History" emptyText="No commissions yet.">
+          {commissions.map((c) => (
+            <div key={c.id} className="flex items-center justify-between border-2 border-foreground bg-bauhaus-canvas px-3 py-2">
+              <div>
+                <p className="font-black text-sm text-foreground tabular-nums">₹{Number(c.commission_amount).toLocaleString("en-IN")}</p>
+                <p className="font-medium text-[11px] text-muted-foreground">{c.percentage}% of ₹{Number(c.amount_paid).toLocaleString("en-IN")}</p>
               </div>
-            ))}
-          </div>
-        </Card>
+              <StatusPill status={c.status} />
+            </div>
+          ))}
+        </ListCard>
       </div>
     </>
+  );
+}
+
+function ListCard({ title, emptyText, children }: { title: string; emptyText: string; children: React.ReactNode }) {
+  const empty = !children || (Array.isArray(children) && children.length === 0);
+  return (
+    <div className="bg-bauhaus-white border-3 border-foreground shadow-bauhaus p-5">
+      <h3 className="font-black uppercase tracking-wider text-sm text-foreground mb-3">{title}</h3>
+      {empty ? (
+        <p className="font-medium text-xs text-muted-foreground">{emptyText}</p>
+      ) : (
+        <div className="space-y-2">{children}</div>
+      )}
+    </div>
+  );
+}
+
+function StatusPill({ status }: { status: string }) {
+  const tone: Record<string, string> = {
+    paid: "bg-bauhaus-yellow",
+    approved: "bg-bauhaus-blue text-primary-foreground",
+    pending: "bg-bauhaus-white",
+    signup: "bg-bauhaus-white",
+    locked: "bg-bauhaus-red text-primary-foreground",
+  };
+  return (
+    <span className={`border-2 border-foreground px-2 py-0.5 font-bold uppercase tracking-widest text-[10px] ${tone[status] || "bg-bauhaus-white"}`}>
+      {status}
+    </span>
   );
 }
