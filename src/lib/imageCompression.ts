@@ -245,65 +245,6 @@ export async function processImageMultiSize(
  */
 export const compressImage = processImage;
 
-// ───────────────────────────── AVIF support ─────────────────────────────
-// AVIF is ~25–35% smaller than WebP at equal visual quality. Browser-side
-// canvas.toBlob('image/avif') is supported in Chrome 85+/Edge/Opera/Safari 16+.
-// Firefox can decode but currently cannot encode — we feature-detect and
-// silently skip when unsupported. AVIF is always best-effort: a failure here
-// must NEVER block the main WebP upload.
-
-let _avifEncodeSupported: boolean | null = null;
-
-/** One-time check: can the current browser encode AVIF via canvas? */
-export async function canEncodeAvif(): Promise<boolean> {
-  if (_avifEncodeSupported !== null) return _avifEncodeSupported;
-  try {
-    const c = document.createElement("canvas");
-    c.width = 2;
-    c.height = 2;
-    const blob = await new Promise<Blob | null>((res) =>
-      c.toBlob((b) => res(b), "image/avif", 0.7),
-    );
-    _avifEncodeSupported = !!(blob && blob.type === "image/avif" && blob.size > 0);
-  } catch {
-    _avifEncodeSupported = false;
-  }
-  return _avifEncodeSupported;
-}
-
-/**
- * Best-effort: produce an AVIF variant of the given image at <=`maxDimension`.
- * Returns null if the browser cannot encode AVIF, or if encoding fails.
- *
- * Quality is tuned a touch lower than WebP because AVIF preserves detail
- * better at lower q values.
- */
-export async function processImageToAvif(
-  file: File,
-  maxDimension = DEFAULT_MAX_DIMENSION,
-  quality = 0.6,
-): Promise<File | null> {
-  if (file.size > MAX_RAW_SIZE) return null;
-  if (!(await canEncodeAvif())) return null;
-
-  try {
-    const img = await loadImage(file);
-    const { width, height } = scaleDimensions(img.width, img.height, maxDimension);
-    const canvas = renderToCanvas(img, width, height);
-    URL.revokeObjectURL(img.src);
-
-    const blob = await new Promise<Blob | null>((res) =>
-      canvas.toBlob((b) => res(b), "image/avif", quality),
-    );
-    if (!blob || blob.size === 0) return null;
-
-    const baseName = file.name.replace(/\.[^/.]+$/, "");
-    return new File([blob], `${baseName}.avif`, { type: "image/avif" });
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Fetch an image from a URL and compress it to ~50% of original file size.
  * Used for CSV bulk-upload flow — lighter compression than manual uploads.
