@@ -395,19 +395,31 @@ export default function CreateStore() {
       // Attach partner referral code if user entered one (non-blocking)
       const code = partnerCode.trim().toUpperCase();
       if (code) {
-        try {
-          const { data: refData, error: refError } = await supabase.functions.invoke(
-            "attach-referral",
-            { body: { partner_code: code } }
-          );
-          const payload = refData as { error?: string; backfilled_stores?: number } | null;
-          if (refError || payload?.error) {
-            toast.error(payload?.error || refError?.message || "Couldn't apply partner code (you can add it later in Settings)");
-          } else {
-            toast.success("Partner code applied! 🎉");
+        if (!/^SBP\d{3,8}$/.test(code)) {
+          toast.error("Partner code should look like SBP1234 — skipped");
+        } else {
+          try {
+            const { data: refData, error: refError } = await supabase.functions.invoke(
+              "attach-referral",
+              { body: { ref: code } }
+            );
+            const payload = refData as { ok?: boolean; reason?: string; error?: string } | null;
+            if (refError) {
+              toast.error("Couldn't apply partner code (you can add it later in Settings)");
+            } else if (!payload?.ok) {
+              const reasons: Record<string, string> = {
+                partner_inactive: "This partner code is not active.",
+                self_referral: "You can't use your own partner code.",
+                already_attached: "You're already linked to another partner.",
+                invalid_code: "Invalid partner code.",
+              };
+              toast.error(reasons[payload?.reason || ""] || "Couldn't apply partner code");
+            } else {
+              toast.success("Partner code applied! 🎉");
+            }
+          } catch {
+            toast.error("Couldn't apply partner code (you can add it later in Settings)");
           }
-        } catch {
-          toast.error("Couldn't apply partner code (you can add it later in Settings)");
         }
       }
 
