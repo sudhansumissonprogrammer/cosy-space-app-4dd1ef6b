@@ -5,7 +5,7 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  TrendingUp, Wallet, Users, Share2, Repeat, ShieldCheck, Rocket, IndianRupee,
+  TrendingUp, Wallet, Users, Share2, Repeat, ShieldCheck, Rocket, IndianRupee, ArrowRight, Sparkles,
 } from "lucide-react";
 
 export default function PartnerLanding() {
@@ -14,34 +14,52 @@ export default function PartnerLanding() {
       {/* Top nav */}
       <header className="sticky top-0 z-30 border-b border-border/50 bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <Link to="/" className="text-base font-semibold text-foreground">ShopBanao Partners</Link>
+          <Link to="/" className="flex items-center gap-2 text-base font-semibold text-foreground">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 text-primary-foreground">
+              <Sparkles className="h-3.5 w-3.5" />
+            </span>
+            ShopBanao Partners
+          </Link>
           <div className="flex items-center gap-2">
             <Link to="/partners/login">
               <Button variant="ghost" size="sm">Login</Button>
             </Link>
             <Link to="/partners/signup">
-              <Button size="sm">Join Now</Button>
+              <Button size="sm" className="gap-1">Join Now <ArrowRight className="h-3.5 w-3.5" /></Button>
             </Link>
           </div>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="border-b border-border/40">
-        <div className="mx-auto max-w-5xl px-4 py-16 text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
+      <section className="relative overflow-hidden border-b border-border/40">
+        {/* Soft gradient backdrop */}
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-primary/10 via-background to-background" />
+        <div
+          className="pointer-events-none absolute -left-20 -top-20 -z-10 h-80 w-80 rounded-full bg-primary/15 blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -right-20 top-40 -z-10 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
+          aria-hidden
+        />
+
+        <div className="mx-auto max-w-5xl px-4 py-16 text-center sm:py-20">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
             <Rocket className="h-3.5 w-3.5" /> Recurring partner program
           </span>
-          <h1 className="mt-5 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+          <h1 className="mt-5 text-4xl font-bold tracking-tight text-foreground sm:text-6xl">
             Earn recurring commission for every store you refer.
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground">
+          <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
             Share your unique referral link. When someone you refer subscribes to ShopBanao,
             you earn a percentage of every billing cycle — for as long as they stay.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link to="/partners/signup">
-              <Button size="lg" className="px-6">Join Partner Program</Button>
+              <Button size="lg" className="px-6 shadow-lg shadow-primary/20">
+                Join Partner Program <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
             </Link>
             <Link to="/partners/login">
               <Button size="lg" variant="outline" className="px-6">Partner Login</Button>
@@ -53,7 +71,7 @@ export default function PartnerLanding() {
 
       {/* Benefits grid */}
       <section className="mx-auto max-w-5xl px-4 py-16">
-        <h2 className="text-center text-2xl font-semibold text-foreground sm:text-3xl">
+        <h2 className="text-center text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           Why become a ShopBanao partner?
         </h2>
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -65,11 +83,11 @@ export default function PartnerLanding() {
             { icon: ShieldCheck, title: "Fair attribution", desc: "90-day cookie window. Once your referral pays, they're locked to you for life." },
             { icon: Users, title: "Anyone can join", desc: "Creators, agencies, freelancers, store owners — if you can share a link, you can earn." },
           ].map((b) => (
-            <Card key={b.title} className="p-5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Card key={b.title} className="rounded-2xl border p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary">
                 <b.icon className="h-5 w-5" />
               </div>
-              <h3 className="mt-3 text-base font-semibold text-foreground">{b.title}</h3>
+              <h3 className="mt-3 text-base font-bold tracking-tight text-foreground">{b.title}</h3>
               <p className="mt-1.5 text-sm text-muted-foreground">{b.desc}</p>
             </Card>
           ))}
@@ -79,7 +97,7 @@ export default function PartnerLanding() {
       {/* How it works */}
       <section className="border-y border-border/40 bg-muted/30">
         <div className="mx-auto max-w-5xl px-4 py-16">
-          <h2 className="text-center text-2xl font-semibold text-foreground sm:text-3xl">
+          <h2 className="text-center text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             How it works
           </h2>
           <ol className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -89,11 +107,11 @@ export default function PartnerLanding() {
               { n: 3, t: "They subscribe", d: "When someone you refer pays for any plan, you earn." },
               { n: 4, t: "Get paid", d: "Recurring commission flows into your wallet every billing cycle." },
             ].map((s) => (
-              <li key={s.n} className="rounded-xl border border-border/60 bg-background p-5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+              <li key={s.n} className="rounded-2xl border border-border/60 bg-background p-5 transition-shadow hover:shadow-md">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-sm font-bold text-primary-foreground shadow-sm">
                   {s.n}
                 </div>
-                <h3 className="mt-3 font-semibold text-foreground">{s.t}</h3>
+                <h3 className="mt-3 font-bold tracking-tight text-foreground">{s.t}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{s.d}</p>
               </li>
             ))}
@@ -103,29 +121,32 @@ export default function PartnerLanding() {
 
       {/* Commission explanation */}
       <section className="mx-auto max-w-4xl px-4 py-16">
-        <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 via-background to-background p-8 text-center">
-          <IndianRupee className="mx-auto h-10 w-10 text-primary" />
-          <h2 className="mt-3 text-2xl font-bold text-foreground sm:text-3xl">
-            Earn up to 40% recurring
-          </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground">
-            Commission is calculated on the actual amount your referral pays. If they're on a
-            small plan, you earn from the small plan. If they upgrade, your commission scales
-            up automatically — every single billing cycle, for as long as their subscription
-            is active.
-          </p>
-          <ul className="mx-auto mt-6 grid max-w-xl gap-2 text-left text-sm text-muted-foreground">
-            <li>✓ Commission only after a successful paid subscription</li>
-            <li>✓ Recurring commissions on every billing cycle</li>
-            <li>✓ No commission on free trials, refunds, or failed payments</li>
-            <li>✓ Held for 14 days, then released to withdrawable balance</li>
-          </ul>
+        <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 via-background to-background p-8 text-center">
+          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-2xl" aria-hidden />
+          <div className="relative">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-lg">
+              <IndianRupee className="h-7 w-7" />
+            </div>
+            <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              Earn up to 40% recurring
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground">
+              Commission is calculated on the actual amount your referral pays. If they upgrade, your commission scales
+              up automatically — every single billing cycle, for as long as their subscription is active.
+            </p>
+            <ul className="mx-auto mt-6 grid max-w-xl gap-2 text-left text-sm text-muted-foreground">
+              <li>✓ Commission only after a successful paid subscription</li>
+              <li>✓ Recurring commissions on every billing cycle</li>
+              <li>✓ No commission on free trials, refunds, or failed payments</li>
+              <li>✓ Held for 14 days, then released to withdrawable balance</li>
+            </ul>
+          </div>
         </div>
       </section>
 
       {/* FAQ */}
       <section className="mx-auto max-w-3xl px-4 py-16">
-        <h2 className="text-center text-2xl font-semibold text-foreground sm:text-3xl">
+        <h2 className="text-center text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           Frequently asked questions
         </h2>
         <Accordion type="single" collapsible className="mt-8">
@@ -168,12 +189,24 @@ export default function PartnerLanding() {
 
         <div className="mt-12 text-center">
           <Link to="/partners/signup">
-            <Button size="lg">Join the Partner Program</Button>
+            <Button size="lg" className="shadow-lg shadow-primary/20">Join the Partner Program</Button>
           </Link>
         </div>
       </section>
 
-      <footer className="border-t border-border/40 py-6 text-center text-xs text-muted-foreground">
+      {/* Sticky mobile CTA */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-30 border-t border-border/60 bg-background/95 p-3 backdrop-blur sm:hidden"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+      >
+        <Link to="/partners/signup">
+          <Button className="h-11 w-full shadow-lg shadow-primary/20">
+            Join Partner Program <ArrowRight className="ml-1 h-4 w-4" />
+          </Button>
+        </Link>
+      </div>
+
+      <footer className="border-t border-border/40 py-6 pb-24 text-center text-xs text-muted-foreground sm:pb-6">
         <Link to="/" className="hover:underline">← Back to ShopBanao</Link>
       </footer>
     </div>

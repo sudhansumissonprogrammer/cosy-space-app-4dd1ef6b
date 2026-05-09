@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, LogOut, LayoutDashboard, Wallet, ArrowDownToLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationsBell } from "@/components/partner/NotificationsBell";
+import { PartnerBottomNav } from "@/components/partner/PartnerBottomNav";
 
-// Prefetch sibling tab chunks so tab switches are instant (no skeleton flash).
 const prefetchPartnerTabs = () => {
   import("@/pages/partner/PartnerOverview").catch(() => {});
   import("@/pages/partner/PartnerWallet").catch(() => {});
@@ -42,33 +42,45 @@ export default function PartnerLayout() {
     { to: "/partners/dashboard/withdrawals", label: "Withdrawals", icon: ArrowDownToLine },
   ];
 
+  const initial = (partner.name || "P").trim().charAt(0).toUpperCase();
+
   return (
     <div className="min-h-screen bg-muted/20">
-      <header className="sticky top-0 z-30 border-b border-border/50 bg-background">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <div>
-            <h1 className="text-sm font-semibold text-foreground">Partner Dashboard</h1>
-            <p className="text-xs text-muted-foreground">{partner.partner_code} · {partner.name}</p>
+      <header className="sticky top-0 z-30 border-b border-border/50 bg-background/95 backdrop-blur">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-sm font-bold text-primary-foreground shadow-sm">
+              {initial}
+            </div>
+            <div className="min-w-0">
+              <h1 className="truncate text-sm font-semibold text-foreground">{partner.name}</h1>
+              <p className="truncate text-[11px] text-muted-foreground">
+                <span className="font-mono">{partner.partner_code}</span> · Partner
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <NotificationsBell partnerId={partner.id} />
-            <Button variant="ghost" size="sm" onClick={signOut}>
-              <LogOut className="mr-2 h-4 w-4" />Sign out
+            <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-xs">
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Sign out</span>
             </Button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-2 pb-1">
+        <nav className="mx-auto hidden max-w-6xl gap-1 px-2 pb-1 md:flex">
           {tabs.map((t) => (
             <NavLink
               key={t.to}
               to={t.to}
               end={t.end}
-              className={({ isActive }) => cn(
-                "flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm transition-colors",
-                isActive
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-              )}
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm transition-colors",
+                  isActive
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                )
+              }
             >
               <t.icon className="h-4 w-4" />
               {t.label}
@@ -77,7 +89,7 @@ export default function PartnerLayout() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-6xl space-y-6 px-4 py-6">
+      <main className="mx-auto max-w-6xl space-y-4 px-4 py-4 pb-24 md:py-6 md:pb-8">
         <Suspense
           fallback={
             <div className="flex justify-center py-12">
@@ -88,6 +100,8 @@ export default function PartnerLayout() {
           <Outlet context={{ partner }} />
         </Suspense>
       </main>
+
+      <PartnerBottomNav />
     </div>
   );
 }
