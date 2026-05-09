@@ -54,6 +54,9 @@ export default function AuthCallback() {
           return;
         }
 
+        import("@/lib/referralTracking")
+          .then(({ attachReferralAfterSignup }) => attachReferralAfterSignup())
+          .catch(() => {});
         redirect(isPasswordRecovery ? "/reset-password" : "/dashboard");
         return;
       }
@@ -72,6 +75,9 @@ export default function AuthCallback() {
           return;
         }
 
+        import("@/lib/referralTracking")
+          .then(({ attachReferralAfterSignup }) => attachReferralAfterSignup())
+          .catch(() => {});
         redirect(isPasswordRecovery ? "/reset-password" : "/dashboard");
         return;
       }
@@ -81,6 +87,9 @@ export default function AuthCallback() {
       } = await supabase.auth.getSession();
 
       if (session) {
+        import("@/lib/referralTracking")
+          .then(({ attachReferralAfterSignup }) => attachReferralAfterSignup())
+          .catch(() => {});
         redirect(isPasswordRecovery ? "/reset-password" : "/dashboard");
         return;
       }
