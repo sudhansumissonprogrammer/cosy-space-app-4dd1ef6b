@@ -37,6 +37,8 @@ const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneM
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
 const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
+import PdpTrustRow from "@/components/storefront/PdpTrustRow";
+import PdpAskWhatsApp from "@/components/storefront/PdpAskWhatsApp";
 
 interface Variant {
   id: string;
@@ -659,6 +661,14 @@ export default function ProductDetail() {
            )}
           </div>
 
+          {/* Trust row above the fold (right below price) — hidden in V18 */}
+          {!isV18 && (
+            <PdpTrustRow
+              freeShippingAbove={shippingConfig?.free_shipping_above ?? null}
+              hasWhatsApp={!!store.whatsapp_number}
+            />
+          )}
+
 
           {/* Live viewers — hidden in V18 */}
           {!isV18 && (
@@ -1018,14 +1028,23 @@ export default function ProductDetail() {
                       </div>
                     </div>
                   </div>
-                  {/* Mobile price */}
-                  <div className="shrink-0 min-w-0 sm:hidden">
-                    <p className="text-sm font-extrabold text-foreground leading-tight">
-                      {formatPrice((variantPrice * quantity), currency)}
-                    </p>
-                    {hasDiscount && (
-                      <p className="text-[10px] text-emerald-600 font-semibold">{discountPct}% OFF</p>
+                  {/* Mobile thumbnail + price */}
+                  <div className="flex sm:hidden items-center gap-2 shrink-0 min-w-0">
+                    {product.image_url && (
+                      <img
+                        src={optimizeImageUrl(product.image_url, 40)}
+                        alt=""
+                        className="h-10 w-10 rounded-lg object-cover border border-border shrink-0"
+                      />
                     )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-extrabold text-foreground leading-tight whitespace-nowrap">
+                        {formatPrice((variantPrice * quantity), currency)}
+                      </p>
+                      {hasDiscount && (
+                        <p className="text-[10px] text-emerald-600 font-semibold leading-tight">{discountPct}% OFF</p>
+                      )}
+                    </div>
                   </div>
                   <div className="flex flex-1 sm:flex-none gap-2">
                     <button
@@ -1098,6 +1117,18 @@ export default function ProductDetail() {
             } catch {}
             return null;
           })()}
+
+          {/* Persistent product-aware "Ask about this" WhatsApp pill */}
+          {!isOutOfStock && store.whatsapp_number && (store as any)?.theme !== "theme-18" && (
+            <PdpAskWhatsApp
+              phone={store.whatsapp_number}
+              storeName={store.name}
+              productName={product.name}
+              productUrl={typeof window !== "undefined" ? `${window.location.origin}${window.location.pathname}` : ""}
+              priceLabel={formatPrice(Number(variantPrice), currency)}
+              liftedAboveStickyBar={stickyBarVisible}
+            />
+          )}
         </>,
         document.body
       )}
