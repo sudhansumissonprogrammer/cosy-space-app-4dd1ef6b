@@ -844,6 +844,47 @@ export type Database = {
           },
         ]
       }
+      partner_notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          partner_id: string
+          read_at: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          partner_id: string
+          read_at?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          partner_id?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_notifications_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_referral_clicks: {
         Row: {
           created_at: string
@@ -949,6 +990,170 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      partner_wallet_ledger: {
+        Row: {
+          amount: number
+          bucket_from: string | null
+          bucket_to: string | null
+          commission_id: string | null
+          created_at: string
+          direction: string
+          id: string
+          kind: string
+          notes: string | null
+          partner_id: string
+          withdrawal_id: string | null
+        }
+        Insert: {
+          amount: number
+          bucket_from?: string | null
+          bucket_to?: string | null
+          commission_id?: string | null
+          created_at?: string
+          direction: string
+          id?: string
+          kind: string
+          notes?: string | null
+          partner_id: string
+          withdrawal_id?: string | null
+        }
+        Update: {
+          amount?: number
+          bucket_from?: string | null
+          bucket_to?: string | null
+          commission_id?: string | null
+          created_at?: string
+          direction?: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          partner_id?: string
+          withdrawal_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_wallet_ledger_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: false
+            referencedRelation: "partner_commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_wallet_ledger_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_wallet_ledger_withdrawal_fk"
+            columns: ["withdrawal_id"]
+            isOneToOne: false
+            referencedRelation: "partner_withdrawals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_wallets: {
+        Row: {
+          approved: number
+          locked: number
+          paid: number
+          partner_id: string
+          pending: number
+          updated_at: string
+        }
+        Insert: {
+          approved?: number
+          locked?: number
+          paid?: number
+          partner_id: string
+          pending?: number
+          updated_at?: string
+        }
+        Update: {
+          approved?: number
+          locked?: number
+          paid?: number
+          partner_id?: string
+          pending?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_wallets_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_withdrawals: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          bank_account_name: string | null
+          bank_account_no: string | null
+          bank_ifsc: string | null
+          created_at: string
+          id: string
+          method: string
+          paid_at: string | null
+          partner_id: string
+          payout_ref: string | null
+          processed_at: string | null
+          requested_at: string
+          status: string
+          updated_at: string
+          upi_id: string | null
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          bank_account_name?: string | null
+          bank_account_no?: string | null
+          bank_ifsc?: string | null
+          created_at?: string
+          id?: string
+          method: string
+          paid_at?: string | null
+          partner_id: string
+          payout_ref?: string | null
+          processed_at?: string | null
+          requested_at?: string
+          status?: string
+          updated_at?: string
+          upi_id?: string | null
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          bank_account_name?: string | null
+          bank_account_no?: string | null
+          bank_ifsc?: string | null
+          created_at?: string
+          id?: string
+          method?: string
+          paid_at?: string | null
+          partner_id?: string
+          payout_ref?: string | null
+          processed_at?: string | null
+          requested_at?: string
+          status?: string
+          updated_at?: string
+          upi_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_withdrawals_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       partners: {
         Row: {
@@ -2651,6 +2856,17 @@ export type Database = {
       }
     }
     Functions: {
+      _ensure_wallet: { Args: { _partner_id: string }; Returns: undefined }
+      _notify_partner: {
+        Args: {
+          _body: string
+          _meta: Json
+          _partner_id: string
+          _title: string
+          _type: string
+        }
+        Returns: undefined
+      }
       can_create_website_order: {
         Args: { _store_id: string }
         Returns: boolean
@@ -2747,6 +2963,30 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      wallet_approve_commission: {
+        Args: { _commission_id: string }
+        Returns: boolean
+      }
+      wallet_credit_commission: {
+        Args: { _commission_id: string }
+        Returns: undefined
+      }
+      wallet_lock_for_withdrawal: {
+        Args: { _withdrawal_id: string }
+        Returns: undefined
+      }
+      wallet_refund_withdrawal: {
+        Args: { _withdrawal_id: string }
+        Returns: undefined
+      }
+      wallet_reverse_commission: {
+        Args: { _commission_id: string }
+        Returns: boolean
+      }
+      wallet_settle_withdrawal: {
+        Args: { _withdrawal_id: string }
+        Returns: undefined
       }
     }
     Enums: {
