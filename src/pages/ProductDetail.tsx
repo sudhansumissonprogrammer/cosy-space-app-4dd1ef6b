@@ -661,13 +661,6 @@ export default function ProductDetail() {
            )}
           </div>
 
-          {/* Trust row above the fold (right below price) — hidden in V18 */}
-          {!isV18 && (
-            <PdpTrustRow
-              freeShippingAbove={shippingConfig?.free_shipping_above ?? null}
-              hasWhatsApp={!!store.whatsapp_number}
-            />
-          )}
 
 
           {/* Live viewers — hidden in V18 */}
