@@ -829,111 +829,6 @@ export type Database = {
         }
         Relationships: []
       }
-      partner_clawbacks: {
-        Row: {
-          admin_note: string | null
-          amount: number
-          commission_id: string
-          created_at: string
-          id: string
-          partner_id: string
-          resolved_at: string | null
-          status: string
-        }
-        Insert: {
-          admin_note?: string | null
-          amount: number
-          commission_id: string
-          created_at?: string
-          id?: string
-          partner_id: string
-          resolved_at?: string | null
-          status?: string
-        }
-        Update: {
-          admin_note?: string | null
-          amount?: number
-          commission_id?: string
-          created_at?: string
-          id?: string
-          partner_id?: string
-          resolved_at?: string | null
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "partner_clawbacks_commission_id_fkey"
-            columns: ["commission_id"]
-            isOneToOne: false
-            referencedRelation: "partner_commissions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "partner_clawbacks_partner_id_fkey"
-            columns: ["partner_id"]
-            isOneToOne: false
-            referencedRelation: "partners"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      partner_commission_overrides: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          ends_at: string | null
-          id: string
-          is_active: boolean
-          note: string | null
-          partner_id: string
-          percentage: number
-          plan_id: string | null
-          starts_at: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          ends_at?: string | null
-          id?: string
-          is_active?: boolean
-          note?: string | null
-          partner_id: string
-          percentage: number
-          plan_id?: string | null
-          starts_at?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          ends_at?: string | null
-          id?: string
-          is_active?: boolean
-          note?: string | null
-          partner_id?: string
-          percentage?: number
-          plan_id?: string | null
-          starts_at?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "partner_commission_overrides_partner_id_fkey"
-            columns: ["partner_id"]
-            isOneToOne: false
-            referencedRelation: "partners"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "partner_commission_overrides_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "plans"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       partner_commissions: {
         Row: {
           amount_paid: number
@@ -1031,27 +926,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      partner_rate_limits: {
-        Row: {
-          action: string
-          count: number
-          last_at: string
-          partner_id: string
-        }
-        Insert: {
-          action: string
-          count?: number
-          last_at?: string
-          partner_id: string
-        }
-        Update: {
-          action?: string
-          count?: number
-          last_at?: string
-          partner_id?: string
-        }
-        Relationships: []
       }
       partner_referral_clicks: {
         Row: {
@@ -3166,10 +3040,6 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
-      }
-      resolve_partner_commission_pct: {
-        Args: { _partner_id: string; _store_id: string }
-        Returns: number
       }
       wallet_adjust: {
         Args: {

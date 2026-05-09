@@ -71,34 +71,6 @@ Deno.serve(async (req) => {
         });
         return j({ ok: true });
       }
-      case "create_override": {
-        const { plan_id, percentage, starts_at, ends_at, note } = args;
-        const pct = Number(percentage);
-        if (!Number.isFinite(pct) || pct < 0 || pct > 100) return j({ error: "invalid percentage" }, 400);
-        const { data, error } = await admin.from("partner_commission_overrides").insert({
-          partner_id, plan_id: plan_id ?? null, percentage: pct,
-          starts_at: starts_at ?? null, ends_at: ends_at ?? null, note: note ?? null,
-          created_by: ud.user.id,
-        }).select().single();
-        if (error) return j({ error: error.message }, 400);
-        await admin.rpc("log_partner_audit", {
-          _action: "create_override", _target_type: "override", _target_id: data.id,
-          _old: null, _new: data, _note: note ?? null,
-        });
-        return j({ ok: true, override: data });
-      }
-      case "deactivate_override": {
-        const { override_id } = args;
-        const { data: oldO } = await admin.from("partner_commission_overrides").select("*").eq("id", override_id).maybeSingle();
-        const { error } = await admin.from("partner_commission_overrides")
-          .update({ is_active: false, updated_at: new Date().toISOString() }).eq("id", override_id);
-        if (error) return j({ error: error.message }, 400);
-        await admin.rpc("log_partner_audit", {
-          _action: "deactivate_override", _target_type: "override", _target_id: override_id,
-          _old: oldO, _new: { is_active: false }, _note: null,
-        });
-        return j({ ok: true });
-      }
       default:
         return j({ error: "unknown action" }, 400);
     }

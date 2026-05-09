@@ -45,15 +45,14 @@ Deno.serve(async (req) => {
     if (partner.status !== "active") return json({ error: "Partner account not active" }, 403);
     if (partner.payouts_paused) return json({ error: "Payouts are temporarily paused on your account. Contact support." }, 403);
 
-    // Rate limit: 1 request / 10 seconds / partner
-    const { data: rl } = await admin.from("partner_rate_limits")
-      .select("last_at").eq("partner_id", partner.id).eq("action", "withdrawal_request").maybeSingle();
-    if (rl?.last_at && Date.now() - new Date(rl.last_at).getTime() < 10_000) {
-      return json({ error: "Too many requests. Please wait a few seconds." }, 429);
+    // Rate limit: max 3 withdrawals requested in last hour
+    const { count: recentCount } = await admin.from("partner_withdrawals")
+      .select("id", { count: "exact", head: true })
+      .eq("partner_id", partner.id)
+      .gte("requested_at", new Date(Date.now() - 60 * 60_000).toISOString());
+    if ((recentCount ?? 0) >= 3) {
+      return json({ error: "Too many withdrawal requests. Try again later." }, 429);
     }
-    await admin.from("partner_rate_limits").upsert({
-      partner_id: partner.id, action: "withdrawal_request", last_at: new Date().toISOString(), count: 1,
-    }, { onConflict: "partner_id,action" });
 
     const { data: settings } = await admin.from("partner_settings").select("minimum_withdrawal").limit(1).maybeSingle();
     const minimum = Number(settings?.minimum_withdrawal ?? 500);

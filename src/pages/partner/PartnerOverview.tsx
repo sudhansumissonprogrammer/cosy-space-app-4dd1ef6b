@@ -27,13 +27,8 @@ export default function PartnerOverview() {
 
   useEffect(() => {
     refresh();
-    const channel = supabase
-      .channel(`partner-${partner.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "partner_referral_clicks", filter: `partner_id=eq.${partner.id}` }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "partner_referrals", filter: `partner_id=eq.${partner.id}` }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "partner_commissions", filter: `partner_id=eq.${partner.id}` }, refresh)
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const id = setInterval(refresh, 30_000);
+    return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partner.id]);
 

@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Loader2, LogOut, LayoutDashboard, Wallet, ArrowDownToLine, BarChart3, Bell } from "lucide-react";
+import { Loader2, LogOut, LayoutDashboard, Wallet, ArrowDownToLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationsBell } from "@/components/partner/NotificationsBell";
 
@@ -33,7 +33,6 @@ export default function PartnerLayout() {
     { to: "/partners/dashboard", label: "Overview", icon: LayoutDashboard, end: true },
     { to: "/partners/dashboard/wallet", label: "Wallet", icon: Wallet },
     { to: "/partners/dashboard/withdrawals", label: "Withdrawals", icon: ArrowDownToLine },
-    { to: "/partners/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   ];
 
   return (
