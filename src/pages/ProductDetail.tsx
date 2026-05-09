@@ -960,23 +960,25 @@ export default function ProductDetail() {
       </div>
 
 
-      {/* Complete the Look */}
-      <Suspense fallback={null}>
-        <RelatedProducts
-          storeId={store.id}
-          storeSlug={store.slug}
-          currentProductId={product.id}
-          currentCategory={product.category}
-          store={store}
-          addToCart={addToCart}
-          currency={currency}
-        />
-      </Suspense>
+      <div className="px-4 sm:px-0">
+        {/* Complete the Look */}
+        <Suspense fallback={null}>
+          <RelatedProducts
+            storeId={store.id}
+            storeSlug={store.slug}
+            currentProductId={product.id}
+            currentCategory={product.category}
+            store={store}
+            addToCart={addToCart}
+            currency={currency}
+          />
+        </Suspense>
 
-      {/* Customer Reviews */}
-      <Suspense fallback={null}>
-        <CustomerReviews reviews={fakeReviews} realReviews={realReviews || []} rating={stats.rating} reviewCount={stats.reviewCount} productId={product.id} storeId={store.id} onReviewSubmitted={refetchReviews} />
-      </Suspense>
+        {/* Customer Reviews */}
+        <Suspense fallback={null}>
+          <CustomerReviews reviews={fakeReviews} realReviews={realReviews || []} rating={stats.rating} reviewCount={stats.reviewCount} productId={product.id} storeId={store.id} onReviewSubmitted={refetchReviews} />
+        </Suspense>
+      </div>
 
       {/* Portal: render fixed elements outside PageTransition animation container */}
       {createPortal(
