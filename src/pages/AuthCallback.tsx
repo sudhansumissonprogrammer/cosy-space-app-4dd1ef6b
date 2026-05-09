@@ -31,6 +31,11 @@ export default function AuthCallback() {
       }
 
       if (event === "SIGNED_IN") {
+        // Best-effort: if a referral cookie was set before email confirmation,
+        // attach it to this user now that they have a session.
+        import("@/lib/referralTracking")
+          .then(({ attachReferralAfterSignup }) => attachReferralAfterSignup())
+          .catch(() => {});
         redirect(isPasswordRecovery ? "/reset-password" : "/dashboard");
       }
     });
