@@ -1,101 +1,124 @@
-# Per-Store Cashfree Gateway (Storefront Checkout)
+# Referral Partner Program — Phase 1
 
-Add Cashfree as a second store-level payment gateway, mirroring how Razorpay works today. Each store owner enters their **own** Cashfree App ID + Secret Key in Payment Settings. Customer payments on that storefront route to the merchant's Cashfree account.
+Building the core MVP of the ShopBanao Partner Program: tracking, attribution, basic commissions, partner dashboard, and admin panel. Phase 2 (payouts/wallet/withdrawal automation, KYC) and Phase 3 (fraud engine, leaderboard, advanced analytics) come later.
 
-**Strict isolation:** This is completely separate from the platform's SaaS billing Cashfree (which uses our `CASHFREE_APP_ID` env secret to charge merchants for the Pro plan). Different DB columns, different edge functions, different order ID prefixes — zero overlap.
+## What ships in Phase 1
 
-**Mutual exclusion:** In Payment Settings, Razorpay and Cashfree act as radio choices — only one can be ON at a time. COD remains an independent toggle.
+1. **Partner landing page** — `/partners` with hero, benefits, how-it-works, commission explanation, FAQ, Join + Login CTAs.
+2. **Partner auth** — signup / login / forgot-password using existing Supabase auth, segregated by user role `partner`.
+3. **Partner dashboard** — `/partners/dashboard` with totals (clicks, signups, paid customers, estimated earnings), referral link, copy / WhatsApp share / QR code, recent referrals + commissions tables.
+4. **Referral tracking** — `?ref=SBP1023` query param captured anywhere on the site, saved as `sb_ref` cookie (90 days), and a click row inserted via edge function.
+5. **Attribution** — on signup, the cookie's referral code is read and a `partner_referrals` row is created locking the user (and later their store/subscription) to that partner.
+6. **Basic commission engine** — when a `subscription_payments` row transitions to `status = 'paid'`, a Postgres trigger inserts a `commissions` row using the partner's `commission_percentage` (with plan-wise override fallback).
+7. **Admin panel** — new `/admin/partners` section: list partners, edit %, suspend, view referred stores, view commissions ledger.
 
----
+## Out of scope for Phase 1
+- Wallet states, withdrawal workflow, payout marking, KYC capture, bank/UPI fields beyond basics
+- Recurring webhook integration with Razorpay/Stripe (commissions will be created off the existing internal `subscription_payments`/billing events; we'll wire real webhooks in Phase 2)
+- Fraud detection, leaderboard, badges, exports
+- Email + in-app notifications (will be added in Phase 2 alongside payouts)
 
-## What the merchant sees
+## Database schema (new tables)
 
-**Store Settings → Orders & Payments**
-- Cash on Delivery — independent toggle (unchanged)
-- **Online Payment Gateway** — single selector with three states:
-  - None
-  - Razorpay (existing fields: Key ID, Key Secret)
-  - Cashfree (new fields: App ID, Secret Key, Environment: Production / Sandbox)
-- Switching from one to the other auto-disables the other. Saving validates that the chosen gateway's credentials are filled.
-- Inline link to `https://merchant.cashfree.com/merchants/pg/developers/api` with 3-step instructions for fetching keys.
-- Partial payment block continues to work, now triggered when **any** online gateway is enabled.
+```text
+partners
+  id uuid pk, user_id uuid (auth.users) unique
+  partner_code text unique           -- e.g. SBP1023
+  name, email, mobile
+  commission_percentage numeric default 40
+  status text default 'active'       -- active | suspended
+  created_at, updated_at
 
-**Customer checkout**
-- "Pay Online" option appears whenever the store has either Razorpay OR Cashfree enabled — single label, the merchant's chosen gateway opens behind the scenes.
-- Cashfree opens via the official drop-in checkout (SDK already loaded for SaaS billing — reused).
-- All Razorpay edge cases we already handle apply to Cashfree too: cancel → "Retry payment" CTA, dropped network → status check, auto-verify on tab focus, back-button guard, success → order confirmed, failure → order stays `pending` with retry.
+partner_referral_clicks
+  id, partner_id fk, ip, user_agent, referrer, landing_path, created_at
 
----
+partner_referrals
+  id, partner_id fk
+  referred_user_id uuid (auth.users) -- set on signup
+  store_id uuid null                 -- set when store is created
+  status text default 'signup'       -- signup | trial | paid | churned
+  first_paid_at timestamptz null
+  locked boolean default false       -- true after first paid payment
+  created_at
 
-## Database changes (one migration)
+partner_commissions
+  id, partner_id fk, referral_id fk
+  store_id, subscription_id, payment_id
+  amount_paid numeric, percentage numeric, commission_amount numeric
+  status text default 'pending'      -- pending | approved | paid | reversed
+  created_at
 
-Add to `store_payment_config`:
-- `cashfree_app_id text`
-- `cashfree_secret_key text`
-- `cashfree_env text default 'production'` (`'production'` | `'sandbox'`)
+partner_settings (singleton row, admin-tunable)
+  default_percentage numeric default 40
+  cookie_days int default 90
+  hold_days int default 14
+  minimum_withdrawal numeric default 500
+```
 
-Update `payment_methods` jsonb to also accept `'cashfree'`. RLS unchanged (existing `is_store_owner` policies cover it).
+Plus: add nullable `referred_by_partner_id` to `stores` for fast joins, and a `partner` value to the existing `app_role` enum.
 
-Update `get_own_payment_secret` RPC → add a sibling `get_own_cashfree_secret(_store_id)` returning the cashfree secret only to store owner. Update `get_store_payment_config` RPC to also return `cashfree_app_id` and `cashfree_env` (NOT the secret — secret stays server-side).
+## Attribution flow
 
----
+```text
+Visitor → /signup?ref=SBP1023
+   ↓ ReferralCapture component reads ?ref, sets sb_ref cookie (90d),
+     fires edge fn track-referral-click → partner_referral_clicks row
+   ↓
+Signup → after auth.signUp success, client calls edge fn attach-referral
+     which validates sb_ref, finds partner by code, inserts partner_referrals
+   ↓
+Store creation → trigger updates partner_referrals.store_id + stores.referred_by_partner_id
+   ↓
+First successful subscription payment → DB trigger fn create_partner_commission()
+     inserts partner_commissions, marks referral.status='paid' + locked=true
+```
 
-## New edge functions (3, all isolated)
+## Edge functions
 
-1. **`store-cashfree-create-order`** — verifies caller owns store, reads `store_payment_config` (merchant's CF creds), creates a Cashfree order with `order_id = ord_<orderUuid>` (note the `ord_` prefix vs. SaaS billing's `sub_` prefix — guarantees no collision), returns `payment_session_id` to the client. Validates amount, currency, store ownership, gateway enabled.
+- `track-referral-click` (public, no JWT) — validates `ref` code, records click, returns 200.
+- `attach-referral` (auth required) — runs after signup, links the new auth user to a partner via cookie/header value, idempotent.
+- `partner-stats` (auth required, partner role) — returns aggregated dashboard numbers from a single SQL call.
 
-2. **`store-cashfree-verify`** — called after checkout success. Server-side fetches order status from Cashfree using merchant's creds; if `PAID`, updates `orders.status` to `confirmed` (or `partially_paid` for partial). Mirrors `razorpay-verify`.
+## Routes
 
-3. **`store-cashfree-status`** — polled on tab focus / cancel / network blip. Returns current Cashfree order status without trusting client. Mirrors `razorpay-payment-status`.
+```text
+/partners                       public landing
+/partners/login                 partner login
+/partners/signup                partner signup (no referral capture here)
+/partners/forgot-password
+/partners/dashboard             overview + referral tools
+/partners/referrals             referrals table
+/partners/commissions           commissions ledger
+/partners/profile               basic profile edit
 
-All three use `verify_jwt = true` (default) since they're store-owner / authenticated-checkout flows. Each validates the merchant's Cashfree creds belong to **their** `store_payment_config` row — never falls back to platform secrets.
+/admin/partners                 list + filters
+/admin/partners/:id             detail (edit %, suspend, see stores+commissions)
+/admin/partners/commissions     global commissions ledger
+/admin/partners/settings        defaults (%, cookie days, hold days)
+```
 
----
+## RLS summary
 
-## Frontend changes
+- `partners`: partner can select/update own row (by `user_id`); admin full access.
+- `partner_referrals`, `partner_commissions`: partner can only `select` rows where `partner_id` matches their own; admin full access; service role inserts via triggers / edge functions.
+- `partner_referral_clicks`: insert allowed via edge function (service role); partner select own; admin full.
+- `partner_settings`: admin only.
 
-**`src/pages/StorePayments.tsx`**
-- Replace independent Razorpay toggle with a "Online Gateway" selector (radio group: None / Razorpay / Cashfree). Existing Razorpay collapsible becomes one branch; new Cashfree collapsible becomes the other with App ID / Secret Key / Env fields.
-- Save mutation validates only the selected gateway's fields. Persists `payment_methods` as `['cod', 'razorpay']` OR `['cod', 'cashfree']` (never both online).
+## Implementation order
 
-**`src/pages/CheckoutPage.tsx`**
-- Detect `hasCashfree = availableMethods.includes('cashfree')`.
-- New `paymentMethod` value `'cashfree'`. UI label stays "Pay Online" — merchant's choice is invisible to customer.
-- Pay handler branches: Razorpay → existing flow; Cashfree → call `store-cashfree-create-order`, open Cashfree drop-in via `loadCashfree(env)`, on `paymentDetails` event call `store-cashfree-verify`.
-- Reuse the existing **edge-case handlers** built for Razorpay: cancel → retry CTA, focus-listener auto-verify (`store-cashfree-status`), `beforeunload` guard, pending-order recovery on remount.
+1. Migration for tables, enum extension, RLS, trigger, helper SQL fn `is_partner_owner(partner_id)`.
+2. Landing page + partner auth pages (reusing existing auth UI patterns).
+3. Referral capture util + `track-referral-click` edge fn.
+4. Partner dashboard shell + `partner-stats` edge fn + referral/commission tables.
+5. `attach-referral` edge fn wired into signup flow + storefront signup flow.
+6. Admin partner pages plugged into existing AdminSidebar/AdminLayout.
+7. Smoke test: open `/signup?ref=…`, complete flow with a fake `subscription_payments` insert, confirm commission row appears with correct math.
 
-**`src/lib/loadCashfree.ts`** — already exists and handles both `production` and `sandbox` modes; reused as-is.
+## Open question — confirm before I migrate
 
----
+The existing app has a `subscriptions` table tied to `user_id` (merchant) and `plan_id`, but I don't see a `subscription_payments` table in the schema dump above. **Where does a successful paid subscription currently get recorded?** Options:
 
-## Edge cases handled
+1. There's already a payments/invoices table I should hook the trigger into — tell me its name.
+2. There isn't one yet — I'll add a minimal `subscription_payments(store_id, plan_id, amount, status, paid_at)` table as part of this migration so the commission trigger has something to fire on.
 
-| Case | Behavior |
-|---|---|
-| User cancels Cashfree modal | Order stays `pending`, "Retry Payment" CTA appears, no duplicate order created on retry (idempotent — reuses same `orders.id`) |
-| Tab loses focus mid-payment, user returns | `visibilitychange` listener calls `store-cashfree-status`; if PAID, auto-confirms; if FAILED, shows retry |
-| User pays but network drops before frontend gets callback | Cashfree webhook would be ideal, but for v1 the focus-recheck + manual "I've paid, check status" button covers it |
-| Merchant has both gateways' fields filled but flips selector | Only the active gateway is used at checkout; other creds remain in DB but are ignored (preserves data if they switch back) |
-| Merchant disables online gateway entirely | `payment_methods = ['cod']`; checkout falls back to COD only |
-| Merchant uses sandbox creds | `cashfree_env = 'sandbox'` routes API calls to `sandbox.cashfree.com` and SDK loads in sandbox mode |
-| Wrong/expired creds | Cashfree returns auth error → edge function returns 502 with friendly message; checkout shows "Payment temporarily unavailable, try COD or contact store" |
-| Mixing with SaaS billing | Different table (`orders` vs `subscription_payments`), different order prefix (`ord_` vs `sub_`), different env keys (merchant's vs platform's) — zero possibility of cross-contamination |
-
----
-
-## Out of scope (intentionally)
-
-- Cashfree webhook for store orders — focus-recheck + verify-on-success covers 99% of cases; webhook can be added later if needed.
-- Migrating existing Razorpay merchants — they keep their setup untouched.
-- Yearly/coupons/refunds UI — separate feature.
-
----
-
-## Files touched
-
-- DB migration: add 3 columns + new RPC + update RPC
-- New: `supabase/functions/store-cashfree-create-order/index.ts`
-- New: `supabase/functions/store-cashfree-verify/index.ts`
-- New: `supabase/functions/store-cashfree-status/index.ts`
-- Edited: `src/pages/StorePayments.tsx` (radio selector + Cashfree fields)
-- Edited: `src/pages/CheckoutPage.tsx` (Cashfree branch in pay handler + status auto-recheck)
+Reply with the table name (or "create it") and I'll start with the migration.
