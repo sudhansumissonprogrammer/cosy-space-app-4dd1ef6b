@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Upload, X, Crown, LogOut } from "lucide-react";
+import { Loader2, Upload, X, Crown, LogOut, Sparkles, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
@@ -28,6 +28,55 @@ export default function UserSettings() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [partnerCode, setPartnerCode] = useState("");
+
+  // Existing referral attribution (if any)
+  const { data: referral, refetch: refetchReferral } = useQuery({
+    queryKey: ["my-referral", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("partner_referrals")
+        .select("id, partner_id, status, created_at, partners:partner_id(name, partner_code)")
+        .eq("referred_user_id", user!.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+
+  const applyPartnerCode = useMutation({
+    mutationFn: async () => {
+      const cleaned = partnerCode.trim().toUpperCase();
+      if (!/^SBP\d{3,8}$/.test(cleaned)) {
+        throw new Error("Code should look like SBP1234");
+      }
+      const { data, error } = await supabase.functions.invoke("attach-referral", {
+        body: { ref: cleaned },
+      });
+      if (error) throw new Error(error.message || "Could not apply code");
+      if (!data?.ok) {
+        const reasons: Record<string, string> = {
+          partner_inactive: "This partner code is not active.",
+          self_referral: "You can't use your own partner code.",
+          already_attached: "You're already linked to another partner.",
+          invalid_code: "Invalid partner code.",
+        };
+        throw new Error(reasons[data?.reason] || "Could not apply code");
+      }
+      return data;
+    },
+    onSuccess: (data: any) => {
+      const extra = data?.backfilled_stores
+        ? ` ${data.backfilled_stores} of your stores have been linked.`
+        : "";
+      toast.success(`Partner code applied!${extra}`);
+      setPartnerCode("");
+      refetchReferral();
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
