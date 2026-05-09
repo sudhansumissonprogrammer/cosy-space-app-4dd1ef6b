@@ -1028,30 +1028,17 @@ export default function ProductDetail() {
                       </div>
                     </div>
                   </div>
-                  {/* Mobile thumbnail + price */}
-                  <div className="flex sm:hidden items-center gap-2 shrink-0 min-w-0">
-                    {product.image_url && (
-                      <img
-                        src={optimizeImageUrl(product.image_url, 40)}
-                        alt=""
-                        className="h-10 w-10 rounded-lg object-cover border border-border shrink-0"
-                      />
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-sm font-extrabold text-foreground leading-tight whitespace-nowrap">
-                        {formatPrice((variantPrice * quantity), currency)}
-                      </p>
-                      {hasDiscount && (
-                        <p className="text-[10px] text-emerald-600 font-semibold leading-tight">{discountPct}% OFF</p>
-                      )}
-                    </div>
+                  {/* Mobile price */}
+                  <div className="flex sm:hidden items-center shrink-0 min-w-0">
+                    <p className="text-sm font-extrabold text-foreground leading-tight whitespace-nowrap">
+                      {formatPrice((variantPrice * quantity), currency)}
+                    </p>
                   </div>
                   <div className="flex flex-1 sm:flex-none gap-2">
                     <button
-                      className={`btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs uppercase tracking-wider transition-all ${
+                      className={`btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-all ${
                         justAdded ? "bg-emerald-600 text-white" : "btn-gold"
                       }`}
-                      style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 500, letterSpacing: "0.06em" }}
                       onClick={handleAddToCart}
                     >
                       {justAdded ? (
@@ -1067,8 +1054,8 @@ export default function ProductDetail() {
                       )}
                     </button>
                     <button
-                      className="btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs uppercase tracking-wider transition-all"
-                      style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 500, letterSpacing: "0.06em", backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
+                      className="btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-all"
+                      style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
                       onClick={handleBuyNow}
                     >
                       <ShoppingBag className="h-3.5 w-3.5" />
