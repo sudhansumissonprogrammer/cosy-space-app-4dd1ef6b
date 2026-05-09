@@ -58,13 +58,13 @@ export default defineConfig(({ mode }) => ({
     // Build-only, zero dev impact. Threshold skips tiny files where compression
     // overhead isn't worth it.
     compression({
-      algorithm: "brotliCompress",
+      algorithms: ["brotliCompress"],
       exclude: [/\.(br)$/, /\.(gz)$/],
       threshold: 1024,
       deleteOriginalAssets: false,
     }),
     compression({
-      algorithm: "gzip",
+      algorithms: ["gzip"],
       exclude: [/\.(br)$/, /\.(gz)$/],
       threshold: 1024,
       deleteOriginalAssets: false,
