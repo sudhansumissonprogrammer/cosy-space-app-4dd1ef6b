@@ -3,6 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- ─── Analytics sendBeacon shim ───
+         Lovable's flock.js posts to /~api/analytics with a blocking fetch that
+         steals a TCP connection slot from real critical resources (~1.1s seen
+         on 5G mobile). We intercept that exact path BEFORE flock.js loads and
+         redirect it to navigator.sendBeacon, which is fire-and-forget and uses
+         the browser's background queue (zero impact on critical path). -->
+    <script>
+      (function(){
+        if (typeof window === 'undefined') return;
+        var origFetch = window.fetch;
+        if (!origFetch) return;
+        var BEACON = navigator && navigator.sendBeacon ? navigator.sendBeacon.bind(navigator) : null;
+        window.fetch = function(input, init){
+          try {
+            var url = typeof input === 'string' ? input : (input && input.url) || '';
+            var method = (init && init.method) || (input && input.method) || 'GET';
+            if (BEACON && url.indexOf('/~api/analytics') !== -1 && String(method).toUpperCase() === 'POST') {
+              var body = init && init.body;
+              var blob;
+              try {
+                if (body instanceof Blob) blob = body;
+                else if (typeof body === 'string') blob = new Blob([body], { type: 'application/json' });
+                else if (body) blob = new Blob([JSON.stringify(body)], { type: 'application/json' });
+              } catch (e) {}
+              var ok = false;
+              try { ok = BEACON(url, blob || ''); } catch (e) {}
+              if (ok) {
+                return Promise.resolve(new Response(null, { status: 204, statusText: 'No Content' }));
+              }
+            }
+          } catch (e) {}
+          return origFetch.apply(this, arguments);
+        };
+      })();
+    </script>
     <!-- Self-hosted fonts — no external network calls to Google -->
     <style>
       @font-face{font-family:'Alegreya SC';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/alegreya-sc-400.woff2') format('woff2')}
