@@ -77,6 +77,19 @@ export default function AuthRoutes() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/install" element={<InstallApp />} />
 
+        {/* Partner Program */}
+        <Route path="/partners" element={<PartnerLanding />} />
+        <Route path="/partners/signup" element={<PartnerSignup />} />
+        <Route path="/partners/login" element={<PartnerLogin />} />
+        <Route
+          path="/partners/dashboard"
+          element={
+            <ProtectedRoute>
+              <PartnerDashboard />
+            </ProtectedRoute>
+          }
+        />
+
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route
           path="/admin"
@@ -96,6 +109,7 @@ export default function AuthRoutes() {
           <Route path="error-logs" element={<AdminErrorLogs />} />
           <Route path="settings" element={<AdminSettings />} />
           <Route path="menu-config" element={<AdminMenuConfig />} />
+          <Route path="partners" element={<AdminPartners />} />
         </Route>
 
         <Route

@@ -21,6 +21,14 @@ if (typeof window !== "undefined" && typeof (window as any).cancelIdleCallback !
 
 installChunkLoadRecovery();
 
+// Capture ?ref=SBP… anywhere in the site (landing, signup, storefront subdomain).
+// Runs before App mounts so the cookie is set even on the landing fast-path.
+if (typeof window !== "undefined" && window.location.search.includes("ref=")) {
+  import("@/lib/referralTracking")
+    .then(({ captureReferralFromURL }) => captureReferralFromURL())
+    .catch(() => {});
+}
+
 /**
  * 🚀 LANDING-ONLY FAST PATH
  * If the initial URL is the marketing landing page (`/` or `/theme`) on the
