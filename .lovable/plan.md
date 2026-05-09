@@ -1,103 +1,72 @@
-## Phase 3 — Referral Partner Program
+## Goal
 
-Phase 1 (signup/referrals) and Phase 2 (wallet/withdrawals/recurring) are live. Phase 3 layers automation, analytics, scale and enterprise admin tooling on top — no fraud/IP/abuse systems per your instruction.
+Refresh the Partner area UI to feel as polished and modern as the Store Dashboard: bold hero numbers, animated counts, premium gradient cards, horizontally-scrollable stat strips on mobile, tighter spacing, and a sticky bottom tab bar on phones.
 
-### 1. Advanced commission rules (engine)
+Scope: visual/UI only — no business logic, data, or backend changes.
 
-New table `partner_commission_overrides`:
-- `partner_id`, `plan_id?` (nullable = applies to all plans), `percentage`, `starts_at?`, `ends_at?`, `note?`, `is_active`
-- Supports plan-wise %, partner-specific %, time-bound campaigns, enterprise deals.
+## Pages to redesign
 
-Resolution order inside `create_partner_commission_on_paid` trigger:
-1. Active override matching `partner_id + plan_id` and current date in window
-2. Active override matching `partner_id + plan_id IS NULL`
-3. `partners.commission_percentage`
-4. Default 40
+1. **`src/layouts/PartnerLayout.tsx`** — header + tab nav
+2. **`src/pages/partner/PartnerOverview.tsx`** — overview/home tab
+3. **`src/pages/partner/PartnerWallet.tsx`** — wallet tab
+4. **`src/pages/partner/PartnerWithdrawals.tsx`** — withdrawals tab
+5. **`src/pages/partner/PartnerLanding.tsx`** — public landing (premium polish pass)
+6. **`src/pages/partner/PartnerLogin.tsx` & `PartnerSignup.tsx`** — light polish only (cards, spacing, gradient header)
 
-Admin UI on `/admin/partners/:id` — overrides tab to add/expire rules.
+## Design direction (matches Dashboard.tsx)
 
-### 2. Audit log system
+- **Hero block at the top** of each tab — gradient `from-primary to-primary/70`, big tabular-nums number, secondary CTA on the right.
+- **Animated stat count-up** via existing `useCountUp` hook (already used in Dashboard).
+- **Stat strip**: horizontal scroll on mobile (`flex gap-2.5 overflow-x-auto scrollbar-hide`), grid on `md+`, compact icon+label+value cards (mirrors Dashboard `statCards`).
+- **Premium cards**: `rounded-2xl`, soft border, no harsh shadow, subtle `bg-accent/20` strips for inline info (matches store URL strip).
+- **Section headings**: `text-sm font-bold tracking-tight` with optional small action button on the right (View all / Refresh).
+- **Empty states**: centered icon-in-circle + helper text + small CTA button (same pattern as Dashboard's empty charts).
+- **Status pills**: keep existing tone map but switch to `rounded-full px-2.5 py-0.5 text-[11px] font-semibold` and use semantic tokens (no raw `amber-100` etc.; map to `bg-warning/15 text-warning` style via Tailwind arbitrary or keep current colors but unify).
 
-New table `partner_audit_logs`:
-- `id, actor_user_id, actor_role, action, target_type, target_id, old_value jsonb, new_value jsonb, note, created_at`
-- Helper `log_partner_audit(action, target_type, target_id, old, new, note)` SECURITY DEFINER.
-- Wired into: withdrawal approve/reject/mark_paid, commission adjust, partner status change, override create/edit, wallet manual adjust.
-- Admin viewer at `/admin/partners/audit` with filters (actor, action, date).
+## Mobile-friendly improvements
 
-### 3. Advanced admin controls
+- **Sticky bottom tab bar** on phones (replaces top nav scroll-row on small screens). Top nav stays for `md+`. Pattern: fixed bottom strip with 3 icon+label items, active state uses `bg-primary/10 text-primary`. Hidden ≥ md.
+- **Larger touch targets** (44px min) on all action buttons.
+- **Safe-area padding** (`pb-[env(safe-area-inset-bottom)]`) on bottom bar.
+- **Pull-to-refresh hook** on Overview/Wallet using existing `usePullToRefresh` (same as store dashboard).
 
-New edge function `admin-partner-controls` (admin-only) supports:
-- `adjust_commission` — change `commission_amount`/status with audit trail + ledger entry
-- `wallet_adjustment` — credit/debit `approved`/`pending` (kind=`adjustment`)
-- `pause_payouts` / `resume_payouts` — `partners.payouts_paused boolean`
-- `set_partner_status` — active / suspended / banned
+## Per-page changes
 
-UI: actions on `AdminPartners` detail drawer.
+### PartnerLayout
+- Header: keep partner code/name on the left, add subtle avatar circle with initial. Notifications bell + sign-out on the right.
+- Replace the top scroll-row tab nav with: full nav on `md+` only, sticky bottom tab bar on mobile.
+- Add `<main className="pb-20 md:pb-6">` so content doesn't hide behind bottom bar.
 
-### 4. Realtime + advanced analytics
+### PartnerOverview
+- New **gradient hero** showing "Total earned" big + small "this month" delta beneath, copy/share CTAs as outline-on-gradient buttons.
+- Stat strip: Clicks · Signups · Paid · Conversion% (compute % client-side from signups/clicks). Animated count-up.
+- Referral link card → premium card: QR larger on `md+`, three quick share chips (WhatsApp, Copy link, Copy code) with icons.
+- Recent referrals + commission history → split cards with section headers and "Empty state" illustrations.
 
-- Enable Realtime on `partner_referral_clicks`, `partner_referrals`, `partner_commissions`, `partner_wallet_ledger`.
-- Extend `partner-analytics`:
-  - clicks/signups/paid for 7d / 30d / 90d
-  - MRR + ARR estimates, churn rate, ARPU
-  - Daily commission series, plan-mix breakdown
-- New global `admin-partners-analytics` (totals, top 10 partners, payout liability).
-- Partner Overview + Analytics pages get realtime "live counter" cards via Supabase channels.
+### PartnerWallet
+- Hero withdrawable card stays, but enlarged with mini-progress bar showing `pending → approved` flow.
+- 4 tile strip → horizontal scroll on mobile (matches Dashboard pattern).
+- Wallet activity → unify row layout with subtle hover, credit/debit chip, date in muted micro-text.
 
-### 5. Exports & reports
+### PartnerWithdrawals
+- Form card → cleaner: amount with quick-fill chips (`25%`, `50%`, `Max`), method tabs styled to match `SettingsTabsNav` look.
+- History rows → card list with status pill at top-right, method icon (UPI/Bank), and collapsible admin notes.
 
-New edge function `partner-exports` returns CSV streams (admin or scoped partner):
-- `commissions` — filters: partner, plan, date range, status
-- `payouts` — filters: status, date, partner
-- `partner-performance` — clicks, signups, paid, total earnings by partner
-- `subscriptions` — referred stores with plan, MRR, billing_status
+### PartnerLanding (premium polish)
+- Add subtle hero gradient backdrop and soft "noise" overlay; bigger headline weight; sticky CTA on mobile.
+- Convert benefits cards to use the same icon-tile style as `FeaturesGrid` on the marketing site for brand consistency.
 
-Admin UI on `/admin/partners/exports` + buttons on existing pages.
+### PartnerLogin / PartnerSignup
+- Wrap in a centered premium card on a soft gradient background; keep form logic untouched.
 
-### 6. Scalability & performance
+## Technical notes
 
-- Indexes:
-  - `partner_commissions(partner_id, status, created_at desc)`
-  - `partner_commissions(payment_id)` (already unique-partial — keep)
-  - `partner_wallet_ledger(partner_id, created_at desc)`
-  - `partner_withdrawals(partner_id, status, created_at desc)`
-  - `partner_referrals(partner_id, status)`, `partner_referrals(store_id)`
-  - `partner_referral_clicks(partner_id, created_at desc)`
-  - `partner_audit_logs(target_type, target_id, created_at desc)`
-- React Query: `staleTime: 60_000` on partner dashboard reads, `keepPreviousData` on paginated lists.
-- `partner-wallet`/`partner-analytics` add `Cache-Control: private, max-age=15` for safe-to-cache shapes.
-- Pagination on ledger / withdrawals / commissions admin tables (cursor-based via `created_at,id`).
+- All colors via semantic HSL tokens (`primary`, `muted`, `accent`, `border`, `foreground`). No raw hex.
+- Reuse: `useCountUp`, `usePullToRefresh`, `Card`, `Button`, `Tabs`, existing `NotificationsBell`.
+- New small component: `src/components/partner/PartnerBottomNav.tsx` (mobile bottom tab bar).
+- New small component: `src/components/partner/StatTile.tsx` (shared tile used across overview/wallet).
+- No DB/edge function changes. No new dependencies.
 
-### 7. Security hardening
+## Out of scope
 
-- All admin edge functions: verify JWT + `has_role(_, 'admin')` server-side (already partially done — finish missing ones).
-- `partner-approve-commissions` cron secret already added in last loop — keep.
-- Rate-limit `partner-request-withdrawal` (1 request / 10s / partner) using a small `partner_rate_limits` table.
-- Webhook signature verification on `cashfree-webhook` — already present, add idempotency log table `webhook_events(provider, event_id PK, processed_at)` to make retries safe.
-- `partner_audit_logs` doubles as security log for sensitive admin actions.
-
-### 8. UI polish (Shopify Partners / Stripe / Rewardful feel)
-
-- Replace partner overview tiles with gradient "card-stat" components, sparklines (recharts mini).
-- Add skeleton loaders + optimistic updates on withdrawal request.
-- Dark, dense data tables on admin (sticky header, zebra rows, column-resize off, but compact density).
-- Empty states with illustrations + helpful CTAs.
-- `PartnerLayout` topbar gets notifications bell (already there) + partner code copy chip + "Refer & Earn" gradient CTA.
-
-### Out of scope (per your instructions)
-
-- Fraud detection / IP blocks / abuse engine
-- Leaderboards / gamification / badges
-- Coupon attribution
-- Email notifications (in-app only — Phase 2 decision stands)
-
----
-
-### Execution order (single migration + code rounds)
-
-1. Migration: new tables (`partner_commission_overrides`, `partner_audit_logs`, `webhook_events`, `partner_rate_limits`), new columns (`partners.payouts_paused`), helper functions (`resolve_partner_commission_pct`, `log_partner_audit`), updated `create_partner_commission_on_paid`, indexes, realtime publication.
-2. Edge functions: `admin-partner-controls`, `partner-exports`, `admin-partners-analytics`, expand `partner-analytics`, harden `partner-request-withdrawal`.
-3. Frontend: admin overrides UI, admin audit log viewer, admin exports page, pause-payouts/wallet-adjust drawer actions, partner overview realtime sparklines + polish.
-4. QA: deploy edge fns, smoke test each via curl, verify realtime flows, run linter.
-
-This is the scope I'll build in this loop — confirm and I'll start.
+- Data model, edge functions, route changes, auth flow, copy rewrites beyond what fits new layout.
