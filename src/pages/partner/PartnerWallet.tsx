@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Loader2, Wallet, Clock, CheckCircle2, TrendingDown, ArrowRight } from "lucide-react";
 
 interface WalletData {
@@ -22,69 +20,80 @@ export default function PartnerWallet() {
   }, []);
 
   if (loading || !data) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-foreground" /></div>;
   }
 
   const { wallet, ledger, settings } = data;
   const fmt = (n: number) => `₹${Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
   const tiles = [
-    { label: "Pending", value: wallet.pending, sub: `Hold period: ${settings.hold_days} days`, icon: Clock, tone: "text-amber-600" },
-    { label: "Approved", value: wallet.approved, sub: "Available to withdraw", icon: CheckCircle2, tone: "text-emerald-600" },
-    { label: "Locked", value: wallet.locked, sub: "In an open withdrawal", icon: TrendingDown, tone: "text-blue-600" },
-    { label: "Paid out", value: wallet.paid, sub: "Total received", icon: Wallet, tone: "text-foreground" },
+    { label: "Pending", value: wallet.pending, sub: `Hold period: ${settings.hold_days} days`, icon: Clock, color: "bg-bauhaus-yellow", text: "text-foreground" },
+    { label: "Approved", value: wallet.approved, sub: "Available to withdraw", icon: CheckCircle2, color: "bg-bauhaus-blue", text: "text-primary-foreground" },
+    { label: "Locked", value: wallet.locked, sub: "In an open withdrawal", icon: TrendingDown, color: "bg-bauhaus-white", text: "text-foreground" },
+    { label: "Paid out", value: wallet.paid, sub: "Total received", icon: Wallet, color: "bg-bauhaus-canvas", text: "text-foreground" },
   ];
 
   return (
     <>
-      <Card className="overflow-hidden border-0 bg-gradient-to-br from-primary to-primary/70 p-6 text-primary-foreground">
-        <div className="flex items-start justify-between gap-4">
+      {/* Hero balance card */}
+      <div className="bg-bauhaus-red text-primary-foreground border-3 border-foreground shadow-bauhaus-lg p-6 sm:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
           <div>
-            <p className="text-xs uppercase tracking-wider opacity-80">Withdrawable balance</p>
-            <p className="mt-1 text-4xl font-bold tabular-nums">{fmt(wallet.withdrawable)}</p>
-            <p className="mt-1 text-xs opacity-80">Minimum withdrawal: {fmt(settings.minimum_withdrawal)}</p>
-          </div>
-          <Button asChild variant="secondary" size="sm">
-            <Link to="/partners/dashboard/withdrawals">Withdraw <ArrowRight className="ml-1 h-3 w-3" /></Link>
-          </Button>
-        </div>
-      </Card>
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {tiles.map((t) => (
-          <Card key={t.label} className="p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">{t.label}</p>
-              <t.icon className={`h-4 w-4 ${t.tone}`} />
+            <div className="inline-block border-2 border-primary-foreground/30 bg-bauhaus-yellow text-foreground px-2 py-0.5 font-bold uppercase tracking-widest text-[10px] mb-3">
+              Withdrawable
             </div>
-            <p className="mt-2 text-2xl font-bold tabular-nums">{fmt(t.value)}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">{t.sub}</p>
-          </Card>
+            <p className="font-black text-5xl sm:text-6xl tabular-nums tracking-tight">{fmt(wallet.withdrawable)}</p>
+            <p className="mt-2 font-medium text-xs opacity-90">Minimum withdrawal: <span className="font-bold">{fmt(settings.minimum_withdrawal)}</span></p>
+          </div>
+          <Link
+            to="/partners/dashboard/withdrawals"
+            className="inline-flex items-center justify-center gap-2 bg-bauhaus-white text-foreground font-bold uppercase tracking-wider text-xs px-6 py-3 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-yellow active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+          >
+            Withdraw <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+
+      {/* Buckets */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {tiles.map((t) => (
+          <div key={t.label} className={`${t.color} border-3 border-foreground shadow-bauhaus p-5 ${t.text}`}>
+            <div className="flex items-center justify-between">
+              <p className={`font-bold uppercase tracking-widest text-[10px] ${t.text === "text-primary-foreground" ? "opacity-80" : "text-muted-foreground"}`}>{t.label}</p>
+              <t.icon className="h-4 w-4" />
+            </div>
+            <p className="mt-3 font-black text-2xl sm:text-3xl tabular-nums">{fmt(t.value)}</p>
+            <p className={`mt-1 font-medium text-[11px] ${t.text === "text-primary-foreground" ? "opacity-80" : "text-muted-foreground"}`}>{t.sub}</p>
+          </div>
         ))}
       </div>
 
-      <Card className="p-5">
-        <h3 className="text-sm font-semibold text-foreground">Wallet activity</h3>
-        <div className="mt-3 divide-y divide-border/50">
-          {ledger.length === 0 ? (
-            <p className="py-6 text-center text-xs text-muted-foreground">No activity yet.</p>
-          ) : ledger.map((l: any) => (
-            <div key={l.id} className="flex items-center justify-between py-3">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-foreground capitalize">
-                  {String(l.kind).replace(/_/g, " ")}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {l.notes || "—"} · {new Date(l.created_at).toLocaleString()}
+      {/* Ledger */}
+      <div className="bg-bauhaus-white border-3 border-foreground shadow-bauhaus p-5">
+        <h3 className="font-black uppercase tracking-wider text-sm text-foreground mb-3">Wallet Activity</h3>
+
+        {ledger.length === 0 ? (
+          <p className="py-6 text-center font-medium text-xs text-muted-foreground">No activity yet.</p>
+        ) : (
+          <div className="divide-y-2 divide-foreground/10">
+            {ledger.map((l: any) => (
+              <div key={l.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold uppercase tracking-wider text-xs text-foreground">
+                    {String(l.kind).replace(/_/g, " ")}
+                  </p>
+                  <p className="font-medium text-[11px] text-muted-foreground truncate">
+                    {l.notes || "—"} · {new Date(l.created_at).toLocaleString("en-IN")}
+                  </p>
+                </div>
+                <p className={`font-black text-sm tabular-nums px-2 py-0.5 border-2 border-foreground ${l.direction === "credit" ? "bg-bauhaus-yellow" : "bg-bauhaus-red text-primary-foreground"}`}>
+                  {l.direction === "credit" ? "+" : "−"}{fmt(Number(l.amount))}
                 </p>
               </div>
-              <p className={`text-sm font-semibold tabular-nums ${l.direction === "credit" ? "text-emerald-600" : "text-rose-600"}`}>
-                {l.direction === "credit" ? "+" : "−"}{fmt(Number(l.amount))}
-              </p>
-            </div>
-          ))}
-        </div>
-      </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </>
   );
 }
