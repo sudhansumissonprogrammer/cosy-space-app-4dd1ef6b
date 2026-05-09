@@ -560,9 +560,9 @@ export default function ProductDetail() {
   const v18Font: React.CSSProperties = isV18 ? { fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" } : {};
 
   return (
-    <div className="mx-auto max-w-6xl lg:max-w-7xl px-4 py-3 sm:py-8" style={isV18 ? { backgroundColor: "var(--storefront-bg, #0a0a0a)", color: "var(--storefront-text, #ffffff)" } : {}}>
+    <div className="mx-auto max-w-6xl lg:max-w-7xl px-0 sm:px-4 pt-0 sm:pt-8 pb-3 sm:pb-8" style={isV18 ? { backgroundColor: "var(--storefront-bg, #0a0a0a)", color: "var(--storefront-text, #ffffff)" } : {}}>
       {/* Breadcrumb */}
-      <nav className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground" aria-label="Breadcrumb" style={isV18 ? { display: "none" } : {}}>
+      <nav className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground px-4 sm:px-0" aria-label="Breadcrumb" style={isV18 ? { display: "none" } : {}}>
         <Link to={storefrontPath(store.slug)} className="hover:text-foreground transition-colors">Home</Link>
         <span>/</span>
         <Link to={storefrontPath(store.slug, "shop")} className="hover:text-foreground transition-colors">Shop</Link>
@@ -592,7 +592,7 @@ export default function ProductDetail() {
         />
 
         {/* Product Info */}
-        <div className="flex flex-col gap-0 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:scrollbar-hide">
+        <div className="flex flex-col gap-0 px-4 sm:px-0 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:scrollbar-hide">
 
           {/* Product Title — right under image */}
           <h1 className="text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
@@ -960,23 +960,25 @@ export default function ProductDetail() {
       </div>
 
 
-      {/* Complete the Look */}
-      <Suspense fallback={null}>
-        <RelatedProducts
-          storeId={store.id}
-          storeSlug={store.slug}
-          currentProductId={product.id}
-          currentCategory={product.category}
-          store={store}
-          addToCart={addToCart}
-          currency={currency}
-        />
-      </Suspense>
+      <div className="px-4 sm:px-0">
+        {/* Complete the Look */}
+        <Suspense fallback={null}>
+          <RelatedProducts
+            storeId={store.id}
+            storeSlug={store.slug}
+            currentProductId={product.id}
+            currentCategory={product.category}
+            store={store}
+            addToCart={addToCart}
+            currency={currency}
+          />
+        </Suspense>
 
-      {/* Customer Reviews */}
-      <Suspense fallback={null}>
-        <CustomerReviews reviews={fakeReviews} realReviews={realReviews || []} rating={stats.rating} reviewCount={stats.reviewCount} productId={product.id} storeId={store.id} onReviewSubmitted={refetchReviews} />
-      </Suspense>
+        {/* Customer Reviews */}
+        <Suspense fallback={null}>
+          <CustomerReviews reviews={fakeReviews} realReviews={realReviews || []} rating={stats.rating} reviewCount={stats.reviewCount} productId={product.id} storeId={store.id} onReviewSubmitted={refetchReviews} />
+        </Suspense>
+      </div>
 
       {/* Portal: render fixed elements outside PageTransition animation container */}
       {createPortal(
