@@ -45,8 +45,14 @@ export default function LazyMount({
     return () => obs.disconnect();
   }, [rootMargin, visible]);
 
+  // Keep `minHeight` applied even after the section mounts. It acts as a
+  // *floor* — real content taller than the reservation renders unchanged,
+  // but if the rendered section ends up shorter than what we reserved, the
+  // page height does NOT shrink. This prevents the browser from snapping
+  // scroll position upward (the "auto-scrolling to top" bug) every time a
+  // below-fold section becomes visible while the user is reading.
   return (
-    <div ref={ref} style={visible ? undefined : { minHeight }}>
+    <div ref={ref} style={{ minHeight }}>
       {visible ? children : fallback}
     </div>
   );
