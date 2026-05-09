@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, ZoomIn } from "lucide-react";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 
@@ -35,9 +36,9 @@ export default function ZoomableGallery({ images, initialIndex = 0, alt, open, o
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col animate-fade-in" role="dialog" aria-modal="true">
-      <div className="flex items-center justify-between px-4 h-12 text-white">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-black flex flex-col animate-fade-in" role="dialog" aria-modal="true">
+      <div className="flex items-center justify-between px-4 h-12 text-white bg-black">
         <div className="text-[12px] font-semibold opacity-80">{idx + 1} / {images.length}</div>
         <button onClick={onClose} className="h-9 w-9 rounded-full flex items-center justify-center bg-white/10 active:bg-white/20" aria-label="Close">
           <X className="h-5 w-5" />
@@ -45,7 +46,7 @@ export default function ZoomableGallery({ images, initialIndex = 0, alt, open, o
       </div>
       <div
         ref={containerRef}
-        className="flex-1 overflow-auto flex items-center justify-center touch-pinch-zoom"
+        className="flex-1 overflow-auto flex items-center justify-center bg-black touch-pinch-zoom"
         onDoubleClick={() => setZoom((z) => (z === 1 ? 2.5 : 1))}
       >
         <img
@@ -71,8 +72,9 @@ export default function ZoomableGallery({ images, initialIndex = 0, alt, open, o
           <style>{`.no-scrollbar::-webkit-scrollbar{display:none}.no-scrollbar{scrollbar-width:none}`}</style>
         </div>
       )}
-      <div className="text-center text-white/60 text-[11px] pb-2">Double-tap to zoom · ESC to close</div>
-    </div>
+      <div className="text-center text-white/60 text-[11px] pb-2 bg-black">Double-tap to zoom · ESC to close</div>
+    </div>,
+    document.body
   );
 }
 
