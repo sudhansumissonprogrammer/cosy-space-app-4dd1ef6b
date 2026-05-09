@@ -787,6 +787,54 @@ export type Database = {
           },
         ]
       }
+      partner_clawbacks: {
+        Row: {
+          admin_note: string | null
+          amount: number
+          commission_id: string
+          created_at: string
+          id: string
+          partner_id: string
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          admin_note?: string | null
+          amount: number
+          commission_id: string
+          created_at?: string
+          id?: string
+          partner_id: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          admin_note?: string | null
+          amount?: number
+          commission_id?: string
+          created_at?: string
+          id?: string
+          partner_id?: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_clawbacks_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: false
+            referencedRelation: "partner_commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_clawbacks_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_commissions: {
         Row: {
           amount_paid: number
