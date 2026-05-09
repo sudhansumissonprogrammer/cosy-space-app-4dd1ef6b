@@ -15,7 +15,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import {
   processImageMultiSize,
-  processImageToAvif,
   type MultiSizeResult,
   type VariantWidth,
   getCompressionMessage,
