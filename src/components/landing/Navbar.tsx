@@ -29,6 +29,7 @@ const Navbar = () => {
           <a href="/#faq" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">FAQ</a>
           <a
             href="/login"
+            {...onAuthCtaIntent}
             className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200"
           >
             Store Owner Login
@@ -38,9 +39,8 @@ const Navbar = () => {
         <div className="hidden md:flex items-center gap-4">
           <a
             href="/signup"
+            {...onAuthCtaIntent}
             className="bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-xs px-4 py-2 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200"
-            
-            
           >
             Start Free
           </a>
