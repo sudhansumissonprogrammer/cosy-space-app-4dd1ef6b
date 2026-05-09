@@ -50,6 +50,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
+    beastiesPlugin(),
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: null,
