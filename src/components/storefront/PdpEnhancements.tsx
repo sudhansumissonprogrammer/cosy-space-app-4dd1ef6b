@@ -177,13 +177,9 @@ export function StockUrgencyStrip({ stock }: { stock: number | null | undefined 
 /** Sticky ADD bar mini-thumb + name (used on V19/V20 PDP). */
 export function StickyAddInfo({ thumb, name }: { thumb?: string; name: string }) {
   return (
-    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-      <div className="h-10 w-10 rounded-lg overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
-        {thumb && <img src={thumb} alt="" className="h-full w-full object-cover" loading="lazy" />}
-      </div>
+    <div className="flex items-center min-w-0 flex-1">
       <div className="min-w-0">
-        <div className="text-[12px] font-bold text-gray-900 truncate leading-tight">{name}</div>
-        <div className="text-[10px] text-gray-500 leading-tight mt-0.5">In your cart soon</div>
+        <div className="text-[13px] font-bold text-gray-900 truncate leading-tight">{name}</div>
       </div>
     </div>
   );
