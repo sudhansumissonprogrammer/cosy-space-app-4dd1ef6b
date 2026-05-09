@@ -1029,10 +1029,18 @@ export default function ProductDetail() {
                     </div>
                   </div>
                   {/* Mobile price */}
-                  <div className="flex sm:hidden items-center shrink-0 min-w-0">
-                    <p className="text-sm font-extrabold text-foreground leading-tight whitespace-nowrap">
+                  <div className="flex sm:hidden flex-col items-start shrink-0 min-w-0 leading-tight">
+                    <p className="text-sm font-extrabold text-foreground whitespace-nowrap">
                       {formatPrice((variantPrice * quantity), currency)}
                     </p>
+                    {hasDiscount && discountPct > 0 && (
+                      <div className="flex items-center gap-1 -mt-0.5">
+                        <span className="text-[10px] text-muted-foreground line-through whitespace-nowrap">
+                          {formatPrice((Number(product.price) * quantity), currency)}
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-600 whitespace-nowrap">{discountPct}% OFF</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-1 sm:flex-none gap-2">
                     <button
