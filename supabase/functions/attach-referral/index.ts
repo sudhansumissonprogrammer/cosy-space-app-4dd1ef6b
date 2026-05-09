@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const ref = String(body?.ref ?? "").trim().toUpperCase();
-    if (!/^SBP\d{3,8}$/.test(ref)) {
+    if (!/^SBP\d{2,}$/.test(ref)) {
       return new Response(JSON.stringify({ error: "invalid_code" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
