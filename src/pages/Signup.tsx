@@ -114,6 +114,7 @@ export default function Signup() {
       if (error) {
         if (isFetchFailure(error.message)) {
           await signUpWithProxy(normalizedEmail, password, normalizedFullName);
+          attachReferralAfterSignup().catch(() => {});
           toast.success("Account created! Signing you in...");
           navigate("/dashboard");
           return;
