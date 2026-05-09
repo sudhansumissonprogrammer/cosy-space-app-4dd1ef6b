@@ -36,9 +36,8 @@ export async function captureReferralFromURL(): Promise<void> {
     const ref = params.get("ref");
     if (!ref) return;
     const cleaned = ref.trim().toUpperCase();
-    if (!/^SBP\d{3,8}$/.test(cleaned)) return;
+    if (!/^SBP\d{2,}$/.test(cleaned)) return;
 
-    const existing = getReferralCode();
     setReferralCookie(cleaned);
 
     // Don't double-track on every navigation — only fire once per code per session
@@ -53,12 +52,19 @@ export async function captureReferralFromURL(): Promise<void> {
         referrer: document.referrer || null,
       },
     }).catch(() => {});
-
-    // Mark unused to silence lints
-    void existing;
   } catch {
     // tracking is best-effort
   }
+}
+
+function clearReferralCookie() {
+  if (typeof document === "undefined") return;
+  let domainPart = "";
+  try {
+    const host = window.location.hostname;
+    if (host.endsWith("shopbanao.in")) domainPart = "; Domain=.shopbanao.in";
+  } catch {}
+  document.cookie = `${COOKIE_NAME}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${domainPart}`;
 }
 
 /** Called after a successful signup to attach the new user to the referring partner. */
@@ -66,10 +72,21 @@ export async function attachReferralAfterSignup(): Promise<void> {
   if (typeof window === "undefined") return;
   const code = getReferralCode();
   if (!code) return;
+  // Only run if we actually have a session — otherwise the edge function
+  // returns 401 and we waste calls (and pollute logs) on every sign-in form
+  // submit / Google redirect.
+  const { data } = await supabase.auth.getSession();
+  if (!data.session) return;
   try {
-    await supabase.functions.invoke("attach-referral", {
+    const { data: res, error } = await supabase.functions.invoke("attach-referral", {
       body: { ref: code },
     });
+    const payload = res as { ok?: boolean; reason?: string } | null;
+    // Clear cookie on a definitive outcome so a second user on the same
+    // browser doesn't inherit the previous user's referral.
+    if (!error && payload && (payload.ok === true || payload.reason === "already_attached" || payload.reason === "self_referral")) {
+      clearReferralCookie();
+    }
   } catch {
     // best-effort
   }

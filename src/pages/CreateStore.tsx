@@ -395,7 +395,7 @@ export default function CreateStore() {
       // Attach partner referral code if user entered one (non-blocking)
       const code = partnerCode.trim().toUpperCase();
       if (code) {
-        if (!/^SBP\d{3,8}$/.test(code)) {
+        if (!/^SBP\d{2,}$/.test(code)) {
           toast.error("Partner code should look like SBP1234 — skipped");
         } else {
           try {
