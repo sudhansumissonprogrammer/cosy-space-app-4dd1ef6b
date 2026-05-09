@@ -26,7 +26,9 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
   const headingFont = themeConfig?.heading_font || "Instrument Sans";
   const bodyFont = themeConfig?.body_font || "Instrument Sans";
   const fontsToLoad = Array.from(new Set([headingFont, bodyFont])).filter(Boolean);
-  const googleFontsUrl = `https://fonts.googleapis.com/css2?${fontsToLoad.map(f => `family=${f.replace(/ /g, '+')}:wght@400;500;600;700`).join('&')}&display=swap`;
+  // Phase 1 fix #6: trim weights to 400;600 so the URL matches the Worker-injected
+  // Google Fonts link exactly. Same URL → browser cache hit → no duplicate download.
+  const googleFontsUrl = `https://fonts.googleapis.com/css2?${fontsToLoad.map(f => `family=${f.replace(/ /g, '+')}:wght@400;600`).join('&')}&display=swap`;
 
   return (
     <>
