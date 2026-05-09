@@ -11,7 +11,7 @@ const liveStores = [
   { img: serdiyaMobile, label: "Serdiya Jewellers", url: "https://serdiyajewellers.shop" },
 ];
 
-const PhoneMockup = ({ img, label, url, className = "" }: { img: string; label: string; url: string; className?: string }) => (
+const PhoneMockup = ({ img, label, url, className = "", priority = false }: { img: string; label: string; url: string; className?: string; priority?: boolean }) => (
   <a
     href={url}
     target="_blank"
@@ -23,7 +23,16 @@ const PhoneMockup = ({ img, label, url, className = "" }: { img: string; label: 
       <div className="bg-foreground rounded-[22px] sm:rounded-[26px] lg:rounded-[28px] p-[3px] sm:p-[3px] shadow-2xl transition-transform duration-500 group-hover:scale-[1.03] group-hover:-translate-y-1">
         <div className="absolute top-[3px] left-1/2 -translate-x-1/2 w-10 sm:w-12 lg:w-14 h-2.5 sm:h-3 bg-foreground rounded-b-lg z-20" />
         <div className="rounded-[19px] sm:rounded-[23px] lg:rounded-[25px] overflow-hidden" style={{ aspectRatio: PHONE_ASPECT }}>
-          <img src={img} alt={`${label} live store`} width="190" height="411" className="w-full h-full object-cover block" loading="eager" decoding="async" fetchPriority="high" />
+          <img
+            src={img}
+            alt={`${label} live store`}
+            width="190"
+            height="411"
+            className="w-full h-full object-cover block"
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            {...(priority ? ({ fetchpriority: "high" } as any) : {})}
+          />
         </div>
       </div>
       {/* Hover overlay */}
