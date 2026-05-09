@@ -14,17 +14,27 @@ export default function PartnerOverview() {
   const [referrals, setReferrals] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
 
+  const refresh = async () => {
+    const { data: statsRes } = await supabase.functions.invoke("partner-stats", { body: {} });
+    if (statsRes?.stats) setStats(statsRes.stats);
+    const [{ data: refs }, { data: comms }] = await Promise.all([
+      supabase.from("partner_referrals").select("id,status,created_at,first_paid_at").eq("partner_id", partner.id).order("created_at", { ascending: false }).limit(10),
+      supabase.from("partner_commissions").select("id,amount_paid,commission_amount,percentage,status,created_at").eq("partner_id", partner.id).order("created_at", { ascending: false }).limit(10),
+    ]);
+    setReferrals(refs || []);
+    setCommissions(comms || []);
+  };
+
   useEffect(() => {
-    (async () => {
-      const { data: statsRes } = await supabase.functions.invoke("partner-stats", { body: {} });
-      if (statsRes?.stats) setStats(statsRes.stats);
-      const [{ data: refs }, { data: comms }] = await Promise.all([
-        supabase.from("partner_referrals").select("id,status,created_at,first_paid_at").eq("partner_id", partner.id).order("created_at", { ascending: false }).limit(10),
-        supabase.from("partner_commissions").select("id,amount_paid,commission_amount,percentage,status,created_at").eq("partner_id", partner.id).order("created_at", { ascending: false }).limit(10),
-      ]);
-      setReferrals(refs || []);
-      setCommissions(comms || []);
-    })();
+    refresh();
+    const channel = supabase
+      .channel(`partner-${partner.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "partner_referral_clicks", filter: `partner_id=eq.${partner.id}` }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "partner_referrals", filter: `partner_id=eq.${partner.id}` }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "partner_commissions", filter: `partner_id=eq.${partner.id}` }, refresh)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partner.id]);
 
   const refLink = buildReferralLink(partner.partner_code);
