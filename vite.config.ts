@@ -53,7 +53,31 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     beastiesPlugin(),
-    VitePWA({
+    // Brotli + gzip precompression of build assets. Cloudflare/most CDNs serve
+    // .br when the client supports it → 15-25% smaller JS/CSS than gzip.
+    // Build-only, zero dev impact. Threshold skips tiny files where compression
+    // overhead isn't worth it.
+    compression({
+      algorithm: "brotliCompress",
+      exclude: [/\.(br)$/, /\.(gz)$/],
+      threshold: 1024,
+      deleteOriginalAssets: false,
+    }),
+    compression({
+      algorithm: "gzip",
+      exclude: [/\.(br)$/, /\.(gz)$/],
+      threshold: 1024,
+      deleteOriginalAssets: false,
+    }),
+    // Bundle visualizer — emits dist/stats.html showing chunk sizes.
+    // Opt-in via ANALYZE=1 env so normal builds aren't slowed down.
+    process.env.ANALYZE === "1" &&
+      visualizer({
+        filename: "dist/stats.html",
+        gzipSize: true,
+        brotliSize: true,
+        template: "treemap",
+      }),
       registerType: "autoUpdate",
       injectRegister: null,
       includeAssets: ["favicon.ico", "pwa-192x192.png", "pwa-512x512.png"],
