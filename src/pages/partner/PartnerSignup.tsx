@@ -84,18 +84,20 @@ export default function PartnerSignup() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-2">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-primary/5 via-background to-background px-4 py-10">
+      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-primary/15 blur-3xl" aria-hidden />
+      <div className="pointer-events-none absolute -right-20 bottom-10 h-64 w-64 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+      <div className="relative w-full max-w-sm">
+        <div className="mb-7 flex flex-col items-center gap-2 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 shadow-lg shadow-primary/30">
             <Sparkles className="h-6 w-6 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-semibold text-foreground">Join the Partner Program</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Join the Partner Program</h1>
           <p className="text-center text-sm text-muted-foreground">
             Earn recurring commission on every store you refer
           </p>
         </div>
-        <Card>
+        <Card className="rounded-2xl border shadow-xl shadow-primary/5">
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4 pt-6">
               <div className="space-y-2">
