@@ -92,18 +92,16 @@ const reviewerNames = [
   "Pooja G.", "Rohit V.", "Swati J.", "Nikhil W.", "Kavita C.",
 ];
 const reviewTexts = [
-  "Absolutely love this product! Quality exceeded my expectations. Will definitely buy again. 🙌",
-  "Great value for money. Arrived well-packed and exactly as described. Highly recommended!",
-  "Perfect fit and premium quality material. My friends keep asking where I got it from! ⭐",
-  "Fast delivery and amazing quality. This is now my go-to store for shopping.",
-  "Superb product! The color and quality are just as shown in the photos. Very happy with my purchase.",
-  "Ordered this for my sister's birthday — she loved it! Great packaging too. 🎁",
-  "Better than expected. The attention to detail is impressive. Five stars from me!",
-  "This is my third order from this store. Never disappointed. Excellent customer service too.",
-  "Wow, the quality is top-notch! Feels very premium. Will be ordering more for sure.",
-  "Received it in just 3 days. Product is exactly as shown. Very satisfied customer here! 😊",
+  "Really happy with my order. Looks nice and the quality feels good for the price. Delivery was on time too. 🙌",
+  "Loved it! Exactly as shown in the pictures. Packaging was neat and it arrived quickly. Will order again.",
+  "Good experience overall. Product feels well made and the finish is clean. Worth the money. ⭐",
+  "Nice quality and fast delivery. Got lots of compliments already. Definitely recommend this store.",
+  "Very satisfied with my purchase. Looks even better in person. Smooth checkout and quick shipping. 😊",
+  "Great product for the price. Just as described and packed properly. Would happily buy from here again.",
+  "Exactly what I was looking for. Quality is solid and it arrived sooner than expected. Five stars!",
+  "Honestly better than I expected. Looks classy and feels durable. Already planning my next order. 🎁",
 ];
-const reviewDaysAgo = [1, 2, 3, 5, 7, 10, 12, 14, 18, 21, 25, 30];
+const reviewDaysAgo = [2, 3, 5, 7, 10, 12, 14, 18, 21, 25];
 
 function getFakeReviews(productId: string) {
   let hash = 0;
@@ -112,25 +110,19 @@ function getFakeReviews(productId: string) {
     hash |= 0;
   }
   const abs = Math.abs(hash);
-  const count = 3 + (abs % 3);
-  const reviews = [];
-  for (let i = 0; i < count; i++) {
-    const idx = (abs + i * 7) % reviewerNames.length;
-    const textIdx = (abs + i * 13) % reviewTexts.length;
-    const daysIdx = (abs + i * 3) % reviewDaysAgo.length;
-    const rating = 4 + ((abs + i) % 2);
-    reviews.push({
-      id: `review-${i}`,
-      name: reviewerNames[idx],
-      rating,
-      text: reviewTexts[textIdx],
-      daysAgo: reviewDaysAgo[daysIdx],
-      verified: true,
-      helpful: 2 + ((abs + i * 5) % 15),
-      avatar: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(reviewerNames[idx])}&backgroundColor=c0aede,d1d4f9,b6e3f4,ffd5dc,ffdfbf`,
-    });
-  }
-  return reviews;
+  const idx = abs % reviewerNames.length;
+  const textIdx = abs % reviewTexts.length;
+  const daysIdx = abs % reviewDaysAgo.length;
+  return [{
+    id: `review-0`,
+    name: reviewerNames[idx],
+    rating: 5,
+    text: reviewTexts[textIdx],
+    daysAgo: reviewDaysAgo[daysIdx],
+    verified: true,
+    helpful: 4 + (abs % 12),
+    avatar: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(reviewerNames[idx])}&backgroundColor=c0aede,d1d4f9,b6e3f4,ffd5dc,ffdfbf`,
+  }];
 }
 
 export default function ProductDetail() {
