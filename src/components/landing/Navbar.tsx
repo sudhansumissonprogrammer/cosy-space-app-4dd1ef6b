@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import logo from "@/assets/shopbanao-logo.webp";
+import { onAuthCtaIntent } from "@/lib/prefetchLandingAuth";
 
 // NOTE: We deliberately do NOT prefetch App.tsx from landing — any
 // `import("@/App")` reference here would make Rollup add modulepreload links
