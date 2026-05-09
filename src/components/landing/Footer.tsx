@@ -13,6 +13,7 @@ const Footer = () => {
   const companyLinks: { label: string; to: string }[] = [
     { label: "About Us", to: "/about-us" },
     { label: "Contact Us", to: "/contact-us" },
+    { label: "Partner Program", to: "/partners" },
   ];
   const legalLinks: { label: string; to: string }[] = [
     { label: "Privacy Policy", to: "/privacy-policy" },

@@ -24,12 +24,11 @@ const Navbar = () => {
           <a href="/#features" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">Features</a>
           <a href="/#pricing" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">Pricing</a>
           <a href="/#sellers" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">For Sellers</a>
+          <a href="/partners" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">Partners</a>
           <a href="/#faq" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">FAQ</a>
           <a
             href="/login"
             className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200"
-            
-            
           >
             Store Owner Login
           </a>
@@ -58,11 +57,12 @@ const Navbar = () => {
           <a href="/#features" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>Features</a>
           <a href="/#pricing" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>Pricing</a>
           <a href="/#sellers" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>For Sellers</a>
+          <a href="/partners" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>Partners</a>
           <a href="/#faq" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>FAQ</a>
           <a
             href="/login"
             className="block font-bold uppercase tracking-wider text-foreground"
-            onClick={() => () => setMobileOpen(false)}
+            onClick={() => setMobileOpen(false)}
           >
             Store Owner Login
           </a>
@@ -70,7 +70,7 @@ const Navbar = () => {
             <a
               href="/signup"
               className="block text-center bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider px-6 py-3 border-2 border-foreground shadow-bauhaus"
-              onClick={() => () => setMobileOpen(false)}
+              onClick={() => setMobileOpen(false)}
             >
               Start Free
             </a>
