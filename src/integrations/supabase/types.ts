@@ -969,30 +969,39 @@ export type Database = {
         Row: {
           created_at: string
           first_paid_at: string | null
+          flagged_reason: string | null
           id: string
           locked: boolean
           partner_id: string
           referred_user_id: string
+          signup_ip: string | null
+          signup_user_agent: string | null
           status: string
           store_id: string | null
         }
         Insert: {
           created_at?: string
           first_paid_at?: string | null
+          flagged_reason?: string | null
           id?: string
           locked?: boolean
           partner_id: string
           referred_user_id: string
+          signup_ip?: string | null
+          signup_user_agent?: string | null
           status?: string
           store_id?: string | null
         }
         Update: {
           created_at?: string
           first_paid_at?: string | null
+          flagged_reason?: string | null
           id?: string
           locked?: boolean
           partner_id?: string
           referred_user_id?: string
+          signup_ip?: string | null
+          signup_user_agent?: string | null
           status?: string
           store_id?: string | null
         }
