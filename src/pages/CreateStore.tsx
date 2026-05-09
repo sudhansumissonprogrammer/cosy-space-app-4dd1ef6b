@@ -126,6 +126,7 @@ export default function CreateStore() {
   // Step 5
   const [instagramUrl, setInstagramUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
+  const [partnerCode, setPartnerCode] = useState("");
 
   const theme = "theme-1";
 
