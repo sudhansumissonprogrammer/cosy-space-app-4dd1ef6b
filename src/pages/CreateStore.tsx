@@ -392,6 +392,26 @@ export default function CreateStore() {
         // Non-critical — store still works, just first visit may be slower
       }
 
+      // Attach partner referral code if user entered one (non-blocking)
+      const code = partnerCode.trim().toUpperCase();
+      if (code) {
+        try {
+          const { data: refData, error: refError } = await supabase.functions.invoke(
+            "attach-referral",
+            { body: { partner_code: code } }
+          );
+          const payload = refData as { error?: string; backfilled_stores?: number } | null;
+          if (refError || payload?.error) {
+            toast.error(payload?.error || refError?.message || "Couldn't apply partner code (you can add it later in Settings)");
+          } else {
+            toast.success("Partner code applied! 🎉");
+          }
+        } catch {
+          toast.error("Couldn't apply partner code (you can add it later in Settings)");
+        }
+      }
+
+
       setCreatingAnimation(false);
       setStoreCreated(true);
       setCreatedSlug(slug.trim());
