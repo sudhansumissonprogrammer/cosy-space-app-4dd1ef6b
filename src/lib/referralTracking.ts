@@ -66,19 +66,27 @@ function clearReferralCookie() {
   } catch {}
   document.cookie = `${COOKIE_NAME}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${domainPart}`;
 }
-    // tracking is best-effort
-  }
-}
 
 /** Called after a successful signup to attach the new user to the referring partner. */
 export async function attachReferralAfterSignup(): Promise<void> {
   if (typeof window === "undefined") return;
   const code = getReferralCode();
   if (!code) return;
+  // Only run if we actually have a session — otherwise the edge function
+  // returns 401 and we waste calls (and pollute logs) on every sign-in form
+  // submit / Google redirect.
+  const { data } = await supabase.auth.getSession();
+  if (!data.session) return;
   try {
-    await supabase.functions.invoke("attach-referral", {
+    const { data: res, error } = await supabase.functions.invoke("attach-referral", {
       body: { ref: code },
     });
+    const payload = res as { ok?: boolean; reason?: string } | null;
+    // Clear cookie on a definitive outcome so a second user on the same
+    // browser doesn't inherit the previous user's referral.
+    if (!error && payload && (payload.ok === true || payload.reason === "already_attached" || payload.reason === "self_referral")) {
+      clearReferralCookie();
+    }
   } catch {
     // best-effort
   }
