@@ -15,10 +15,15 @@ export default function PartnerLanding() {
       {/* Top nav */}
       <header className="sticky top-0 z-30 border-b border-border/50 bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <Link to="/" className="flex items-center -space-x-1">
+          <Link to="/" className="flex items-center gap-2">
             <img src={logo} alt="ShopBanao" width="64" height="64" className="h-10 md:h-12 w-auto" decoding="async" />
-            <span className="text-xl md:text-2xl text-foreground" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700 }}>
-              ShopBanao <span className="text-muted-foreground font-normal">· Partners</span>
+            <span className="flex flex-col leading-none">
+              <span className="text-lg md:text-xl text-foreground" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700 }}>
+                ShopBanao
+              </span>
+              <span className="mt-0.5 text-[10px] md:text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                Partners
+              </span>
             </span>
           </Link>
           <div className="flex items-center gap-2">
