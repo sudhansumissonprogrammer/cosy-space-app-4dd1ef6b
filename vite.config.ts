@@ -5,6 +5,8 @@ import fs from "fs";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 import Beasties from "beasties";
+import { compression } from "vite-plugin-compression2";
+import { visualizer } from "rollup-plugin-visualizer";
 
 /**
  * Inline critical CSS from dist/index.html and async-load the rest.
@@ -51,6 +53,31 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     beastiesPlugin(),
+    // Brotli + gzip precompression of build assets. Cloudflare/most CDNs serve
+    // .br when the client supports it → 15-25% smaller JS/CSS than gzip.
+    // Build-only, zero dev impact. Threshold skips tiny files where compression
+    // overhead isn't worth it.
+    compression({
+      algorithms: ["brotliCompress"],
+      exclude: [/\.(br)$/, /\.(gz)$/],
+      threshold: 1024,
+      deleteOriginalAssets: false,
+    }),
+    compression({
+      algorithms: ["gzip"],
+      exclude: [/\.(br)$/, /\.(gz)$/],
+      threshold: 1024,
+      deleteOriginalAssets: false,
+    }),
+    // Bundle visualizer — emits dist/stats.html showing chunk sizes.
+    // Opt-in via ANALYZE=1 env so normal builds aren't slowed down.
+    process.env.ANALYZE === "1" &&
+      visualizer({
+        filename: "dist/stats.html",
+        gzipSize: true,
+        brotliSize: true,
+        template: "treemap",
+      }),
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: null,
