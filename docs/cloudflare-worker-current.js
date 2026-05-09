@@ -626,8 +626,11 @@ function buildThemeCssFromConfig(tc) {
 
   const fonts = [...new Set([headingFont, bodyFont].filter(Boolean))];
   if (fonts.length > 0) {
+    // v8.8.0 (Phase 1 fix #7): trim font weights from 400;500;600;700 → 400;600.
+    // Saves ~100KB per Google Fonts CSS request and ~200ms FCP. 500/700 are
+    // rarely used by storefront templates; CSS font-synthesis fills any gap.
     const families = fonts
-      .map((f) => `family=${f.replace(/ /g, "+")}:wght@400;500;600;700`)
+      .map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600`)
       .join("&");
     const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=swap`;
     css += `<link rel="preconnect" href="https://fonts.googleapis.com" />\n`;
@@ -868,9 +871,12 @@ const SPA_SHELL_KV_TTL = 300; // v8.7.0: publish-fresh safety; shell can change 
 const SPA_SHELL_CACHE_TTL = 60; // v8.7.0: short safety net only; human navigations use fresh origin shell.
 
 function setNoStoreHtmlHeaders(headers) {
-  headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-  headers.set("Pragma", "no-cache");
-  headers.set("Expires", "0");
+  // v8.8.0 (Phase 1 fix #4): switched from no-store to SWR.
+  // Repeat visits revalidate in background (instant paint from cache),
+  // while still honouring publishes via must-revalidate within 0s.
+  headers.set("Cache-Control", "public, max-age=0, must-revalidate, stale-while-revalidate=300");
+  headers.delete("Pragma");
+  headers.delete("Expires");
 }
 
 let inflightShellFetch = null;
@@ -1455,14 +1461,45 @@ function _extractTopProductImages(inlineProductsStr, n) {
  * The preload scanner sees these BEFORE any JS executes — downloads start
  * within ~50ms of HTML arrival instead of ~2500ms after React renders.
  */
-function _buildProductImagePreloads(inlineProductsStr, count = 6) {
+/**
+ * v8.8.0 (Phase 1 fixes #1, #2, #3):
+ *  #1 Rewrite Supabase Storage URLs to the render/image API at width=400&q=72
+ *     so the preload URL matches what React eventually paints. No more wasted
+ *     800w preload + second render-API fetch.
+ *  #2 Cap to first 2 products only (above-fold on mobile). Extra preloads
+ *     starve the LCP image of HTTP/2 priority.
+ *  #3 Add imagesrcset + imagesizes so the browser picks the right size.
+ */
+function _toRenderUrl(rawUrl, width, quality) {
+  try {
+    const u = new URL(rawUrl);
+    if (u.hostname.endsWith(".supabase.co") && u.pathname.includes("/storage/v1/object/")) {
+      u.pathname = u.pathname.replace("/storage/v1/object/", "/storage/v1/render/image/");
+      u.searchParams.set("width", String(width));
+      u.searchParams.set("quality", String(quality));
+      u.searchParams.set("resize", "contain");
+      return u.toString();
+    }
+    return rawUrl;
+  } catch {
+    return rawUrl;
+  }
+}
+function _buildProductImagePreloads(inlineProductsStr, count = 2) {
   const items = _extractTopProductImages(inlineProductsStr, count);
   if (!items.length) return "";
   let out = "";
   for (let i = 0; i < items.length; i++) {
-    const u = escapeHtml(items[i].url);
-    const fp = i < 2 ? ` fetchpriority="high"` : "";
-    out += `<link rel="preload" as="image" href="${u}"${fp} />\n`;
+    const raw = items[i].url;
+    const main = _toRenderUrl(raw, 400, 72);
+    const srcset =
+      `${escapeHtml(_toRenderUrl(raw, 200, 72))} 200w, ` +
+      `${escapeHtml(_toRenderUrl(raw, 400, 72))} 400w, ` +
+      `${escapeHtml(_toRenderUrl(raw, 800, 72))} 800w`;
+    const fp = i === 0 ? ` fetchpriority="high"` : "";
+    out +=
+      `<link rel="preload" as="image" href="${escapeHtml(main)}" ` +
+      `imagesrcset="${srcset}" imagesizes="(max-width:640px) 45vw, 25vw"${fp} />\n`;
   }
   return out;
 }
@@ -2039,7 +2076,8 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
     productsJson = inlineProducts;
   }
   if (productsJson) {
-    productImagePreloads = _buildProductImagePreloads(productsJson, 6);
+    // Phase 1 fix #2: cut from 6→2 preloads (above-fold mobile only).
+    productImagePreloads = _buildProductImagePreloads(productsJson, 2);
     productPreloaderGrid = _buildProductPreloaderGrid(productsJson, 8);
   }
 

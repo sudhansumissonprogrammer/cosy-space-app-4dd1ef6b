@@ -316,12 +316,19 @@ export default function StorefrontHomeV20() {
         </section>
       )}
 
-      {visibleCategories.map((cat) => {
+      {visibleCategories.map((cat, idx) => {
         const items = getCategoryItems(cat).slice(0, 8);
         if (items.length === 0) return null;
         const catHref = storefrontPath(slug, `category/${cat.slug}`);
+        // Phase 2 fix #9: skip rendering work for off-screen category strips.
+        // First strip stays normal (above-fold). Subsequent strips use
+        // content-visibility:auto so the browser skips layout/paint until they
+        // scroll near the viewport. contain-intrinsic-size reserves space → no CLS.
+        const offscreenStyle: React.CSSProperties | undefined = idx > 0
+          ? { contentVisibility: "auto", containIntrinsicSize: "1px 360px" }
+          : undefined;
         return (
-          <section key={cat.id}>
+          <section key={cat.id} style={offscreenStyle}>
             <Link
               to={catHref}
               className="v20-cat-strip"
@@ -338,7 +345,7 @@ export default function StorefrontHomeV20() {
                   key={p.id}
                   className="flex-shrink-0 snap-start w-[44%] sm:w-[30%] md:w-[24%] lg:w-[19%] xl:w-[16%]"
                 >
-                  <V20ProductCard product={p} slug={slug} store={store} priority={i < 2} />
+                  <V20ProductCard product={p} slug={slug} store={store} priority={i < 2} lowPriority={i >= 4} />
                 </div>
               ))}
               <Link
