@@ -1562,7 +1562,7 @@ function LightboxImage({
   return (
     <>
       {!loaded && !errored && (
-        <div className="absolute inset-0 flex items-center justify-center text-neutral-500 text-sm">
+        <div className="absolute inset-0 flex items-center justify-center text-white/60 text-sm">
           Loading…
         </div>
       )}
