@@ -258,6 +258,63 @@ export default function UserSettings() {
         </CardContent>
       </Card>
 
+      {/* Partner / Referral code */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Referred by a partner?
+          </CardTitle>
+          <CardDescription>
+            {referral
+              ? "You're linked to a ShopBanao partner."
+              : "Have a partner code? Add it once and your stores will be tracked automatically."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {referral ? (
+            <div className="flex items-center gap-3 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">
+                  {(referral as any).partners?.name || "Partner"}{" "}
+                  <span className="text-xs text-muted-foreground">
+                    ({(referral as any).partners?.partner_code})
+                  </span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Linked on {new Date(referral.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                applyPartnerCode.mutate();
+              }}
+              className="flex flex-col gap-2 sm:flex-row sm:items-end"
+            >
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="partner-code">Partner code</Label>
+                <Input
+                  id="partner-code"
+                  placeholder="e.g. SBP1023"
+                  value={partnerCode}
+                  onChange={(e) => setPartnerCode(e.target.value.toUpperCase())}
+                  maxLength={11}
+                  className="font-mono"
+                />
+              </div>
+              <Button type="submit" disabled={applyPartnerCode.isPending || !partnerCode.trim()}>
+                {applyPartnerCode.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Apply
+              </Button>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Profile */}
       <form onSubmit={(e) => { e.preventDefault(); updateProfile.mutate(); }}>
         <Card>
