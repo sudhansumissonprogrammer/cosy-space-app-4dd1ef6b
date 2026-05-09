@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
+import { Suspense, useEffect, useState } from "react";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -7,9 +7,15 @@ import { Loader2, LogOut, LayoutDashboard, Wallet, ArrowDownToLine } from "lucid
 import { cn } from "@/lib/utils";
 import { NotificationsBell } from "@/components/partner/NotificationsBell";
 
+// Prefetch sibling tab chunks so tab switches are instant (no skeleton flash).
+const prefetchPartnerTabs = () => {
+  import("@/pages/partner/PartnerOverview").catch(() => {});
+  import("@/pages/partner/PartnerWallet").catch(() => {});
+  import("@/pages/partner/PartnerWithdrawals").catch(() => {});
+};
+
 export default function PartnerLayout() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { session, loading: authLoading, signOut } = useAuth();
   const [partner, setPartner] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -22,6 +28,7 @@ export default function PartnerLayout() {
       if (!p) { navigate("/partners/signup", { replace: true }); return; }
       setPartner(p);
       setLoading(false);
+      prefetchPartnerTabs();
     })();
   }, [session, authLoading, navigate]);
 
@@ -71,7 +78,15 @@ export default function PartnerLayout() {
       </header>
 
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-6">
-        <Outlet context={{ partner }} />
+        <Suspense
+          fallback={
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          }
+        >
+          <Outlet context={{ partner }} />
+        </Suspense>
       </main>
     </div>
   );
