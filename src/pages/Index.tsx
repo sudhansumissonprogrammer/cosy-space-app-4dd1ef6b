@@ -1,8 +1,9 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
-import LandingJsonLd from "@/components/landing/LandingJsonLd";
 import LazyMount from "@/components/landing/LazyMount";
+
+const LandingJsonLd = lazy(() => import("@/components/landing/LandingJsonLd"));
 
 // Below-fold lazy chunks — each wrapped in LazyMount so its chunk only
 // downloads when the user scrolls near it.
