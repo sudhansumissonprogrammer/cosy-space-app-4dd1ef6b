@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
 import { LayoutDashboard, Loader2 } from "lucide-react";
+import { attachReferralAfterSignup } from "@/lib/referralTracking";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -121,6 +122,9 @@ export default function Signup() {
         toast.error(error.message);
         return;
       }
+
+      // Best-effort: attach this signup to the referring partner (if any cookie set)
+      attachReferralAfterSignup().catch(() => {});
 
       if (signUpData?.session) {
         toast.success("Account created successfully!");
