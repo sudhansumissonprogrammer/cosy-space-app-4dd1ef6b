@@ -1521,13 +1521,14 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
         )}
       </div>
 
-      {lightboxOpen && (
+      {lightboxOpen && createPortal(
         <FullscreenLightbox
           images={images}
           productName={productName}
           initialIndex={activeIndex}
           onClose={() => setLightboxOpen(false)}
-        />
+        />,
+        document.body
       )}
     </>
   );
@@ -1682,8 +1683,8 @@ function FullscreenLightbox({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-black animate-in fade-in duration-200">
-      <div className="flex items-center justify-between px-4 py-3 text-white bg-black/40">
+    <div className="fixed inset-0 z-[9999] flex flex-col bg-black animate-in fade-in duration-200" role="dialog" aria-modal="true">
+      <div className="flex items-center justify-between px-4 py-3 text-white bg-black">
         <span className="text-sm font-medium opacity-80">
           {images.length > 1 ? `${activeIndex + 1} / ${images.length}` : productName}
         </span>
@@ -1696,14 +1697,14 @@ function FullscreenLightbox({
       </div>
 
       <div
-        className="relative flex flex-1 items-center justify-center overflow-hidden touch-none select-none p-3 sm:p-6"
+        className="relative flex flex-1 items-center justify-center overflow-hidden bg-black touch-none select-none p-0 sm:p-4"
         onTouchStart={(e) => { handleTouchStart(e); handleSwipeStart(e); }}
         onTouchMove={handleTouchMove}
         onTouchEnd={(e) => { handleTouchEnd(); handleSwipeEnd(e); }}
         onDoubleClick={handleDoubleClick}
         style={{ cursor: scale > 1 ? "grab" : "default" }}
       >
-        <div className="relative flex items-center justify-center w-full h-full overflow-hidden">
+        <div className="relative flex items-center justify-center w-full h-full overflow-hidden bg-black">
           <LightboxImage
             src={images[activeIndex]}
             alt={productName}
