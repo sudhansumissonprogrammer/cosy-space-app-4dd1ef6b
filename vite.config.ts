@@ -254,7 +254,14 @@ export default defineConfig(({ mode }) => ({
             id.includes("/src/lib/flyToCart") ||
             id.includes("/src/lib/prefetchProductDetail") ||
             id.includes("/src/lib/prefetchStorefrontRoutes") ||
-            id.includes("/src/lib/subdomain")
+            id.includes("/src/lib/subdomain") ||
+            id.includes("/src/hooks/useProductCardActions") ||
+            id.includes("/src/components/storefront/StarRating") ||
+            id.includes("/src/components/storefront/SectionHeading") ||
+            id.includes("/src/components/storefront/OptimizedImage") ||
+            id.includes("/src/components/storefront/PageTransition") ||
+            id.includes("/src/components/storefront/StorefrontTrustStrip") ||
+            id.includes("/src/components/storefront/ScrollProgressBar")
           ) {
             return "storefront-shell";
           }
