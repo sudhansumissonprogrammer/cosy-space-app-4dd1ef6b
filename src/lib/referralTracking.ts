@@ -52,10 +52,20 @@ export async function captureReferralFromURL(): Promise<void> {
         referrer: document.referrer || null,
       },
     }).catch(() => {});
-
-    // Mark unused to silence lints
-    void existing;
   } catch {
+    // tracking is best-effort
+  }
+}
+
+function clearReferralCookie() {
+  if (typeof document === "undefined") return;
+  let domainPart = "";
+  try {
+    const host = window.location.hostname;
+    if (host.endsWith("shopbanao.in")) domainPart = "; Domain=.shopbanao.in";
+  } catch {}
+  document.cookie = `${COOKIE_NAME}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${domainPart}`;
+}
     // tracking is best-effort
   }
 }
