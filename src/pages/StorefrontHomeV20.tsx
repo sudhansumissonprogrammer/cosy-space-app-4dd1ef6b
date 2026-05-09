@@ -338,7 +338,7 @@ export default function StorefrontHomeV20() {
                   key={p.id}
                   className="flex-shrink-0 snap-start w-[44%] sm:w-[30%] md:w-[24%] lg:w-[19%] xl:w-[16%]"
                 >
-                  <V20ProductCard product={p} slug={slug} store={store} priority={i < 2} />
+                  <V20ProductCard product={p} slug={slug} store={store} priority={i < 2} lowPriority={i >= 4} />
                 </div>
               ))}
               <Link

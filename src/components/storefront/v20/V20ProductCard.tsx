@@ -17,9 +17,11 @@ interface Props {
   slug: string;
   store: any;
   priority?: boolean;
+  /** Phase 2 fix #8: deprioritize below-fold images so they don't compete with LCP. */
+  lowPriority?: boolean;
 }
 
-export default function V20ProductCard({ product, slug, store, priority = false }: Props) {
+export default function V20ProductCard({ product, slug, store, priority = false, lowPriority = false }: Props) {
   const { items, addToCart, updateQuantity } = useCart();
   const cartItem = items.find((i) => i.productId === product.id && !i.variantId);
   const cartQty = cartItem?.quantity || 0;
@@ -81,7 +83,7 @@ export default function V20ProductCard({ product, slug, store, priority = false 
               alt={product.name}
               className={`h-full w-full object-cover ${outOfStock ? "opacity-50" : ""}`}
               loading={priority ? "eager" : "lazy"}
-              fetchPriority={priority ? "high" : "auto"}
+              fetchPriority={priority ? "high" : lowPriority ? "low" : "auto"}
               width={280}
               height={280}
             />
