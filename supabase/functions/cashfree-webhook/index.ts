@@ -69,6 +69,24 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // Idempotency: short-circuit if we've already processed this exact webhook event.
+    // Cashfree provides a unique event id; fall back to a deterministic composite key.
+    const eventId: string =
+      String(event?.event_id ?? event?.data?.event_id ?? "") ||
+      `${eventType ?? "unknown"}:${cfOrderId}:${event?.data?.payment?.cf_payment_id ?? ""}`;
+    const { error: dupErr } = await supabase
+      .from("webhook_events")
+      .insert({ provider: "cashfree", event_id: eventId, payload: event });
+    if (dupErr) {
+      // Primary-key violation = already processed — ack so Cashfree stops retrying.
+      const msg = String(dupErr.message || "").toLowerCase();
+      if (msg.includes("duplicate") || msg.includes("unique")) {
+        return new Response("OK (duplicate)", { status: 200 });
+      }
+      // Other errors: log and continue (don't block payment processing).
+      console.warn("webhook_events insert failed", dupErr.message);
+    }
+
     // ---------- Branch 1: per-store storefront order (ord_ prefix) ----------
     if (cfOrderId.startsWith("ord_")) {
       // Recover store_id from order_tags (set by store-cashfree-create-order)
