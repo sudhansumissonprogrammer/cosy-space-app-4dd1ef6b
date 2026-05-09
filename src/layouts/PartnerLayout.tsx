@@ -45,7 +45,7 @@ export default function PartnerLayout() {
   const initial = (partner.name || "P").trim().charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-muted/20">
+    <div className="min-h-screen bg-muted/20 font-dashboard">
       <header className="sticky top-0 z-30 border-b border-border/50 bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4">
           <div className="flex min-w-0 items-center gap-2.5">
