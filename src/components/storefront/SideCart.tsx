@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { formatPrice } from "@/lib/productUtils";
 import { Suspense, lazy, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -157,7 +158,7 @@ export default function SideCart({ store }: SideCartProps) {
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
                           <Truck className="h-3 w-3" />
-                          Add {currency} {shippingRemaining.toFixed(0)} more for FREE delivery!
+                          Add {formatPrice(shippingRemaining, currency)} more for FREE delivery!
                         </span>
                         <span className="text-[9px]" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 50%, transparent)" }}>{Math.round(shippingProgress)}%</span>
                       </div>

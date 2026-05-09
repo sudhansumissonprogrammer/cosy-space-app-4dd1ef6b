@@ -1,4 +1,5 @@
 import { Link, useOutletContext, useNavigate } from "react-router-dom";
+import { formatPrice } from "@/lib/productUtils";
 import { Suspense, lazy, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,7 +86,7 @@ export default function CartPage() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs sm:text-sm font-semibold text-emerald-600 flex items-center gap-1.5">
                   <Truck className="h-4 w-4" />
-                  Add {currency} {shippingRemaining.toFixed(0)} more for FREE delivery!
+                  Add {formatPrice(shippingRemaining, currency)} more for FREE delivery!
                 </span>
                 <span className="text-[10px] sm:text-xs font-medium" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>{Math.round(shippingProgress)}%</span>
               </div>
