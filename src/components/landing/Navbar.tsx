@@ -14,7 +14,7 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 bg-bauhaus-white border-b-4 border-foreground">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between h-14 md:h-20">
         <a href="/" className="flex items-center -space-x-1">
-          <img src={logo} alt="ShopBanao" width="64" height="64" className="h-14 md:h-16 w-auto" fetchPriority="high" decoding="async" />
+          <img src={logo} alt="ShopBanao" width="64" height="64" className="h-14 md:h-16 w-auto" {...({ fetchpriority: "high" } as any)} decoding="async" />
           <span className="text-2xl md:text-3xl text-foreground" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700 }}>
             ShopBanao
           </span>
