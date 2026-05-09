@@ -23,6 +23,13 @@ const AdminWhatsApp = lazy(() => import("@/pages/admin/AdminWhatsApp"));
 const AdminUsageMonitoring = lazy(() => import("@/pages/admin/AdminUsageMonitoring"));
 const AdminErrorLogs = lazy(() => import("@/pages/admin/AdminErrorLogs"));
 const AdminMenuConfig = lazy(() => import("@/pages/admin/AdminMenuConfig"));
+const AdminPartners = lazy(() => import("@/pages/admin/AdminPartners"));
+
+// Partner program
+const PartnerLanding = lazy(() => import("@/pages/partner/PartnerLanding"));
+const PartnerSignup = lazy(() => import("@/pages/partner/PartnerSignup"));
+const PartnerLogin = lazy(() => import("@/pages/partner/PartnerLogin"));
+const PartnerDashboard = lazy(() => import("@/pages/partner/PartnerDashboard"));
 
 // Dashboard
 const DashboardLayout = lazy(() => import("@/layouts/DashboardLayout"));

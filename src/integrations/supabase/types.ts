@@ -787,6 +787,211 @@ export type Database = {
           },
         ]
       }
+      partner_commissions: {
+        Row: {
+          amount_paid: number
+          commission_amount: number
+          created_at: string
+          id: string
+          partner_id: string
+          payment_id: string | null
+          percentage: number
+          referral_id: string | null
+          status: string
+          store_id: string | null
+          subscription_id: string | null
+        }
+        Insert: {
+          amount_paid: number
+          commission_amount: number
+          created_at?: string
+          id?: string
+          partner_id: string
+          payment_id?: string | null
+          percentage: number
+          referral_id?: string | null
+          status?: string
+          store_id?: string | null
+          subscription_id?: string | null
+        }
+        Update: {
+          amount_paid?: number
+          commission_amount?: number
+          created_at?: string
+          id?: string
+          partner_id?: string
+          payment_id?: string | null
+          percentage?: number
+          referral_id?: string | null
+          status?: string
+          store_id?: string | null
+          subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_commissions_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_commissions_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "partner_referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_referral_clicks: {
+        Row: {
+          created_at: string
+          id: string
+          ip: string | null
+          landing_path: string | null
+          partner_id: string
+          referrer: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip?: string | null
+          landing_path?: string | null
+          partner_id: string
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip?: string | null
+          landing_path?: string | null
+          partner_id?: string
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_referral_clicks_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_referrals: {
+        Row: {
+          created_at: string
+          first_paid_at: string | null
+          id: string
+          locked: boolean
+          partner_id: string
+          referred_user_id: string
+          status: string
+          store_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          first_paid_at?: string | null
+          id?: string
+          locked?: boolean
+          partner_id: string
+          referred_user_id: string
+          status?: string
+          store_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          first_paid_at?: string | null
+          id?: string
+          locked?: boolean
+          partner_id?: string
+          referred_user_id?: string
+          status?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_referrals_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_settings: {
+        Row: {
+          cookie_days: number
+          default_percentage: number
+          hold_days: number
+          id: string
+          minimum_withdrawal: number
+          updated_at: string
+        }
+        Insert: {
+          cookie_days?: number
+          default_percentage?: number
+          hold_days?: number
+          id?: string
+          minimum_withdrawal?: number
+          updated_at?: string
+        }
+        Update: {
+          cookie_days?: number
+          default_percentage?: number
+          hold_days?: number
+          id?: string
+          minimum_withdrawal?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      partners: {
+        Row: {
+          commission_percentage: number
+          created_at: string
+          email: string
+          id: string
+          mobile: string | null
+          name: string
+          partner_code: string
+          status: string
+          total_earnings: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          commission_percentage?: number
+          created_at?: string
+          email: string
+          id?: string
+          mobile?: string | null
+          name: string
+          partner_code?: string
+          status?: string
+          total_earnings?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          commission_percentage?: number
+          created_at?: string
+          email?: string
+          id?: string
+          mobile?: string | null
+          name?: string
+          partner_code?: string
+          status?: string
+          total_earnings?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           created_at: string
@@ -1631,6 +1836,7 @@ export type Database = {
           partial_payment_enabled: boolean
           partial_payment_type: string
           partial_payment_value: number | null
+          referred_by_partner_id: string | null
           return_policy: string | null
           shipping_policy: string | null
           slug: string
@@ -1676,6 +1882,7 @@ export type Database = {
           partial_payment_enabled?: boolean
           partial_payment_type?: string
           partial_payment_value?: number | null
+          referred_by_partner_id?: string | null
           return_policy?: string | null
           shipping_policy?: string | null
           slug: string
@@ -1721,6 +1928,7 @@ export type Database = {
           partial_payment_enabled?: boolean
           partial_payment_type?: string
           partial_payment_value?: number | null
+          referred_by_partner_id?: string | null
           return_policy?: string | null
           shipping_policy?: string | null
           slug?: string
@@ -2461,6 +2669,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      generate_partner_code: { Args: never; Returns: string }
       get_admin_analytics: { Args: never; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
       get_admin_users_stores: { Args: never; Returns: Json }
@@ -2513,6 +2722,7 @@ export type Database = {
         Returns: boolean
       }
       is_order_owner: { Args: { _order_id: string }; Returns: boolean }
+      is_partner_owner: { Args: { _partner_id: string }; Returns: boolean }
       is_store_active: { Args: { _store_id: string }; Returns: boolean }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
       is_store_owner_by_folder: { Args: { _name: string }; Returns: boolean }
@@ -2540,7 +2750,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "partner"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2668,7 +2878,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "partner"],
     },
   },
 } as const
