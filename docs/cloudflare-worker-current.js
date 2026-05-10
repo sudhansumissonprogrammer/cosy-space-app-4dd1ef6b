@@ -508,9 +508,9 @@ function getSkeletonCleanupScript(fallbackMs = 12000) {
       var s=document.getElementById('sf-skel');
       if(!s)return;
       removed=true;
-      s.style.transition='opacity 80ms linear';
+      s.style.transition='opacity 120ms linear';
       s.style.opacity='0';
-      setTimeout(function(){s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();},90);
+      setTimeout(function(){s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();},130);
     }
     function hasShellPainted(){
       var root=document.getElementById('root');
@@ -520,17 +520,33 @@ function getSkeletonCleanupScript(fallbackMs = 12000) {
       for(var i=0;i<kids.length;i++){totalHeight+=kids[i].offsetHeight;}
       return totalHeight>400;
     }
-    function dismiss(){
+    // Wait until the React shell has actually painted real content before killing
+    // the skeleton — prevents the white blank flash between skeleton fade and
+    // first product-grid paint.
+    function dismissWhenPainted(){
       if(removed)return;
-      requestAnimationFrame(kill);
+      if(hasShellPainted()){
+        requestAnimationFrame(kill);
+        return;
+      }
+      // Poll fast (every animation frame) until paint lands or 2s elapse
+      var waited=0;
+      function tick(){
+        if(removed)return;
+        if(hasShellPainted()){requestAnimationFrame(kill);return;}
+        waited+=16;
+        if(waited>2000){requestAnimationFrame(kill);return;} // give up gating
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
     }
-    // Primary: React fires this as soon as the shell has data (no image wait)
-    window.addEventListener('storefront:content-ready',dismiss,{once:true});
+    // Primary: React fires this once it has mounted & double-rAF'd the shell
+    window.addEventListener('storefront:content-ready',dismissWhenPainted,{once:true});
     // Safety net: poll DOM in case the event was missed (e.g. React errored)
     var tries=0;
     function poll(){
       if(removed)return;
-      if(hasShellPainted()){dismiss();return;}
+      if(hasShellPainted()){requestAnimationFrame(kill);return;}
       tries++;
       if(tries>300)return; // give up polling, rely on fallbackMs
       setTimeout(poll,32);
