@@ -645,6 +645,14 @@ function buildThemeCssFromConfig(tc) {
       ],
       "Inter": [{ weight: 400, url: "/fonts/inter-latin.woff2" }],
       "Outfit": [{ weight: 400, url: "/fonts/outfit-latin.woff2" }],
+      "Montserrat Alternates": [
+        { weight: 400, url: "/fonts/montserrat-alternates-400.woff2" },
+        { weight: 500, url: "/fonts/montserrat-alternates-500.woff2" },
+        { weight: 600, url: "/fonts/montserrat-alternates-600.woff2" },
+        { weight: 700, url: "/fonts/montserrat-alternates-700.woff2" },
+      ],
+      // Mulish ships as a variable font — single file covers 200–900
+      "Mulish": [{ weight: 400, url: "/fonts/mulish-latin.woff2" }],
     };
     const localFonts = fonts.filter((f) => SELF_HOSTED[f]);
     const remoteFonts = fonts.filter((f) => !SELF_HOSTED[f]);
