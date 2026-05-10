@@ -573,7 +573,7 @@ export default function CheckoutPage() {
     const eid = generateEventId();
     const eventData = {
       content_ids: checkoutItems.map((i) => i.productId),
-      contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
+      contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
       num_items: checkoutItems.length,
       value: subtotal,
       currency,
