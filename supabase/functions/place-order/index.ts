@@ -218,6 +218,7 @@ Deno.serve(async (req) => {
         buyer_fbc: meta?.fbc || null,
         buyer_fbp: meta?.fbp || null,
         meta_event_id: meta?.event_id || null,
+        meta_event_source_url: meta?.event_source_url || null,
       })
       .select("id")
       .single();

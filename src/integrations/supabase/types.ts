@@ -634,6 +634,7 @@ export type Database = {
           customer_phone: string | null
           id: string
           meta_event_id: string | null
+          meta_event_source_url: string | null
           meta_purchase_fired_at: string | null
           notes: string | null
           order_number: number
@@ -667,6 +668,7 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           meta_event_id?: string | null
+          meta_event_source_url?: string | null
           meta_purchase_fired_at?: string | null
           notes?: string | null
           order_number?: number
@@ -700,6 +702,7 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           meta_event_id?: string | null
+          meta_event_source_url?: string | null
           meta_purchase_fired_at?: string | null
           notes?: string | null
           order_number?: number

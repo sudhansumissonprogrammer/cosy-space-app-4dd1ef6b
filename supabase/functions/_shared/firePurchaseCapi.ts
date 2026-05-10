@@ -49,7 +49,7 @@ export async function firePurchaseCapi(
       .select(
         "id, store_id, status, total, currency, customer_phone, customer_name, city, state, pincode, " +
         "storefront_customer_id, buyer_ip, buyer_user_agent, buyer_fbc, buyer_fbp, " +
-        "meta_event_id, meta_purchase_fired_at",
+        "meta_event_id, meta_event_source_url, meta_purchase_fired_at",
       )
       .eq("id", orderId)
       .maybeSingle();
@@ -178,6 +178,7 @@ export async function firePurchaseCapi(
     const contentIds = (items || []).map((i) => i.product_id).filter(Boolean) as string[];
     const eventSourceUrl =
       opts.eventSourceUrl ||
+      (order as any).meta_event_source_url ||
       (store.custom_domain
         ? `https://${store.custom_domain}/checkout`
         : `https://${store.slug}.shopbanao.in/checkout`);
