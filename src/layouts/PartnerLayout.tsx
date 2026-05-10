@@ -26,9 +26,10 @@ export default function PartnerLayout() {
     (async () => {
       let { data: p } = await supabase.from("partners").select("*").eq("user_id", session.user.id).maybeSingle();
       if (!p) {
-        // Self-heal: signup-with-email-confirmation can land users here without a partner row.
+        // Self-heal ONLY for users who explicitly signed up as a partner (email-confirmation interrupted flow).
+        // Never auto-create for merchants who happen to land here.
         const meta = (session.user.user_metadata || {}) as any;
-        if (meta.user_type === "partner" || meta.full_name) {
+        if (meta.user_type === "partner") {
           await supabase.from("partners").insert({
             user_id: session.user.id,
             name: meta.full_name || session.user.email?.split("@")[0] || "Partner",
