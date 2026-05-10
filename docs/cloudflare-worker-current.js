@@ -72,7 +72,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.9.2-fonts-nonblock-cache";
+const WORKER_VERSION = "8.10.0-fast-skeleton-dismiss";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -489,12 +489,17 @@ function _capMapSize(map, max) {
    FIX #11: buildSkeleton now actually uses bgColor param
    ============================================================ */
 
-// FIX #27: Wait for at least one real image to finish loading before fading
-// the skeleton. Previously, kill() fired on storefront:content-ready (which
-// signals data arrival) — but lazy chunks + image downloads hadn't painted
-// yet, producing a 1-2s blank-white flash between skeleton removal and
-// content visibility. Now we poll until an <img> in #root has complete=true
-// && naturalWidth>0, then fade in 80ms.
+// v8.10.0 — FAST DISMISS: kill skeleton as soon as React paints the shell
+// (storefront:content-ready). Previously we polled for a real <img> to finish
+// downloading, which on mobile 4G added 800–1500ms while waiting on the LCP
+// product image. OptimizedImage already ships blur-up placeholders, so there's
+// no blank-flash risk — images just progressively fade in over their own
+// placeholder once decoded.
+//
+// Order of dismissal triggers (whichever fires first):
+//   1. storefront:content-ready event (React shell painted)        — primary
+//   2. #root has measurable content (height > 400px)               — safety net
+//   3. fallbackMs (12s) hard kill                                  — last resort
 function getSkeletonCleanupScript(fallbackMs = 12000) {
   return `<script>(function(){
     var removed=false;
@@ -507,34 +512,31 @@ function getSkeletonCleanupScript(fallbackMs = 12000) {
       s.style.opacity='0';
       setTimeout(function(){s.style.visibility='hidden';s.style.display='none';if(s.remove)s.remove();},90);
     }
-    function hasRealContent(){
+    function hasShellPainted(){
       var root=document.getElementById('root');
       if(!root)return false;
+      if(root.querySelector('[data-storefront-ready]'))return true;
       var totalHeight=0;var kids=root.children;
       for(var i=0;i<kids.length;i++){totalHeight+=kids[i].offsetHeight;}
-      if(totalHeight<400)return false;
-      if(root.querySelector('[data-storefront-ready]'))return true;
-      var imgs=root.querySelectorAll('img');
-      if(!imgs.length)return false;
-      for(var j=0;j<imgs.length;j++){
-        if(imgs[j].complete && imgs[j].naturalWidth>0)return true;
-      }
-      return false;
+      return totalHeight>400;
     }
-    var tries=0;
-    function waitForPaint(){
+    function dismiss(){
       if(removed)return;
-      if(hasRealContent()){
-        requestAnimationFrame(function(){requestAnimationFrame(kill);});
-        return;
-      }
-      tries++;
-      if(tries>300){kill();return;}
-      setTimeout(waitForPaint,32);
+      requestAnimationFrame(kill);
     }
-    window.addEventListener('storefront:content-ready',waitForPaint,{once:true});
-    if(document.readyState!=='loading'){setTimeout(waitForPaint,200);}
-    else{document.addEventListener('DOMContentLoaded',function(){setTimeout(waitForPaint,200);},{once:true});}
+    // Primary: React fires this as soon as the shell has data (no image wait)
+    window.addEventListener('storefront:content-ready',dismiss,{once:true});
+    // Safety net: poll DOM in case the event was missed (e.g. React errored)
+    var tries=0;
+    function poll(){
+      if(removed)return;
+      if(hasShellPainted()){dismiss();return;}
+      tries++;
+      if(tries>300)return; // give up polling, rely on fallbackMs
+      setTimeout(poll,32);
+    }
+    if(document.readyState!=='loading')poll();
+    else document.addEventListener('DOMContentLoaded',poll,{once:true});
     setTimeout(kill,${fallbackMs});
   })()</script>`;
 }
