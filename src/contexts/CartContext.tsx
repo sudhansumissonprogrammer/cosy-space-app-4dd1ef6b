@@ -101,7 +101,29 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
     }
   }, [items, slug, hydrated]);
 
-  const openCart = useCallback(() => setIsCartOpen(true), []);
+  const openCart = useCallback(() => {
+    setIsCartOpen(true);
+    // Fire ViewCart on cart drawer open (Shopify parity for cart-abandonment audiences)
+    if (storeId && items.length > 0) {
+      Promise.all([
+        import("@/hooks/useFacebookPixel"),
+        import("@/lib/metaCapi"),
+      ]).then(([pixelMod, capiMod]) => {
+        const eid = pixelMod.generateEventId();
+        const value = items.reduce((s, i) => s + i.price * i.quantity, 0);
+        const data = {
+          content_ids: items.map((i) => i.productId),
+          contents: items.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+          content_type: "product",
+          num_items: items.reduce((s, i) => s + i.quantity, 0),
+          value,
+          currency,
+        };
+        pixelMod.fbPixelTrack("ViewCart", data, eid);
+        capiMod.fireMetaCAPI({ storeId, eventName: "ViewCart", eventId: eid, customData: data });
+      }).catch(() => {});
+    }
+  }, [storeId, items, currency]);
   const closeCart = useCallback(() => setIsCartOpen(false), []);
 
   const addToCart = useCallback((item: Omit<CartItem, "quantity"> & { quantity?: number }, options?: { silent?: boolean }) => {
