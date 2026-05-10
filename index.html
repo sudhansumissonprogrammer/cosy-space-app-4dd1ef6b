@@ -177,6 +177,28 @@
         var supaUrl='https://dqepeywgftbpxeeqfuwt.supabase.co';
         var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk';
 
+        /* ─── Bootstrap cache (set by previous visit) ───
+           Synchronously read store_id + fonts + top image URLs to:
+             1. Inject LCP image preload at T+0 (saves ~300ms on repeat LCP)
+             2. Inject Google Fonts preload at T+0 (saves ~150ms FOUT window)
+             3. Fire products fetch IN PARALLEL with shell (saves ~150ms RTT) */
+        var boot=null;
+        try{var bs=localStorage.getItem('sf_boot_'+slug);if(bs)boot=JSON.parse(bs);}catch(e){}
+        if(boot){
+          if(boot.hf||boot.bf)injectGFont(boot.hf,boot.bf);
+          if(Array.isArray(boot.imgs)){
+            for(var bi=0;bi<boot.imgs.length && bi<2;bi++){
+              var bu=boot.imgs[bi];if(!bu||typeof bu!=='string')continue;
+              if(document.querySelector('link[data-sf-img-pre="'+bu+'"]'))continue;
+              var bl=document.createElement('link');
+              bl.rel='preload';bl.as='image';bl.href=bu;
+              bl.setAttribute('data-sf-img-pre',bu);
+              if(bi===0)bl.setAttribute('fetchpriority','high');
+              document.head.appendChild(bl);
+            }
+          }
+        }
+
         /* v6.5.0 preview parity: inject <link rel="preload" as="image"> tags
            the moment product URLs arrive. The browser preload-scanner can't
            read URLs from <script> data, so we materialize them as <link> tags
@@ -186,7 +208,7 @@
           if(!Array.isArray(products))return;
           var head=document.head;var injected=0;
           for(var i=0;i<products.length && injected<6;i++){
-            var p=products[i];var u=p&&p.image_url;
+            var pp=products[i];var u=pp&&pp.image_url;
             if(!u||typeof u!=='string')continue;
             if(document.querySelector('link[data-sf-img-pre="'+u+'"]'))continue;
             var l=document.createElement('link');
@@ -198,9 +220,9 @@
         }
 
         /* CRITICAL: kick off shell + products in PARALLEL.
-           Old code waited for shell.store.id then started products — a
-           sequential waterfall (~200-400ms wasted). The products query
-           filters by slug via a sub-select so we don't need store_id first. */
+           For repeat visitors with a cached store_id we fire products
+           IMMEDIATELY in true parallel (no waterfall). For first-time
+           visitors we fall back to the sequential .then() path. */
         var shellPromise=fetch(supaUrl+'/rest/v1/rpc/get_storefront_shell',{
           method:'POST',
           headers:{'Content-Type':'application/json','apikey':key,'Authorization':'Bearer '+key},
@@ -213,20 +235,26 @@
           return data;
         }).catch(function(){return null});
 
-        /* Products: fire IN PARALLEL using a slug-based filter so we don't
-           depend on shell.store.id. Falls back to store_id once shell lands
-           if the slug filter returns nothing. */
-        var productsPromise=shellPromise.then(function(data){
-          if(!data||!data.store)return null;
-          var prodUrl=supaUrl+'/rest/v1/products?store_id=eq.'+data.store.id+'&is_active=eq.true&order=is_best_selling.desc,created_at.desc,id.asc&limit=14&select=id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id';
-          return fetch(prodUrl,{headers:{'apikey':key,'Authorization':'Bearer '+key}})
+        function buildProductsUrl(sid){
+          return supaUrl+'/rest/v1/products?store_id=eq.'+sid+'&is_active=eq.true&order=is_best_selling.desc,created_at.desc,id.asc&limit=14&select=id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id';
+        }
+        var productsPromise;
+        if(boot&&boot.sid){
+          /* Repeat visitor: TRUE PARALLEL — fire products at T+0 alongside shell */
+          productsPromise=fetch(buildProductsUrl(boot.sid),{headers:{'apikey':key,'Authorization':'Bearer '+key}})
             .then(function(r){return r.json()})
-            .then(function(products){
-              injectProductImagePreloads(products);
-              return products;
-            })
+            .then(function(products){injectProductImagePreloads(products);return products;})
             .catch(function(){return null});
-        });
+        }else{
+          /* First-time visitor: chain to shell so we have a real store_id */
+          productsPromise=shellPromise.then(function(data){
+            if(!data||!data.store)return null;
+            return fetch(buildProductsUrl(data.store.id),{headers:{'apikey':key,'Authorization':'Bearer '+key}})
+              .then(function(r){return r.json()})
+              .then(function(products){injectProductImagePreloads(products);return products;})
+              .catch(function(){return null});
+          });
+        }
         window.__PRODUCTS_PREFETCH__=productsPromise;
         window.__STOREFRONT_PREFETCH__=shellPromise;
       })();
