@@ -46,11 +46,10 @@ export function optimizeImageUrl(
   if (!firstUrl) return "";
   url = firstUrl;
 
-  // ── 1. Our pipeline images: route through /cf-img on production for edge cache ──
+  // ── 1. Our pipeline images: use Supabase render API directly ──
   if (isOptimizedUrl(url)) {
     const variant = resolveVariantUrl(url, 800);
     if (variant.includes("supabase.co/storage")) {
-      if (shouldUseCfImg()) return toCfImg(variant, width, quality);
       try {
         const u = new URL(variant);
         u.pathname = u.pathname.replace(
