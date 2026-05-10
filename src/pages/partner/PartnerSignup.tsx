@@ -27,9 +27,9 @@ export default function PartnerSignup() {
         return;
       }
       // Auth user exists but partner row missing (e.g. email-verify interrupted signup).
-      // Auto-create from auth metadata so they don't get stuck in a redirect loop.
+      // Auto-create only for users who explicitly signed up as a partner.
       const meta = (session.user.user_metadata || {}) as any;
-      if (meta.user_type === "partner" || meta.full_name) {
+      if (meta.user_type === "partner") {
         const { error } = await supabase.from("partners").insert({
           user_id: session.user.id,
           name: meta.full_name || session.user.email?.split("@")[0] || "Partner",
