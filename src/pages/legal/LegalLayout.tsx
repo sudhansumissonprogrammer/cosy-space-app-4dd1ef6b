@@ -1,6 +1,6 @@
 import { ReactNode, useEffect } from "react";
 import { Link } from "react-router-dom";
-import logo from "@/assets/shopbanao-logo.png";
+import logo from "@/assets/shopbanao-logo.webp";
 
 interface LegalLayoutProps {
   title: string;

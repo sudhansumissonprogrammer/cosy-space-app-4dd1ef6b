@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, Clock, MessageCircle, Instagram, Facebook, Send, Mail } from "lucide-react";
-import shopbanaoLogo from "@/assets/shopbanao-logo.png";
+import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
