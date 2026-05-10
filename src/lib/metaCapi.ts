@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getCapiUser } from "@/lib/metaEnrichment";
 
 /**
  * Returns true on Lovable preview/editor/dev hosts.
