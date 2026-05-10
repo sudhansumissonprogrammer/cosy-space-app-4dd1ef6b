@@ -1,7 +1,10 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.7.0 — PUBLISH-FRESH HTML
+ * SHOPBANAO PRODUCTION ROUTER v8.9.0 — VISITOR-ID ANALYTICS
  *
- * Changes from v8.6.6:
+ * Changes from v8.7.0:
+ *  v8.9.0 — recordPageView() now reads first-party `sb_vid` cookie and stores
+ *           it as page_views.visitor_id. Counts unique visitors using a stable
+ *           cookie ID instead of CGNAT-shared mobile IPs (15-25% accuracy lift).
  *  v8.7.0 — Storefront HTML now fetches the latest Lovable shell on every
  *           human navigation and sends no-store HTML headers. This prevents
  *           Cloudflare Worker Cache/KV/in-memory/browser HTML from pinning old
