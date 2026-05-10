@@ -140,6 +140,83 @@ export default function StoreTracking() {
         }}
         className="space-y-6"
       >
+        {/* Marketing Health — Shopify-style status overview */}
+        {(() => {
+          const pixelOk = !!(store as any)?.facebook_pixel_id;
+          const capiOk = pixelOk && !!metaAccessToken;
+          const lastFiredAgo = lastCapiPurchase
+            ? (() => {
+                const ms = Date.now() - new Date(lastCapiPurchase).getTime();
+                const mins = Math.floor(ms / 60_000);
+                if (mins < 1) return "just now";
+                if (mins < 60) return `${mins}m ago`;
+                const hrs = Math.floor(mins / 60);
+                if (hrs < 24) return `${hrs}h ago`;
+                const days = Math.floor(hrs / 24);
+                return `${days}d ago`;
+              })()
+            : null;
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Activity className="h-5 w-5 text-primary" />
+                  Marketing Health
+                </CardTitle>
+                <CardDescription>
+                  Live status of your Meta tracking pipeline
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${pixelOk ? "bg-emerald-500" : "bg-amber-500"}`}
+                    />
+                    <span className="text-sm font-medium">Facebook Pixel</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {pixelOk ? "Active" : "Not configured"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        capiOk ? "bg-emerald-500" : pixelOk ? "bg-amber-500" : "bg-muted-foreground/40"
+                      }`}
+                    />
+                    <div>
+                      <div className="text-sm font-medium">Conversions API</div>
+                      {pixelOk && !capiOk && (
+                        <div className="text-[11px] text-amber-700 dark:text-amber-400">
+                          Pixel-only mode — add token below for ~30% better ROAS
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {capiOk ? "Connected" : pixelOk ? "Optional" : "—"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        lastFiredAgo ? "bg-emerald-500" : "bg-muted-foreground/40"
+                      }`}
+                    />
+                    <span className="text-sm font-medium">Last server Purchase</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {lastFiredAgo ?? "No events yet"}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         {/* Facebook Pixel */}
         <Card>
           <CardHeader>
