@@ -93,9 +93,8 @@ export function optimizeImageUrl(
     }
   }
 
-  // ── 4. Supabase Storage: /cf-img on production, direct render elsewhere ──
+  // ── 4. Supabase Storage: use Supabase render API directly ──
   if (url.includes("supabase.co/storage")) {
-    if (shouldUseCfImg()) return toCfImg(url, width, quality);
     try {
       const u = new URL(url);
       u.pathname = u.pathname.replace(
