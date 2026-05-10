@@ -4595,6 +4595,37 @@ export default {
       // FIX #23: Fire-and-forget — was blocking critical path for no reason
       _getSlugIndex(env).catch(() => {});
 
+      // v8.12.1 BUGFIX: Cold-isolate path was serving the storefront on the
+      // subdomain even when the store had a custom_domain configured —
+      // bypassing the canonical 301 and splitting Meta Pixel attribution
+      // (Pixel fired on *.shopbanao.in, CAPI's event_source_url pointed at
+      // the custom domain → EMQ mismatch). Resolve store info FIRST so the
+      // 301 happens regardless of isolate warmth. Cheap: hits in-memory /
+      // Cache API / KV cascade and is fire-and-forget cached for 30 min.
+      {
+        const earlyStoreInfo = await _resolveStoreInfo(slug, hostname, env).catch(() => null);
+        if (earlyStoreInfo && !earlyStoreInfo.storeId) {
+          const safeSlug = slug.replace(/[<>"'&]/g, "");
+          const r = new Response(buildNotFoundHtml(safeSlug, ROOT_DOMAIN), {
+            status: 404,
+            headers: {
+              "Content-Type": "text/html; charset=utf-8",
+              "Cache-Control": "public, max-age=300",
+              ...SECURITY_HEADERS,
+            },
+          });
+          return cacheableResponse(ctx, request, r, 300);
+        }
+        if (earlyStoreInfo?.customDomain) {
+          const target = `https://${earlyStoreInfo.customDomain}${url.pathname}${url.search}`;
+          const r = new Response(null, {
+            status: 301,
+            headers: { Location: target, "Cache-Control": "public, max-age=86400" },
+          });
+          return cacheableResponse(ctx, request, r, 86400);
+        }
+      }
+
       // v6.6.0: Cold-start unified path — was causing 2-3 skeleton flashes
       // because the previous instant-skeleton page used document.write() to
       // swap in warm HTML, which wiped React's DOM and forced a full reboot.
