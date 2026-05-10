@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import { setCapiUser } from "@/lib/metaEnrichment";
 
 /**
  * Lazy-load the STOREFRONT supabase client — keeps the supabase chunk off the
