@@ -159,6 +159,7 @@ function CategorySection({
   const { data: products, isLoading } = useQuery({
     queryKey: ["storefront-category-home", storeId, category.name],
     queryFn: async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data: d, error } = await supabase
         .from("products")
         .select(CATEGORY_PRODUCT_COLS)
