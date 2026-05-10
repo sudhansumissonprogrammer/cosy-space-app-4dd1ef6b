@@ -16,6 +16,8 @@ import CategoryHeroBanner from "@/components/storefront/CategoryHeroBanner";
 import ShopEmptyState from "@/components/storefront/ShopEmptyState";
 import BackToTop from "@/components/storefront/BackToTop";
 import { fetchCategoryEdge } from "@/lib/storefrontEdgeApi";
+import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
+import { fireMetaCAPI } from "@/lib/metaCapi";
 
 export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
@@ -138,6 +140,38 @@ export default function CategoryDetail() {
     listName: category?.name || "Category",
     customDomain: (store as any)?.custom_domain,
   });
+
+  // Fire Meta Pixel ViewContent + CAPI once per category visit.
+  // Critical for ad-spend optimization: without ViewContent, Meta has no
+  // signal of "what user is interested in" → can't optimize delivery for
+  // category-targeted ads. We send first 5 product IDs and category name.
+  const viewContentFiredRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!category || !store?.id) return;
+    if (rawProducts.length === 0) return;
+    const key = `${store.id}:${category.slug}`;
+    if (viewContentFiredRef.current === key) return;
+    viewContentFiredRef.current = key;
+
+    const topIds = rawProducts.slice(0, 5).map((p: any) => String(p.id));
+    const eventId = generateEventId();
+    const customData = {
+      content_ids: topIds,
+      content_name: category.name,
+      content_category: category.name,
+      content_type: "product_group",
+      currency: "INR",
+    };
+    try { fbPixelTrack("ViewContent", customData, eventId); } catch {}
+    try {
+      fireMetaCAPI({
+        storeId: store.id,
+        eventName: "ViewContent",
+        eventId,
+        customData,
+      } as any);
+    } catch {}
+  }, [category, store?.id, rawProducts.length]);
 
   const sentinelElRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
