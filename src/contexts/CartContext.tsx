@@ -103,8 +103,21 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
 
   const openCart = useCallback(() => {
     setIsCartOpen(true);
-    // Fire ViewCart on cart drawer open (Shopify parity for cart-abandonment audiences)
+    // Fire ViewCart only on user-initiated cart opens, throttled per cart-content
+    // hash + 30 min window so repeated icon clicks don't spam Meta with duplicates
+    // (Shopify behaves the same — one ViewCart per "session of looking at cart").
     if (storeId && items.length > 0) {
+      try {
+        const hash = items.map((i) => `${i.productId}:${i.quantity}`).sort().join("|");
+        const key = `vc_${storeId}`;
+        const raw = sessionStorage.getItem(key);
+        const now = Date.now();
+        if (raw) {
+          const [prevHash, prevTs] = raw.split("@");
+          if (prevHash === hash && now - Number(prevTs) < 30 * 60 * 1000) return;
+        }
+        sessionStorage.setItem(key, `${hash}@${now}`);
+      } catch {}
       Promise.all([
         import("@/hooks/useFacebookPixel"),
         import("@/lib/metaCapi"),

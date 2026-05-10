@@ -32,14 +32,22 @@ export default function StorefrontSearchBar({
   }, []);
 
   // Fire Search event (debounced) when the user pauses typing on a non-empty query.
-  // Tracked once per unique query per session so retargeting audiences stay clean.
-  const lastFiredQueryRef = useRef<string>("");
+  // Deduped per session via sessionStorage so the same query never fires twice
+  // even if the search bar remounts (route change, theme switch, etc.).
   useEffect(() => {
     const q = searchQuery.trim();
     if (q.length < 2) return;
-    if (lastFiredQueryRef.current === q) return;
     const timer = setTimeout(() => {
-      lastFiredQueryRef.current = q;
+      try {
+        const key = "sf_search_fired";
+        const raw = sessionStorage.getItem(key) || "";
+        const fired = new Set(raw ? raw.split("\n") : []);
+        if (fired.has(q)) return;
+        fired.add(q);
+        // Cap at 50 entries to keep the cookie tiny
+        const arr = Array.from(fired).slice(-50);
+        sessionStorage.setItem(key, arr.join("\n"));
+      } catch {}
       const storeId = (window as any).__SF_STORE_ID__;
       Promise.all([
         import("@/hooks/useFacebookPixel"),
