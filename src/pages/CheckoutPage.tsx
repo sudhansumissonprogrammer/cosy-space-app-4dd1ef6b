@@ -1558,10 +1558,7 @@ export default function CheckoutPage() {
 
       {/* 3. Delivery Details */}
       <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-4">
-        <div className="flex items-center gap-2">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">2</span>
-          <span className="text-sm font-medium text-foreground">{t("Delivery Details", "डिलीवरी विवरण")}</span>
-        </div>
+        <div className="text-sm font-medium text-foreground">{t("Delivery Details", "डिलीवरी विवरण")}</div>
 
         {/* Saved-address card (only when shopper is logged in with saved addresses) */}
         {savedAddresses && savedAddresses.length > 0 && selectedAddr ? (
