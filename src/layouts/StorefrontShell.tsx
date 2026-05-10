@@ -134,6 +134,26 @@ export default function StorefrontShell({
   // Listen for live theme preview messages
   const previewOverride = useThemePreview(store?.id);
 
+  // Fire storefront:content-ready AFTER React has committed and painted the
+  // storefront content. Using a post-mount effect + double rAF ensures the
+  // browser has actually painted at least one frame of the real storefront
+  // before the Worker kills the skeleton. This eliminates the white-blank
+  // gap users saw between skeleton fade and product grid paint.
+  useEffect(() => {
+    if (!store?.id) return;
+    if ((window as any).__SF_READY_FIRED__) return;
+    let cancelled = false;
+    requestAnimationFrame(() => {
+      if (cancelled) return;
+      requestAnimationFrame(() => {
+        if (cancelled) return;
+        (window as any).__SF_READY_FIRED__ = true;
+        window.dispatchEvent(new Event("storefront:content-ready"));
+      });
+    });
+    return () => { cancelled = true; };
+  }, [store?.id]);
+
   // Scroll to top on every route change — centralised fix for all mobile navbars
   const { pathname } = useLocation();
   useEffect(() => {
