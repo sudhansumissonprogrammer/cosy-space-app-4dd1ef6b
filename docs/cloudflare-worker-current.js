@@ -72,7 +72,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.10.0-fast-skeleton-dismiss";
+const WORKER_VERSION = "8.11.0-cold-ttfb-cut";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
