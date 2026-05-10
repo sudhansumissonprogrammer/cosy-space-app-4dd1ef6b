@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 
 /**
  * Defers mounting (and therefore the lazy-imported chunk download) of a
@@ -53,7 +53,7 @@ export default function LazyMount({
   // below-fold section becomes visible while the user is reading.
   return (
     <div ref={ref} style={{ minHeight }}>
-      {visible ? children : fallback}
+      {visible ? <Suspense fallback={fallback}>{children}</Suspense> : fallback}
     </div>
   );
 }
