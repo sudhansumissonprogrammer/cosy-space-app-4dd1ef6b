@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
+// supabase is dynamic-imported inside the preview/localhost fallback only
+// to keep the 171KB supabase chunk OUT of the storefront-shell static graph.
 
 const PAGE_SIZE = 14;
 
