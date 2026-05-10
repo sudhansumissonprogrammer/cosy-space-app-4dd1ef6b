@@ -226,18 +226,6 @@ export default function StorefrontShell({
     return null;
   }
 
-  // Perf: fire content-ready as soon as the SHELL has data (not after products).
-  // The Worker's skeleton-cleanup script still polls hasRealContent() — it
-  // only kills the skeleton once a real <img> has actually painted, so the
-  // user never sees a blank flash. Firing earlier just removes the artificial
-  // ~600ms wait for the products query/RAFs in useStorefrontProducts.
-  if (typeof window !== "undefined" && !(window as any).__SF_READY_FIRED__) {
-    (window as any).__SF_READY_FIRED__ = true;
-    requestAnimationFrame(() => {
-      window.dispatchEvent(new Event("storefront:content-ready"));
-    });
-  }
-
   // Not found
   if (!store) {
     return <StorefrontNotFound slug={slug} label={notFoundLabel} />;
