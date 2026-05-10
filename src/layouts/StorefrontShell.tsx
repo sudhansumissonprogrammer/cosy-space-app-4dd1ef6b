@@ -182,11 +182,11 @@ export default function StorefrontShell({
     }
   }, [pathname, (store as any)?.facebook_pixel_id]);
 
-  // Persist ?fbclid → _fbc cookie once per visit so subsequent CAPI events
-  // carry the click ID even after the visitor navigates away from the entry URL.
+  // Persist ?fbclid → _fbc cookie + expose store id globally for tracking helpers
   useEffect(() => {
     ensureFbcPersisted();
-  }, []);
+    if (store?.id) (window as any).__SF_STORE_ID__ = store.id;
+  }, [store?.id]);
 
   // GA4 tag — read measurement ID from store.features.ga4_measurement_id
   // (jsonb on stores). Stores without GA4 set up: hook is a no-op.
