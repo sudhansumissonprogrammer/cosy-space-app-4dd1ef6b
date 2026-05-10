@@ -31,6 +31,37 @@ export default function StorefrontSearchBar({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // Fire Search event (debounced) when the user pauses typing on a non-empty query.
+  // Tracked once per unique query per session so retargeting audiences stay clean.
+  const lastFiredQueryRef = useRef<string>("");
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) return;
+    if (lastFiredQueryRef.current === q) return;
+    const timer = setTimeout(() => {
+      lastFiredQueryRef.current = q;
+      const storeId = (window as any).__SF_STORE_ID__;
+      Promise.all([
+        import("@/hooks/useFacebookPixel"),
+        import("@/lib/metaCapi"),
+        import("@/hooks/useGA4"),
+      ]).then(([pixelMod, capiMod, gaMod]) => {
+        const eid = pixelMod.generateEventId();
+        pixelMod.fbPixelTrack("Search", { search_string: q }, eid);
+        if (storeId) {
+          capiMod.fireMetaCAPI({
+            storeId,
+            eventName: "Search",
+            eventId: eid,
+            customData: { search_string: q } as any,
+          });
+        }
+        gaMod.ga4Track("search", { search_term: q });
+      }).catch(() => {});
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const suggestions = useMemo(() => {
     if (!searchQuery.trim() || !products) return [];
     const q = searchQuery.toLowerCase();
