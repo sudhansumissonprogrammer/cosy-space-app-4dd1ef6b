@@ -182,6 +182,17 @@ export default function StorefrontShell({
     }
   }, [pathname, (store as any)?.facebook_pixel_id]);
 
+  // Persist ?fbclid → _fbc cookie once per visit so subsequent CAPI events
+  // carry the click ID even after the visitor navigates away from the entry URL.
+  useEffect(() => {
+    ensureFbcPersisted();
+  }, []);
+
+  // GA4 tag — read measurement ID from store.features.ga4_measurement_id
+  // (jsonb on stores). Stores without GA4 set up: hook is a no-op.
+  const ga4Id = (store as any)?.features?.ga4_measurement_id || null;
+  useGA4(ga4Id, pathname);
+
   // Capture ?coupon=CODE from any storefront URL into sessionStorage so it survives
   // navigation through product → cart → checkout (where it auto-applies).
   useEffect(() => {
