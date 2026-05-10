@@ -64,6 +64,7 @@ function BestSellersSection({ storeId, slug, store, cardStyle, isCarousel }: {
     queryKey: ["storefront-best-sellers-inf", storeId],
     queryFn: async ({ pageParam = 0 }) => {
       const offset = pageParam * BATCH_SIZE;
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data: d, error } = await supabase
         .from("products")
         .select(BEST_SELLER_COLS)
