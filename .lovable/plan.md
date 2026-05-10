@@ -1,72 +1,53 @@
-## Goal
+# Plan: Shopify-grade `AddPaymentInfo` for All Gateways
 
-Refresh the Partner area UI to feel as polished and modern as the Store Dashboard: bold hero numbers, animated counts, premium gradient cards, horizontally-scrollable stat strips on mobile, tighter spacing, and a sticky bottom tab bar on phones.
+Goal: Fire `AddPaymentInfo` (browser pixel + CAPI mirror, deduped by `event_id`) whenever a customer picks a payment option in checkout — correctly labelled per store's actual gateway (Razorpay / Cashfree / COD-only / Partial-COD). One implementation works for every store: serdiyajewellers (Razorpay + partial), imitationworld (Cashfree + partial), COD-only stores, and full-online stores.
 
-Scope: visual/UI only — no business logic, data, or backend changes.
+## Scope
+Single file: `src/pages/CheckoutPage.tsx`. No edge function changes (`meta-capi` already accepts any `event_name`). No DB changes.
 
-## Pages to redesign
+## Method resolution table
 
-1. **`src/layouts/PartnerLayout.tsx`** — header + tab nav
-2. **`src/pages/partner/PartnerOverview.tsx`** — overview/home tab
-3. **`src/pages/partner/PartnerWallet.tsx`** — wallet tab
-4. **`src/pages/partner/PartnerWithdrawals.tsx`** — withdrawals tab
-5. **`src/pages/partner/PartnerLanding.tsx`** — public landing (premium polish pass)
-6. **`src/pages/partner/PartnerLogin.tsx` & `PartnerSignup.tsx`** — light polish only (cards, spacing, gradient header)
+| User selection | State | Resolved `content_category` | `value` |
+|---|---|---|---|
+| COD button | `paymentMethod==="cod"` & not partial | `cod` | `total` |
+| Partial advance (advance via Razorpay) | `paymentMethod==="razorpay"` & `partialPaymentMode==="partial"` & `activeGateway==="razorpay"` | `partial_cod_razorpay` | `partialAdvanceTotal` |
+| Partial advance (advance via Cashfree) | same but `activeGateway==="cashfree"` | `partial_cod_cashfree` | `partialAdvanceTotal` |
+| Full Online — Razorpay | `paymentMethod==="razorpay"` & `partialPaymentMode==="full"` & `activeGateway==="razorpay"` | `razorpay` | `total` |
+| Full Online — Cashfree | same but `activeGateway==="cashfree"` | `cashfree` | `total` |
+| COD-only store (no gateway) | `activeGateway===null` & `paymentMethod==="cod"` | `cod` | `total` |
 
-## Design direction (matches Dashboard.tsx)
+## Steps
 
-- **Hero block at the top** of each tab — gradient `from-primary to-primary/70`, big tabular-nums number, secondary CTA on the right.
-- **Animated stat count-up** via existing `useCountUp` hook (already used in Dashboard).
-- **Stat strip**: horizontal scroll on mobile (`flex gap-2.5 overflow-x-auto scrollbar-hide`), grid on `md+`, compact icon+label+value cards (mirrors Dashboard `statCards`).
-- **Premium cards**: `rounded-2xl`, soft border, no harsh shadow, subtle `bg-accent/20` strips for inline info (matches store URL strip).
-- **Section headings**: `text-sm font-bold tracking-tight` with optional small action button on the right (View all / Refresh).
-- **Empty states**: centered icon-in-circle + helper text + small CTA button (same pattern as Dashboard's empty charts).
-- **Status pills**: keep existing tone map but switch to `rounded-full px-2.5 py-0.5 text-[11px] font-semibold` and use semantic tokens (no raw `amber-100` etc.; map to `bg-warning/15 text-warning` style via Tailwind arbitrary or keep current colors but unify).
+**1. Helper inside component** — `resolvePaymentInfo()` returns `{ category, value }` from the table above using existing `paymentMethod`, `partialPaymentMode`, `activeGateway`, `total`, `partialAdvanceTotal`, `isPartialOrder`.
 
-## Mobile-friendly improvements
+**2. New `useEffect`** watching `[paymentMethod, partialPaymentMode, activeGateway, checkoutItems.length]`, placed right after the existing InitiateCheckout effect (line 571–597) so funnel order stays IC → AddPaymentInfo.
 
-- **Sticky bottom tab bar** on phones (replaces top nav scroll-row on small screens). Top nav stays for `md+`. Pattern: fixed bottom strip with 3 icon+label items, active state uses `bg-primary/10 text-primary`. Hidden ≥ md.
-- **Larger touch targets** (44px min) on all action buttons.
-- **Safe-area padding** (`pb-[env(safe-area-inset-bottom)]`) on bottom bar.
-- **Pull-to-refresh hook** on Overview/Wallet using existing `usePullToRefresh` (same as store dashboard).
+```text
+useEffect:
+  if (checkoutItems.length === 0) return;
+  const { category, value } = resolvePaymentInfo();
+  if (firedRef.current.has(category)) return;   // dedup per category
+  firedRef.current.add(category);
+  const eid = generateEventId();
+  const data = { content_category: category, currency, value,
+                 num_items, content_ids, contents };
+  fbPixelTrack("AddPaymentInfo", data, eid);
+  fireMetaCAPI({ storeId, eventName: "AddPaymentInfo", eventId: eid,
+                 userEmail, userPhone, externalId, customData: data });
+```
 
-## Per-page changes
+**3. Dedup ref** — `const firedRef = useRef<Set<string>>(new Set())`. Keyed by resolved `category`, so toggling COD↔Razorpay↔Partial each fires once but re-renders don't.
 
-### PartnerLayout
-- Header: keep partner code/name on the left, add subtle avatar circle with initial. Notifications bell + sign-out on the right.
-- Replace the top scroll-row tab nav with: full nav on `md+` only, sticky bottom tab bar on mobile.
-- Add `<main className="pb-20 md:pb-6">` so content doesn't hide behind bottom bar.
+**4. COD-only store** — `paymentMethod` defaults to `"cod"` from mount, so the effect fires once after items load. No special case needed.
 
-### PartnerOverview
-- New **gradient hero** showing "Total earned" big + small "this month" delta beneath, copy/share CTAs as outline-on-gradient buttons.
-- Stat strip: Clicks · Signups · Paid · Conversion% (compute % client-side from signups/clicks). Animated count-up.
-- Referral link card → premium card: QR larger on `md+`, three quick share chips (WhatsApp, Copy link, Copy code) with icons.
-- Recent referrals + commission history → split cards with section headers and "Empty state" illustrations.
+**5. Partial value correctness** — using `partialAdvanceTotal` (not `total`) for partial categories matches the actual amount Meta will see at Purchase, keeping Pixel↔CAPI value-match clean for ROAS optimization.
 
-### PartnerWallet
-- Hero withdrawable card stays, but enlarged with mini-progress bar showing `pending → approved` flow.
-- 4 tile strip → horizontal scroll on mobile (matches Dashboard pattern).
-- Wallet activity → unify row layout with subtle hover, credit/debit chip, date in muted micro-text.
+**6. Guards already in place** — `fbPixelTrack` and `fireMetaCAPI` both short-circuit on Lovable preview/dev hosts. Zero risk on non-prod.
 
-### PartnerWithdrawals
-- Form card → cleaner: amount with quick-fill chips (`25%`, `50%`, `Max`), method tabs styled to match `SettingsTabsNav` look.
-- History rows → card list with status pill at top-right, method icon (UPI/Bank), and collapsible admin notes.
+## Verification
+After deploy: open serdiyajewellers.shop checkout in Meta Pixel Helper → toggle COD/Online/Partial → see one `AddPaymentInfo` per category with correct `content_category` + `value`. Events Manager → CAPI tab → matching `event_id` dedup, EMQ ≥ 7.
 
-### PartnerLanding (premium polish)
-- Add subtle hero gradient backdrop and soft "noise" overlay; bigger headline weight; sticky CTA on mobile.
-- Convert benefits cards to use the same icon-tile style as `FeaturesGrid` on the marketing site for brand consistency.
-
-### PartnerLogin / PartnerSignup
-- Wrap in a centered premium card on a soft gradient background; keep form logic untouched.
-
-## Technical notes
-
-- All colors via semantic HSL tokens (`primary`, `muted`, `accent`, `border`, `foreground`). No raw hex.
-- Reuse: `useCountUp`, `usePullToRefresh`, `Card`, `Button`, `Tabs`, existing `NotificationsBell`.
-- New small component: `src/components/partner/PartnerBottomNav.tsx` (mobile bottom tab bar).
-- New small component: `src/components/partner/StatTile.tsx` (shared tile used across overview/wallet).
-- No DB/edge function changes. No new dependencies.
-
-## Out of scope
-
-- Data model, edge functions, route changes, auth flow, copy rewrites beyond what fits new layout.
+## Out of scope (future)
+- Adding CAPI access token (separate Settings step — biggest ROI, user already aware).
+- COD-prominent UI redesign for the 73% Razorpay drop-off.
+- AddPaymentInfo from V19/V20 custom checkout pages (only standard `CheckoutPage.tsx` covered here; other layouts use the same page).
