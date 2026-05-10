@@ -3,6 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- ─── First-party visitor ID cookie (analytics only) ───
+         Sets `sb_vid` if missing. Used server-side by the Worker on the NEXT
+         page view to count unique visitors accurately (immune to mobile
+         carrier NAT / shared IPs). 1-year expiry, first-party, SameSite=Lax.
+         No PII, no cross-site tracking. -->
+    <script>
+      (function(){
+        try{
+          var k='sb_vid';
+          if(document.cookie.indexOf(k+'=')===-1){
+            var b=new Uint8Array(16);
+            (window.crypto||window.msCrypto).getRandomValues(b);
+            b[6]=(b[6]&0x0f)|0x40;b[8]=(b[8]&0x3f)|0x80;
+            var h=[];for(var i=0;i<16;i++)h.push((b[i]+0x100).toString(16).slice(1));
+            var v=h[0]+h[1]+h[2]+h[3]+'-'+h[4]+h[5]+'-'+h[6]+h[7]+'-'+h[8]+h[9]+'-'+h[10]+h[11]+h[12]+h[13]+h[14]+h[15];
+            document.cookie=k+'='+v+';path=/;max-age=31536000;samesite=lax';
+          }
+        }catch(e){}
+      })();
+    </script>
     <!-- ─── Analytics sendBeacon shim ───
          Lovable's flock.js posts to /~api/analytics with a blocking fetch that
          steals a TCP connection slot from real critical resources (~1.1s seen
