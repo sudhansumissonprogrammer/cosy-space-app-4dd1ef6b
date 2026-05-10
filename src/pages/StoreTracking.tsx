@@ -244,7 +244,7 @@ export default function StoreTracking() {
               <div className="rounded-lg border bg-muted/50 p-3 space-y-1">
                 <p className="text-xs font-medium text-foreground">Events tracked automatically:</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {["PageView", "ViewContent", "AddToCart", "InitiateCheckout", "Purchase"].map((e) => (
+                  {["PageView", "ViewContent", "AddToCart", "InitiateCheckout", "AddPaymentInfo", "Purchase"].map((e) => (
                     <Badge key={e} variant="secondary" className="text-xs">{e}</Badge>
                   ))}
                 </div>
