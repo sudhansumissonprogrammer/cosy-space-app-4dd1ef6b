@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
+// supabase is dynamic-imported inside the preview/localhost fallback only
+// to keep the 171KB supabase chunk OUT of the storefront-shell static graph.
 
 const PAGE_SIZE = 14;
 
@@ -67,7 +68,8 @@ async function fetchProducts(storeId: string): Promise<any[]> {
     return json;
   }
 
-  // ── Preview/localhost fallback: direct Supabase ──
+  // ── Preview/localhost fallback: direct Supabase (lazy import) ──
+  const { supabase } = await import("@/integrations/supabase/client");
   const { data, error } = await supabase
     .from("products")
     .select(PRODUCT_COLUMNS)

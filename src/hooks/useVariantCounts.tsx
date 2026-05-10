@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+// supabase is dynamic-imported inside queryFn (deferred 1s after mount anyway)
+// to keep the 171KB supabase chunk OUT of the storefront-shell static graph.
 
 type CountMap = Map<string, number>;
 
@@ -23,6 +24,7 @@ export function VariantCountProvider({ productIds, children }: { productIds: str
     queryKey: ["variant-counts-batch", productIds.length > 0 ? productIds[0] : "empty", productIds.length],
     queryFn: async (): Promise<CountMap> => {
       if (productIds.length === 0) return new Map();
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase
         .from("product_variants")
         .select("product_id")
