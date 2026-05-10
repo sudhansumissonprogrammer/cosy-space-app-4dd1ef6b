@@ -9,7 +9,8 @@ import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
-import { supabase } from "@/integrations/supabase/client";
+// supabase is dynamic-imported inside queryFns to keep the 171KB chunk OFF
+// the storefront-shell static graph (V16 is bundled into storefront-shell).
 import { Search, SlidersHorizontal, ArrowRight, Loader2 } from "lucide-react";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import { VariantCountProvider } from "@/hooks/useVariantCounts";
