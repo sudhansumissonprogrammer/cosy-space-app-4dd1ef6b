@@ -178,6 +178,7 @@ export async function firePurchaseCapi(
     const contentIds = (items || []).map((i) => i.product_id).filter(Boolean) as string[];
     const eventSourceUrl =
       opts.eventSourceUrl ||
+      (order as any).meta_event_source_url ||
       (store.custom_domain
         ? `https://${store.custom_domain}/checkout`
         : `https://${store.slug}.shopbanao.in/checkout`);
