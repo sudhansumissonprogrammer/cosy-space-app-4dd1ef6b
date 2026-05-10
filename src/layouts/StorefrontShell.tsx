@@ -160,6 +160,26 @@ export default function StorefrontShell({
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
   }, [pathname]);
 
+  // SPA route-change PageView for Meta Pixel (Shopify-style).
+  // Skip the first pathname — the inline pixel in index.html (or the
+  // useFacebookPixel hook) already fired PageView for the initial load.
+  // Subsequent client-side navigations need an explicit fbq('track','PageView')
+  // so Meta sees every page in the funnel, not just the entry page.
+  const lastPageviewPath = useRef<string | null>(null);
+  useEffect(() => {
+    const pixelId = (store as any)?.facebook_pixel_id;
+    if (!pixelId) return;
+    if (lastPageviewPath.current === null) {
+      lastPageviewPath.current = pathname;
+      return;
+    }
+    if (lastPageviewPath.current === pathname) return;
+    lastPageviewPath.current = pathname;
+    if (typeof window !== "undefined" && typeof window.fbq === "function") {
+      try { window.fbq("track", "PageView"); } catch {}
+    }
+  }, [pathname, (store as any)?.facebook_pixel_id]);
+
   // Capture ?coupon=CODE from any storefront URL into sessionStorage so it survives
   // navigation through product → cart → checkout (where it auto-applies).
   useEffect(() => {
