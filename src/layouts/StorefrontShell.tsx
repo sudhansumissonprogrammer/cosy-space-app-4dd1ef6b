@@ -197,6 +197,28 @@ export default function StorefrontShell({
     };
   }, [themeVarsKey]);
 
+  // Defer non-critical overlay chunk loads until the browser is idle.
+  // FloatingWhatsApp/SideCart/BackToTop/CartPlusOneOverlay are all `lazy()`
+  // but their `import()` would fire the moment Suspense renders them. Gating
+  // behind requestIdleCallback keeps those ~30-60KB extra chunks off the
+  // first-paint network/parse window.
+  const [overlaysReady, setOverlaysReady] = useState(false);
+  useEffect(() => {
+    if (overlaysReady) return;
+    const cb = () => setOverlaysReady(true);
+    const idle: any = (window as any).requestIdleCallback;
+    const handle = idle
+      ? idle(cb, { timeout: 3000 })
+      : window.setTimeout(cb, 1500);
+    return () => {
+      if (idle && (window as any).cancelIdleCallback) {
+        (window as any).cancelIdleCallback(handle);
+      } else {
+        clearTimeout(handle);
+      }
+    };
+  }, [overlaysReady]);
+
   // Single-skeleton policy: while data loads, render `null`.
   // The inline skeleton (Worker #sf-skel in production, index.html fallback in preview)
   // remains visible until storefront:content-ready fires.
