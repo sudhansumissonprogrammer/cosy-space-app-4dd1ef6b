@@ -178,6 +178,19 @@ export default defineConfig(({ mode }) => ({
          *   - embla only used by storefront carousels → safe isolated chunk
          */
         manualChunks(id) {
+          // === Entry-only helpers ===
+          // main.tsx needs host detection on EVERY route, including the root
+          // marketing landing. If these helpers are allowed to be auto-placed
+          // into storefront-shell, the landing entry statically imports the
+          // whole storefront chunk graph before first paint.
+          if (
+            id.includes("/src/lib/subdomain") ||
+            id.includes("/src/lib/chunkLoadRecovery") ||
+            id.includes("vite/preload-helper")
+          ) {
+            return "entry-utils";
+          }
+
           // === Core framework (React) ===
           if (
             id.includes("node_modules/react-dom") ||
