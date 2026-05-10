@@ -264,24 +264,29 @@ export default function StorefrontShell({
         <SmartInstallPrompt appName={store.name} primaryColor={primaryColor} textColor={btnTextColor} />
       </Suspense>
       */}
-      {showSideCart && (
+      {/* Overlay chunks gated behind requestIdleCallback to keep them off first-paint */}
+      {overlaysReady && showSideCart && (
         <Suspense fallback={null}>
           <SideCart store={store} />
         </Suspense>
       )}
-      {showWhatsApp && (
+      {overlaysReady && showWhatsApp && (
         <Suspense fallback={null}>
           <FloatingWhatsApp store={store} />
         </Suspense>
       )}
       {/* ExitIntentPopup permanently disabled — SAVE100 reserved for WhatsApp recovery links only.
           Coupon auto-applies at checkout via ?coupon=SAVE100 in the recovery link. */}
-      <Suspense fallback={null}>
-        <BackToTop />
-      </Suspense>
-      <Suspense fallback={null}>
-        <CartPlusOneOverlay />
-      </Suspense>
+      {overlaysReady && (
+        <Suspense fallback={null}>
+          <BackToTop />
+        </Suspense>
+      )}
+      {overlaysReady && (
+        <Suspense fallback={null}>
+          <CartPlusOneOverlay />
+        </Suspense>
+      )}
     </div>
   );
 
