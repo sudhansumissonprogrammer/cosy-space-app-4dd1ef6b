@@ -754,6 +754,7 @@ export type Database = {
           id: string
           path: string | null
           store_id: string
+          visitor_id: string | null
           visitor_ip: string | null
         }
         Insert: {
@@ -761,6 +762,7 @@ export type Database = {
           id?: string
           path?: string | null
           store_id: string
+          visitor_id?: string | null
           visitor_ip?: string | null
         }
         Update: {
@@ -768,6 +770,7 @@ export type Database = {
           id?: string
           path?: string | null
           store_id?: string
+          visitor_id?: string | null
           visitor_ip?: string | null
         }
         Relationships: [
