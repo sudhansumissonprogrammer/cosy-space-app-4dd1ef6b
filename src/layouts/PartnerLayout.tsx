@@ -24,7 +24,21 @@ export default function PartnerLayout() {
     if (authLoading) return;
     if (!session) { navigate("/partners/login", { replace: true }); return; }
     (async () => {
-      const { data: p } = await supabase.from("partners").select("*").eq("user_id", session.user.id).maybeSingle();
+      let { data: p } = await supabase.from("partners").select("*").eq("user_id", session.user.id).maybeSingle();
+      if (!p) {
+        // Self-heal: signup-with-email-confirmation can land users here without a partner row.
+        const meta = (session.user.user_metadata || {}) as any;
+        if (meta.user_type === "partner" || meta.full_name) {
+          await supabase.from("partners").insert({
+            user_id: session.user.id,
+            name: meta.full_name || session.user.email?.split("@")[0] || "Partner",
+            email: session.user.email!,
+            mobile: meta.mobile || null,
+          });
+          const re = await supabase.from("partners").select("*").eq("user_id", session.user.id).maybeSingle();
+          p = re.data;
+        }
+      }
       if (!p) { navigate("/partners/signup", { replace: true }); return; }
       setPartner(p);
       setLoading(false);
