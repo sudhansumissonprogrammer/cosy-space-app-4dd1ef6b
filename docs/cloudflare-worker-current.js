@@ -72,7 +72,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.10.0-fast-skeleton-dismiss";
+const WORKER_VERSION = "8.11.0-cold-ttfb-cut";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -4570,11 +4570,14 @@ export default {
       // awaits the prefetch (already supported in StorefrontLayout.logic.ts),
       // and renders → ONE skeleton only, identical to the warm path.
       if (!_memShell) {
-        // v6.7.0: Raised deadline from 600ms → 1300ms so the inline-data path
-        // catches ~95% of cold hits. Eliminates the browser-side self-call
-        // (window.__STOREFRONT_PREFETCH__ → /?__sf_data=1) which was the
-        // mysterious "Unknown 557ms" subrequest doubling request counts.
-        const COLD_DATA_DEADLINE = 1300;
+        // v8.7.0 TTFB-cut: previous deadline of 1300ms blocked HTML flush
+        // on cold-cache hits, producing ~2.2s real-world TTFB. The fallback
+        // path immediately below (_buildPrefetchPromiseScript) injects a
+        // Promise that React's useStorefront() awaits — so when shell data
+        // isn't ready we ship HTML instantly and let the browser overlap
+        // shell-data RTT with JS download/parse. Net: ~1000ms TTFB cut on
+        // cold hits, identical UX (single skeleton, no flash).
+        const COLD_DATA_DEADLINE = 250;
         const [shellResult, prefetchResult, inlineProductsCold] = await Promise.all([
           getNavigationSpaShell(request, ctx, env),
           prefetchStorefrontDataWithDeadline(slug, ctx, env, COLD_DATA_DEADLINE).catch(() => ({ data: null, source: "none" })),
