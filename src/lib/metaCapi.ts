@@ -82,6 +82,18 @@ export function fireMetaCAPI(params: CAPIEventParams) {
 
   const { fbc, fbp } = getMetaCookies();
 
+  // Auto-merge globally-registered user data (logged-in storefront customer).
+  // Per-call params win over the global registry — explicit > implicit.
+  const u = getCapiUser();
+  const userEmail = params.userEmail ?? u.email;
+  const userPhone = params.userPhone ?? u.phone;
+  const externalId = params.externalId ?? u.externalId;
+  const firstName = params.firstName ?? u.firstName;
+  const lastName = params.lastName ?? u.lastName;
+  const city = params.city ?? u.city;
+  const state = params.state ?? u.state;
+  const zipCode = params.zipCode ?? u.zipCode;
+
   // Fire and forget — don't block the UI
   // Sanitize event_source_url — strip ALL query params and fragments.
   // URL params can contain PII (?email=, ?phone=, ?coupon=) or junk (?fbclid, utm_*)
@@ -89,8 +101,8 @@ export function fireMetaCAPI(params: CAPIEventParams) {
   // Sending only origin+pathname is the safe canonical form Meta recommends.
   let safeUrl = "";
   try {
-    const u = new URL(window.location.href);
-    safeUrl = `${u.origin}${u.pathname}`;
+    const u2 = new URL(window.location.href);
+    safeUrl = `${u2.origin}${u2.pathname}`;
   } catch {
     safeUrl = window.location.origin;
   }
