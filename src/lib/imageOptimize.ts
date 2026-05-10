@@ -17,30 +17,11 @@ const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
 const ENABLE_EDGE_IMAGE_PROXY = import.meta.env.VITE_ENABLE_EDGE_IMAGE_PROXY === "true";
 
 /**
- * v8.4 — route product images through the Cloudflare Worker `/cf-img`
- * on production hosts. This puts every image behind the Worker's edge
- * cache (s-maxage=2592000) so a second visitor anywhere on the planet
- * gets cache-hit instead of a 1.1s Supabase Storage round-trip.
- * Localhost / Lovable preview keep using the direct Supabase render API
- * because they don't have a Worker in front.
+ * v8.5 — `/cf-img` Worker proxy disabled. Every image hit was generating a
+ * paid Cloudflare Worker invocation; we now go direct to Supabase Storage's
+ * Render API (`/storage/v1/render/image/`), which is free and CDN-cached
+ * by Supabase. Net cost saving: ~5-30 Worker events per pageview.
  */
-function shouldUseCfImg(): boolean {
-  if (typeof window === "undefined") return false;
-  const h = window.location.hostname;
-  if (h === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(h)) return false;
-  if (h.endsWith(".lovable.app") || h.endsWith(".lovableproject.com")) return false;
-  return true;
-}
-
-function toCfImg(rawUrl: string, width: number, quality: number): string {
-  if (typeof window === "undefined") return rawUrl;
-  const params = new URLSearchParams({
-    url: rawUrl,
-    w: String(width),
-    q: String(quality),
-  });
-  return `${window.location.origin}/cf-img?${params.toString()}`;
-}
 
 /** We now store only 800w — render API handles responsive sizes */
 const PIPELINE_WIDTHS: number[] = [400, 800];
@@ -65,11 +46,10 @@ export function optimizeImageUrl(
   if (!firstUrl) return "";
   url = firstUrl;
 
-  // ── 1. Our pipeline images: route through /cf-img on production for edge cache ──
+  // ── 1. Our pipeline images: use Supabase render API directly ──
   if (isOptimizedUrl(url)) {
     const variant = resolveVariantUrl(url, 800);
     if (variant.includes("supabase.co/storage")) {
-      if (shouldUseCfImg()) return toCfImg(variant, width, quality);
       try {
         const u = new URL(variant);
         u.pathname = u.pathname.replace(
@@ -113,9 +93,8 @@ export function optimizeImageUrl(
     }
   }
 
-  // ── 4. Supabase Storage: /cf-img on production, direct render elsewhere ──
+  // ── 4. Supabase Storage: use Supabase render API directly ──
   if (url.includes("supabase.co/storage")) {
-    if (shouldUseCfImg()) return toCfImg(url, width, quality);
     try {
       const u = new URL(url);
       u.pathname = u.pathname.replace(

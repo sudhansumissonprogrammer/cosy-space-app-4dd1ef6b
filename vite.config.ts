@@ -272,7 +272,15 @@ export default defineConfig(({ mode }) => ({
             id.includes("/src/components/storefront/StorefrontMobileHero") ||
             id.includes("/src/hooks/useVariantCounts") ||
             id.includes("/src/hooks/useStorefrontProducts") ||
-            id.includes("/src/hooks/useFacebookPixel")
+            id.includes("/src/hooks/useFacebookPixel") ||
+            // v8.5 — absorb V16 theme entry layout + its bottom nav + hero
+            // carousel so cold load fires ONE chunk instead of 4 separate
+            // round trips (~600ms saved per cold visit on 4G).
+            id.includes("/src/layouts/StorefrontLayoutV16") ||
+            id.includes("/src/pages/StorefrontHomeV16") ||
+            id.includes("/src/components/storefront/MobileBottomNav") ||
+            id.includes("/src/components/storefront/HeroBannerCarousel") ||
+            id.includes("/src/components/storefront/MobileHeroCarousel")
           ) {
             return "storefront-shell";
           }

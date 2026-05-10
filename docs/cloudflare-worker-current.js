@@ -1476,18 +1476,17 @@ function _extractTopProductImages(inlineProductsStr, n) {
  *  #3 Add imagesrcset + imagesizes so the browser picks the right size.
  */
 function _toRenderUrl(rawUrl, width, quality) {
-  // v8.4 — emit relative /cf-img URLs so preloads hit the Worker's edge cache
-  // (s-maxage=2592000) instead of Supabase Storage directly. Saves 700-900ms
-  // per LCP image on cold loads after the first visitor warms the cache.
+  // v8.5 — emit Supabase Render API URLs directly (NOT /cf-img). The Worker
+  // proxy was generating one paid event per image; Supabase's render API is
+  // free and CDN-cached. Saves ~5-30 Worker events per pageview.
   try {
     const u = new URL(rawUrl);
-    if (u.hostname.endsWith(".supabase.co") && u.pathname.includes("/storage/v1/")) {
-      const params = new URLSearchParams({
-        url: rawUrl,
-        w: String(width),
-        q: String(quality),
-      });
-      return `/cf-img?${params.toString()}`;
+    if (u.hostname.endsWith(".supabase.co") && u.pathname.includes("/storage/v1/object/")) {
+      u.pathname = u.pathname.replace("/storage/v1/object/", "/storage/v1/render/image/");
+      u.searchParams.set("width", String(width));
+      u.searchParams.set("quality", String(quality));
+      u.searchParams.set("resize", "contain");
+      return u.toString();
     }
     return rawUrl;
   } catch {
