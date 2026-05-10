@@ -68,9 +68,9 @@ async function fetchProducts(storeId: string): Promise<any[]> {
     return json;
   }
 
-  // ── Preview/localhost fallback: direct Supabase ──
+  // ── Preview/localhost fallback: direct Supabase (lazy import) ──
+  const { supabase } = await import("@/integrations/supabase/client");
   const { data, error } = await supabase
-    .from("products")
     .select(PRODUCT_COLUMNS)
     .eq("store_id", storeId)
     .eq("is_active", true)
