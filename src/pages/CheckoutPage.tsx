@@ -573,7 +573,7 @@ export default function CheckoutPage() {
     const eid = generateEventId();
     const eventData = {
       content_ids: checkoutItems.map((i) => i.productId),
-      contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
+      contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
       num_items: checkoutItems.length,
       value: subtotal,
       currency,
@@ -626,7 +626,7 @@ export default function CheckoutPage() {
     const data = {
       content_category: category,
       content_ids: checkoutItems.map((i) => i.productId),
-      contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
+      contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
       num_items: checkoutItems.length,
       value,
       currency,
@@ -1007,6 +1007,7 @@ export default function CheckoutPage() {
         "Purchase",
         {
           content_ids: checkoutItems.map((i) => i.productId),
+          contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
           content_type: "product",
           content_name: checkoutItems.map((i) => i.name).join(", "),
           value: total,

@@ -1,53 +1,96 @@
-# Plan: Shopify-grade `AddPaymentInfo` for All Gateways
+## Goal
 
-Goal: Fire `AddPaymentInfo` (browser pixel + CAPI mirror, deduped by `event_id`) whenever a customer picks a payment option in checkout — correctly labelled per store's actual gateway (Razorpay / Cashfree / COD-only / Partial-COD). One implementation works for every store: serdiyajewellers (Razorpay + partial), imitationworld (Cashfree + partial), COD-only stores, and full-online stores.
+Make tracking Shopify-grade for **all stores**, regardless of whether the merchant adds a CAPI access token. Pixel-only must still work well; Pixel + CAPI must be best-in-class.
 
-## Scope
-Single file: `src/pages/CheckoutPage.tsx`. No edge function changes (`meta-capi` already accepts any `event_name`). No DB changes.
+---
 
-## Method resolution table
+## How Shopify handles this (mental model)
 
-| User selection | State | Resolved `content_category` | `value` |
-|---|---|---|---|
-| COD button | `paymentMethod==="cod"` & not partial | `cod` | `total` |
-| Partial advance (advance via Razorpay) | `paymentMethod==="razorpay"` & `partialPaymentMode==="partial"` & `activeGateway==="razorpay"` | `partial_cod_razorpay` | `partialAdvanceTotal` |
-| Partial advance (advance via Cashfree) | same but `activeGateway==="cashfree"` | `partial_cod_cashfree` | `partialAdvanceTotal` |
-| Full Online — Razorpay | `paymentMethod==="razorpay"` & `partialPaymentMode==="full"` & `activeGateway==="razorpay"` | `razorpay` | `total` |
-| Full Online — Cashfree | same but `activeGateway==="cashfree"` | `cashfree` | `total` |
-| COD-only store (no gateway) | `activeGateway===null` & `paymentMethod==="cod"` | `cod` | `total` |
+Shopify Pixel works for every store out-of-the-box (browser-only). When the merchant connects the Conversions API (token), Shopify automatically mirrors every event server-side with shared `event_id` for dedup. Merchants who never add CAPI still get good tracking — just with the usual 30-50% browser-loss on iOS/adblock. Merchants who add CAPI get EMQ 8-9 + recovered loss.
 
-## Steps
+We already match this architecture (Pixel always fires, CAPI fires conditionally based on `meta_access_token`). The gaps below close the remaining quality delta.
 
-**1. Helper inside component** — `resolvePaymentInfo()` returns `{ category, value }` from the table above using existing `paymentMethod`, `partialPaymentMode`, `activeGateway`, `total`, `partialAdvanceTotal`, `isPartialOrder`.
+---
 
-**2. New `useEffect`** watching `[paymentMethod, partialPaymentMode, activeGateway, checkoutItems.length]`, placed right after the existing InitiateCheckout effect (line 571–597) so funnel order stays IC → AddPaymentInfo.
+## Scope (4 changes)
 
-```text
-useEffect:
-  if (checkoutItems.length === 0) return;
-  const { category, value } = resolvePaymentInfo();
-  if (firedRef.current.has(category)) return;   // dedup per category
-  firedRef.current.add(category);
-  const eid = generateEventId();
-  const data = { content_category: category, currency, value,
-                 num_items, content_ids, contents };
-  fbPixelTrack("AddPaymentInfo", data, eid);
-  fireMetaCAPI({ storeId, eventName: "AddPaymentInfo", eventId: eid,
-                 userEmail, userPhone, externalId, customData: data });
+### 1. Surface CAPI status to merchants — "Marketing Health" widget
+
+**Where:** Store dashboard → Settings → Marketing tab (existing page).
+
+**What it shows:** three status pills per store —
+- Pixel ID: ✅ set / ⚠ missing
+- CAPI Token: ✅ connected / ⚠ pixel-only mode (link → "Add token for +30% ROAS")
+- Last server event: timestamp from `meta_capi_events` log table, or "no events yet"
+
+**Why:** today merchants have no idea CAPI is silently skipped. A visible "pixel-only mode" badge with a one-line ROI pitch is the single biggest behavioral lever to get more stores onto CAPI. Shopify does exactly this.
+
+**No forcing** — pixel-only stores keep working. The widget just nudges.
+
+---
+
+### 2. Pixel-only fallback hardening (for stores that never add CAPI)
+
+For every browser event, ensure the Pixel payload alone is rich enough that Meta's EMQ stays ≥6 even without server backup:
+
+- **Purchase** — add `contents[].item_price` and `contents[].quantity` to the browser `fbq("track","Purchase",...)` call in `CheckoutPage.tsx`. Today only `content_ids + value` are sent. Per-line item_price unlocks DPA + better attribution for pixel-only stores.
+- **AddPaymentInfo / InitiateCheckout / AddToCart** — already include `contents[]`, verify `item_price` is set on each.
+- **`em`/`ph` advanced matching** — when the storefront customer is logged in, pass plaintext email/phone into `fbq("init", pixelId, { em, ph, external_id })` so Meta auto-hashes browser-side. This is the Pixel-only equivalent of CAPI user_data and adds ~1.5 EMQ for free. We already do this server-side; mirror it browser-side for the pixel-only path.
+
+**Result:** stores without CAPI token still get Shopify-grade pixel quality.
+
+### 3. CAPI mirror parity (for stores that DO add token)
+
+When a store has CAPI configured, every browser event must have a matching server event with same `event_id`. Audit + fix any gaps:
+
+- **Purchase** — add `contents[].item_price` to the server payload too (mirror change #2).
+- **`fireMetaCAPI`** in `src/lib/metaCapi.ts` — already passes `contents` through; just ensure callers populate `item_price`.
+
+### 4. Reliability: 1-retry on CAPI 5xx
+
+In `supabase/functions/meta-capi/index.ts`, when `metaResponse.status >= 500`, wait 500ms and retry once. 4xx (token bad, schema bad) is not retried — that's a config issue, retrying won't help. Lifts delivery from ~99.5% → ~99.9%.
+
+---
+
+## Out of scope (deliberate)
+
+- **Forcing CAPI onboarding** — keep it opt-in. Pixel-only must stay first-class.
+- **`Subscribe` / `CompleteRegistration`** — separate small task.
+- **`delivery_category`** on Purchase — minor, separate.
+- **Currency validation, custom ViewCategory event** — cosmetic, skip for now.
+- **V19/V20 custom checkout AddPaymentInfo** — those use V20CartPage; will need a follow-up pass once the main CheckoutPage flow is verified.
+
+---
+
+## Files touched
+
+```
+src/pages/CheckoutPage.tsx           — add item_price to Purchase contents; advanced matching on init
+src/contexts/StorefrontAuthContext   — pass em/ph into fbq init when customer logs in
+src/lib/metaCapi.ts                  — no logic change, just verify item_price flows through
+supabase/functions/meta-capi/index.ts — 1-retry on 5xx
+src/pages/StoreSettings.tsx (Marketing tab) — add Marketing Health widget
+                                              (Pixel / CAPI / last event status)
 ```
 
-**3. Dedup ref** — `const firedRef = useRef<Set<string>>(new Set())`. Keyed by resolved `category`, so toggling COD↔Razorpay↔Partial each fires once but re-renders don't.
+No DB migrations, no new edge functions, no breaking changes.
 
-**4. COD-only store** — `paymentMethod` defaults to `"cod"` from mount, so the effect fires once after items load. No special case needed.
+---
 
-**5. Partial value correctness** — using `partialAdvanceTotal` (not `total`) for partial categories matches the actual amount Meta will see at Purchase, keeping Pixel↔CAPI value-match clean for ROAS optimization.
+## Verification after build
 
-**6. Guards already in place** — `fbPixelTrack` and `fireMetaCAPI` both short-circuit on Lovable preview/dev hosts. Zero risk on non-prod.
+1. **Pixel-only store** (imitationworld): Meta Pixel Helper shows Purchase with `contents[{id, quantity, item_price}]`. Events Manager EMQ ≥ 6.
+2. **Pixel + CAPI store** (serdiyajewellers, after they paste token): Events Manager → CAPI tab shows matching `event_id`, EMQ ≥ 8, dedup status "Yes".
+3. **Marketing Health widget**: shows red dot + "Add CAPI token (+30% ROAS)" for serdiyajewellers; green dots once token is added.
+4. CAPI 5xx retry: simulate by temporarily breaking Meta endpoint in a test, confirm second attempt logged.
 
-## Verification
-After deploy: open serdiyajewellers.shop checkout in Meta Pixel Helper → toggle COD/Online/Partial → see one `AddPaymentInfo` per category with correct `content_category` + `value`. Events Manager → CAPI tab → matching `event_id` dedup, EMQ ≥ 7.
+---
 
-## Out of scope (future)
-- Adding CAPI access token (separate Settings step — biggest ROI, user already aware).
-- COD-prominent UI redesign for the 73% Razorpay drop-off.
-- AddPaymentInfo from V19/V20 custom checkout pages (only standard `CheckoutPage.tsx` covered here; other layouts use the same page).
+## Order of implementation
+
+1. Marketing Health widget (biggest behavioral lever — gets more stores onto CAPI)
+2. `item_price` on Purchase (browser + server)
+3. Browser-side advanced matching (`em`/`ph` in fbq init)
+4. CAPI 5xx retry
+
+Approve and I'll ship in this order.

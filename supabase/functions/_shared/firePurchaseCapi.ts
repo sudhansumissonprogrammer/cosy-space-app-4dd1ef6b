@@ -204,8 +204,8 @@ export async function firePurchaseCapi(
       },
     };
 
-    // 7. Send to Meta.
-    const resp = await fetch(
+    // 7. Send to Meta — with 1 retry on 5xx (transient Meta blip).
+    const sendOnce = () => fetch(
       `${META_GRAPH_URL}/${store.facebook_pixel_id}/events?access_token=${store.meta_access_token}`,
       {
         method: "POST",
@@ -213,6 +213,11 @@ export async function firePurchaseCapi(
         body: JSON.stringify({ data: [event] }),
       },
     );
+    let resp = await sendOnce();
+    if (resp.status >= 500 && resp.status < 600) {
+      await new Promise((r) => setTimeout(r, 500));
+      resp = await sendOnce();
+    }
 
     const result = await resp.json().catch(() => ({}));
 

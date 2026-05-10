@@ -85,6 +85,28 @@ export function setCapiUser(user: CapiUser | null): void {
     return;
   }
   window.__SF_CAPI_USER__ = user;
+
+  // Mirror to Pixel Advanced Matching for the pixel-only path.
+  // Meta auto-hashes plaintext em/ph/external_id/fn/ln/ct/st/zp passed to fbq("init").
+  // This lifts EMQ ~1.5 points for stores that never add a CAPI access token.
+  try {
+    const pixelId = (window as any).__SF_PIXEL_INITED__;
+    if (!pixelId || typeof (window as any).fbq !== "function") return;
+    const am: Record<string, string> = {};
+    if (user.email) am.em = user.email.trim().toLowerCase();
+    if (user.phone) am.ph = user.phone.replace(/\D/g, "");
+    if (user.externalId) am.external_id = user.externalId;
+    if (user.firstName) am.fn = user.firstName.trim().toLowerCase();
+    if (user.lastName) am.ln = user.lastName.trim().toLowerCase();
+    if (user.city) am.ct = user.city.trim().toLowerCase().replace(/\s+/g, "");
+    if (user.state) am.st = user.state.trim().toLowerCase().replace(/\s+/g, "");
+    if (user.zipCode) am.zp = user.zipCode.trim().toLowerCase().replace(/\s+/g, "");
+    if (Object.keys(am).length > 0) {
+      (window as any).fbq("init", pixelId, am);
+    }
+  } catch {
+    /* noop */
+  }
 }
 
 export function getCapiUser(): CapiUser {

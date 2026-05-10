@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity } from "lucide-react";
 
 export default function StoreTracking() {
   const { storeId, storeSlug } = useStoreSlugParam();
@@ -41,6 +41,24 @@ export default function StoreTracking() {
     },
     enabled: !!store?.slug,
     staleTime: 60000,
+  });
+
+  // Marketing health: timestamp of the most-recent server-side Purchase CAPI fire.
+  const { data: lastCapiPurchase } = useQuery({
+    queryKey: ["last-capi-purchase", storeId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("meta_purchase_fired_at")
+        .eq("store_id", storeId!)
+        .not("meta_purchase_fired_at", "is", null)
+        .order("meta_purchase_fired_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return (data as any)?.meta_purchase_fired_at as string | null;
+    },
+    enabled: !!storeId,
+    staleTime: 60_000,
   });
 
   // Fetch meta_access_token via secure RPC (column revoked from direct SELECT)
@@ -122,6 +140,83 @@ export default function StoreTracking() {
         }}
         className="space-y-6"
       >
+        {/* Marketing Health — Shopify-style status overview */}
+        {(() => {
+          const pixelOk = !!(store as any)?.facebook_pixel_id;
+          const capiOk = pixelOk && !!metaAccessToken;
+          const lastFiredAgo = lastCapiPurchase
+            ? (() => {
+                const ms = Date.now() - new Date(lastCapiPurchase).getTime();
+                const mins = Math.floor(ms / 60_000);
+                if (mins < 1) return "just now";
+                if (mins < 60) return `${mins}m ago`;
+                const hrs = Math.floor(mins / 60);
+                if (hrs < 24) return `${hrs}h ago`;
+                const days = Math.floor(hrs / 24);
+                return `${days}d ago`;
+              })()
+            : null;
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Activity className="h-5 w-5 text-primary" />
+                  Marketing Health
+                </CardTitle>
+                <CardDescription>
+                  Live status of your Meta tracking pipeline
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${pixelOk ? "bg-emerald-500" : "bg-amber-500"}`}
+                    />
+                    <span className="text-sm font-medium">Facebook Pixel</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {pixelOk ? "Active" : "Not configured"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        capiOk ? "bg-emerald-500" : pixelOk ? "bg-amber-500" : "bg-muted-foreground/40"
+                      }`}
+                    />
+                    <div>
+                      <div className="text-sm font-medium">Conversions API</div>
+                      {pixelOk && !capiOk && (
+                        <div className="text-[11px] text-amber-700 dark:text-amber-400">
+                          Pixel-only mode — add token below for ~30% better ROAS
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {capiOk ? "Connected" : pixelOk ? "Optional" : "—"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        lastFiredAgo ? "bg-emerald-500" : "bg-muted-foreground/40"
+                      }`}
+                    />
+                    <span className="text-sm font-medium">Last server Purchase</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {lastFiredAgo ?? "No events yet"}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         {/* Facebook Pixel */}
         <Card>
           <CardHeader>
