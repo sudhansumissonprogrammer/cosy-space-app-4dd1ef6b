@@ -1675,10 +1675,7 @@ export default function CheckoutPage() {
       {/* 4. Payment Method */}
       <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">3</span>
-            <span className="text-sm font-medium text-foreground">{t("Payment", "भुगतान")}</span>
-          </div>
+          <span className="text-sm font-medium text-foreground">{t("Payment", "भुगतान")}</span>
           <div className="flex items-center gap-1.5">
             {couponDiscount > 0 && (
               <span className="text-xs text-muted-foreground line-through">{formatPrice(subtotal, currency)}</span>
