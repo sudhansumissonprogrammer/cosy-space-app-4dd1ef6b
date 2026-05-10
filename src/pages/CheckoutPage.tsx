@@ -1606,7 +1606,32 @@ export default function CheckoutPage() {
                 <Plus className="h-3 w-3" /> {t("Add email for order updates (optional)", "ईमेल जोड़ें (वैकल्पिक)")}
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-2">
-                <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={200} />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim();
+                    // Lead event when shopper enters a valid-looking email but hasn't paid yet
+                    // — captures intent for COD-heavy India where many drop off before pay.
+                    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && (window as any).__SF_LEAD_FIRED__ !== v) {
+                      (window as any).__SF_LEAD_FIRED__ = v;
+                      const eid = generateEventId();
+                      fbPixelTrack("Lead", { content_name: "checkout_email", currency, value: subtotal }, eid);
+                      fireMetaCAPI({
+                        storeId: store.id,
+                        eventName: "Lead",
+                        eventId: eid,
+                        userEmail: v,
+                        userPhone: normalizePhone(phone) || undefined,
+                        customData: { content_name: "checkout_email", currency, value: subtotal } as any,
+                      });
+                    }
+                  }}
+                  maxLength={200}
+                />
               </CollapsibleContent>
             </Collapsible>
           </>
