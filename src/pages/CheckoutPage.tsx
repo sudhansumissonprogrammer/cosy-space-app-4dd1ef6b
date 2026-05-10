@@ -1592,31 +1592,18 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* ⚡ Returning Customer 1-Tap — auto-detected via phone lookup */}
+            {/* Returning Customer 1-Tap — compact one-line variant */}
             {returningOrder && !returningUsed && (
-              <div className="rounded-xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-3.5 animate-in fade-in slide-in-from-top-2">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                    <CheckCircle2 className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <p className="text-sm font-semibold text-foreground">Welcome back{returningOrder.customer_name ? `, ${returningOrder.customer_name.split(" ")[0]}` : ""}! 👋</p>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground mb-2">Ship to your last address?</p>
-                    <p className="text-xs text-foreground/80 leading-snug line-clamp-2">
-                      {[returningOrder.street_address, returningOrder.city, returningOrder.state, returningOrder.pincode].filter(Boolean).join(", ")}
-                    </p>
-                    <div className="mt-2.5 flex items-center gap-2">
-                      <Button size="sm" className="h-8 text-xs px-3" onClick={applyReturningOrder}>
-                        <Check className="h-3.5 w-3.5 mr-1" /> Use this address
-                      </Button>
-                      <Button size="sm" variant="ghost" className="h-8 text-xs px-2 text-muted-foreground" onClick={() => setReturningDismissed(true)}>
-                        New address
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+              <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-2.5 animate-in fade-in">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
+                <p className="flex-1 min-w-0 truncate text-xs text-foreground">
+                  {returningOrder.customer_name ? <><span className="font-semibold">{returningOrder.customer_name.split(" ")[0]}</span> · </> : null}
+                  {[returningOrder.city, returningOrder.pincode].filter(Boolean).join(", ")}
+                </p>
+                <Button size="sm" className="h-7 text-[11px] px-2.5" onClick={applyReturningOrder}>Use</Button>
+                <button onClick={() => setReturningDismissed(true)} className="text-muted-foreground hover:text-foreground" aria-label="Dismiss">
+                  <X className="h-3.5 w-3.5" />
+                </button>
               </div>
             )}
 
