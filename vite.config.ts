@@ -264,7 +264,12 @@ export default defineConfig(({ mode }) => ({
             id.includes("/src/lib/flyToCart") ||
             id.includes("/src/lib/prefetchProductDetail") ||
             id.includes("/src/lib/prefetchStorefrontRoutes") ||
-            id.includes("/src/lib/subdomain") ||
+            // NOTE: /src/lib/subdomain is intentionally NOT here.
+            // main.tsx imports subdomain for host detection. If subdomain
+            // lives in the storefront-shell chunk, Rollup makes the entry
+            // statically import storefront-shell, which transitively pulls
+            // supabase + radix + router-query + icons (~245KB) onto the
+            // landing critical path. Keeping subdomain out → entry stays lean.
             id.includes("/src/hooks/useProductCardActions") ||
             id.includes("/src/components/storefront/StarRating") ||
             id.includes("/src/components/storefront/SectionHeading") ||
