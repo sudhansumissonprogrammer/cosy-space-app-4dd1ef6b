@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+// supabase is dynamic-imported inside queryFn (deferred 1s after mount anyway)
+// to keep the 171KB supabase chunk OUT of the storefront-shell static graph.
 
 type CountMap = Map<string, number>;
 
