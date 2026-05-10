@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.partner-approve-commissions]
 verify_jwt = false
+
+[functions.meta-product-feed]
+verify_jwt = false
