@@ -117,6 +117,34 @@ export function useStorefrontProducts(storeId: string | undefined) {
           window.dispatchEvent(new Event("storefront:content-ready"));
         });
       }
+
+      // Bootstrap cache: persist top 2 product image URLs by slug so the next
+      // visit can inject <link rel=preload as=image fetchpriority=high> at
+      // HTML parse time — kicks off LCP image download ~300ms earlier than
+      // waiting for the products RTT.
+      try {
+        const arr = Array.isArray(data) ? data : [];
+        const imgs = arr
+          .map((p: any) => p?.image_url)
+          .filter((u: any) => typeof u === "string" && u.length > 0)
+          .slice(0, 2);
+        if (imgs.length && arr[0]?.store_id) {
+          // We don't have slug here, but we can find it via React Query cache key.
+          // Simpler: walk localStorage for any sf_boot_ key whose sid matches.
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (!key || !key.startsWith("sf_boot_")) continue;
+            try {
+              const v = JSON.parse(localStorage.getItem(key) || "{}");
+              if (v.sid === arr[0].store_id) {
+                v.imgs = imgs;
+                localStorage.setItem(key, JSON.stringify(v));
+                break;
+              }
+            } catch {}
+          }
+        }
+      } catch {}
     }
   }, [data, isLoading]);
 
