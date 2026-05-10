@@ -19,13 +19,29 @@ export default function PartnerSignup() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // If already a partner, send to dashboard
-    if (!authLoading && session) {
-      (async () => {
-        const { data } = await supabase.from("partners").select("id").eq("user_id", session.user.id).maybeSingle();
-        if (data) navigate("/partners/dashboard", { replace: true });
-      })();
-    }
+    if (authLoading || !session) return;
+    (async () => {
+      const { data } = await supabase.from("partners").select("id").eq("user_id", session.user.id).maybeSingle();
+      if (data) {
+        navigate("/partners/dashboard", { replace: true });
+        return;
+      }
+      // Auth user exists but partner row missing (e.g. email-verify interrupted signup).
+      // Auto-create from auth metadata so they don't get stuck in a redirect loop.
+      const meta = (session.user.user_metadata || {}) as any;
+      if (meta.user_type === "partner" || meta.full_name) {
+        const { error } = await supabase.from("partners").insert({
+          user_id: session.user.id,
+          name: meta.full_name || session.user.email?.split("@")[0] || "Partner",
+          email: session.user.email!,
+          mobile: meta.mobile || null,
+        });
+        if (!error) {
+          toast.success("Welcome aboard! Your partner account is ready.");
+          navigate("/partners/dashboard", { replace: true });
+        }
+      }
+    })();
   }, [authLoading, session, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,7 +65,7 @@ export default function PartnerSignup() {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/partners/dashboard`,
-            data: { full_name: trimmed.name, user_type: "partner" },
+            data: { full_name: trimmed.name, mobile: trimmed.mobile, user_type: "partner" },
           },
         });
         if (error) throw error;
