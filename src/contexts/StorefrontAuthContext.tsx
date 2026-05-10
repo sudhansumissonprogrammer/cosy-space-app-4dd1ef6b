@@ -102,6 +102,28 @@ export function StorefrontAuthProvider({
     }
   }, [customer, user, fetchOrCreateCustomer]);
 
+  // Sync logged-in customer into the global Meta CAPI registry so every
+  // fireMetaCAPI() call auto-attaches em/ph/external_id without each call site
+  // having to wire them. This is the single biggest lever for ad-side EMQ.
+  useEffect(() => {
+    const email = customer?.email || user?.email || undefined;
+    const phone = customer?.phone || (user as any)?.phone || undefined;
+    const externalId = customer?.id || user?.id || undefined;
+    const name = customer?.name || undefined;
+    let firstName: string | undefined;
+    let lastName: string | undefined;
+    if (name) {
+      const parts = name.trim().split(/\s+/);
+      firstName = parts[0];
+      lastName = parts.length > 1 ? parts.slice(1).join(" ") : undefined;
+    }
+    if (email || phone || externalId) {
+      setCapiUser({ email, phone, externalId, firstName, lastName });
+    } else {
+      setCapiUser(null);
+    }
+  }, [customer?.id, customer?.email, customer?.phone, customer?.name, user?.id, user?.email]);
+
   useEffect(() => {
     // Fast-path: if no STOREFRONT auth token in localStorage, mark loading=false
     // immediately so anonymous visitors don't see a spinner. We STILL subscribe
