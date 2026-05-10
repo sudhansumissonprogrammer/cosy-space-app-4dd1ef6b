@@ -1488,10 +1488,7 @@ export default function CheckoutPage() {
       {/* 1. Order Summary — Collapsible */}
       <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen} defaultOpen className="mb-4 rounded-xl border border-border bg-card">
         <CollapsibleTrigger className="flex w-full items-center justify-between p-4">
-          <div className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">1</span>
-            <span className="text-sm font-medium text-foreground">{t("Order Summary", "ऑर्डर सारांश")} ({itemCount} {itemCount === 1 ? t("item", "आइटम") : t("items", "आइटम")})</span>
-          </div>
+          <span className="text-sm font-medium text-foreground">{t("Order Summary", "ऑर्डर सारांश")} · {itemCount} {itemCount === 1 ? t("item", "आइटम") : t("items", "आइटम")}</span>
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-foreground">{formatPrice(subtotal, currency)}</span>
             <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${summaryOpen ? "rotate-180" : ""}`} />
