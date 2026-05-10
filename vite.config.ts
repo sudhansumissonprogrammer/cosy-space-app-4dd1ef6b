@@ -308,7 +308,17 @@ export default defineConfig(({ mode }) => ({
             id.includes("/src/pages/StorefrontHomeV16") ||
             id.includes("/src/components/storefront/MobileBottomNav") ||
             id.includes("/src/components/storefront/HeroBannerCarousel") ||
-            id.includes("/src/components/storefront/MobileHeroCarousel")
+            id.includes("/src/components/storefront/MobileHeroCarousel") ||
+            // v8.6 — absorb shadcn Sheet primitive into storefront-shell.
+            // Sheet is used by HamburgerMenu, SideCart, MobileAppHeader,
+            // StorefrontLayoutV2, and ShopFilterBar (filter drawer on
+            // category page). When it lives in its own micro-chunk, a
+            // CDN race condition during deploy can return 503 → React
+            // lazy-load throws "Cannot read properties of undefined
+            // (reading 'default')" → ErrorBoundary shows white error
+            // screen on category/menu pages. Bundling into shell makes
+            // it deploy atomically with the rest of the storefront.
+            id.includes("/src/components/ui/sheet")
           ) {
             return "storefront-shell";
           }
