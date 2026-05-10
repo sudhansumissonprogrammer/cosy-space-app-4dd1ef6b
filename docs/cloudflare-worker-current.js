@@ -626,27 +626,54 @@ function buildThemeCssFromConfig(tc) {
 
   const fonts = [...new Set([headingFont, bodyFont].filter(Boolean))];
   if (fonts.length > 0) {
-    // v8.8.0 (Phase 1 fix #7): trim font weights from 400;500;600;700 → 400;600.
-    // Saves ~100KB per Google Fonts CSS request and ~200ms FCP. 500/700 are
-    // rarely used by storefront templates; CSS font-synthesis fills any gap.
-    const families = fonts
-      .map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600`)
-      .join("&");
-    const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=swap`;
-    css += `<link rel="preconnect" href="https://fonts.googleapis.com" />\n`;
-    css += `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n`;
-    // Dynamic per-store font preload: kicks off the Google Fonts CSS fetch with
-    // highest priority so the actual font files (woff2) start downloading in
-    // parallel with HTML parsing — regardless of which font the merchant chose.
-    // Saves ~200-400ms FOUT on cold loads for ALL stores (not just Poppins).
-    css += `<link rel="preload" as="style" href="${googleFontsHref}" fetchpriority="high" data-sf-font="1" />\n`;
-    // v8.9.2 — non-render-blocking stylesheet via media-print swap.
-    // Eliminates the Google Fonts CSS from the FCP critical chain (saves
-    // 1-3s on slow 4G). font-display:swap inside the CSS still prevents
-    // FOIT, so text paints in the system fallback while gstatic woff2
-    // downloads in the background.
-    css += `<link id="storefront-google-fonts" rel="stylesheet" href="${googleFontsHref}" media="print" onload="this.media='all';this.dataset.loaded='true'" data-loaded="false" data-sf-font="1" />\n`;
-    css += `<noscript><link rel="stylesheet" href="${googleFontsHref}" /></noscript>\n`;
+    // v8.6 — self-hosted font whitelist. Fonts already shipped under /fonts/
+    // emit local @font-face blocks (zero external network) instead of going
+    // to Google Fonts CSS. Saves the 144-221ms render-blocking gstatic round-
+    // trip + woff2 fetch per font family. Falls through to Google Fonts only
+    // for families we don't self-host.
+    const SELF_HOSTED = {
+      "Alegreya SC": [
+        { weight: 400, url: "/fonts/alegreya-sc-400.woff2" },
+        { weight: 700, url: "/fonts/alegreya-sc-700.woff2" },
+      ],
+      "Poppins": [
+        { weight: 400, url: "/fonts/poppins-400.woff2" },
+        { weight: 500, url: "/fonts/poppins-500.woff2" },
+        { weight: 600, url: "/fonts/poppins-600.woff2" },
+        { weight: 700, url: "/fonts/poppins-700.woff2" },
+        { weight: 800, url: "/fonts/poppins-800.woff2" },
+      ],
+      "Inter": [{ weight: 400, url: "/fonts/inter-latin.woff2" }],
+      "Outfit": [{ weight: 400, url: "/fonts/outfit-latin.woff2" }],
+    };
+    const localFonts = fonts.filter((f) => SELF_HOSTED[f]);
+    const remoteFonts = fonts.filter((f) => !SELF_HOSTED[f]);
+
+    // Emit local @font-face for self-hosted families
+    if (localFonts.length > 0) {
+      let faceCss = "<style data-sf-font-local>";
+      for (const fam of localFonts) {
+        for (const f of SELF_HOSTED[fam]) {
+          faceCss += `@font-face{font-family:'${fam}';font-style:normal;font-weight:${f.weight};font-display:swap;src:url('${f.url}') format('woff2')}`;
+        }
+      }
+      faceCss += "</style>\n";
+      css += faceCss;
+    }
+
+    // Only hit Google Fonts for families we don't self-host
+    if (remoteFonts.length > 0) {
+      const families = remoteFonts
+        .map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600`)
+        .join("&");
+      const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+      css += `<link rel="preconnect" href="https://fonts.googleapis.com" />\n`;
+      css += `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n`;
+      css += `<link rel="preload" as="style" href="${googleFontsHref}" fetchpriority="high" data-sf-font="1" />\n`;
+      css += `<link id="storefront-google-fonts" rel="stylesheet" href="${googleFontsHref}" media="print" onload="this.media='all';this.dataset.loaded='true'" data-loaded="false" data-sf-font="1" />\n`;
+      css += `<noscript><link rel="stylesheet" href="${googleFontsHref}" /></noscript>\n`;
+    }
+
     css += `<style>:root{--storefront-heading-font:'${fonts[0] || "Inter"}';--storefront-body-font:'${fonts[fonts.length > 1 ? 1 : 0] || "Inter"}'}</style>\n`;
   }
 
