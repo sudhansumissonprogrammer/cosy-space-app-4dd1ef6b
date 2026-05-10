@@ -1714,12 +1714,12 @@ export default function CheckoutPage() {
               </div>
               <CreditCard className="h-5 w-5 text-muted-foreground" />
               <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-foreground">{tCritical("Pay Advance Only", "सिर्फ़ एडवांस दें")}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-medium text-foreground">{tCritical("Advance Online + Balance COD", "एडवांस ऑनलाइन + शेष COD")}</p>
                   <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">{tCritical("Recommended", "अनुशंसित")}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {currencySymbol}{partialAdvanceTotal.toFixed(0)} {tCritical("now", "अभी")} + {currencySymbol}{partialBalanceDue.toFixed(0)} {tCritical("on delivery", "डिलीवरी पर")}
+                  {tCritical("Pay", "भुगतान करें")} {currencySymbol}{partialAdvanceTotal.toFixed(0)} {tCritical("online now", "अभी ऑनलाइन")} · {currencySymbol}{partialBalanceDue.toFixed(0)} {tCritical("cash on delivery", "डिलीवरी पर नकद")}
                 </p>
               </div>
             </button>
