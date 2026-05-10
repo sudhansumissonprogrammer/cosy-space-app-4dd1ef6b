@@ -52,23 +52,33 @@ function shouldUseLandingFastPath(): boolean {
   return true;
 }
 
-// Defer non-critical font CSS imports — they block initial render for ALL routes
-// but are only needed by dashboard (Montserrat Alternates) and landing (Plus Jakarta Sans).
-// Loading them after React mount saves ~200ms on first paint.
-if ("requestIdleCallback" in window) {
-  (window as any).requestIdleCallback(() => {
-    import('@fontsource/plus-jakarta-sans/400.css');
-    import('@fontsource/plus-jakarta-sans/600.css');
-    import('@fontsource/montserrat-alternates/400.css');
-    import('@fontsource/montserrat-alternates/600.css');
-  }, { timeout: 2000 });
-} else {
-  setTimeout(() => {
-    import('@fontsource/plus-jakarta-sans/400.css');
-    import('@fontsource/plus-jakarta-sans/600.css');
-    import('@fontsource/montserrat-alternates/400.css');
-    import('@fontsource/montserrat-alternates/600.css');
-  }, 500);
+// Defer non-critical font CSS imports.
+//
+// CRITICAL: These fonts are ONLY used by the marketing landing
+// (Plus Jakarta Sans) and the dashboard (Montserrat Alternates).
+// Storefronts (subdomains + custom domains) load their OWN theme fonts
+// via the Cloudflare Worker (data-sf-font), so importing these here on
+// storefront hosts ships ~180KB of render-blocking CSS for nothing —
+// real measurement showed two 3KB CSS files blocking paint for 2.7–2.9s
+// on cold mobile loads (CSS triggers font-face fetches as render-blocking).
+{
+  const host = typeof window !== "undefined" ? window.location.hostname : "";
+  const isStorefrontHost =
+    host && (isSubdomainHost(host) || isCustomDomainHost(host));
+
+  if (!isStorefrontHost) {
+    const loadFonts = () => {
+      import('@fontsource/plus-jakarta-sans/400.css');
+      import('@fontsource/plus-jakarta-sans/600.css');
+      import('@fontsource/montserrat-alternates/400.css');
+      import('@fontsource/montserrat-alternates/600.css');
+    };
+    if ("requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(loadFonts, { timeout: 2000 });
+    } else {
+      setTimeout(loadFonts, 500);
+    }
+  }
 }
 
 // Defer global error handlers to idle time — not needed during first paint
