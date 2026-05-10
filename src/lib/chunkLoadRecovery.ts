@@ -16,6 +16,11 @@ const PRIMARY_CHUNK_ERROR_PATTERNS = [
   /Unable to preload CSS/i,
   /Loading CSS chunk \d+ failed/i,
   /ChunkLoadError/i,
+  // After a deploy, an old chunk path can resolve to a stale/empty module
+  // → React tries to render and reads `.default` of undefined. Treat as
+  // recoverable so the user sees a fresh reload, not a white error screen.
+  /Cannot read propert(y|ies) of undefined \(reading ['"]default['"]\)/i,
+  /undefined is not an object \(evaluating .*['"]default['"]\)/i,
 ];
 
 const FOLLOW_UP_RECOVERY_PATTERNS = [
