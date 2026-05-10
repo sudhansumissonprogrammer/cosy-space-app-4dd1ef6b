@@ -1824,6 +1824,31 @@ export default function CheckoutPage() {
           <span className="font-semibold text-foreground">{t("Total", "कुल")}</span>
           <span className="text-lg font-bold text-foreground">{formatPrice(total, currency)}</span>
         </div>
+        {isPartialOrder && (
+          <div className="mt-2 rounded-xl border-2 border-primary/30 bg-primary/5 p-3 space-y-2">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-primary">
+              {t("Partial Payment Breakdown", "आंशिक भुगतान विवरण")}
+            </p>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-foreground">
+                {t("Pay now (advance)", "अभी भुगतान करें (अग्रिम)")}
+              </span>
+              <span className="font-bold text-foreground">{currencySymbol}{partialAdvanceTotal.toFixed(0)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-foreground">
+                {t("Cash on Delivery (balance)", "डिलीवरी पर नकद (शेष)")}
+              </span>
+              <span className="font-bold text-foreground">{currencySymbol}{partialBalanceDue.toFixed(0)}</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              {t(
+                `Pay ${currencySymbol}${partialAdvanceTotal.toFixed(0)} online now to confirm your order. Pay the remaining ${currencySymbol}${partialBalanceDue.toFixed(0)} in cash when your order is delivered.`,
+                `ऑर्डर कन्फर्म करने के लिए अभी ${currencySymbol}${partialAdvanceTotal.toFixed(0)} ऑनलाइन भुगतान करें। शेष ${currencySymbol}${partialBalanceDue.toFixed(0)} डिलीवरी के समय नकद में दें।`
+              )}
+            </p>
+          </div>
+        )}
         {/* Confirming payment overlay — shown after UPI app (GPay/PhonePe) returns,
             while we poll Cashfree for the final status (3–15s typical for UPI). */}
         {confirmingPayment && (
