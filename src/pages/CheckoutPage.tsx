@@ -596,6 +596,53 @@ export default function CheckoutPage() {
     });
   }, []);
 
+  // AddPaymentInfo — Shopify-grade funnel signal.
+  // Fires once per resolved payment category (cod / razorpay / cashfree /
+  // partial_cod_razorpay / partial_cod_cashfree) when the customer picks an
+  // option. Browser pixel + CAPI mirror with shared event_id for dedup.
+  // Works for COD-only stores (no gateway), Razorpay-only, Cashfree-only,
+  // and partial-payment-enabled stores transparently.
+  const apiFiredRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (checkoutItems.length === 0) return;
+    // Resolve the actual payment category Meta should attribute to.
+    let category: string;
+    let value: number;
+    if (paymentMethod === "cod" && !isPartialOrder) {
+      category = "cod";
+      value = total;
+    } else if (isPartialOrder) {
+      category = activeGateway === "cashfree" ? "partial_cod_cashfree" : "partial_cod_razorpay";
+      value = partialAdvanceTotal;
+    } else if (paymentMethod === "razorpay") {
+      category = activeGateway === "cashfree" ? "cashfree" : "razorpay";
+      value = total;
+    } else {
+      return;
+    }
+    if (apiFiredRef.current.has(category)) return;
+    apiFiredRef.current.add(category);
+    const eid = generateEventId();
+    const data = {
+      content_category: category,
+      content_ids: checkoutItems.map((i) => i.productId),
+      contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity })),
+      num_items: checkoutItems.length,
+      value,
+      currency,
+    };
+    fbPixelTrack("AddPaymentInfo", data, eid);
+    fireMetaCAPI({
+      storeId: store.id,
+      eventName: "AddPaymentInfo",
+      eventId: eid,
+      userEmail: email.trim() || undefined,
+      userPhone: normalizePhone(phone) || undefined,
+      externalId: customer?.id || undefined,
+      customData: data,
+    });
+  }, [paymentMethod, partialPaymentMode, activeGateway, isPartialOrder, checkoutItems.length]);
+
   // Save abandoned cart on checkout entry (deduplicated via sessionStorage)
   const [abandonedCartId, setAbandonedCartId] = useState<string | null>(null);
   useEffect(() => {
