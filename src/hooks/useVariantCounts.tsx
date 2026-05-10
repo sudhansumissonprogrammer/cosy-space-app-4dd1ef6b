@@ -24,6 +24,7 @@ export function VariantCountProvider({ productIds, children }: { productIds: str
     queryKey: ["variant-counts-batch", productIds.length > 0 ? productIds[0] : "empty", productIds.length],
     queryFn: async (): Promise<CountMap> => {
       if (productIds.length === 0) return new Map();
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase
         .from("product_variants")
         .select("product_id")
