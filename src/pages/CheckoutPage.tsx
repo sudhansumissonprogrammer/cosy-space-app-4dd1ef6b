@@ -1888,13 +1888,20 @@ export default function CheckoutPage() {
             <><Loader2 className="mr-2 h-5 w-5 animate-spin" />{t("Placing order...", "ऑर्डर हो रहा है...")}</>
           ) : (
             <>
-              <span>
-                {isPartialOrder
-                  ? `${t("Confirm Order", "ऑर्डर कन्फर्म करें")} · ${currencySymbol}${chargeAmount.toFixed(0)}`
-                  : paymentMethod === "razorpay"
+              {isPartialOrder ? (
+                <span className="flex flex-col items-center leading-tight">
+                  <span>{t("Pay", "भुगतान करें")} {currencySymbol}{partialAdvanceTotal.toFixed(0)} {t("Now", "अभी")}</span>
+                  <span className="text-[11px] font-medium opacity-80">
+                    {t(`+ ${currencySymbol}${partialBalanceDue.toFixed(0)} Cash on Delivery`, `+ ${currencySymbol}${partialBalanceDue.toFixed(0)} डिलीवरी पर नकद`)}
+                  </span>
+                </span>
+              ) : (
+                <span>
+                  {paymentMethod === "razorpay"
                     ? `${t("Pay Securely", "सुरक्षित भुगतान करें")} ${currencySymbol}${total.toFixed(0)}`
                     : `${t("Place Order", "ऑर्डर करें")} · ${currencySymbol}${total.toFixed(0)}`}
-              </span>
+                </span>
+              )}
               <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
             </>
           )}
