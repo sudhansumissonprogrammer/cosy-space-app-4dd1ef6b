@@ -65,7 +65,7 @@ export default function PartnerSignup() {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/partners/dashboard`,
-            data: { full_name: trimmed.name, user_type: "partner" },
+            data: { full_name: trimmed.name, mobile: trimmed.mobile, user_type: "partner" },
           },
         });
         if (error) throw error;
