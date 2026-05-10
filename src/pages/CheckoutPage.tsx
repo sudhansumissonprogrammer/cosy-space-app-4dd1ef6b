@@ -1516,7 +1516,7 @@ export default function CheckoutPage() {
         </CollapsibleContent>
       </Collapsible>
 
-      {/* 2. Coupon Code — only show if store has active coupons */}
+      {/* 2. Coupon Code — collapsed by default to reduce clutter */}
       {(hasActiveCoupons || appliedCoupon) && (
       <div className="mb-4 rounded-xl border border-border bg-card p-4">
         {appliedCoupon ? (
@@ -1531,22 +1531,27 @@ export default function CheckoutPage() {
             </button>
           </div>
         ) : (
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Enter coupon code"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                className="pl-9 uppercase"
-                maxLength={30}
-                onKeyDown={(e) => e.key === "Enter" && applyCoupon()}
-              />
-            </div>
-            <Button variant="outline" onClick={() => applyCoupon()} disabled={couponLoading || !couponCode.trim()}>
-              {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
-            </Button>
-          </div>
+          <Collapsible>
+            <CollapsibleTrigger className="flex w-full items-center justify-between text-sm font-medium text-foreground">
+              <span className="flex items-center gap-2"><Tag className="h-4 w-4 text-primary" />{t("Have a coupon code?", "कूपन कोड है?")}</span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform [[data-state=open]_&]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-3">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter coupon code"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  className="uppercase"
+                  maxLength={30}
+                  onKeyDown={(e) => e.key === "Enter" && applyCoupon()}
+                />
+                <Button variant="outline" onClick={() => applyCoupon()} disabled={couponLoading || !couponCode.trim()}>
+                  {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                </Button>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         )}
       </div>
       )}
