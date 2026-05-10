@@ -1007,6 +1007,7 @@ export default function CheckoutPage() {
         "Purchase",
         {
           content_ids: checkoutItems.map((i) => i.productId),
+          contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
           content_type: "product",
           content_name: checkoutItems.map((i) => i.name).join(", "),
           value: total,
