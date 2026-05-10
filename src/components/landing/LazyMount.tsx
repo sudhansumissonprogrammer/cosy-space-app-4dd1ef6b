@@ -53,7 +53,7 @@ export default function LazyMount({
   // below-fold section becomes visible while the user is reading.
   return (
     <div ref={ref} style={{ minHeight }}>
-      {visible ? children : fallback}
+      {visible ? <Suspense fallback={fallback}>{children}</Suspense> : fallback}
     </div>
   );
 }
