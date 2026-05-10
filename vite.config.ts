@@ -99,7 +99,17 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         navigateFallback: null,
         navigateFallbackDenylist: [/^\/~oauth/],
-        globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
+        // CRITICAL: do NOT precache the whole build. Previously globPatterns
+        // pulled every JS/CSS/font/PNG into the SW install step (>1MB) and
+        // those background downloads competed with the landing page's
+        // critical paint resources — pushing FCP from ~1s to ~8s on first
+        // visit. Runtime caching rules below already handle on-demand
+        // CacheFirst for /assets/*. SW now only precaches the manifest,
+        // favicon, and the two PWA icons that `includeAssets` declares.
+        globPatterns: ["index.html", "manifest.webmanifest", "favicon.ico"],
+        // Skip precache integrity check on third-party fonts/images that may
+        // legitimately not be in the build output.
+        navigationPreload: true,
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === "navigate",
