@@ -1714,12 +1714,12 @@ export default function CheckoutPage() {
               </div>
               <CreditCard className="h-5 w-5 text-muted-foreground" />
               <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-foreground">{tCritical("Pay Advance Only", "सिर्फ़ एडवांस दें")}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-medium text-foreground">{tCritical("Advance Online + Balance COD", "एडवांस ऑनलाइन + शेष COD")}</p>
                   <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">{tCritical("Recommended", "अनुशंसित")}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {currencySymbol}{partialAdvanceTotal.toFixed(0)} {tCritical("now", "अभी")} + {currencySymbol}{partialBalanceDue.toFixed(0)} {tCritical("on delivery", "डिलीवरी पर")}
+                  {tCritical("Pay", "भुगतान करें")} {currencySymbol}{partialAdvanceTotal.toFixed(0)} {tCritical("online now", "अभी ऑनलाइन")} · {currencySymbol}{partialBalanceDue.toFixed(0)} {tCritical("cash on delivery", "डिलीवरी पर नकद")}
                 </p>
               </div>
             </button>
@@ -1824,6 +1824,31 @@ export default function CheckoutPage() {
           <span className="font-semibold text-foreground">{t("Total", "कुल")}</span>
           <span className="text-lg font-bold text-foreground">{formatPrice(total, currency)}</span>
         </div>
+        {isPartialOrder && (
+          <div className="mt-2 rounded-xl border-2 border-primary/30 bg-primary/5 p-3 space-y-2">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-primary">
+              {t("Partial Payment Breakdown", "आंशिक भुगतान विवरण")}
+            </p>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-foreground">
+                {t("Pay now (advance)", "अभी भुगतान करें (अग्रिम)")}
+              </span>
+              <span className="font-bold text-foreground">{currencySymbol}{partialAdvanceTotal.toFixed(0)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-foreground">
+                {t("Cash on Delivery (balance)", "डिलीवरी पर नकद (शेष)")}
+              </span>
+              <span className="font-bold text-foreground">{currencySymbol}{partialBalanceDue.toFixed(0)}</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              {t(
+                `Pay ${currencySymbol}${partialAdvanceTotal.toFixed(0)} online now to confirm your order. Pay the remaining ${currencySymbol}${partialBalanceDue.toFixed(0)} in cash when your order is delivered.`,
+                `ऑर्डर कन्फर्म करने के लिए अभी ${currencySymbol}${partialAdvanceTotal.toFixed(0)} ऑनलाइन भुगतान करें। शेष ${currencySymbol}${partialBalanceDue.toFixed(0)} डिलीवरी के समय नकद में दें।`
+              )}
+            </p>
+          </div>
+        )}
         {/* Confirming payment overlay — shown after UPI app (GPay/PhonePe) returns,
             while we poll Cashfree for the final status (3–15s typical for UPI). */}
         {confirmingPayment && (
@@ -1863,13 +1888,20 @@ export default function CheckoutPage() {
             <><Loader2 className="mr-2 h-5 w-5 animate-spin" />{t("Placing order...", "ऑर्डर हो रहा है...")}</>
           ) : (
             <>
-              <span>
-                {isPartialOrder
-                  ? `${t("Confirm Order", "ऑर्डर कन्फर्म करें")} · ${currencySymbol}${chargeAmount.toFixed(0)}`
-                  : paymentMethod === "razorpay"
+              {isPartialOrder ? (
+                <span className="flex flex-col items-center leading-tight">
+                  <span>{t("Pay", "भुगतान करें")} {currencySymbol}{partialAdvanceTotal.toFixed(0)} {t("Now", "अभी")}</span>
+                  <span className="text-[11px] font-medium opacity-80">
+                    {t(`+ ${currencySymbol}${partialBalanceDue.toFixed(0)} Cash on Delivery`, `+ ${currencySymbol}${partialBalanceDue.toFixed(0)} डिलीवरी पर नकद`)}
+                  </span>
+                </span>
+              ) : (
+                <span>
+                  {paymentMethod === "razorpay"
                     ? `${t("Pay Securely", "सुरक्षित भुगतान करें")} ${currencySymbol}${total.toFixed(0)}`
                     : `${t("Place Order", "ऑर्डर करें")} · ${currencySymbol}${total.toFixed(0)}`}
-              </span>
+                </span>
+              )}
               <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
             </>
           )}
