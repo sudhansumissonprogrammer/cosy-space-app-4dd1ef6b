@@ -43,6 +43,24 @@ export default function StoreTracking() {
     staleTime: 60000,
   });
 
+  // Marketing health: timestamp of the most-recent server-side Purchase CAPI fire.
+  const { data: lastCapiPurchase } = useQuery({
+    queryKey: ["last-capi-purchase", storeId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("meta_purchase_fired_at")
+        .eq("store_id", storeId!)
+        .not("meta_purchase_fired_at", "is", null)
+        .order("meta_purchase_fired_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return (data as any)?.meta_purchase_fired_at as string | null;
+    },
+    enabled: !!storeId,
+    staleTime: 60_000,
+  });
+
   // Fetch meta_access_token via secure RPC (column revoked from direct SELECT)
   const { data: metaTokenFromDb } = useQuery({
     queryKey: ["store-meta-token", storeId],
