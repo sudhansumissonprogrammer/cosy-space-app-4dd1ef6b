@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
       action_source: "website",
     };
 
-    const metaResponse = await fetch(
+    const sendOnce = () => fetch(
       `${META_GRAPH_URL}/${pixelId}/events?access_token=${accessToken}`,
       {
         method: "POST",
@@ -211,6 +211,11 @@ Deno.serve(async (req) => {
         body: JSON.stringify({ data: [event] }),
       }
     );
+    let metaResponse = await sendOnce();
+    if (metaResponse.status >= 500 && metaResponse.status < 600) {
+      await new Promise((r) => setTimeout(r, 500));
+      metaResponse = await sendOnce();
+    }
 
     const metaResult = await metaResponse.json();
 
