@@ -111,6 +111,23 @@ export function useStorefront(slugOverride?: string) {
         localStorage.setItem(`storefront_theme_${store.slug}`, store.theme);
       } catch {}
 
+      // Bootstrap cache: store_id + fonts (read synchronously by index.html on
+      // next visit to fire products fetch in PARALLEL with shell + inject font
+      // preload at HTML parse time).
+      try {
+        const t = (data as any)?.theme || (data as any)?.theme_config || {};
+        const prev = JSON.parse(localStorage.getItem(`sf_boot_${store.slug}`) || "{}");
+        localStorage.setItem(
+          `sf_boot_${store.slug}`,
+          JSON.stringify({
+            sid: store.id,
+            hf: t.heading_font || prev.hf || null,
+            bf: t.body_font || prev.bf || null,
+            imgs: prev.imgs || [],
+          })
+        );
+      } catch {}
+
       // Custom pages are now bundled in the get_storefront_shell RPC payload
       // and seeded into the cache below — no extra prefetch needed.
       // (Saves ~600 Supabase requests/day.)
