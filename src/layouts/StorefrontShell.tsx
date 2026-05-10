@@ -8,6 +8,8 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
+import { ensureFbcPersisted } from "@/lib/metaEnrichment";
+import { useGA4 } from "@/hooks/useGA4";
 
 import { buildThemeStyle, getResolvedThemeFonts, loadGoogleFonts } from "@/lib/themeUtils";
 import StorefrontNotFound from "@/components/storefront/StorefrontNotFound";
@@ -179,6 +181,17 @@ export default function StorefrontShell({
       try { window.fbq("track", "PageView"); } catch {}
     }
   }, [pathname, (store as any)?.facebook_pixel_id]);
+
+  // Persist ?fbclid → _fbc cookie + expose store id globally for tracking helpers
+  useEffect(() => {
+    ensureFbcPersisted();
+    if (store?.id) (window as any).__SF_STORE_ID__ = store.id;
+  }, [store?.id]);
+
+  // GA4 tag — read measurement ID from store.features.ga4_measurement_id
+  // (jsonb on stores). Stores without GA4 set up: hook is a no-op.
+  const ga4Id = (store as any)?.features?.ga4_measurement_id || null;
+  useGA4(ga4Id, pathname);
 
   // Capture ?coupon=CODE from any storefront URL into sessionStorage so it survives
   // navigation through product → cart → checkout (where it auto-applies).

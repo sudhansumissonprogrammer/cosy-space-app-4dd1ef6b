@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getCapiUser } from "@/lib/metaEnrichment";
 
 /**
  * Returns true on Lovable preview/editor/dev hosts.
@@ -81,6 +82,18 @@ export function fireMetaCAPI(params: CAPIEventParams) {
 
   const { fbc, fbp } = getMetaCookies();
 
+  // Auto-merge globally-registered user data (logged-in storefront customer).
+  // Per-call params win over the global registry — explicit > implicit.
+  const u = getCapiUser();
+  const userEmail = params.userEmail ?? u.email;
+  const userPhone = params.userPhone ?? u.phone;
+  const externalId = params.externalId ?? u.externalId;
+  const firstName = params.firstName ?? u.firstName;
+  const lastName = params.lastName ?? u.lastName;
+  const city = params.city ?? u.city;
+  const state = params.state ?? u.state;
+  const zipCode = params.zipCode ?? u.zipCode;
+
   // Fire and forget — don't block the UI
   // Sanitize event_source_url — strip ALL query params and fragments.
   // URL params can contain PII (?email=, ?phone=, ?coupon=) or junk (?fbclid, utm_*)
@@ -88,8 +101,8 @@ export function fireMetaCAPI(params: CAPIEventParams) {
   // Sending only origin+pathname is the safe canonical form Meta recommends.
   let safeUrl = "";
   try {
-    const u = new URL(window.location.href);
-    safeUrl = `${u.origin}${u.pathname}`;
+    const u2 = new URL(window.location.href);
+    safeUrl = `${u2.origin}${u2.pathname}`;
   } catch {
     safeUrl = window.location.origin;
   }
@@ -101,17 +114,17 @@ export function fireMetaCAPI(params: CAPIEventParams) {
         event_name: params.eventName,
         event_id: params.eventId || undefined,
         event_source_url: safeUrl,
-        user_email: params.userEmail || undefined,
-        user_phone: params.userPhone || undefined,
+        user_email: userEmail || undefined,
+        user_phone: userPhone || undefined,
         user_agent: navigator.userAgent,
         fbc: fbc || undefined,
         fbp: fbp || undefined,
-        external_id: params.externalId || undefined,
-        first_name: params.firstName || undefined,
-        last_name: params.lastName || undefined,
-        city: params.city || undefined,
-        state: params.state || undefined,
-        zip_code: params.zipCode || undefined,
+        external_id: externalId || undefined,
+        first_name: firstName || undefined,
+        last_name: lastName || undefined,
+        city: city || undefined,
+        state: state || undefined,
+        zip_code: zipCode || undefined,
         custom_data: params.customData || undefined,
       },
     })
