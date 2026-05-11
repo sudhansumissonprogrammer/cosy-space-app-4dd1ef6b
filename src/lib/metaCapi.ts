@@ -76,9 +76,23 @@ export function fireMetaCAPI(params: CAPIEventParams) {
   // Guard: never fire from Lovable preview/editor/dev domains.
   if (isNonProductionHost()) return;
 
-  // Skip if store has no pixel configured (cached per store)
-  const cacheKey = `meta_pixel_${params.storeId}`;
-  if (sessionStorage.getItem(cacheKey) === "0") return;
+  // Skip if we've already learned this store has no CAPI access token configured.
+  // Cached in localStorage with a 7-day TTL so each browser only pings the edge
+  // function once a week per store (vs once per session before). When the store
+  // owner adds a CAPI token later, the cache naturally expires.
+  // To force-refresh: clear localStorage key `meta_capi_skip_<storeId>`.
+  const cacheKey = `meta_capi_skip_${params.storeId}`;
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      const expiresAt = parseInt(cached, 10);
+      if (Number.isFinite(expiresAt) && Date.now() < expiresAt) return;
+      // expired — fall through to re-check
+      localStorage.removeItem(cacheKey);
+    }
+  } catch {
+    // localStorage unavailable (private mode etc.) — proceed with call
+  }
 
   const { fbc, fbp } = getMetaCookies();
 
@@ -133,9 +147,15 @@ export function fireMetaCAPI(params: CAPIEventParams) {
         console.warn("Meta CAPI warning:", error.message);
         return;
       }
-      // Cache "no pixel" when function says meta is not configured
+      // Cache "no CAPI configured" for 7 days so we don't re-call the edge
+      // function on every visit. localStorage persists across sessions/tabs.
       if (data?.skipped && data?.reason === "meta_not_configured") {
-        sessionStorage.setItem(cacheKey, "0");
+        try {
+          const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
+          localStorage.setItem(cacheKey, String(expiresAt));
+        } catch {
+          // localStorage unavailable — best effort
+        }
       }
     })
     .catch((err) => {
