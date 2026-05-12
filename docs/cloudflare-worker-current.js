@@ -3496,9 +3496,10 @@ async function callEdgeFunction(name, params = {}) {
    SEO FILES + BOT HANDLER
    ============================================================ */
 
-async function handleSeoFiles(url, slug) {
+async function handleSeoFiles(url, slug, hostname) {
+  const domain = hostname || url.hostname;
   if (url.pathname === "/sitemap.xml") {
-    const res = await callEdgeFunction("seo-page", { type: "sitemap", slug });
+    const res = await callEdgeFunction("seo-page", { type: "sitemap", slug, domain });
     if (res.ok) {
       const body = await res.text();
       return new Response(body, {
@@ -3507,7 +3508,7 @@ async function handleSeoFiles(url, slug) {
     }
   }
   if (url.pathname === "/robots.txt") {
-    const res = await callEdgeFunction("seo-page", { type: "robots", slug });
+    const res = await callEdgeFunction("seo-page", { type: "robots", slug, domain });
     if (res.ok) {
       const body = await res.text();
       return new Response(body, {
