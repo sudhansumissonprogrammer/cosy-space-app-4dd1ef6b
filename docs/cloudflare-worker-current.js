@@ -5012,7 +5012,7 @@ export default {
       // v8.9.0: also fetch inline PDP/category payload for /product/* and /category/*
       const pdpCategoryRouteCD = _parsePdpCategoryPath(url.pathname);
       const [seoResponse, botResponse, kvBatchCD, cachedHeadCDReal, inlineProductsCDReal, pdpCategoryJsonCD] = await Promise.all([
-        handleSeoFiles(url, resolvedSlug),
+        handleSeoFiles(url, resolvedSlug, hostname),
         handleBot(request, resolvedSlug, url, true),
         _batchKvRead(resolvedSlug, env),
         _getCachedPrebuiltHead(env),
