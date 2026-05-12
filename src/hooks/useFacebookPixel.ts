@@ -79,16 +79,17 @@ export function useFacebookPixel(pixelId: string | null | undefined) {
       script.src = "https://connect.facebook.net/en_US/fbevents.js";
       document.head.appendChild(script);
 
-      // noscript pixel — must go in <body> per HTML5 spec
-      const noscript = document.createElement("noscript");
-      noscript.id = "fb-pixel-noscript";
-      const img = document.createElement("img");
-      img.height = 1;
-      img.width = 1;
-      img.style.display = "none";
-      img.src = `https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`;
-      noscript.appendChild(img);
-      document.body.appendChild(noscript);
+      // NOTE: We deliberately do NOT inject a <noscript><img/></noscript>
+      // fallback here. The fallback's purpose is to fire PageView when
+      // JavaScript is disabled — but if we got here, JS is running and
+      // the real fbq pixel above already fired PageView. Worse, when a
+      // <noscript> is inserted via JS, Chromium parses its content and
+      // STILL fetches the img inside, producing a duplicate PageView
+      // (one with `&noscript=1`, one without). That duplicates events
+      // in Events Manager, dilutes EMQ and inflates reported traffic.
+      // The only correct place for the <noscript> fallback would be
+      // inside the server-rendered <body> in index.html (so the browser
+      // ignores it when JS runs) — not injected from a React hook.
     });
 
     // Init + PageView fire immediately via shim (queued until script loads)
@@ -101,7 +102,6 @@ export function useFacebookPixel(pixelId: string | null | undefined) {
 
     return () => {
       document.getElementById("fb-pixel-script")?.remove();
-      document.getElementById("fb-pixel-noscript")?.remove();
     };
   }, [pixelId]);
 
