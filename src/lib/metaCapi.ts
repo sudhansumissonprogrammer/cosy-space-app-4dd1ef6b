@@ -72,6 +72,12 @@ interface CAPIEventParams {
  * This runs alongside the client-side pixel for deduplication.
  * Non-blocking — errors are silently logged.
  */
+// In-flight dedupe: if multiple events fire on a fresh visit (PageView +
+// ViewContent + AddToCart, etc.) before the first response sets the
+// "meta_not_configured" cache, they would ALL hit the edge function. Track
+// the first probe per store so the rest short-circuit until it resolves.
+const inflightProbe = new Map<string, Promise<boolean>>();
+
 export function fireMetaCAPI(params: CAPIEventParams) {
   // Guard: never fire from Lovable preview/editor/dev domains.
   if (isNonProductionHost()) return;
