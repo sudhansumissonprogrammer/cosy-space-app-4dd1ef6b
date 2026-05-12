@@ -3680,7 +3680,7 @@ async function handlePrewarm(request, url, ctx, env) {
           .catch(() => {}),
       ];
       if (env?.STORE_KV)
-        idWrites.push(env.STORE_KV.put(`store-id:${subDomain}`, storeIdStr, { expirationTtl: 86400 }).catch(() => {}));
+        idWrites.push(kvPutDedup(env, `store-id:${subDomain}`, storeIdStr, { expirationTtl: 86400 }));
       if (domain) {
         const cleanDomain = domain
           .replace(/^www\./, "")
