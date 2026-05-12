@@ -3622,7 +3622,7 @@ async function handlePrewarm(request, url, ctx, env) {
           )
           .catch(() => {}),
         env?.STORE_KV
-          ? env.STORE_KV.put(PREBUILT_HEAD_KV_KEY, built, { expirationTtl: PREBUILT_HEAD_KV_TTL }).catch(() => {})
+          ? kvPutDedup(env, PREBUILT_HEAD_KV_KEY, built, { expirationTtl: PREBUILT_HEAD_KV_TTL })
           : Promise.resolve(),
       ]);
       results.prebuiltHead = "warmed";
