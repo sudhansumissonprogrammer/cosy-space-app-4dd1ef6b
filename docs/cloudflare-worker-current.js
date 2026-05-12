@@ -2166,6 +2166,143 @@ function _buildSeoBodyBlock(store) {
   );
 }
 
+/**
+ * v8.15.0 — Build per-route (PDP / category) SEO head HTML used by the
+ * streaming path. Returns full <title>, meta description, canonical, OG +
+ * Twitter tags and JSON-LD (Product+Offer+BreadcrumbList for PDP,
+ * CollectionPage+BreadcrumbList for category). Empty string for unknown.
+ */
+function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryInline) {
+  if (!store || !pdpCategoryInline?.json || !pdpCategoryInline?.kind) return "";
+  let parsed;
+  try { parsed = JSON.parse(pdpCategoryInline.json); } catch { return ""; }
+
+  const canonicalBase = store.custom_domain
+    ? `https://${store.custom_domain}`
+    : `https://${slug}.${ROOT_DOMAIN}`;
+  const url = `${canonicalBase}${pathname || "/"}`;
+  const safe = (o) => JSON.stringify(o).replace(/<\/script/gi, "<\\/script");
+
+  if (pdpCategoryInline.kind === "product") {
+    const p = parsed?.product;
+    if (!p) return "";
+    const images = Array.isArray(parsed?.images)
+      ? parsed.images.map((i) => i?.image_url).filter(Boolean)
+      : [];
+    const heroImg = p.og_image_url || p.image_url || images[0] || store.og_image_url || store.banner_url || store.logo_url || "";
+    const title = escapeHtml(p.meta_title || `${p.name} — ${store.name}`);
+    const desc = escapeHtml(p.meta_description || (p.description ? String(p.description).slice(0, 160) : `Buy ${p.name} from ${store.name}. Cash on delivery, fast shipping across India.`));
+    const ogImg = escapeHtml(heroImg);
+    const price = Number(p.sale_price || p.price || 0);
+    const inStock = Number(p.stock_quantity || 0) > 0;
+    const productLd = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: p.name,
+      description: p.description || desc,
+      image: images.length ? images : (heroImg ? [heroImg] : undefined),
+      sku: p.sku || undefined,
+      brand: { "@type": "Brand", name: store.name },
+      offers: {
+        "@type": "Offer",
+        url,
+        priceCurrency: p.currency || store.currency || "INR",
+        price: price.toFixed(2),
+        availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        seller: { "@type": "Organization", name: store.name },
+      },
+    };
+    const breadcrumbLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: `${canonicalBase}/` },
+        ...(p.category ? [{ "@type": "ListItem", position: 2, name: p.category, item: `${canonicalBase}/category/${encodeURIComponent(String(p.category).toLowerCase().replace(/\s+/g, "-"))}` }] : []),
+        { "@type": "ListItem", position: p.category ? 3 : 2, name: p.name, item: url },
+      ],
+    };
+    let html = "";
+    html += `<title>${title}</title>`;
+    html += `<meta name="description" content="${desc}">`;
+    html += `<link rel="canonical" href="${escapeHtml(url)}">`;
+    html += `<meta property="og:type" content="product">`;
+    html += `<meta property="og:title" content="${title}">`;
+    html += `<meta property="og:description" content="${desc}">`;
+    html += `<meta property="og:url" content="${escapeHtml(url)}">`;
+    html += `<meta property="og:site_name" content="${escapeHtml(store.name)}">`;
+    if (ogImg) {
+      html += `<meta property="og:image" content="${ogImg}">`;
+      html += `<meta name="twitter:image" content="${ogImg}">`;
+    }
+    html += `<meta name="twitter:card" content="summary_large_image">`;
+    html += `<meta name="twitter:title" content="${title}">`;
+    html += `<meta name="twitter:description" content="${desc}">`;
+    html += `<script type="application/ld+json">${safe(productLd)}</script>`;
+    html += `<script type="application/ld+json">${safe(breadcrumbLd)}</script>`;
+    return html;
+  }
+
+  if (pdpCategoryInline.kind === "category") {
+    const c = parsed?.category;
+    if (!c) return "";
+    const products = Array.isArray(parsed?.products) ? parsed.products : [];
+    const heroImg = c.og_image_url || c.image_url || store.banner_url || store.logo_url || "";
+    const title = escapeHtml(c.meta_title || `${c.name} — ${store.name}${store.city ? ` | ${store.city}` : ""}`);
+    const desc = escapeHtml(c.meta_description || `Shop ${c.name.toLowerCase()} from ${store.name}. ${products.length} products available with fast shipping across India.`);
+    const ogImg = escapeHtml(heroImg);
+    const collectionLd = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: c.name,
+      url,
+      description: desc,
+      isPartOf: { "@type": "WebSite", name: store.name, url: `${canonicalBase}/` },
+      ...(products.length
+        ? {
+            mainEntity: {
+              "@type": "ItemList",
+              numberOfItems: products.length,
+              itemListElement: products.slice(0, 20).map((pp, i) => ({
+                "@type": "ListItem",
+                position: i + 1,
+                url: `${canonicalBase}/product/${encodeURIComponent(pp.slug || "")}`,
+                name: pp.name,
+              })),
+            },
+          }
+        : {}),
+    };
+    const breadcrumbLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: `${canonicalBase}/` },
+        { "@type": "ListItem", position: 2, name: c.name, item: url },
+      ],
+    };
+    let html = "";
+    html += `<title>${title}</title>`;
+    html += `<meta name="description" content="${desc}">`;
+    html += `<link rel="canonical" href="${escapeHtml(url)}">`;
+    html += `<meta property="og:type" content="website">`;
+    html += `<meta property="og:title" content="${title}">`;
+    html += `<meta property="og:description" content="${desc}">`;
+    html += `<meta property="og:url" content="${escapeHtml(url)}">`;
+    html += `<meta property="og:site_name" content="${escapeHtml(store.name)}">`;
+    if (ogImg) {
+      html += `<meta property="og:image" content="${ogImg}">`;
+      html += `<meta name="twitter:image" content="${ogImg}">`;
+    }
+    html += `<meta name="twitter:card" content="summary_large_image">`;
+    html += `<meta name="twitter:title" content="${title}">`;
+    html += `<meta name="twitter:description" content="${desc}">`;
+    html += `<script type="application/ld+json">${safe(collectionLd)}</script>`;
+    html += `<script type="application/ld+json">${safe(breadcrumbLd)}</script>`;
+    return html;
+  }
+  return "";
+}
+
 function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) {
   // v8.14.0: strip platform default SEO tags BEFORE we inject per-store ones.
   html = _stripPlatformSeoHead(html);
