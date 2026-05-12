@@ -75,7 +75,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.13.0-font-display-optional";
+const WORKER_VERSION = "8.13.1-kv-write-reduction";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -937,9 +937,11 @@ function _buildLinkPreloadHeader(html) {
    ============================================================ */
 
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
-// v6.9.1: Shell HTML must refresh quickly after frontend publishes; long TTLs caused
-// custom domains/subdomains to keep serving old JS bundle references after deploy.
-const SPA_SHELL_KV_TTL = 300; // v8.7.0: publish-fresh safety; shell can change on every Lovable publish.
+// v8.13.1 cost-cut: 300s → 3600s. Cuts ~12k KV writes/wk. After Lovable
+// publishes, /api/purge-shell already exists for instant flush; otherwise
+// new visitors see fresh shell within 1h. Vite hashed bundles coexist on
+// CDN so old shell references don't 404 mid-window.
+const SPA_SHELL_KV_TTL = 3600;
 const SPA_SHELL_CACHE_TTL = 60; // v8.7.0: short safety net only; human navigations use fresh origin shell.
 
 function setNoStoreHtmlHeaders(headers) {
@@ -1090,8 +1092,9 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
   if (ctx) {
     ctx.waitUntil(
       Promise.all([
+        // v8.13.1: dedup-wrapped — collapses multi-isolate write bursts in same colo.
         env?.STORE_KV
-          ? env.STORE_KV.put(SPA_SHELL_KV_KEY, html, { expirationTtl: SPA_SHELL_KV_TTL })
+          ? kvPutDedup(env, SPA_SHELL_KV_KEY, html, { expirationTtl: SPA_SHELL_KV_TTL })
           : Promise.resolve(),
         cache.put(
           shellCacheKey,
@@ -2443,7 +2446,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
       try {
         const existing = await env.STORE_KV.get(lockKey);
         if (existing) return; // Another isolate warmed this store recently
-        await env.STORE_KV.put(lockKey, "1", { expirationTtl: 60 }).catch(() => {}); // v8.4.1: 30m → 60s so each colo can warm its own CF cache mirror
+        await env.STORE_KV.put(lockKey, "1", { expirationTtl: 300 }).catch(() => {}); // v8.13.1: 60s → 300s, ~5x fewer writes; CF cache mirror is hot for active stores
       } catch {}
     }
 
@@ -3619,7 +3622,7 @@ async function handlePrewarm(request, url, ctx, env) {
           )
           .catch(() => {}),
         env?.STORE_KV
-          ? env.STORE_KV.put(PREBUILT_HEAD_KV_KEY, built, { expirationTtl: PREBUILT_HEAD_KV_TTL }).catch(() => {})
+          ? kvPutDedup(env, PREBUILT_HEAD_KV_KEY, built, { expirationTtl: PREBUILT_HEAD_KV_TTL })
           : Promise.resolve(),
       ]);
       results.prebuiltHead = "warmed";
@@ -3639,7 +3642,7 @@ async function handlePrewarm(request, url, ctx, env) {
       ];
       if (env?.STORE_KV)
         writes.push(
-          env.STORE_KV.put(`domain:${cleanDomain}`, cacheData, { expirationTtl: KV_DOMAIN_TTL }).catch(() => {}),
+          kvPutDedup(env, `domain:${cleanDomain}`, cacheData, { expirationTtl: KV_DOMAIN_TTL }),
         );
       await Promise.all(writes);
       results.domainMapping = "warmed";
@@ -3677,7 +3680,7 @@ async function handlePrewarm(request, url, ctx, env) {
           .catch(() => {}),
       ];
       if (env?.STORE_KV)
-        idWrites.push(env.STORE_KV.put(`store-id:${subDomain}`, storeIdStr, { expirationTtl: 86400 }).catch(() => {}));
+        idWrites.push(kvPutDedup(env, `store-id:${subDomain}`, storeIdStr, { expirationTtl: 86400 }));
       if (domain) {
         const cleanDomain = domain
           .replace(/^www\./, "")
@@ -3693,7 +3696,7 @@ async function handlePrewarm(request, url, ctx, env) {
         );
         if (env?.STORE_KV)
           idWrites.push(
-            env.STORE_KV.put(`store-id:${cleanDomain}`, storeIdStr, { expirationTtl: 86400 }).catch(() => {}),
+            kvPutDedup(env, `store-id:${cleanDomain}`, storeIdStr, { expirationTtl: 86400 }),
           );
       }
       await Promise.all(idWrites);
@@ -3721,9 +3724,7 @@ async function handlePrewarm(request, url, ctx, env) {
         );
         if (env?.STORE_KV)
           cacheOps.push(
-            env.STORE_KV.put(_buildProductsKvKey(subDomain, {}, subVersion), prodBody, { expirationTtl: PRODUCTS_KV_TTL }).catch(
-              () => {},
-            ),
+            kvPutDedup(env, _buildProductsKvKey(subDomain, {}, subVersion), prodBody, { expirationTtl: PRODUCTS_KV_TTL }),
           );
         if (domain) {
           const cleanDomain = domain
@@ -3746,9 +3747,9 @@ async function handlePrewarm(request, url, ctx, env) {
           );
           if (env?.STORE_KV)
             cacheOps.push(
-              env.STORE_KV.put(_buildProductsKvKey(cleanDomain, {}, cdVersion), prodBody, {
+              kvPutDedup(env, _buildProductsKvKey(cleanDomain, {}, cdVersion), prodBody, {
                 expirationTtl: PRODUCTS_KV_TTL,
-              }).catch(() => {}),
+              }),
             );
         }
         await Promise.all(cacheOps);
@@ -3791,21 +3792,13 @@ async function handlePrewarm(request, url, ctx, env) {
       results.fullHtml = "skipped";
     }
 
-    if (env?.STORE_KV) {
-      try {
-        const currentIndex = await env.STORE_KV.get("all-active-slugs", { type: "json" });
-        if (Array.isArray(currentIndex) && !currentIndex.includes(slug)) {
-          currentIndex.push(slug);
-          await env.STORE_KV.put("all-active-slugs", JSON.stringify(currentIndex), { expirationTtl: 3_600 }).catch(
-            () => {},
-          );
-          if (_slugIndexSet) _slugIndexSet.add(slug);
-        } else if (!currentIndex) {
-          await env.STORE_KV.put("all-active-slugs", JSON.stringify([slug]), { expirationTtl: 3_600 }).catch(() => {});
-          _slugIndexSet = new Set([slug]);
-          _slugIndexExpiresAt = Date.now() + 1_800_000;
-        }
-      } catch {}
+    // v8.13.1 cost-cut: removed all-active-slugs append-write here.
+    // Cron rebuilds the full list every 60min from DB; consumers
+    // (`_getSlugIndex`) are fire-and-forget and never gate request handling,
+    // so a 60-min staleness window for brand-new stores is harmless.
+    if (env?.STORE_KV && _slugIndexSet) {
+      // Keep in-memory set fresh for this isolate so subsequent reads see the slug.
+      _slugIndexSet.add(slug);
     }
 
     return addCorsHeaders(
