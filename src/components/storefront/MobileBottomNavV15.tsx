@@ -75,7 +75,10 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
                         ? "max-w-[56px] opacity-100"
                         : "max-w-0 opacity-0"
                     }`}
-                    style={{ color: active ? "var(--storefront-bg, hsl(var(--background)))" : undefined }}
+                    style={{
+                      fontFamily: "var(--storefront-body-font, inherit)",
+                      color: active ? "var(--storefront-bg, hsl(var(--background)))" : undefined,
+                    }}
                   >
                     {item.label}
                   </span>
