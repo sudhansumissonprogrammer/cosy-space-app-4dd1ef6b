@@ -75,7 +75,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.14.0-seo-rewrite";
+const WORKER_VERSION = "8.15.0-seo-routes";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -2166,7 +2166,146 @@ function _buildSeoBodyBlock(store) {
   );
 }
 
+/**
+ * v8.15.0 — Build per-route (PDP / category) SEO head HTML used by the
+ * streaming path. Returns full <title>, meta description, canonical, OG +
+ * Twitter tags and JSON-LD (Product+Offer+BreadcrumbList for PDP,
+ * CollectionPage+BreadcrumbList for category). Empty string for unknown.
+ */
+function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryInline) {
+  if (!store || !pdpCategoryInline?.json || !pdpCategoryInline?.kind) return "";
+  let parsed;
+  try { parsed = JSON.parse(pdpCategoryInline.json); } catch { return ""; }
+
+  const canonicalBase = store.custom_domain
+    ? `https://${store.custom_domain}`
+    : `https://${slug}.${ROOT_DOMAIN}`;
+  const url = `${canonicalBase}${pathname || "/"}`;
+  const safe = (o) => JSON.stringify(o).replace(/<\/script/gi, "<\\/script");
+
+  if (pdpCategoryInline.kind === "product") {
+    const p = parsed?.product;
+    if (!p) return "";
+    const images = Array.isArray(parsed?.images)
+      ? parsed.images.map((i) => i?.image_url).filter(Boolean)
+      : [];
+    const heroImg = p.og_image_url || p.image_url || images[0] || store.og_image_url || store.banner_url || store.logo_url || "";
+    const title = escapeHtml(p.meta_title || `${p.name} — ${store.name}`);
+    const desc = escapeHtml(p.meta_description || (p.description ? String(p.description).slice(0, 160) : `Buy ${p.name} from ${store.name}. Cash on delivery, fast shipping across India.`));
+    const ogImg = escapeHtml(heroImg);
+    const price = Number(p.sale_price || p.price || 0);
+    const inStock = Number(p.stock_quantity || 0) > 0;
+    const productLd = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: p.name,
+      description: p.description || desc,
+      image: images.length ? images : (heroImg ? [heroImg] : undefined),
+      sku: p.sku || undefined,
+      brand: { "@type": "Brand", name: store.name },
+      offers: {
+        "@type": "Offer",
+        url,
+        priceCurrency: p.currency || store.currency || "INR",
+        price: price.toFixed(2),
+        availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        seller: { "@type": "Organization", name: store.name },
+      },
+    };
+    const breadcrumbLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: `${canonicalBase}/` },
+        ...(p.category ? [{ "@type": "ListItem", position: 2, name: p.category, item: `${canonicalBase}/category/${encodeURIComponent(String(p.category).toLowerCase().replace(/\s+/g, "-"))}` }] : []),
+        { "@type": "ListItem", position: p.category ? 3 : 2, name: p.name, item: url },
+      ],
+    };
+    let html = "";
+    html += `<title>${title}</title>`;
+    html += `<meta name="description" content="${desc}">`;
+    html += `<link rel="canonical" href="${escapeHtml(url)}">`;
+    html += `<meta property="og:type" content="product">`;
+    html += `<meta property="og:title" content="${title}">`;
+    html += `<meta property="og:description" content="${desc}">`;
+    html += `<meta property="og:url" content="${escapeHtml(url)}">`;
+    html += `<meta property="og:site_name" content="${escapeHtml(store.name)}">`;
+    if (ogImg) {
+      html += `<meta property="og:image" content="${ogImg}">`;
+      html += `<meta name="twitter:image" content="${ogImg}">`;
+    }
+    html += `<meta name="twitter:card" content="summary_large_image">`;
+    html += `<meta name="twitter:title" content="${title}">`;
+    html += `<meta name="twitter:description" content="${desc}">`;
+    html += `<script type="application/ld+json">${safe(productLd)}</script>`;
+    html += `<script type="application/ld+json">${safe(breadcrumbLd)}</script>`;
+    return html;
+  }
+
+  if (pdpCategoryInline.kind === "category") {
+    const c = parsed?.category;
+    if (!c) return "";
+    const products = Array.isArray(parsed?.products) ? parsed.products : [];
+    const heroImg = c.og_image_url || c.image_url || store.banner_url || store.logo_url || "";
+    const title = escapeHtml(c.meta_title || `${c.name} — ${store.name}${store.city ? ` | ${store.city}` : ""}`);
+    const desc = escapeHtml(c.meta_description || `Shop ${c.name.toLowerCase()} from ${store.name}. ${products.length} products available with fast shipping across India.`);
+    const ogImg = escapeHtml(heroImg);
+    const collectionLd = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: c.name,
+      url,
+      description: desc,
+      isPartOf: { "@type": "WebSite", name: store.name, url: `${canonicalBase}/` },
+      ...(products.length
+        ? {
+            mainEntity: {
+              "@type": "ItemList",
+              numberOfItems: products.length,
+              itemListElement: products.slice(0, 20).map((pp, i) => ({
+                "@type": "ListItem",
+                position: i + 1,
+                url: `${canonicalBase}/product/${encodeURIComponent(pp.slug || "")}`,
+                name: pp.name,
+              })),
+            },
+          }
+        : {}),
+    };
+    const breadcrumbLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: `${canonicalBase}/` },
+        { "@type": "ListItem", position: 2, name: c.name, item: url },
+      ],
+    };
+    let html = "";
+    html += `<title>${title}</title>`;
+    html += `<meta name="description" content="${desc}">`;
+    html += `<link rel="canonical" href="${escapeHtml(url)}">`;
+    html += `<meta property="og:type" content="website">`;
+    html += `<meta property="og:title" content="${title}">`;
+    html += `<meta property="og:description" content="${desc}">`;
+    html += `<meta property="og:url" content="${escapeHtml(url)}">`;
+    html += `<meta property="og:site_name" content="${escapeHtml(store.name)}">`;
+    if (ogImg) {
+      html += `<meta property="og:image" content="${ogImg}">`;
+      html += `<meta name="twitter:image" content="${ogImg}">`;
+    }
+    html += `<meta name="twitter:card" content="summary_large_image">`;
+    html += `<meta name="twitter:title" content="${title}">`;
+    html += `<meta name="twitter:description" content="${desc}">`;
+    html += `<script type="application/ld+json">${safe(collectionLd)}</script>`;
+    html += `<script type="application/ld+json">${safe(breadcrumbLd)}</script>`;
+    return html;
+  }
+  return "";
+}
+
 function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) {
+  // v8.15.0: ensure <html lang="en"> for SEO + accessibility.
+  html = html.replace(/<html(?![^>]*\blang=)/i, '<html lang="en"');
   // v8.14.0: strip platform default SEO tags BEFORE we inject per-store ones.
   html = _stripPlatformSeoHead(html);
 
@@ -2351,7 +2490,10 @@ async function serveStreamedHtml(
 
   (async () => {
     try {
-      const html = shellResult.html;
+      let html = shellResult.html;
+      // v8.15.0: ensure <html lang="en"> for SEO + accessibility.
+      html = html.replace(/<html(?![^>]*\blang=)/i, '<html lang="en"');
+
       const headEnd = html.indexOf("</head>");
 
       if (headEnd === -1) {
@@ -2376,36 +2518,52 @@ async function serveStreamedHtml(
       }
       const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";${themeHint}${productsHint}${pdpCatHint}</script>`;
 
-      // v6.4.0: Preload-scanner image fast-path — emit <link rel="preload">
-      // tags for the first 6 product images directly in <head>. The browser
-      // starts downloading them BEFORE any JS runs.
+      // v6.4.0: Preload-scanner image fast-path
       const productImagePreloads = inlineProducts
         ? _buildProductImagePreloads(inlineProducts, 6)
         : "";
+
+      // v8.15.0: For PDP/category routes, AWAIT storefront data before
+      // flushing head so we can SSR per-route <title>, <meta description>,
+      // canonical and JSON-LD. Cost: ~50-150ms TTFB on these routes;
+      // unlocks Google indexing per product/category page.
+      let perRouteSeoHead = "";
+      let earlyStorefrontResult = null;
+      if (pdpCategoryInline?.kind && pdpCategoryInline?.json) {
+        try {
+          earlyStorefrontResult = await storefrontPromise;
+        } catch {}
+        const earlyStore = earlyStorefrontResult?.data?.store;
+        if (earlyStore) {
+          perRouteSeoHead = _buildPdpCategorySeoHead(
+            earlyStore,
+            slug,
+            null,
+            (pdpCategoryInline.kind === "product" ? "/product/" : "/category/") +
+              (pdpCategoryInline.slug || ""),
+            pdpCategoryInline,
+          );
+        }
+      }
 
       // v8.14.0: strip platform default SEO tags before flushing head.
       let headChunk = _stripPlatformSeoHead(html.slice(0, headEnd) + "</head>");
       headChunk = headChunk.slice(0, headChunk.indexOf("</head>"));
       headChunk = headChunk.replace(
         "<head>",
-        `<head>${slugScript}${themeCss}${productImagePreloads}${prebuiltHead || ""}`,
+        `<head>${slugScript}${themeCss}${productImagePreloads}${perRouteSeoHead}${prebuiltHead || ""}`,
       );
       headChunk += "</head>";
 
       // Flush head immediately — browser starts fetching assets NOW
       await writer.write(enc.encode(headChunk));
 
-      // FIX #2: storefrontPromise was started before shell fetch, so by now
-      // it has had the full allotted time and is very likely resolved already
-      const storefrontResult = await storefrontPromise;
+      // FIX #2: storefrontPromise was started before shell fetch
+      const storefrontResult = earlyStorefrontResult || (await storefrontPromise);
 
       const skeletonMuted = getSkeletonMuted(textColor);
-      // FIX #11: Pass actual bgColor
       const skeleton = buildSkeleton(bgColor, skeletonMuted);
 
-      // v6.4.0: Hidden product preloader grid — real <img> tags so the
-      // preload-scanner queues image downloads in parallel with React JS.
-      // Prefer fresh storefront data (richer); fall back to inlineProducts.
       let preloaderProductsJson = inlineProducts || "";
       if (Array.isArray(storefrontResult?.data?.products) && storefrontResult.data.products.length > 0) {
         preloaderProductsJson = JSON.stringify(storefrontResult.data.products);
@@ -2425,23 +2583,19 @@ async function serveStreamedHtml(
         bodyChunk = bodyChunk.replace("</body>", `<script>window.__STOREFRONT_DATA__=${jsonStr};</script></body>`);
       }
 
-      if (storefrontResult?.data?.store) {
+      // v8.15.0: skip the JS title/canonical hack on PDP/category — those
+      // already have SSR meta tags from _buildPdpCategorySeoHead.
+      if (storefrontResult?.data?.store && !pdpCategoryInline?.kind) {
         const s = storefrontResult.data.store;
         const faviconUrl = escapeHtml(s.logo_url || "");
 
-        // FIX #16: Inject canonical tag via JS in streaming path
         const canonicalBase = s.custom_domain
           ? `https://${s.custom_domain}`
           : `https://${slug}.${ROOT_DOMAIN}`;
 
         let metaScript = `<script>(function(){document.title=${JSON.stringify(s.meta_title || `${s.name} — Shop Online`)};`;
-
-        // Add canonical link
         metaScript += `var cn=document.querySelector("link[rel='canonical']");if(!cn){cn=document.createElement('link');cn.rel='canonical';document.head.appendChild(cn);}cn.href=${JSON.stringify(canonicalBase + "/")};`;
-
-        // Add og:url
         metaScript += `var ou=document.querySelector("meta[property='og:url']");if(!ou){ou=document.createElement('meta');ou.setAttribute('property','og:url');document.head.appendChild(ou);}ou.content=${JSON.stringify(canonicalBase + "/")};`;
-
         if (faviconUrl) {
           metaScript += `var li=document.querySelector("link[rel~='icon']");if(!li){li=document.createElement('link');li.rel='icon';document.head.appendChild(li);}li.href=${JSON.stringify(faviconUrl)};`;
         }
@@ -4835,7 +4989,7 @@ export default {
         _getInlineProductsOrNull(hostname, slug, env, ctx),
         _getInlinePdpCategoryOrNull(hostname, pdpCategoryRoute, env, ctx),
       ]);
-      const pdpCategoryInline = pdpCategoryJson ? { kind: pdpCategoryRoute.kind, json: pdpCategoryJson } : null;
+      const pdpCategoryInline = pdpCategoryJson ? { kind: pdpCategoryRoute.kind, slug: pdpCategoryRoute.slug, json: pdpCategoryJson } : null;
 
       // Hydrate in-memory caches from batch
       if (kvBatch.theme && !(_memThemeCache.get(slug)?.expiresAt > Date.now())) {
@@ -5019,7 +5173,7 @@ export default {
         _getInlineProductsOrNull(hostname, resolvedSlug, env, ctx),
         _getInlinePdpCategoryOrNull(hostname, pdpCategoryRouteCD, env, ctx),
       ]);
-      const pdpCategoryInlineCD = pdpCategoryJsonCD ? { kind: pdpCategoryRouteCD.kind, json: pdpCategoryJsonCD } : null;
+      const pdpCategoryInlineCD = pdpCategoryJsonCD ? { kind: pdpCategoryRouteCD.kind, slug: pdpCategoryRouteCD.slug, json: pdpCategoryJsonCD } : null;
 
       // Hydrate in-memory from batch
       if (kvBatchCD.theme && !(_memThemeCache.get(resolvedSlug)?.expiresAt > Date.now())) {
