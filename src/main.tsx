@@ -153,21 +153,19 @@ if ("serviceWorker" in navigator) {
     })();
     if (!cleanupDone) {
       try { localStorage.setItem(CLEANUP_KEY, "1"); } catch {}
+      // v8.16: NEVER reload after cleanup. In WebViews with volatile
+      // localStorage (Instagram in-app browser, some Chrome sandboxes,
+      // blocked-storage modes) the CLEANUP_KEY doesn't persist, so every
+      // page load re-ran cleanup → window.location.replace → reload loop
+      // every ~10-15s. Just unregister silently; the next user-initiated
+      // navigation will pick up fresh assets without any forced reload.
       Promise.all([
         navigator.serviceWorker.getRegistrations(),
         caches.keys().catch(() => [] as string[]),
       ]).then(([registrations, keys]) => {
-        const hadWorker = registrations.length > 0;
-        const hadCaches = keys.length > 0;
-
         Promise.all(registrations.map((r) => r.unregister()))
           .then(() => Promise.all(keys.map((k) => caches.delete(k))))
-          .then(() => {
-            if (hadWorker || hadCaches) {
-              // Use replace() so reload doesn't pollute history
-              window.location.replace(window.location.href);
-            }
-          });
+          .catch(() => {});
       });
     }
     // Do NOT register SW on live hosts — ever.
