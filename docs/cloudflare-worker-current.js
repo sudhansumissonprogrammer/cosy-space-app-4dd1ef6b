@@ -3696,7 +3696,7 @@ async function handlePrewarm(request, url, ctx, env) {
         );
         if (env?.STORE_KV)
           idWrites.push(
-            env.STORE_KV.put(`store-id:${cleanDomain}`, storeIdStr, { expirationTtl: 86400 }).catch(() => {}),
+            kvPutDedup(env, `store-id:${cleanDomain}`, storeIdStr, { expirationTtl: 86400 }),
           );
       }
       await Promise.all(idWrites);
