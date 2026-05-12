@@ -1,96 +1,115 @@
 ## Goal
+Make every storefront (custom domain + subdomain) rank in Google like a Shopify/WordPress site. Today every store leaks the ShopBanao platform's meta tags, which is why none of them appear in search.
 
-Make tracking Shopify-grade for **all stores**, regardless of whether the merchant adds a CAPI access token. Pixel-only must still work well; Pixel + CAPI must be best-in-class.
+## Root cause (one bug, 9 symptoms)
 
----
+The Worker **appends** new SEO tags but never **strips** the original ones from `index.html` (which are the ShopBanao landing page tags). Browsers and Googlebot read the first `<title>`, first `<link rel="canonical">`, first `<meta name="description">` they find — which is always the platform's. The Worker's injected tags come later and are ignored.
 
-## How Shopify handles this (mental model)
+Confirmed by curl on `serdiyajewellers.shop`:
+- `<title>` = "ShopBanao — Create Your Online Store for Free"
+- `<link rel="canonical" href="https://shopbanao.in/">` (catastrophic — Google de-indexes the store)
+- `<meta name="description">` = ShopBanao marketing copy
+- `<meta name="keywords">` = "ShopBanao, shop banao, ..."
+- `<meta name="author" content="ShopBanao">`
+- og:image = Lovable preview screenshot
 
-Shopify Pixel works for every store out-of-the-box (browser-only). When the merchant connects the Conversions API (token), Shopify automatically mirrors every event server-side with shared `event_id` for dedup. Merchants who never add CAPI still get good tracking — just with the usual 30-50% browser-loss on iOS/adblock. Merchants who add CAPI get EMQ 8-9 + recovered loss.
+## Full bug list (5 you already found + 4 new)
 
-We already match this architecture (Pixel always fires, CAPI fires conditionally based on `meta_access_token`). The gaps below close the remaining quality delta.
+| # | Bug | Severity | Where |
+|---|---|---|---|
+| 1 | Original platform `<title>` not stripped → empty store title in Google | KILLER | Worker `injectIntoHtml` |
+| 2 | Original `<link rel="canonical">` to shopbanao.in not stripped → de-indexes every store | KILLER | Worker `injectIntoHtml` |
+| 3 | Original platform `<meta name="description">` and `keywords`/`author` not stripped | KILLER | Worker `injectIntoHtml` |
+| 4 | Original og:title/og:description/og:image not stripped → wrong social previews | HIGH | Worker `injectIntoHtml` |
+| 5 | No JSON-LD schema (Organization, WebSite, Product, BreadcrumbList) | HIGH | Worker `injectIntoHtml` |
+| 6 | robots.txt on custom domain still says `Sitemap: serdiyajewellers.shopbanao.in/sitemap.xml` because worker doesn't forward hostname to seo-page | HIGH | Worker `handleSeoFiles` + `seo-page/index.ts handleRobots` |
+| 7 | No static H1 / store name / description in body — Googlebot indexes a blank shell | MEDIUM | Worker `injectIntoHtml` |
+| 8 | PDP and category pages get **only** the homepage meta — every product page tells Google "Serdiya Jewellers — Shop Online" instead of the product name + price | HIGH | Worker (no per-route meta logic) |
+| 9 | No per-product `meta_title` / `meta_description` columns in DB; merchants can't customize SEO per product | MEDIUM | DB + dashboard UI |
 
----
+## Plan
 
-## Scope (4 changes)
+### Phase 1 — Worker HTML rewriter (the unblocker)
 
-### 1. Surface CAPI status to merchants — "Marketing Health" widget
+Refactor `injectIntoHtml` (and the streaming variant) in `docs/cloudflare-worker-current.js` so it **rewrites** the `<head>` instead of appending:
 
-**Where:** Store dashboard → Settings → Marketing tab (existing page).
+1. **Strip these tags** from the source HTML before injecting:
+   - `<title>...</title>`
+   - `<link rel="canonical" ...>`
+   - `<meta name="description" ...>`, `<meta name="keywords" ...>`, `<meta name="author" ...>`
+   - `<meta property="og:*" ...>`, `<meta name="twitter:*" ...>`
+   - `<meta name="theme-color" ...>` (replace with store's primary color)
+2. **Inject per-store replacements** using `store.meta_title`, `meta_description`, `custom_domain`, `og_image_url`, `logo_url`, `banner_url`.
+3. **Build JSON-LD** server-side and inline it:
+   - Homepage → `Organization` + `WebSite` (with `SearchAction`)
+   - PDP → `Product` + `Offer` (price, availability, currency=INR) + `BreadcrumbList`
+   - Category → `CollectionPage` + `BreadcrumbList`
+4. **Inline a static SEO snippet** into the body skeleton (hidden visually but readable by crawlers): `<h1>{store.name}</h1><p>{store.description}</p>` — overwritten by React on hydrate.
+5. **Per-route meta** — when path is `/product/:slug` use the inline product (already in `__PRODUCT_INLINE__`) to set title = `${product.name} — ${store.name}`, description = product description, og:image = product image, canonical = `https://{host}/product/{slug}`. Same logic for `/category/:slug`.
+6. **Remove the streaming path's `document.title = ...` JS hack** — once tags are stripped + injected, both paths produce correct static HTML.
 
-**What it shows:** three status pills per store —
-- Pixel ID: ✅ set / ⚠ missing
-- CAPI Token: ✅ connected / ⚠ pixel-only mode (link → "Add token for +30% ROAS")
-- Last server event: timestamp from `meta_capi_events` log table, or "no events yet"
+### Phase 2 — Sitemap & robots fix
 
-**Why:** today merchants have no idea CAPI is silently skipped. A visible "pixel-only mode" badge with a one-line ROI pitch is the single biggest behavioral lever to get more stores onto CAPI. Shopify does exactly this.
+1. In `docs/cloudflare-worker-current.js handleSeoFiles`: pass `hostname` as `domain` to the edge function: `callEdgeFunction("seo-page", { type: "robots", slug, domain: hostname })` and same for sitemap.
+2. In `supabase/functions/seo-page/index.ts handleSitemap`: when `domain` param is present, prefer it over `store.custom_domain` (so subdomain visitors get a subdomain sitemap and custom-domain visitors get a custom-domain sitemap — Google requires the sitemap to be on the same host as the URLs it lists).
+3. Also include category image entries in sitemap and add `<priority>0.9</priority>` for best-sellers.
 
-**No forcing** — pixel-only stores keep working. The widget just nudges.
+### Phase 3 — Auto SEO defaults (zero merchant work)
 
----
-
-### 2. Pixel-only fallback hardening (for stores that never add CAPI)
-
-For every browser event, ensure the Pixel payload alone is rich enough that Meta's EMQ stays ≥6 even without server backup:
-
-- **Purchase** — add `contents[].item_price` and `contents[].quantity` to the browser `fbq("track","Purchase",...)` call in `CheckoutPage.tsx`. Today only `content_ids + value` are sent. Per-line item_price unlocks DPA + better attribution for pixel-only stores.
-- **AddPaymentInfo / InitiateCheckout / AddToCart** — already include `contents[]`, verify `item_price` is set on each.
-- **`em`/`ph` advanced matching** — when the storefront customer is logged in, pass plaintext email/phone into `fbq("init", pixelId, { em, ph, external_id })` so Meta auto-hashes browser-side. This is the Pixel-only equivalent of CAPI user_data and adds ~1.5 EMQ for free. We already do this server-side; mirror it browser-side for the pixel-only path.
-
-**Result:** stores without CAPI token still get Shopify-grade pixel quality.
-
-### 3. CAPI mirror parity (for stores that DO add token)
-
-When a store has CAPI configured, every browser event must have a matching server event with same `event_id`. Audit + fix any gaps:
-
-- **Purchase** — add `contents[].item_price` to the server payload too (mirror change #2).
-- **`fireMetaCAPI`** in `src/lib/metaCapi.ts` — already passes `contents` through; just ensure callers populate `item_price`.
-
-### 4. Reliability: 1-retry on CAPI 5xx
-
-In `supabase/functions/meta-capi/index.ts`, when `metaResponse.status >= 500`, wait 500ms and retry once. 4xx (token bad, schema bad) is not retried — that's a config issue, retrying won't help. Lifts delivery from ~99.5% → ~99.9%.
-
----
-
-## Out of scope (deliberate)
-
-- **Forcing CAPI onboarding** — keep it opt-in. Pixel-only must stay first-class.
-- **`Subscribe` / `CompleteRegistration`** — separate small task.
-- **`delivery_category`** on Purchase — minor, separate.
-- **Currency validation, custom ViewCategory event** — cosmetic, skip for now.
-- **V19/V20 custom checkout AddPaymentInfo** — those use V20CartPage; will need a follow-up pass once the main CheckoutPage flow is verified.
-
----
-
-## Files touched
+Most merchants leave SEO fields blank. Build a deterministic fallback ladder so SEO works **automatically** the moment a store goes live:
 
 ```
-src/pages/CheckoutPage.tsx           — add item_price to Purchase contents; advanced matching on init
-src/contexts/StorefrontAuthContext   — pass em/ph into fbq init when customer logs in
-src/lib/metaCapi.ts                  — no logic change, just verify item_price flows through
-supabase/functions/meta-capi/index.ts — 1-retry on 5xx
-src/pages/StoreSettings.tsx (Marketing tab) — add Marketing Health widget
-                                              (Pixel / CAPI / last event status)
+title       = meta_title || `${name} — ${primary_category} Online | {city}`
+description = meta_description || description || `Shop ${primary_category.toLowerCase()} from ${name}. Cash on delivery, fast shipping across India.`
+og:image    = og_image_url || banner_url || mobile_hero_url || logo_url || generated-OG (store name on brand color)
+keywords    = derived from category names + store.name + city
 ```
 
-No DB migrations, no new edge functions, no breaking changes.
+For products without per-product meta:
+```
+title       = `${product.name} — ${store.name}` (capped at 60 chars)
+description = first 155 chars of product.description, fallback to `${product.name} from ${store.name}. Order on WhatsApp or COD.`
+```
 
----
+### Phase 4 — Per-product SEO (DB + dashboard)
 
-## Verification after build
+1. Migration: add `meta_title TEXT`, `meta_description TEXT`, `og_image_url TEXT` to `products` table (nullable).
+2. Migration: add same to `categories` table.
+3. Dashboard UI: add an "SEO" accordion in the product editor and category editor with these 3 fields + character counters + live Google preview.
+4. Worker reads these when building per-route meta in Phase 1, step 5.
 
-1. **Pixel-only store** (imitationworld): Meta Pixel Helper shows Purchase with `contents[{id, quantity, item_price}]`. Events Manager EMQ ≥ 6.
-2. **Pixel + CAPI store** (serdiyajewellers, after they paste token): Events Manager → CAPI tab shows matching `event_id`, EMQ ≥ 8, dedup status "Yes".
-3. **Marketing Health widget**: shows red dot + "Add CAPI token (+30% ROAS)" for serdiyajewellers; green dots once token is added.
-4. CAPI 5xx retry: simulate by temporarily breaking Meta endpoint in a test, confirm second attempt logged.
+### Phase 5 — Custom domain auto-fix on attach
 
----
+When a merchant attaches a custom domain (existing flow that updates `stores.custom_domain`):
+1. Already-handled: sitemap regenerates with new domain (DB-driven).
+2. Add: trigger an edge function to call `/api/purge-store` so the cached HTML with old subdomain canonicals is flushed within seconds.
+3. Add: after attach success, show a one-click "Submit to Google" CTA in dashboard that opens the Search Console URL inspector pre-filled with the new domain.
 
-## Order of implementation
+### Phase 6 — Optional polish (skip if you want to ship fast)
 
-1. Marketing Health widget (biggest behavioral lever — gets more stores onto CAPI)
-2. `item_price` on Purchase (browser + server)
-3. Browser-side advanced matching (`em`/`ph` in fbq init)
-4. CAPI 5xx retry
+- `<html lang="{store.language || 'en-IN'}">` rewrite
+- `hreflang="x-default"` self-referencing
+- BreadcrumbList JSON-LD on every page
+- Server-render the first 6 product cards as plain `<a>` tags (helps Googlebot follow internal links without JS)
+- `og:image` auto-generation: edge function that takes a store and renders a 1200×630 PNG with logo + name + brand color, cached in R2
 
-Approve and I'll ship in this order.
+## Risk
+
+- **Stripping existing tags is regex-based on streamed HTML.** Test against the current `index.html` shape; gate behind a worker version flag so it can be rolled back fast.
+- **JSON-LD must be valid.** Bad schema = Google ignores it (no penalty, but no rich snippets either). Validate with structured-data linter before shipping.
+- **No data migration risk** in Phase 4 — new columns are nullable, existing stores keep working.
+
+## Expected outcome
+
+- **Within 24h after deploy:** Googlebot recrawls, sees correct canonicals + titles per store.
+- **2-4 weeks:** stores appear when searching brand name (e.g., "serdiya jewellers").
+- **4-8 weeks:** product pages start ranking for long-tail queries like "imitation mangalsutra under 500".
+- **6-8 weeks:** rich snippets (price, image, availability) appear in search results once Google validates the Product JSON-LD.
+
+## Suggested ship order
+
+1. **Phase 1 + Phase 2** together (one worker deploy + one edge function deploy). This alone unblocks 90% of the SEO problem.
+2. **Phase 3** auto-defaults in same deploy (no extra risk).
+3. **Phase 4** DB + dashboard SEO UI as a follow-up (1-2 days work).
+4. **Phase 5** purge-on-attach as a small addition.
+5. **Phase 6** optional, ship later.

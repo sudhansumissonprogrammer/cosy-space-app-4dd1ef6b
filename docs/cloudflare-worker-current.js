@@ -75,7 +75,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.13.1-kv-write-reduction";
+const WORKER_VERSION = "8.14.0-seo-rewrite";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -2070,7 +2070,106 @@ async function proxyToOriginCached(request, ctx) {
    HTML INJECTION HELPERS
    ============================================================ */
 
+/**
+ * v8.14.0 — Strip the platform's default SEO tags from <head> so the per-store
+ * tags we inject afterwards are the FIRST (and only) ones Googlebot sees.
+ * Without this, the original ShopBanao landing meta from index.html wins
+ * (canonical → shopbanao.in, title → "ShopBanao — Create…"), and every store
+ * is invisible in search.
+ */
+function _stripPlatformSeoHead(html) {
+  const headEnd = html.indexOf("</head>");
+  if (headEnd === -1) return html;
+  let head = html.slice(0, headEnd);
+  const body = html.slice(headEnd);
+
+  // Remove tags that we will replace per-store.
+  head = head
+    .replace(/<title[^>]*>[\s\S]*?<\/title>/gi, "")
+    .replace(/<link[^>]+rel=["']canonical["'][^>]*>\s*/gi, "")
+    .replace(/<meta[^>]+name=["'](?:description|keywords|author)["'][^>]*>\s*/gi, "")
+    .replace(/<meta[^>]+property=["']og:[^"']+["'][^>]*>\s*/gi, "")
+    .replace(/<meta[^>]+name=["']twitter:[^"']+["'][^>]*>\s*/gi, "")
+    .replace(/<meta[^>]+name=["']theme-color["'][^>]*>\s*/gi, "");
+
+  return head + body;
+}
+
+/**
+ * v8.14.0 — Build JSON-LD structured data for storefront homepage.
+ * Emits Organization + WebSite (with SearchAction). PDP/category schemas are
+ * emitted in the streaming path where per-route data is available.
+ */
+function _buildHomepageJsonLd(store, canonicalBase) {
+  if (!store) return "";
+  const sameAs = [];
+  if (store.instagram_url) sameAs.push(store.instagram_url);
+  if (store.facebook_url) sameAs.push(store.facebook_url);
+
+  const org = {
+    "@context": "https://schema.org",
+    "@type": "Store",
+    name: store.name,
+    url: canonicalBase + "/",
+  };
+  if (store.description) org.description = store.description;
+  if (store.logo_url) org.logo = store.logo_url;
+  if (store.banner_url) org.image = store.banner_url;
+  if (store.whatsapp_number) org.telephone = store.whatsapp_number;
+  if (sameAs.length) org.sameAs = sameAs;
+  if (store.location || store.city || store.state) {
+    org.address = {
+      "@type": "PostalAddress",
+      ...(store.location ? { streetAddress: store.location } : {}),
+      ...(store.city ? { addressLocality: store.city } : {}),
+      ...(store.state ? { addressRegion: store.state } : {}),
+      addressCountry: "IN",
+    };
+  }
+  org.currenciesAccepted = store.currency || "INR";
+  org.paymentAccepted = "Cash, UPI, Credit Card, Debit Card";
+
+  const website = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: store.name,
+    url: canonicalBase + "/",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${canonicalBase}/shop?q={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  };
+
+  const safe = (o) => JSON.stringify(o).replace(/<\/script/gi, "<\\/script");
+  return (
+    `<script type="application/ld+json">${safe(org)}</script>` +
+    `<script type="application/ld+json">${safe(website)}</script>`
+  );
+}
+
+/**
+ * v8.14.0 — Hidden but crawlable SEO content block injected into the body
+ * skeleton. Googlebot sees the store name + description + nav links even if
+ * React fails to hydrate. Visually hidden via inline styles (not display:none,
+ * which Google ignores).
+ */
+function _buildSeoBodyBlock(store) {
+  if (!store) return "";
+  const name = escapeHtml(store.name || "");
+  const desc = escapeHtml(store.description || store.meta_description || "");
+  return (
+    `<div style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap" aria-hidden="false">` +
+    `<h1>${name}</h1>` +
+    (desc ? `<p>${desc}</p>` : "") +
+    `</div>`
+  );
+}
+
 function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) {
+  // v8.14.0: strip platform default SEO tags BEFORE we inject per-store ones.
+  html = _stripPlatformSeoHead(html);
+
   let injection = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";`;
   if (storefrontData) {
     const jsonStr = JSON.stringify(storefrontData).replace(/<\/script/gi, "<\\/script");
@@ -2094,15 +2193,28 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
 
   const logoUrl = storefrontData?.store?.logo_url || "";
   let ogMeta = "";
+  let jsonLd = "";
+  let seoBody = "";
   if (storefrontData?.store) {
     const s = storefrontData.store;
-    const ogTitle = escapeHtml(s.meta_title || `${s.name} — Shop Online`);
-    const ogDesc = escapeHtml(
-      s.meta_description || s.description || `Shop the best products at ${s.name}. Fast delivery & easy returns.`,
-    );
-    const ogImage = escapeHtml(s.og_image_url || s.banner_url || s.logo_url || "");
+    // v8.14.0: smarter auto-defaults — pull category names + city for context.
+    const cats = Array.isArray(storefrontData.categories) ? storefrontData.categories : [];
+    const primaryCat = cats[0]?.name || "";
+    const cityBit = s.city ? ` | ${s.city}` : "";
+    const autoTitle = primaryCat
+      ? `${s.name} — ${primaryCat} Online${cityBit}`
+      : `${s.name} — Shop Online${cityBit}`;
+    const autoDesc = primaryCat
+      ? `Shop ${primaryCat.toLowerCase()} from ${s.name}. Cash on delivery, fast shipping across India.`
+      : `Shop the best products at ${s.name}. Fast delivery & easy returns across India.`;
 
-    // FIX #16: Canonical tag — prefer custom domain, fallback to subdomain
+    const ogTitle = escapeHtml(s.meta_title || autoTitle);
+    const ogDesc = escapeHtml(s.meta_description || s.description || autoDesc);
+    const ogImage = escapeHtml(
+      s.og_image_url || s.banner_url || s.mobile_hero_url || s.logo_url || "",
+    );
+
+    // Canonical: prefer custom domain, fall back to subdomain.
     const canonicalBase = s.custom_domain
       ? `https://${s.custom_domain}`
       : `https://${slug}.${ROOT_DOMAIN}`;
@@ -2110,20 +2222,33 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
 
     ogMeta += `<title>${ogTitle}</title>`;
     ogMeta += `<meta name="description" content="${ogDesc}">`;
+    if (cats.length) {
+      const kw = cats.slice(0, 8).map((c) => escapeHtml(c.name || "")).filter(Boolean).join(", ");
+      const kwExtra = [s.name, s.city].filter(Boolean).map(escapeHtml).join(", ");
+      ogMeta += `<meta name="keywords" content="${[kw, kwExtra].filter(Boolean).join(", ")}">`;
+    }
+    ogMeta += `<meta property="og:type" content="website">`;
     ogMeta += `<meta property="og:title" content="${ogTitle}">`;
     ogMeta += `<meta property="og:description" content="${ogDesc}">`;
     ogMeta += `<meta property="og:url" content="${escapeHtml(canonicalBase)}/">`;
+    ogMeta += `<meta property="og:site_name" content="${escapeHtml(s.name)}">`;
+    ogMeta += `<meta property="og:locale" content="en_IN">`;
+    ogMeta += `<meta name="twitter:card" content="summary_large_image">`;
     ogMeta += `<meta name="twitter:title" content="${ogTitle}">`;
     ogMeta += `<meta name="twitter:description" content="${ogDesc}">`;
     if (ogImage) {
       ogMeta += `<meta property="og:image" content="${ogImage}">`;
+      ogMeta += `<meta property="og:image:width" content="1200">`;
+      ogMeta += `<meta property="og:image:height" content="630">`;
       ogMeta += `<meta name="twitter:image" content="${ogImage}">`;
     }
-    ogMeta += `<meta property="og:site_name" content="${escapeHtml(s.name)}">`;
     if (logoUrl) {
       ogMeta += `<link rel="icon" type="image/png" href="${escapeHtml(logoUrl)}">`;
       ogMeta += `<link rel="apple-touch-icon" href="${escapeHtml(logoUrl)}">`;
     }
+
+    jsonLd = _buildHomepageJsonLd(s, canonicalBase);
+    seoBody = _buildSeoBodyBlock(s);
   }
 
   const skeletonMuted = getSkeletonMuted(textColor);
@@ -2196,12 +2321,12 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
 
   let injectedHtml = html.replace(
     "<head>",
-    `<head>${injection}${ogMeta}${inlineThemeCss}${productImagePreloads}${lcpPreload}${cssPreload}${modulePreloads}`,
+    `<head>${injection}${ogMeta}${jsonLd}${inlineThemeCss}${productImagePreloads}${lcpPreload}${cssPreload}${modulePreloads}`,
   );
   // Inject skeleton + invisible product preloader grid before #root.
   // The grid's <img> tags are read by the preload-scanner, queueing image
   // downloads in parallel with the React JS bundle.
-  injectedHtml = injectedHtml.replace('<div id="root">', `${skeleton}${productPreloaderGrid}<div id="root">`);
+  injectedHtml = injectedHtml.replace('<div id="root">', `${skeleton}${productPreloaderGrid}${seoBody}<div id="root">`);
   return { html: injectedHtml, dataSource };
 }
 
@@ -2258,7 +2383,9 @@ async function serveStreamedHtml(
         ? _buildProductImagePreloads(inlineProducts, 6)
         : "";
 
-      let headChunk = html.slice(0, headEnd);
+      // v8.14.0: strip platform default SEO tags before flushing head.
+      let headChunk = _stripPlatformSeoHead(html.slice(0, headEnd) + "</head>");
+      headChunk = headChunk.slice(0, headChunk.indexOf("</head>"));
       headChunk = headChunk.replace(
         "<head>",
         `<head>${slugScript}${themeCss}${productImagePreloads}${prebuiltHead || ""}`,
@@ -3369,9 +3496,10 @@ async function callEdgeFunction(name, params = {}) {
    SEO FILES + BOT HANDLER
    ============================================================ */
 
-async function handleSeoFiles(url, slug) {
+async function handleSeoFiles(url, slug, hostname) {
+  const domain = hostname || url.hostname;
   if (url.pathname === "/sitemap.xml") {
-    const res = await callEdgeFunction("seo-page", { type: "sitemap", slug });
+    const res = await callEdgeFunction("seo-page", { type: "sitemap", slug, domain });
     if (res.ok) {
       const body = await res.text();
       return new Response(body, {
@@ -3380,7 +3508,7 @@ async function handleSeoFiles(url, slug) {
     }
   }
   if (url.pathname === "/robots.txt") {
-    const res = await callEdgeFunction("seo-page", { type: "robots", slug });
+    const res = await callEdgeFunction("seo-page", { type: "robots", slug, domain });
     if (res.ok) {
       const body = await res.text();
       return new Response(body, {
@@ -4744,7 +4872,7 @@ export default {
         return cacheableResponse(ctx, request, r, 86400);
       }
 
-      const seoResponse = await handleSeoFiles(url, slug);
+      const seoResponse = await handleSeoFiles(url, slug, hostname);
       if (seoResponse) return seoResponse;
       const botResponse = await handleBot(request, slug, url, false);
       if (botResponse) return botResponse;
@@ -4884,7 +5012,7 @@ export default {
       // v8.9.0: also fetch inline PDP/category payload for /product/* and /category/*
       const pdpCategoryRouteCD = _parsePdpCategoryPath(url.pathname);
       const [seoResponse, botResponse, kvBatchCD, cachedHeadCDReal, inlineProductsCDReal, pdpCategoryJsonCD] = await Promise.all([
-        handleSeoFiles(url, resolvedSlug),
+        handleSeoFiles(url, resolvedSlug, hostname),
         handleBot(request, resolvedSlug, url, true),
         _batchKvRead(resolvedSlug, env),
         _getCachedPrebuiltHead(env),
