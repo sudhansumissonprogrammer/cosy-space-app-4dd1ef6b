@@ -1054,6 +1054,31 @@ export default function CheckoutPage() {
       : contactDigits;
 
     const handlePaymentSuccess = async (response: any) => {
+      // 🛡️ Fire browser Pixel Purchase IMMEDIATELY — before awaiting verify.
+      // Razorpay only calls this handler after the payment is actually captured,
+      // so it's safe. Doing it now (rather than after finalizeOrder) means a
+      // verify timeout / network blip / user closing the tab during verify does
+      // NOT lose the Meta event. sessionStorage guard makes it idempotent vs
+      // the second fire inside finalizeOrder.
+      try {
+        const dedupKey = `meta_purchase_fired_${order.id}`;
+        if (sessionStorage.getItem(dedupKey) !== "1") {
+          sessionStorage.setItem(dedupKey, "1");
+          fbPixelTrack(
+            "Purchase",
+            {
+              content_ids: checkoutItems.map((i) => i.productId),
+              contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+              content_type: "product",
+              content_name: checkoutItems.map((i) => i.name).join(", "),
+              value: total,
+              currency,
+              num_items: checkoutItems.length,
+            },
+            purchaseEventIdRef.current,
+          );
+        }
+      } catch {}
       try {
         try {
           await callEdgeFunction("razorpay-verify", {
