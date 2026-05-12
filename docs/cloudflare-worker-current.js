@@ -3792,21 +3792,13 @@ async function handlePrewarm(request, url, ctx, env) {
       results.fullHtml = "skipped";
     }
 
-    if (env?.STORE_KV) {
-      try {
-        const currentIndex = await env.STORE_KV.get("all-active-slugs", { type: "json" });
-        if (Array.isArray(currentIndex) && !currentIndex.includes(slug)) {
-          currentIndex.push(slug);
-          await env.STORE_KV.put("all-active-slugs", JSON.stringify(currentIndex), { expirationTtl: 3_600 }).catch(
-            () => {},
-          );
-          if (_slugIndexSet) _slugIndexSet.add(slug);
-        } else if (!currentIndex) {
-          await env.STORE_KV.put("all-active-slugs", JSON.stringify([slug]), { expirationTtl: 3_600 }).catch(() => {});
-          _slugIndexSet = new Set([slug]);
-          _slugIndexExpiresAt = Date.now() + 1_800_000;
-        }
-      } catch {}
+    // v8.13.1 cost-cut: removed all-active-slugs append-write here.
+    // Cron rebuilds the full list every 60min from DB; consumers
+    // (`_getSlugIndex`) are fire-and-forget and never gate request handling,
+    // so a 60-min staleness window for brand-new stores is harmless.
+    if (env?.STORE_KV && _slugIndexSet) {
+      // Keep in-memory set fresh for this isolate so subsequent reads see the slug.
+      _slugIndexSet.add(slug);
     }
 
     return addCorsHeaders(
