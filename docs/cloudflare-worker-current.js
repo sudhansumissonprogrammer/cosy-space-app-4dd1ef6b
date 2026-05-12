@@ -2304,6 +2304,8 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
 }
 
 function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) {
+  // v8.15.0: ensure <html lang="en"> for SEO + accessibility.
+  html = html.replace(/<html(?![^>]*\blang=)/i, '<html lang="en"');
   // v8.14.0: strip platform default SEO tags BEFORE we inject per-store ones.
   html = _stripPlatformSeoHead(html);
 
