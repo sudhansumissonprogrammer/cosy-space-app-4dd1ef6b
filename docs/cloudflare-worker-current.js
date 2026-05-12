@@ -75,7 +75,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.12.1-cold-subdomain-redirect";
+const WORKER_VERSION = "8.13.0-font-display-optional";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
