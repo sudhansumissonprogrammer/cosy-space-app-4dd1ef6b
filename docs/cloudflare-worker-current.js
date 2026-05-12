@@ -1092,8 +1092,9 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
   if (ctx) {
     ctx.waitUntil(
       Promise.all([
+        // v8.13.1: dedup-wrapped — collapses multi-isolate write bursts in same colo.
         env?.STORE_KV
-          ? env.STORE_KV.put(SPA_SHELL_KV_KEY, html, { expirationTtl: SPA_SHELL_KV_TTL })
+          ? kvPutDedup(env, SPA_SHELL_KV_KEY, html, { expirationTtl: SPA_SHELL_KV_TTL })
           : Promise.resolve(),
         cache.put(
           shellCacheKey,
