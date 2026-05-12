@@ -4872,7 +4872,7 @@ export default {
         return cacheableResponse(ctx, request, r, 86400);
       }
 
-      const seoResponse = await handleSeoFiles(url, slug);
+      const seoResponse = await handleSeoFiles(url, slug, hostname);
       if (seoResponse) return seoResponse;
       const botResponse = await handleBot(request, slug, url, false);
       if (botResponse) return botResponse;
