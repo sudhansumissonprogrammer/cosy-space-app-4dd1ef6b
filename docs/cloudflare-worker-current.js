@@ -3747,9 +3747,9 @@ async function handlePrewarm(request, url, ctx, env) {
           );
           if (env?.STORE_KV)
             cacheOps.push(
-              env.STORE_KV.put(_buildProductsKvKey(cleanDomain, {}, cdVersion), prodBody, {
+              kvPutDedup(env, _buildProductsKvKey(cleanDomain, {}, cdVersion), prodBody, {
                 expirationTtl: PRODUCTS_KV_TTL,
-              }).catch(() => {}),
+              }),
             );
         }
         await Promise.all(cacheOps);
