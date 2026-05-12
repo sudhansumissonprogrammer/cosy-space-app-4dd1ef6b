@@ -3724,9 +3724,7 @@ async function handlePrewarm(request, url, ctx, env) {
         );
         if (env?.STORE_KV)
           cacheOps.push(
-            env.STORE_KV.put(_buildProductsKvKey(subDomain, {}, subVersion), prodBody, { expirationTtl: PRODUCTS_KV_TTL }).catch(
-              () => {},
-            ),
+            kvPutDedup(env, _buildProductsKvKey(subDomain, {}, subVersion), prodBody, { expirationTtl: PRODUCTS_KV_TTL }),
           );
         if (domain) {
           const cleanDomain = domain
