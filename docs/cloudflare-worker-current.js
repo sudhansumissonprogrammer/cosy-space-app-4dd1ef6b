@@ -2446,7 +2446,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
       try {
         const existing = await env.STORE_KV.get(lockKey);
         if (existing) return; // Another isolate warmed this store recently
-        await env.STORE_KV.put(lockKey, "1", { expirationTtl: 60 }).catch(() => {}); // v8.4.1: 30m → 60s so each colo can warm its own CF cache mirror
+        await env.STORE_KV.put(lockKey, "1", { expirationTtl: 300 }).catch(() => {}); // v8.13.1: 60s → 300s, ~5x fewer writes; CF cache mirror is hot for active stores
       } catch {}
     }
 
