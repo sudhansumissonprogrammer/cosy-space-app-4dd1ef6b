@@ -68,7 +68,10 @@ export type Database = {
           display_order: number
           id: string
           image_url: string | null
+          meta_description: string | null
+          meta_title: string | null
           name: string
+          og_image_url: string | null
           show_on_home: boolean
           slug: string
           store_id: string
@@ -78,7 +81,10 @@ export type Database = {
           display_order?: number
           id?: string
           image_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
           name: string
+          og_image_url?: string | null
           show_on_home?: boolean
           slug: string
           store_id: string
@@ -88,7 +94,10 @@ export type Database = {
           display_order?: number
           id?: string
           image_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
           name?: string
+          og_image_url?: string | null
           show_on_home?: boolean
           slug?: string
           store_id?: string
@@ -1466,7 +1475,10 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           is_best_selling: boolean
+          meta_description: string | null
+          meta_title: string | null
           name: string
+          og_image_url: string | null
           partial_payment_enabled: boolean
           partial_payment_type: string
           partial_payment_value: number | null
@@ -1489,7 +1501,10 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_best_selling?: boolean
+          meta_description?: string | null
+          meta_title?: string | null
           name: string
+          og_image_url?: string | null
           partial_payment_enabled?: boolean
           partial_payment_type?: string
           partial_payment_value?: number | null
@@ -1512,7 +1527,10 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_best_selling?: boolean
+          meta_description?: string | null
+          meta_title?: string | null
           name?: string
+          og_image_url?: string | null
           partial_payment_enabled?: boolean
           partial_payment_type?: string
           partial_payment_value?: number | null
