@@ -370,7 +370,7 @@ async function handleSitemap(url: URL) {
 
 // ── Robots.txt handler ──────────────────────────────────────────
 
-function handleRobots(url: URL) {
+async function handleRobots(url: URL) {
   const slug = url.searchParams.get("slug");
   const domain = url.searchParams.get("domain");
 
@@ -378,7 +378,28 @@ function handleRobots(url: URL) {
     return new Response("Missing slug parameter", { status: 400, headers: corsHeaders });
   }
 
-  const storeHost = domain || `${slug}.${ROOT_DOMAIN}`;
+  // v8.14.0: Prefer the actual hostname the request came in on (passed as
+  // `domain` by the worker). Falls back to store.custom_domain → subdomain.
+  // Google requires the Sitemap: URL to live on the same host as the URLs it
+  // lists, so cross-host sitemaps get rejected in Search Console.
+  let storeHost = domain;
+  if (!storeHost) {
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL");
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (supabaseUrl && supabaseKey) {
+        const r = await fetch(
+          `${supabaseUrl}/rest/v1/stores?slug=eq.${encodeURIComponent(slug)}&select=custom_domain`,
+          { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
+        );
+        if (r.ok) {
+          const rows = await r.json();
+          if (Array.isArray(rows) && rows[0]?.custom_domain) storeHost = rows[0].custom_domain;
+        }
+      }
+    } catch { /* fall through */ }
+  }
+  if (!storeHost) storeHost = `${slug}.${ROOT_DOMAIN}`;
   const sitemapUrl = `https://${storeHost}/sitemap.xml`;
 
   const robotsTxt = `User-agent: *
