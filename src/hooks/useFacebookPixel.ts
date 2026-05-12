@@ -102,7 +102,6 @@ export function useFacebookPixel(pixelId: string | null | undefined) {
 
     return () => {
       document.getElementById("fb-pixel-script")?.remove();
-      document.getElementById("fb-pixel-noscript")?.remove();
     };
   }, [pixelId]);
 
