@@ -4989,7 +4989,7 @@ export default {
         _getInlineProductsOrNull(hostname, slug, env, ctx),
         _getInlinePdpCategoryOrNull(hostname, pdpCategoryRoute, env, ctx),
       ]);
-      const pdpCategoryInline = pdpCategoryJson ? { kind: pdpCategoryRoute.kind, json: pdpCategoryJson } : null;
+      const pdpCategoryInline = pdpCategoryJson ? { kind: pdpCategoryRoute.kind, slug: pdpCategoryRoute.slug, json: pdpCategoryJson } : null;
 
       // Hydrate in-memory caches from batch
       if (kvBatch.theme && !(_memThemeCache.get(slug)?.expiresAt > Date.now())) {
@@ -5173,7 +5173,7 @@ export default {
         _getInlineProductsOrNull(hostname, resolvedSlug, env, ctx),
         _getInlinePdpCategoryOrNull(hostname, pdpCategoryRouteCD, env, ctx),
       ]);
-      const pdpCategoryInlineCD = pdpCategoryJsonCD ? { kind: pdpCategoryRouteCD.kind, json: pdpCategoryJsonCD } : null;
+      const pdpCategoryInlineCD = pdpCategoryJsonCD ? { kind: pdpCategoryRouteCD.kind, slug: pdpCategoryRouteCD.slug, json: pdpCategoryJsonCD } : null;
 
       // Hydrate in-memory from batch
       if (kvBatchCD.theme && !(_memThemeCache.get(resolvedSlug)?.expiresAt > Date.now())) {
