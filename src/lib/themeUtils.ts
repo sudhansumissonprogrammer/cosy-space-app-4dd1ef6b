@@ -47,7 +47,9 @@ function buildGoogleFontsHref(fonts: string[]): string | null {
     .map((font) => `family=${font.replace(/ /g, "+")}:wght@${GOOGLE_FONT_WEIGHTS}`)
     .join("&");
 
-  return families ? `https://fonts.googleapis.com/css2?${families}&display=swap` : null;
+  // display=optional: browser uses fallback if font not ready in ~100ms and NEVER swaps,
+  // eliminating FOUT/CLS. Repeat visitors (font cached) get the real font on first paint.
+  return families ? `https://fonts.googleapis.com/css2?${families}&display=optional` : null;
 }
 
 function getButtonRadius(buttonStyle: string | undefined, defaultButtonRadius: string) {
