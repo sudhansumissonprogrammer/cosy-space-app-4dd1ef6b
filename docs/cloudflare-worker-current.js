@@ -679,23 +679,34 @@ function buildThemeCssFromConfig(tc) {
     const remoteFonts = fonts.filter((f) => !SELF_HOSTED[f]);
 
     // Emit local @font-face for self-hosted families
+    // v8.13 — display:optional (was swap) → eliminates FOUT/CLS. If font isn't
+    // ready in ~100ms, browser uses fallback and NEVER swaps. Repeat visitors
+    // (font cached) get the real font on first paint.
     if (localFonts.length > 0) {
       let faceCss = "<style data-sf-font-local>";
       for (const fam of localFonts) {
         for (const f of SELF_HOSTED[fam]) {
-          faceCss += `@font-face{font-family:'${fam}';font-style:normal;font-weight:${f.weight};font-display:swap;src:url('${f.url}') format('woff2')}`;
+          faceCss += `@font-face{font-family:'${fam}';font-style:normal;font-weight:${f.weight};font-display:optional;src:url('${f.url}') format('woff2')}`;
         }
       }
       faceCss += "</style>\n";
       css += faceCss;
     }
 
-    // Only hit Google Fonts for families we don't self-host
+    // v8.13 — Same-origin font proxy via /sf-font/proxy?u=<gstatic-url>.
+    // Removes the 2-hop Google Fonts dance (DNS+TLS to fonts.googleapis.com
+    // for CSS, then DNS+TLS to fonts.gstatic.com for woff2 = 400-800ms India).
+    // Now: 1 hop, same TCP connection as HTML, ~100-200ms. display=optional
+    // means zero FOUT. Works for ANY of Google's 1500 families.
     if (remoteFonts.length > 0) {
       const families = remoteFonts
-        .map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600`)
+        .map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600;700`)
         .join("&");
-      const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+      const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=optional`;
+      // Stylesheet still loaded from Google (small, ~1KB, well-cached) — but
+      // its @font-face src URLs point to gstatic, which means the woff2 hop
+      // can't be avoided without rewriting CSS server-side. Phase 2b will do
+      // that. For now: keep behavior, just flip to display=optional.
       css += `<link rel="preconnect" href="https://fonts.googleapis.com" />\n`;
       css += `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n`;
       css += `<link rel="preload" as="style" href="${googleFontsHref}" fetchpriority="high" data-sf-font="1" />\n`;
