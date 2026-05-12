@@ -138,7 +138,7 @@ export function fireMetaCAPI(params: CAPIEventParams) {
     safeUrl = window.location.origin;
   }
 
-  supabase.functions
+  const probe = supabase.functions
     .invoke("meta-capi", {
       body: {
         store_id: params.storeId,
@@ -162,7 +162,7 @@ export function fireMetaCAPI(params: CAPIEventParams) {
     .then(({ data, error }) => {
       if (error) {
         console.warn("Meta CAPI warning:", error.message);
-        return;
+        return false;
       }
       // Cache "no CAPI configured" for 7 days so we don't re-call the edge
       // function on every visit. localStorage persists across sessions/tabs.
@@ -173,9 +173,17 @@ export function fireMetaCAPI(params: CAPIEventParams) {
         } catch {
           // localStorage unavailable — best effort
         }
+        return true;
       }
+      return false;
     })
     .catch((err) => {
       console.warn("Meta CAPI fire-and-forget error:", err);
-    });
+      return false;
+    })
+    .finally(() => {
+      inflightProbe.delete(params.storeId);
+    }) as Promise<boolean>;
+
+  inflightProbe.set(params.storeId, probe);
 }
