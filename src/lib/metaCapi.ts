@@ -72,6 +72,12 @@ interface CAPIEventParams {
  * This runs alongside the client-side pixel for deduplication.
  * Non-blocking — errors are silently logged.
  */
+// In-flight dedupe: if multiple events fire on a fresh visit (PageView +
+// ViewContent + AddToCart, etc.) before the first response sets the
+// "meta_not_configured" cache, they would ALL hit the edge function. Track
+// the first probe per store so the rest short-circuit until it resolves.
+const inflightProbe = new Map<string, Promise<boolean>>();
+
 export function fireMetaCAPI(params: CAPIEventParams) {
   // Guard: never fire from Lovable preview/editor/dev domains.
   if (isNonProductionHost()) return;
@@ -94,9 +100,20 @@ export function fireMetaCAPI(params: CAPIEventParams) {
     // localStorage unavailable (private mode etc.) — proceed with call
   }
 
-  const { fbc, fbp } = getMetaCookies();
+  // If a probe is already in flight for this store, wait for it. If it
+  // resolves to "skipped", drop this event without a second network call.
+  const existing = inflightProbe.get(params.storeId);
+  if (existing) {
+    existing.then((skipped) => {
+      if (skipped) return;
+      // Probe came back configured — fire this event normally (recursive,
+      // but cache/inflight will prevent loops).
+      fireMetaCAPI(params);
+    });
+    return;
+  }
 
-  // Auto-merge globally-registered user data (logged-in storefront customer).
+  const { fbc, fbp } = getMetaCookies();
   // Per-call params win over the global registry — explicit > implicit.
   const u = getCapiUser();
   const userEmail = params.userEmail ?? u.email;
@@ -121,7 +138,7 @@ export function fireMetaCAPI(params: CAPIEventParams) {
     safeUrl = window.location.origin;
   }
 
-  supabase.functions
+  const probe = supabase.functions
     .invoke("meta-capi", {
       body: {
         store_id: params.storeId,
@@ -145,7 +162,7 @@ export function fireMetaCAPI(params: CAPIEventParams) {
     .then(({ data, error }) => {
       if (error) {
         console.warn("Meta CAPI warning:", error.message);
-        return;
+        return false;
       }
       // Cache "no CAPI configured" for 7 days so we don't re-call the edge
       // function on every visit. localStorage persists across sessions/tabs.
@@ -156,9 +173,17 @@ export function fireMetaCAPI(params: CAPIEventParams) {
         } catch {
           // localStorage unavailable — best effort
         }
+        return true;
       }
+      return false;
     })
     .catch((err) => {
       console.warn("Meta CAPI fire-and-forget error:", err);
-    });
+      return false;
+    })
+    .finally(() => {
+      inflightProbe.delete(params.storeId);
+    }) as Promise<boolean>;
+
+  inflightProbe.set(params.storeId, probe);
 }
