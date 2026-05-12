@@ -778,7 +778,11 @@ ${productPreloaderGrid}
 // Just hard-reload so the user gets the now-warm cached HTML on next hit.
 // This page is only served by the cron warmer fallback now — the main
 // request paths (subdomain + custom domain) ship the real React shell.
-setTimeout(function(){ try { location.reload(); } catch(e) {} }, 1500);
+<script>
+// v8.16.0: Reload removed. This page is unused (kept for cron warmer
+// fallback only). A setTimeout(location.reload, 1500) here used to
+// cause an auto-refresh loop in any WebView that hit it. The real
+// HTML shell is served by the main subdomain/custom-domain handlers.
 </script>
 </body>
 </html>`;
