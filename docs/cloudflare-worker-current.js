@@ -937,9 +937,11 @@ function _buildLinkPreloadHeader(html) {
    ============================================================ */
 
 const SPA_SHELL_KV_KEY = "spa-shell:v1";
-// v6.9.1: Shell HTML must refresh quickly after frontend publishes; long TTLs caused
-// custom domains/subdomains to keep serving old JS bundle references after deploy.
-const SPA_SHELL_KV_TTL = 300; // v8.7.0: publish-fresh safety; shell can change on every Lovable publish.
+// v8.13.1 cost-cut: 300s → 3600s. Cuts ~12k KV writes/wk. After Lovable
+// publishes, /api/purge-shell already exists for instant flush; otherwise
+// new visitors see fresh shell within 1h. Vite hashed bundles coexist on
+// CDN so old shell references don't 404 mid-window.
+const SPA_SHELL_KV_TTL = 3600;
 const SPA_SHELL_CACHE_TTL = 60; // v8.7.0: short safety net only; human navigations use fresh origin shell.
 
 function setNoStoreHtmlHeaders(headers) {
