@@ -668,7 +668,7 @@ Deno.serve(async (req) => {
       case "sitemap":
         return await handleSitemap(url);
       case "robots":
-        return handleRobots(url);
+        return await handleRobots(url);
       case "feed":
         return await handleProductFeed(url);
       default:
