@@ -2488,7 +2488,10 @@ async function serveStreamedHtml(
 
   (async () => {
     try {
-      const html = shellResult.html;
+      let html = shellResult.html;
+      // v8.15.0: ensure <html lang="en"> for SEO + accessibility.
+      html = html.replace(/<html(?![^>]*\blang=)/i, '<html lang="en"');
+
       const headEnd = html.indexOf("</head>");
 
       if (headEnd === -1) {
@@ -2513,36 +2516,52 @@ async function serveStreamedHtml(
       }
       const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";${themeHint}${productsHint}${pdpCatHint}</script>`;
 
-      // v6.4.0: Preload-scanner image fast-path — emit <link rel="preload">
-      // tags for the first 6 product images directly in <head>. The browser
-      // starts downloading them BEFORE any JS runs.
+      // v6.4.0: Preload-scanner image fast-path
       const productImagePreloads = inlineProducts
         ? _buildProductImagePreloads(inlineProducts, 6)
         : "";
+
+      // v8.15.0: For PDP/category routes, AWAIT storefront data before
+      // flushing head so we can SSR per-route <title>, <meta description>,
+      // canonical and JSON-LD. Cost: ~50-150ms TTFB on these routes;
+      // unlocks Google indexing per product/category page.
+      let perRouteSeoHead = "";
+      let earlyStorefrontResult = null;
+      if (pdpCategoryInline?.kind && pdpCategoryInline?.json) {
+        try {
+          earlyStorefrontResult = await storefrontPromise;
+        } catch {}
+        const earlyStore = earlyStorefrontResult?.data?.store;
+        if (earlyStore) {
+          perRouteSeoHead = _buildPdpCategorySeoHead(
+            earlyStore,
+            slug,
+            null,
+            (pdpCategoryInline.kind === "product" ? "/product/" : "/category/") +
+              (pdpCategoryInline.slug || ""),
+            pdpCategoryInline,
+          );
+        }
+      }
 
       // v8.14.0: strip platform default SEO tags before flushing head.
       let headChunk = _stripPlatformSeoHead(html.slice(0, headEnd) + "</head>");
       headChunk = headChunk.slice(0, headChunk.indexOf("</head>"));
       headChunk = headChunk.replace(
         "<head>",
-        `<head>${slugScript}${themeCss}${productImagePreloads}${prebuiltHead || ""}`,
+        `<head>${slugScript}${themeCss}${productImagePreloads}${perRouteSeoHead}${prebuiltHead || ""}`,
       );
       headChunk += "</head>";
 
       // Flush head immediately — browser starts fetching assets NOW
       await writer.write(enc.encode(headChunk));
 
-      // FIX #2: storefrontPromise was started before shell fetch, so by now
-      // it has had the full allotted time and is very likely resolved already
-      const storefrontResult = await storefrontPromise;
+      // FIX #2: storefrontPromise was started before shell fetch
+      const storefrontResult = earlyStorefrontResult || (await storefrontPromise);
 
       const skeletonMuted = getSkeletonMuted(textColor);
-      // FIX #11: Pass actual bgColor
       const skeleton = buildSkeleton(bgColor, skeletonMuted);
 
-      // v6.4.0: Hidden product preloader grid — real <img> tags so the
-      // preload-scanner queues image downloads in parallel with React JS.
-      // Prefer fresh storefront data (richer); fall back to inlineProducts.
       let preloaderProductsJson = inlineProducts || "";
       if (Array.isArray(storefrontResult?.data?.products) && storefrontResult.data.products.length > 0) {
         preloaderProductsJson = JSON.stringify(storefrontResult.data.products);
@@ -2562,23 +2581,19 @@ async function serveStreamedHtml(
         bodyChunk = bodyChunk.replace("</body>", `<script>window.__STOREFRONT_DATA__=${jsonStr};</script></body>`);
       }
 
-      if (storefrontResult?.data?.store) {
+      // v8.15.0: skip the JS title/canonical hack on PDP/category — those
+      // already have SSR meta tags from _buildPdpCategorySeoHead.
+      if (storefrontResult?.data?.store && !pdpCategoryInline?.kind) {
         const s = storefrontResult.data.store;
         const faviconUrl = escapeHtml(s.logo_url || "");
 
-        // FIX #16: Inject canonical tag via JS in streaming path
         const canonicalBase = s.custom_domain
           ? `https://${s.custom_domain}`
           : `https://${slug}.${ROOT_DOMAIN}`;
 
         let metaScript = `<script>(function(){document.title=${JSON.stringify(s.meta_title || `${s.name} — Shop Online`)};`;
-
-        // Add canonical link
         metaScript += `var cn=document.querySelector("link[rel='canonical']");if(!cn){cn=document.createElement('link');cn.rel='canonical';document.head.appendChild(cn);}cn.href=${JSON.stringify(canonicalBase + "/")};`;
-
-        // Add og:url
         metaScript += `var ou=document.querySelector("meta[property='og:url']");if(!ou){ou=document.createElement('meta');ou.setAttribute('property','og:url');document.head.appendChild(ou);}ou.content=${JSON.stringify(canonicalBase + "/")};`;
-
         if (faviconUrl) {
           metaScript += `var li=document.querySelector("link[rel~='icon']");if(!li){li=document.createElement('link');li.rel='icon';document.head.appendChild(li);}li.href=${JSON.stringify(faviconUrl)};`;
         }
