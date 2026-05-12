@@ -86,7 +86,12 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
                   </span>
                 )}
               </div>
-              <span className="text-[11px] font-medium leading-none">{item.label}</span>
+              <span
+                className="text-[11px] font-medium leading-none"
+                style={{ fontFamily: "var(--storefront-body-font, inherit)" }}
+              >
+                {item.label}
+              </span>
             </Link>
           );
         })}
