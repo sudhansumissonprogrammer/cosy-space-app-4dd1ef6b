@@ -2383,7 +2383,9 @@ async function serveStreamedHtml(
         ? _buildProductImagePreloads(inlineProducts, 6)
         : "";
 
-      let headChunk = html.slice(0, headEnd);
+      // v8.14.0: strip platform default SEO tags before flushing head.
+      let headChunk = _stripPlatformSeoHead(html.slice(0, headEnd) + "</head>");
+      headChunk = headChunk.slice(0, headChunk.indexOf("</head>"));
       headChunk = headChunk.replace(
         "<head>",
         `<head>${slugScript}${themeCss}${productImagePreloads}${prebuiltHead || ""}`,
