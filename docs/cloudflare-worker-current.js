@@ -3642,7 +3642,7 @@ async function handlePrewarm(request, url, ctx, env) {
       ];
       if (env?.STORE_KV)
         writes.push(
-          env.STORE_KV.put(`domain:${cleanDomain}`, cacheData, { expirationTtl: KV_DOMAIN_TTL }).catch(() => {}),
+          kvPutDedup(env, `domain:${cleanDomain}`, cacheData, { expirationTtl: KV_DOMAIN_TTL }),
         );
       await Promise.all(writes);
       results.domainMapping = "warmed";
