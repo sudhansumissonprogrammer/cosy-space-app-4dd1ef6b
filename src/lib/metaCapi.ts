@@ -100,9 +100,20 @@ export function fireMetaCAPI(params: CAPIEventParams) {
     // localStorage unavailable (private mode etc.) — proceed with call
   }
 
-  const { fbc, fbp } = getMetaCookies();
+  // If a probe is already in flight for this store, wait for it. If it
+  // resolves to "skipped", drop this event without a second network call.
+  const existing = inflightProbe.get(params.storeId);
+  if (existing) {
+    existing.then((skipped) => {
+      if (skipped) return;
+      // Probe came back configured — fire this event normally (recursive,
+      // but cache/inflight will prevent loops).
+      fireMetaCAPI(params);
+    });
+    return;
+  }
 
-  // Auto-merge globally-registered user data (logged-in storefront customer).
+  const { fbc, fbp } = getMetaCookies();
   // Per-call params win over the global registry — explicit > implicit.
   const u = getCapiUser();
   const userEmail = params.userEmail ?? u.email;
