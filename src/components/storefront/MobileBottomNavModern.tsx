@@ -101,6 +101,7 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
                       active ? "max-w-[70px] opacity-100" : "max-w-0 opacity-0"
                     }`}
                     style={{
+                      fontFamily: "var(--storefront-body-font, inherit)",
                       color: active
                         ? "var(--storefront-btn-text, hsl(var(--primary-foreground)))"
                         : undefined,
