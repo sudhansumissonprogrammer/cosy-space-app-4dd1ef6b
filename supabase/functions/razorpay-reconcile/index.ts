@@ -38,16 +38,20 @@ Deno.serve(async (req) => {
   } catch { /* no body / not JSON — fine */ }
 
   // Pull pending razorpay orders. Cap to 24h window so we don't hammer
-  // Razorpay with stale orders forever.
+  // Razorpay with stale orders forever — unless an explicit order_id is passed
+  // (manual backfill case), in which case we ignore the age cap.
   let q = supabase
     .from("orders")
     .select("id, store_id, status, payment_type, razorpay_order_id, notes, created_at")
     .eq("status", "pending")
     .eq("payment_method", "razorpay")
     .not("razorpay_order_id", "is", null)
-    .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
     .limit(200);
-  if (onlyOrderId) q = q.eq("id", onlyOrderId).gte("created_at", new Date(0).toISOString());
+  if (onlyOrderId) {
+    q = q.eq("id", onlyOrderId);
+  } else {
+    q = q.gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+  }
 
   const { data: orders, error } = await q;
   if (error) {
