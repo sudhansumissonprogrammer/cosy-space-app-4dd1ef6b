@@ -51,14 +51,43 @@ Deno.serve(async (req) => {
   const startedAt = Date.now();
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-  // Pull stores worth keeping warm — custom domain OR recently created.
-  // (Schema: id, slug, custom_domain, created_at — no is_active column.)
-  const { data: stores, error } = await supabase
+  // v8.4.0 cost-cut: only warm stores that received real traffic in last 24h
+  // OR have a custom_domain (paying/branded — keep snappy regardless).
+  // Inactive stores skip warming; their first visitor pays a ~300ms cold hit
+  // (acceptable since the store has no traffic to begin with).
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { data: activeRows, error: activeErr } = await supabase
+    .from("page_views")
+    .select("store_id")
+    .gte("created_at", since)
+    .limit(10000);
+
+  if (activeErr) {
+    return new Response(JSON.stringify({ error: activeErr.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const activeIds = Array.from(new Set((activeRows || []).map((r: any) => r.store_id).filter(Boolean)));
+
+  // Always include stores with a custom domain even if quiet today.
+  const { data: domainRows } = await supabase
     .from("stores")
-    .select("slug, custom_domain")
-    .or("custom_domain.not.is.null,created_at.gte." +
-      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+    .select("id, slug, custom_domain")
+    .not("custom_domain", "is", null)
     .limit(500);
+
+  const { data: activeStores } = activeIds.length
+    ? await supabase.from("stores").select("id, slug, custom_domain").in("id", activeIds)
+    : { data: [] as any[] };
+
+  const map = new Map<string, { slug: string; custom_domain: string | null }>();
+  for (const s of [...(domainRows || []), ...(activeStores || [])]) {
+    if (s?.slug) map.set(s.id, { slug: s.slug, custom_domain: s.custom_domain ?? null });
+  }
+  const stores = Array.from(map.values());
+  const error = null as { message: string } | null;
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {
