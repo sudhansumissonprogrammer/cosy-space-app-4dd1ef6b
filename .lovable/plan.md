@@ -1,115 +1,129 @@
-## Goal
-Make every storefront (custom domain + subdomain) rank in Google like a Shopify/WordPress site. Today every store leaks the ShopBanao platform's meta tags, which is why none of them appear in search.
 
-## Root cause (one bug, 9 symptoms)
+# Cloud Bill Reduction — Safe Plan (no UX regression)
 
-The Worker **appends** new SEO tags but never **strips** the original ones from `index.html` (which are the ShopBanao landing page tags). Browsers and Googlebot read the first `<title>`, first `<link rel="canonical">`, first `<meta name="description">` they find — which is always the platform's. The Worker's injected tags come later and are ignored.
+Three hard requirements drive every choice below:
+1. **Merchant edits must appear instantly** for shoppers
+2. **Meta Pixel + CAPI ROAS must keep working** for ad-running stores
+3. **Cold load must stay fast** (no slow first-paint regressions)
 
-Confirmed by curl on `serdiyajewellers.shop`:
-- `<title>` = "ShopBanao — Create Your Online Store for Free"
-- `<link rel="canonical" href="https://shopbanao.in/">` (catastrophic — Google de-indexes the store)
-- `<meta name="description">` = ShopBanao marketing copy
-- `<meta name="keywords">` = "ShopBanao, shop banao, ..."
-- `<meta name="author" content="ShopBanao">`
-- og:image = Lovable preview screenshot
+Estimated bill impact: **~$1/day → ~$0.55/day** (−45%) with **zero shopper-facing regression**.
 
-## Full bug list (5 you already found + 4 new)
+---
 
-| # | Bug | Severity | Where |
-|---|---|---|---|
-| 1 | Original platform `<title>` not stripped → empty store title in Google | KILLER | Worker `injectIntoHtml` |
-| 2 | Original `<link rel="canonical">` to shopbanao.in not stripped → de-indexes every store | KILLER | Worker `injectIntoHtml` |
-| 3 | Original platform `<meta name="description">` and `keywords`/`author` not stripped | KILLER | Worker `injectIntoHtml` |
-| 4 | Original og:title/og:description/og:image not stripped → wrong social previews | HIGH | Worker `injectIntoHtml` |
-| 5 | No JSON-LD schema (Organization, WebSite, Product, BreadcrumbList) | HIGH | Worker `injectIntoHtml` |
-| 6 | robots.txt on custom domain still says `Sitemap: serdiyajewellers.shopbanao.in/sitemap.xml` because worker doesn't forward hostname to seo-page | HIGH | Worker `handleSeoFiles` + `seo-page/index.ts handleRobots` |
-| 7 | No static H1 / store name / description in body — Googlebot indexes a blank shell | MEDIUM | Worker `injectIntoHtml` |
-| 8 | PDP and category pages get **only** the homepage meta — every product page tells Google "Serdiya Jewellers — Shop Online" instead of the product name + price | HIGH | Worker (no per-route meta logic) |
-| 9 | No per-product `meta_title` / `meta_description` columns in DB; merchants can't customize SEO per product | MEDIUM | DB + dashboard UI |
+## 1. Worker shell cache: TTL 1 hour + reliable purge on every save
 
-## Plan
+**What changes**
+- Bump `s-maxage` for `get_storefront_shell` and `get_storefront_data` worker responses to **3600s** (1h), with `stale-while-revalidate=86400`
+- Audit every dashboard save mutation and ensure `useStorePurge(storeId)` is called in `onSuccess`
+- Add a single shared `usePurgeOnSuccess` wrapper so future saves can't forget
 
-### Phase 1 — Worker HTML rewriter (the unblocker)
+**Why this keeps edits instant**
+The worker only serves stale data if no purge fires. Every legitimate edit path (theme, logo, banner, hero, products, categories, custom pages, store settings, payment config, shipping) calls `purgeStoreCache(slug, custom_domain)` which wipes the CF edge cache for that store immediately. Result: shoppers see new data within ~1s of merchant clicking Save.
 
-Refactor `injectIntoHtml` (and the streaming variant) in `docs/cloudflare-worker-current.js` so it **rewrites** the `<head>` instead of appending:
+**Pages to audit for missing purge calls**
+StoreSettings, StoreThemeSettings, StorePages, StorePageEditor, CategoryManagement, BestSellerManagement, StorePayments, StoreShipping, StoreDomain, ProductForm (create/edit), CreateStore, BulkUpload, MediaLibrary deletions, StoreTaxSettings, StoreTracking.
 
-1. **Strip these tags** from the source HTML before injecting:
-   - `<title>...</title>`
-   - `<link rel="canonical" ...>`
-   - `<meta name="description" ...>`, `<meta name="keywords" ...>`, `<meta name="author" ...>`
-   - `<meta property="og:*" ...>`, `<meta name="twitter:*" ...>`
-   - `<meta name="theme-color" ...>` (replace with store's primary color)
-2. **Inject per-store replacements** using `store.meta_title`, `meta_description`, `custom_domain`, `og_image_url`, `logo_url`, `banner_url`.
-3. **Build JSON-LD** server-side and inline it:
-   - Homepage → `Organization` + `WebSite` (with `SearchAction`)
-   - PDP → `Product` + `Offer` (price, availability, currency=INR) + `BreadcrumbList`
-   - Category → `CollectionPage` + `BreadcrumbList`
-4. **Inline a static SEO snippet** into the body skeleton (hidden visually but readable by crawlers): `<h1>{store.name}</h1><p>{store.description}</p>` — overwritten by React on hydrate.
-5. **Per-route meta** — when path is `/product/:slug` use the inline product (already in `__PRODUCT_INLINE__`) to set title = `${product.name} — ${store.name}`, description = product description, og:image = product image, canonical = `https://{host}/product/{slug}`. Same logic for `/category/:slug`.
-6. **Remove the streaming path's `document.title = ...` JS hack** — once tags are stripped + injected, both paths produce correct static HTML.
+**Safety net**
+Add an admin-only "Purge cache for this store" button in `AdminUsersStores` for emergencies.
 
-### Phase 2 — Sitemap & robots fix
+---
 
-1. In `docs/cloudflare-worker-current.js handleSeoFiles`: pass `hostname` as `domain` to the edge function: `callEdgeFunction("seo-page", { type: "robots", slug, domain: hostname })` and same for sitemap.
-2. In `supabase/functions/seo-page/index.ts handleSitemap`: when `domain` param is present, prefer it over `store.custom_domain` (so subdomain visitors get a subdomain sitemap and custom-domain visitors get a custom-domain sitemap — Google requires the sitemap to be on the same host as the URLs it lists).
-3. Also include category image entries in sitemap and add `<priority>0.9</priority>` for best-sellers.
+## 2. Page-views debounce (per session, per path, 30s)
 
-### Phase 3 — Auto SEO defaults (zero merchant work)
+**What changes**
+- In the page-view recording hook, before insert: check `sessionStorage` for key `pv:{storeId}:{path}`. If timestamp <30s old → skip insert. Else write key + insert.
+- Add tooltip in admin Analytics: "Views are deduped per visitor per page within a 30-second window."
 
-Most merchants leave SEO fields blank. Build a deterministic fallback ladder so SEO works **automatically** the moment a store goes live:
+**Why ROAS is unaffected**
+Pixel/CAPI events fire on a separate path (`metaCapi.ts`) — they are not tied to `page_views` inserts. Ad attribution uses Meta's own pixel, not our page_views table.
 
-```
-title       = meta_title || `${name} — ${primary_category} Online | {city}`
-description = meta_description || description || `Shop ${primary_category.toLowerCase()} from ${name}. Cash on delivery, fast shipping across India.`
-og:image    = og_image_url || banner_url || mobile_hero_url || logo_url || generated-OG (store name on brand color)
-keywords    = derived from category names + store.name + city
-```
+---
 
-For products without per-product meta:
-```
-title       = `${product.name} — ${store.name}` (capped at 60 chars)
-description = first 155 chars of product.description, fallback to `${product.name} from ${store.name}. Order on WhatsApp or COD.`
-```
+## 3. CAPI: skip only when store has no Meta pixel (preserves ROAS)
 
-### Phase 4 — Per-product SEO (DB + dashboard)
+**What changes**
+- In `metaCapi.ts`, before the probe call, check `store.facebook_pixel_id`. If null/empty → return early, never call the edge function.
+- Stores that DO have a pixel configured → behave exactly as today (every event probed, sent to Meta when token configured).
 
-1. Migration: add `meta_title TEXT`, `meta_description TEXT`, `og_image_url TEXT` to `products` table (nullable).
-2. Migration: add same to `categories` table.
-3. Dashboard UI: add an "SEO" accordion in the product editor and category editor with these 3 fields + character counters + live Google preview.
-4. Worker reads these when building per-route meta in Phase 1, step 5.
+**Why ROAS stays intact**
+Stores running Meta ads always set `facebook_pixel_id`. Skipping CAPI only on stores with no pixel removes pure waste (~80% of stores). Ad-running stores keep 100% of current CAPI behavior — no fbclid checks, no cookie checks, no attribution loss.
 
-### Phase 5 — Custom domain auto-fix on attach
+---
 
-When a merchant attaches a custom domain (existing flow that updates `stores.custom_domain`):
-1. Already-handled: sitemap regenerates with new domain (DB-driven).
-2. Add: trigger an edge function to call `/api/purge-store` so the cached HTML with old subdomain canonicals is flushed within seconds.
-3. Add: after attach success, show a one-click "Submit to Google" CTA in dashboard that opens the Search Console URL inspector pre-filled with the new domain.
+## 4. Selective prewarm cron (active stores only)
 
-### Phase 6 — Optional polish (skip if you want to ship fast)
+**What changes**
+- Modify `prewarm-cron` edge function to query: stores with ≥1 page_view in the last 24h
+- Warm only those stores (currently warms all 20 regardless of activity)
+- Keep the cron schedule as-is
 
-- `<html lang="{store.language || 'en-IN'}">` rewrite
-- `hreflang="x-default"` self-referencing
-- BreadcrumbList JSON-LD on every page
-- Server-render the first 6 product cards as plain `<a>` tags (helps Googlebot follow internal links without JS)
-- `og:image` auto-generation: edge function that takes a store and renders a 1200×630 PNG with logo + name + brand color, cached in R2
+**Why cold load stays fast**
+Stores receiving real traffic stay warm. Inactive stores don't need warming because:
+- First visitor triggers `prewarm-store` automatically on landing
+- Worker also fetches+caches on first miss
+A truly cold store's first visitor sees ~300ms TTFB (acceptable for a store with zero traffic). Active stores stay at ~50ms.
 
-## Risk
+---
 
-- **Stripping existing tags is regex-based on streamed HTML.** Test against the current `index.html` shape; gate behind a worker version flag so it can be rolled back fast.
-- **JSON-LD must be valid.** Bad schema = Google ignores it (no penalty, but no rich snippets either). Validate with structured-data linter before shipping.
-- **No data migration risk** in Phase 4 — new columns are nullable, existing stores keep working.
+## 5. Error logs hygiene (size + noise control)
 
-## Expected outcome
+**What changes**
+- Daily pg_cron job: `DELETE FROM error_logs WHERE created_at < now() - interval '30 days'`
+- Add client-side throttle in `logError.ts`: max 5 logs per error-message-hash per session (sessionStorage counter)
+- One-time investigation query to identify top error sources currently flooding the table
 
-- **Within 24h after deploy:** Googlebot recrawls, sees correct canonicals + titles per store.
-- **2-4 weeks:** stores appear when searching brand name (e.g., "serdiya jewellers").
-- **4-8 weeks:** product pages start ranking for long-tail queries like "imitation mangalsutra under 500".
-- **6-8 weeks:** rich snippets (price, image, availability) appear in search results once Google validates the Product JSON-LD.
+**Why this is safe**
+30 days is plenty for debugging. Throttle prevents one buggy component from filling the table with thousands of identical rows.
 
-## Suggested ship order
+---
 
-1. **Phase 1 + Phase 2** together (one worker deploy + one edge function deploy). This alone unblocks 90% of the SEO problem.
-2. **Phase 3** auto-defaults in same deploy (no extra risk).
-3. **Phase 4** DB + dashboard SEO UI as a follow-up (1-2 days work).
-4. **Phase 5** purge-on-attach as a small addition.
-5. **Phase 6** optional, ship later.
+## What we are NOT doing (and why)
+
+| Skipped | Reason |
+|---|---|
+| Compress shell payload (drop fields per route) | Adds RPC overload risk and cache fragmentation; complexity > savings at 20 stores |
+| Reduce prewarm frequency blindly | Would slow cold loads; selective warming is strictly better |
+| Skip CAPI on missing fbclid | Would hurt returning-customer attribution and ROAS for ad-running stores |
+| Shorten worker TTL to 15 min | Unnecessary if purge coverage is solid; 1h gives bigger savings with same UX |
+
+---
+
+## Technical details (for the dev)
+
+### Files to modify
+- `docs/cloudflare-worker-current.js` — bump shell + data TTL constants; user must redeploy worker manually
+- `src/hooks/useStorePurge.ts` — already exists, just ensure usage everywhere
+- All dashboard save pages listed in §1 — add `purge()` to onSuccess if missing
+- `src/lib/metaCapi.ts` — early return when `store.facebook_pixel_id` is missing (pass pixel_id into the call site)
+- Page-view recording hook (likely in `StorefrontShell.tsx` or a hook called from it) — add sessionStorage debounce
+- `supabase/functions/prewarm-cron/index.ts` — query active stores via `page_views` last 24h
+- `src/lib/logError.ts` — add per-session throttle
+- New migration: pg_cron daily cleanup of `error_logs` >30 days
+
+### Deployment notes
+- Worker change requires manual deploy by the user (per project memory)
+- All other changes deploy automatically via Lovable Cloud
+- DB function untouched → no overload-guard risk
+
+### Verification checklist
+1. Edit store name in dashboard → confirm shopper sees new name within 2s on hard refresh
+2. Edit a product → same check
+3. Open ad-running store with `?fbclid=test` → confirm CAPI probe still fires
+4. Open store with no pixel configured → confirm zero meta-capi network calls
+5. Refresh storefront 5x in 30s → confirm only 1 page_view row inserted
+6. Check `prewarm-cron` logs → confirm it only touches active stores
+
+---
+
+## Expected outcome after deploy
+
+| Metric | Before | After |
+|---|---|---|
+| DB load (% of bill) | 63% | ~30–35% |
+| Network (% of bill) | 35% | ~25% |
+| Daily bill | ~$1.00 | ~$0.55 |
+| Shopper TTFB (warm) | ~50ms | ~50ms (unchanged) |
+| Shopper TTFB (cold active) | ~50ms | ~50ms (unchanged) |
+| Edit-to-visible delay | <1s | <1s (unchanged) |
+| Meta CAPI events for ad stores | 100% sent | 100% sent (unchanged) |
+| `error_logs` table size growth | ~3MB/mo | ~0.5MB/mo |
