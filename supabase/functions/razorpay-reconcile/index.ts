@@ -58,9 +58,6 @@ Deno.serve(async (req) => {
     console.error("reconcile fetch error", error);
     return json({ error: error.message }, 500);
   }
-  if (!orders || orders.length === 0) {
-    return json({ scanned: 0, confirmed: 0 });
-  }
 
   // Group by store so we fetch payment config once per store.
   const byStore = new Map<string, any[]>();
