@@ -63,11 +63,11 @@ Deno.serve(async (req) => {
   }
 
   // Group by store so we fetch payment config once per store.
-  const byStore = new Map<string, typeof orders>();
-  for (const o of orders) {
+  const byStore = new Map<string, any[]>();
+  for (const o of orders ?? []) {
     const arr = byStore.get(o.store_id) ?? [];
     arr.push(o as any);
-    byStore.set(o.store_id, arr as any);
+    byStore.set(o.store_id, arr);
   }
 
   let confirmed = 0;
@@ -147,13 +147,59 @@ Deno.serve(async (req) => {
     }
   }
 
+  // SECOND PASS — CAPI back-fill.
+  // Catches orders that ARE confirmed (or delivered/shipped/etc) but never
+  // had Meta CAPI fired — e.g. status flipped manually from pending → delivered
+  // bypassing razorpay-verify, or a transient CAPI failure when the order was
+  // first confirmed. firePurchaseCapi itself is idempotent via the
+  // meta_purchase_fired_at stamp, so this is safe to re-run.
+  const capiBackfilled = await capiBackfill(supabase, onlyOrderId);
+
   return json({
-    scanned: orders.length,
+    scanned: orders?.length ?? 0,
     confirmed,
     failed_final: failedFinal,
     still_pending: stillPending,
+    capi_backfilled: capiBackfilled,
   });
 });
+
+const PAID_STATUSES = [
+  "paid", "confirmed", "partially_paid", "processing", "shipped", "delivered", "completed",
+];
+
+async function capiBackfill(
+  supabase: ReturnType<typeof createClient>,
+  onlyOrderId: string | null,
+): Promise<number> {
+  // Look back 7 days for any razorpay-paid order that has browser signals
+  // but never had CAPI fired.
+  let q = supabase
+    .from("orders")
+    .select("id, created_at, buyer_fbp, buyer_fbc, buyer_user_agent, meta_event_id, meta_purchase_fired_at, status, payment_method")
+    .in("status", PAID_STATUSES)
+    .eq("payment_method", "razorpay")
+    .is("meta_purchase_fired_at", null)
+    .limit(100);
+  if (onlyOrderId) {
+    q = q.eq("id", onlyOrderId);
+  } else {
+    q = q.gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+  }
+  const { data: rows, error } = await q;
+  if (error || !rows) return 0;
+
+  let fired = 0;
+  for (const o of rows) {
+    // firePurchaseCapi internally re-checks browser signals and stamps even
+    // when no Pixel is configured, so we don't need to filter here.
+    const res = await firePurchaseCapi(supabase, o.id, { source: "razorpay-reconcile-backfill" });
+    if (res.ok && res.reason !== "already_fired" && res.reason !== "manual_order") {
+      fired++;
+    }
+  }
+  return fired;
+}
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
