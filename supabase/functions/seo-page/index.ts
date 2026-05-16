@@ -459,28 +459,32 @@ async function handleRobots(url: URL) {
     return new Response("Missing slug parameter", { status: 400, headers: corsHeaders });
   }
 
-  // v8.14.0: Prefer the actual hostname the request came in on (passed as
-  // `domain` by the worker). Falls back to store.custom_domain → subdomain.
-  // Google requires the Sitemap: URL to live on the same host as the URLs it
-  // lists, so cross-host sitemaps get rejected in Search Console.
-  let storeHost = domain;
-  if (!storeHost) {
-    try {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL");
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-      if (supabaseUrl && supabaseKey) {
-        const r = await fetch(
-          `${supabaseUrl}/rest/v1/stores?slug=eq.${encodeURIComponent(slug)}&select=custom_domain`,
-          { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
-        );
-        if (r.ok) {
-          const rows = await r.json();
-          if (Array.isArray(rows) && rows[0]?.custom_domain) storeHost = rows[0].custom_domain;
-        }
+  // Look up custom_domain so we can both (a) decide whether to 301 the
+  // subdomain request to the primary host, and (b) pick the right Sitemap: URL.
+  let customDomain: string | null = null;
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (supabaseUrl && supabaseKey) {
+      const r = await fetch(
+        `${supabaseUrl}/rest/v1/stores?slug=eq.${encodeURIComponent(slug)}&select=custom_domain`,
+        { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
+      );
+      if (r.ok) {
+        const rows = await r.json();
+        if (Array.isArray(rows) && rows[0]?.custom_domain) customDomain = rows[0].custom_domain;
       }
-    } catch { /* fall through */ }
-  }
-  if (!storeHost) storeHost = `${slug}.${ROOT_DOMAIN}`;
+    }
+  } catch { /* fall through */ }
+
+  const redirect = buildPrimaryDomainRedirect(
+    { slug, custom_domain: customDomain },
+    domain,
+    "/robots.txt",
+  );
+  if (redirect) return redirect;
+
+  const storeHost = domain || customDomain || `${slug}.${ROOT_DOMAIN}`;
   const sitemapUrl = `https://${storeHost}/sitemap.xml`;
 
   const robotsTxt = `User-agent: *
@@ -491,6 +495,24 @@ Disallow: /login
 Disallow: /signup
 Disallow: /checkout
 Disallow: /cart
+Disallow: /account
+Disallow: /wishlist
+
+# AI training crawlers
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
 
 Sitemap: ${sitemapUrl}
 
@@ -503,6 +525,75 @@ Sitemap: ${sitemapUrl}
       "Content-Type": "text/plain; charset=utf-8",
       "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
       "CDN-Cache-Control": "public, max-age=86400",
+    },
+  });
+}
+
+// ── llms.txt handler ────────────────────────────────────────────
+
+async function handleLlms(url: URL) {
+  const slug = url.searchParams.get("slug");
+  const domain = url.searchParams.get("domain");
+
+  if (!slug) {
+    return new Response("Missing slug parameter", { status: 400, headers: corsHeaders });
+  }
+
+  const supabase = getSupabase();
+  const { data: store, error } = await supabase
+    .from("stores")
+    .select("id, slug, name, description, meta_description, custom_domain")
+    .eq("slug", slug)
+    .eq("is_suspended", false)
+    .single();
+
+  if (error || !store) {
+    return new Response("Store not found", { status: 404, headers: corsHeaders });
+  }
+
+  const redirect = buildPrimaryDomainRedirect(store, domain, "/llms.txt");
+  if (redirect) return redirect;
+
+  const storeHost = domain || store.custom_domain || `${slug}.${ROOT_DOMAIN}`;
+  const baseUrl = `https://${storeHost}`;
+  const desc = store.meta_description || store.description || `${store.name} — online store powered by ShopBanao.`;
+
+  const [{ data: categories }, { data: pages }] = await Promise.all([
+    supabase.from("categories").select("name, slug").eq("store_id", store.id).limit(20),
+    supabase
+      .from("store_pages")
+      .select("title, slug, page_type")
+      .eq("store_id", store.id)
+      .eq("is_active", true)
+      .limit(20),
+  ]);
+
+  let body = `# ${store.name}\n\n> ${desc}\n\n## Storefront\n- [Home](${baseUrl}/)\n- [Shop all products](${baseUrl}/shop)\n- [Best sellers](${baseUrl}/best-sellers)\n- [Categories](${baseUrl}/categories)\n- [Contact](${baseUrl}/contact)\n`;
+
+  if (categories && categories.length) {
+    body += `\n## Categories\n`;
+    for (const c of categories) {
+      if (!c.slug) continue;
+      body += `- [${c.name}](${baseUrl}/category/${c.slug})\n`;
+    }
+  }
+
+  if (pages && pages.length) {
+    body += `\n## Pages\n`;
+    for (const p of pages) {
+      if (!p.slug) continue;
+      body += `- [${p.title}](${baseUrl}/page/${p.slug})\n`;
+    }
+  }
+
+  body += `\n## Machine-readable\n- [Sitemap](${baseUrl}/sitemap.xml)\n- [Robots](${baseUrl}/robots.txt)\n`;
+
+  return new Response(body, {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+      "CDN-Cache-Control": "public, max-age=3600",
     },
   });
 }
