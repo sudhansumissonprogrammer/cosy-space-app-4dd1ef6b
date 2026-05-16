@@ -3752,6 +3752,8 @@ async function handleBot(request, slug, url, isCustom) {
   const isSearchBot = SEARCH_BOT_REGEX.test(ua);
   const isSocialBot = SOCIAL_BOT_REGEX.test(ua) || INSTAGRAM_CRAWLER_REGEX.test(ua);
   const productSlug = getProductSlug(url.pathname);
+  // v8.16 — Richer route kinds (category/page/shop/best-sellers/categories/about/contact/track-order).
+  const botRoute = getBotRoute(url.pathname) || { kind: "home" };
 
   // PHASE 1 FIX #3: Bot HTML cached aggressively at the edge.
   // Bots re-crawl periodically anyway. 24h cache + 7d SWR = ~95% fewer
@@ -3772,7 +3774,8 @@ async function handleBot(request, slug, url, isCustom) {
       slug,
       product: productSlug || "",
       domain: domain || "",
-    });
+      kind: botRoute.kind,
+      route_slug: botRoute.slug || "",
     if (botRenderRes.ok) {
       const html = await botRenderRes.text();
       const finalRes = new Response(html, {
