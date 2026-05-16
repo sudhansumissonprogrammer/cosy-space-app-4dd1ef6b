@@ -253,6 +253,360 @@ ${products.length > 30 ? `<p style="text-align:center;color:#666;margin-top:24px
 </html>`;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// v2 builders — category, custom pages, listing pages, static info pages.
+// All emit BreadcrumbList JSON-LD + canonical pointing at primary domain.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function buildBreadcrumb(items: Array<{ name: string; url: string }>): string {
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((it, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: it.name,
+      item: it.url,
+    })),
+  });
+}
+
+function renderProductCard(
+  store: any,
+  p: any,
+  canonicalBase: string,
+): string {
+  const pPrice = formatPrice(
+    p.sale_price || p.price,
+    p.currency || store.currency || "INR",
+  );
+  const pSlug = p.slug || p.id;
+  return `<div class="card" itemscope itemtype="https://schema.org/Product">
+<a href="${esc(canonicalBase)}/product/${esc(pSlug)}">
+${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.name)}" width="280" height="280" loading="lazy" itemprop="image">` : `<div style="width:280px;height:280px;background:#f0f0f0"></div>`}
+<h3 itemprop="name">${esc(p.name)}</h3>
+<p class="card-price">${pPrice}</p>
+</a>
+</div>`;
+}
+
+const SHARED_STYLE = `body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:0;color:#1a1a1a;background:#fff}
+.header{padding:16px 24px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:12px}
+.header img{height:40px;width:40px;object-fit:contain;border-radius:8px}
+.header h2{margin:0;font-size:18px}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+.hero{margin-bottom:24px}
+.hero h1{font-size:32px;margin:0 0 8px}
+.hero p{color:#666;font-size:16px;margin:0}
+.breadcrumb{font-size:14px;color:#666;margin-bottom:16px}
+.breadcrumb a{color:#666;text-decoration:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px}
+.card{border:1px solid #eee;border-radius:8px;overflow:hidden}
+.card a{text-decoration:none;color:inherit}
+.card img{width:100%;height:280px;object-fit:cover}
+.card h3{margin:12px 12px 4px;font-size:16px}
+.card-price{margin:4px 12px 12px;font-weight:700;color:#16a34a}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin:24px 0}
+.cat-card{padding:24px;background:#f8f8f8;border-radius:8px;text-align:center;text-decoration:none;color:#1a1a1a;font-weight:600}
+.cat-card:hover{background:#eee}
+.prose{line-height:1.75;color:#333;max-width:760px}
+.prose h2{font-size:22px;margin-top:32px}
+.prose p{margin:12px 0}
+.cta{display:inline-block;margin-top:16px;padding:12px 20px;background:#1a1a1a;color:#fff;text-decoration:none;border-radius:6px;font-weight:600}
+.footer{margin-top:48px;padding:24px;border-top:1px solid #eee;text-align:center;color:#999;font-size:13px}`;
+
+function buildShellHead(opts: {
+  title: string;
+  desc: string;
+  canonical: string;
+  storeName: string;
+  ogImage?: string;
+  jsonLd: string[];
+  ogType?: string;
+}): string {
+  const { title, desc, canonical, storeName, ogImage, jsonLd, ogType = "website" } = opts;
+  return `<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(desc)}">
+<link rel="canonical" href="${esc(canonical)}">
+<meta name="robots" content="index,follow">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(desc)}">
+<meta property="og:url" content="${esc(canonical)}">
+<meta property="og:type" content="${ogType}">
+<meta property="og:site_name" content="${esc(storeName)}">
+${ogImage ? `<meta property="og:image" content="${esc(ogImage)}">` : ""}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(desc)}">
+${ogImage ? `<meta name="twitter:image" content="${esc(ogImage)}">` : ""}
+${jsonLd.map((j) => `<script type="application/ld+json">${j}</script>`).join("\n")}
+<style>${SHARED_STYLE}</style>
+</head>`;
+}
+
+function buildShellHeader(store: any): string {
+  const storeName = esc(store.name);
+  return `<header class="header">
+${store.logo_url ? `<img src="${esc(store.logo_url)}" alt="${storeName} logo">` : ""}
+<h2 style="font-family:'Alegreya SC',serif;letter-spacing:0.04em">${storeName}</h2>
+</header>`;
+}
+
+function buildShellFooter(store: any, canonical: string): string {
+  return `<footer class="footer">&copy; ${new Date().getFullYear()} ${esc(store.name)}. All rights reserved.</footer>
+<script>window.location.replace(${JSON.stringify(canonical)});</script>`;
+}
+
+function buildCategoryHtml(
+  store: any,
+  category: { name: string; slug: string; description?: string | null },
+  products: any[],
+  canonical: string,
+  storeBase: string,
+): string {
+  const storeName = esc(store.name);
+  const title = `${category.name} — ${store.name}`;
+  const desc =
+    category.description?.slice(0, 160) ||
+    `Shop ${category.name} at ${store.name}. ${products.length} products available.`;
+  const ogImage = products[0]?.image_url || store.og_image_url || store.banner_url || store.logo_url || "";
+
+  const itemList = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `${category.name} — ${store.name}`,
+    numberOfItems: products.length,
+    itemListElement: products.slice(0, 30).map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${storeBase}/product/${p.slug || p.id}`,
+      name: p.name,
+    })),
+  });
+
+  const breadcrumb = buildBreadcrumb([
+    { name: store.name, url: storeBase },
+    { name: "Categories", url: `${storeBase}/categories` },
+    { name: category.name, url: canonical },
+  ]);
+
+  const cards = products.slice(0, 30).map((p) => renderProductCard(store, p, storeBase)).join("\n");
+
+  return `<!DOCTYPE html><html lang="en">${buildShellHead({
+    title,
+    desc,
+    canonical,
+    storeName: store.name,
+    ogImage,
+    jsonLd: [itemList, breadcrumb],
+  })}<body>
+${buildShellHeader(store)}
+<main class="container">
+<nav class="breadcrumb"><a href="${esc(storeBase)}">${storeName}</a> &rsaquo; <a href="${esc(storeBase)}/categories">Categories</a> &rsaquo; ${esc(category.name)}</nav>
+<section class="hero"><h1>${esc(category.name)}</h1>${category.description ? `<p>${esc(category.description)}</p>` : ""}</section>
+<section class="grid">${cards || `<p>No products in this category yet.</p>`}</section>
+${products.length > 30 ? `<p style="text-align:center;color:#666;margin-top:24px">Showing 30 of ${products.length} products</p>` : ""}
+</main>
+${buildShellFooter(store, canonical)}
+</body></html>`;
+}
+
+function buildListingHtml(
+  store: any,
+  products: any[],
+  opts: { kind: "shop" | "best-sellers"; title: string; desc: string },
+  canonical: string,
+  storeBase: string,
+): string {
+  const ogImage = products[0]?.image_url || store.og_image_url || store.banner_url || store.logo_url || "";
+  const breadcrumb = buildBreadcrumb([
+    { name: store.name, url: storeBase },
+    { name: opts.kind === "shop" ? "Shop" : "Best Sellers", url: canonical },
+  ]);
+  const cards = products.slice(0, 30).map((p) => renderProductCard(store, p, storeBase)).join("\n");
+  return `<!DOCTYPE html><html lang="en">${buildShellHead({
+    title: opts.title,
+    desc: opts.desc,
+    canonical,
+    storeName: store.name,
+    ogImage,
+    jsonLd: [breadcrumb],
+  })}<body>
+${buildShellHeader(store)}
+<main class="container">
+<nav class="breadcrumb"><a href="${esc(storeBase)}">${esc(store.name)}</a> &rsaquo; ${opts.kind === "shop" ? "Shop" : "Best Sellers"}</nav>
+<section class="hero"><h1>${esc(opts.title)}</h1><p>${esc(opts.desc)}</p></section>
+<section class="grid">${cards || `<p>No products yet.</p>`}</section>
+</main>
+${buildShellFooter(store, canonical)}
+</body></html>`;
+}
+
+function buildCategoriesIndexHtml(
+  store: any,
+  categories: any[],
+  canonical: string,
+  storeBase: string,
+): string {
+  const title = `Browse categories — ${store.name}`;
+  const desc = `Browse all ${categories.length} product categories at ${store.name}.`;
+  const breadcrumb = buildBreadcrumb([
+    { name: store.name, url: storeBase },
+    { name: "Categories", url: canonical },
+  ]);
+  const itemList = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: title,
+    numberOfItems: categories.length,
+    itemListElement: categories.map((c, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${storeBase}/category/${c.slug}`,
+      name: c.name,
+    })),
+  });
+  const links = categories
+    .map((c) => `<a class="cat-card" href="${esc(storeBase)}/category/${esc(c.slug)}">${esc(c.name)}</a>`)
+    .join("");
+  return `<!DOCTYPE html><html lang="en">${buildShellHead({
+    title,
+    desc,
+    canonical,
+    storeName: store.name,
+    ogImage: store.og_image_url || store.banner_url || store.logo_url || "",
+    jsonLd: [itemList, breadcrumb],
+  })}<body>
+${buildShellHeader(store)}
+<main class="container">
+<nav class="breadcrumb"><a href="${esc(storeBase)}">${esc(store.name)}</a> &rsaquo; Categories</nav>
+<section class="hero"><h1>Categories</h1><p>${esc(desc)}</p></section>
+<nav class="cat-grid">${links || `<p>No categories yet.</p>`}</nav>
+</main>
+${buildShellFooter(store, canonical)}
+</body></html>`;
+}
+
+// Strip <script>/<style> blocks and dangerous attrs from merchant-authored HTML
+// before rendering for bots. Bots don't execute JS but Google still flags risky
+// content for the canonical URL — keep it conservative.
+function sanitizeContent(html: string): string {
+  if (!html) return "";
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
+    .replace(/\son\w+\s*=\s*"[^"]*"/gi, "")
+    .replace(/\son\w+\s*=\s*'[^']*'/gi, "");
+}
+
+function buildCustomPageHtml(
+  store: any,
+  page: { title: string; content: string | null; custom_html: string | null; image_url: string | null; slug: string },
+  canonical: string,
+  storeBase: string,
+): string {
+  const body = sanitizeContent(page.custom_html || page.content || "");
+  const desc = (page.content || "").replace(/<[^>]+>/g, "").slice(0, 160) || `${page.title} — ${store.name}`;
+  const ogImage = page.image_url || store.og_image_url || store.banner_url || store.logo_url || "";
+
+  const breadcrumb = buildBreadcrumb([
+    { name: store.name, url: storeBase },
+    { name: page.title, url: canonical },
+  ]);
+  const webPage = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: page.title,
+    url: canonical,
+    isPartOf: { "@type": "WebSite", name: store.name, url: storeBase },
+  });
+
+  return `<!DOCTYPE html><html lang="en">${buildShellHead({
+    title: `${page.title} — ${store.name}`,
+    desc,
+    canonical,
+    storeName: store.name,
+    ogImage,
+    jsonLd: [webPage, breadcrumb],
+    ogType: "article",
+  })}<body>
+${buildShellHeader(store)}
+<main class="container">
+<nav class="breadcrumb"><a href="${esc(storeBase)}">${esc(store.name)}</a> &rsaquo; ${esc(page.title)}</nav>
+<article>
+<h1>${esc(page.title)}</h1>
+<div class="prose">${body || `<p>No content yet.</p>`}</div>
+</article>
+</main>
+${buildShellFooter(store, canonical)}
+</body></html>`;
+}
+
+function buildStaticInfoHtml(
+  store: any,
+  kind: "about" | "contact" | "track-order",
+  canonical: string,
+  storeBase: string,
+): string {
+  const labels: Record<string, { title: string; intro: string; ogType: string }> = {
+    about: {
+      title: `About ${store.name}`,
+      intro: store.description || `${store.name} is an online store serving customers across India.`,
+      ogType: "website",
+    },
+    contact: {
+      title: `Contact ${store.name}`,
+      intro: `Get in touch with ${store.name} for orders, support, and feedback.`,
+      ogType: "website",
+    },
+    "track-order": {
+      title: `Track your order — ${store.name}`,
+      intro: `Track the live status of your order from ${store.name}.`,
+      ogType: "website",
+    },
+  };
+  const meta = labels[kind];
+  const breadcrumb = buildBreadcrumb([
+    { name: store.name, url: storeBase },
+    { name: meta.title, url: canonical },
+  ]);
+
+  const lines: string[] = [`<p>${esc(meta.intro)}</p>`];
+  if (kind === "contact") {
+    if (store.whatsapp_number) lines.push(`<p><strong>WhatsApp:</strong> <a href="https://wa.me/${esc(String(store.whatsapp_number).replace(/[^0-9]/g, ""))}">${esc(store.whatsapp_number)}</a></p>`);
+    if (store.city || store.state) lines.push(`<p><strong>Location:</strong> ${esc([store.city, store.state].filter(Boolean).join(", "))}</p>`);
+    if (store.instagram_url) lines.push(`<p><strong>Instagram:</strong> <a href="${esc(store.instagram_url)}">${esc(store.instagram_url)}</a></p>`);
+    if (store.facebook_url) lines.push(`<p><strong>Facebook:</strong> <a href="${esc(store.facebook_url)}">${esc(store.facebook_url)}</a></p>`);
+  }
+
+  return `<!DOCTYPE html><html lang="en">${buildShellHead({
+    title: meta.title,
+    desc: meta.intro.slice(0, 160),
+    canonical,
+    storeName: store.name,
+    ogImage: store.og_image_url || store.banner_url || store.logo_url || "",
+    jsonLd: [breadcrumb],
+    ogType: meta.ogType,
+  })}<body>
+${buildShellHeader(store)}
+<main class="container">
+<nav class="breadcrumb"><a href="${esc(storeBase)}">${esc(store.name)}</a> &rsaquo; ${esc(meta.title)}</nav>
+<article><h1>${esc(meta.title)}</h1><div class="prose">${lines.join("")}</div></article>
+</main>
+${buildShellFooter(store, canonical)}
+</body></html>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const HTML_CACHE_HEADERS = {
+  "Content-Type": "text/html; charset=utf-8",
+  "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -263,6 +617,9 @@ Deno.serve(async (req) => {
   const productSlug = url.searchParams.get("product");
   const domain = url.searchParams.get("domain");
   const isSocial = url.searchParams.get("social") === "true";
+  // v2: richer route kinds. Falls back to product/home for backwards compat.
+  const kindParam = (url.searchParams.get("kind") || "").toLowerCase();
+  const routeSlug = url.searchParams.get("route_slug") || "";
 
   if (!slug) {
     return new Response(JSON.stringify({ error: "Missing slug" }), {
@@ -342,9 +699,103 @@ Deno.serve(async (req) => {
     });
   }
 
+  // ── v2 routing — explicit kind takes precedence ────────────────────────
+  // Backwards compat: if kind is missing but productSlug present, treat as product.
+  const effectiveKind: string = kindParam
+    || (productSlug ? "product" : "home");
+
+  // Category page
+  if (effectiveKind === "category" && routeSlug) {
+    const { data: cat } = await supabase
+      .from("categories")
+      .select("id, name, slug, description")
+      .eq("store_id", store.id)
+      .eq("slug", routeSlug)
+      .maybeSingle();
+    if (!cat) return new Response("Category not found", { status: 404, headers: corsHeaders });
+
+    const { data: catProducts } = await supabase
+      .from("products")
+      .select("id, name, slug, price, sale_price, currency, image_url, stock_quantity, category")
+      .eq("store_id", store.id)
+      .eq("is_active", true)
+      .eq("category", cat.name)
+      .order("is_best_selling", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    const html = buildCategoryHtml(
+      store,
+      cat as any,
+      catProducts || [],
+      `${canonical}/category/${cat.slug}`,
+      canonical,
+    );
+    return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
+  }
+
+  // Merchant-authored custom page (/page/:slug)
+  if (effectiveKind === "page" && routeSlug) {
+    const { data: page } = await supabase
+      .from("store_pages")
+      .select("title, content, custom_html, image_url, slug, is_active")
+      .eq("store_id", store.id)
+      .eq("slug", routeSlug)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (!page) return new Response("Page not found", { status: 404, headers: corsHeaders });
+    const html = buildCustomPageHtml(
+      store,
+      page as any,
+      `${canonical}/page/${page.slug}`,
+      canonical,
+    );
+    return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
+  }
+
+  // Listing pages — /shop and /best-sellers
+  if (effectiveKind === "shop" || effectiveKind === "best-sellers") {
+    const baseQuery = supabase
+      .from("products")
+      .select("id, name, slug, price, sale_price, currency, image_url, stock_quantity, category")
+      .eq("store_id", store.id)
+      .eq("is_active", true);
+    const { data: listingProducts } = effectiveKind === "best-sellers"
+      ? await baseQuery.eq("is_best_selling", true).order("created_at", { ascending: false }).limit(50)
+      : await baseQuery.order("is_best_selling", { ascending: false }).order("created_at", { ascending: false }).limit(50);
+
+    const opts = effectiveKind === "best-sellers"
+      ? { kind: "best-sellers" as const, title: `Best sellers at ${store.name}`, desc: `Top-selling products at ${store.name}.` }
+      : { kind: "shop" as const, title: `Shop all products — ${store.name}`, desc: `Browse the full product catalog at ${store.name}.` };
+    const html = buildListingHtml(
+      store,
+      listingProducts || [],
+      opts,
+      `${canonical}/${effectiveKind}`,
+      canonical,
+    );
+    return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
+  }
+
+  // Categories index page
+  if (effectiveKind === "categories") {
+    const { data: cats } = await supabase
+      .from("categories")
+      .select("name, slug")
+      .eq("store_id", store.id)
+      .order("name");
+    const html = buildCategoriesIndexHtml(store, cats || [], `${canonical}/categories`, canonical);
+    return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
+  }
+
+  // Static info routes
+  if (effectiveKind === "about" || effectiveKind === "contact" || effectiveKind === "track-order") {
+    const html = buildStaticInfoHtml(store, effectiveKind, `${canonical}/${effectiveKind}`, canonical);
+    return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
+  }
+
   // Product page
-  if (productSlug) {
-    // Try by slug first, then by id
+  if (effectiveKind === "product" && productSlug) {
     let product: any = null;
     const { data: bySlug } = await supabase
       .from("products")
@@ -353,9 +804,7 @@ Deno.serve(async (req) => {
       .eq("slug", productSlug)
       .eq("is_active", true)
       .single();
-
     product = bySlug;
-
     if (!product) {
       const { data: byId } = await supabase
         .from("products")
@@ -366,15 +815,9 @@ Deno.serve(async (req) => {
         .single();
       product = byId;
     }
-
     if (!product) {
-      return new Response("Product not found", {
-        status: 404,
-        headers: corsHeaders,
-      });
+      return new Response("Product not found", { status: 404, headers: corsHeaders });
     }
-
-    // Fetch product images
     const { data: images } = await supabase
       .from("product_images")
       .select("image_url, display_order")
@@ -384,17 +827,10 @@ Deno.serve(async (req) => {
 
     const productCanonical = `${canonical}/product/${product.slug || product.id}`;
     const html = buildProductHtml(store, product, images || [], productCanonical);
-
-    return new Response(html, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
-      },
-    });
+    return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
   }
 
-  // Store home page
+  // Store home page (default)
   const { data: products } = await supabase
     .from("products")
     .select("id, name, slug, price, sale_price, currency, image_url, stock_quantity, category")
@@ -411,12 +847,5 @@ Deno.serve(async (req) => {
     .order("name");
 
   const html = buildStoreHtml(store, products || [], categories || [], canonical);
-
-  return new Response(html, {
-    headers: {
-      ...corsHeaders,
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
-    },
-  });
+  return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
 });

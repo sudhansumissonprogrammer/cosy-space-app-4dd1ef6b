@@ -18,10 +18,13 @@
  */
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import Index from "./pages/Index";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const ThemeShowcase = lazy(() => import("./pages/ThemeShowcase"));
+const Guides = lazy(() => import("./pages/Guides"));
+const GuideDetail = lazy(() => import("./pages/GuideDetail"));
 
 // NOTE: We deliberately do NOT statically import or prefetch App.tsx from
 // landing code. Any `import("./App")` here causes Rollup to add a
@@ -32,19 +35,37 @@ const ThemeShowcase = lazy(() => import("./pages/ThemeShowcase"));
 const LandingApp = () => {
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route
-            path="/theme"
-            element={
-              <Suspense fallback={<div className="min-h-screen bg-background" />}>
-                <ThemeShowcase />
-              </Suspense>
-            }
-          />
-        </Routes>
-      </BrowserRouter>
+      <HelmetProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route
+              path="/theme"
+              element={
+                <Suspense fallback={<div className="min-h-screen bg-background" />}>
+                  <ThemeShowcase />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/guides"
+              element={
+                <Suspense fallback={<div className="min-h-screen bg-background" />}>
+                  <Guides />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/guides/:slug"
+              element={
+                <Suspense fallback={<div className="min-h-screen bg-background" />}>
+                  <GuideDetail />
+                </Suspense>
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </HelmetProvider>
     </ErrorBoundary>
   );
 };

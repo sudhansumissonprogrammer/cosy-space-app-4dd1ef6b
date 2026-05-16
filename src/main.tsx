@@ -42,7 +42,8 @@ if (typeof window !== "undefined" && window.location.search.includes("ref=")) {
 function shouldUseLandingFastPath(): boolean {
   if (typeof window === "undefined") return false;
   const path = window.location.pathname;
-  if (path !== "/" && path !== "/theme") return false;
+  const isLandingPath = path === "/" || path === "/theme" || path === "/guides" || path.startsWith("/guides/");
+  if (!isLandingPath) return false;
   // Storefront subdomains and custom domains must always use the full App
   // (they render storefront at `/`, not the marketing landing).
   const host = window.location.hostname;
