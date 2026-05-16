@@ -3776,6 +3776,7 @@ async function handleBot(request, slug, url, isCustom) {
       domain: domain || "",
       kind: botRoute.kind,
       route_slug: botRoute.slug || "",
+    });
     if (botRenderRes.ok) {
       const html = await botRenderRes.text();
       const finalRes = new Response(html, {
