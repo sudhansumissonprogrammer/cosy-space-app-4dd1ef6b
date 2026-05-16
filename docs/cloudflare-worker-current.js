@@ -4458,7 +4458,8 @@ export default {
         !url.pathname.startsWith("/api") &&
         !url.pathname.startsWith("/rest") &&
         url.pathname !== "/sitemap.xml" &&
-        url.pathname !== "/robots.txt");
+        url.pathname !== "/robots.txt" &&
+        url.pathname !== "/llms.txt");
 
     if (isStaticAsset) {
       // v7.3.0 #3+#4: Route ALL static assets through cf.cacheEverything proxy
