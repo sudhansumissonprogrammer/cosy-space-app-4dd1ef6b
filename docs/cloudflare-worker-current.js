@@ -2254,7 +2254,7 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
     const heroImg = c.og_image_url || c.image_url || store.banner_url || store.logo_url || "";
     const title = escapeHtml(c.meta_title || `${c.name} — ${store.name}${store.city ? ` | ${store.city}` : ""}`);
     const desc = escapeHtml(c.meta_description || `Shop ${c.name.toLowerCase()} from ${store.name}. ${products.length} products available with fast shipping across India.`);
-    const ogImg = escapeHtml(heroImg);
+    const ogImg = (typeof heroImg === "string" && /^https?:\/\//i.test(heroImg)) ? escapeHtml(heroImg) : "";
     const collectionLd = {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
