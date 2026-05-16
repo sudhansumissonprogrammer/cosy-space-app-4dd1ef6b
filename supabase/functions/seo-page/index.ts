@@ -239,6 +239,32 @@ async function handleSharePage(url: URL) {
 
 // ── Sitemap handler ─────────────────────────────────────────────
 
+// Build a 301 redirect to the canonical primary host when the request came in
+// on a subdomain but the store has a custom_domain configured. Returns null
+// when no redirect is needed.
+function buildPrimaryDomainRedirect(
+  store: { custom_domain: string | null; slug: string },
+  domain: string | null,
+  pathname: string,
+): Response | null {
+  const requestHost = (domain || "").toLowerCase().replace(/^www\./, "");
+  const primary = store.custom_domain?.toLowerCase().replace(/^www\./, "");
+  if (!primary) return null;
+  if (requestHost === primary) return null;
+  // Only redirect when the incoming host is the subdomain on shopbanao.in.
+  // Leave preview / lovable / localhost untouched so devs can still inspect.
+  const expectedSub = `${store.slug.toLowerCase()}.${ROOT_DOMAIN}`;
+  if (requestHost !== expectedSub) return null;
+  return new Response(null, {
+    status: 301,
+    headers: {
+      ...corsHeaders,
+      Location: `https://${primary}${pathname}`,
+      "Cache-Control": "public, max-age=3600",
+    },
+  });
+}
+
 async function handleSitemap(url: URL) {
   const slug = url.searchParams.get("slug");
   const domain = url.searchParams.get("domain");
@@ -259,10 +285,15 @@ async function handleSitemap(url: URL) {
     return new Response("Store not found", { status: 404, headers: corsHeaders });
   }
 
+  // Primary-domain rule: subdomain sitemap 301s to custom domain so Google
+  // sees a single canonical sitemap per store (Shopify behaviour).
+  const redirect = buildPrimaryDomainRedirect(store, domain, "/sitemap.xml");
+  if (redirect) return redirect;
+
   const storeHost = domain || store.custom_domain || `${slug}.${ROOT_DOMAIN}`;
   const baseUrl = `https://${storeHost}`;
 
-  const [productsResult, categoriesResult] = await Promise.all([
+  const [productsResult, categoriesResult, pagesResult] = await Promise.all([
     supabase
       .from("products")
       .select("slug, id, updated_at, image_url, name, price, sale_price")
@@ -272,14 +303,31 @@ async function handleSitemap(url: URL) {
       .limit(1000),
     supabase
       .from("categories")
-      .select("slug, name")
+      .select("slug, name, updated_at")
       .eq("store_id", store.id),
+    supabase
+      .from("store_pages")
+      .select("slug, page_type, updated_at, is_active")
+      .eq("store_id", store.id)
+      .eq("is_active", true),
   ]);
 
   const products = productsResult.data;
   const categories = categoriesResult.data;
+  const customPages = pagesResult.data || [];
   const now = new Date().toISOString().split("T")[0];
   const storeUpdated = store.updated_at?.split("T")[0] || now;
+
+  // Build a set of page_types the merchant has actually published so we only
+  // emit legacy legal/about routes that resolve, never sitemap'd 404s.
+  const publishedTypes = new Set(
+    customPages.map((p: any) => (p.page_type || "").toLowerCase()).filter(Boolean),
+  );
+  const pageTypeUpdated = new Map<string, string>();
+  for (const p of customPages) {
+    const t = (p.page_type || "").toLowerCase();
+    if (t && p.updated_at) pageTypeUpdated.set(t, p.updated_at.split("T")[0]);
+  }
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -291,10 +339,10 @@ async function handleSitemap(url: URL) {
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>${baseUrl}/contact</loc>
+    <loc>${baseUrl}/shop</loc>
     <lastmod>${storeUpdated}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>${baseUrl}/best-sellers</loc>
@@ -303,18 +351,26 @@ async function handleSitemap(url: URL) {
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>${baseUrl}/shop</loc>
+    <loc>${baseUrl}/categories</loc>
     <lastmod>${storeUpdated}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/contact</loc>
+    <lastmod>${storeUpdated}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
 `;
 
   if (categories) {
     for (const cat of categories) {
+      if (!cat.slug) continue;
+      const catLastmod = (cat as any).updated_at?.split("T")[0] || storeUpdated;
       xml += `  <url>
     <loc>${baseUrl}/category/${escapeXml(cat.slug)}</loc>
-    <lastmod>${storeUpdated}</lastmod>
+    <lastmod>${catLastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -347,9 +403,34 @@ async function handleSitemap(url: URL) {
     }
   }
 
-  for (const page of ["about", "privacy-policy", "return-policy", "shipping-policy", "terms"]) {
+  // Legacy legal/about routes — only if the merchant published the matching
+  // page_type. Prevents sitemap'd 404s for stores that haven't filled them in.
+  const legacyMap: Array<{ path: string; type: string }> = [
+    { path: "about", type: "about" },
+    { path: "privacy-policy", type: "privacy" },
+    { path: "return-policy", type: "return" },
+    { path: "shipping-policy", type: "shipping" },
+    { path: "terms", type: "terms" },
+  ];
+  for (const { path, type } of legacyMap) {
+    if (!publishedTypes.has(type)) continue;
+    const lm = pageTypeUpdated.get(type) || storeUpdated;
     xml += `  <url>
-    <loc>${baseUrl}/${page}</loc>
+    <loc>${baseUrl}/${path}</loc>
+    <lastmod>${lm}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+`;
+  }
+
+  // Merchant-authored custom pages → /page/{slug}
+  for (const page of customPages) {
+    if (!page.slug) continue;
+    const lm = page.updated_at?.split("T")[0] || storeUpdated;
+    xml += `  <url>
+    <loc>${baseUrl}/page/${escapeXml(page.slug)}</loc>
+    <lastmod>${lm}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -378,28 +459,32 @@ async function handleRobots(url: URL) {
     return new Response("Missing slug parameter", { status: 400, headers: corsHeaders });
   }
 
-  // v8.14.0: Prefer the actual hostname the request came in on (passed as
-  // `domain` by the worker). Falls back to store.custom_domain → subdomain.
-  // Google requires the Sitemap: URL to live on the same host as the URLs it
-  // lists, so cross-host sitemaps get rejected in Search Console.
-  let storeHost = domain;
-  if (!storeHost) {
-    try {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL");
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-      if (supabaseUrl && supabaseKey) {
-        const r = await fetch(
-          `${supabaseUrl}/rest/v1/stores?slug=eq.${encodeURIComponent(slug)}&select=custom_domain`,
-          { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
-        );
-        if (r.ok) {
-          const rows = await r.json();
-          if (Array.isArray(rows) && rows[0]?.custom_domain) storeHost = rows[0].custom_domain;
-        }
+  // Look up custom_domain so we can both (a) decide whether to 301 the
+  // subdomain request to the primary host, and (b) pick the right Sitemap: URL.
+  let customDomain: string | null = null;
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (supabaseUrl && supabaseKey) {
+      const r = await fetch(
+        `${supabaseUrl}/rest/v1/stores?slug=eq.${encodeURIComponent(slug)}&select=custom_domain`,
+        { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
+      );
+      if (r.ok) {
+        const rows = await r.json();
+        if (Array.isArray(rows) && rows[0]?.custom_domain) customDomain = rows[0].custom_domain;
       }
-    } catch { /* fall through */ }
-  }
-  if (!storeHost) storeHost = `${slug}.${ROOT_DOMAIN}`;
+    }
+  } catch { /* fall through */ }
+
+  const redirect = buildPrimaryDomainRedirect(
+    { slug, custom_domain: customDomain },
+    domain,
+    "/robots.txt",
+  );
+  if (redirect) return redirect;
+
+  const storeHost = domain || customDomain || `${slug}.${ROOT_DOMAIN}`;
   const sitemapUrl = `https://${storeHost}/sitemap.xml`;
 
   const robotsTxt = `User-agent: *
@@ -410,6 +495,24 @@ Disallow: /login
 Disallow: /signup
 Disallow: /checkout
 Disallow: /cart
+Disallow: /account
+Disallow: /wishlist
+
+# AI training crawlers
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
 
 Sitemap: ${sitemapUrl}
 
@@ -422,6 +525,75 @@ Sitemap: ${sitemapUrl}
       "Content-Type": "text/plain; charset=utf-8",
       "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
       "CDN-Cache-Control": "public, max-age=86400",
+    },
+  });
+}
+
+// ── llms.txt handler ────────────────────────────────────────────
+
+async function handleLlms(url: URL) {
+  const slug = url.searchParams.get("slug");
+  const domain = url.searchParams.get("domain");
+
+  if (!slug) {
+    return new Response("Missing slug parameter", { status: 400, headers: corsHeaders });
+  }
+
+  const supabase = getSupabase();
+  const { data: store, error } = await supabase
+    .from("stores")
+    .select("id, slug, name, description, meta_description, custom_domain")
+    .eq("slug", slug)
+    .eq("is_suspended", false)
+    .single();
+
+  if (error || !store) {
+    return new Response("Store not found", { status: 404, headers: corsHeaders });
+  }
+
+  const redirect = buildPrimaryDomainRedirect(store, domain, "/llms.txt");
+  if (redirect) return redirect;
+
+  const storeHost = domain || store.custom_domain || `${slug}.${ROOT_DOMAIN}`;
+  const baseUrl = `https://${storeHost}`;
+  const desc = store.meta_description || store.description || `${store.name} — online store powered by ShopBanao.`;
+
+  const [{ data: categories }, { data: pages }] = await Promise.all([
+    supabase.from("categories").select("name, slug").eq("store_id", store.id).limit(20),
+    supabase
+      .from("store_pages")
+      .select("title, slug, page_type")
+      .eq("store_id", store.id)
+      .eq("is_active", true)
+      .limit(20),
+  ]);
+
+  let body = `# ${store.name}\n\n> ${desc}\n\n## Storefront\n- [Home](${baseUrl}/)\n- [Shop all products](${baseUrl}/shop)\n- [Best sellers](${baseUrl}/best-sellers)\n- [Categories](${baseUrl}/categories)\n- [Contact](${baseUrl}/contact)\n`;
+
+  if (categories && categories.length) {
+    body += `\n## Categories\n`;
+    for (const c of categories) {
+      if (!c.slug) continue;
+      body += `- [${c.name}](${baseUrl}/category/${c.slug})\n`;
+    }
+  }
+
+  if (pages && pages.length) {
+    body += `\n## Pages\n`;
+    for (const p of pages) {
+      if (!p.slug) continue;
+      body += `- [${p.title}](${baseUrl}/page/${p.slug})\n`;
+    }
+  }
+
+  body += `\n## Machine-readable\n- [Sitemap](${baseUrl}/sitemap.xml)\n- [Robots](${baseUrl}/robots.txt)\n`;
+
+  return new Response(body, {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+      "CDN-Cache-Control": "public, max-age=3600",
     },
   });
 }
@@ -671,6 +843,8 @@ Deno.serve(async (req) => {
         return await handleRobots(url);
       case "feed":
         return await handleProductFeed(url);
+      case "llms":
+        return await handleLlms(url);
       default:
         return new Response(JSON.stringify({ error: `Unknown type: ${type}` }), {
           status: 400,

@@ -3672,6 +3672,9 @@ async function handleSeoFiles(url, slug, hostname) {
   const domain = hostname || url.hostname;
   if (url.pathname === "/sitemap.xml") {
     const res = await callEdgeFunction("seo-page", { type: "sitemap", slug, domain });
+    // 301 redirects come from the edge fn when a subdomain request needs to
+    // canonicalize to the store's custom domain. Pass them through unchanged.
+    if (res.status === 301 || res.status === 302) return res;
     if (res.ok) {
       const body = await res.text();
       return new Response(body, {
@@ -3681,10 +3684,21 @@ async function handleSeoFiles(url, slug, hostname) {
   }
   if (url.pathname === "/robots.txt") {
     const res = await callEdgeFunction("seo-page", { type: "robots", slug, domain });
+    if (res.status === 301 || res.status === 302) return res;
     if (res.ok) {
       const body = await res.text();
       return new Response(body, {
         headers: { "Content-Type": "text/plain", "Cache-Control": "public, max-age=86400", ...SECURITY_HEADERS },
+      });
+    }
+  }
+  if (url.pathname === "/llms.txt") {
+    const res = await callEdgeFunction("seo-page", { type: "llms", slug, domain });
+    if (res.status === 301 || res.status === 302) return res;
+    if (res.ok) {
+      const body = await res.text();
+      return new Response(body, {
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600", ...SECURITY_HEADERS },
       });
     }
   }
@@ -4444,7 +4458,8 @@ export default {
         !url.pathname.startsWith("/api") &&
         !url.pathname.startsWith("/rest") &&
         url.pathname !== "/sitemap.xml" &&
-        url.pathname !== "/robots.txt");
+        url.pathname !== "/robots.txt" &&
+        url.pathname !== "/llms.txt");
 
     if (isStaticAsset) {
       // v7.3.0 #3+#4: Route ALL static assets through cf.cacheEverything proxy
@@ -4503,6 +4518,7 @@ export default {
       url.pathname !== "/cf-img" &&
       url.pathname !== "/sitemap.xml" &&
       url.pathname !== "/robots.txt" &&
+      url.pathname !== "/llms.txt" &&
       url.pathname !== "/__health" &&
       !request.headers.get("cookie")?.includes("auth");
 

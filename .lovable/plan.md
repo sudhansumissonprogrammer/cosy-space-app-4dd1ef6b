@@ -1,129 +1,109 @@
+## Goal
 
-# Cloud Bill Reduction — Safe Plan (no UX regression)
+Make every store (subdomain or custom domain) properly indexable with its own sitemap, robots, and identity JSON-LD, and give merchants a self-serve SEO panel to control titles, descriptions, OG images, and social profile links.
 
-Three hard requirements drive every choice below:
-1. **Merchant edits must appear instantly** for shoppers
-2. **Meta Pixel + CAPI ROAS must keep working** for ad-running stores
-3. **Cold load must stay fast** (no slow first-paint regressions)
-
-Estimated bill impact: **~$1/day → ~$0.55/day** (−45%) with **zero shopper-facing regression**.
+Includes the user's hard requirement: when a store has a custom domain, the **subdomain copies of `/sitemap.xml` and `/robots.txt` must redirect (301) to the custom domain** so Google sees ONE canonical sitemap per store (Shopify primary-domain rule). When no custom domain is set, the subdomain serves them directly.
 
 ---
 
-## 1. Worker shell cache: TTL 1 hour + reliable purge on every save
+## Phase 1 — Per-store SEO foundation
 
-**What changes**
-- Bump `s-maxage` for `get_storefront_shell` and `get_storefront_data` worker responses to **3600s** (1h), with `stale-while-revalidate=86400`
-- Audit every dashboard save mutation and ensure `useStorePurge(storeId)` is called in `onSuccess`
-- Add a single shared `usePurgeOnSuccess` wrapper so future saves can't forget
+### 1A. Sitemap / robots primary-domain redirect (the user's main ask)
 
-**Why this keeps edits instant**
-The worker only serves stale data if no purge fires. Every legitimate edit path (theme, logo, banner, hero, products, categories, custom pages, store settings, payment config, shipping) calls `purgeStoreCache(slug, custom_domain)` which wipes the CF edge cache for that store immediately. Result: shoppers see new data within ~1s of merchant clicking Save.
+Today `seo-page` already builds a per-store sitemap and robots from the request hostname — so the URLs inside the file always match the host that served it. What it does NOT do: if the store has `custom_domain` set, hitting `brand.shopbanao.in/sitemap.xml` still serves a subdomain sitemap. That splits the SEO signal across two hosts.
 
-**Pages to audit for missing purge calls**
-StoreSettings, StoreThemeSettings, StorePages, StorePageEditor, CategoryManagement, BestSellerManagement, StorePayments, StoreShipping, StoreDomain, ProductForm (create/edit), CreateStore, BulkUpload, MediaLibrary deletions, StoreTaxSettings, StoreTracking.
+Fix in the **Cloudflare Worker** (`docs/cloudflare-worker-current.js`, `handleSeoFiles`):
 
-**Safety net**
-Add an admin-only "Purge cache for this store" button in `AdminUsersStores` for emergencies.
+```text
+incoming /sitemap.xml or /robots.txt
+   │
+   ├─ on custom domain ──────────────► serve via seo-page (host = custom domain)
+   │
+   └─ on subdomain ─┐
+                    ├─ store has custom_domain set
+                    │   └─► 301 → https://{custom_domain}/sitemap.xml
+                    │       (or /robots.txt)
+                    │
+                    └─ no custom_domain
+                        └─► serve via seo-page (host = subdomain)
+```
 
----
+To know whether a subdomain store has a custom domain without a DB hit per request, reuse the existing storefront shell lookup (already cached in the Worker). If unavailable, the edge function returns the redirect itself (cheap one-time check, cached 1h).
 
-## 2. Page-views debounce (per session, per path, 30s)
+### 1B. Sitemap content gaps
 
-**What changes**
-- In the page-view recording hook, before insert: check `sessionStorage` for key `pv:{storeId}:{path}`. If timestamp <30s old → skip insert. Else write key + insert.
-- Add tooltip in admin Analytics: "Views are deduped per visitor per page within a 30-second window."
+`seo-page → handleSitemap` currently includes home, /shop, /contact, /best-sellers, categories, products, and a hardcoded list of legal pages. Missing:
 
-**Why ROAS is unaffected**
-Pixel/CAPI events fire on a separate path (`metaCapi.ts`) — they are not tied to `page_views` inserts. Ad attribution uses Meta's own pixel, not our page_views table.
+- Custom pages from `store_pages` table (merchants build their own pages — currently invisible to Google).
+- Conditional gating: only include `/about`, `/privacy-policy`, etc. when the matching `store_pages` row exists (avoid 404s in sitemap).
+- `<lastmod>` from `store_pages.updated_at` and `categories.updated_at` (today categories have no lastmod).
 
----
+### 1C. Per-store identity JSON-LD (Knowledge Graph signal)
 
-## 3. CAPI: skip only when store has no Meta pixel (preserves ROAS)
+`useStoreJsonLd` already emits a single `Store` schema. Split it into three stacked schemas so Google can build a brand entity:
 
-**What changes**
-- In `metaCapi.ts`, before the probe call, check `store.facebook_pixel_id`. If null/empty → return early, never call the edge function.
-- Stores that DO have a pixel configured → behave exactly as today (every event probed, sent to Meta when token configured).
+1. **Organization** — name, url, logo, sameAs (instagram + facebook + whatsapp wa.me link), contactPoint.
+2. **WebSite** — name, url, `potentialAction` SearchAction → `{base}/shop?q={search_term_string}`. This is what triggers the sitelinks search box.
+3. **Store / LocalBusiness** — keep current address + priceRange + contactPoint.
 
-**Why ROAS stays intact**
-Stores running Meta ads always set `facebook_pixel_id`. Skipping CAPI only on stores with no pixel removes pure waste (~80% of stores). Ad-running stores keep 100% of current CAPI behavior — no fbclid checks, no cookie checks, no attribution loss.
+All three use `getStoreBaseUrl(slug, customDomain)` so URLs always point to the primary domain.
 
----
+### 1D. Per-store `llms.txt`
 
-## 4. Selective prewarm cron (active stores only)
+Add `type: "llms"` to `seo-page` and route `/llms.txt` through the Worker the same way sitemap/robots are routed. Body: store name, URL, short description, top categories, key pages. Same primary-domain redirect rule as 1A.
 
-**What changes**
-- Modify `prewarm-cron` edge function to query: stores with ≥1 page_view in the last 24h
-- Warm only those stores (currently warms all 20 regardless of activity)
-- Keep the cron schedule as-is
+### 1E. Canonical hardening (verify, no code change expected)
 
-**Why cold load stays fast**
-Stores receiving real traffic stay warm. Inactive stores don't need warming because:
-- First visitor triggers `prewarm-store` automatically on landing
-- Worker also fetches+caches on first miss
-A truly cold store's first visitor sees ~300ms TTFB (acceptable for a store with zero traffic). Active stores stay at ~50ms.
+Spot-check `useMetaTags` and product/category pages — `getStoreBaseUrl` already prefers custom_domain, so canonicals should already be correct. Confirm and document.
 
 ---
 
-## 5. Error logs hygiene (size + noise control)
+## Phase 2 — Merchant SEO controls in the dashboard
 
-**What changes**
-- Daily pg_cron job: `DELETE FROM error_logs WHERE created_at < now() - interval '30 days'`
-- Add client-side throttle in `logError.ts`: max 5 logs per error-message-hash per session (sessionStorage counter)
-- One-time investigation query to identify top error sources currently flooding the table
+`StoreSettings.tsx` already has a SEO section with `meta_title`, `meta_description`, `og_image_url`, `instagram_url`, `facebook_url`. We extend it without breaking layout:
 
-**Why this is safe**
-30 days is plenty for debugging. Throttle prevents one buggy component from filling the table with thousands of identical rows.
+### 2A. Live preview + character counters
+- Google SERP preview card (title, URL, description) using current `getStoreBaseUrl` result.
+- Facebook/WhatsApp share preview card using OG image + title + description.
+- Character counters with green/amber/red thresholds (title 50–60, description 140–160).
 
----
+### 2B. Sitemap & robots helper card
+- Show the canonical sitemap URL (auto-switches between custom domain and subdomain).
+- Copy-to-clipboard button.
+- "Submit to Google Search Console" CTA → opens GSC with prefilled URL.
+- "Verify ownership" CTA → opens GSC site verification.
+- Inline note explaining: "When you add a custom domain, your subdomain sitemap automatically redirects to the custom domain version — no extra work."
 
-## What we are NOT doing (and why)
+### 2C. Google Business Profile claim CTA
+- Single button linking to `https://business.google.com/create` with prefilled name + website + phone via URL params.
+- Helper text: "A claimed Google Business Profile is the #1 driver of brand search ranking."
 
-| Skipped | Reason |
-|---|---|
-| Compress shell payload (drop fields per route) | Adds RPC overload risk and cache fragmentation; complexity > savings at 20 stores |
-| Reduce prewarm frequency blindly | Would slow cold loads; selective warming is strictly better |
-| Skip CAPI on missing fbclid | Would hurt returning-customer attribution and ROAS for ad-running stores |
-| Shorten worker TTL to 15 min | Unnecessary if purge coverage is solid; 1h gives bigger savings with same UX |
+### 2D. Social profile widening (only if missing today)
+- Add fields for YouTube, X/Twitter, LinkedIn if the columns exist; otherwise skip.
+- These feed `sameAs` in Organization JSON-LD (Phase 1C).
 
----
-
-## Technical details (for the dev)
-
-### Files to modify
-- `docs/cloudflare-worker-current.js` — bump shell + data TTL constants; user must redeploy worker manually
-- `src/hooks/useStorePurge.ts` — already exists, just ensure usage everywhere
-- All dashboard save pages listed in §1 — add `purge()` to onSuccess if missing
-- `src/lib/metaCapi.ts` — early return when `store.facebook_pixel_id` is missing (pass pixel_id into the call site)
-- Page-view recording hook (likely in `StorefrontShell.tsx` or a hook called from it) — add sessionStorage debounce
-- `supabase/functions/prewarm-cron/index.ts` — query active stores via `page_views` last 24h
-- `src/lib/logError.ts` — add per-session throttle
-- New migration: pg_cron daily cleanup of `error_logs` >30 days
-
-### Deployment notes
-- Worker change requires manual deploy by the user (per project memory)
-- All other changes deploy automatically via Lovable Cloud
-- DB function untouched → no overload-guard risk
-
-### Verification checklist
-1. Edit store name in dashboard → confirm shopper sees new name within 2s on hard refresh
-2. Edit a product → same check
-3. Open ad-running store with `?fbclid=test` → confirm CAPI probe still fires
-4. Open store with no pixel configured → confirm zero meta-capi network calls
-5. Refresh storefront 5x in 30s → confirm only 1 page_view row inserted
-6. Check `prewarm-cron` logs → confirm it only touches active stores
+### 2E. Cache purge on save
+- Saving SEO fields already purges store cache via existing flow. Verify it also purges sitemap/robots at the edge by including `/sitemap.xml`, `/robots.txt`, `/llms.txt` in the purge list.
 
 ---
 
-## Expected outcome after deploy
+## Out of scope (saved for Phase 3+)
 
-| Metric | Before | After |
-|---|---|---|
-| DB load (% of bill) | 63% | ~30–35% |
-| Network (% of bill) | 35% | ~25% |
-| Daily bill | ~$1.00 | ~$0.55 |
-| Shopper TTFB (warm) | ~50ms | ~50ms (unchanged) |
-| Shopper TTFB (cold active) | ~50ms | ~50ms (unchanged) |
-| Edit-to-visible delay | <1s | <1s (unchanged) |
-| Meta CAPI events for ad stores | 100% sent | 100% sent (unchanged) |
-| `error_logs` table size growth | ~3MB/mo | ~0.5MB/mo |
+- Auto-submit sitemap to GSC via API per store — needs per-merchant OAuth, complex. Phase 2 ships manual CTAs.
+- Edge SSR for bots (Phase 3 — separate plan).
+- Platform-level keyword content pages (Phase 4).
+
+---
+
+## Files touched
+
+**Phase 1**
+- `docs/cloudflare-worker-current.js` — primary-domain redirect logic in `handleSeoFiles`, add `/llms.txt` route. *(Manual deploy by user after edits.)*
+- `supabase/functions/seo-page/index.ts` — custom pages in sitemap, conditional legal pages, lastmod fixes, new `handleLlms`, redirect helper.
+- `src/hooks/useJsonLd.ts` — split `useStoreJsonLd` into Organization + WebSite + Store stack.
+
+**Phase 2**
+- `src/pages/StoreSettings.tsx` — SERP/social preview cards, character counters, sitemap helper card, GBP CTA.
+- `src/lib/purgeStoreCache.ts` (or wherever purge lives) — include SEO file paths.
+
+No database migration needed — all required columns already exist.
