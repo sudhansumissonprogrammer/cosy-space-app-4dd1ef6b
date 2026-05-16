@@ -162,18 +162,61 @@ export function useStoreJsonLd({
 }: StoreJsonLdOptions) {
   useEffect(() => {
     const baseUrl = getStoreBaseUrl(storeSlug, customDomain);
-    const data: Record<string, any> = {
+
+    // Build sameAs (social profiles + wa.me) for entity disambiguation in Google Knowledge Graph.
+    const sameAs: string[] = [];
+    if (instagramUrl) sameAs.push(instagramUrl);
+    if (facebookUrl) sameAs.push(facebookUrl);
+    if (whatsappNumber) {
+      const waDigits = whatsappNumber.replace(/[^0-9]/g, "");
+      if (waDigits) sameAs.push(`https://wa.me/${waDigits}`);
+    }
+
+    // 1) Organization — brand identity for Knowledge Graph / sitelinks logo.
+    const orgData: Record<string, any> = {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: storeName,
+      url: baseUrl,
+    };
+    if (description) orgData.description = description;
+    if (logo) orgData.logo = logo;
+    if (sameAs.length) orgData.sameAs = sameAs;
+    if (whatsappNumber) {
+      orgData.contactPoint = {
+        "@type": "ContactPoint",
+        telephone: whatsappNumber,
+        contactType: "customer service",
+        areaServed: "IN",
+        availableLanguage: ["English", "Hindi"],
+      };
+    }
+    setJsonLd(orgData, ORG_SCRIPT_ID);
+
+    // 2) WebSite + SearchAction — enables Google sitelinks search box.
+    setJsonLd({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: storeName,
+      url: baseUrl,
+      potentialAction: {
+        "@type": "SearchAction",
+        target: `${baseUrl}/shop?q={search_term_string}`,
+        "query-input": "required name=search_term_string",
+      },
+    }, WEBSITE_SCRIPT_ID);
+
+    // 3) Store / LocalBusiness — physical/commerce signals.
+    const storeData: Record<string, any> = {
       "@context": "https://schema.org",
       "@type": "Store",
       name: storeName,
       url: baseUrl,
     };
-    if (description) data.description = description;
-    if (logo) data.logo = logo;
-
-    // Address
+    if (description) storeData.description = description;
+    if (logo) storeData.logo = logo;
     if (city || state || location) {
-      data.address = {
+      storeData.address = {
         "@type": "PostalAddress",
         ...(city && { addressLocality: city }),
         ...(state && { addressRegion: state }),
@@ -181,32 +224,23 @@ export function useStoreJsonLd({
         addressCountry: "IN",
       };
     }
-
     if (whatsappNumber) {
-      data.contactPoint = {
+      storeData.contactPoint = {
         "@type": "ContactPoint",
         telephone: whatsappNumber,
         contactType: "customer service",
       };
     }
+    if (sameAs.length) storeData.sameAs = sameAs;
+    storeData.priceRange = "₹";
 
-    // sameAs social links
-    const sameAs: string[] = [];
-    if (instagramUrl) sameAs.push(instagramUrl);
-    if (facebookUrl) sameAs.push(facebookUrl);
-    if (sameAs.length > 0) data.sameAs = sameAs;
+    setJsonLd(storeData);
 
-    // Search action
-    data.potentialAction = {
-      "@type": "SearchAction",
-      target: `${baseUrl}/shop?q={search_term_string}`,
-      "query-input": "required name=search_term_string",
+    return () => {
+      removeJsonLd();
+      removeJsonLd(ORG_SCRIPT_ID);
+      removeJsonLd(WEBSITE_SCRIPT_ID);
     };
-
-    data.priceRange = "₹";
-
-    setJsonLd(data);
-    return () => removeJsonLd();
   }, [storeName, storeSlug, description, logo, location, whatsappNumber, customDomain, instagramUrl, facebookUrl, city, state, businessHours]);
 }
 
