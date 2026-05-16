@@ -4518,6 +4518,7 @@ export default {
       url.pathname !== "/cf-img" &&
       url.pathname !== "/sitemap.xml" &&
       url.pathname !== "/robots.txt" &&
+      url.pathname !== "/llms.txt" &&
       url.pathname !== "/__health" &&
       !request.headers.get("cookie")?.includes("auth");
 
