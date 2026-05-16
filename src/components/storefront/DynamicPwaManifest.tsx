@@ -27,6 +27,14 @@ export default function DynamicPwaManifest({ storeName, logoUrl, themeColor = "#
           { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
         ];
 
+    // Default start_url: keep storefront PWA scoped to its store path when
+    // viewed via /store/{slug} on the apex/preview domain — otherwise the
+    // installed PWA would open the ShopBanao landing page instead of the store.
+    let defaultStart = "/";
+    const m = window.location.pathname.match(/^(\/store\/[^/]+)/);
+    if (m) defaultStart = m[1] + "/";
+    const finalStart = startUrl || defaultStart;
+
     const manifest = {
       name: storeName,
       short_name: storeName.length > 12 ? storeName.slice(0, 12) : storeName,
@@ -34,8 +42,8 @@ export default function DynamicPwaManifest({ storeName, logoUrl, themeColor = "#
       theme_color: themeColor,
       background_color: "#ffffff",
       display: "standalone" as const,
-      start_url: startUrl || (window.location.origin + "/"),
-      scope: startUrl ? window.location.origin + startUrl : window.location.origin + "/",
+      start_url: window.location.origin + finalStart,
+      scope: window.location.origin + finalStart,
       icons,
     };
 
