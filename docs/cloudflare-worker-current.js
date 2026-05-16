@@ -2197,7 +2197,7 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
     const heroImg = p.og_image_url || p.image_url || images[0] || store.og_image_url || store.banner_url || store.logo_url || "";
     const title = escapeHtml(p.meta_title || `${p.name} — ${store.name}`);
     const desc = escapeHtml(p.meta_description || (p.description ? String(p.description).slice(0, 160) : `Buy ${p.name} from ${store.name}. Cash on delivery, fast shipping across India.`));
-    const ogImg = escapeHtml(heroImg);
+    const ogImg = (typeof heroImg === "string" && /^https?:\/\//i.test(heroImg)) ? escapeHtml(heroImg) : "";
     const price = Number(p.sale_price || p.price || 0);
     const inStock = Number(p.stock_quantity || 0) > 0;
     const productLd = {
