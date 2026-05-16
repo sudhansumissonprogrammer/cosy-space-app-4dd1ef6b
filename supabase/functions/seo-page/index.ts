@@ -239,6 +239,32 @@ async function handleSharePage(url: URL) {
 
 // ── Sitemap handler ─────────────────────────────────────────────
 
+// Build a 301 redirect to the canonical primary host when the request came in
+// on a subdomain but the store has a custom_domain configured. Returns null
+// when no redirect is needed.
+function buildPrimaryDomainRedirect(
+  store: { custom_domain: string | null; slug: string },
+  domain: string | null,
+  pathname: string,
+): Response | null {
+  const requestHost = (domain || "").toLowerCase().replace(/^www\./, "");
+  const primary = store.custom_domain?.toLowerCase().replace(/^www\./, "");
+  if (!primary) return null;
+  if (requestHost === primary) return null;
+  // Only redirect when the incoming host is the subdomain on shopbanao.in.
+  // Leave preview / lovable / localhost untouched so devs can still inspect.
+  const expectedSub = `${store.slug.toLowerCase()}.${ROOT_DOMAIN}`;
+  if (requestHost !== expectedSub) return null;
+  return new Response(null, {
+    status: 301,
+    headers: {
+      ...corsHeaders,
+      Location: `https://${primary}${pathname}`,
+      "Cache-Control": "public, max-age=3600",
+    },
+  });
+}
+
 async function handleSitemap(url: URL) {
   const slug = url.searchParams.get("slug");
   const domain = url.searchParams.get("domain");
@@ -259,10 +285,15 @@ async function handleSitemap(url: URL) {
     return new Response("Store not found", { status: 404, headers: corsHeaders });
   }
 
+  // Primary-domain rule: subdomain sitemap 301s to custom domain so Google
+  // sees a single canonical sitemap per store (Shopify behaviour).
+  const redirect = buildPrimaryDomainRedirect(store, domain, "/sitemap.xml");
+  if (redirect) return redirect;
+
   const storeHost = domain || store.custom_domain || `${slug}.${ROOT_DOMAIN}`;
   const baseUrl = `https://${storeHost}`;
 
-  const [productsResult, categoriesResult] = await Promise.all([
+  const [productsResult, categoriesResult, pagesResult] = await Promise.all([
     supabase
       .from("products")
       .select("slug, id, updated_at, image_url, name, price, sale_price")
@@ -272,8 +303,13 @@ async function handleSitemap(url: URL) {
       .limit(1000),
     supabase
       .from("categories")
-      .select("slug, name")
+      .select("slug, name, updated_at")
       .eq("store_id", store.id),
+    supabase
+      .from("store_pages")
+      .select("slug, page_type, updated_at, is_active")
+      .eq("store_id", store.id)
+      .eq("is_active", true),
   ]);
 
   const products = productsResult.data;
