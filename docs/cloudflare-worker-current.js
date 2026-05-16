@@ -2091,6 +2091,7 @@ function _stripPlatformSeoHead(html) {
   head = head
     .replace(/<title[^>]*>[\s\S]*?<\/title>/gi, "")
     .replace(/<link[^>]+rel=["']canonical["'][^>]*>\s*/gi, "")
+    .replace(/<link[^>]+rel=["'](?:icon|shortcut icon|apple-touch-icon)["'][^>]*>\s*/gi, "")
     .replace(/<meta[^>]+name=["'](?:description|keywords|author)["'][^>]*>\s*/gi, "")
     .replace(/<meta[^>]+property=["']og:[^"']+["'][^>]*>\s*/gi, "")
     .replace(/<meta[^>]+name=["']twitter:[^"']+["'][^>]*>\s*/gi, "")
