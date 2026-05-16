@@ -843,6 +843,8 @@ Deno.serve(async (req) => {
         return await handleRobots(url);
       case "feed":
         return await handleProductFeed(url);
+      case "llms":
+        return await handleLlms(url);
       default:
         return new Response(JSON.stringify({ error: `Unknown type: ${type}` }), {
           status: 400,
