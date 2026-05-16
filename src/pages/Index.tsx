@@ -41,24 +41,28 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background font-outfit">
       <Navbar />
-      <Hero />
+      <main>
+        <Hero />
+        <Suspense fallback={null}>
+          <LazyMount minHeight={80}><PaymentTrustStrip /></LazyMount>
+          <LazyMount minHeight={300}><StatsBar /></LazyMount>
+          <LazyMount minHeight={500}><ProblemAwareness /></LazyMount>
+          <LazyMount minHeight={600}><CommissionCalculator /></LazyMount>
+          <LazyMount minHeight={500}><WhoUses /></LazyMount>
+          <LazyMount minHeight={500}><SolutionFlow /></LazyMount>
+          <LazyMount minHeight={700}><StoreLookShowcase showOverlays={false} /></LazyMount>
+          <LazyMount minHeight={500}><Testimonials /></LazyMount>
+          <LazyMount minHeight={600}><ComparisonTable /></LazyMount>
+          <LazyMount minHeight={700}><Pricing /></LazyMount>
+          <LazyMount minHeight={500}><FAQ /></LazyMount>
+          <LazyMount minHeight={400}><FinalCTA /></LazyMount>
+          <LazyMount minHeight={0}><LandingWhatsApp /></LazyMount>
+          <LazyMount minHeight={0}><ExitIntentPopup /></LazyMount>
+          {seoReady && <LandingJsonLd />}
+        </Suspense>
+      </main>
       <Suspense fallback={null}>
-        <LazyMount minHeight={80}><PaymentTrustStrip /></LazyMount>
-        <LazyMount minHeight={300}><StatsBar /></LazyMount>
-        <LazyMount minHeight={500}><ProblemAwareness /></LazyMount>
-        <LazyMount minHeight={600}><CommissionCalculator /></LazyMount>
-        <LazyMount minHeight={500}><WhoUses /></LazyMount>
-        <LazyMount minHeight={500}><SolutionFlow /></LazyMount>
-        <LazyMount minHeight={700}><StoreLookShowcase showOverlays={false} /></LazyMount>
-        <LazyMount minHeight={500}><Testimonials /></LazyMount>
-        <LazyMount minHeight={600}><ComparisonTable /></LazyMount>
-        <LazyMount minHeight={700}><Pricing /></LazyMount>
-        <LazyMount minHeight={500}><FAQ /></LazyMount>
-        <LazyMount minHeight={400}><FinalCTA /></LazyMount>
         <LazyMount minHeight={300}><Footer /></LazyMount>
-        <LazyMount minHeight={0}><LandingWhatsApp /></LazyMount>
-        <LazyMount minHeight={0}><ExitIntentPopup /></LazyMount>
-        {seoReady && <LandingJsonLd />}
       </Suspense>
     </div>
   );
