@@ -379,6 +379,27 @@ function getProductSlug(pathname) {
   return m ? decodeURIComponent(m[1]) : null;
 }
 
+/* v8.16 — Rich bot-route detector. Maps a storefront pathname to a
+   { kind, slug? } payload passed to the bot-render edge function.
+   Covers product, category, custom page, listing, and static info routes.
+   Returns { kind: "home" } for the store root.                       */
+function getBotRoute(pathname) {
+  if (!pathname || pathname === "/" || pathname === "") return { kind: "home" };
+  let m = pathname.match(/^\/product\/([^/?#]+)\/?$/i);
+  if (m) return { kind: "product", slug: decodeURIComponent(m[1]) };
+  m = pathname.match(/^\/category\/([^/?#]+)\/?$/i);
+  if (m) return { kind: "category", slug: decodeURIComponent(m[1]) };
+  m = pathname.match(/^\/page\/([^/?#]+)\/?$/i);
+  if (m) return { kind: "page", slug: decodeURIComponent(m[1]) };
+  if (/^\/shop\/?$/i.test(pathname)) return { kind: "shop" };
+  if (/^\/best-sellers\/?$/i.test(pathname)) return { kind: "best-sellers" };
+  if (/^\/categories\/?$/i.test(pathname)) return { kind: "categories" };
+  if (/^\/about\/?$/i.test(pathname)) return { kind: "about" };
+  if (/^\/contact\/?$/i.test(pathname)) return { kind: "contact" };
+  if (/^\/track-order\/?$/i.test(pathname)) return { kind: "track-order" };
+  return null; // unknown route — fall back to home/SPA
+}
+
 function buildSubdomainUrl(slug, path, search = "") {
   return `https://${slug}.${ROOT_DOMAIN}${path}${search}`;
 }
