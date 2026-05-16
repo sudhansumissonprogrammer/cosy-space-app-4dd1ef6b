@@ -2354,9 +2354,20 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
 
     const ogTitle = escapeHtml(s.meta_title || autoTitle);
     const ogDesc = escapeHtml(s.meta_description || s.description || autoDesc);
-    const ogImage = escapeHtml(
-      s.og_image_url || s.banner_url || s.mobile_hero_url || s.logo_url || "",
-    );
+    // Pick best OG image: explicit og_image_url > banner > mobile hero > logo.
+    // Only accept absolute http(s) URLs (WhatsApp/FB silently drop relative ones).
+    const rawOgImage = s.og_image_url || s.banner_url || s.mobile_hero_url || s.logo_url || "";
+    const isAbs = typeof rawOgImage === "string" && /^https?:\/\//i.test(rawOgImage);
+    const ogImage = isAbs ? escapeHtml(rawOgImage) : "";
+    // Only emit 1200×630 hint when merchant explicitly set og_image_url
+    // (assumed properly sized). Logo/banner fallbacks may be any aspect ratio —
+    // declaring fake 1200×630 makes Facebook/WhatsApp reject the image.
+    const isExplicitOg = isAbs && rawOgImage === s.og_image_url;
+    // Twitter summary_large_image needs ≥600×314. If we only have a logo
+    // (likely square/small), downgrade to "summary" card style.
+    const twitterCard = isExplicitOg || (isAbs && rawOgImage === s.banner_url)
+      ? "summary_large_image"
+      : "summary";
 
     // Canonical: prefer custom domain, fall back to subdomain.
     const canonicalBase = s.custom_domain
@@ -2377,16 +2388,18 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
     ogMeta += `<meta property="og:url" content="${escapeHtml(canonicalBase)}/">`;
     ogMeta += `<meta property="og:site_name" content="${escapeHtml(s.name)}">`;
     ogMeta += `<meta property="og:locale" content="en_IN">`;
-    ogMeta += `<meta name="twitter:card" content="summary_large_image">`;
+    ogMeta += `<meta name="twitter:card" content="${twitterCard}">`;
     ogMeta += `<meta name="twitter:title" content="${ogTitle}">`;
     ogMeta += `<meta name="twitter:description" content="${ogDesc}">`;
     if (ogImage) {
       ogMeta += `<meta property="og:image" content="${ogImage}">`;
-      ogMeta += `<meta property="og:image:width" content="1200">`;
-      ogMeta += `<meta property="og:image:height" content="630">`;
+      if (isExplicitOg) {
+        ogMeta += `<meta property="og:image:width" content="1200">`;
+        ogMeta += `<meta property="og:image:height" content="630">`;
+      }
       ogMeta += `<meta name="twitter:image" content="${ogImage}">`;
     }
-    if (logoUrl) {
+    if (logoUrl && /^https?:\/\//i.test(logoUrl)) {
       ogMeta += `<link rel="icon" type="image/png" href="${escapeHtml(logoUrl)}">`;
       ogMeta += `<link rel="apple-touch-icon" href="${escapeHtml(logoUrl)}">`;
     }
