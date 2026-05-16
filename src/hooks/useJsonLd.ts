@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { getStoreBaseUrl } from "@/lib/storeUrl";
 
 const SCRIPT_ID = "json-ld-structured-data";
+const ORG_SCRIPT_ID = "json-ld-organization";
+const WEBSITE_SCRIPT_ID = "json-ld-website";
 const BREADCRUMB_SCRIPT_ID = "json-ld-breadcrumb";
 const ITEM_LIST_SCRIPT_ID = "json-ld-item-list";
 
