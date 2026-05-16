@@ -1,0 +1,26 @@
+# ShopBanao
+
+> ShopBanao is India's easiest platform to create your own online store — zero commission, WhatsApp ordering, UPI/Razorpay/Cashfree/COD payments, 20 storefront themes, and a built-in PWA. Launch in 10 minutes.
+
+ShopBanao (also branded as Storivo) is a multi-tenant ecommerce SaaS built for Indian small businesses, creators, D2C brands, and local sellers. Each merchant gets a branded storefront on a subdomain (brand.shopbanao.in) or custom domain, with mobile-first themes, WhatsApp checkout, India-native payment rails, abandoned-cart recovery, and analytics.
+
+## Pages
+
+- [Home](/): What ShopBanao is, who it's for, and how to start a free store.
+- [About Us](/about-us): Mission, team, and the story behind ShopBanao.
+- [Contact Us](/contact-us): Reach support, sales, and partnerships.
+- [Pricing & Theme Showcase](/theme): Browse the 20 storefront themes and plan options.
+- [Sign Up](/signup): Create a free store in under 10 minutes.
+- [Login](/login): Merchant dashboard login.
+
+## Policies
+
+- [Privacy Policy](/privacy-policy): How we handle merchant and shopper data.
+- [Terms & Conditions](/terms-and-conditions): Platform terms of use.
+- [Refund Policy](/refund-policy): Refund handling for ShopBanao plans.
+- [Cancellation Policy](/cancellation-policy): Account and subscription cancellation.
+- [Shipping Policy](/shipping-policy): Shipping support and merchant guidelines.
+
+## Optional
+
+- [Partner Program](/partners/signup): Earn by referring merchants to ShopBanao.
