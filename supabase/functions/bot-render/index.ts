@@ -699,9 +699,103 @@ Deno.serve(async (req) => {
     });
   }
 
+  // ── v2 routing — explicit kind takes precedence ────────────────────────
+  // Backwards compat: if kind is missing but productSlug present, treat as product.
+  const effectiveKind: string = kindParam
+    || (productSlug ? "product" : "home");
+
+  // Category page
+  if (effectiveKind === "category" && routeSlug) {
+    const { data: cat } = await supabase
+      .from("categories")
+      .select("id, name, slug, description")
+      .eq("store_id", store.id)
+      .eq("slug", routeSlug)
+      .maybeSingle();
+    if (!cat) return new Response("Category not found", { status: 404, headers: corsHeaders });
+
+    const { data: catProducts } = await supabase
+      .from("products")
+      .select("id, name, slug, price, sale_price, currency, image_url, stock_quantity, category")
+      .eq("store_id", store.id)
+      .eq("is_active", true)
+      .eq("category", cat.name)
+      .order("is_best_selling", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    const html = buildCategoryHtml(
+      store,
+      cat as any,
+      catProducts || [],
+      `${canonical}/category/${cat.slug}`,
+      canonical,
+    );
+    return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
+  }
+
+  // Merchant-authored custom page (/page/:slug)
+  if (effectiveKind === "page" && routeSlug) {
+    const { data: page } = await supabase
+      .from("store_pages")
+      .select("title, content, custom_html, image_url, slug, is_active")
+      .eq("store_id", store.id)
+      .eq("slug", routeSlug)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (!page) return new Response("Page not found", { status: 404, headers: corsHeaders });
+    const html = buildCustomPageHtml(
+      store,
+      page as any,
+      `${canonical}/page/${page.slug}`,
+      canonical,
+    );
+    return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
+  }
+
+  // Listing pages — /shop and /best-sellers
+  if (effectiveKind === "shop" || effectiveKind === "best-sellers") {
+    const baseQuery = supabase
+      .from("products")
+      .select("id, name, slug, price, sale_price, currency, image_url, stock_quantity, category")
+      .eq("store_id", store.id)
+      .eq("is_active", true);
+    const { data: listingProducts } = effectiveKind === "best-sellers"
+      ? await baseQuery.eq("is_best_selling", true).order("created_at", { ascending: false }).limit(50)
+      : await baseQuery.order("is_best_selling", { ascending: false }).order("created_at", { ascending: false }).limit(50);
+
+    const opts = effectiveKind === "best-sellers"
+      ? { kind: "best-sellers" as const, title: `Best sellers at ${store.name}`, desc: `Top-selling products at ${store.name}.` }
+      : { kind: "shop" as const, title: `Shop all products — ${store.name}`, desc: `Browse the full product catalog at ${store.name}.` };
+    const html = buildListingHtml(
+      store,
+      listingProducts || [],
+      opts,
+      `${canonical}/${effectiveKind}`,
+      canonical,
+    );
+    return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
+  }
+
+  // Categories index page
+  if (effectiveKind === "categories") {
+    const { data: cats } = await supabase
+      .from("categories")
+      .select("name, slug")
+      .eq("store_id", store.id)
+      .order("name");
+    const html = buildCategoriesIndexHtml(store, cats || [], `${canonical}/categories`, canonical);
+    return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
+  }
+
+  // Static info routes
+  if (effectiveKind === "about" || effectiveKind === "contact" || effectiveKind === "track-order") {
+    const html = buildStaticInfoHtml(store, effectiveKind, `${canonical}/${effectiveKind}`, canonical);
+    return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
+  }
+
   // Product page
-  if (productSlug) {
-    // Try by slug first, then by id
+  if (effectiveKind === "product" && productSlug) {
     let product: any = null;
     const { data: bySlug } = await supabase
       .from("products")
@@ -710,9 +804,7 @@ Deno.serve(async (req) => {
       .eq("slug", productSlug)
       .eq("is_active", true)
       .single();
-
     product = bySlug;
-
     if (!product) {
       const { data: byId } = await supabase
         .from("products")
@@ -723,15 +815,9 @@ Deno.serve(async (req) => {
         .single();
       product = byId;
     }
-
     if (!product) {
-      return new Response("Product not found", {
-        status: 404,
-        headers: corsHeaders,
-      });
+      return new Response("Product not found", { status: 404, headers: corsHeaders });
     }
-
-    // Fetch product images
     const { data: images } = await supabase
       .from("product_images")
       .select("image_url, display_order")
@@ -741,17 +827,10 @@ Deno.serve(async (req) => {
 
     const productCanonical = `${canonical}/product/${product.slug || product.id}`;
     const html = buildProductHtml(store, product, images || [], productCanonical);
-
-    return new Response(html, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
-      },
-    });
+    return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
   }
 
-  // Store home page
+  // Store home page (default)
   const { data: products } = await supabase
     .from("products")
     .select("id, name, slug, price, sale_price, currency, image_url, stock_quantity, category")
@@ -768,12 +847,5 @@ Deno.serve(async (req) => {
     .order("name");
 
   const html = buildStoreHtml(store, products || [], categories || [], canonical);
-
-  return new Response(html, {
-    headers: {
-      ...corsHeaders,
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
-    },
-  });
+  return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
 });
