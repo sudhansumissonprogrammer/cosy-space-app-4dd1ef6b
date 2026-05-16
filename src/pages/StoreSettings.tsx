@@ -508,7 +508,15 @@ export default function StoreSettings() {
           </CardContent>
         </Card>
 
-        {/* ── 7. Domain shortcut ── */}
+        {/* ── 6b. Search engine helpers ── */}
+        <SearchEngineHelperCard
+          slug={store?.slug || storeSlug || ""}
+          storeName={name || store?.name || ""}
+          customDomain={store?.custom_domain || null}
+          whatsappNumber={whatsappNumber}
+          city={city}
+        />
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
