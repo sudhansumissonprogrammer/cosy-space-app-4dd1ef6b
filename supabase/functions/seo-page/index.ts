@@ -314,8 +314,20 @@ async function handleSitemap(url: URL) {
 
   const products = productsResult.data;
   const categories = categoriesResult.data;
+  const customPages = pagesResult.data || [];
   const now = new Date().toISOString().split("T")[0];
   const storeUpdated = store.updated_at?.split("T")[0] || now;
+
+  // Build a set of page_types the merchant has actually published so we only
+  // emit legacy legal/about routes that resolve, never sitemap'd 404s.
+  const publishedTypes = new Set(
+    customPages.map((p: any) => (p.page_type || "").toLowerCase()).filter(Boolean),
+  );
+  const pageTypeUpdated = new Map<string, string>();
+  for (const p of customPages) {
+    const t = (p.page_type || "").toLowerCase();
+    if (t && p.updated_at) pageTypeUpdated.set(t, p.updated_at.split("T")[0]);
+  }
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -327,10 +339,10 @@ async function handleSitemap(url: URL) {
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>${baseUrl}/contact</loc>
+    <loc>${baseUrl}/shop</loc>
     <lastmod>${storeUpdated}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>${baseUrl}/best-sellers</loc>
@@ -339,18 +351,26 @@ async function handleSitemap(url: URL) {
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>${baseUrl}/shop</loc>
+    <loc>${baseUrl}/categories</loc>
     <lastmod>${storeUpdated}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/contact</loc>
+    <lastmod>${storeUpdated}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
 `;
 
   if (categories) {
     for (const cat of categories) {
+      if (!cat.slug) continue;
+      const catLastmod = (cat as any).updated_at?.split("T")[0] || storeUpdated;
       xml += `  <url>
     <loc>${baseUrl}/category/${escapeXml(cat.slug)}</loc>
-    <lastmod>${storeUpdated}</lastmod>
+    <lastmod>${catLastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -383,9 +403,34 @@ async function handleSitemap(url: URL) {
     }
   }
 
-  for (const page of ["about", "privacy-policy", "return-policy", "shipping-policy", "terms"]) {
+  // Legacy legal/about routes — only if the merchant published the matching
+  // page_type. Prevents sitemap'd 404s for stores that haven't filled them in.
+  const legacyMap: Array<{ path: string; type: string }> = [
+    { path: "about", type: "about" },
+    { path: "privacy-policy", type: "privacy" },
+    { path: "return-policy", type: "return" },
+    { path: "shipping-policy", type: "shipping" },
+    { path: "terms", type: "terms" },
+  ];
+  for (const { path, type } of legacyMap) {
+    if (!publishedTypes.has(type)) continue;
+    const lm = pageTypeUpdated.get(type) || storeUpdated;
     xml += `  <url>
-    <loc>${baseUrl}/${page}</loc>
+    <loc>${baseUrl}/${path}</loc>
+    <lastmod>${lm}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+`;
+  }
+
+  // Merchant-authored custom pages → /page/{slug}
+  for (const page of customPages) {
+    if (!page.slug) continue;
+    const lm = page.updated_at?.split("T")[0] || storeUpdated;
+    xml += `  <url>
+    <loc>${baseUrl}/page/${escapeXml(page.slug)}</loc>
+    <lastmod>${lm}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
