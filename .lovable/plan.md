@@ -1,73 +1,111 @@
-## Phase 1 & 2 — Verification
+# Tier 1 — Safe Cost & Performance Wins
 
-Both phases are live in code. No fixes needed:
+Goal: ship 9 zero/low-risk optimizations, ~₹780/mo saved. Each item is independently revertable. Order chosen so the riskiest visual items (AVIF, quality 75) ship last after monitoring.
 
-- **Phase 1 (edge SEO)**: `seo-page` function serves `/sitemap.xml`, `/robots.txt`, `/llms.txt`. `buildPrimaryDomainRedirect` 301s subdomain → custom domain when one is configured. Sitemap includes products, categories with `lastmod`, custom `store_pages`, product images. Worker (v8.15.0) routes all three paths through `seo-page`. JSON‑LD stack (`Organization` + `WebSite`+`SearchAction` + `Store`) emitted by `useJsonLd` for every storefront.
-- **Phase 2 (merchant dashboard)**: `SearchEngineHelperCard` in `StoreSettings.tsx` shows copy-able sitemap/robots/llms URLs (auto-switches to custom domain), GSC verification CTA, GSC sitemap-submit CTA, GBP claim CTA with prefilled name/phone/city.
+## Ground rules (apply to every item)
 
-## Phase 3 — Bot SSR (extend, don't rebuild)
+- One item per commit so any regression is bisectable.
+- After each Worker change → user manually redeploys `docs/cloudflare-worker-current.js` and we check 1 storefront before moving on.
+- After each DB function change → use **DROP FUNCTION IF EXISTS** first (event trigger `guard_storefront_rpc_overloads` will reject otherwise).
+- No item touches business logic, payment, auth, or order flow.
 
-`bot-render` edge function and worker bot pipeline (24h edge cache + 7d SWR) **already exist** for product pages and store home. The gap is route coverage — Googlebot currently gets JS-only HTML for category, custom pages, and shop listings.
+---
 
-### Changes
+## Phase A — Pure backend wins (no UX change possible)
 
-1. **Worker `handleBot` (`docs/cloudflare-worker-current.js`)**
-   - Replace the single `productSlug` extraction with a richer `getBotRoute(pathname)` returning `{ kind, slug }` where `kind ∈ product | category | page | shop | best-sellers | categories | about | contact | track-order`.
-   - Pass `kind` + `slug` (when present) to `bot-render` as new query params; keep current `product=` param for backwards compatibility.
-   - Keep the bot-cache key keyed on full pathname (already is).
+### A1. CAPI skip when no pixel (#3)
+- File: `supabase/functions/_shared/firePurchaseCapi.ts`
+- Code already early-returns when `facebook_pixel_id` is null (line 105). Add an upstream **cheap check**: cache `store.facebook_pixel_id` presence in a small in-memory map keyed by `store_id` for 5 min so we skip the Supabase select entirely on the 95% of stores with no pixel.
+- Safety: behaviour identical, only avoids a DB roundtrip. No fallback needed.
 
-2. **`bot-render` edge function**
-   - Add branches for the new `kind` values:
-     - **category** → fetch category + its products via existing `get_category_with_products` RPC (already used by worker). Emit `ItemList` + `BreadcrumbList` JSON‑LD, `<h1>{category}</h1>`, anchor links to each PDP.
-     - **page** → fetch `store_pages` row by slug; render its sanitized HTML body inside the same shell as store home. Add `WebPage` JSON‑LD.
-     - **shop / best-sellers / categories** → reuse `buildStoreHtml` but with a filtered/sorted product set + page-specific `<title>`/meta.
-     - **about / contact / track-order** → static shell with store name, address, WhatsApp number (already in `stores` row).
-   - Every page gets `BreadcrumbList` JSON‑LD and a canonical pointing at the primary domain (custom domain when present).
-   - Cap product list at 50 to keep response < 200KB.
+### A2. `page_views` 30 s session dedupe (#2)
+- File: `supabase/functions/ingest/index.ts` (insert at line 138).
+- Add a Deno KV (or in-memory `Map` with TTL) keyed by `${store_id}:${session_id}:${path}`. If hit within 30 s → 204 no-op.
+- Safety: analytics aggregates unchanged (duplicates within 30 s are beacon noise per the existing comment in code). Add a `dedup_skipped` counter to the response so we can confirm in logs.
 
-3. **Sitemap parity**
-   - `seo-page` sitemap already lists products + categories + custom pages. Add `/shop`, `/best-sellers`, `/categories`, `/about`, `/contact` as static rows so Googlebot discovers them.
+### A3. Auth session cache 5 min (#15)
+- File: `src/contexts/AuthContext.tsx` (around `getSession()` at line 40 + any polling).
+- Wrap `getSession()` in a 5-min memo; rely on existing `onAuthStateChange` for invalidation. JWT itself is valid 1 h, so this only collapses redundant calls.
+- Safety: `onAuthStateChange` still fires on real login/logout, so UI stays correct.
 
-4. **Manual worker deploy** (worker file is not bundled by Vite — user must redeploy `docs/cloudflare-worker-current.js`).
+### A4. Disable Realtime on storefront tables (#8)
+- Migration: `ALTER PUBLICATION supabase_realtime DROP TABLE` for any storefront-facing tables currently in the publication (products, categories, store_pages, stores, store_theme_config). Keep `partner_notifications` and any dashboard tables that need it.
+- Verification step before running: query `pg_publication_tables` to list current members, share with user, then drop only confirmed-unused ones. The only realtime consumer I found is `src/components/partner/NotificationsBell.tsx` on `partner-notif-*`.
+- Safety: storefronts already poll; dashboard uses different tables.
 
-## Phase 4 — Platform SEO + GSC
+---
 
-### 4a. Blog/guides on shopbanao.in
+## Phase B — Caching / shape changes (still safe, easy revert)
 
-Add a lightweight content section served from the **landing app** (LandingApp.tsx) so it stays off the storefront critical path.
+### B1. Worker TTL 1 h + purge guarantee (#1)
+- File: `docs/cloudflare-worker-current.js`
+- Today: `CACHE_STOREFRONT_TTL = 7_200` (2 h), `KV_STOREFRONT_TTL = 86_400` (24 h). Spec asks for **1 h edge TTL**. Lower to `CACHE_STOREFRONT_TTL = 3_600` and keep `KV_STOREFRONT_TTL = 3_600` (matches "1h" spec). Actually we **raise effective TTL via purge**: keep KV at 86_400 so cold edges still hit KV, and the purge endpoint (already wired in `src/lib/purgeStoreCache.ts`) wipes on every save.
+- Verify `/api/purge-store` invalidates BOTH the Cache API entry AND the KV key for each hostname. If KV purge missing, add it.
+- Safety: purge already runs on every dashboard save (`useStorePurge`). Worst case: a save races and a shopper sees 1 h old data — same as today's 2 h window, strictly better.
 
-- New route `/guides` and `/guides/:slug` in `LandingApp.tsx`.
-- Source: static MDX or a small `guides` array in `src/content/guides/`. No DB, no React Query — keeps landing bundle small (constraint memory).
-- Each guide page: `<Helmet>` (install `react-helmet-async`) for per-page `<title>`, meta description, canonical, `Article` + `BreadcrumbList` JSON‑LD, `og:image`.
-- Add `/guides` and every guide slug to `public/sitemap.xml` (the root-domain landing sitemap, separate from per-store sitemaps).
-- First three guides (matching Semrush gaps from earlier analysis):
-  1. "How to create a WhatsApp store in India (2026)" — target `whatsapp store` (1K/mo, KD 43)
-  2. "Best free online store builder for India" — target `online store builder india` (140/mo, KD 0) + `free online store` (480/mo, KD 43)
-  3. "Shopify alternative for India: 5 cheaper options" — target `shopify alternative india` (20/mo, KD 0)
-- Each guide ends with a CTA linking to `/signup`.
+### B2. Lite shell RPC (#6)
+- Migration (DROP-FIRST):
+  ```sql
+  DROP FUNCTION IF EXISTS public.get_storefront_shell_lite(text);
+  CREATE OR REPLACE FUNCTION public.get_storefront_shell_lite(_slug text) …
+  ```
+- Returns only fields the SPA shell needs for first paint: `id, name, slug, logo_url, theme, currency, custom_domain, meta_title, meta_description, og_image_url, total_products`. Drops `about_us_text`, `mobile_hero_images`, `business_hours`, full policies, etc. (those load on demand from existing `get_storefront_shell`).
+- Worker shell path calls `_lite`; on miss/error → fall through to existing `get_storefront_shell`.
+- Safety: net-new function. Old one untouched. Reversible by flipping a Worker constant.
 
-### 4b. Google Search Console wiring
+### B3. Image pre-warm 3 sizes (#4)
+- File: `src/lib/uploadOptimizedImage.ts` currently uploads only 800w. Add 400w + 1600w variants during the same `processImageMultiSize` call (helper already supports it — see `VariantWidth`).
+- Update `resolveVariantUrl` / `optimizeImageUrl` so 400/800/1600 hit the pre-built file directly, skipping Supabase Render API.
+- Safety: existing 800w stays the canonical. New variants are extra files, missing variant falls back to Render API. No data migration.
 
-- Trigger `standard_connectors--connect` with `connector_id: google_search_console` so the user authorizes once at the workspace level.
-- Add a tiny `gsc-submit` edge function that, on successful publish of a store (or first custom-domain verification), calls the gateway to (i) submit the site, (ii) submit `<base>/sitemap.xml`. This makes "indexable from day 1" automatic for every new merchant.
-- Surface a "Submitted to Google" badge in `SearchEngineHelperCard` once the function returns success (store column `gsc_submitted_at`).
+---
 
-### Out of scope (this round)
-- Per-merchant OAuth (merchants verifying their own GSC properties) — requires building an OAuth app and per-store token storage. Workspace-level connector covers shopbanao.in + custom domains added by us; merchant self-serve is a later phase.
-- Edge SSR for logged-in/human traffic (we keep bot-only SSR — humans still get the SPA).
+## Phase C — Visual quality items (ship last, monitor)
 
-### Technical summary
+### C1. Quality 85 → 75 for thumbnails only (#12)
+- File: `src/components/storefront/OptimizedImage.tsx` and `src/lib/imageOptimize.ts`.
+- Default `quality` param stays 85. `OptimizedImage` gets a `priority` already; add rule: if **not** `priority` AND width ≤ 600 → quality 75. Hero/banner (`priority=true`) stays 85.
+- Safety: only thumbnails change. One-line revert.
+
+### C2. AVIF format with WebP fallback (#11)
+- File: `src/lib/imageOptimize.ts` Supabase Render branch. Add `format=auto` query param (Supabase Render returns AVIF to capable browsers, WebP otherwise — server-side content negotiation, no client check needed).
+- Safety: Render's `format=auto` is the documented safe path. Worst case Safari <16 keeps WebP.
+
+---
+
+## Verification per item
+
+| Item | Check |
+|------|-------|
+| A1 | `supabase--edge_function_logs firePurchaseCapi` → expect "skip: no pixel" majority |
+| A2 | 5 quick reloads of same storefront → only 1 row in `page_views` |
+| A3 | Network tab: no `/auth/v1/user` polling after login |
+| A4 | `select * from pg_publication_tables where pubname='supabase_realtime'` → storefront tables gone |
+| B1 | Save a product → reload storefront → see edit within 1 s |
+| B2 | Worker log shows `get_storefront_shell_lite` invocations; storefront renders normally |
+| B3 | Upload a new product image → Storage shows `-400w`, `-800w`, `-1600w` files |
+| C1 | Visual diff thumbnails: no banding |
+| C2 | `curl -H "Accept: image/avif" <url>` returns `content-type: image/avif` |
+
+---
+
+## Out of scope
+
+- Per-merchant OAuth, edge SSR for humans, GSC auto-submit, blog/guides expansion — already tracked in Phase 4 of the SEO plan.
+- Worker auto-deploy — file remains manual.
+
+## Files touched (no code written until plan approved)
 
 ```text
-docs/cloudflare-worker-current.js     +getBotRoute(), pass kind to bot-render
-supabase/functions/bot-render/index.ts +category/page/shop/best-sellers/static handlers, BreadcrumbList JSON-LD
-supabase/functions/seo-page/index.ts   +static landing-page rows in handleSitemap
-supabase/functions/gsc-submit/index.ts NEW — gateway call to add site + submit sitemap
-src/LandingApp.tsx                    +/guides, /guides/:slug routes (lazy)
-src/content/guides/*.mdx              NEW — 3 seed guides
-src/pages/Guides.tsx, GuideDetail.tsx NEW — with <Helmet> SEO
-public/sitemap.xml                    +/guides rows
-src/pages/StoreSettings.tsx           +"Submitted to Google" badge wiring
+supabase/functions/_shared/firePurchaseCapi.ts   A1
+supabase/functions/ingest/index.ts               A2
+src/contexts/AuthContext.tsx                     A3
+migration (publication drop)                     A4
+docs/cloudflare-worker-current.js                B1, B2 (manual redeploy)
+migration (get_storefront_shell_lite)            B2
+src/lib/uploadOptimizedImage.ts                  B3
+src/lib/imageOptimize.ts                         B3, C1, C2
+src/components/storefront/OptimizedImage.tsx     C1
 ```
 
-Deploy notes: edge functions auto-deploy; worker requires manual redeploy after the bot-router change.
+Estimated wall time: ~10 h spread across 3 sittings (A → wait 24 h → B → wait 24 h → C).
