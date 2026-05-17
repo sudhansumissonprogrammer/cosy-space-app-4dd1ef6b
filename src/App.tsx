@@ -560,11 +560,12 @@ async function prefetchTargetPageData(
             queryClient.prefetchInfiniteQuery({
               queryKey: ["category-products", storeId, cat.name],
               queryFn: async ({ pageParam = 0 }) => {
+                const { PRODUCT_CARD_FIELDS } = await import("@/lib/productSelectors");
                 const from = pageParam * 14;
                 const to = from + 13;
                 const { data: prods, error: pErr } = await supabase
                   .from("products")
-                  .select("id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at")
+                  .select(PRODUCT_CARD_FIELDS)
                   .eq("store_id", storeId)
                   .eq("category", cat.name)
                   .eq("is_active", true)
