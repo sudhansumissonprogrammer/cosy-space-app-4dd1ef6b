@@ -11,6 +11,7 @@
  */
 
 import { isOptimizedUrl, resolveVariantUrl } from "./uploadOptimizedImage";
+import { getAdaptiveQuality, shouldPreloadLcp } from "./networkHints";
 // VariantWidth no longer needed — we always serve the 800w stored variant directly
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
@@ -210,10 +211,14 @@ export function preloadHeroImage(
   width: number = 800,
 ): (() => void) | undefined {
   if (!url) return undefined;
-  const optimized = optimizeImageUrl(url, width, 75);
+  // Bug #4 fix: skip preload on save-data / 2G — keeps bandwidth for critical
+  // JSON/JS and avoids wasted bytes when the user opted out of heavy media.
+  if (!shouldPreloadLcp()) return undefined;
+
+  const q = getAdaptiveQuality(75);
+  const optimized = optimizeImageUrl(url, width, q);
   if (!optimized) return undefined;
 
-  // Avoid duplicate preloads
   const existing = document.querySelector(
     `link[rel="preload"][href="${optimized}"]`,
   );
@@ -224,8 +229,7 @@ export function preloadHeroImage(
   link.as = "image";
   link.href = optimized;
   link.setAttribute("fetchpriority", "high");
-  // Add srcset for responsive preload
-  const srcSet = getImageSrcSet(url, [400, 800], 75);
+  const srcSet = getImageSrcSet(url, [400, 800], q);
   if (srcSet) {
     link.setAttribute("imagesrcset", srcSet);
     link.setAttribute("imagesizes", HERO_IMAGE_SIZES);

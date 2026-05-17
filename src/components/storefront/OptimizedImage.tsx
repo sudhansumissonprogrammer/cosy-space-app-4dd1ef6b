@@ -4,6 +4,7 @@ import {
   getImageSrcSet,
   PRODUCT_CARD_SIZES,
 } from "@/lib/imageOptimize";
+import { getAdaptiveQuality, isSaveDataMode } from "@/lib/networkHints";
 
 interface OptimizedImageProps {
   src: string | null | undefined;
@@ -64,8 +65,16 @@ function OptimizedImageInner({
   // Tier-1 #12: thumbnails (non-priority, render width ≤ 600) use quality 75.
   // Hero/LCP (`priority`) and large images keep 85. Caller-supplied quality
   // overrides via the explicit `quality` prop (anything ≠ default 85 wins).
-  const effectiveQuality =
+  // Bug #5 fix: cap quality adaptively on slow / save-data connections
+  // (50 on 2G/saveData, 65 on 3G, unchanged on 4G+).
+  const baseQuality =
     quality !== 85 ? quality : priority || width > 600 ? 85 : 75;
+  const effectiveQuality = Math.min(baseQuality, getAdaptiveQuality(baseQuality));
+
+  // Bug #4 fix (extends to all images): on save-data, drop eager loading
+  // for non-priority images and never set high fetchPriority.
+  const saveData = isSaveDataMode();
+  const effectivePriority = priority && !saveData;
 
   const optimizedSrc = optimizeImageUrl(src, width, effectiveQuality);
   const blurSrc = optimizeImageUrl(src, 20, 30);
@@ -92,9 +101,9 @@ function OptimizedImageInner({
         alt={alt}
         className={`${className} ${!priority && !loaded ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
         style={style}
-        loading={priority ? "eager" : "lazy"}
-        decoding={priority ? "sync" : "async"}
-        fetchPriority={priority ? "high" : "auto"}
+        loading={effectivePriority ? "eager" : "lazy"}
+        decoding={effectivePriority ? "sync" : "async"}
+        fetchPriority={effectivePriority ? "high" : "auto"}
         onLoad={() => setLoaded(true)}
         onError={() => {
           setErrored(true);
