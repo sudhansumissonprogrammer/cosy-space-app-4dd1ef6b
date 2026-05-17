@@ -102,6 +102,17 @@ export async function firePurchaseCapi(
       return { ok: true, reason: "manual_order" };
     }
 
+    // Fast path: this store was recently observed to have no pixel — skip DB.
+    const cachedExp = _noPixelCache.get(order.store_id);
+    if (cachedExp && cachedExp > Date.now()) {
+      await supabase
+        .from("orders")
+        .update({ meta_purchase_fired_at: new Date().toISOString() })
+        .eq("id", orderId)
+        .is("meta_purchase_fired_at", null);
+      return { ok: true, reason: "meta_not_configured_cached" };
+    }
+
     // 2. Load store pixel config.
     const { data: store } = await supabase
       .from("stores")
@@ -111,6 +122,7 @@ export async function firePurchaseCapi(
 
     if (!store?.facebook_pixel_id || !store?.meta_access_token) {
       // No Pixel configured — stamp anyway so we don't keep retrying.
+      _noPixelCache.set(order.store_id, Date.now() + NO_PIXEL_TTL_MS);
       await supabase
         .from("orders")
         .update({ meta_purchase_fired_at: new Date().toISOString() })
