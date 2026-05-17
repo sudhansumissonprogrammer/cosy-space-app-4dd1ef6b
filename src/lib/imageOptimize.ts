@@ -11,6 +11,7 @@
  */
 
 import { isOptimizedUrl, resolveVariantUrl } from "./uploadOptimizedImage";
+import { getAdaptiveQuality, shouldPreloadLcp } from "./networkHints";
 // VariantWidth no longer needed — we always serve the 800w stored variant directly
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID || "";
