@@ -1331,6 +1331,9 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         "Content-Type": "application/json",
+        // Tier-1 #5: prefer Brotli on RPC payloads. Workers runtime auto-
+        // decompresses br/gzip when reading via res.json()/res.text().
+        "Accept-Encoding": "br, gzip",
       },
       signal: controller.signal,
       body: JSON.stringify({ _slug: slug }),
