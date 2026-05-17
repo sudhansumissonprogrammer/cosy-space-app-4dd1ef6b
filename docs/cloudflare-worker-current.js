@@ -75,7 +75,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.15.0-seo-routes";
+const WORKER_VERSION = "8.15.1-brotli-rpc";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -1331,6 +1331,9 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         "Content-Type": "application/json",
+        // Tier-1 #5: prefer Brotli on RPC payloads. Workers runtime auto-
+        // decompresses br/gzip when reading via res.json()/res.text().
+        "Accept-Encoding": "br, gzip",
       },
       signal: controller.signal,
       body: JSON.stringify({ _slug: slug }),
@@ -2988,6 +2991,7 @@ async function _fetchPdpFromDb(storeSlug, productSlug, timeoutMs) {
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         "Content-Type": "application/json",
         Accept: "application/json",
+        "Accept-Encoding": "br, gzip", // Tier-1 #5
       },
       body: JSON.stringify({ _store_slug: storeSlug, _product_slug: productSlug }),
       signal: controller.signal,
@@ -3013,6 +3017,7 @@ async function _fetchCategoryFromDb(storeSlug, categorySlug, limit, timeoutMs) {
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         "Content-Type": "application/json",
         Accept: "application/json",
+        "Accept-Encoding": "br, gzip", // Tier-1 #5
       },
       body: JSON.stringify({ _store_slug: storeSlug, _category_slug: categorySlug, _limit: limit }),
       signal: controller.signal,
