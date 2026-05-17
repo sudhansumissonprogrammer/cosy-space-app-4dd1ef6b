@@ -484,9 +484,10 @@ async function prefetchTargetPageData(
       queryClient.prefetchQuery({
         queryKey: ["storefront-product", storeId, productSlug],
         queryFn: async () => {
+          const { PRODUCT_PDP_FIELDS } = await import("@/lib/productSelectors");
           let { data: prod, error } = await supabase
             .from("products")
-            .select("*")
+            .select(PRODUCT_PDP_FIELDS)
             .eq("store_id", storeId)
             .eq("slug", productSlug)
             .eq("is_active", true)
@@ -495,7 +496,7 @@ async function prefetchTargetPageData(
             if (!isUUID(productSlug)) return prod;
             const result = await supabase
               .from("products")
-              .select("*")
+              .select(PRODUCT_PDP_FIELDS)
               .eq("store_id", storeId)
               .eq("id", productSlug)
               .eq("is_active", true)
