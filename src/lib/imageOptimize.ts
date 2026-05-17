@@ -59,6 +59,9 @@ export function optimizeImageUrl(
         u.searchParams.set("width", String(width));
         u.searchParams.set("quality", String(quality));
         u.searchParams.set("resize", "contain");
+        // Tier-1 #11: AVIF for browsers that send Accept: image/avif,
+        // WebP otherwise. Supabase Render handles content negotiation.
+        u.searchParams.set("format", "origin");
         return u.toString();
       } catch {
         return variant;
@@ -85,7 +88,7 @@ export function optimizeImageUrl(
       const u = new URL(url);
       u.searchParams.set("w", String(width));
       u.searchParams.set("q", String(quality));
-      u.searchParams.set("fm", "webp");
+      // Tier-1 #11: `auto=format` already lets Unsplash pick AVIF/WebP — keep.
       u.searchParams.set("auto", "format");
       return u.toString();
     } catch {
@@ -104,6 +107,8 @@ export function optimizeImageUrl(
       u.searchParams.set("width", String(width));
       u.searchParams.set("quality", String(quality));
       u.searchParams.set("resize", "contain");
+      // Tier-1 #11: AVIF when supported, WebP fallback.
+      u.searchParams.set("format", "origin");
       return u.toString();
     } catch {
       return url;
