@@ -1,111 +1,98 @@
-# Tier 1 — Safe Cost & Performance Wins
 
-Goal: ship 9 zero/low-risk optimizations, ~₹780/mo saved. Each item is independently revertable. Order chosen so the riskiest visual items (AVIF, quality 75) ship last after monitoring.
+## What I found (deep check before planning)
 
-## Ground rules (apply to every item)
+I inspected the live database and the current Cloudflare Worker before deciding what's actually safe to change. Headline:
 
-- One item per commit so any regression is bisectable.
-- After each Worker change → user manually redeploys `docs/cloudflare-worker-current.js` and we check 1 storefront before moving on.
-- After each DB function change → use **DROP FUNCTION IF EXISTS** first (event trigger `guard_storefront_rpc_overloads` will reject otherwise).
-- No item touches business logic, payment, auth, or order flow.
+**Most of what your analysis suggested is ALREADY done.** Only #3 (log retention) needs a real fix today.
 
----
+### #1 — Page-view tracking (sampling/batching)
+The Worker (v8.2+) already does this aggressively:
+- **30-min per-visitor dedup** (`PV_DEDUP_WINDOW_MS = 30 min`) → one visitor browsing 10 pages = 1 row, not 10.
+- **Bot filter** (regex blocks Googlebot, WhatsApp, Lighthouse, etc.).
+- **Bulk batching** — buffers up to 100 rows or 60s, then one bulk INSERT. ~80–95% fewer DB round-trips.
+- **No edge function involved** — Worker writes directly to PostgREST.
+- Asset/API paths skipped.
 
-## Phase A — Pure backend wins (no UX change possible)
+So the "16,856 page views" are **already the deduped, sampled, batched number**. Adding more sampling on top would just hurt your analytics accuracy without saving meaningful money. **No change recommended.**
 
-### A1. CAPI skip when no pixel (#3)
-- File: `supabase/functions/_shared/firePurchaseCapi.ts`
-- Code already early-returns when `facebook_pixel_id` is null (line 105). Add an upstream **cheap check**: cache `store.facebook_pixel_id` presence in a small in-memory map keyed by `store_id` for 5 min so we skip the Supabase select entirely on the 95% of stores with no pixel.
-- Safety: behaviour identical, only avoids a DB roundtrip. No fallback needed.
+### #2 — `get_storefront_data` JSON egress
+Already migrated. Live RPC is `get_storefront_shell` which returns metadata + categories + theme + custom_pages + `total_products` count. **Products are NOT in the shell.** Products load paginated 50 at a time via `useInfiniteProducts`. Worker caches the shell at the edge. **No change recommended** — would be busywork.
 
-### A2. `page_views` 30 s session dedupe (#2)
-- File: `supabase/functions/ingest/index.ts` (insert at line 138).
-- Add a Deno KV (or in-memory `Map` with TTL) keyed by `${store_id}:${session_id}:${path}`. If hit within 30 s → 204 no-op.
-- Safety: analytics aggregates unchanged (duplicates within 30 s are beacon noise per the existing comment in code). Add a `dedup_skipped` counter to the response so we can confirm in logs.
+### #3 — Log table growth ✅ This is the real fix
+Current state from live DB:
+| Table | Rows | Size | Rows past retention |
+|---|---|---|---|
+| `page_views` | 18,878 | 5.3 MB | 0 older than 90 days (table is young) |
+| `error_logs` | 1,873 | 3.1 MB | 3 older than 30 days |
 
-### A3. Auth session cache 5 min (#15)
-- File: `src/contexts/AuthContext.tsx` (around `getSession()` at line 40 + any polling).
-- Wrap `getSession()` in a 5-min memo; rely on existing `onAuthStateChange` for invalidation. JWT itself is valid 1 h, so this only collapses redundant calls.
-- Safety: `onAuthStateChange` still fires on real login/logout, so UI stays correct.
+Nothing to delete *today*, but with ~560 PVs/day per active store and growing store count, these tables will hit 60+ MB / 200k+ rows within a year — slow queries, RLS scans get expensive, backups balloon.
 
-### A4. Disable Realtime on storefront tables (#8)
-- Migration: `ALTER PUBLICATION supabase_realtime DROP TABLE` for any storefront-facing tables currently in the publication (products, categories, store_pages, stores, store_theme_config). Keep `partner_notifications` and any dashboard tables that need it.
-- Verification step before running: query `pg_publication_tables` to list current members, share with user, then drop only confirmed-unused ones. The only realtime consumer I found is `src/components/partner/NotificationsBell.tsx` on `partner-notif-*`.
-- Safety: storefronts already poll; dashboard uses different tables.
+`pg_cron` and `pg_net` are already enabled, and you already run 7 cleanup-style cron jobs (referral telemetry, media library, etc.), so this fits the existing pattern.
 
----
+## The plan (one migration only)
 
-## Phase B — Caching / shape changes (still safe, easy revert)
+### Migration: add `cleanup_app_logs()` function + daily cron
 
-### B1. Worker TTL 1 h + purge guarantee (#1)
-- File: `docs/cloudflare-worker-current.js`
-- Today: `CACHE_STOREFRONT_TTL = 7_200` (2 h), `KV_STOREFRONT_TTL = 86_400` (24 h). Spec asks for **1 h edge TTL**. Lower to `CACHE_STOREFRONT_TTL = 3_600` and keep `KV_STOREFRONT_TTL = 3_600` (matches "1h" spec). Actually we **raise effective TTL via purge**: keep KV at 86_400 so cold edges still hit KV, and the purge endpoint (already wired in `src/lib/purgeStoreCache.ts`) wipes on every save.
-- Verify `/api/purge-store` invalidates BOTH the Cache API entry AND the KV key for each hostname. If KV purge missing, add it.
-- Safety: purge already runs on every dashboard save (`useStorePurge`). Worst case: a save races and a shopper sees 1 h old data — same as today's 2 h window, strictly better.
+```sql
+-- 1. Function (SECURITY DEFINER, search_path locked)
+CREATE OR REPLACE FUNCTION public.cleanup_app_logs()
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  _pv_deleted int;
+  _el_deleted int;
+BEGIN
+  -- page_views: keep 90 days (StoreAnalytics charts only need 30-day window)
+  WITH d AS (
+    DELETE FROM public.page_views
+    WHERE created_at < now() - interval '90 days'
+    RETURNING 1
+  ) SELECT count(*) INTO _pv_deleted FROM d;
 
-### B2. Lite shell RPC (#6)
-- Migration (DROP-FIRST):
-  ```sql
-  DROP FUNCTION IF EXISTS public.get_storefront_shell_lite(text);
-  CREATE OR REPLACE FUNCTION public.get_storefront_shell_lite(_slug text) …
-  ```
-- Returns only fields the SPA shell needs for first paint: `id, name, slug, logo_url, theme, currency, custom_domain, meta_title, meta_description, og_image_url, total_products`. Drops `about_us_text`, `mobile_hero_images`, `business_hours`, full policies, etc. (those load on demand from existing `get_storefront_shell`).
-- Worker shell path calls `_lite`; on miss/error → fall through to existing `get_storefront_shell`.
-- Safety: net-new function. Old one untouched. Reversible by flipping a Worker constant.
+  -- error_logs: keep 30 days
+  WITH d AS (
+    DELETE FROM public.error_logs
+    WHERE created_at < now() - interval '30 days'
+    RETURNING 1
+  ) SELECT count(*) INTO _el_deleted FROM d;
 
-### B3. Image pre-warm 3 sizes (#4)
-- File: `src/lib/uploadOptimizedImage.ts` currently uploads only 800w. Add 400w + 1600w variants during the same `processImageMultiSize` call (helper already supports it — see `VariantWidth`).
-- Update `resolveVariantUrl` / `optimizeImageUrl` so 400/800/1600 hit the pre-built file directly, skipping Supabase Render API.
-- Safety: existing 800w stays the canonical. New variants are extra files, missing variant falls back to Render API. No data migration.
+  RETURN json_build_object(
+    'page_views_deleted', _pv_deleted,
+    'error_logs_deleted', _el_deleted,
+    'ran_at', now()
+  );
+END;
+$$;
 
----
-
-## Phase C — Visual quality items (ship last, monitor)
-
-### C1. Quality 85 → 75 for thumbnails only (#12)
-- File: `src/components/storefront/OptimizedImage.tsx` and `src/lib/imageOptimize.ts`.
-- Default `quality` param stays 85. `OptimizedImage` gets a `priority` already; add rule: if **not** `priority` AND width ≤ 600 → quality 75. Hero/banner (`priority=true`) stays 85.
-- Safety: only thumbnails change. One-line revert.
-
-### C2. AVIF format with WebP fallback (#11)
-- File: `src/lib/imageOptimize.ts` Supabase Render branch. Add `format=auto` query param (Supabase Render returns AVIF to capable browsers, WebP otherwise — server-side content negotiation, no client check needed).
-- Safety: Render's `format=auto` is the documented safe path. Worst case Safari <16 keeps WebP.
-
----
-
-## Verification per item
-
-| Item | Check |
-|------|-------|
-| A1 | `supabase--edge_function_logs firePurchaseCapi` → expect "skip: no pixel" majority |
-| A2 | 5 quick reloads of same storefront → only 1 row in `page_views` |
-| A3 | Network tab: no `/auth/v1/user` polling after login |
-| A4 | `select * from pg_publication_tables where pubname='supabase_realtime'` → storefront tables gone |
-| B1 | Save a product → reload storefront → see edit within 1 s |
-| B2 | Worker log shows `get_storefront_shell_lite` invocations; storefront renders normally |
-| B3 | Upload a new product image → Storage shows `-400w`, `-800w`, `-1600w` files |
-| C1 | Visual diff thumbnails: no banding |
-| C2 | `curl -H "Accept: image/avif" <url>` returns `content-type: image/avif` |
-
----
-
-## Out of scope
-
-- Per-merchant OAuth, edge SSR for humans, GSC auto-submit, blog/guides expansion — already tracked in Phase 4 of the SEO plan.
-- Worker auto-deploy — file remains manual.
-
-## Files touched (no code written until plan approved)
-
-```text
-supabase/functions/_shared/firePurchaseCapi.ts   A1
-supabase/functions/ingest/index.ts               A2
-src/contexts/AuthContext.tsx                     A3
-migration (publication drop)                     A4
-docs/cloudflare-worker-current.js                B1, B2 (manual redeploy)
-migration (get_storefront_shell_lite)            B2
-src/lib/uploadOptimizedImage.ts                  B3
-src/lib/imageOptimize.ts                         B3, C1, C2
-src/components/storefront/OptimizedImage.tsx     C1
+-- 2. Schedule daily at 03:30 UTC (off-peak, after billing-cron at 03:00)
+SELECT cron.schedule(
+  'cleanup-app-logs-daily',
+  '30 3 * * *',
+  $$ SELECT public.cleanup_app_logs(); $$
+);
 ```
 
-Estimated wall time: ~10 h spread across 3 sittings (A → wait 24 h → B → wait 24 h → C).
+### Why these retention windows are safe
+- **page_views 90 days** — `StoreAnalytics.tsx` and admin dashboards query last 30 days only. 90 gives 3× safety margin and keeps month-over-month comparisons working.
+- **error_logs 30 days** — debugging window is days, not months. Anything older is noise.
+- Function uses `DELETE … RETURNING` so we get exact counts, and runs in one transaction per table.
+
+### What I will NOT touch (and why)
+- ❌ No worker changes — current dedup + batching is already optimal.
+- ❌ No `get_storefront_shell` changes — already lean.
+- ❌ No new sampling on page-views — Worker handles it.
+- ❌ No Cache-Control header tweaks — worker already controls edge cache.
+- ❌ No table truncations or backfills — only deletes rows past retention.
+
+### Rollback
+If retention is ever wrong: `SELECT cron.unschedule('cleanup-app-logs-daily');` and `DROP FUNCTION public.cleanup_app_logs();`. No schema is altered, no data is touched until 90/30 days have passed.
+
+### Expected impact
+- Today: 0 rows deleted (nothing is old enough).
+- Steady state: keeps `page_views` capped around 50–80k rows per active store, `error_logs` under a few thousand.
+- Bill impact: small now (~₹3–5/mo), prevents the table from becoming the #1 cost driver 6–12 months from now.
+
+Approve to run the migration.

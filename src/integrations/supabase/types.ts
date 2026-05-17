@@ -2975,6 +2975,7 @@ export type Database = {
         Returns: boolean
       }
       check_product_limit: { Args: { _user_id: string }; Returns: Json }
+      cleanup_app_logs: { Args: never; Returns: Json }
       cleanup_orphan_media_library: { Args: never; Returns: Json }
       cleanup_referral_telemetry: { Args: never; Returns: Json }
       delete_email: {
