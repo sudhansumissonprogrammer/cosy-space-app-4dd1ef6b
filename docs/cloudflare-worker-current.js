@@ -2991,6 +2991,7 @@ async function _fetchPdpFromDb(storeSlug, productSlug, timeoutMs) {
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         "Content-Type": "application/json",
         Accept: "application/json",
+        "Accept-Encoding": "br, gzip", // Tier-1 #5
       },
       body: JSON.stringify({ _store_slug: storeSlug, _product_slug: productSlug }),
       signal: controller.signal,
