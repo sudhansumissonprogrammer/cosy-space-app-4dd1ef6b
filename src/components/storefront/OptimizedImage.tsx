@@ -101,9 +101,9 @@ function OptimizedImageInner({
         alt={alt}
         className={`${className} ${!priority && !loaded ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
         style={style}
-        loading={priority ? "eager" : "lazy"}
-        decoding={priority ? "sync" : "async"}
-        fetchPriority={priority ? "high" : "auto"}
+        loading={effectivePriority ? "eager" : "lazy"}
+        decoding={effectivePriority ? "sync" : "async"}
+        fetchPriority={effectivePriority ? "high" : "auto"}
         onLoad={() => setLoaded(true)}
         onError={() => {
           setErrored(true);
