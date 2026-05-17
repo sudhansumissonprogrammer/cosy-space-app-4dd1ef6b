@@ -26,6 +26,10 @@ function isRateLimited(key: string): boolean {
   return entry.count > RATE_LIMIT;
 }
 
+// Tier-1 #2: 30s page_view dedupe (see handlePageView below).
+const _pvDedup = new Map<string, number>();
+const PV_DEDUP_TTL_MS = 30_000;
+
 function getSupabase() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
