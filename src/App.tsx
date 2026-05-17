@@ -503,7 +503,8 @@ async function prefetchTargetPageData(
               .maybeSingle();
             prod = result.data;
           }
-          if (prod) {
+          if (prod && typeof (prod as any).id === "string") {
+            const prodId = (prod as any).id as string;
             await Promise.allSettled([
               queryClient.prefetchQuery({
                 queryKey: ["product-images", prod.id],
