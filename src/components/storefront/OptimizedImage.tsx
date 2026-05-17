@@ -4,6 +4,7 @@ import {
   getImageSrcSet,
   PRODUCT_CARD_SIZES,
 } from "@/lib/imageOptimize";
+import { getAdaptiveQuality, isSaveDataMode } from "@/lib/networkHints";
 
 interface OptimizedImageProps {
   src: string | null | undefined;
