@@ -59,6 +59,8 @@ export function optimizeImageUrl(
         u.searchParams.set("width", String(width));
         u.searchParams.set("quality", String(quality));
         u.searchParams.set("resize", "contain");
+        // Tier-1 #11: Supabase Render auto-negotiates WebP via Accept header
+        // when `format` is omitted. Do NOT set format=origin (that defeats it).
         return u.toString();
       } catch {
         return variant;
@@ -80,12 +82,13 @@ export function optimizeImageUrl(
   }
 
   // ── 3. Unsplash: native CDN params (no Worker hit) ──
+  // Tier-1 #11: `auto=format` lets Unsplash serve AVIF to capable browsers,
+  // WebP otherwise. Dropping `fm=webp` (was forcing WebP and blocking AVIF).
   if (url.includes("images.unsplash.com")) {
     try {
       const u = new URL(url);
       u.searchParams.set("w", String(width));
       u.searchParams.set("q", String(quality));
-      u.searchParams.set("fm", "webp");
       u.searchParams.set("auto", "format");
       return u.toString();
     } catch {
@@ -104,6 +107,7 @@ export function optimizeImageUrl(
       u.searchParams.set("width", String(width));
       u.searchParams.set("quality", String(quality));
       u.searchParams.set("resize", "contain");
+      // Render auto-WebP via Accept header — omit `format` param.
       return u.toString();
     } catch {
       return url;

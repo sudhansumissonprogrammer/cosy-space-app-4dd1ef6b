@@ -26,6 +26,10 @@ function isRateLimited(key: string): boolean {
   return entry.count > RATE_LIMIT;
 }
 
+// Tier-1 #2: 30s page_view dedupe (see handlePageView below).
+const _pvDedup = new Map<string, number>();
+const PV_DEDUP_TTL_MS = 30_000;
+
 function getSupabase() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -132,6 +136,27 @@ async function handleView(req: Request) {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  }
+
+  // Tier-1 #2: 30s dedupe per (store, ip, path). Same visitor refreshing or
+  // SPA-routing back to the same page within 30s is noise — same logic the
+  // existing comment above describes. In-memory per-isolate; good enough at
+  // edge scale because the same visitor's beacons tend to hit the same isolate.
+  const dedupKey = `${store_id}:${ip}:${cleanPath}`;
+  const nowMs = Date.now();
+  const lastTs = _pvDedup.get(dedupKey);
+  if (lastTs && nowMs - lastTs < PV_DEDUP_TTL_MS) {
+    return new Response(JSON.stringify({ ok: true, dropped: "dedup_30s" }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  _pvDedup.set(dedupKey, nowMs);
+  // Cheap GC so the map can't grow unbounded.
+  if (_pvDedup.size > 5000) {
+    for (const [k, t] of _pvDedup) {
+      if (nowMs - t > PV_DEDUP_TTL_MS) _pvDedup.delete(k);
+    }
   }
 
   const supabase = getSupabase();

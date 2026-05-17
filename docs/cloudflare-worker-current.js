@@ -1155,8 +1155,8 @@ async function getNavigationSpaShell(request, ctx, env) {
 
 // FIX #20 + Phase 2 #6: Storefront data changes rarely — push TTLs higher.
 // Auto-purge on store update keeps freshness; SWR serves stale instantly.
-const KV_STOREFRONT_TTL = 86_400; // v8.1.0 cost-cut: 6h → 24h (purge invalidates on save)
-const CACHE_STOREFRONT_TTL = 7_200; // v8.1.0 cost-cut: 1h → 2h
+const KV_STOREFRONT_TTL = 86_400; // 24h — purge wipes on every save
+const CACHE_STOREFRONT_TTL = 3_600; // Tier-1 #1: 2h → 1h. Purge handles freshness.
 
 // v7.6.0 Fix D: Reduced from 3 KV reads to 1. `storefront` is already fetched
 // by earlyStorefrontPromise (prefetchStorefrontDataWithDeadline) and `storeInfo`

@@ -61,9 +61,15 @@ function OptimizedImageInner({
     return fallback ? <>{fallback}</> : null;
   }
 
-  const optimizedSrc = optimizeImageUrl(src, width, quality);
+  // Tier-1 #12: thumbnails (non-priority, render width ≤ 600) use quality 75.
+  // Hero/LCP (`priority`) and large images keep 85. Caller-supplied quality
+  // overrides via the explicit `quality` prop (anything ≠ default 85 wins).
+  const effectiveQuality =
+    quality !== 85 ? quality : priority || width > 600 ? 85 : 75;
+
+  const optimizedSrc = optimizeImageUrl(src, width, effectiveQuality);
   const blurSrc = optimizeImageUrl(src, 20, 30);
-  const srcSet = getImageSrcSet(src, srcSetSizes, quality);
+  const srcSet = getImageSrcSet(src, srcSetSizes, effectiveQuality);
 
   return (
     <div className="relative overflow-hidden" style={aspectRatio ? { aspectRatio } : undefined}>

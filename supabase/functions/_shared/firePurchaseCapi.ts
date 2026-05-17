@@ -14,6 +14,13 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0
 
 const META_GRAPH_URL = "https://graph.facebook.com/v21.0";
 
+// Tier-1 #3: cache stores that have NO pixel/access_token so we skip the
+// `stores` SELECT entirely for the 95% of stores without Meta configured.
+// In-memory only; per-isolate. TTL 5 min — short enough that a merchant who
+// just configured their pixel sees it work within minutes.
+const NO_PIXEL_TTL_MS = 5 * 60 * 1000;
+const _noPixelCache = new Map<string, number>(); // store_id → expiresAt
+
 // Normalization helpers per Meta CAPI spec — must match the rules in meta-capi/index.ts.
 // Wrong normalization = our hash ≠ Meta's hash = no match = degraded EMQ score.
 const normEmail = (v: string) => v.trim().toLowerCase();
@@ -95,6 +102,17 @@ export async function firePurchaseCapi(
       return { ok: true, reason: "manual_order" };
     }
 
+    // Fast path: this store was recently observed to have no pixel — skip DB.
+    const cachedExp = _noPixelCache.get(order.store_id);
+    if (cachedExp && cachedExp > Date.now()) {
+      await supabase
+        .from("orders")
+        .update({ meta_purchase_fired_at: new Date().toISOString() })
+        .eq("id", orderId)
+        .is("meta_purchase_fired_at", null);
+      return { ok: true, reason: "meta_not_configured_cached" };
+    }
+
     // 2. Load store pixel config.
     const { data: store } = await supabase
       .from("stores")
@@ -104,6 +122,7 @@ export async function firePurchaseCapi(
 
     if (!store?.facebook_pixel_id || !store?.meta_access_token) {
       // No Pixel configured — stamp anyway so we don't keep retrying.
+      _noPixelCache.set(order.store_id, Date.now() + NO_PIXEL_TTL_MS);
       await supabase
         .from("orders")
         .update({ meta_purchase_fired_at: new Date().toISOString() })
