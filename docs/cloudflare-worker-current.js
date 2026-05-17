@@ -3017,6 +3017,7 @@ async function _fetchCategoryFromDb(storeSlug, categorySlug, limit, timeoutMs) {
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         "Content-Type": "application/json",
         Accept: "application/json",
+        "Accept-Encoding": "br, gzip", // Tier-1 #5
       },
       body: JSON.stringify({ _store_slug: storeSlug, _category_slug: categorySlug, _limit: limit }),
       signal: controller.signal,
