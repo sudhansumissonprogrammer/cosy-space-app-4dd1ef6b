@@ -428,9 +428,10 @@ export default function ProductDetail() {
   const { data: realReviews, refetch: refetchReviews } = useQuery({
     queryKey: ["product-reviews", product?.id],
     queryFn: async () => {
+      const { PRODUCT_REVIEW_FIELDS } = await import("@/lib/productSelectors");
       const { data } = await supabase
         .from("product_reviews")
-        .select("*")
+        .select(PRODUCT_REVIEW_FIELDS)
         .eq("product_id", product!.id)
         .order("created_at", { ascending: false })
         .limit(50);
