@@ -507,24 +507,24 @@ async function prefetchTargetPageData(
             const prodId = (prod as any).id as string;
             await Promise.allSettled([
               queryClient.prefetchQuery({
-                queryKey: ["product-images", prod.id],
+                queryKey: ["product-images", prodId],
                 queryFn: async () => {
                   const { data: imgs } = await supabase
                     .from("product_images")
                     .select("id, image_url, display_order")
-                    .eq("product_id", prod.id)
+                    .eq("product_id", prodId)
                     .order("display_order");
                   return imgs ?? [];
                 },
                 staleTime: 5 * 60 * 1000,
               }),
               queryClient.prefetchQuery({
-                queryKey: ["product-variants", prod.id],
+                queryKey: ["product-variants", prodId],
                 queryFn: async () => {
                   const { data: vars } = await supabase
                     .from("product_variants")
                     .select("id, name, price, sku, stock_quantity, display_order")
-                    .eq("product_id", prod.id)
+                    .eq("product_id", prodId)
                     .eq("is_active", true)
                     .order("display_order");
                   return vars ?? [];
