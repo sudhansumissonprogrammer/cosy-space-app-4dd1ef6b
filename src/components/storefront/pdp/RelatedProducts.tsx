@@ -28,9 +28,10 @@ export default function RelatedProducts({
   const { data: related } = useQuery({
     queryKey: ["related-products", storeId, currentProductId],
     queryFn: async () => {
+      const { PRODUCT_CARD_FIELDS } = await import("@/lib/productSelectors");
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select(PRODUCT_CARD_FIELDS)
         .eq("store_id", storeId)
         .eq("is_active", true)
         .neq("id", currentProductId)

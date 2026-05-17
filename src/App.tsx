@@ -484,9 +484,10 @@ async function prefetchTargetPageData(
       queryClient.prefetchQuery({
         queryKey: ["storefront-product", storeId, productSlug],
         queryFn: async () => {
+          const { PRODUCT_PDP_FIELDS } = await import("@/lib/productSelectors");
           let { data: prod, error } = await supabase
             .from("products")
-            .select("*")
+            .select(PRODUCT_PDP_FIELDS)
             .eq("store_id", storeId)
             .eq("slug", productSlug)
             .eq("is_active", true)
@@ -495,34 +496,35 @@ async function prefetchTargetPageData(
             if (!isUUID(productSlug)) return prod;
             const result = await supabase
               .from("products")
-              .select("*")
+              .select(PRODUCT_PDP_FIELDS)
               .eq("store_id", storeId)
               .eq("id", productSlug)
               .eq("is_active", true)
               .maybeSingle();
             prod = result.data;
           }
-          if (prod) {
+          if (prod && typeof (prod as any).id === "string") {
+            const prodId = (prod as any).id as string;
             await Promise.allSettled([
               queryClient.prefetchQuery({
-                queryKey: ["product-images", prod.id],
+                queryKey: ["product-images", prodId],
                 queryFn: async () => {
                   const { data: imgs } = await supabase
                     .from("product_images")
                     .select("id, image_url, display_order")
-                    .eq("product_id", prod.id)
+                    .eq("product_id", prodId)
                     .order("display_order");
                   return imgs ?? [];
                 },
                 staleTime: 5 * 60 * 1000,
               }),
               queryClient.prefetchQuery({
-                queryKey: ["product-variants", prod.id],
+                queryKey: ["product-variants", prodId],
                 queryFn: async () => {
                   const { data: vars } = await supabase
                     .from("product_variants")
                     .select("id, name, price, sku, stock_quantity, display_order")
-                    .eq("product_id", prod.id)
+                    .eq("product_id", prodId)
                     .eq("is_active", true)
                     .order("display_order");
                   return vars ?? [];
@@ -558,11 +560,12 @@ async function prefetchTargetPageData(
             queryClient.prefetchInfiniteQuery({
               queryKey: ["category-products", storeId, cat.name],
               queryFn: async ({ pageParam = 0 }) => {
+                const { PRODUCT_CARD_FIELDS } = await import("@/lib/productSelectors");
                 const from = pageParam * 14;
                 const to = from + 13;
                 const { data: prods, error: pErr } = await supabase
                   .from("products")
-                  .select("id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at")
+                  .select(PRODUCT_CARD_FIELDS)
                   .eq("store_id", storeId)
                   .eq("category", cat.name)
                   .eq("is_active", true)
@@ -589,11 +592,12 @@ async function prefetchTargetPageData(
     queryClient.prefetchInfiniteQuery({
       queryKey: ["storefront-shop-all", storeId],
       queryFn: async ({ pageParam = 0 }) => {
+        const { PRODUCT_CARD_FIELDS } = await import("@/lib/productSelectors");
         const from = pageParam * 14;
         const to = from + 13;
         const { data: prods, error } = await supabase
           .from("products")
-          .select("id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at")
+          .select(PRODUCT_CARD_FIELDS)
           .eq("store_id", storeId)
           .eq("is_active", true)
           .order("created_at", { ascending: false })

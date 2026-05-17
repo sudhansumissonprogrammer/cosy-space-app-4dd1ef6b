@@ -217,9 +217,10 @@ export default function ProductDetail() {
       }
 
       // Fallback: legacy direct query (covers UUID-as-slug case + RPC failures)
+      const { PRODUCT_PDP_FIELDS } = await import("@/lib/productSelectors");
       let { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select(PRODUCT_PDP_FIELDS)
         .eq("store_id", store.id)
         .eq("slug", productSlug!)
         .eq("is_active", true)
@@ -232,7 +233,7 @@ export default function ProductDetail() {
         }
         const result = await supabase
           .from("products")
-          .select("*")
+          .select(PRODUCT_PDP_FIELDS)
           .eq("store_id", store.id)
           .eq("id", productSlug!)
           .eq("is_active", true)
@@ -427,9 +428,10 @@ export default function ProductDetail() {
   const { data: realReviews, refetch: refetchReviews } = useQuery({
     queryKey: ["product-reviews", product?.id],
     queryFn: async () => {
+      const { PRODUCT_REVIEW_FIELDS } = await import("@/lib/productSelectors");
       const { data } = await supabase
         .from("product_reviews")
-        .select("*")
+        .select(PRODUCT_REVIEW_FIELDS)
         .eq("product_id", product!.id)
         .order("created_at", { ascending: false })
         .limit(50);

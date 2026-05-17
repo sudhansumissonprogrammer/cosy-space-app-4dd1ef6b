@@ -25,6 +25,7 @@ export default function FrequentlyBoughtTogether({
   const { data: bundleProducts } = useQuery({
     queryKey: ["bundle-products", storeId, currentProductId],
     queryFn: async () => {
+      const { PRODUCT_CARD_FIELDS } = await import("@/lib/productSelectors");
       const { data: coIds, error: coErr } = await supabase.rpc("get_co_purchased_products", {
         _product_id: currentProductId,
         _limit: 2,
@@ -33,7 +34,7 @@ export default function FrequentlyBoughtTogether({
       if (!coErr && coIds && coIds.length > 0) {
         const { data: coProducts, error } = await supabase
           .from("products")
-          .select("*")
+          .select(PRODUCT_CARD_FIELDS)
           .in("id", coIds)
           .eq("is_active", true);
         if (!error && coProducts && coProducts.length > 0) return coProducts.slice(0, 2);
@@ -41,7 +42,7 @@ export default function FrequentlyBoughtTogether({
 
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select(PRODUCT_CARD_FIELDS)
         .eq("store_id", storeId)
         .eq("is_active", true)
         .neq("id", currentProductId)
