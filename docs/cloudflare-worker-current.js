@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.19.0-longtail-kv-gate";
+const WORKER_VERSION = "8.20.0-cf-cache-status";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -511,6 +511,10 @@ function addDiagnosticHeaders(response, { slug, cacheStatus, dataSource }) {
   res.headers.set("X-Worker-Version", WORKER_VERSION);
   if (slug) res.headers.set("X-Store-Slug", slug);
   res.headers.set("X-Cache-Status", cacheStatus);
+  // v8.20.0: mirror to canonical `cf-cache-status` header so Cloudflare's
+  // dashboard cache-rate widget, Lighthouse, and PSI register Worker
+  // cache hits (they only inspect the standard header name).
+  if (cacheStatus) res.headers.set("cf-cache-status", cacheStatus);
   if (dataSource) res.headers.set("X-Data-Source", dataSource);
   return res;
 }
@@ -1846,7 +1850,7 @@ async function getCustomDomainForSlug(slug) {
       .put(
         key,
         new Response(JSON.stringify({ custom_domain: customDomain }), {
-          headers: { "Cache-Control": "public, max-age=300" },
+          headers: { "Cache-Control": "public, max-age=3600" },
         }),
       )
       .catch(() => {});
@@ -1897,7 +1901,7 @@ async function _resolveStoreInfo(slug, hostname, env) {
         .put(
           new Request(`https://cache/slug-domain-${slug}`),
           new Response(JSON.stringify({ custom_domain: result.customDomain }), {
-            headers: { "Cache-Control": "public, max-age=300" },
+            headers: { "Cache-Control": "public, max-age=3600" },
           }),
         )
         .catch(() => {});
@@ -1932,14 +1936,14 @@ async function _resolveStoreInfo(slug, hostname, env) {
         cache
           .put(
             infoCacheKey,
-            new Response(JSON.stringify(kvData), { headers: { "Cache-Control": "public, max-age=300" } }),
+            new Response(JSON.stringify(kvData), { headers: { "Cache-Control": "public, max-age=3600" } }),
           )
           .catch(() => {});
         cache
           .put(
             new Request(`https://cache/slug-domain-${slug}`),
             new Response(JSON.stringify({ custom_domain: result.customDomain }), {
-              headers: { "Cache-Control": "public, max-age=300" },
+              headers: { "Cache-Control": "public, max-age=3600" },
             }),
           )
           .catch(() => {});
