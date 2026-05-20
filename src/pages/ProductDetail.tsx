@@ -32,6 +32,7 @@ import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
+import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 
 const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
@@ -894,11 +895,13 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Frequently Bought Together — hidden in V18 */}
+          {/* Frequently Bought Together — hidden in V18, deferred until near viewport */}
           {!isV18 && (
-            <Suspense fallback={null}>
-              <FrequentlyBoughtTogether storeId={store.id} storeSlug={store.slug} currentProductId={product.id} currentCategory={product.category} currency={currency} addToCart={addToCart} productImage={product.image_url} />
-            </Suspense>
+            <DeferUntilVisible rootMargin="600px" minHeight={220}>
+              <Suspense fallback={null}>
+                <FrequentlyBoughtTogether storeId={store.id} storeSlug={store.slug} currentProductId={product.id} currentCategory={product.category} currency={currency} addToCart={addToCart} productImage={product.image_url} />
+              </Suspense>
+            </DeferUntilVisible>
           )}
 
           {/* V18: SKU & Categories */}
@@ -963,23 +966,27 @@ export default function ProductDetail() {
 
 
       <div className="px-4 sm:px-0">
-        {/* Complete the Look */}
-        <Suspense fallback={null}>
-          <RelatedProducts
-            storeId={store.id}
-            storeSlug={store.slug}
-            currentProductId={product.id}
-            currentCategory={product.category}
-            store={store}
-            addToCart={addToCart}
-            currency={currency}
-          />
-        </Suspense>
+        {/* Complete the Look — deferred until near viewport */}
+        <DeferUntilVisible rootMargin="600px" minHeight={320}>
+          <Suspense fallback={null}>
+            <RelatedProducts
+              storeId={store.id}
+              storeSlug={store.slug}
+              currentProductId={product.id}
+              currentCategory={product.category}
+              store={store}
+              addToCart={addToCart}
+              currency={currency}
+            />
+          </Suspense>
+        </DeferUntilVisible>
 
-        {/* Customer Reviews */}
-        <Suspense fallback={null}>
-          <CustomerReviews reviews={fakeReviews} realReviews={realReviews || []} rating={stats.rating} reviewCount={stats.reviewCount} productId={product.id} storeId={store.id} onReviewSubmitted={refetchReviews} />
-        </Suspense>
+        {/* Customer Reviews — deferred until near viewport */}
+        <DeferUntilVisible rootMargin="600px" minHeight={240}>
+          <Suspense fallback={null}>
+            <CustomerReviews reviews={fakeReviews} realReviews={realReviews || []} rating={stats.rating} reviewCount={stats.reviewCount} productId={product.id} storeId={store.id} onReviewSubmitted={refetchReviews} />
+          </Suspense>
+        </DeferUntilVisible>
       </div>
 
       {/* Portal: render fixed elements outside PageTransition animation container */}
