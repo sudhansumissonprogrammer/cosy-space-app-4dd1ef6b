@@ -193,7 +193,7 @@ function R2MigrationPanel() {
     setRunning(true);
     try {
       const { data, error } = await supabase.functions.invoke("r2-migrate-images", {
-        body: { batch_size: 25, dry_run: dryRun },
+        body: { batch_size: 100, dry_run: dryRun },
       });
       if (error) throw error;
       setResult(data);
@@ -209,6 +209,43 @@ function R2MigrationPanel() {
     }
   };
 
+  const runAll = async () => {
+    setRunning(true);
+    let totalMigrated = 0;
+    try {
+      for (let i = 0; i < 30; i++) {
+        const { data, error } = await supabase.functions.invoke("r2-migrate-images", {
+          body: { batch_size: 100 },
+        });
+        if (error) throw error;
+        setResult(data);
+        totalMigrated += data.migrated || 0;
+        if ((data.total_remaining || 0) === 0) break;
+        if ((data.migrated || 0) === 0) break; // no progress — stop
+      }
+      toast.success(`Done — migrated ${totalMigrated} total`);
+    } catch (err) {
+      toast.error(`Migration failed: ${err instanceof Error ? err.message : "unknown"}`);
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const copyDemo = async () => {
+    setRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("r2-migrate-images", {
+        body: { action: "copy-demo-assets" },
+      });
+      if (error) throw error;
+      toast.success(`Demo assets: copied ${data.copied?.length || 0}, failed ${data.failed?.length || 0}`);
+    } catch (err) {
+      toast.error(`Demo copy failed: ${err instanceof Error ? err.message : "unknown"}`);
+    } finally {
+      setRunning(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -218,7 +255,14 @@ function R2MigrationPanel() {
         </Button>
         <Button onClick={() => run(false)} disabled={running}>
           {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Cloud className="mr-2 h-4 w-4" />}
-          Migrate next batch (25)
+          Migrate next batch (100)
+        </Button>
+        <Button variant="default" onClick={runAll} disabled={running}>
+          {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Cloud className="mr-2 h-4 w-4" />}
+          Migrate ALL (auto-loop)
+        </Button>
+        <Button variant="outline" onClick={copyDemo} disabled={running}>
+          Copy demo seed assets
         </Button>
       </div>
 
