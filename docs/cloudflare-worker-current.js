@@ -3949,6 +3949,8 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     _kvWriteRecent.delete(`storefront:${purgeSlug}`);
     _kvWriteRecent.delete(`theme-lite:${purgeSlug}`);
     _kvWriteRecent.delete(`store-info:${purgeSlug}`);
+    _kvWriteRecent.delete(`warm-lock:${purgeSlug}`); // v8.18.0
+    _memWarmLock.delete(purgeSlug);                  // v8.18.0
     purgeOps.push(cache.delete(getEarlyCacheKey(`${purgeSlug}.${ROOT_DOMAIN}`)).catch(() => {}));
     purgeOps.push(cache.delete(getEarlyCacheKey(hostname)).catch(() => {}));
     // v8.6.2: purge CF Cache API mirrors for all SPA paths that can inline stale store/payment data.
