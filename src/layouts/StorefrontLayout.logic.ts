@@ -6,7 +6,11 @@ import type { Tables } from "@/integrations/supabase/types";
 
 export type StoreData = Tables<"stores">;
 
-const PREFETCH_BRIDGE_TIMEOUT_MS = 1500;
+// v8.17.0 cold-load fix: bridge timeout 1500→800ms. If the index.html prefetch
+// stalls (slow mobile/4G), waiting 1.5s before falling back wastes the entire
+// shell-only Promise advantage. 800ms is still enough for Supabase RPC on a
+// healthy connection but lets us bail to the direct RPC faster on bad ones.
+const PREFETCH_BRIDGE_TIMEOUT_MS = 800;
 
 /** Lazy supabase import — keeps the 45KB chunk off the storefront critical path
  *  when the prefetch bridge (index.html) already fetched the data */
