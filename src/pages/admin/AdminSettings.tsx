@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Settings, Save, MessageSquare, Eye, EyeOff } from "lucide-react";
+import { Settings, Save, MessageSquare, Eye, EyeOff, Cloud, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 
 const CURRENCIES = ["INR", "USD", "EUR", "GBP", "AED", "SGD", "AUD", "CAD"];
