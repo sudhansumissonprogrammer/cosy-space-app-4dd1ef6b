@@ -1,4 +1,43 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { AwsClient } from "npm:aws4fetch@1.0.20";
+
+// ── R2 setup for image cleanup ─────────────────────────────────
+const R2_ACCOUNT_ID = Deno.env.get("R2_ACCOUNT_ID") || "";
+const R2_ACCESS_KEY_ID = Deno.env.get("R2_ACCESS_KEY_ID") || "";
+const R2_SECRET_ACCESS_KEY = Deno.env.get("R2_SECRET_ACCESS_KEY") || "";
+const R2_BUCKET_NAME = Deno.env.get("R2_BUCKET_NAME") || "";
+const R2_PUBLIC_URL = (Deno.env.get("R2_PUBLIC_URL") || "").replace(/\/+$/, "");
+const r2 = (R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY)
+  ? new AwsClient({ accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY, service: "s3", region: "auto" })
+  : null;
+const r2Endpoint = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET_NAME}`;
+
+/** Convert a cdn.shopbanao.in URL → R2 key. Returns null for non-R2 URLs. */
+function r2KeyFromUrl(u: string | null | undefined): string | null {
+  if (!u) return null;
+  let key: string | null = null;
+  if (R2_PUBLIC_URL && u.startsWith(R2_PUBLIC_URL + "/")) key = u.slice(R2_PUBLIC_URL.length + 1);
+  else if (u.startsWith("https://cdn.shopbanao.in/")) key = u.slice("https://cdn.shopbanao.in/".length);
+  if (!key) return null;
+  return key.split("?")[0];
+}
+
+async function deleteR2Keys(keys: string[]): Promise<number> {
+  if (!r2 || keys.length === 0) return 0;
+  let deleted = 0;
+  // Sequential to keep memory low; R2 DELETE is fast (~50ms each)
+  for (const key of keys) {
+    try {
+      const res = await r2.fetch(`${r2Endpoint}/${key}`, { method: "DELETE" });
+      await res.text();
+      if (res.ok || res.status === 204 || res.status === 404) deleted++;
+    } catch (e) {
+      console.warn(`[delete-store] R2 DELETE failed for ${key}:`, e);
+    }
+  }
+  return deleted;
+}
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -149,7 +188,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 5. Delete storage files by bucket
+    // 5. Delete storage files by bucket (Supabase Storage — legacy URLs)
     const bucketGroups: Record<string, string[]> = {};
     for (const f of filesToDelete) {
       if (!bucketGroups[f.bucket]) bucketGroups[f.bucket] = [];
@@ -166,6 +205,16 @@ Deno.serve(async (req) => {
         if (error) console.error(`[delete-store] Storage error for ${bucket}:`, error.message);
       }
     }
+
+    // 5b. Delete R2 (cdn.shopbanao.in) objects for the same store
+    const r2Keys: string[] = [];
+    const pushR2 = (u: string | null | undefined) => { const k = r2KeyFromUrl(u); if (k) r2Keys.push(k); };
+    pushR2(store.logo_url); pushR2(store.banner_url); pushR2(store.mobile_hero_url); pushR2(store.og_image_url);
+    if (productImages) for (const img of productImages) pushR2(img.image_url);
+    if (products) for (const p of products) pushR2(p.image_url);
+    if (categories) for (const cat of categories) pushR2(cat.image_url);
+    const r2Deleted = await deleteR2Keys(r2Keys);
+    cleanupResults.r2_files_deleted = r2Deleted;
 
     cleanupResults.storage_files_deleted = totalFilesDeleted;
 

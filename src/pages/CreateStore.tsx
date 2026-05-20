@@ -348,7 +348,7 @@ export default function CreateStore() {
 
         // Seed 3 demo categories + 4 demo products
         try {
-          const STORAGE_BASE = "https://dqepeywgftbpxeeqfuwt.supabase.co/storage/v1/object/public/product-images/demo";
+          const STORAGE_BASE = "https://cdn.shopbanao.in/product-images/demo";
           const DEMO_IMGS = [
             `${STORAGE_BASE}/product-1.jpg`,
             `${STORAGE_BASE}/product-2.jpg`,
