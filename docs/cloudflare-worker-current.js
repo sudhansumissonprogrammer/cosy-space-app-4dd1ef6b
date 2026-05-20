@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.21.0-fcp-text-and-preload10";
+const WORKER_VERSION = "8.22.0-deep-modulepreload";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -888,13 +888,110 @@ function _buildPrebuiltHead(html) {
     if (!seen.has(m[1]) && !DASHBOARD_CHUNK_PATTERN.test(m[1])) {
       seen.add(m[1]);
       head += `<link rel="modulepreload" href="${m[1]}" />`;
-      if (++mpCount >= 6) break;
+      mpCount++;
     }
   }
+  // v8.22.0: Stash the entry chunk path so deep-preload pass can fetch + parse
+  // it after this synchronous build completes. We cannot fetch here (no async).
+  const entry = [...seen][0];
+  if (entry) head += `<!--ENTRY:${entry}-->`;
 
   _memPrebuiltHead = head;
   return head;
 }
+
+/* ============================================================
+   v8.22.0 — DEEP MODULEPRELOAD: discover 2nd-tier chunks
+   (App.js, storefront-shell.js, supabase, radix, router-query…)
+   by fetching the entry chunk once and extracting its dynamic
+   imports. Cached in KV for 24h. Removes the 3-deep waterfall
+   that adds ~1.5s on mobile cold loads.
+   ============================================================ */
+
+let _memDeepChunks = null;
+const DEEP_CHUNKS_KV_KEY = "deep-chunks:v1";
+const DEEP_CHUNKS_TTL = 86400; // 24h
+const DEEP_CHUNK_DASH_PATTERN =
+  /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages|landing-)/;
+
+async function getDeepChunkPreloads(entryPath, origin, env) {
+  if (_memDeepChunks) return _memDeepChunks;
+  // KV first
+  if (env?.STORE_KV) {
+    try {
+      const cached = await env.STORE_KV.get(DEEP_CHUNKS_KV_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        // Invalidate if entry hash changed (new deploy)
+        if (parsed.entry === entryPath && Array.isArray(parsed.chunks)) {
+          _memDeepChunks = parsed.chunks;
+          return _memDeepChunks;
+        }
+      }
+    } catch {}
+  }
+  // Fetch entry JS and extract imports
+  try {
+    const res = await fetch(`${origin}${entryPath}`, {
+      cf: { cacheTtl: 3600, cacheEverything: true },
+    });
+    if (!res.ok) return [];
+    const code = await res.text();
+    const found = new Set();
+    // Vite emits both static (import"./X.js") and dynamic (import("./X.js"))
+    // forms, plus chunk maps. Match all /assets/*.js refs anywhere.
+    for (const m of code.matchAll(/["'`]\/?(assets\/[A-Za-z0-9_\-]+-[A-Za-z0-9]+\.js)["'`]/g)) {
+      const p = "/" + m[1];
+      if (p === entryPath) continue;
+      if (DEEP_CHUNK_DASH_PATTERN.test(p)) continue;
+      found.add(p);
+    }
+    // Storefront-critical chunk names — prioritize these first
+    const PRIORITY = /(?:App-|storefront-shell-|supabase-|radix|router-query-|framework-|entry-utils-|icons-|ErrorBoundary-|logError-)/;
+    const arr = [...found].sort((a, b) => {
+      const pa = PRIORITY.test(a) ? 0 : 1;
+      const pb = PRIORITY.test(b) ? 0 : 1;
+      return pa - pb;
+    }).slice(0, 12); // cap at 12 to avoid head bloat
+    _memDeepChunks = arr;
+    if (env?.STORE_KV) {
+      env.STORE_KV.put(
+        DEEP_CHUNKS_KV_KEY,
+        JSON.stringify({ entry: entryPath, chunks: arr }),
+        { expirationTtl: DEEP_CHUNKS_TTL },
+      ).catch(() => {});
+    }
+    return arr;
+  } catch {
+    return [];
+  }
+}
+
+function injectDeepPreloads(head, deepChunks) {
+  if (!deepChunks || deepChunks.length === 0) return head;
+  const extra = deepChunks
+    .map((p) => `<link rel="modulepreload" href="${p}" />`)
+    .join("");
+  // Insert right after the ENTRY marker so they appear together at the top
+  return head.replace(/<!--ENTRY:[^>]+-->/, extra);
+}
+
+// v8.22.0: One-shot enricher — extracts entry path from the marker the
+// synchronous head-builder left behind, fetches/caches the deep chunk list,
+// and splices modulepreloads into the head. Falls back to original head on
+// any error so HTML response is never blocked.
+async function enrichHeadWithDeepPreloads(head, origin, env) {
+  if (!head) return head;
+  const marker = head.match(/<!--ENTRY:([^>-]+)-->/);
+  if (!marker) return head;
+  try {
+    const deep = await getDeepChunkPreloads(marker[1], origin, env);
+    return injectDeepPreloads(head, deep);
+  } catch {
+    return head.replace(/<!--ENTRY:[^>]+-->/, "");
+  }
+}
+
 
 async function getPrebuiltHead(html, env) {
   // FIX #7: In-memory first
@@ -2810,7 +2907,8 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
     return { response, dataSource: "none" };
   }
 
-  const prebuiltHead = cachedHeadMem || (await getPrebuiltHead(shellResult.html, env));
+  let prebuiltHead = cachedHeadMem || (await getPrebuiltHead(shellResult.html, env));
+  prebuiltHead = await enrichHeadWithDeepPreloads(prebuiltHead, new URL(request.url).origin, env);
   // FIX #3: Always build Link header for every response
   const linkHeader = _buildLinkPreloadHeader(shellResult.html);
 
@@ -5249,7 +5347,8 @@ export default {
         return addDiagnosticHeaders(response, { slug, cacheStatus: "MISS", dataSource: "none" });
       }
 
-      const prebuiltHead = cachedHead || (await getPrebuiltHead(shellResult.html, env));
+      let prebuiltHead = cachedHead || (await getPrebuiltHead(shellResult.html, env));
+      prebuiltHead = await enrichHeadWithDeepPreloads(prebuiltHead, new URL(request.url).origin, env);
       // FIX #3: Always set Link header
       const linkHeader = _buildLinkPreloadHeader(shellResult.html);
 
@@ -5406,7 +5505,8 @@ export default {
         return addDiagnosticHeaders(response, { slug: resolvedSlug, cacheStatus: "MISS", dataSource: "none" });
       }
 
-      const prebuiltHeadCD = cachedHeadCDReal || (await getPrebuiltHead(shellResultCD.html, env));
+      let prebuiltHeadCD = cachedHeadCDReal || (await getPrebuiltHead(shellResultCD.html, env));
+      prebuiltHeadCD = await enrichHeadWithDeepPreloads(prebuiltHeadCD, new URL(request.url).origin, env);
       // FIX #3
       const linkHeaderCD = _buildLinkPreloadHeader(shellResultCD.html);
 
