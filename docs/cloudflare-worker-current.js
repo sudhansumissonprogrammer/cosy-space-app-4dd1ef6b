@@ -3366,7 +3366,7 @@ function _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, source) {
   if (data && data.category) {
     ctx.waitUntil(Promise.all([
       cache.put(cacheKey, response.clone()).catch(() => {}),
-      ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: CATEGORY_KV_TTL }),
+      ctx?.__skipKvWarm ? Promise.resolve() : kvPutLongTail(env, kvKey, body, { expirationTtl: CATEGORY_KV_TTL }), // v8.19.0 B
     ]));
   } else {
     // v8.8.1 Fix #4: short negative cache for unknown categories.
