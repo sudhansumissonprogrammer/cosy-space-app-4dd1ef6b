@@ -209,6 +209,7 @@ Deno.serve(async (req) => {
       if (!rows?.length) continue;
 
       for (const row of rows) {
+        if (overBudget()) break;
         const val = (row as Record<string, unknown>)[tgt.col];
 
         if (tgt.isArray && Array.isArray(val)) {
