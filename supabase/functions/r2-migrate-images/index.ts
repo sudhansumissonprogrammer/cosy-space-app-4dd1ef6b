@@ -183,6 +183,9 @@ Deno.serve(async (req) => {
     }
 
 
+    const T0 = Date.now();
+    const TIME_BUDGET_MS = 110_000; // Hard stop before 150s edge timeout
+    const overBudget = () => (Date.now() - T0) > TIME_BUDGET_MS;
     let migrated = 0;
     let skipped = 0;
     const errors: string[] = [];
@@ -206,6 +209,7 @@ Deno.serve(async (req) => {
       if (!rows?.length) continue;
 
       for (const row of rows) {
+        if (overBudget()) break;
         const val = (row as Record<string, unknown>)[tgt.col];
 
         if (tgt.isArray && Array.isArray(val)) {
@@ -268,7 +272,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Stop early if we've hit the batch limit
+      // Stop early if we've hit the batch limit or the time budget
+      if (overBudget()) break;
       if (migrated + errors.length >= batchSize) break;
     }
 

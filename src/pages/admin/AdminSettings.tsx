@@ -193,7 +193,7 @@ function R2MigrationPanel() {
     setRunning(true);
     try {
       const { data, error } = await supabase.functions.invoke("r2-migrate-images", {
-        body: { batch_size: 100, dry_run: dryRun },
+        body: { batch_size: 25, dry_run: dryRun },
       });
       if (error) throw error;
       setResult(data);
@@ -213,9 +213,9 @@ function R2MigrationPanel() {
     setRunning(true);
     let totalMigrated = 0;
     try {
-      for (let i = 0; i < 30; i++) {
+      for (let i = 0; i < 80; i++) {
         const { data, error } = await supabase.functions.invoke("r2-migrate-images", {
-          body: { batch_size: 100 },
+          body: { batch_size: 25 },
         });
         if (error) throw error;
         setResult(data);
@@ -255,7 +255,7 @@ function R2MigrationPanel() {
         </Button>
         <Button onClick={() => run(false)} disabled={running}>
           {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Cloud className="mr-2 h-4 w-4" />}
-          Migrate next batch (100)
+          Migrate next batch (25)
         </Button>
         <Button variant="default" onClick={runAll} disabled={running}>
           {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Cloud className="mr-2 h-4 w-4" />}
