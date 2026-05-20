@@ -3595,7 +3595,7 @@ async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
   }
 }
 
-function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
+function buildProductResponse(data, cacheKey, kvKey, ctx, env, source, filters) {
   const body = JSON.stringify(data || []);
   const response = new Response(body, {
     headers: {
@@ -3611,8 +3611,10 @@ function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
   ctx.waitUntil(
     Promise.all([
       cache.put(cacheKey, response.clone()).catch(() => {}),
-      // v8.1.0: bots skip KV; dedup collapses repeats
-      ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }),
+      // v8.1.0: bots skip KV; dedup collapses repeats.
+      // v8.19.0 B+C: default-filter pages → direct KV write; filtered/paged
+      // long-tail combos → second-hit gate (Cache API only on first miss).
+      ctx?.__skipKvWarm ? Promise.resolve() : kvPutProducts(env, kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }, filters),
     ]),
   );
   return addCorsHeaders(response, source);
