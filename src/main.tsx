@@ -64,15 +64,23 @@ function shouldUseLandingFastPath(): boolean {
 // on cold mobile loads (CSS triggers font-face fetches as render-blocking).
 {
   const host = typeof window !== "undefined" ? window.location.hostname : "";
+  const path = typeof window !== "undefined" ? window.location.pathname : "";
   const isStorefrontHost =
     host && (isSubdomainHost(host) || isCustomDomainHost(host));
+  const isLanding = path === "/" || path === "/theme" || path === "/guides" || path.startsWith("/guides/");
 
   if (!isStorefrontHost) {
     const loadFonts = () => {
+      // Plus Jakarta — used by landing + dashboard
       import('@fontsource/plus-jakarta-sans/400.css');
       import('@fontsource/plus-jakarta-sans/600.css');
-      import('@fontsource/montserrat-alternates/400.css');
-      import('@fontsource/montserrat-alternates/600.css');
+      // Montserrat Alternates is dashboard-only. Skip on landing to avoid
+      // ~50KB of extra CSS + 2 font fetches that were landing on the cold
+      // critical path even though landing never uses this font.
+      if (!isLanding) {
+        import('@fontsource/montserrat-alternates/400.css');
+        import('@fontsource/montserrat-alternates/600.css');
+      }
     };
     if ("requestIdleCallback" in window) {
       (window as any).requestIdleCallback(loadFonts, { timeout: 2000 });
