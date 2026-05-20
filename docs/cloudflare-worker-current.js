@@ -625,14 +625,8 @@ function buildSkeleton(bgColor, skeletonMuted, includeCleanup = true, storeName 
   let s = `<script>window.__SF_WORKER__=true;</script>${shimmerKeyframes}<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${skelBg};z-index:2147483000;pointer-events:none;overflow:hidden">`;
   s += `<nav style="height:56px;background:${skelBg};border-bottom:1px solid #ececec;display:flex;align-items:center;padding:0 16px;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">`;
   s += `<div class="sf-ph" style="height:32px;width:32px;border-radius:8px;flex-shrink:0"></div>`;
-  // v8.21.0 — FCP fix: render visible store name text so FCP fires at skeleton
-  // paint (~1.6s) instead of waiting for hero image decode (~9s on cold).
-  if (storeName) {
-    const safeName = String(storeName).replace(/[<>"'&]/g, function(c){return ({"<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;","&":"&amp;"})[c];});
-    s += `<span style="font-family:'Inter','Segoe UI',sans-serif;font-size:15px;font-weight:600;color:${textColor};letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%">${safeName}</span>`;
-  } else {
-    s += `<div class="sf-ph" style="height:12px;width:80px"></div>`;
-  }
+  // Store name text removed per user request — show placeholder bar only
+  s += `<div class="sf-ph" style="height:12px;width:80px"></div>`;
   s += `<div style="flex:1"></div>`;
   s += `<div class="sf-ph" style="width:28px;height:28px;border-radius:50%"></div>`;
   s += `</nav>`;
