@@ -74,6 +74,7 @@ async function r2Put(key: string, body: Uint8Array, contentType: string): Promis
       "Content-Type": contentType,
       "Cache-Control": "public, max-age=31536000, immutable",
     },
+    signal: AbortSignal.timeout(15000),
   });
   if (!res.ok) {
     const text = await res.text();
