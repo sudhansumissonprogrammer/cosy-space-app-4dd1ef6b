@@ -4992,7 +4992,14 @@ export default {
         // isn't ready we ship HTML instantly and let the browser overlap
         // shell-data RTT with JS download/parse. Net: ~1000ms TTFB cut on
         // cold hits, identical UX (single skeleton, no flash).
-        const COLD_DATA_DEADLINE = 250;
+        // v8.17.0 cold-load fix: 250ms was too tight — Supabase RPC from
+        // CF edge to DB routinely takes 280–450ms, so the deadline almost
+        // always missed and we shipped shell-only HTML (forcing a 2nd
+        // round-trip in the browser before React could render). 700ms
+        // lands the full-injected-HTML path on ~70–80% of cold hits,
+        // cutting visible skeleton time by 500–800ms. The HTML is still
+        // flushed quickly because shellResult comes from KV in parallel.
+        const COLD_DATA_DEADLINE = 700;
         const [shellResult, prefetchResult, inlineProductsCold] = await Promise.all([
           getNavigationSpaShell(request, ctx, env),
           prefetchStorefrontDataWithDeadline(slug, ctx, env, COLD_DATA_DEADLINE).catch(() => ({ data: null, source: "none" })),
