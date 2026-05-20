@@ -2799,12 +2799,21 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
     }
 
     // ── Cross-isolate KV lock (SYNC write, v7.7.0 Fix 1) ──
+    // v8.18.0 Fix D: short-circuit on in-memory marker first. If this isolate
+    // already grabbed the warm-lock within the last 5 min, skip the KV.get
+    // AND KV.put entirely — that's the single biggest source of KV ops here.
+    if (_memWarmLockHas(slug)) return;
     if (env?.STORE_KV) {
       const lockKey = `warm-lock:${slug}`;
       try {
         const existing = await env.STORE_KV.get(lockKey);
-        if (existing) return; // Another isolate warmed this store recently
-        await env.STORE_KV.put(lockKey, "1", { expirationTtl: 300 }).catch(() => {}); // v8.13.1: 60s → 300s, ~5x fewer writes; CF cache mirror is hot for active stores
+        if (existing) {
+          _memWarmLockSet(slug); // remember so future requests skip KV.get too
+          return;
+        }
+        // kvPutDedup already collapses repeat warm-lock writes for 24h per isolate.
+        await kvPutDedup(env, lockKey, "1", { expirationTtl: 300 });
+        _memWarmLockSet(slug);
       } catch {}
     }
 
