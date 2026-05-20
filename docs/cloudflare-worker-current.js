@@ -540,9 +540,13 @@ function getSkeletonCleanupScript(fallbackMs = 12000) {
       var root=document.getElementById('root');
       if(!root)return false;
       if(root.querySelector('[data-storefront-ready]'))return true;
+      // v8.17.0 cold-load fix: 400px threshold made us wait extra rAF ticks
+      // for product image rows to lay out. 120px = nav + first content row,
+      // which is enough to guarantee no blank flash (OptimizedImage already
+      // ships blur placeholders so images progressively fade in).
       var totalHeight=0;var kids=root.children;
       for(var i=0;i<kids.length;i++){totalHeight+=kids[i].offsetHeight;}
-      return totalHeight>400;
+      return totalHeight>120;
     }
     // Wait until the React shell has actually painted real content before killing
     // the skeleton — prevents the white blank flash between skeleton fade and
