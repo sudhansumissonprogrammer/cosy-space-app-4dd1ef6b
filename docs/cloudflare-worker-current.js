@@ -1,5 +1,18 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.18.0 — KV-WRITE COST-CUT
+ * SHOPBANAO PRODUCTION ROUTER v8.19.0 — LONG-TAIL KV GATE
+ *
+ * Changes from v8.18.0:
+ *  v8.19.0 — Three more KV-write cuts (~50% on top of v8.18.0):
+ *            (B) Second-hit gate for PDP + Category + filtered Products.
+ *                First miss writes Cache API only; KV write only on the 2nd
+ *                miss within 5min. Eliminates one-hit-wonder crawler writes.
+ *            (C) Default-filter products (home page) still write KV directly.
+ *                Non-default filters (page>=2, category drill, custom sort)
+ *                go through the second-hit gate.
+ *            (E) Bot KV-skip already covers PDP/Category/Products via
+ *                ctx.__skipKvWarm (set in early-bot path, v8.1.0).
+ *            Purge handlers also clear _secondHitMap implicitly because the
+ *                version bump changes the kvKey shape.
  *
  * Changes from v8.9.0:
  *  v8.18.0 — Three-pronged KV write reduction (~50% fewer KV puts):
