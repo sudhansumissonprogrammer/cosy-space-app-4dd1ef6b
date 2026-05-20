@@ -183,6 +183,9 @@ Deno.serve(async (req) => {
     }
 
 
+    const T0 = Date.now();
+    const TIME_BUDGET_MS = 110_000; // Hard stop before 150s edge timeout
+    const overBudget = () => (Date.now() - T0) > TIME_BUDGET_MS;
     let migrated = 0;
     let skipped = 0;
     const errors: string[] = [];
