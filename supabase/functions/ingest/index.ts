@@ -246,6 +246,13 @@ async function handleCleanup(req: Request) {
     .lt("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
   results.error_logs_deleted = errCount ?? 0;
 
+  // 6. Tier-2 #I: delete customer_leads older than 180 days (keeps table bounded)
+  const { count: leadCount } = await supabase
+    .from("customer_leads")
+    .delete({ count: "exact" })
+    .lt("created_at", new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString());
+  results.customer_leads_deleted = leadCount ?? 0;
+
   console.log("[ingest/cleanup] Results:", results);
 
   return new Response(JSON.stringify({ success: true, results }), {
