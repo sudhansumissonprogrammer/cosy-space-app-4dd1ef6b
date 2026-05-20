@@ -2907,7 +2907,8 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
     return { response, dataSource: "none" };
   }
 
-  const prebuiltHead = cachedHeadMem || (await getPrebuiltHead(shellResult.html, env));
+  let prebuiltHead = cachedHeadMem || (await getPrebuiltHead(shellResult.html, env));
+  prebuiltHead = await enrichHeadWithDeepPreloads(prebuiltHead, new URL(request.url).origin, env);
   // FIX #3: Always build Link header for every response
   const linkHeader = _buildLinkPreloadHeader(shellResult.html);
 
