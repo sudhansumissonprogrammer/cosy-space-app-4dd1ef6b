@@ -137,7 +137,12 @@
               var s=document.createElement('script');s.id='fb-pixel-script';s.async=true;
               s.src='https://connect.facebook.net/en_US/fbevents.js';document.head.appendChild(s);
             };
-            if('requestIdleCallback' in w){w.requestIdleCallback(loadSdk,{timeout:4000});}else{setTimeout(loadSdk,2000);}
+            var loaded=false;var wrap=function(){if(loaded)return;loaded=true;loadSdk();};
+            if('requestIdleCallback' in w){w.requestIdleCallback(wrap,{timeout:4000});}else{setTimeout(wrap,2000);}
+            // Also load on first interaction so fast clickers (Add to Cart, Checkout) don't wait for idle
+            ['pointerdown','touchstart','keydown'].forEach(function(ev){
+              w.addEventListener(ev,wrap,{once:true,passive:true,capture:true});
+            });
           }
         })();
 
