@@ -146,6 +146,7 @@ const WORKER_VERSION = "8.15.1-brotli-rpc";
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 const HTML_CACHE_SCHEMA_VERSION = "html-v3-publish-fresh-2026-05-04";
+const R2_CDN_HOST = "cdn.shopbanao.in";
 
 const SUPABASE_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
 const SUPABASE_ANON_KEY =
@@ -4394,6 +4395,14 @@ export default {
 
     const url = new URL(request.url);
     const hostname = (request.headers.get("host") || url.hostname).toLowerCase().trim();
+
+    // R2 custom domain lives under shopbanao.in too, but it must NOT be treated
+    // as a storefront subdomain. If the wildcard Worker route catches it,
+    // pass through to the R2 custom-domain origin instead of returning
+    // "Store Not Found" for slug "cdn".
+    if (hostname === R2_CDN_HOST) {
+      return fetch(request);
+    }
 
     // ─── HEALTH CHECK ───
     if (url.pathname === "/__health") {
