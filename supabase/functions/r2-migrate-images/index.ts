@@ -149,13 +149,39 @@ Deno.serve(async (req) => {
 
     let batchSize = 25;
     let dryRun = false;
+    let action: "migrate" | "copy-demo-assets" = "migrate";
     if (req.headers.get("content-type")?.includes("application/json")) {
       try {
         const body = await req.json();
         if (typeof body.batch_size === "number") batchSize = Math.min(100, Math.max(1, body.batch_size));
         if (body.dry_run === true) dryRun = true;
+        if (body.action === "copy-demo-assets") action = "copy-demo-assets";
       } catch { /* ignore */ }
     }
+
+    // ── One-shot: copy the 7 hardcoded demo seed images to R2 ─────
+    if (action === "copy-demo-assets") {
+      const SUP = `${SUPABASE_URL}/storage/v1/object/public/product-images/demo`;
+      const files = [
+        "product-1.jpg", "product-2.jpg", "product-3.jpg", "product-4.jpg",
+        "category-fashion.jpg", "category-electronics.jpg", "category-accessories.jpg",
+      ];
+      const copied: string[] = [];
+      const failed: string[] = [];
+      for (const f of files) {
+        try {
+          const newU = await migrateUrl(admin, `${SUP}/${f}`);
+          if (newU) copied.push(newU); else failed.push(f);
+        } catch (e) {
+          failed.push(`${f}: ${e instanceof Error ? e.message : "err"}`);
+        }
+      }
+      return new Response(
+        JSON.stringify({ success: true, action, copied, failed }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
 
     let migrated = 0;
     let skipped = 0;
