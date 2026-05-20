@@ -75,6 +75,9 @@ export function logError(options: LogErrorOptions): void {
     // Skip known third-party / WebView noise (FB in-app browser etc.)
     if (isIgnoredError(options.message || "", options.stack)) return;
 
+    // Tier-2 #D: skip if same error fired in last 5 min
+    if (isDuplicateError(`${options.context || ""}::${options.message || ""}`)) return;
+
     // Throttle check
     if (errorCount >= MAX_ERRORS_PER_MINUTE) return;
     errorCount++;
