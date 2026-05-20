@@ -685,24 +685,42 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
     startRoutePrefetch((window as any).__STOREFRONT_DATA__?.store?.id || cachedBulk?.store?.id);
   }, [effectiveSlug, queryClient, startRoutePrefetch]);
 
-  // 🚀 Eagerly start loading the right layout/page chunks.
-  // Re-run when theme changes from the instant fallback to the real store theme,
-  // otherwise custom-domain visits can prefetch theme-1 first and theme-19 late.
+  // v8.21.0 — Defer all route-chunk prefetch until after FCP/idle.
+  // Previously these fired during initial render and competed with critical
+  // path JS for HTTP/2 bandwidth (25+ chunks × ~1.8s each on cold load).
+  // Now they wait for idle so the LCP image + critical chunks finish first.
   const chunkPrefetchKeyRef = useRef("");
   const path = window.location.pathname;
   const chunkPrefetchKey = `${theme}:${path}`;
   if (chunkPrefetchKeyRef.current !== chunkPrefetchKey) {
     chunkPrefetchKeyRef.current = chunkPrefetchKey;
-    prefetchLayoutChunk(theme).catch(() => {});
-
-    const isHomePage = path === "/" || /\/store\/[^/]+\/?$/.test(path);
-    if (isHomePage) {
-      prefetchHomeChunk(theme).catch(() => {});
+    const runIdle = (fn: () => void) => {
+      const ric = (window as any).requestIdleCallback;
+      if (typeof ric === "function") {
+        ric(fn, { timeout: 3000 });
+      } else {
+        setTimeout(fn, 1500);
+      }
+    };
+    const schedulePrefetch = () => {
+      const isHomePage = path === "/" || /\/store\/[^/]+\/?$/.test(path);
+      // Layout chunk is the most likely to be needed — schedule first.
+      runIdle(() => { prefetchLayoutChunk(theme).catch(() => {}); });
+      if (isHomePage) {
+        runIdle(() => { prefetchHomeChunk(theme).catch(() => {}); });
+      } else {
+        runIdle(() => { prefetchTargetPageChunk(path); });
+        runIdle(() => { prefetchHomeChunk(theme).catch(() => {}); });
+      }
+    };
+    // Wait for load event so critical resources finish first.
+    if (document.readyState === "complete") {
+      schedulePrefetch();
     } else {
-      prefetchTargetPageChunk(path);
-      requestIdleCallback?.(() => prefetchHomeChunk(theme).catch(() => {}));
+      window.addEventListener("load", schedulePrefetch, { once: true });
     }
   }
+
 
   // Subscribe to query cache — when fresh data arrives with a different theme, switch instantly
   useEffect(() => {
