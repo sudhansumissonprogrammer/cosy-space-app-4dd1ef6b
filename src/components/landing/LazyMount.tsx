@@ -18,7 +18,7 @@ interface LazyMountProps {
 export default function LazyMount({
   children,
   minHeight = 400,
-  rootMargin = "600px 0px",
+  rootMargin = "2000px 0px",
   fallback = null,
 }: LazyMountProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -27,7 +27,12 @@ export default function LazyMount({
   useEffect(() => {
     if (visible) return;
     const el = ref.current;
-    if (!el) return;
+    if (!el) {
+      // No ref yet — schedule idle mount as safety net
+      const idle: any = (window as any).requestIdleCallback;
+      const h = idle ? idle(() => setVisible(true), { timeout: 2500 }) : setTimeout(() => setVisible(true), 1500);
+      return () => { idle ? (window as any).cancelIdleCallback?.(h) : clearTimeout(h); };
+    }
     if (typeof IntersectionObserver === "undefined") {
       setVisible(true);
       return;
@@ -42,7 +47,20 @@ export default function LazyMount({
       { rootMargin }
     );
     obs.observe(el);
-    return () => obs.disconnect();
+
+    // Safety net: after the browser is idle, mount everything regardless of
+    // scroll position. This eliminates the "white-then-content" flash users
+    // saw when scrolling fast — chunks are already downloaded & rendered.
+    const idle: any = (window as any).requestIdleCallback;
+    const handle = idle
+      ? idle(() => { setVisible(true); obs.disconnect(); }, { timeout: 3000 })
+      : window.setTimeout(() => { setVisible(true); obs.disconnect(); }, 1800);
+
+    return () => {
+      obs.disconnect();
+      if (idle && (window as any).cancelIdleCallback) (window as any).cancelIdleCallback(handle);
+      else clearTimeout(handle as any);
+    };
   }, [rootMargin, visible]);
 
   // Keep `minHeight` applied even after the section mounts. It acts as a
