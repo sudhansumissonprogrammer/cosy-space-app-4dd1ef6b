@@ -152,12 +152,98 @@ export default function AdminSettings() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Cloud className="h-5 w-5" />
+            R2 Image Migration
+          </CardTitle>
+          <CardDescription>
+            Move existing images from Supabase Storage to Cloudflare R2 (cdn.shopbanao.in).
+            Run in batches until "remaining" reaches 0. Safe to re-run.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <R2MigrationPanel />
+        </CardContent>
+      </Card>
+
       <div className="max-w-lg">
         <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || isLoading}>
           <Save className="mr-2 h-4 w-4" />
           {saveMutation.isPending ? "Saving..." : "Save All Settings"}
         </Button>
       </div>
+    </div>
+  );
+}
+
+function R2MigrationPanel() {
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<{
+    migrated: number;
+    skipped: number;
+    error_count: number;
+    total_remaining: number;
+    errors: string[];
+    dry_run?: boolean;
+  } | null>(null);
+
+  const run = async (dryRun: boolean) => {
+    setRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("r2-migrate-images", {
+        body: { batch_size: 25, dry_run: dryRun },
+      });
+      if (error) throw error;
+      setResult(data);
+      if (dryRun) {
+        toast.info(`${data.total_remaining} images remain to migrate`);
+      } else {
+        toast.success(`Migrated ${data.migrated}, ${data.total_remaining} remaining`);
+      }
+    } catch (err) {
+      toast.error(`Migration failed: ${err instanceof Error ? err.message : "unknown"}`);
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={() => run(true)} disabled={running}>
+          {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          Check remaining
+        </Button>
+        <Button onClick={() => run(false)} disabled={running}>
+          {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Cloud className="mr-2 h-4 w-4" />}
+          Migrate next batch (25)
+        </Button>
+      </div>
+
+      {result && (
+        <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
+          {result.dry_run && <div className="font-medium">Dry run</div>}
+          <div>Migrated this batch: <span className="font-semibold">{result.migrated}</span></div>
+          <div>Skipped: {result.skipped}</div>
+          <div>Errors: {result.error_count}</div>
+          <div>
+            Total remaining:{" "}
+            <span className={result.total_remaining === 0 ? "font-semibold text-green-600" : "font-semibold"}>
+              {result.total_remaining}
+            </span>
+          </div>
+          {result.errors.length > 0 && (
+            <details className="mt-2">
+              <summary className="cursor-pointer text-destructive">View errors</summary>
+              <ul className="mt-2 list-disc pl-5 text-xs">
+                {result.errors.map((e, i) => <li key={i}>{e}</li>)}
+              </ul>
+            </details>
+          )}
+        </div>
+      )}
     </div>
   );
 }
