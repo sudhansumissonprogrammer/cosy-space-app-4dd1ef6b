@@ -1,7 +1,16 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.9.0 — VISITOR-ID ANALYTICS
+ * SHOPBANAO PRODUCTION ROUTER v8.18.0 — KV-WRITE COST-CUT
  *
- * Changes from v8.7.0:
+ * Changes from v8.9.0:
+ *  v8.18.0 — Three-pronged KV write reduction (~50% fewer KV puts):
+ *            (A) kvPutDedup default TTL 5min → 60min; static keys
+ *                (store-info, store-id, domain, theme-lite, warm-lock,
+ *                 prebuilt-head, spa-shell, all-active-slugs) → 24h.
+ *            (D) _warmFullHtmlInBackground short-circuits on an in-memory
+ *                warm-lock marker before doing KV.get + KV.put.
+ *            (F) Static keys' 24h dedup acts as a once-per-isolate write
+ *                cache — multiple cron passes and multi-colo fan-outs
+ *                collapse to one write per isolate per day.
  *  v8.9.0 — recordPageView() now reads first-party `sb_vid` cookie and stores
  *           it as page_views.visitor_id. Counts unique visitors using a stable
  *           cookie ID instead of CGNAT-shared mobile IPs (15-25% accuracy lift).
