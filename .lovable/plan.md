@@ -1,98 +1,92 @@
 
-## What I found (deep check before planning)
+# Migrate all images to Cloudflare R2
 
-I inspected the live database and the current Cloudflare Worker before deciding what's actually safe to change. Headline:
+Goal: all image uploads (logos, banners, hero, product images, category images, media library, external-image copies) go to R2 served via `https://cdn.shopbanao.in`. Existing Supabase Storage URLs get migrated in the background.
 
-**Most of what your analysis suggested is ALREADY done.** Only #3 (log retention) needs a real fix today.
+## Architecture
 
-### #1 — Page-view tracking (sampling/batching)
-The Worker (v8.2+) already does this aggressively:
-- **30-min per-visitor dedup** (`PV_DEDUP_WINDOW_MS = 30 min`) → one visitor browsing 10 pages = 1 row, not 10.
-- **Bot filter** (regex blocks Googlebot, WhatsApp, Lighthouse, etc.).
-- **Bulk batching** — buffers up to 100 rows or 60s, then one bulk INSERT. ~80–95% fewer DB round-trips.
-- **No edge function involved** — Worker writes directly to PostgREST.
-- Asset/API paths skipped.
-
-So the "16,856 page views" are **already the deduped, sampled, batched number**. Adding more sampling on top would just hurt your analytics accuracy without saving meaningful money. **No change recommended.**
-
-### #2 — `get_storefront_data` JSON egress
-Already migrated. Live RPC is `get_storefront_shell` which returns metadata + categories + theme + custom_pages + `total_products` count. **Products are NOT in the shell.** Products load paginated 50 at a time via `useInfiniteProducts`. Worker caches the shell at the edge. **No change recommended** — would be busywork.
-
-### #3 — Log table growth ✅ This is the real fix
-Current state from live DB:
-| Table | Rows | Size | Rows past retention |
-|---|---|---|---|
-| `page_views` | 18,878 | 5.3 MB | 0 older than 90 days (table is young) |
-| `error_logs` | 1,873 | 3.1 MB | 3 older than 30 days |
-
-Nothing to delete *today*, but with ~560 PVs/day per active store and growing store count, these tables will hit 60+ MB / 200k+ rows within a year — slow queries, RLS scans get expensive, backups balloon.
-
-`pg_cron` and `pg_net` are already enabled, and you already run 7 cleanup-style cron jobs (referral telemetry, media library, etc.), so this fits the existing pattern.
-
-## The plan (one migration only)
-
-### Migration: add `cleanup_app_logs()` function + daily cron
-
-```sql
--- 1. Function (SECURITY DEFINER, search_path locked)
-CREATE OR REPLACE FUNCTION public.cleanup_app_logs()
-RETURNS json
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  _pv_deleted int;
-  _el_deleted int;
-BEGIN
-  -- page_views: keep 90 days (StoreAnalytics charts only need 30-day window)
-  WITH d AS (
-    DELETE FROM public.page_views
-    WHERE created_at < now() - interval '90 days'
-    RETURNING 1
-  ) SELECT count(*) INTO _pv_deleted FROM d;
-
-  -- error_logs: keep 30 days
-  WITH d AS (
-    DELETE FROM public.error_logs
-    WHERE created_at < now() - interval '30 days'
-    RETURNING 1
-  ) SELECT count(*) INTO _el_deleted FROM d;
-
-  RETURN json_build_object(
-    'page_views_deleted', _pv_deleted,
-    'error_logs_deleted', _el_deleted,
-    'ran_at', now()
-  );
-END;
-$$;
-
--- 2. Schedule daily at 03:30 UTC (off-peak, after billing-cron at 03:00)
-SELECT cron.schedule(
-  'cleanup-app-logs-daily',
-  '30 3 * * *',
-  $$ SELECT public.cleanup_app_logs(); $$
-);
+```text
+┌─────────────┐      upload      ┌────────────────────┐
+│  Frontend   │ ───────────────► │ edge fn: r2-upload │
+│ (compressed │                  │  (S3 PUT to R2)    │
+│  800w webp) │                  └──────────┬─────────┘
+└─────────────┘                             │
+                                            ▼
+                                  ┌───────────────────┐
+                                  │  R2 bucket        │
+                                  │  shopbanao-images │
+                                  └─────────┬─────────┘
+                                            │ public via custom domain
+                                            ▼
+                                 https://cdn.shopbanao.in/<key>
 ```
 
-### Why these retention windows are safe
-- **page_views 90 days** — `StoreAnalytics.tsx` and admin dashboards query last 30 days only. 90 gives 3× safety margin and keeps month-over-month comparisons working.
-- **error_logs 30 days** — debugging window is days, not months. Anything older is noise.
-- Function uses `DELETE … RETURNING` so we get exact counts, and runs in one transaction per table.
+Serving: Worker `/cf-img?url=&w=&q=` already proxies + resizes any URL, so cdn.shopbanao.in images get the same responsive variants and edge cache. `optimizeImageUrl()` will detect cdn.shopbanao.in and route through `/cf-img` (just like Supabase URLs today).
 
-### What I will NOT touch (and why)
-- ❌ No worker changes — current dedup + batching is already optimal.
-- ❌ No `get_storefront_shell` changes — already lean.
-- ❌ No new sampling on page-views — Worker handles it.
-- ❌ No Cache-Control header tweaks — worker already controls edge cache.
-- ❌ No table truncations or backfills — only deletes rows past retention.
+## Steps
 
-### Rollback
-If retention is ever wrong: `SELECT cron.unschedule('cleanup-app-logs-daily');` and `DROP FUNCTION public.cleanup_app_logs();`. No schema is altered, no data is touched until 90/30 days have passed.
+### 1. New edge function `r2-upload`
+- Auth: requires JWT (uses existing user session)
+- Accepts: `multipart/form-data` with `file`, `bucket` (logical name like `product-images`), `path`
+- Uses AWS SigV4 to PUT to R2 S3 endpoint (`https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com/<R2_BUCKET_NAME>/<key>`)
+- Key layout preserves multi-tenancy: `product-images/<userId>/<storeId>/<timestamp>-<rand>-800w.webp` (same as today, just on R2)
+- Returns `{ publicUrl: "https://cdn.shopbanao.in/<key>", path }`
+- Sets `Content-Type`, `Cache-Control: public, max-age=31536000, immutable`
 
-### Expected impact
-- Today: 0 rows deleted (nothing is old enough).
-- Steady state: keeps `page_views` capped around 50–80k rows per active store, `error_logs` under a few thousand.
-- Bill impact: small now (~₹3–5/mo), prevents the table from becoming the #1 cost driver 6–12 months from now.
+### 2. Update `src/lib/uploadOptimizedImage.ts`
+- Replace `supabase.storage.from(bucket).upload(...)` with `supabase.functions.invoke("r2-upload", { body: formData })`
+- Same compression pipeline (single 800w webp) — no UI change
+- Returns the new `cdn.shopbanao.in` URL as `mainUrl`
 
-Approve to run the migration.
+### 3. Update `src/lib/imageOptimize.ts`
+- Add CDN detection: if URL starts with `https://cdn.shopbanao.in`, append `?width=&quality=` via Worker `/cf-img` in prod, or just append `?w=&q=` if Worker supports R2 directly
+- Existing pipeline-naming logic (`-800w.webp` → `-400w.webp`) keeps working; just the host changes
+
+### 4. Update `image-ops/copy` edge function (external image import)
+- Instead of `supabase.storage.from("product-images").upload(...)`, do the same S3 PUT to R2
+- Returns cdn.shopbanao.in URL
+
+### 5. Background migration: `r2-migrate-supabase-storage` edge function
+- Admin-only (via `has_role(auth.uid(), 'admin')`)
+- Paginates through these tables and rewrites Supabase Storage URLs → R2 URLs:
+  - `products.image_url`, `product_images.image_url`, `categories.image_url`
+  - `stores.logo_url`, `banner_url`, `mobile_hero_url`, `og_image_url`, `about_us_image_url`, `mobile_hero_images[]`
+  - `store_pages.image_url`, `media_library.file_url`
+- For each Supabase Storage URL:
+  1. Download from Supabase
+  2. PUT to R2 at the same path
+  3. Update DB row with new cdn.shopbanao.in URL
+- Run in batches of 50, return progress. Admin triggers manually from `/admin` page (button) until done.
+- Safe to re-run (idempotent — skips URLs already on cdn.shopbanao.in).
+
+### 6. Admin trigger UI
+- Add a "Migrate images to R2" button in `src/pages/admin/AdminSettings.tsx` (or new section)
+- Shows batch progress + count of remaining Supabase URLs
+
+### 7. Worker passthrough (already done)
+- `cdn.shopbanao.in` already bypasses the storefront route in the Worker (deployed last turn)
+- `/cf-img` already accepts any URL → will resize R2 images the same way
+
+## Technical details (for me)
+
+- R2 S3 endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
+- SigV4 region: `auto`, service: `s3`
+- Public read: handled by R2 custom domain `cdn.shopbanao.in` (already active)
+- Use Deno's `crypto.subtle` for HMAC-SHA256 (no extra deps needed for SigV4)
+- All edge fns: `verify_jwt = true` for upload (user-scoped); admin migrate also checks `has_role`
+- Keep `image-ops/resize` action for backward-compat during transition
+
+## Out of scope (not changing)
+
+- Supabase Storage buckets stay alive until migration completes — then can be emptied
+- No DB schema changes (URLs are just stored as TEXT)
+- No frontend UI/UX changes for users uploading
+- Theme system, RPCs, RLS — untouched
+
+## Rollout
+
+1. Deploy edge fns + frontend changes → all NEW uploads go to R2 immediately
+2. Run migration in admin panel in batches until 0 Supabase URLs remain
+3. Verify everything loads, then optionally delete old Supabase Storage objects (you do manually)
+
+Ready to build?
