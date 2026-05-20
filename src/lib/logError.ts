@@ -18,21 +18,48 @@ const MAX_ERRORS_PER_MINUTE = 10;
  * they originate from the host app's injected JS and would just spam our logs.
  */
 const IGNORED_ERROR_PATTERNS: RegExp[] = [
-  /_AutofillCallbackHandler/i,           // FB/IG iOS WebView autofill bridge
-  /window\.webkit\.messageHandlers/i,    // iOS WKWebView native bridge
-  /^Script error\.?$/i,                   // Cross-origin script (no details available)
+  /_AutofillCallbackHandler/i,
+  /window\.webkit\.messageHandlers/i,
+  /^Script error\.?$/i,
   /Non-Error promise rejection captured/i,
   /ResizeObserver loop limit exceeded/i,
   /ResizeObserver loop completed with undelivered notifications/i,
-  /Java exception was raised during method invocation/i, // Android WebView
-  /__gCrWeb/i,                            // Chrome iOS WebView bridge
-  /instantSearchSDKJSBridgeClearHighlight/i, // Bing app WebView
-  /webkitExitFullScreen/i,                // Safari fullscreen quirks
+  /Java exception was raised during method invocation/i,
+  /__gCrWeb/i,
+  /instantSearchSDKJSBridgeClearHighlight/i,
+  /webkitExitFullScreen/i,
+  // Tier-2 #E: drop noisy network/abort/3p errors
+  /\bAbortError\b/i,
+  /The user aborted a request/i,
+  /^Failed to fetch$/i,
+  /^Load failed$/i,
+  /^NetworkError\b/i,
+  /^TypeError: Failed to fetch/i,
+  /ChunkLoadError/i,
+  /Loading chunk \d+ failed/i,
+  /Loading CSS chunk/i,
+  /^Importing a module script failed/i,
+  /^Unexpected token '<'/i,
+  /googletagmanager|gtag|fbevents|clarity|hotjar/i,
 ];
 
 function isIgnoredError(message: string, stack?: string): boolean {
   const haystack = `${message} ${stack || ""}`;
   return IGNORED_ERROR_PATTERNS.some((rx) => rx.test(haystack));
+}
+
+// Tier-2 #D: dedupe same (message+context) within 5 min
+const _errDedup = new Map<string, number>();
+const ERR_DEDUP_TTL_MS = 5 * 60_000;
+function isDuplicateError(key: string): boolean {
+  const now = Date.now();
+  const last = _errDedup.get(key);
+  if (last && now - last < ERR_DEDUP_TTL_MS) return true;
+  _errDedup.set(key, now);
+  if (_errDedup.size > 200) {
+    for (const [k, t] of _errDedup) if (now - t > ERR_DEDUP_TTL_MS) _errDedup.delete(k);
+  }
+  return false;
 }
 
 interface LogErrorOptions {
