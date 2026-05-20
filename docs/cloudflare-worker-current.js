@@ -5347,7 +5347,8 @@ export default {
         return addDiagnosticHeaders(response, { slug, cacheStatus: "MISS", dataSource: "none" });
       }
 
-      const prebuiltHead = cachedHead || (await getPrebuiltHead(shellResult.html, env));
+      let prebuiltHead = cachedHead || (await getPrebuiltHead(shellResult.html, env));
+      prebuiltHead = await enrichHeadWithDeepPreloads(prebuiltHead, new URL(request.url).origin, env);
       // FIX #3: Always set Link header
       const linkHeader = _buildLinkPreloadHeader(shellResult.html);
 
