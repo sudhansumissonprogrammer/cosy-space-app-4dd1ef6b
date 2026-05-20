@@ -255,7 +255,7 @@ function R2MigrationPanel() {
         </Button>
         <Button onClick={() => run(false)} disabled={running}>
           {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Cloud className="mr-2 h-4 w-4" />}
-          Migrate next batch (100)
+          Migrate next batch (25)
         </Button>
         <Button variant="default" onClick={runAll} disabled={running}>
           {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Cloud className="mr-2 h-4 w-4" />}
