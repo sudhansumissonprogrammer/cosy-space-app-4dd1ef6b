@@ -1,15 +1,10 @@
 /**
- * Centralized upload handler for the image optimization pipeline.
+ * Centralized upload handler — now uploads to Cloudflare R2 via edge function.
  *
- * On every upload:
- *  1. Compresses to a single 800w WebP variant client-side
- *  2. Uploads ONE file to Supabase Storage
- *  3. Returns the public URL as the main reference
- *
- * Responsive serving is handled by Supabase render API at request time:
- *   /storage/v1/render/image/...?width=400&quality=85
- *
- * Naming: {basePath}-800w.webp
+ * Pipeline:
+ *   1. Compress to 800w WebP client-side
+ *   2. POST to `r2-upload` edge function (S3 PUT to R2)
+ *   3. Returns the public cdn.shopbanao.in URL
  */
 
 import { supabase } from "@/integrations/supabase/client";
@@ -30,10 +25,10 @@ export interface UploadResult {
 }
 
 /**
- * Upload an image with automatic optimization (single 800w file).
+ * Upload an image to Cloudflare R2 with automatic optimization (single 800w file).
  *
  * @param file        Raw image file from the user
- * @param bucket      Storage bucket name (e.g. "product-images")
+ * @param bucket      Logical bucket prefix (e.g. "product-images")
  * @param basePath    Path prefix (e.g. "userId/storeId/1234abc")
  * @returns UploadResult with URL
  */
@@ -43,26 +38,26 @@ export async function uploadOptimizedImage(
   basePath: string,
 ): Promise<UploadResult> {
   const result: MultiSizeResult = await processImageMultiSize(file);
-  const variantUrls = new Map<VariantWidth, string>();
-
-  // Upload the single 800w variant
   const variantFile = result.variants.get(800);
   if (!variantFile) throw new Error("Image compression failed — no output file");
 
   const ext = variantFile.name.split(".").pop() || "webp";
   const path = `${basePath}-800w.${ext}`;
 
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(path, variantFile, {
-      cacheControl: "31536000", // 1 year — immutable content-addressed
-      upsert: true,
-      contentType: variantFile.type,
-    });
+  const form = new FormData();
+  form.append("file", variantFile);
+  form.append("bucket", bucket);
+  form.append("path", path);
+
+  const { data, error } = await supabase.functions.invoke("r2-upload", {
+    body: form,
+  });
 
   if (error) throw new Error(`Failed to upload image: ${error.message}`);
+  if (!data?.publicUrl) throw new Error("Upload failed: no URL returned");
 
-  const mainUrl = supabase.storage.from(bucket).getPublicUrl(data.path).data.publicUrl;
+  const mainUrl = data.publicUrl as string;
+  const variantUrls = new Map<VariantWidth, string>();
   variantUrls.set(800, mainUrl);
 
   return {
@@ -85,18 +80,14 @@ export function generateUploadPath(userId: string, storeId: string): string {
  * Given a main image URL (800w), derive the variant URL for a given width.
  * Works for images uploaded through our pipeline.
  *
- * Example:
- *   resolveVariantUrl("https://.../-800w.webp", 400)
- *   → "https://.../-400w.webp"
+ * Note: We only store 800w now. This function returns the same URL since
+ * R2 serves a single file size — the browser downscales as needed.
  */
 export function resolveVariantUrl(
   mainUrl: string,
-  width: VariantWidth,
+  _width: VariantWidth,
 ): string {
-  // Match our naming convention: basePath-800w.ext
-  const match = mainUrl.match(/^(.+)-(\d+)w\.(webp|jpg|jpeg|png)$/i);
-  if (!match) return mainUrl;
-  return `${match[1]}-${width}w.${match[3]}`;
+  return mainUrl;
 }
 
 /**

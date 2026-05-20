@@ -1,10 +1,43 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { AwsClient } from "npm:aws4fetch@1.0.20";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+// ── R2 config ───────────────────────────────────────────────────
+const R2_ACCOUNT_ID = Deno.env.get("R2_ACCOUNT_ID") || "";
+const R2_ACCESS_KEY_ID = Deno.env.get("R2_ACCESS_KEY_ID") || "";
+const R2_SECRET_ACCESS_KEY = Deno.env.get("R2_SECRET_ACCESS_KEY") || "";
+const R2_BUCKET_NAME = Deno.env.get("R2_BUCKET_NAME") || "";
+const R2_PUBLIC_URL = (Deno.env.get("R2_PUBLIC_URL") || "").replace(/\/+$/, "");
+
+const r2 = new AwsClient({
+  accessKeyId: R2_ACCESS_KEY_ID,
+  secretAccessKey: R2_SECRET_ACCESS_KEY,
+  service: "s3",
+  region: "auto",
+});
+const r2Endpoint = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET_NAME}`;
+
+async function r2Put(key: string, body: ArrayBuffer | Uint8Array, contentType: string) {
+  const res = await r2.fetch(`${r2Endpoint}/${key}`, {
+    method: "PUT",
+    body: body instanceof Uint8Array ? body : new Uint8Array(body),
+    headers: {
+      "Content-Type": contentType,
+      "Cache-Control": "public, max-age=31536000, immutable",
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`R2 PUT failed: ${res.status} ${text}`);
+  }
+  await res.text();
+  return `${R2_PUBLIC_URL}/${key}`;
+}
 
 // ── Shared URL validation ───────────────────────────────────────
 
@@ -66,6 +99,7 @@ async function handleResize(url: URL) {
 }
 
 // ── Copy external image handler ─────────────────────────────────
+// Downloads remote image and pushes to R2 (cdn.shopbanao.in).
 
 async function handleCopy(req: Request) {
   const { url, store_id, product_id } = await req.json();
@@ -77,6 +111,13 @@ async function handleCopy(req: Request) {
     );
   }
 
+  // Skip if already on our CDN or storage
+  if (R2_PUBLIC_URL && url.startsWith(R2_PUBLIC_URL)) {
+    return new Response(
+      JSON.stringify({ success: true, new_url: url, skipped: true }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   if (url.includes(supabaseUrl) || url.includes("supabase.co/storage")) {
     return new Response(
@@ -135,32 +176,24 @@ async function handleCopy(req: Request) {
   };
   const ext = extMap[contentType] || "jpg";
 
-  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const supaAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
   const timestamp = Date.now();
   const rand = Math.random().toString(36).slice(2, 8);
-  const storagePath = `external/${store_id}/${product_id}-${timestamp}-${rand}.${ext}`;
+  const key = `external/${store_id}/${product_id}-${timestamp}-${rand}.${ext}`;
 
   const arrayBuffer = await blob.arrayBuffer();
-  const { data: uploadData, error: uploadError } = await supaAdmin.storage
-    .from("product-images")
-    .upload(storagePath, arrayBuffer, {
-      contentType,
-      cacheControl: "31536000",
-      upsert: false,
-    });
-
-  if (uploadError) {
+  let newUrl: string;
+  try {
+    newUrl = await r2Put(key, arrayBuffer, contentType);
+  } catch (err) {
+    console.error("[image-ops/copy] R2 upload failed:", err);
     return new Response(
-      JSON.stringify({ success: false, error: `Upload failed: ${uploadError.message}` }),
+      JSON.stringify({ success: false, error: `Upload failed: ${err instanceof Error ? err.message : "unknown"}` }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
-  const newUrl = supaAdmin.storage
-    .from("product-images")
-    .getPublicUrl(uploadData.path).data.publicUrl;
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supaAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
   const { error: updateError } = await supaAdmin
     .from("products")

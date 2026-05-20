@@ -47,9 +47,12 @@ export function optimizeImageUrl(
   if (!firstUrl) return "";
   url = firstUrl;
 
-  // ── 1. Our pipeline images: use Supabase render API directly ──
+  // ── 1. Our pipeline images on R2/CDN: serve directly ──
+  // R2 serves a single 800w WebP variant — browser downscales as needed.
+  // No runtime resize call = zero Worker cost.
   if (isOptimizedUrl(url)) {
     const variant = resolveVariantUrl(url, 800);
+    // Legacy Supabase Storage pipeline images (pre-R2 migration) still use render API
     if (variant.includes("supabase.co/storage")) {
       try {
         const u = new URL(variant);
@@ -60,13 +63,12 @@ export function optimizeImageUrl(
         u.searchParams.set("width", String(width));
         u.searchParams.set("quality", String(quality));
         u.searchParams.set("resize", "contain");
-        // Tier-1 #11: Supabase Render auto-negotiates WebP via Accept header
-        // when `format` is omitted. Do NOT set format=origin (that defeats it).
         return u.toString();
       } catch {
         return variant;
       }
     }
+    // R2/CDN URLs — serve directly
     return variant;
   }
 
