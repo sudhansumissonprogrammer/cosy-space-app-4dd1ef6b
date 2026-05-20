@@ -1,92 +1,71 @@
+# Landing page slow load — fix plan
 
-# Migrate all images to Cloudflare R2
+## The real problem
 
-Goal: all image uploads (logos, banners, hero, product images, category images, media library, external-image copies) go to R2 served via `https://cdn.shopbanao.in`. Existing Supabase Storage URLs get migrated in the background.
+The live profile of `https://shopbanao.in/` shows:
 
-## Architecture
+- **First Contentful Paint = 7.7s** (should be <1.5s)
+- Page load = 2.9s, but the screen looks blank until ~7s because critical chunks load in a long waterfall.
+- **17 separate JS chunks** load on first paint, including ones that should be inlined.
 
-```text
-┌─────────────┐      upload      ┌────────────────────┐
-│  Frontend   │ ───────────────► │ edge fn: r2-upload │
-│ (compressed │                  │  (S3 PUT to R2)    │
-│  800w webp) │                  └──────────┬─────────┘
-└─────────────┘                             │
-                                            ▼
-                                  ┌───────────────────┐
-                                  │  R2 bucket        │
-                                  │  shopbanao-images │
-                                  └─────────┬─────────┘
-                                            │ public via custom domain
-                                            ▼
-                                 https://cdn.shopbanao.in/<key>
+Top offenders found in the network trace:
+
+| Resource | Time | Why it hurts |
+|---|---|---|
+| `Navbar-JHlczaDE.js` | **2000 ms** | Navbar is a *static* import in `Index.tsx` but Rollup still split it into its own chunk → loads after Index, after framework, after entry. Above-the-fold header waits 2s. |
+| `400-CY0dnwJo.css` / `600-Bpup8yGQ.css` (Montserrat Alternates) | ~980 ms | Loaded from `main.tsx`. Landing **does not use Montserrat Alternates** — it's a dashboard-only font. ~50 KB of render-blocking CSS for nothing. |
+| `alegreya-sc-700.woff2` (89 KB) | 1055 ms | Used by the italic "ShopBanao" wordmark in the hero. Not preloaded → headline stays invisible until the font finishes. |
+| `shopbanao-logo-ByBmcqDQ.webp` | 1080 ms | LCP-candidate logo in Navbar. Not preloaded. |
+| `showcase-overlays-mobile.webp` / `showcase-serdiya-mobile.webp` | ~950 ms | Hero phone-mockup images, not preloaded. |
+| `~api/analytics` XHR | **2163 ms** | Fires from `~flock.js` early in load. Not on the render path, but it inflates "page load". |
+| `ProblemAwareness`, `StatsBar`, `PaymentTrustStrip`, `Footer`, `LandingJsonLd` chunks | all in first wave | `LazyMount` `rootMargin: 2000px` is so large that *every* section intersects immediately on mobile → all "lazy" chunks download in the cold-load wave, defeating the optimisation. |
+
+So nothing about the page is actually heavy — the issue is a chunk waterfall + render-blocking CSS/fonts that the browser cannot start until the previous step finishes.
+
+## What to change
+
+### 1. Inline Navbar + Hero into the landing chunk
+
+Force Rollup to keep `Navbar.tsx`, `Hero.tsx`, and `shopbanao-logo.webp` import wrapper inside the `LandingApp` chunk via `manualChunks` (add a `landing-shell` group). Result: zero extra round trip for the above-the-fold header.
+
+### 2. Stop loading dashboard fonts on the landing page
+
+In `src/main.tsx`, the `loadFonts()` block imports `@fontsource/montserrat-alternates/{400,600}.css`. Landing doesn't use it. Split: only load Plus Jakarta on landing, only load Montserrat on dashboard routes. Saves ~50 KB render-blocking CSS + 2 font fetches.
+
+### 3. Preload the actual LCP assets in `index.html`
+
+Add to `<head>` (root-host only, guarded by an inline script so storefronts don't get them):
+
+```html
+<link rel="preload" as="image" href="/assets/shopbanao-logo-*.webp" fetchpriority="high">
+<link rel="preload" as="font" type="font/woff2" href="/fonts/alegreya-sc-700.woff2" crossorigin>
 ```
 
-Serving: Worker `/cf-img?url=&w=&q=` already proxies + resizes any URL, so cdn.shopbanao.in images get the same responsive variants and edge cache. `optimizeImageUrl()` will detect cdn.shopbanao.in and route through `/cf-img` (just like Supabase URLs today).
+Logo filename is content-hashed — emit the preload from the build via a small Vite post-build step (or hash-stable manifest lookup).
 
-## Steps
+### 4. Fix `LazyMount` so it actually defers
 
-### 1. New edge function `r2-upload`
-- Auth: requires JWT (uses existing user session)
-- Accepts: `multipart/form-data` with `file`, `bucket` (logical name like `product-images`), `path`
-- Uses AWS SigV4 to PUT to R2 S3 endpoint (`https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com/<R2_BUCKET_NAME>/<key>`)
-- Key layout preserves multi-tenancy: `product-images/<userId>/<storeId>/<timestamp>-<rand>-800w.webp` (same as today, just on R2)
-- Returns `{ publicUrl: "https://cdn.shopbanao.in/<key>", path }`
-- Sets `Content-Type`, `Cache-Control: public, max-age=31536000, immutable`
+`rootMargin: "2000px 0px"` on a 900 px mobile viewport intersects every below-fold section at first paint. Change to `rootMargin: "600px 0px"` (one viewport ahead) and rely on the existing `requestIdleCallback` safety-net for the "scroll fast, no white" case. The idle mount already kicks in after first paint, so the white-flash fix from last week is preserved while the cold-load waterfall shrinks.
 
-### 2. Update `src/lib/uploadOptimizedImage.ts`
-- Replace `supabase.storage.from(bucket).upload(...)` with `supabase.functions.invoke("r2-upload", { body: formData })`
-- Same compression pipeline (single 800w webp) — no UI change
-- Returns the new `cdn.shopbanao.in` URL as `mainUrl`
+### 5. Defer analytics ping until after FCP
 
-### 3. Update `src/lib/imageOptimize.ts`
-- Add CDN detection: if URL starts with `https://cdn.shopbanao.in`, append `?width=&quality=` via Worker `/cf-img` in prod, or just append `?w=&q=` if Worker supports R2 directly
-- Existing pipeline-naming logic (`-800w.webp` → `-400w.webp`) keeps working; just the host changes
+`~flock.js` posts to `/~api/analytics` immediately. Wrap the POST in `requestIdleCallback` (or `setTimeout(..., 2000)` fallback) so it doesn't fight the LCP image for bandwidth.
 
-### 4. Update `image-ops/copy` edge function (external image import)
-- Instead of `supabase.storage.from("product-images").upload(...)`, do the same S3 PUT to R2
-- Returns cdn.shopbanao.in URL
+### 6. Keep the inline skeleton hidden synchronously on root host
 
-### 5. Background migration: `r2-migrate-supabase-storage` edge function
-- Admin-only (via `has_role(auth.uid(), 'admin')`)
-- Paginates through these tables and rewrites Supabase Storage URLs → R2 URLs:
-  - `products.image_url`, `product_images.image_url`, `categories.image_url`
-  - `stores.logo_url`, `banner_url`, `mobile_hero_url`, `og_image_url`, `about_us_image_url`, `mobile_hero_images[]`
-  - `store_pages.image_url`, `media_library.file_url`
-- For each Supabase Storage URL:
-  1. Download from Supabase
-  2. PUT to R2 at the same path
-  3. Update DB row with new cdn.shopbanao.in URL
-- Run in batches of 50, return progress. Admin triggers manually from `/admin` page (button) until done.
-- Safe to re-run (idempotent — skips URLs already on cdn.shopbanao.in).
+Currently the inline `#inline-skel` is rendered then hidden by JS after parse. On the marketing host it should be `style="display:none"` by default and only shown via inline script when a storefront path is detected. Eliminates a layout pass and removes the white flash period.
 
-### 6. Admin trigger UI
-- Add a "Migrate images to R2" button in `src/pages/admin/AdminSettings.tsx` (or new section)
-- Shows batch progress + count of remaining Supabase URLs
+## Expected result
 
-### 7. Worker passthrough (already done)
-- `cdn.shopbanao.in` already bypasses the storefront route in the Worker (deployed last turn)
-- `/cf-img` already accepts any URL → will resize R2 images the same way
+- FCP: ~7.7 s → **<1.5 s**
+- LCP (hero logo + headline): **<2.0 s**
+- Cold-load round-trips on critical path: 17 → ~8
+- No functional changes — landing visuals, content, and routes stay identical.
 
-## Technical details (for me)
+## Technical notes
 
-- R2 S3 endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
-- SigV4 region: `auto`, service: `s3`
-- Public read: handled by R2 custom domain `cdn.shopbanao.in` (already active)
-- Use Deno's `crypto.subtle` for HMAC-SHA256 (no extra deps needed for SigV4)
-- All edge fns: `verify_jwt = true` for upload (user-scoped); admin migrate also checks `has_role`
-- Keep `image-ops/resize` action for backward-compat during transition
-
-## Out of scope (not changing)
-
-- Supabase Storage buckets stay alive until migration completes — then can be emptied
-- No DB schema changes (URLs are just stored as TEXT)
-- No frontend UI/UX changes for users uploading
-- Theme system, RPCs, RLS — untouched
-
-## Rollout
-
-1. Deploy edge fns + frontend changes → all NEW uploads go to R2 immediately
-2. Run migration in admin panel in batches until 0 Supabase URLs remain
-3. Verify everything loads, then optionally delete old Supabase Storage objects (you do manually)
-
-Ready to build?
+- `vite.config.ts` → extend `manualChunks(id)` with a `landing-shell` bucket for `src/components/landing/Navbar`, `src/components/landing/Hero`, and `src/assets/shopbanao-logo*`.
+- `src/main.tsx` → branch font loading on `shouldUseLandingFastPath()` vs dashboard host.
+- `src/components/landing/LazyMount.tsx` → reduce `rootMargin` default; keep the idle safety-net (so "scroll fast → white" stays fixed).
+- `index.html` → add hash-aware preload tags via a small build-time injector, gated to root host by inline JS.
+- No backend, RLS, or schema changes.
