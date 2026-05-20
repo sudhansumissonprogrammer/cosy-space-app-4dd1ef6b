@@ -3538,7 +3538,7 @@ async function handleProductsApi(request, url, ctx, env) {
 
   try {
     const data = await fetchPromise;
-    return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin");
+    return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin", filters);
   } catch {
     return _fallbackProducts(domain, filters, version, env);
   } finally {
