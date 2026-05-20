@@ -1,5 +1,18 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.18.0 — KV-WRITE COST-CUT
+ * SHOPBANAO PRODUCTION ROUTER v8.19.0 — LONG-TAIL KV GATE
+ *
+ * Changes from v8.18.0:
+ *  v8.19.0 — Three more KV-write cuts (~50% on top of v8.18.0):
+ *            (B) Second-hit gate for PDP + Category + filtered Products.
+ *                First miss writes Cache API only; KV write only on the 2nd
+ *                miss within 5min. Eliminates one-hit-wonder crawler writes.
+ *            (C) Default-filter products (home page) still write KV directly.
+ *                Non-default filters (page>=2, category drill, custom sort)
+ *                go through the second-hit gate.
+ *            (E) Bot KV-skip already covers PDP/Category/Products via
+ *                ctx.__skipKvWarm (set in early-bot path, v8.1.0).
+ *            Purge handlers also clear _secondHitMap implicitly because the
+ *                version bump changes the kvKey shape.
  *
  * Changes from v8.9.0:
  *  v8.18.0 — Three-pronged KV write reduction (~50% fewer KV puts):
@@ -1053,6 +1066,57 @@ function _memWarmLockSet(slug) {
   if (_memWarmLock.size > 2000) _memWarmLock.clear();
   _memWarmLock.set(slug, Date.now() + WARM_LOCK_MEM_TTL_MS);
 }
+
+// v8.19.0 Fix B — "second-hit" gate. First miss for a key writes only to
+// Cache API (free). KV write is suppressed until the SAME key is seen again
+// within SECOND_HIT_TTL. Eliminates one-hit-wonder writes (long-tail PDPs,
+// crawler-only category combos). Cache API edge-locality means the 2nd
+// visitor in that 5-min window still hits cache; only a different colo
+// would re-fetch from origin (sub-100ms, no user-visible difference).
+const _secondHitMap = new Map(); // key → expiresAt
+const SECOND_HIT_TTL_MS = 5 * 60_000;
+const SECOND_HIT_MAX = 20_000;
+function _shouldWriteOnSecondHit(key) {
+  const now = Date.now();
+  const exp = _secondHitMap.get(key);
+  if (exp && now < exp) {
+    // Second hit within window → allow write, clear marker so we don't
+    // keep rewriting on every subsequent hit (kvPutDedup handles that).
+    _secondHitMap.delete(key);
+    return true;
+  }
+  if (_secondHitMap.size > SECOND_HIT_MAX) {
+    let n = 2000;
+    for (const k of _secondHitMap.keys()) {
+      _secondHitMap.delete(k);
+      if (--n <= 0) break;
+    }
+  }
+  _secondHitMap.set(key, now + SECOND_HIT_TTL_MS);
+  return false;
+}
+function kvPutLongTail(env, key, value, opts) {
+  if (!env?.STORE_KV) return Promise.resolve();
+  if (!_shouldWriteOnSecondHit(key)) return Promise.resolve();
+  return kvPutDedup(env, key, value, opts);
+}
+
+// v8.19.0 Fix C — Default-filter products go straight to KV (storefront home
+// page, high re-hit rate). Non-default filters (page>=2, category drill,
+// custom sort) are long-tail → gated by second-hit.
+function _isDefaultProductFilter(filters) {
+  if (!filters) return true;
+  if (filters.category) return false;
+  if (filters.sort) return false;
+  if (filters.page && Number(filters.page) > 1) return false;
+  return true;
+}
+function kvPutProducts(env, key, value, opts, filters) {
+  if (_isDefaultProductFilter(filters)) return kvPutDedup(env, key, value, opts);
+  return kvPutLongTail(env, key, value, opts);
+}
+
+
 
 
 async function getSpaShell(request, ctx, env) {
@@ -3229,7 +3293,7 @@ function _buildPdpResponse(data, cacheKey, kvKey, ctx, env, source) {
   if (data && data.product) {
     ctx.waitUntil(Promise.all([
       cache.put(cacheKey, response.clone()).catch(() => {}),
-      ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: PDP_KV_TTL }),
+      ctx?.__skipKvWarm ? Promise.resolve() : kvPutLongTail(env, kvKey, body, { expirationTtl: PDP_KV_TTL }), // v8.19.0 B
     ]));
   } else {
     // v8.8.1 Fix #4: cache "not found" briefly so DoS via random slugs can't hammer DB.
@@ -3315,7 +3379,7 @@ function _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, source) {
   if (data && data.category) {
     ctx.waitUntil(Promise.all([
       cache.put(cacheKey, response.clone()).catch(() => {}),
-      ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: CATEGORY_KV_TTL }),
+      ctx?.__skipKvWarm ? Promise.resolve() : kvPutLongTail(env, kvKey, body, { expirationTtl: CATEGORY_KV_TTL }), // v8.19.0 B
     ]));
   } else {
     // v8.8.1 Fix #4: short negative cache for unknown categories.
@@ -3476,7 +3540,7 @@ async function handleProductsApi(request, url, ctx, env) {
   if (inflightProductRequests.has(coalesceKey)) {
     try {
       const data = await inflightProductRequests.get(coalesceKey);
-      return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin-coalesced");
+      return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin-coalesced", filters);
     } catch {
       return _fallbackProducts(domain, filters, version, env);
     }
@@ -3487,7 +3551,7 @@ async function handleProductsApi(request, url, ctx, env) {
 
   try {
     const data = await fetchPromise;
-    return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin");
+    return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin", filters);
   } catch {
     return _fallbackProducts(domain, filters, version, env);
   } finally {
@@ -3544,7 +3608,7 @@ async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
   }
 }
 
-function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
+function buildProductResponse(data, cacheKey, kvKey, ctx, env, source, filters) {
   const body = JSON.stringify(data || []);
   const response = new Response(body, {
     headers: {
@@ -3560,8 +3624,10 @@ function buildProductResponse(data, cacheKey, kvKey, ctx, env, source) {
   ctx.waitUntil(
     Promise.all([
       cache.put(cacheKey, response.clone()).catch(() => {}),
-      // v8.1.0: bots skip KV; dedup collapses repeats
-      ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }),
+      // v8.1.0: bots skip KV; dedup collapses repeats.
+      // v8.19.0 B+C: default-filter pages → direct KV write; filtered/paged
+      // long-tail combos → second-hit gate (Cache API only on first miss).
+      ctx?.__skipKvWarm ? Promise.resolve() : kvPutProducts(env, kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }, filters),
     ]),
   );
   return addCorsHeaders(response, source);
@@ -3584,7 +3650,7 @@ async function _refreshProductsBackground(domain, filters, version, env) {
           }),
         )
         .catch(() => {}),
-      kvPutDedup(env, kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }),
+      kvPutProducts(env, kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }, filters), // v8.19.0 C
     ]);
   } catch {}
 }
