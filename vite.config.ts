@@ -179,16 +179,31 @@ export default defineConfig(({ mode }) => ({
          */
         manualChunks(id) {
           // === Entry-only helpers ===
-          // main.tsx needs host detection on EVERY route, including the root
-          // marketing landing. If these helpers are allowed to be auto-placed
-          // into storefront-shell, the landing entry statically imports the
-          // whole storefront chunk graph before first paint.
           if (
             id.includes("/src/lib/subdomain") ||
             id.includes("/src/lib/chunkLoadRecovery") ||
             id.includes("vite/preload-helper")
           ) {
             return "entry-utils";
+          }
+
+          // === Landing above-the-fold shell ===
+          // Navbar + Hero are statically imported by src/pages/Index.tsx but
+          // Rollup was still splitting them into separate chunks → above-the-fold
+          // header waited ~2s for an extra round trip on cold mobile loads.
+          // Bundle LandingApp + Index + Navbar + Hero + ErrorBoundary +
+          // shopbanao-logo asset into ONE `landing-shell` chunk so first paint
+          // happens after ONE script download instead of four.
+          if (
+            id.includes("/src/LandingApp") ||
+            id.includes("/src/pages/Index.tsx") ||
+            id.includes("/src/components/landing/Navbar") ||
+            id.includes("/src/components/landing/Hero") ||
+            id.includes("/src/components/landing/LazyMount") ||
+            id.includes("/src/components/ErrorBoundary") ||
+            id.includes("/src/assets/shopbanao-logo")
+          ) {
+            return "landing-shell";
           }
 
           // === Core framework (React) ===
