@@ -18,7 +18,7 @@ interface LazyMountProps {
 export default function LazyMount({
   children,
   minHeight = 400,
-  rootMargin = "2000px 0px",
+  rootMargin = "600px 0px",
   fallback = null,
 }: LazyMountProps) {
   const ref = useRef<HTMLDivElement>(null);
