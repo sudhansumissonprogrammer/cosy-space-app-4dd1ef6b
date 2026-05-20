@@ -408,9 +408,10 @@
           for(var i=0;i<kids.length;i++){
             totalHeight+=kids[i].offsetHeight;
           }
-          /* Need real React content (not just early shell). 400px ensures
-             nav + at least one section is mounted before we fade. */
-          return totalHeight>=400;
+          /* Need real React content (not just early shell). 120px is enough
+             for mobile nav + first content row; waiting for 400px can keep
+             the skeleton visible too long on cold mobile loads. */
+          return totalHeight>=120;
         }
 
         function waitForPaint(){

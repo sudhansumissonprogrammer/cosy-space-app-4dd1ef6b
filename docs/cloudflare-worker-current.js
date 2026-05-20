@@ -75,7 +75,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.15.1-brotli-rpc";
+const WORKER_VERSION = "8.17.1-mobile-skeleton";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -523,7 +523,7 @@ function _capMapSize(map, max) {
 //
 // Order of dismissal triggers (whichever fires first):
 //   1. storefront:content-ready event (React shell painted)        — primary
-//   2. #root has measurable content (height > 400px)               — safety net
+//   2. #root has measurable content (height > 120px)               — safety net
 //   3. fallbackMs (12s) hard kill                                  — last resort
 function getSkeletonCleanupScript(fallbackMs = 12000) {
   return `<script>(function(){
