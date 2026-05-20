@@ -143,44 +143,42 @@ function isSafeSwHost(): boolean {
  * - Only preview/local hosts register SW.
  */
 if ("serviceWorker" in navigator) {
-  if (isPublishedHost()) {
-    // ── LIVE HOSTS: Aggressive SW cleanup ──
-    // Legacy SWs on published hosts cause stale HTML. Clean up ONCE per device
-    // (localStorage, not sessionStorage) — otherwise every new tab triggers a
-    // full reload + double skeleton on first visit.
-    const CLEANUP_KEY = "sw_cleanup_v4";
-    const cleanupDone = (() => {
-      try { return localStorage.getItem(CLEANUP_KEY); } catch { return "1"; }
-    })();
-    if (!cleanupDone) {
-      try { localStorage.setItem(CLEANUP_KEY, "1"); } catch {}
-      // v8.16: NEVER reload after cleanup. In WebViews with volatile
-      // localStorage (Instagram in-app browser, some Chrome sandboxes,
-      // blocked-storage modes) the CLEANUP_KEY doesn't persist, so every
-      // page load re-ran cleanup → window.location.replace → reload loop
-      // every ~10-15s. Just unregister silently; the next user-initiated
-      // navigation will pick up fresh assets without any forced reload.
-      Promise.all([
-        navigator.serviceWorker.getRegistrations(),
-        caches.keys().catch(() => [] as string[]),
-      ]).then(([registrations, keys]) => {
-        Promise.all(registrations.map((r) => r.unregister()))
-          .then(() => Promise.all(keys.map((k) => caches.delete(k))))
-          .catch(() => {});
-      });
-    }
-    // Do NOT register SW on live hosts — ever.
-  } else if (isSafeSwHost()) {
-    // ── PREVIEW/LOCAL ONLY: Normal SW registration (idle) ──
-    const registerSW = () => {
+  // v8.23.0: Defer ALL SW work (cleanup + registration) until after `load`
+  // event so it never competes with the LCP image or hydration.
+  const runSwWork = () => {
+    if (isPublishedHost()) {
+      // ── LIVE HOSTS: Aggressive SW cleanup (one-time per device) ──
+      const CLEANUP_KEY = "sw_cleanup_v4";
+      const cleanupDone = (() => {
+        try { return localStorage.getItem(CLEANUP_KEY); } catch { return "1"; }
+      })();
+      if (!cleanupDone) {
+        try { localStorage.setItem(CLEANUP_KEY, "1"); } catch {}
+        Promise.all([
+          navigator.serviceWorker.getRegistrations(),
+          caches.keys().catch(() => [] as string[]),
+        ]).then(([registrations, keys]) => {
+          Promise.all(registrations.map((r) => r.unregister()))
+            .then(() => Promise.all(keys.map((k) => caches.delete(k))))
+            .catch(() => {});
+        });
+      }
+    } else if (isSafeSwHost()) {
       navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
-    };
-
-    if ("requestIdleCallback" in window) {
-      (window as any).requestIdleCallback(registerSW, { timeout: 5000 });
-    } else {
-      setTimeout(registerSW, 3000);
     }
+  };
+
+  const scheduleSwWork = () => {
+    if ("requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(runSwWork, { timeout: 5000 });
+    } else {
+      setTimeout(runSwWork, 2000);
+    }
+  };
+
+  if (document.readyState === "complete") {
+    scheduleSwWork();
+  } else {
+    window.addEventListener("load", scheduleSwWork, { once: true });
   }
-  // else: unknown host — do nothing
 }
