@@ -3280,7 +3280,7 @@ function _buildPdpResponse(data, cacheKey, kvKey, ctx, env, source) {
   if (data && data.product) {
     ctx.waitUntil(Promise.all([
       cache.put(cacheKey, response.clone()).catch(() => {}),
-      ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: PDP_KV_TTL }),
+      ctx?.__skipKvWarm ? Promise.resolve() : kvPutLongTail(env, kvKey, body, { expirationTtl: PDP_KV_TTL }), // v8.19.0 B
     ]));
   } else {
     // v8.8.1 Fix #4: cache "not found" briefly so DoS via random slugs can't hammer DB.
