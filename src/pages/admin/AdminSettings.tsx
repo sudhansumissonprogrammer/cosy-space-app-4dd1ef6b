@@ -213,9 +213,9 @@ function R2MigrationPanel() {
     setRunning(true);
     let totalMigrated = 0;
     try {
-      for (let i = 0; i < 30; i++) {
+      for (let i = 0; i < 80; i++) {
         const { data, error } = await supabase.functions.invoke("r2-migrate-images", {
-          body: { batch_size: 100 },
+          body: { batch_size: 25 },
         });
         if (error) throw error;
         setResult(data);
