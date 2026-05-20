@@ -193,7 +193,7 @@ function R2MigrationPanel() {
     setRunning(true);
     try {
       const { data, error } = await supabase.functions.invoke("r2-migrate-images", {
-        body: { batch_size: 100, dry_run: dryRun },
+        body: { batch_size: 25, dry_run: dryRun },
       });
       if (error) throw error;
       setResult(data);
