@@ -100,14 +100,14 @@ export default function MediaLibrary() {
   const deleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
       const toDelete = media?.filter((m) => ids.includes(m.id)) || [];
-      for (const item of toDelete) {
+      const urls = toDelete.map((m) => m.file_url).filter(Boolean);
+      // Delete from R2 (r2-delete silently skips legacy supabase URLs)
+      if (urls.length > 0) {
         try {
-          const url = new URL(item.file_url);
-          const pathMatch = url.pathname.match(/\/object\/public\/product-images\/(.+)/);
-          if (pathMatch) {
-            await supabase.storage.from("product-images").remove([pathMatch[1]]);
-          }
-        } catch {}
+          await supabase.functions.invoke("r2-delete", { body: { urls } });
+        } catch (e) {
+          console.warn("[media-library] r2-delete failed (non-fatal):", e);
+        }
       }
       const { error } = await (supabase as any).from("media_library").delete().in("id", ids);
       if (error) throw error;
