@@ -612,7 +612,7 @@ function getSkeletonCleanupScript(fallbackMs = 12000) {
   })()</script>`;
 }
 
-function buildSkeleton(bgColor, skeletonMuted, includeCleanup = true) {
+function buildSkeleton(bgColor, skeletonMuted, includeCleanup = true, storeName = "", textColor = "#1a1a1a") {
   // FIX #11: Use actual store bgColor instead of hardcoded #ffffff
   const skelBg = bgColor || "#ffffff";
   const skelBase = "#f0f0f0";
@@ -625,7 +625,14 @@ function buildSkeleton(bgColor, skeletonMuted, includeCleanup = true) {
   let s = `<script>window.__SF_WORKER__=true;</script>${shimmerKeyframes}<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${skelBg};z-index:2147483000;pointer-events:none;overflow:hidden">`;
   s += `<nav style="height:56px;background:${skelBg};border-bottom:1px solid #ececec;display:flex;align-items:center;padding:0 16px;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">`;
   s += `<div class="sf-ph" style="height:32px;width:32px;border-radius:8px;flex-shrink:0"></div>`;
-  s += `<div class="sf-ph" style="height:12px;width:80px"></div>`;
+  // v8.21.0 — FCP fix: render visible store name text so FCP fires at skeleton
+  // paint (~1.6s) instead of waiting for hero image decode (~9s on cold).
+  if (storeName) {
+    const safeName = String(storeName).replace(/[<>"'&]/g, function(c){return ({"<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;","&":"&amp;"})[c];});
+    s += `<span style="font-family:'Inter','Segoe UI',sans-serif;font-size:15px;font-weight:600;color:${textColor};letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%">${safeName}</span>`;
+  } else {
+    s += `<div class="sf-ph" style="height:12px;width:80px"></div>`;
+  }
   s += `<div style="flex:1"></div>`;
   s += `<div class="sf-ph" style="width:28px;height:28px;border-radius:50%"></div>`;
   s += `</nav>`;
@@ -783,7 +790,7 @@ function getSkeletonMuted(textColor) {
 function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname, inlineProducts) {
   const themeCss = themeLite ? buildThemeCssFromConfig(themeLite).css : "";
   const skeletonMuted = themeLite ? getSkeletonMuted(themeLite.tc || themeLite.text_color || "#1a1a1a") : "#e8e8e8";
-  const skeleton = buildSkeleton(bgColor, skeletonMuted, false);
+  const skeleton = buildSkeleton(bgColor, skeletonMuted, false, (themeLite && (themeLite.name || themeLite.store_name)) || slug || "", (themeLite && (themeLite.tc || themeLite.text_color)) || "#1a1a1a");
   const safeSlug = (slug || "").replace(/[<>"'&]/g, "");
 
   // Build canonical URL
@@ -2545,8 +2552,8 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
   }
 
   const skeletonMuted = getSkeletonMuted(textColor);
-  // FIX #11: Pass actual bgColor
-  const skeleton = buildSkeleton(bgColor, skeletonMuted);
+  // FIX #11: Pass actual bgColor — v8.21.0: also pass store name for instant FCP
+  const skeleton = buildSkeleton(bgColor, skeletonMuted, true, (storefrontData && storefrontData.store && storefrontData.store.name) || "", textColor);
 
   // LCP preload: hero image (mobile_hero > banner > logo)
   let lcpPreload = "";
@@ -2597,10 +2604,10 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
 
   const DASHBOARD_CHUNK_PATTERN =
     /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages)-/;
-  // v7.8.0: Cap modulepreload to 6 (parity with Link header on line 716).
-  // Browsers only open ~6 HTTP/2 streams for high-priority preloads; injecting
-  // more causes contention with the LCP image fetch. The first 6 chunks cover
-  // framework + router + main + storefront layout — enough to start hydration.
+  // v8.21.0: Bumped 6→10. The previous cap caused a 4-hop sequential waterfall
+  // (index→App→storefront-shell→supabase). HTTP/2 on the warm worker→client leg
+  // handles 10 small (<60KB) chunks in parallel without head-of-line blocking
+  // the LCP image preload, which has fetchpriority="high" anyway.
   let modulePreloads = "";
   const seen = new Set();
   let mpCount = 0;
@@ -2608,7 +2615,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
     if (!seen.has(m[1]) && !DASHBOARD_CHUNK_PATTERN.test(m[1])) {
       seen.add(m[1]);
       modulePreloads += `<link rel="modulepreload" href="${m[1]}" />\n`;
-      if (++mpCount >= 6) break;
+      if (++mpCount >= 10) break;
     }
   }
 
@@ -2716,7 +2723,8 @@ async function serveStreamedHtml(
       const storefrontResult = earlyStorefrontResult || (await storefrontPromise);
 
       const skeletonMuted = getSkeletonMuted(textColor);
-      const skeleton = buildSkeleton(bgColor, skeletonMuted);
+      // v8.21.0: pass store name into skeleton so FCP fires on text paint, not image decode
+      const skeleton = buildSkeleton(bgColor, skeletonMuted, true, (storefrontResult && storefrontResult.data && storefrontResult.data.store && storefrontResult.data.store.name) || "", textColor);
 
       let preloaderProductsJson = inlineProducts || "";
       if (Array.isArray(storefrontResult?.data?.products) && storefrontResult.data.products.length > 0) {
