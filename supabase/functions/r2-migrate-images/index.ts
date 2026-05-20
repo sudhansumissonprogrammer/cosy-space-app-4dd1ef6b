@@ -148,13 +148,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    let batchSize = 25;
+    let batchSize = 10;
     let dryRun = false;
     let action: "migrate" | "copy-demo-assets" = "migrate";
     if (req.headers.get("content-type")?.includes("application/json")) {
       try {
         const body = await req.json();
-        if (typeof body.batch_size === "number") batchSize = Math.min(100, Math.max(1, body.batch_size));
+        if (typeof body.batch_size === "number") batchSize = Math.min(25, Math.max(1, body.batch_size));
         if (body.dry_run === true) dryRun = true;
         if (body.action === "copy-demo-assets") action = "copy-demo-assets";
       } catch { /* ignore */ }
