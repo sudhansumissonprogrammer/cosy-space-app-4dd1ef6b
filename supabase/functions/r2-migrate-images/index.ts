@@ -95,7 +95,7 @@ async function migrateUrl(supabaseClient: ReturnType<typeof createClient>, origi
     .download(parsed.path);
   if (dlErr || !blob) {
     // Fall back to public HTTP fetch
-    const res = await fetch(originalUrl);
+    const res = await fetch(originalUrl, { signal: AbortSignal.timeout(15000) });
     if (!res.ok) throw new Error(`Download failed: ${dlErr?.message || res.status}`);
     const ab = await res.arrayBuffer();
     const ct = res.headers.get("content-type") || "image/jpeg";
