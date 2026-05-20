@@ -278,15 +278,18 @@ Deno.serve(async (req) => {
       if (migrated + errors.length >= batchSize) break;
     }
 
-    // Quick total-remaining estimate (sum of all non-array tables)
+    // Quick total-remaining estimate (sum of all non-array tables). Skip if budget exhausted.
     let totalRemaining = 0;
-    for (const tgt of TARGETS) {
-      if (tgt.isArray) continue;
-      const { count } = await admin
-        .from(tgt.table)
-        .select("id", { count: "exact", head: true })
-        .ilike(tgt.col, "%supabase.co/storage%");
-      totalRemaining += count || 0;
+    if (!overBudget()) {
+      for (const tgt of TARGETS) {
+        if (tgt.isArray) continue;
+        if (overBudget()) break;
+        const { count } = await admin
+          .from(tgt.table)
+          .select("id", { count: "exact", head: true })
+          .ilike(tgt.col, "%supabase.co/storage%");
+        totalRemaining += count || 0;
+      }
     }
 
     return new Response(
