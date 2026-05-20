@@ -188,7 +188,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 5. Delete storage files by bucket
+    // 5. Delete storage files by bucket (Supabase Storage — legacy URLs)
     const bucketGroups: Record<string, string[]> = {};
     for (const f of filesToDelete) {
       if (!bucketGroups[f.bucket]) bucketGroups[f.bucket] = [];
@@ -205,6 +205,16 @@ Deno.serve(async (req) => {
         if (error) console.error(`[delete-store] Storage error for ${bucket}:`, error.message);
       }
     }
+
+    // 5b. Delete R2 (cdn.shopbanao.in) objects for the same store
+    const r2Keys: string[] = [];
+    const pushR2 = (u: string | null | undefined) => { const k = r2KeyFromUrl(u); if (k) r2Keys.push(k); };
+    pushR2(store.logo_url); pushR2(store.banner_url); pushR2(store.mobile_hero_url); pushR2(store.og_image_url);
+    if (productImages) for (const img of productImages) pushR2(img.image_url);
+    if (products) for (const p of products) pushR2(p.image_url);
+    if (categories) for (const cat of categories) pushR2(cat.image_url);
+    const r2Deleted = await deleteR2Keys(r2Keys);
+    cleanupResults.r2_files_deleted = r2Deleted;
 
     cleanupResults.storage_files_deleted = totalFilesDeleted;
 
