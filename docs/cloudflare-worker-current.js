@@ -3689,6 +3689,11 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     _kvWriteRecent.delete(`storefront:${purgeSlug}`);
     _kvWriteRecent.delete(`theme-lite:${purgeSlug}`);
     _kvWriteRecent.delete(`store-info:${purgeSlug}`);
+    // v8.18.0: also clear warm-lock dedup + in-memory marker so the next
+    // visitor re-warms the full HTML cache immediately (otherwise TTFB stays
+    // on the slower streaming path for up to 5 min after a dashboard save).
+    _kvWriteRecent.delete(`warm-lock:${purgeSlug}`);
+    _memWarmLock.delete(purgeSlug);
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
@@ -3697,6 +3702,7 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
       purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
       purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
       purgeOps.push(env.STORE_KV.delete(`store-info:${purgeSlug}`).catch(() => {}));
+      purgeOps.push(env.STORE_KV.delete(`warm-lock:${purgeSlug}`).catch(() => {}));
     }
   }
 
@@ -3943,6 +3949,8 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     _kvWriteRecent.delete(`storefront:${purgeSlug}`);
     _kvWriteRecent.delete(`theme-lite:${purgeSlug}`);
     _kvWriteRecent.delete(`store-info:${purgeSlug}`);
+    _kvWriteRecent.delete(`warm-lock:${purgeSlug}`); // v8.18.0
+    _memWarmLock.delete(purgeSlug);                  // v8.18.0
     purgeOps.push(cache.delete(getEarlyCacheKey(`${purgeSlug}.${ROOT_DOMAIN}`)).catch(() => {}));
     purgeOps.push(cache.delete(getEarlyCacheKey(hostname)).catch(() => {}));
     // v8.6.2: purge CF Cache API mirrors for all SPA paths that can inline stale store/payment data.
@@ -3958,6 +3966,7 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
       purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
       purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
       purgeOps.push(env.STORE_KV.delete(`store-info:${purgeSlug}`).catch(() => {}));
+      purgeOps.push(env.STORE_KV.delete(`warm-lock:${purgeSlug}`).catch(() => {})); // v8.18.0
     }
   }
 
