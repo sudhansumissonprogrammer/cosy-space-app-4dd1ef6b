@@ -991,28 +991,58 @@ let inflightShellFetch = null;
    Together with the in-memory caches above, this collapses bursts of
    redundant writes (e.g. theme-lite/storefront re-cached on every request).
    ============================================================ */
+// v8.18.0 KV-write cost-cut:
+//  - Default dedup TTL bumped 5min → 60min (12x fewer isolate-level repeat writes).
+//  - Static keys (store-info, store-id, domain, all-active-slugs, theme-lite,
+//    warm-lock, prebuilt-head, spa-shell) get 24h dedup — they almost never
+//    change mid-day; cron's read-before-write handles real changes.
+//  - Per-request keys (storefront-data, products, pdp, category) keep 60min.
 const _kvWriteRecent = new Map(); // key → expiresAt
-const KV_WRITE_DEDUP_TTL = 300_000; // 5 min — within this window, a 2nd put() is skipped
+const KV_WRITE_DEDUP_TTL_DEFAULT = 60 * 60_000;     // 60 min
+const KV_WRITE_DEDUP_TTL_STATIC  = 24 * 60 * 60_000; // 24 h
 const KV_WRITE_DEDUP_MAX = 10_000;
+const _STATIC_KV_PREFIXES = [
+  "store-info:", "store-id:", "domain:", "theme-lite:",
+  "warm-lock:", "all-active-slugs", "prebuilt-head", "spa-shell",
+];
+function _kvDedupTtlFor(key) {
+  for (const p of _STATIC_KV_PREFIXES) if (key === p || key.startsWith(p)) return KV_WRITE_DEDUP_TTL_STATIC;
+  return KV_WRITE_DEDUP_TTL_DEFAULT;
+}
 function _shouldWriteKv(key) {
   const now = Date.now();
   const exp = _kvWriteRecent.get(key);
   if (exp && now < exp) return false;
   if (_kvWriteRecent.size > KV_WRITE_DEDUP_MAX) {
-    // simple eviction: drop oldest 1k entries
     let n = 1000;
     for (const k of _kvWriteRecent.keys()) {
       _kvWriteRecent.delete(k);
       if (--n <= 0) break;
     }
   }
-  _kvWriteRecent.set(key, now + KV_WRITE_DEDUP_TTL);
+  _kvWriteRecent.set(key, now + _kvDedupTtlFor(key));
   return true;
 }
 function kvPutDedup(env, key, value, opts) {
   if (!env?.STORE_KV) return Promise.resolve();
   if (!_shouldWriteKv(key)) return Promise.resolve();
   return env.STORE_KV.put(key, value, opts).catch(() => {});
+}
+
+// v8.18.0 Fix D: in-memory warm-lock marker. If this isolate already
+// established a warm-lock for `slug` within WARM_LOCK_MEM_TTL_MS, skip
+// the KV.get + KV.put round trip entirely. Safe because warm-html below
+// has its own per-isolate shouldRevalidate() guard.
+const _memWarmLock = new Map(); // slug → expiresAt
+const WARM_LOCK_MEM_TTL_MS = 5 * 60_000;
+function _memWarmLockHas(slug) {
+  const exp = _memWarmLock.get(slug);
+  if (exp && Date.now() < exp) return true;
+  return false;
+}
+function _memWarmLockSet(slug) {
+  if (_memWarmLock.size > 2000) _memWarmLock.clear();
+  _memWarmLock.set(slug, Date.now() + WARM_LOCK_MEM_TTL_MS);
 }
 
 
