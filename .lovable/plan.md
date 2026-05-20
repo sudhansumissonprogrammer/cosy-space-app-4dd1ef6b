@@ -1,71 +1,106 @@
-# Landing page slow load — fix plan
+# Landing Page Cold-Load Speedup + Audit Plan
 
-## The real problem
+Three parallel workstreams from the cold-load audit on `shopbanao.in/`. Each can ship independently; they don't depend on each other.
 
-The live profile of `https://shopbanao.in/` shows:
+---
 
-- **First Contentful Paint = 7.7s** (should be <1.5s)
-- Page load = 2.9s, but the screen looks blank until ~7s because critical chunks load in a long waterfall.
-- **17 separate JS chunks** load on first paint, including ones that should be inlined.
+## A. Worker fix: cache landing HTML + inject critical modulepreloads
 
-Top offenders found in the network trace:
+### Problem
+Real anonymous fetch to `https://shopbanao.in/` returns:
+- `cache-control: no-cache, must-revalidate, max-age=0`
+- No `x-worker-version` header → Worker is NOT executing on root domain (only on subdomains/custom domains)
+- HTML only references the 1.1KB entry shim. The 142KB `framework-*.js` and 40KB `landing-shell-*.js` are discovered at runtime → 4-level JS waterfall (~870ms critical path)
 
-| Resource | Time | Why it hurts |
-|---|---|---|
-| `Navbar-JHlczaDE.js` | **2000 ms** | Navbar is a *static* import in `Index.tsx` but Rollup still split it into its own chunk → loads after Index, after framework, after entry. Above-the-fold header waits 2s. |
-| `400-CY0dnwJo.css` / `600-Bpup8yGQ.css` (Montserrat Alternates) | ~980 ms | Loaded from `main.tsx`. Landing **does not use Montserrat Alternates** — it's a dashboard-only font. ~50 KB of render-blocking CSS for nothing. |
-| `alegreya-sc-700.woff2` (89 KB) | 1055 ms | Used by the italic "ShopBanao" wordmark in the hero. Not preloaded → headline stays invisible until the font finishes. |
-| `shopbanao-logo-ByBmcqDQ.webp` | 1080 ms | LCP-candidate logo in Navbar. Not preloaded. |
-| `showcase-overlays-mobile.webp` / `showcase-serdiya-mobile.webp` | ~950 ms | Hero phone-mockup images, not preloaded. |
-| `~api/analytics` XHR | **2163 ms** | Fires from `~flock.js` early in load. Not on the render path, but it inflates "page load". |
-| `ProblemAwareness`, `StatsBar`, `PaymentTrustStrip`, `Footer`, `LandingJsonLd` chunks | all in first wave | `LazyMount` `rootMargin: 2000px` is so large that *every* section intersects immediately on mobile → all "lazy" chunks download in the cold-load wave, defeating the optimisation. |
+### Changes
 
-So nothing about the page is actually heavy — the issue is a chunk waterfall + render-blocking CSS/fonts that the browser cannot start until the previous step finishes.
+1. **Confirm Worker route binding for `shopbanao.in/*`**
+   - In Cloudflare dashboard → Workers Routes, the route must include `shopbanao.in/*` (not just `*.shopbanao.in/*`)
+   - Without this, none of the Worker logic runs for the landing page
+   - This is a manual user action; we surface it in the plan only
 
-## What to change
+2. **Worker (`docs/cloudflare-worker-current.js`) — landing-specific path**
+   - Detect `hostname === ROOT_DOMAIN` AND `pathname === "/" || /^\/guides/ || === "/theme"`
+   - On miss: fetch origin HTML, then:
+     - Strip `Set-Cookie`, force `Cache-Control: public, max-age=300, s-maxage=3600, stale-while-revalidate=86400`
+     - Run a new `_buildLandingHead()` that injects `<link rel="modulepreload">` for the 3 critical chunks (framework, entry-utils, landing-shell) — discovered by fetching the entry chunk once and regex-extracting its `import "./*.js"` statements, cached in KV under `landing-chunks:v1` (24h TTL), invalidated by entry-chunk hash change
+     - Inject into `<head>` before existing tags
+     - Mirror to `cache.default` via existing `cacheableResponse` / `mirrorToCfCache` so `cf-cache-status: HIT` shows on repeat visits
+   - Bump `WORKER_VERSION` to `8.23.0-landing-cache`
+   - User deploys manually (per existing workflow)
 
-### 1. Inline Navbar + Hero into the landing chunk
+3. **Verification (post-deploy)**
+   - `curl -sI https://shopbanao.in/` should show `cf-cache-status: HIT` and `x-worker-version: 8.23.0-...` on 2nd hit
+   - HTML head should contain 3 `<link rel="modulepreload">` lines for framework/entry-utils/landing-shell
+   - Expected FCP improvement: 400–600ms on cold load
 
-Force Rollup to keep `Navbar.tsx`, `Hero.tsx`, and `shopbanao-logo.webp` import wrapper inside the `LandingApp` chunk via `manualChunks` (add a `landing-shell` group). Result: zero extra round trip for the above-the-fold header.
+### Risk
+- Low. Landing has no per-user content; 5min browser / 1h edge cache is safe.
+- Rollback: revert single Worker file + redeploy.
 
-### 2. Stop loading dashboard fonts on the landing page
+---
 
-In `src/main.tsx`, the `loadFonts()` block imports `@fontsource/montserrat-alternates/{400,600}.css`. Landing doesn't use it. Split: only load Plus Jakarta on landing, only load Montserrat on dashboard routes. Saves ~50 KB render-blocking CSS + 2 font fetches.
+## B. Storefront cold-load audit (for comparison)
 
-### 3. Preload the actual LCP assets in `index.html`
+Run the same cold-load methodology against a real storefront (`serdiyajewellers.shop`) to confirm the Worker's existing v8.22 deep-modulepreload + skeleton work is delivering the expected wins, and to find any remaining bottlenecks.
 
-Add to `<head>` (root-host only, guarded by an inline script so storefronts don't get them):
+### Measurements
 
-```html
-<link rel="preload" as="image" href="/assets/shopbanao-logo-*.webp" fetchpriority="high">
-<link rel="preload" as="font" type="font/woff2" href="/fonts/alegreya-sc-700.woff2" crossorigin>
+1. Anonymous `curl` with TTFB, total time, size, headers (3 runs avg)
+2. Inspect `cf-cache-status`, `x-edge-cache`, `x-worker-version`, `x-data-source` headers
+3. Count `<link rel="modulepreload">` tags injected by Worker
+4. Measure each critical chunk in parallel: framework, storefront-shell, App, supabase-vendor
+5. Verify `#sf-skel` skeleton is present and inline data hydration (`__STOREFRONT_DATA__`) is injected
+6. Check R2 image latency: hero/logo TTFB from `cdn.shopbanao.in`
+
+### Deliverable
+A short report comparing landing vs storefront, with any new fixes identified scored by impact (no code changes in this phase — findings only).
+
+---
+
+## C. Analyze the 142KB framework chunk
+
+The single largest blocker on landing cold load. Goal: identify what's bloating it and whether we can split or trim.
+
+### Steps
+
+1. Read the live chunk via curl + inspect the module graph
+2. Look at `vite.config.ts` `manualChunks` to see what's grouped into `framework`
+3. Identify likely contents (React + ReactDOM + Router + small util libs)
+4. Evaluate split options:
+   - **Split React Router out** → ~30KB saved on landing (LandingApp uses minimal routing; could drop to `<a href>`)
+   - **Move React Query out** if it's bundled here (it shouldn't be on landing)
+   - **Move framer-motion / Radix shared atoms** if leaked
+5. Produce a numbers table: current size, proposed split, projected landing bundle reduction
+
+### Deliverable
+Findings + a follow-up plan (separate plan) if a meaningful win exists. No code changes during analysis.
+
+---
+
+## Technical details (for engineers)
+
+```text
+Current cold-load waterfall (shopbanao.in):
+  HTML 180ms (NOT cached)
+    └── index-CdOv1bdp.js  1.1KB  (190ms)   ← only this is in HTML
+          ├── framework-*.js     142KB (320ms)  ← discovered at runtime
+          ├── entry-utils-*.js     5KB (180ms)
+          └── landing-shell-*.js  40KB (180ms)
+                └── React render → FCP
+
+After A:
+  HTML 20ms (cf-cache HIT)
+    └── index + framework + entry-utils + landing-shell all in parallel
+          → React render → FCP (~700ms total)
 ```
 
-Logo filename is content-hashed — emit the preload from the build via a small Vite post-build step (or hash-stable manifest lookup).
+### Files touched in A
+- `docs/cloudflare-worker-current.js` (Worker — manual deploy)
+- No app code changes
+- No DB / edge function changes
 
-### 4. Fix `LazyMount` so it actually defers
-
-`rootMargin: "2000px 0px"` on a 900 px mobile viewport intersects every below-fold section at first paint. Change to `rootMargin: "600px 0px"` (one viewport ahead) and rely on the existing `requestIdleCallback` safety-net for the "scroll fast, no white" case. The idle mount already kicks in after first paint, so the white-flash fix from last week is preserved while the cold-load waterfall shrinks.
-
-### 5. Defer analytics ping until after FCP
-
-`~flock.js` posts to `/~api/analytics` immediately. Wrap the POST in `requestIdleCallback` (or `setTimeout(..., 2000)` fallback) so it doesn't fight the LCP image for bandwidth.
-
-### 6. Keep the inline skeleton hidden synchronously on root host
-
-Currently the inline `#inline-skel` is rendered then hidden by JS after parse. On the marketing host it should be `style="display:none"` by default and only shown via inline script when a storefront path is detected. Eliminates a layout pass and removes the white flash period.
-
-## Expected result
-
-- FCP: ~7.7 s → **<1.5 s**
-- LCP (hero logo + headline): **<2.0 s**
-- Cold-load round-trips on critical path: 17 → ~8
-- No functional changes — landing visuals, content, and routes stay identical.
-
-## Technical notes
-
-- `vite.config.ts` → extend `manualChunks(id)` with a `landing-shell` bucket for `src/components/landing/Navbar`, `src/components/landing/Hero`, and `src/assets/shopbanao-logo*`.
-- `src/main.tsx` → branch font loading on `shouldUseLandingFastPath()` vs dashboard host.
-- `src/components/landing/LazyMount.tsx` → reduce `rootMargin` default; keep the idle safety-net (so "scroll fast → white" stays fixed).
-- `index.html` → add hash-aware preload tags via a small build-time injector, gated to root host by inline JS.
-- No backend, RLS, or schema changes.
+### Order of execution
+1. Ship A (concrete code change → manual deploy)
+2. Run B (measurements only, generates new findings)
+3. Run C (analysis only, may produce a new plan)
