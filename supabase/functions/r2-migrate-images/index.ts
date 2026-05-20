@@ -74,6 +74,7 @@ async function r2Put(key: string, body: Uint8Array, contentType: string): Promis
       "Content-Type": contentType,
       "Cache-Control": "public, max-age=31536000, immutable",
     },
+    signal: AbortSignal.timeout(15000),
   });
   if (!res.ok) {
     const text = await res.text();
@@ -94,7 +95,7 @@ async function migrateUrl(supabaseClient: ReturnType<typeof createClient>, origi
     .download(parsed.path);
   if (dlErr || !blob) {
     // Fall back to public HTTP fetch
-    const res = await fetch(originalUrl);
+    const res = await fetch(originalUrl, { signal: AbortSignal.timeout(15000) });
     if (!res.ok) throw new Error(`Download failed: ${dlErr?.message || res.status}`);
     const ab = await res.arrayBuffer();
     const ct = res.headers.get("content-type") || "image/jpeg";
@@ -147,13 +148,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    let batchSize = 25;
+    let batchSize = 10;
     let dryRun = false;
     let action: "migrate" | "copy-demo-assets" = "migrate";
     if (req.headers.get("content-type")?.includes("application/json")) {
       try {
         const body = await req.json();
-        if (typeof body.batch_size === "number") batchSize = Math.min(100, Math.max(1, body.batch_size));
+        if (typeof body.batch_size === "number") batchSize = Math.min(25, Math.max(1, body.batch_size));
         if (body.dry_run === true) dryRun = true;
         if (body.action === "copy-demo-assets") action = "copy-demo-assets";
       } catch { /* ignore */ }
@@ -184,7 +185,7 @@ Deno.serve(async (req) => {
 
 
     const T0 = Date.now();
-    const TIME_BUDGET_MS = 110_000; // Hard stop before 150s edge timeout
+    const TIME_BUDGET_MS = 60_000; // Hard stop well before 150s edge timeout
     const overBudget = () => (Date.now() - T0) > TIME_BUDGET_MS;
     let migrated = 0;
     let skipped = 0;
@@ -277,15 +278,18 @@ Deno.serve(async (req) => {
       if (migrated + errors.length >= batchSize) break;
     }
 
-    // Quick total-remaining estimate (sum of all non-array tables)
+    // Quick total-remaining estimate (sum of all non-array tables). Skip if budget exhausted.
     let totalRemaining = 0;
-    for (const tgt of TARGETS) {
-      if (tgt.isArray) continue;
-      const { count } = await admin
-        .from(tgt.table)
-        .select("id", { count: "exact", head: true })
-        .ilike(tgt.col, "%supabase.co/storage%");
-      totalRemaining += count || 0;
+    if (!overBudget()) {
+      for (const tgt of TARGETS) {
+        if (tgt.isArray) continue;
+        if (overBudget()) break;
+        const { count } = await admin
+          .from(tgt.table)
+          .select("id", { count: "exact", head: true })
+          .ilike(tgt.col, "%supabase.co/storage%");
+        totalRemaining += count || 0;
+      }
     }
 
     return new Response(
