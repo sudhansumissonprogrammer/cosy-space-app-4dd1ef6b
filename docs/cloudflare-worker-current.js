@@ -976,6 +976,22 @@ function injectDeepPreloads(head, deepChunks) {
   return head.replace(/<!--ENTRY:[^>]+-->/, extra);
 }
 
+// v8.22.0: One-shot enricher — extracts entry path from the marker the
+// synchronous head-builder left behind, fetches/caches the deep chunk list,
+// and splices modulepreloads into the head. Falls back to original head on
+// any error so HTML response is never blocked.
+async function enrichHeadWithDeepPreloads(head, origin, env) {
+  if (!head) return head;
+  const marker = head.match(/<!--ENTRY:([^>-]+)-->/);
+  if (!marker) return head;
+  try {
+    const deep = await getDeepChunkPreloads(marker[1], origin, env);
+    return injectDeepPreloads(head, deep);
+  } catch {
+    return head.replace(/<!--ENTRY:[^>]+-->/, "");
+  }
+}
+
 
 async function getPrebuiltHead(html, env) {
   // FIX #7: In-memory first
