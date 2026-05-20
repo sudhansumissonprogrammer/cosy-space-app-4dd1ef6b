@@ -94,11 +94,36 @@ async function handleError(req: Request) {
 
 // ── Page view tracking handler ──────────────────────────────────
 
+// Tier-2 #A: skip bots + PWA standalone hits. Bots = ~15-25% of writes,
+// PWA repeat visitors = ~10-15%. Returning ok:true silently drops them
+// without any client retry/log noise.
+const BOT_UA_RX = /bot|crawler|spider|crawling|facebookexternalhit|whatsapp|telegram|slack|discord|preview|fetch|curl|wget|headless|lighthouse|gtmetrix|pagespeed|pingdom|uptimerobot|monitor|axios\/|python-requests|go-http-client|java\/|okhttp/i;
+
 async function handleView(req: Request) {
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("cf-connecting-ip") ||
     "unknown";
+
+  const url = new URL(req.url);
+  const ua = req.headers.get("user-agent") || "";
+
+  // Skip bot UAs at the edge — no DB write, no invocation cost beyond fn entry.
+  if (BOT_UA_RX.test(ua)) {
+    return new Response(JSON.stringify({ ok: true, dropped: "bot_ua" }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Skip PWA standalone sessions — these are repeat visitors already counted
+  // on first install, and they generate 5-10x more pageviews per user.
+  if (url.searchParams.get("source") === "pwa") {
+    return new Response(JSON.stringify({ ok: true, dropped: "pwa" }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   const { store_id, path } = await req.json();
   if (!store_id) {
@@ -220,6 +245,13 @@ async function handleCleanup(req: Request) {
     .delete({ count: "exact" })
     .lt("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
   results.error_logs_deleted = errCount ?? 0;
+
+  // 6. Tier-2 #I: delete customer_leads older than 180 days (keeps table bounded)
+  const { count: leadCount } = await supabase
+    .from("customer_leads")
+    .delete({ count: "exact" })
+    .lt("created_at", new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString());
+  results.customer_leads_deleted = leadCount ?? 0;
 
   console.log("[ingest/cleanup] Results:", results);
 
