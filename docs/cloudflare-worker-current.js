@@ -976,7 +976,6 @@ function injectDeepPreloads(head, deepChunks) {
   return head.replace(/<!--ENTRY:[^>]+-->/, extra);
 }
 
-function _legacyEndPrebuilt() {
 
 async function getPrebuiltHead(html, env) {
   // FIX #7: In-memory first
