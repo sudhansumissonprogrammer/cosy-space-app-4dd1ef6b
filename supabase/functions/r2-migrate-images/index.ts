@@ -272,7 +272,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Stop early if we've hit the batch limit
+      // Stop early if we've hit the batch limit or the time budget
+      if (overBudget()) break;
       if (migrated + errors.length >= batchSize) break;
     }
 
