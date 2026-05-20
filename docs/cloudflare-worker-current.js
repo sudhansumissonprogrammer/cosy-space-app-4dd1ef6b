@@ -3966,6 +3966,7 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
       purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
       purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
       purgeOps.push(env.STORE_KV.delete(`store-info:${purgeSlug}`).catch(() => {}));
+      purgeOps.push(env.STORE_KV.delete(`warm-lock:${purgeSlug}`).catch(() => {})); // v8.18.0
     }
   }
 
