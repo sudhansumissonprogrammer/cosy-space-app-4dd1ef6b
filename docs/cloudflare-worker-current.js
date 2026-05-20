@@ -3637,7 +3637,7 @@ async function _refreshProductsBackground(domain, filters, version, env) {
           }),
         )
         .catch(() => {}),
-      kvPutDedup(env, kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }),
+      kvPutProducts(env, kvKey, body, { expirationTtl: PRODUCTS_KV_TTL }, filters), // v8.19.0 C
     ]);
   } catch {}
 }
