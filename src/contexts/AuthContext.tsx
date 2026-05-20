@@ -36,15 +36,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const lastUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // 1. Restore session from storage FIRST — this is the source of truth
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      lastUserIdRef.current = session?.user?.id ?? null;
+    // v8.23.0: Skip getSession() entirely if no auth token exists in storage.
+    // Saves a ~200ms /auth/v1/user round-trip on every cold load for logged-out
+    // dashboard visitors. onAuthStateChange below still catches future sign-ins.
+    if (!hasStoredSession()) {
       setLoading(false);
-      // Drop stale/partner-owned referral cookies on initial load
-      maybeClearStaleReferralCookie(session?.user?.id ?? null).catch(() => {});
-    });
+    } else {
+      // 1. Restore session from storage FIRST — this is the source of truth
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        lastUserIdRef.current = session?.user?.id ?? null;
+        setLoading(false);
+        // Drop stale/partner-owned referral cookies on initial load
+        maybeClearStaleReferralCookie(session?.user?.id ?? null).catch(() => {});
+      });
+    }
 
     // 2. Subscribe to future auth events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
