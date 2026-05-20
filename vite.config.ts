@@ -200,7 +200,6 @@ export default defineConfig(({ mode }) => ({
             id.includes("/src/components/landing/Navbar") ||
             id.includes("/src/components/landing/Hero") ||
             id.includes("/src/components/landing/LazyMount") ||
-            id.includes("/src/components/ErrorBoundary") ||
             id.includes("/src/assets/shopbanao-logo")
           ) {
             return "landing-shell";
