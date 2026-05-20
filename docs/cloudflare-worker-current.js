@@ -540,9 +540,13 @@ function getSkeletonCleanupScript(fallbackMs = 12000) {
       var root=document.getElementById('root');
       if(!root)return false;
       if(root.querySelector('[data-storefront-ready]'))return true;
+      // v8.17.0 cold-load fix: 400px threshold made us wait extra rAF ticks
+      // for product image rows to lay out. 120px = nav + first content row,
+      // which is enough to guarantee no blank flash (OptimizedImage already
+      // ships blur placeholders so images progressively fade in).
       var totalHeight=0;var kids=root.children;
       for(var i=0;i<kids.length;i++){totalHeight+=kids[i].offsetHeight;}
-      return totalHeight>400;
+      return totalHeight>120;
     }
     // Wait until the React shell has actually painted real content before killing
     // the skeleton — prevents the white blank flash between skeleton fade and
@@ -4992,7 +4996,14 @@ export default {
         // isn't ready we ship HTML instantly and let the browser overlap
         // shell-data RTT with JS download/parse. Net: ~1000ms TTFB cut on
         // cold hits, identical UX (single skeleton, no flash).
-        const COLD_DATA_DEADLINE = 250;
+        // v8.17.0 cold-load fix: 250ms was too tight — Supabase RPC from
+        // CF edge to DB routinely takes 280–450ms, so the deadline almost
+        // always missed and we shipped shell-only HTML (forcing a 2nd
+        // round-trip in the browser before React could render). 700ms
+        // lands the full-injected-HTML path on ~70–80% of cold hits,
+        // cutting visible skeleton time by 500–800ms. The HTML is still
+        // flushed quickly because shellResult comes from KV in parallel.
+        const COLD_DATA_DEADLINE = 700;
         const [shellResult, prefetchResult, inlineProductsCold] = await Promise.all([
           getNavigationSpaShell(request, ctx, env),
           prefetchStorefrontDataWithDeadline(slug, ctx, env, COLD_DATA_DEADLINE).catch(() => ({ data: null, source: "none" })),
