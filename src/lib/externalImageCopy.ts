@@ -67,70 +67,59 @@ export function copyExternalImagesForProducts(
 }
 
 /**
- * Download external images, compress to ~50% of original size (client-side),
- * upload to product-images bucket, and update the product's image_url.
- * Fire-and-forget — does not block the UI.
+ * Download external images, compress to 800w WebP, upload to Cloudflare R2
+ * via the standard uploadOptimizedImage pipeline, and update the product's
+ * image_url. Fire-and-forget — does not block the UI.
  */
 export function compressAndUploadExternalImages(
   products: Array<{ id: string; image_url: string | null }>,
-  storeId: string
+  storeId: string,
 ): void {
   const external = products.filter((p) => isExternalImageUrl(p.image_url));
   if (external.length === 0) return;
 
-  console.info(`[compress-upload] Processing ${external.length} external images with 50% compression`);
+  console.info(
+    `[compress-upload] Processing ${external.length} external images → R2 WebP`,
+  );
 
-  // Process sequentially with delays
   (async () => {
-    const { processImageFromUrl } = await import("@/lib/imageCompression");
+    const { uploadOptimizedImage, generateUploadPath } = await import(
+      "@/lib/uploadOptimizedImage"
+    );
     const { supabase } = await import("@/integrations/supabase/client");
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || "anon";
 
     for (let i = 0; i < external.length; i++) {
       const p = external[i];
       try {
-        // 1. Fetch + compress to 50% of original
-        const result = await processImageFromUrl(p.image_url!, 50);
+        // 1. Fetch external image into a File object
+        const res = await fetch(p.image_url!);
+        if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
+        const blob = await res.blob();
+        const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
+        const file = new File([blob], `${p.id}.${ext}`, { type: blob.type });
 
-        // 2. Upload to storage
-        const filePath = `${storeId}/${p.id}-${Date.now()}.${result.file.name.split(".").pop()}`;
-        const { error: uploadError } = await supabase.storage
-          .from("product-images")
-          .upload(filePath, result.file, {
-            contentType: result.file.type,
-            upsert: true,
-          });
+        // 2. Run through standard pipeline (compresses to 800w WebP + uploads to R2)
+        const basePath = generateUploadPath(userId, storeId);
+        const result = await uploadOptimizedImage(file, "product-images", basePath);
 
-        if (uploadError) {
-          console.warn(`[compress-upload] Upload failed for ${p.id}:`, uploadError);
-          continue;
-        }
-
-        // 3. Get public URL
-        const { data: urlData } = supabase.storage
-          .from("product-images")
-          .getPublicUrl(filePath);
-
-        const newUrl = urlData.publicUrl;
-
-        // 4. Update product image_url in DB
+        // 3. Update product image_url in DB
         const { error: updateError } = await supabase
           .from("products")
-          .update({ image_url: newUrl })
+          .update({ image_url: result.mainUrl })
           .eq("id", p.id);
 
         if (updateError) {
           console.warn(`[compress-upload] DB update failed for ${p.id}:`, updateError);
         } else {
-          const reduction = result.skipped
-            ? "skipped (small)"
-            : `${Math.round((1 - result.compressedSize / result.originalSize) * 100)}% smaller`;
-          console.info(`[compress-upload] ✓ ${p.id}: ${reduction}`);
+          console.info(`[compress-upload] ✓ ${p.id}: → ${result.mainUrl}`);
         }
       } catch (err) {
         console.warn(`[compress-upload] Failed for ${p.id}:`, err);
       }
 
-      // 500ms delay between each
+      // 500ms delay between each to avoid hammering the edge function
       if (i < external.length - 1) {
         await new Promise((r) => setTimeout(r, 500));
       }
