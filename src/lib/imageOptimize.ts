@@ -182,8 +182,20 @@ export function getImageSrcSet(
   const firstUrl = url.includes(",") ? url.split(",")[0].trim() : url.trim();
   if (!firstUrl) return "";
 
-  // For ALL images (pipeline or external), use optimizeImageUrl which handles
-  // render API for pipeline images and CDN params for external
+  // R2/CDN pipeline images store ONE variant (800w). Emitting a srcset of
+  // identical URLs with fake width descriptors is wasted HTML bytes and
+  // confuses devtools. Return "" → React skips the srcset attribute → cleaner
+  // markup; browser uses plain `src` and downscales the 800w WebP as needed.
+  // Legacy Supabase-render URLs and external CDNs (Shopify/Unsplash) still
+  // benefit from real responsive variants below.
+  if (isOptimizedUrl(firstUrl)) {
+    const variant = resolveVariantUrl(firstUrl, 800);
+    if (!variant.includes("supabase.co/storage")) {
+      return ""; // R2 → single source, no srcset
+    }
+  }
+
+  // For external CDNs and legacy Supabase render: real responsive sizes
   return sizes
     .map((w) => `${optimizeImageUrl(firstUrl, w, quality)} ${w}w`)
     .join(", ");
