@@ -1054,6 +1054,57 @@ function _memWarmLockSet(slug) {
   _memWarmLock.set(slug, Date.now() + WARM_LOCK_MEM_TTL_MS);
 }
 
+// v8.19.0 Fix B — "second-hit" gate. First miss for a key writes only to
+// Cache API (free). KV write is suppressed until the SAME key is seen again
+// within SECOND_HIT_TTL. Eliminates one-hit-wonder writes (long-tail PDPs,
+// crawler-only category combos). Cache API edge-locality means the 2nd
+// visitor in that 5-min window still hits cache; only a different colo
+// would re-fetch from origin (sub-100ms, no user-visible difference).
+const _secondHitMap = new Map(); // key → expiresAt
+const SECOND_HIT_TTL_MS = 5 * 60_000;
+const SECOND_HIT_MAX = 20_000;
+function _shouldWriteOnSecondHit(key) {
+  const now = Date.now();
+  const exp = _secondHitMap.get(key);
+  if (exp && now < exp) {
+    // Second hit within window → allow write, clear marker so we don't
+    // keep rewriting on every subsequent hit (kvPutDedup handles that).
+    _secondHitMap.delete(key);
+    return true;
+  }
+  if (_secondHitMap.size > SECOND_HIT_MAX) {
+    let n = 2000;
+    for (const k of _secondHitMap.keys()) {
+      _secondHitMap.delete(k);
+      if (--n <= 0) break;
+    }
+  }
+  _secondHitMap.set(key, now + SECOND_HIT_TTL_MS);
+  return false;
+}
+function kvPutLongTail(env, key, value, opts) {
+  if (!env?.STORE_KV) return Promise.resolve();
+  if (!_shouldWriteOnSecondHit(key)) return Promise.resolve();
+  return kvPutDedup(env, key, value, opts);
+}
+
+// v8.19.0 Fix C — Default-filter products go straight to KV (storefront home
+// page, high re-hit rate). Non-default filters (page>=2, category drill,
+// custom sort) are long-tail → gated by second-hit.
+function _isDefaultProductFilter(filters) {
+  if (!filters) return true;
+  if (filters.category) return false;
+  if (filters.sort) return false;
+  if (filters.page && Number(filters.page) > 1) return false;
+  return true;
+}
+function kvPutProducts(env, key, value, opts, filters) {
+  if (_isDefaultProductFilter(filters)) return kvPutDedup(env, key, value, opts);
+  return kvPutLongTail(env, key, value, opts);
+}
+
+
+
 
 async function getSpaShell(request, ctx, env) {
   // FIX #1 + #6: In-memory first — zero I/O on warm isolates
