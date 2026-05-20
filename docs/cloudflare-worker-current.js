@@ -3527,7 +3527,7 @@ async function handleProductsApi(request, url, ctx, env) {
   if (inflightProductRequests.has(coalesceKey)) {
     try {
       const data = await inflightProductRequests.get(coalesceKey);
-      return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin-coalesced");
+      return buildProductResponse(data, cacheKey, kvKey, ctx, env, "origin-coalesced", filters);
     } catch {
       return _fallbackProducts(domain, filters, version, env);
     }
