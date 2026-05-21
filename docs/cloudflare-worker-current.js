@@ -4744,6 +4744,7 @@ export default {
         // For non-HTML (assets, robots, etc.): always allow.
         const shouldCheckMirror = !isHtmlNav || (!isAuthed && !isPrivatePath);
         let cached = null;
+        let hitKey = null;
         if (shouldCheckMirror) {
           // v8.25.1: for anonymous HTML navs, look up the REAL-HOST key first
           // (matches what mirrorToCfCache writes via getCfCacheKey). Falls
@@ -4752,8 +4753,26 @@ export default {
           if (isHtmlNav && !isAuthed && !isPrivatePath) {
             const cfKey = getCfCacheKey(earlyUrl.hostname, earlyPath);
             cached = await cache.match(cfKey);
+            if (cached) hitKey = "real-host";
+            // v8.25.2: canonical zone-key fallback. Custom domains live outside
+            // the Worker zone; their real-host write occasionally lands in a
+            // colo that won't serve it back. The slug-subdomain key is always
+            // inside the zone, so this is the reliable cache for ad traffic.
+            if (!cached) {
+              const slugForKey = await _earlyResolveSlug(earlyUrl.hostname);
+              if (slugForKey) {
+                const canonical = getCanonicalHtmlCacheKey(slugForKey, earlyPath);
+                if (canonical) {
+                  cached = await cache.match(canonical);
+                  if (cached) hitKey = "canonical-slug";
+                }
+              }
+            }
           }
-          if (!cached) cached = await cache.match(request);
+          if (!cached) {
+            cached = await cache.match(request);
+            if (cached && !hitKey) hitKey = "raw-request";
+          }
         }
         if (cached) {
           if (cached.status === 403 && cached.headers.get("x-blocked-by") === "shopbanao-bot-policy") {
@@ -4763,6 +4782,7 @@ export default {
           hit.headers.set("X-Edge-Cache", "HIT-EARLY");
           hit.headers.set("cf-cache-status", "HIT");
           hit.headers.set("X-Worker-Version", WORKER_VERSION);
+          if (hitKey) hit.headers.set("X-Edge-Key", hitKey);
           return hit;
           }
         }
