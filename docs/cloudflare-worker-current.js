@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.27.2-buffered-stream-mirror";
+const WORKER_VERSION = "8.30.0-ae-pageviews";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -5789,7 +5789,7 @@ export default {
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
           const coldResponse = new Response(enrichedHtml, { status: 200, headers });
           storeInEdgeCache(ctx, hostname, slug, coldResponse.clone(), request, env);
-          ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
+          ctx.waitUntil(recordPageView(env, request, prefetchResult?.data?.store?.id, url.pathname));
           return coldResponse;
         }
 
@@ -5907,7 +5907,7 @@ export default {
 
       // v7.7.0 Fix 2: pass already-resolved inlineProducts to skip 3rd fetch.
       ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, url.pathname, inlineProducts));
-      ctx.waitUntil(recordPageView(request, storeInfo?.storeId, url.pathname));
+      ctx.waitUntil(recordPageView(env, request, storeInfo?.storeId, url.pathname));
 
       return addDiagnosticHeaders(response, { slug, cacheStatus: "MISS", dataSource: "streaming" });
     }
@@ -5963,7 +5963,7 @@ export default {
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
           const coldResponse = new Response(enrichedHtml, { status: 200, headers });
           storeInEdgeCache(ctx, hostname, resolvedSlugCD, coldResponse.clone(), request, env);
-          ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
+          ctx.waitUntil(recordPageView(env, request, prefetchResult?.data?.store?.id, url.pathname));
           return coldResponse;
         }
 
@@ -6070,7 +6070,7 @@ export default {
       // Edge-native page view tracking (replaces frontend trackPageView)
       ctx.waitUntil(
         earlyStorefrontPromiseCD
-          .then((r) => recordPageView(request, r?.data?.store?.id, url.pathname))
+          .then((r) => recordPageView(env, request, r?.data?.store?.id, url.pathname))
           .catch(() => {}),
       );
 
