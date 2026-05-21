@@ -993,6 +993,106 @@ async function enrichHeadWithDeepPreloads(head, origin, env) {
 }
 
 
+/* ============================================================
+   v8.23.0 — LANDING MODULEPRELOAD
+   The root domain (shopbanao.in/) ships LandingApp via a tiny
+   entry shim. The 142KB framework chunk + 40KB landing-shell are
+   dynamic imports — invisible to the browser preloader, so they
+   load serially after the entry. We fetch the entry chunk once,
+   extract its `/assets/*.js` references, cache in KV for 24h,
+   and inject `<link rel="modulepreload">` for each into the
+   landing HTML head. Cuts the 4-step JS waterfall down to 1.
+   ============================================================ */
+
+let _memLandingChunks = null;
+const LANDING_CHUNKS_KV_KEY = "landing-chunks:v1";
+const LANDING_CHUNKS_TTL = 86400; // 24h
+// On landing we WANT landing-shell. Only exclude dashboard/admin/storefront chunks.
+const LANDING_EXCLUDE_PATTERN =
+  /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages|storefront-shell|theme-v)/;
+// Priority order: framework first (largest, blocks render), then landing-shell, then utils.
+const LANDING_PRIORITY = /(?:framework-|landing-shell-|entry-utils-|landing-utils-|icons-)/;
+
+async function getLandingChunkPreloads(entryPath, origin, env) {
+  if (_memLandingChunks && _memLandingChunks.entry === entryPath) {
+    return _memLandingChunks.chunks;
+  }
+  if (env?.STORE_KV) {
+    try {
+      const cached = await env.STORE_KV.get(LANDING_CHUNKS_KV_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.entry === entryPath && Array.isArray(parsed.chunks)) {
+          _memLandingChunks = parsed;
+          return parsed.chunks;
+        }
+      }
+    } catch {}
+  }
+  try {
+    const res = await fetch(`${origin}${entryPath}`, {
+      cf: { cacheTtl: 3600, cacheEverything: true },
+    });
+    if (!res.ok) return [];
+    const code = await res.text();
+    const found = new Set();
+    for (const m of code.matchAll(/["'`]\/?(assets\/[A-Za-z0-9_\-]+-[A-Za-z0-9]+\.js)["'`]/g)) {
+      const p = "/" + m[1];
+      if (p === entryPath) continue;
+      if (LANDING_EXCLUDE_PATTERN.test(p)) continue;
+      found.add(p);
+    }
+    const arr = [...found]
+      .sort((a, b) => {
+        const pa = LANDING_PRIORITY.test(a) ? 0 : 1;
+        const pb = LANDING_PRIORITY.test(b) ? 0 : 1;
+        return pa - pb;
+      })
+      .slice(0, 6); // landing only needs ~3-4 chunks; cap at 6 for safety
+    _memLandingChunks = { entry: entryPath, chunks: arr };
+    if (env?.STORE_KV) {
+      env.STORE_KV.put(
+        LANDING_CHUNKS_KV_KEY,
+        JSON.stringify(_memLandingChunks),
+        { expirationTtl: LANDING_CHUNKS_TTL },
+      ).catch(() => {});
+    }
+    return arr;
+  } catch {
+    return [];
+  }
+}
+
+// Inject modulepreload links right after <head> opening tag (or after <meta charset>).
+async function injectLandingModulepreloads(html, origin, env) {
+  if (!html || typeof html !== "string") return html;
+  const entryMatch = html.match(/<script[^>]+type="module"[^>]+src="(\/assets\/[^"]+\.js)"/);
+  if (!entryMatch) return html;
+  const entryPath = entryMatch[1];
+  const chunks = await getLandingChunkPreloads(entryPath, origin, env);
+  if (!chunks || chunks.length === 0) return html;
+  const preloadTags = chunks
+    .map((p) => `<link rel="modulepreload" href="${p}" />`)
+    .join("");
+  // Inject right before </head> to ensure they're parsed early.
+  if (html.includes("</head>")) {
+    return html.replace("</head>", `${preloadTags}</head>`);
+  }
+  return html;
+}
+
+// Detect landing page paths served from root domain.
+function isLandingPath(pathname) {
+  return (
+    pathname === "/" ||
+    pathname === "/theme" ||
+    pathname === "/guides" ||
+    pathname.startsWith("/guides/")
+  );
+}
+
+
+
 async function getPrebuiltHead(html, env) {
   // FIX #7: In-memory first
   if (_memPrebuiltHead) return _memPrebuiltHead;
