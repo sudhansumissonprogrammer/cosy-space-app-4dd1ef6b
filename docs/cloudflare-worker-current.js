@@ -3084,6 +3084,14 @@ async function serveStreamedHtml(
   return new Response(readable, { status: 200, headers: responseHeaders });
 }
 
+async function mirrorStreamedHtmlDirect(ctx, request, response, slug) {
+  try {
+    if (!ctx?.waitUntil || !response || request.method !== "GET") return;
+    const cloned = response.clone();
+    ctx.waitUntil(mirrorToCfCache(ctx, request, cloned, slug));
+  } catch {}
+}
+
 /* ============================================================
    CORE STOREFRONT FETCH + INJECT
    FIX #2: storefront promise starts FIRST (before any awaits)
