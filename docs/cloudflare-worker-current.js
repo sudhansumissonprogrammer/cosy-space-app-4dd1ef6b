@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.25.1-real-host-cache-key";
+const WORKER_VERSION = "8.25.2-custom-domain-zone-key";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -444,12 +444,49 @@ function getEarlyCacheKey(hostname, pathname = "/") {
 // Synthetic hosts like `edge-html/...` are silently rejected → permanent MISS.
 // We use the actual hostname + clean pathname (no query, no cookies, no Vary)
 // so all anonymous visitors to the same URL share one cache entry.
-function getCfCacheKey(hostname, pathname) {
-  // PDP/category collapsed to per-slug bucket so they don't cache the wrong inlined data
+function _normalizeHtmlPath(pathname) {
   let p = pathname || "/";
   const m = p.match(/^\/(product|category)\/([a-zA-Z0-9_-]+)\/?$/);
   if (m) p = `/${m[1]}/${m[2]}/`;
-  return new Request(`https://${hostname.toLowerCase()}${p}`, { method: "GET" });
+  return p;
+}
+
+function getCfCacheKey(hostname, pathname) {
+  return new Request(`https://${hostname.toLowerCase()}${_normalizeHtmlPath(pathname)}`, { method: "GET" });
+}
+
+// v8.25.2: Canonical zone-owned cache key keyed by store slug.
+// Custom domains (e.g. serdiyajewellers.shop) live outside the Worker zone,
+// which makes cache.put() on the real-host key occasionally inconsistent
+// across colos. By ALSO mirroring to `https://<slug>.shopbanao.in<path>`
+// — which is always inside the Worker's zone — both subdomain and
+// custom-domain visitors share one reliable cache entry.
+function getCanonicalHtmlCacheKey(slug, pathname) {
+  if (!slug) return null;
+  return new Request(`https://${slug}.${ROOT_DOMAIN}${_normalizeHtmlPath(pathname)}`, { method: "GET" });
+}
+
+// Fast, I/O-free slug resolution for the early request path.
+// - Subdomains under ROOT_DOMAIN: derive slug from the hostname.
+// - Custom domains: look up cached domain→slug mapping in caches.default
+//   ONLY (no KV/DB). Returns null on miss; the canonical-key check is
+//   simply skipped and the existing fallbacks handle the request.
+async function _earlyResolveSlug(hostname) {
+  if (!hostname) return null;
+  const host = hostname.replace(/^www\./, "").toLowerCase().trim();
+  if (host.endsWith(`.${ROOT_DOMAIN}`)) {
+    const sub = host.slice(0, -(`.${ROOT_DOMAIN}`.length));
+    if (sub && !sub.includes(".")) return sub;
+    return null;
+  }
+  try {
+    const cached = await cache.match(new Request(`https://cache/domain-${host}`));
+    if (cached) {
+      const data = await cached.json();
+      return data?.slug || null;
+    }
+  } catch {}
+  return null;
 }
 
 function isHtmlNavigationPath(pathname) {
@@ -488,7 +525,7 @@ const STOREFRONT_HTML_MIRROR_PATHS = ["/", "/checkout", "/cart"];
    as a real edge cache hit (the early key is invisible to CF metrics).
    Stripping Set-Cookie + forcing public Cache-Control prevents CF's
    default auto-bypass on cookie/auth responses. */
-async function mirrorToCfCache(ctx, request, response) {
+async function mirrorToCfCache(ctx, request, response, slug = null) {
   try {
     if (!ctx?.waitUntil || !response || request.method !== "GET") return;
     if (/no-store|no-cache|max-age=0/i.test(response.headers.get("Cache-Control") || "")) return;
@@ -513,17 +550,23 @@ async function mirrorToCfCache(ctx, request, response) {
     // sends `no-cache, max-age=0`; leaving that intact makes CF cache rate stay 0%.
     forcePublicHtmlCacheControl(headers, 3600);
     headers.set("X-Edge-Mirror", "1");
-    const toStore = new Response(cloned.body, {
+    // Buffer body once so we can write to multiple cache keys.
+    const buf = await cloned.arrayBuffer();
+    const makeStored = () => new Response(buf, {
       status: cloned.status,
       statusText: cloned.statusText,
       headers,
     });
-    // v8.25.1: store under REAL hostname key. CF rejects synthetic hostnames
-    // in cache.put() silently (returns nothing, never errors). Using the real
-    // hostname + clean path makes the write actually land, so subsequent
-    // visitors get HIT. Works identically on subdomains AND custom domains.
+    // v8.25.1: store under REAL hostname key.
     const cfKey = getCfCacheKey(url.hostname, url.pathname);
-    ctx.waitUntil(cache.put(cfKey, toStore).catch(() => {}));
+    ctx.waitUntil(cache.put(cfKey, makeStored()).catch(() => {}));
+    // v8.25.2: ALSO store under canonical slug-subdomain key (always inside the
+    // Worker zone). Custom-domain visitors fall back to this key when the
+    // real-host write was rejected silently by a cross-zone colo.
+    if (slug) {
+      const canonical = getCanonicalHtmlCacheKey(slug, url.pathname);
+      if (canonical) ctx.waitUntil(cache.put(canonical, makeStored()).catch(() => {}));
+    }
   } catch {}
 }
 
@@ -3187,7 +3230,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
       await cache.put(earlyKey, fullResponse.clone()).catch(() => {});
       // v8.4.0: ALSO mirror under the real request URL so Cloudflare's
       // automatic edge cache (and the dashboard cache-rate metric) sees a HIT.
-      await mirrorToCfCache(ctx, request, fullResponse).catch?.(() => {});
+      await mirrorToCfCache(ctx, request, fullResponse, slug).catch?.(() => {});
     }
   } catch {}
 }
@@ -3197,8 +3240,9 @@ function storeInEdgeCache(ctx, hostname, slug, response, request = null) {
   const earlyKey = getEarlyCacheKey(hostname);
   ctx.waitUntil(cache.put(earlyKey, response.clone()).catch(() => {}));
   // v8.4.0: when caller passes request, also mirror to CF Cache API for HIT metric.
+  // v8.25.2: pass slug so the canonical zone-key mirror is also written.
   if (request) {
-    mirrorToCfCache(ctx, request, response);
+    mirrorToCfCache(ctx, request, response, slug || null);
   }
 }
 
@@ -4700,6 +4744,7 @@ export default {
         // For non-HTML (assets, robots, etc.): always allow.
         const shouldCheckMirror = !isHtmlNav || (!isAuthed && !isPrivatePath);
         let cached = null;
+        let hitKey = null;
         if (shouldCheckMirror) {
           // v8.25.1: for anonymous HTML navs, look up the REAL-HOST key first
           // (matches what mirrorToCfCache writes via getCfCacheKey). Falls
@@ -4708,8 +4753,26 @@ export default {
           if (isHtmlNav && !isAuthed && !isPrivatePath) {
             const cfKey = getCfCacheKey(earlyUrl.hostname, earlyPath);
             cached = await cache.match(cfKey);
+            if (cached) hitKey = "real-host";
+            // v8.25.2: canonical zone-key fallback. Custom domains live outside
+            // the Worker zone; their real-host write occasionally lands in a
+            // colo that won't serve it back. The slug-subdomain key is always
+            // inside the zone, so this is the reliable cache for ad traffic.
+            if (!cached) {
+              const slugForKey = await _earlyResolveSlug(earlyUrl.hostname);
+              if (slugForKey) {
+                const canonical = getCanonicalHtmlCacheKey(slugForKey, earlyPath);
+                if (canonical) {
+                  cached = await cache.match(canonical);
+                  if (cached) hitKey = "canonical-slug";
+                }
+              }
+            }
           }
-          if (!cached) cached = await cache.match(request);
+          if (!cached) {
+            cached = await cache.match(request);
+            if (cached && !hitKey) hitKey = "raw-request";
+          }
         }
         if (cached) {
           if (cached.status === 403 && cached.headers.get("x-blocked-by") === "shopbanao-bot-policy") {
@@ -4719,6 +4782,7 @@ export default {
           hit.headers.set("X-Edge-Cache", "HIT-EARLY");
           hit.headers.set("cf-cache-status", "HIT");
           hit.headers.set("X-Worker-Version", WORKER_VERSION);
+          if (hitKey) hit.headers.set("X-Edge-Key", hitKey);
           return hit;
           }
         }
