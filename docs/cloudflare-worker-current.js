@@ -3200,6 +3200,23 @@ async function serveStreamedHtml(
 async function mirrorStreamedHtmlDirect(ctx, request, response, slug, env = null) {
   try {
     if (!ctx?.waitUntil || !response || request.method !== "GET") return;
+    // v8.27.2: prefer the buffered-bytes promise attached by serveStreamedHtml.
+    // Cloning a streaming Response and reading arrayBuffer() in waitUntil was
+    // flaky (tee buffer + client-paced drain), so HTML cache writes silently
+    // failed. The buffered path is deterministic.
+    const bytesPromise = response._htmlBytesPromise;
+    if (bytesPromise) {
+      const headers = new Headers(response.headers);
+      ctx.waitUntil((async () => {
+        try {
+          const buf = await bytesPromise;
+          if (!buf || !buf.byteLength) return;
+          const buffered = new Response(buf, { status: 200, headers });
+          await mirrorToCfCache(ctx, request, buffered, slug, env);
+        } catch {}
+      })());
+      return;
+    }
     const cloned = response.clone();
     ctx.waitUntil(mirrorToCfCache(ctx, request, cloned, slug, env));
   } catch {}
