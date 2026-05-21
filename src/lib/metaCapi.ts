@@ -95,6 +95,15 @@ export function fireMetaCAPI(params: CAPIEventParams) {
   // Guard: never fire from Lovable preview/editor/dev domains.
   if (isNonProductionHost()) return;
 
+  // Cost-cut: storefront shell sets this flag to false when the merchant has
+  // NOT configured a Meta access token. In that case the edge function would
+  // just return {skipped:true} on every probe — skip the round-trip entirely.
+  // Only `false` skips; `undefined` (flag not hydrated yet) falls through to
+  // the legacy probe + localStorage cache so we never break existing setups.
+  if (typeof window !== "undefined" && (window as any).__SF_META_CAPI_ENABLED__ === false) {
+    return;
+  }
+
   // Cost-cut: drop low-value events server-side; pixel still tracks them client-side.
   if (!CAPI_EVENTS.has(params.eventName)) return;
 
