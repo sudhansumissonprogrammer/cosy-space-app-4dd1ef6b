@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.27.0-kv-html-cache";
+const WORKER_VERSION = "8.27.1-mirror-waituntil-fix";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -3373,8 +3373,13 @@ function storeInEdgeCache(ctx, hostname, slug, response, request = null, env = n
   // v8.4.0: when caller passes request, also mirror to CF Cache API for HIT metric.
   // v8.25.2: pass slug so the canonical zone-key mirror is also written.
   // v8.27.0: pass env so KV HTML mirror also fires.
+  // v8.27.1 BUGFIX: previously fire-and-forget — runtime cancelled
+  // mirrorToCfCache (async arrayBuffer + 3 cache writes + KV put) before
+  // completion, so the cold-cache-api path silently failed to populate
+  // any HTML cache. Wrap in waitUntil to keep the chain alive past
+  // response return.
   if (request) {
-    mirrorToCfCache(ctx, request, response, slug || null, env);
+    ctx.waitUntil(mirrorToCfCache(ctx, request, response.clone(), slug || null, env));
   }
 }
 
