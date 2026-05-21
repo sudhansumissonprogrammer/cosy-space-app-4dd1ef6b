@@ -1,54 +1,82 @@
-# Worker v8.26.0 — fixes verified deployment gaps
+# Phase 1 — Move page_views to Cloudflare Analytics Engine
 
-## What was actually broken in v8.25.2 (confirmed via live tests)
+Goal: stop writing pageviews to Supabase entirely. Worker writes directly to Cloudflare Analytics Engine (AE). Zero Supabase invocations, zero DB rows, zero Network egress for pageviews. Free at current + 10× scale.
 
-Live test results on `serdiyajewellers.shop` showed:
+## What changes
 
-- Every request: `cf-cache-status: MISS`, fresh `x-cache-timestamp` each time
-- No `x-edge-cache: HIT-EARLY` or `x-edge-key` header ever appeared
-- Only **1** `<link rel="modulepreload">` in HTML (should be 5–10)
+1. **Cloudflare Worker** writes pageviews to AE instead of bulk-inserting into Supabase `page_views`.
+2. **Dual-write rollout**: for one week the Worker writes to BOTH AE and Supabase so we can compare counts and verify AE before flipping the switch.
+3. **Read path** (`StoreAnalytics.tsx`, admin dashboards) keeps reading from `page_views` for now — Phase 3 swaps it to AE.
+4. **Supabase ingest function**: its `?type=view` handler becomes a 204 no-op (kept alive only for `?type=error` until Phase 2).
 
-## Root causes found
+## Rollout in 3 stages
 
-### Bug 1 — Deep modulepreload never injected
-`enrichHeadWithDeepPreloads` used regex `/<!--ENTRY:([^>-]+)-->/`. The `[^>-]` class
-excludes both `>` AND `-`. Vite chunk filenames always contain hyphens
-(`index-CdOv1bdp.js`), so the capture group never matches, so
-`getDeepChunkPreloads(marker[1])` is never called, so no deep preloads
-get injected. Cold loads waterfall through chunks one by one.
+```text
+Stage A (today)   Worker → AE + Supabase   read from Supabase     [verify counts match]
+Stage B (+7 days) Worker → AE only         read from Supabase     [stop DB writes]
+Stage C (Phase 3) Worker → AE only         read from AE           [delete page_views]
+```
 
-Fix: change to `[^>]+`.
+## Technical details
 
-### Bug 2 — Canonical-slug cache key never resolved for custom domains
-`_earlyResolveSlug` only checks `cache.match("https://cache/domain-<host>")`.
-Cloudflare silently rejects writes to synthetic hostnames in some colos, so
-this lookup almost always returns null for custom domains. That means the
-canonical-slug cache key (the whole point of v8.25.2) is never tried, only
-the real-host key is, which itself can be unreliable across zones.
+### AE dataset schema
 
-Fix: fall back to `env.STORE_KV.get("domain:<host>")` (~5ms) when Cache API
-returns nothing. KV already stores this mapping for 24h.
+```text
+binding:  AE_PAGEVIEWS
+dataset:  shopbanao_pageviews
+indexes:  [store_id]                                  # partition key
+blobs:    [path, visitor_id, country, device, referrer, host]
+doubles:  [1]                                          # unit count
+```
 
-### Bug 3 — `addDiagnosticHeaders` permanently masked CF cache HITs
-Line 581 unconditionally did `res.headers.set("cf-cache-status", cacheStatus)`
-for any internal status — including MISS, ORIGIN, STREAMING, etc. This
-overwrote Cloudflare's real edge-cache result and made the dashboard cache
-rate look stuck at 0% even when CF was serving from its cache.
+### Worker changes (`docs/cloudflare-worker-current.js`)
 
-Fix: only mirror to `cf-cache-status: HIT` when the internal status starts
-with hit / cached / memory / kv / edge / warm. Otherwise leave whatever
-Cloudflare set in place.
+- Add `writePageViewAE(env, request, storeId, pathname)` helper.
+- In `recordPageView()`: after dedupe passes, call AE write first, then push to existing Supabase buffer (Stage A) or skip the buffer entirely (Stage B, gated by a `PV_WRITE_SUPABASE` constant we flip).
+- AE write is synchronous in-isolate (zero latency, no fetch) — no `ctx.waitUntil` needed.
+- Bump version banner to `v8.30.0-ae-pageviews`.
 
-## Validation after deploy
-1. `curl -sI https://serdiyajewellers.shop/` repeated 3× — expect
-   `cf-cache-status: HIT` and stable `x-cache-timestamp` from request 2 on,
-   `x-edge-cache: HIT-EARLY` with `x-edge-key: canonical-slug` for
-   custom-domain hits.
-2. View HTML source — expect 5+ `<link rel="modulepreload">` tags in `<head>`.
-3. Same for `imitationworld.in` and `fitness.shopbanao.in`.
+### Wrangler binding (user adds in Cloudflare dashboard, not code)
 
-## Safety
-- No DB / RLS changes.
-- No frontend changes.
-- Worker file only — manual deployment required (user pushes via
-  Cloudflare dashboard or wrangler).
+```toml
+[[analytics_engine_datasets]]
+binding = "AE_PAGEVIEWS"
+dataset = "shopbanao_pageviews"
+```
+
+### Frontend
+
+- `supabase/functions/ingest/index.ts`: `handleView()` returns `204` immediately. Comment that pageview tracking moved to Worker AE.
+- No frontend code changes needed — pageviews are already recorded by the Worker on HTML response, not by the SPA.
+- `StoreAnalytics.tsx` and `AdminUsageMonitoring.tsx` unchanged (still read `page_views` table during Stages A+B).
+
+### Cron cleanup
+
+- Existing `cleanup_app_logs()` pg_cron keeps deleting old `page_views` rows; once Stage B is on, table stops growing and shrinks to zero over the retention window.
+
+## What ships in this plan
+
+- Worker code changes (one new function, ~30 lines modified in `recordPageView`).
+- Updated `ingest` edge function (`handleView` → 204 no-op behind a feature flag so we can flip via env var without redeploy).
+- Updated worker version banner + memory note.
+
+## What the user does after I ship the code
+
+1. In Cloudflare dashboard → Workers → your worker → Settings → Bindings → add Analytics Engine binding (`AE_PAGEVIEWS` → `shopbanao_pageviews`).
+2. Deploy the updated worker (paste into Cloudflare or `wrangler deploy`).
+3. Wait 24h, then run a verification query (provided) comparing AE counts vs Supabase `page_views` counts for the same window. Within ~5%, we're good.
+4. After 7 days, tell me "flip to AE-only" and I'll set `PV_WRITE_SUPABASE = false`.
+
+## Risks and mitigations
+
+- **AE binding not yet added** → Worker code guards every write with `if (env.AE_PAGEVIEWS)`. Without the binding it silently falls back to current behavior. Safe to deploy code before binding.
+- **Count drift** → Stage A dual-write makes drift visible before we commit.
+- **Read path still needs DB** → unchanged until Phase 3. No regression for merchants viewing analytics.
+- **AE 90-day retention** → for long-term history, Phase 3 adds an optional R2 archive (out of scope here).
+
+## Expected impact (after Stage B)
+
+- Supabase Network egress: −20% (the entire page_views slice).
+- Supabase edge function invocations: ~zero pageview writes (vs ~60k/day projected at 100 stores).
+- DB row growth: page_views stops growing entirely.
+- Cost at 100 stores: pageview pipeline goes from ~₹300/mo to ₹0.
