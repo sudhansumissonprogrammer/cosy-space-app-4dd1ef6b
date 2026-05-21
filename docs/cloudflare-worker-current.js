@@ -938,14 +938,19 @@ async function getDeepChunkPreloads(entryPath, origin, env) {
     if (!res.ok) return [];
     const code = await res.text();
     const found = new Set();
-    // Vite emits both static (import"./X.js") and dynamic (import("./X.js"))
-    // forms, plus chunk maps. Match all /assets/*.js refs anywhere.
-    for (const m of code.matchAll(/["'`]\/?(assets\/[A-Za-z0-9_\-]+-[A-Za-z0-9]+\.js)["'`]/g)) {
-      const p = "/" + m[1];
+    // v8.24.1: Vite ACTUALLY emits relative paths in the entry chunk
+    // (e.g. `import{...}from"./entry-utils-DnXwcs32.js"`), not absolute
+    // `/assets/...` strings. Previous regex matched zero chunks → only
+    // 1 modulepreload ever shipped → cold load still waterfalled.
+    // Now match both forms and normalize to /assets/<file>.
+    const RX = /["'`](?:\.\/|\.?\/?assets\/)?([A-Za-z0-9_\-]+-[A-Za-z0-9]{6,})\.js["'`]/g;
+    for (const m of code.matchAll(RX)) {
+      const p = "/assets/" + m[1] + ".js";
       if (p === entryPath) continue;
       if (DEEP_CHUNK_DASH_PATTERN.test(p)) continue;
       found.add(p);
     }
+
     // Storefront-critical chunk names — prioritize these first
     const PRIORITY = /(?:App-|storefront-shell-|supabase-|radix|router-query-|framework-|entry-utils-|icons-|ErrorBoundary-|logError-)/;
     const arr = [...found].sort((a, b) => {
