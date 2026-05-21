@@ -4656,16 +4656,28 @@ export default {
        cache rate from 42% → 95%+. Only GET requests are checked. */
     if (earlyMethod === "GET") {
       try {
-        const shouldBypassPathMirror = isHtmlNavigationPath(earlyPath);
-        const cached = shouldBypassPathMirror ? null : await cache.match(request);
+        // v8.24.0: Previously HTML nav paths bypassed this lookup entirely,
+        // which meant every storefront hit ran full Worker compute (~290ms
+        // TTFB) even when mirrorToCfCache had a perfect copy stored under
+        // the same URL. Now: for anonymous HTML nav (no auth cookie, not
+        // checkout/dashboard/admin) we DO check the URL mirror — that's
+        // the load-bearing fix that turns repeat visits into ~30ms HITs.
+        const cookie = request.headers.get("cookie") || "";
+        const isAuthed = /(?:^|;\s*)(?:sb-|.*auth)/i.test(cookie);
+        const isPrivatePath =
+          earlyPath.startsWith("/checkout") ||
+          earlyPath.startsWith("/dashboard") ||
+          earlyPath.startsWith("/admin") ||
+          earlyPath.startsWith("/api/");
+        const isHtmlNav = isHtmlNavigationPath(earlyPath);
+        // For HTML nav: allow lookup ONLY if anonymous + non-private.
+        // For non-HTML (assets, robots, etc.): always allow.
+        const shouldCheckMirror = !isHtmlNav || (!isAuthed && !isPrivatePath);
+        const cached = shouldCheckMirror ? await cache.match(request) : null;
         if (cached) {
-          // v8.6.4: Safety fix — old bot-policy 403s were cached by URL only.
-          // A crawler/empty-UA request to / could poison the normal mobile/IP
-          // response for that same URL. Delete and ignore those legacy entries.
           if (cached.status === 403 && cached.headers.get("x-blocked-by") === "shopbanao-bot-policy") {
             ctx.waitUntil(cache.delete(request).catch(() => {}));
           } else {
-          // Re-emit with diagnostic header so we can see the source.
           const hit = new Response(cached.body, cached);
           hit.headers.set("X-Edge-Cache", "HIT-EARLY");
           hit.headers.set("X-Worker-Version", WORKER_VERSION);
