@@ -197,6 +197,14 @@ export default function StoreSettings() {
       queryClient.invalidateQueries({ queryKey: ["stores"] });
       queryClient.invalidateQueries({ queryKey: ["my-store"] });
       setHeroImageFiles([]);
+      setLogoFile(null);
+      setBannerFile(null);
+      setHeroFile(null);
+      setOgImageFile(null);
+      setLogoRemoved(false);
+      setBannerRemoved(false);
+      setHeroRemoved(false);
+      setOgImageRemoved(false);
       toast.success("Store settings updated!");
 
       const newSlug = result?.newSlug;
