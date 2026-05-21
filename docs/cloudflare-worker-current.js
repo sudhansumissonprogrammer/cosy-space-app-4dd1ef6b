@@ -2034,12 +2034,21 @@ function recordPageView(request, storeId, pathname) {
   if (!storeId) return;
   if (_pvIsBot(request)) return;
   // Only track real page navigations — skip API/asset paths
+  // v8.28.0: added /~api/ (analytics beacon endpoint), /cf-img, /_*,
+  // robots/sitemap/favicon. Without this, /~api/analytics was being
+  // recorded as a page_view (~45% of all rows on busy storefronts).
   if (
     pathname.startsWith("/api/") ||
+    pathname.startsWith("/~api/") ||
+    pathname.startsWith("/cf-img") ||
+    pathname.startsWith("/_") ||
     pathname.startsWith("/assets/") ||
     pathname.startsWith("/rest/") ||
     pathname.startsWith("/functions/") ||
-    /\.(js|css|png|jpe?g|webp|svg|ico|woff2?|map)(\?|$)/i.test(pathname)
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml" ||
+    pathname === "/favicon.ico" ||
+    /\.(js|css|png|jpe?g|webp|svg|ico|woff2?|map|json|xml|txt|avif|gif|ttf|otf)(\?|$)/i.test(pathname)
   ) {
     return;
   }
