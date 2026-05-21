@@ -5400,6 +5400,9 @@ export default {
         // If we have the shell + data, serve fully injected HTML — same as warm path
         if (shellResult?.html && prefetchResult?.data) {
           const injected = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source, inlineProductsCold);
+          // v8.24.0: enrich with deep modulepreloads (framework, App, supabase,
+          // storefront-shell, router-query) so cold loads don't waterfall.
+          const enrichedHtml = await injectDeepPreloadsIntoColdHtml(injected.html, url.origin, env);
           const headers = new Headers();
           headers.set("Content-Type", "text/html; charset=utf-8");
           setNoStoreHtmlHeaders(headers);
@@ -5407,9 +5410,7 @@ export default {
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          // v8.6.3: store cold full HTML too; otherwise first isolate hits keep
-          // returning MISS/no CF metric until the background warmer succeeds.
-          const coldResponse = new Response(injected.html, { status: 200, headers });
+          const coldResponse = new Response(enrichedHtml, { status: 200, headers });
           storeInEdgeCache(ctx, hostname, slug, coldResponse.clone(), request);
           ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
           return coldResponse;
