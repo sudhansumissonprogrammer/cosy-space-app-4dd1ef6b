@@ -1516,7 +1516,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
             {images.map((img, i) => (
               <button
                 key={i}
-                onClick={() => setActiveIndex(i)}
+                onClick={() => setSlideIndex(i)}
                 className={`h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
                   i === activeIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-muted-foreground/30"
                 }`}
