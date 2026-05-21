@@ -471,7 +471,7 @@ function getCanonicalHtmlCacheKey(slug, pathname) {
 // - Custom domains: look up cached domain→slug mapping in caches.default
 //   ONLY (no KV/DB). Returns null on miss; the canonical-key check is
 //   simply skipped and the existing fallbacks handle the request.
-async function _earlyResolveSlug(hostname) {
+async function _earlyResolveSlug(hostname, env = null) {
   if (!hostname) return null;
   const host = hostname.replace(/^www\./, "").toLowerCase().trim();
   if (host.endsWith(`.${ROOT_DOMAIN}`)) {
@@ -479,13 +479,25 @@ async function _earlyResolveSlug(hostname) {
     if (sub && !sub.includes(".")) return sub;
     return null;
   }
+  // Cache API first (sub-ms).
   try {
     const cached = await cache.match(new Request(`https://cache/domain-${host}`));
     if (cached) {
       const data = await cached.json();
-      return data?.slug || null;
+      if (data?.slug) return data.slug;
     }
   } catch {}
+  // v8.26.0: KV fallback (~5ms). Synthetic `https://cache/...` writes are
+  // silently rejected by Cloudflare in some colos → Cache API miss is common
+  // even when KV has a perfectly good mapping. Without this fallback, custom
+  // domains can never resolve their slug in the early path, which means the
+  // canonical-slug cache key (v8.25.2) is never tried, and every visit MISSes.
+  if (env?.STORE_KV) {
+    try {
+      const kvData = await env.STORE_KV.get(`domain:${host}`, { type: "json" });
+      if (kvData?.slug) return kvData.slug;
+    } catch {}
+  }
   return null;
 }
 
