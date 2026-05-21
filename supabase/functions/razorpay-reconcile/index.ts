@@ -59,6 +59,14 @@ Deno.serve(async (req) => {
     return json({ error: error.message }, 500);
   }
 
+  // Cost-cut: zero pending orders is the steady-state. Bail before per-store
+  // payment_config lookups + Razorpay HTTP calls. Saves ~280 wasted DB+fn
+  // invocations/day when no traffic is pending.
+  if (!onlyOrderId && (!orders || orders.length === 0)) {
+    return json({ ok: true, scanned: 0, skipped: "no_pending" });
+  }
+
+
   // Group by store so we fetch payment config once per store.
   const byStore = new Map<string, any[]>();
   for (const o of orders ?? []) {
