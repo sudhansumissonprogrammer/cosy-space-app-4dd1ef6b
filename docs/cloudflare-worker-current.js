@@ -3160,6 +3160,8 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
     newHeaders,
   );
 
+  await mirrorStreamedHtmlDirect(ctx, request, response, slug);
+
   // v7.7.0 Fix 2: pass already-resolved inlineProducts so warm doesn't refetch.
   ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname, inlineProducts));
 
@@ -5667,6 +5669,8 @@ export default {
         pdpCategoryInline,
       );
 
+      await mirrorStreamedHtmlDirect(ctx, request, response, slug);
+
       // v7.7.0 Fix 2: pass already-resolved inlineProducts to skip 3rd fetch.
       ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, url.pathname, inlineProducts));
       ctx.waitUntil(recordPageView(request, storeInfo?.storeId, url.pathname));
@@ -5824,6 +5828,8 @@ export default {
         responseHeadersCD,
         pdpCategoryInlineCD,
       );
+
+      await mirrorStreamedHtmlDirect(ctx, request, responseCD, resolvedSlug);
 
       // v7.7.0 Fix 2: pass already-resolved inlineProducts to skip 3rd fetch.
       ctx.waitUntil(_warmFullHtmlInBackground(request, shellResultCD, resolvedSlug, ctx, env, hostname, url.pathname, inlineProductsCDReal));
