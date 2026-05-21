@@ -1231,6 +1231,8 @@ export default function CheckoutPage() {
       // Disable beforeunload lock — Cashfree triggers UPI deep links from top window
       // which would otherwise show the browser's "Leave site?" confirmation popup.
       window.dispatchEvent(new CustomEvent("payment-in-progress"));
+      // Real intent signal — fire IC the instant the Cashfree drop-in is about to open.
+      fireInitiateCheckoutOnce();
       const result = await cashfree.checkout({
         paymentSessionId: cfData.payment_session_id,
         redirectTarget: "_modal",
