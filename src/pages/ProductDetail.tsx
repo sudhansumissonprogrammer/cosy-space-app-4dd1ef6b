@@ -1479,7 +1479,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
               {images.map((_, i) => (
                 <button
                   key={i}
-                  onClick={(e) => { e.stopPropagation(); setActiveIndex(i); }}
+                  onClick={(e) => { e.stopPropagation(); setSlideIndex(i); }}
                   className={`rounded-full transition-all duration-300 ${
                     i === activeIndex
                       ? "w-5 h-1.5 bg-white"
