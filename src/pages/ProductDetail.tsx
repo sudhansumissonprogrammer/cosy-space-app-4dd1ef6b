@@ -1495,13 +1495,13 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
           {images.length > 1 && (
             <>
               <button
-                onClick={(e) => { e.stopPropagation(); setActiveIndex((i) => (i - 1 + images.length) % images.length); }}
+                onClick={(e) => { e.stopPropagation(); setSlideIndex(s => s - 1); }}
                 className="absolute left-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-all"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); setActiveIndex((i) => (i + 1) % images.length); }}
+                onClick={(e) => { e.stopPropagation(); setSlideIndex(s => s + 1); }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-all"
               >
                 <ChevronRight className="h-4 w-4" />
