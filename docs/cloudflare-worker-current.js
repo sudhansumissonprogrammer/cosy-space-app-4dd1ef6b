@@ -4205,6 +4205,17 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
       purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
       purgeOps.push(env.STORE_KV.delete(`store-info:${purgeSlug}`).catch(() => {}));
       purgeOps.push(env.STORE_KV.delete(`warm-lock:${purgeSlug}`).catch(() => {}));
+      // v8.27.0: purge all html:<slug>:* KV entries (best-effort list+delete).
+      purgeOps.push((async () => {
+        try {
+          const list = await env.STORE_KV.list({ prefix: `html:${purgeSlug}` });
+          await Promise.all((list?.keys || []).map(k => env.STORE_KV.delete(k.name).catch(() => {})));
+          // also clear per-isolate write-dedup so next visitor re-writes KV
+          for (const k of Array.from(_htmlKvWriteRecent.keys())) {
+            if (k.startsWith(`html:${purgeSlug}`)) _htmlKvWriteRecent.delete(k);
+          }
+        } catch {}
+      })());
     }
   }
 
