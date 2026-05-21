@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.27.1-mirror-waituntil-fix";
+const WORKER_VERSION = "8.27.2-buffered-stream-mirror";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -3060,6 +3060,19 @@ async function serveStreamedHtml(
   const writer = writable.getWriter();
   const enc = new TextEncoder();
 
+  // v8.27.2: capture every chunk we emit so the mirror can build a fully
+  // buffered Response after the stream closes. Cloning a streaming Response
+  // and calling arrayBuffer() in waitUntil was unreliable (tee buffer limits
+  // + client-paced drain), causing HTML cache writes to silently fail and
+  // HIT-EARLY to never fire. Capturing in-process is deterministic.
+  const _writtenChunks = [];
+  let _bytesResolve = null;
+  const htmlBytesPromise = new Promise((res) => { _bytesResolve = res; });
+  const writeChunk = async (bytes) => {
+    _writtenChunks.push(bytes);
+    await writer.write(bytes);
+  };
+
   (async () => {
     try {
       let html = shellResult.html;
@@ -3069,7 +3082,7 @@ async function serveStreamedHtml(
       const headEnd = html.indexOf("</head>");
 
       if (headEnd === -1) {
-        await writer.write(enc.encode(html));
+        await writeChunk(enc.encode(html));
         return;
       }
 
@@ -3081,7 +3094,6 @@ async function serveStreamedHtml(
         ? `window.__PRODUCTS_INLINE__=${inlineProducts.replace(/<\/script/gi, "<\\/script")};`
         : "";
       const themeHint = themeLite ? `window.__THEME__=${JSON.stringify(themeLite)};` : "";
-      // v8.9.0: inline PDP/category JSON so the React page boots WITHOUT a fetch
       let pdpCatHint = "";
       if (pdpCategoryInline?.json) {
         const safeJson = pdpCategoryInline.json.replace(/<\/script/gi, "<\\/script");
@@ -3090,15 +3102,10 @@ async function serveStreamedHtml(
       }
       const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";${themeHint}${productsHint}${pdpCatHint}</script>`;
 
-      // v6.4.0: Preload-scanner image fast-path
       const productImagePreloads = inlineProducts
         ? _buildProductImagePreloads(inlineProducts, 6)
         : "";
 
-      // v8.15.0: For PDP/category routes, AWAIT storefront data before
-      // flushing head so we can SSR per-route <title>, <meta description>,
-      // canonical and JSON-LD. Cost: ~50-150ms TTFB on these routes;
-      // unlocks Google indexing per product/category page.
       let perRouteSeoHead = "";
       let earlyStorefrontResult = null;
       if (pdpCategoryInline?.kind && pdpCategoryInline?.json) {
@@ -3118,7 +3125,6 @@ async function serveStreamedHtml(
         }
       }
 
-      // v8.14.0: strip platform default SEO tags before flushing head.
       let headChunk = _stripPlatformSeoHead(html.slice(0, headEnd) + "</head>");
       headChunk = headChunk.slice(0, headChunk.indexOf("</head>"));
       headChunk = headChunk.replace(
@@ -3127,14 +3133,11 @@ async function serveStreamedHtml(
       );
       headChunk += "</head>";
 
-      // Flush head immediately — browser starts fetching assets NOW
-      await writer.write(enc.encode(headChunk));
+      await writeChunk(enc.encode(headChunk));
 
-      // FIX #2: storefrontPromise was started before shell fetch
       const storefrontResult = earlyStorefrontResult || (await storefrontPromise);
 
       const skeletonMuted = getSkeletonMuted(textColor);
-      // v8.21.0: pass store name into skeleton so FCP fires on text paint, not image decode
       const skeleton = buildSkeleton(bgColor, skeletonMuted, true, (storefrontResult && storefrontResult.data && storefrontResult.data.store && storefrontResult.data.store.name) || "", textColor);
 
       let preloaderProductsJson = inlineProducts || "";
@@ -3156,8 +3159,6 @@ async function serveStreamedHtml(
         bodyChunk = bodyChunk.replace("</body>", `<script>window.__STOREFRONT_DATA__=${jsonStr};</script></body>`);
       }
 
-      // v8.15.0: skip the JS title/canonical hack on PDP/category — those
-      // already have SSR meta tags from _buildPdpCategorySeoHead.
       if (storefrontResult?.data?.store && !pdpCategoryInline?.kind) {
         const s = storefrontResult.data.store;
         const faviconUrl = escapeHtml(s.logo_url || "");
@@ -3176,19 +3177,46 @@ async function serveStreamedHtml(
         bodyChunk = bodyChunk.replace("</body>", `${metaScript}</body>`);
       }
 
-      await writer.write(enc.encode(bodyChunk));
+      await writeChunk(enc.encode(bodyChunk));
     } catch {
     } finally {
-      writer.close();
+      try { writer.close(); } catch {}
+      try {
+        const total = _writtenChunks.reduce((a, c) => a + c.byteLength, 0);
+        const buf = new Uint8Array(total);
+        let off = 0;
+        for (const c of _writtenChunks) { buf.set(c, off); off += c.byteLength; }
+        _bytesResolve(buf);
+      } catch { _bytesResolve(null); }
     }
   })();
 
-  return new Response(readable, { status: 200, headers: responseHeaders });
+  const resp = new Response(readable, { status: 200, headers: responseHeaders });
+  // v8.27.2: stash buffered-bytes promise for the mirror path.
+  try { resp._htmlBytesPromise = htmlBytesPromise; } catch {}
+  return resp;
 }
 
 async function mirrorStreamedHtmlDirect(ctx, request, response, slug, env = null) {
   try {
     if (!ctx?.waitUntil || !response || request.method !== "GET") return;
+    // v8.27.2: prefer the buffered-bytes promise attached by serveStreamedHtml.
+    // Cloning a streaming Response and reading arrayBuffer() in waitUntil was
+    // flaky (tee buffer + client-paced drain), so HTML cache writes silently
+    // failed. The buffered path is deterministic.
+    const bytesPromise = response._htmlBytesPromise;
+    if (bytesPromise) {
+      const headers = new Headers(response.headers);
+      ctx.waitUntil((async () => {
+        try {
+          const buf = await bytesPromise;
+          if (!buf || !buf.byteLength) return;
+          const buffered = new Response(buf, { status: 200, headers });
+          await mirrorToCfCache(ctx, request, buffered, slug, env);
+        } catch {}
+      })());
+      return;
+    }
     const cloned = response.clone();
     ctx.waitUntil(mirrorToCfCache(ctx, request, cloned, slug, env));
   } catch {}
