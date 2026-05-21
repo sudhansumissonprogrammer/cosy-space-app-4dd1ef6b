@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.26.0-deep-preload-and-cache-fixes";
+const WORKER_VERSION = "8.26.1-direct-stream-html-mirror";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -539,7 +539,7 @@ const STOREFRONT_HTML_MIRROR_PATHS = ["/", "/checkout", "/cart"];
    default auto-bypass on cookie/auth responses. */
 async function mirrorToCfCache(ctx, request, response, slug = null) {
   try {
-    if (!ctx?.waitUntil || !response || request.method !== "GET") return;
+    if (!response || request.method !== "GET") return;
     if (/no-store|no-cache|max-age=0/i.test(response.headers.get("Cache-Control") || "")) return;
     // Skip authenticated paths to avoid leaking user-specific HTML
     const cookie = request.headers.get("cookie") || "";
@@ -570,15 +570,17 @@ async function mirrorToCfCache(ctx, request, response, slug = null) {
       headers,
     });
     // v8.25.1: store under REAL hostname key.
+    const writes = [];
     const cfKey = getCfCacheKey(url.hostname, url.pathname);
-    ctx.waitUntil(cache.put(cfKey, makeStored()).catch(() => {}));
+    writes.push(cache.put(cfKey, makeStored()));
     // v8.25.2: ALSO store under canonical slug-subdomain key (always inside the
     // Worker zone). Custom-domain visitors fall back to this key when the
     // real-host write was rejected silently by a cross-zone colo.
     if (slug) {
       const canonical = getCanonicalHtmlCacheKey(slug, url.pathname);
-      if (canonical) ctx.waitUntil(cache.put(canonical, makeStored()).catch(() => {}));
+      if (canonical) writes.push(cache.put(canonical, makeStored()));
     }
+    await Promise.allSettled(writes);
   } catch {}
 }
 
