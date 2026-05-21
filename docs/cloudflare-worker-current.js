@@ -4687,13 +4687,24 @@ export default {
         // For HTML nav: allow lookup ONLY if anonymous + non-private.
         // For non-HTML (assets, robots, etc.): always allow.
         const shouldCheckMirror = !isHtmlNav || (!isAuthed && !isPrivatePath);
-        const cached = shouldCheckMirror ? await cache.match(request) : null;
+        let cached = null;
+        if (shouldCheckMirror) {
+          // v8.25.0: for anonymous HTML navs, look up the NORMALIZED key first
+          // (matches what mirrorToCfCache writes). Falls back to raw request
+          // for synthesized responses (redirects, 410s, 404s, assets).
+          if (isHtmlNav && !isAuthed && !isPrivatePath) {
+            const normKey = getEarlyCacheKey(earlyUrl.hostname, earlyPath);
+            cached = await cache.match(normKey);
+          }
+          if (!cached) cached = await cache.match(request);
+        }
         if (cached) {
           if (cached.status === 403 && cached.headers.get("x-blocked-by") === "shopbanao-bot-policy") {
             ctx.waitUntil(cache.delete(request).catch(() => {}));
           } else {
           const hit = new Response(cached.body, cached);
           hit.headers.set("X-Edge-Cache", "HIT-EARLY");
+          hit.headers.set("cf-cache-status", "HIT");
           hit.headers.set("X-Worker-Version", WORKER_VERSION);
           return hit;
           }
