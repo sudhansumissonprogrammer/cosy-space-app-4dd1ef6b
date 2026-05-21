@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.26.0-deep-preload-and-cache-fixes";
+const WORKER_VERSION = "8.26.1-direct-stream-html-mirror";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -539,7 +539,7 @@ const STOREFRONT_HTML_MIRROR_PATHS = ["/", "/checkout", "/cart"];
    default auto-bypass on cookie/auth responses. */
 async function mirrorToCfCache(ctx, request, response, slug = null) {
   try {
-    if (!ctx?.waitUntil || !response || request.method !== "GET") return;
+    if (!response || request.method !== "GET") return;
     if (/no-store|no-cache|max-age=0/i.test(response.headers.get("Cache-Control") || "")) return;
     // Skip authenticated paths to avoid leaking user-specific HTML
     const cookie = request.headers.get("cookie") || "";
@@ -570,15 +570,17 @@ async function mirrorToCfCache(ctx, request, response, slug = null) {
       headers,
     });
     // v8.25.1: store under REAL hostname key.
+    const writes = [];
     const cfKey = getCfCacheKey(url.hostname, url.pathname);
-    ctx.waitUntil(cache.put(cfKey, makeStored()).catch(() => {}));
+    writes.push(cache.put(cfKey, makeStored()));
     // v8.25.2: ALSO store under canonical slug-subdomain key (always inside the
     // Worker zone). Custom-domain visitors fall back to this key when the
     // real-host write was rejected silently by a cross-zone colo.
     if (slug) {
       const canonical = getCanonicalHtmlCacheKey(slug, url.pathname);
-      if (canonical) ctx.waitUntil(cache.put(canonical, makeStored()).catch(() => {}));
+      if (canonical) writes.push(cache.put(canonical, makeStored()));
     }
+    await Promise.allSettled(writes);
   } catch {}
 }
 
@@ -3082,6 +3084,14 @@ async function serveStreamedHtml(
   return new Response(readable, { status: 200, headers: responseHeaders });
 }
 
+async function mirrorStreamedHtmlDirect(ctx, request, response, slug) {
+  try {
+    if (!ctx?.waitUntil || !response || request.method !== "GET") return;
+    const cloned = response.clone();
+    ctx.waitUntil(mirrorToCfCache(ctx, request, cloned, slug));
+  } catch {}
+}
+
 /* ============================================================
    CORE STOREFRONT FETCH + INJECT
    FIX #2: storefront promise starts FIRST (before any awaits)
@@ -3149,6 +3159,8 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
     storefrontPromise,
     newHeaders,
   );
+
+  await mirrorStreamedHtmlDirect(ctx, request, response, slug);
 
   // v7.7.0 Fix 2: pass already-resolved inlineProducts so warm doesn't refetch.
   ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname, inlineProducts));
@@ -5657,6 +5669,8 @@ export default {
         pdpCategoryInline,
       );
 
+      await mirrorStreamedHtmlDirect(ctx, request, response, slug);
+
       // v7.7.0 Fix 2: pass already-resolved inlineProducts to skip 3rd fetch.
       ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, url.pathname, inlineProducts));
       ctx.waitUntil(recordPageView(request, storeInfo?.storeId, url.pathname));
@@ -5814,6 +5828,8 @@ export default {
         responseHeadersCD,
         pdpCategoryInlineCD,
       );
+
+      await mirrorStreamedHtmlDirect(ctx, request, responseCD, resolvedSlug);
 
       // v7.7.0 Fix 2: pass already-resolved inlineProducts to skip 3rd fetch.
       ctx.waitUntil(_warmFullHtmlInBackground(request, shellResultCD, resolvedSlug, ctx, env, hostname, url.pathname, inlineProductsCDReal));
