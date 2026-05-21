@@ -4480,6 +4480,16 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
       purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
       purgeOps.push(env.STORE_KV.delete(`store-info:${purgeSlug}`).catch(() => {}));
       purgeOps.push(env.STORE_KV.delete(`warm-lock:${purgeSlug}`).catch(() => {})); // v8.18.0
+      // v8.27.0: purge html:<slug>:* entries
+      purgeOps.push((async () => {
+        try {
+          const list = await env.STORE_KV.list({ prefix: `html:${purgeSlug}` });
+          await Promise.all((list?.keys || []).map(k => env.STORE_KV.delete(k.name).catch(() => {})));
+          for (const k of Array.from(_htmlKvWriteRecent.keys())) {
+            if (k.startsWith(`html:${purgeSlug}`)) _htmlKvWriteRecent.delete(k);
+          }
+        } catch {}
+      })());
     }
   }
 
