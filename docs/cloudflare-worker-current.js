@@ -633,7 +633,7 @@ const STOREFRONT_HTML_MIRROR_PATHS = ["/", "/checkout", "/cart"];
    as a real edge cache hit (the early key is invisible to CF metrics).
    Stripping Set-Cookie + forcing public Cache-Control prevents CF's
    default auto-bypass on cookie/auth responses. */
-async function mirrorToCfCache(ctx, request, response, slug = null) {
+async function mirrorToCfCache(ctx, request, response, slug = null, env = null) {
   try {
     if (!response || request.method !== "GET") return;
     if (/no-store|no-cache|max-age=0/i.test(response.headers.get("Cache-Control") || "")) return;
@@ -679,8 +679,8 @@ async function mirrorToCfCache(ctx, request, response, slug = null) {
     await Promise.allSettled(writes);
     // v8.27.0: ALSO mirror into KV for global cross-colo HIT-EARLY.
     // KV write is gated by per-isolate 55s dedup so we never thrash KV.
-    if (slug) {
-      kvHtmlPut(ctx, (request && request.cf && request.cf.env) || null, slug, url.pathname,
+    if (slug && env) {
+      kvHtmlPut(ctx, env, slug, url.pathname,
         new Response(buf, { status: cloned.status, headers }));
     }
   } catch {}
