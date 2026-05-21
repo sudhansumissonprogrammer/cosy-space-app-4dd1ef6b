@@ -493,6 +493,9 @@ async function mirrorToCfCache(ctx, request, response) {
     const headers = new Headers(cloned.headers);
     headers.delete("Set-Cookie");
     headers.delete("set-cookie");
+    // v8.25.0: strip Vary so CF cache doesn't fragment by Accept-Encoding/cookie
+    headers.delete("Vary");
+    headers.delete("vary");
     // Force a deterministic, public Cache-Control so CF stores it. Lovable origin
     // sends `no-cache, max-age=0`; leaving that intact makes CF cache rate stay 0%.
     forcePublicHtmlCacheControl(headers, 3600);
@@ -502,7 +505,13 @@ async function mirrorToCfCache(ctx, request, response) {
       statusText: cloned.statusText,
       headers,
     });
-    ctx.waitUntil(cache.put(request, toStore).catch(() => {}));
+    // v8.25.0: store under NORMALIZED key (hostname+path only). Previously we
+    // used the raw `request` which embeds Vary headers — every visitor with a
+    // different cookie/Accept-Encoding combo got a different key → permanent
+    // MISS on the dashboard. Normalized key is identical for all anon visitors
+    // on the same URL across both subdomains AND custom domains.
+    const normKey = getEarlyCacheKey(url.hostname, url.pathname);
+    ctx.waitUntil(cache.put(normKey, toStore).catch(() => {}));
   } catch {}
 }
 
