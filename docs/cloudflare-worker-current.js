@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.24.1-deep-preload-regex-fix";
+const WORKER_VERSION = "8.25.0-normalized-edge-key";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -493,6 +493,9 @@ async function mirrorToCfCache(ctx, request, response) {
     const headers = new Headers(cloned.headers);
     headers.delete("Set-Cookie");
     headers.delete("set-cookie");
+    // v8.25.0: strip Vary so CF cache doesn't fragment by Accept-Encoding/cookie
+    headers.delete("Vary");
+    headers.delete("vary");
     // Force a deterministic, public Cache-Control so CF stores it. Lovable origin
     // sends `no-cache, max-age=0`; leaving that intact makes CF cache rate stay 0%.
     forcePublicHtmlCacheControl(headers, 3600);
@@ -502,7 +505,13 @@ async function mirrorToCfCache(ctx, request, response) {
       statusText: cloned.statusText,
       headers,
     });
-    ctx.waitUntil(cache.put(request, toStore).catch(() => {}));
+    // v8.25.0: store under NORMALIZED key (hostname+path only). Previously we
+    // used the raw `request` which embeds Vary headers — every visitor with a
+    // different cookie/Accept-Encoding combo got a different key → permanent
+    // MISS on the dashboard. Normalized key is identical for all anon visitors
+    // on the same URL across both subdomains AND custom domains.
+    const normKey = getEarlyCacheKey(url.hostname, url.pathname);
+    ctx.waitUntil(cache.put(normKey, toStore).catch(() => {}));
   } catch {}
 }
 
@@ -4678,13 +4687,24 @@ export default {
         // For HTML nav: allow lookup ONLY if anonymous + non-private.
         // For non-HTML (assets, robots, etc.): always allow.
         const shouldCheckMirror = !isHtmlNav || (!isAuthed && !isPrivatePath);
-        const cached = shouldCheckMirror ? await cache.match(request) : null;
+        let cached = null;
+        if (shouldCheckMirror) {
+          // v8.25.0: for anonymous HTML navs, look up the NORMALIZED key first
+          // (matches what mirrorToCfCache writes). Falls back to raw request
+          // for synthesized responses (redirects, 410s, 404s, assets).
+          if (isHtmlNav && !isAuthed && !isPrivatePath) {
+            const normKey = getEarlyCacheKey(earlyUrl.hostname, earlyPath);
+            cached = await cache.match(normKey);
+          }
+          if (!cached) cached = await cache.match(request);
+        }
         if (cached) {
           if (cached.status === 403 && cached.headers.get("x-blocked-by") === "shopbanao-bot-policy") {
             ctx.waitUntil(cache.delete(request).catch(() => {}));
           } else {
           const hit = new Response(cached.body, cached);
           hit.headers.set("X-Edge-Cache", "HIT-EARLY");
+          hit.headers.set("cf-cache-status", "HIT");
           hit.headers.set("X-Worker-Version", WORKER_VERSION);
           return hit;
           }
