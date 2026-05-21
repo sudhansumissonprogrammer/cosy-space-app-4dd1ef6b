@@ -1199,10 +1199,13 @@ const SPA_SHELL_KV_TTL = 3600;
 const SPA_SHELL_CACHE_TTL = 60; // v8.7.0: short safety net only; human navigations use fresh origin shell.
 
 function setNoStoreHtmlHeaders(headers) {
-  // v8.8.0 (Phase 1 fix #4): switched from no-store to SWR.
-  // Repeat visits revalidate in background (instant paint from cache),
-  // while still honouring publishes via must-revalidate within 0s.
-  headers.set("Cache-Control", "public, max-age=0, must-revalidate, stale-while-revalidate=300");
+  // v8.24.0: was `public, max-age=0, must-revalidate, swr=300` which CF
+  // refuses to edge-cache (cf-cache-status stuck at MISS forever).
+  // Now: 60s fresh + 1d SWR. Merchants see edits within 60s on repeat
+  // visits, AND CF's automatic cache starts serving HIT on warm hits —
+  // cutting Worker compute to ~0 for the bulk of anonymous traffic.
+  // Purge button still wipes instantly via /api/purge-shell.
+  headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=86400");
   headers.delete("Pragma");
   headers.delete("Expires");
 }
