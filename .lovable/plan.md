@@ -1,106 +1,114 @@
-# Landing Page Cold-Load Speedup + Audit Plan
+# Worker v8.24.0 — Fix Cold-Cache Modulepreload + True CF Edge HIT
 
-Three parallel workstreams from the cold-load audit on `shopbanao.in/`. Each can ship independently; they don't depend on each other.
+Three audit findings, fixed in one Worker patch. No frontend changes. No DB changes.
 
----
+## Finding 1 — Brotli for JS (dashboard toggle, no code)
 
-## A. Worker fix: cache landing HTML + inject critical modulepreloads
+The `framework-*.js` and `index-*.js` chunks are served with `content-encoding: gzip` instead of brotli. Saves ~100KB per cold load.
 
-### Problem
-Real anonymous fetch to `https://shopbanao.in/` returns:
-- `cache-control: no-cache, must-revalidate, max-age=0`
-- No `x-worker-version` header → Worker is NOT executing on root domain (only on subdomains/custom domains)
-- HTML only references the 1.1KB entry shim. The 142KB `framework-*.js` and 40KB `landing-shell-*.js` are discovered at runtime → 4-level JS waterfall (~870ms critical path)
+**You do this**, not the agent:
+- Cloudflare dashboard → your zone (`shopbanao.in`) → Speed → Optimization → **Content Optimization** → enable **Brotli**.
+- Zero risk. Takes 30 seconds. Effect is global within a few minutes.
 
-### Changes
+If Brotli is already toggled on, the issue is likely that CF cached a gzip variant for the asset. Purge `/assets/*` from Cloudflare cache to force re-fetch with brotli.
 
-1. **Confirm Worker route binding for `shopbanao.in/*`**
-   - In Cloudflare dashboard → Workers Routes, the route must include `shopbanao.in/*` (not just `*.shopbanao.in/*`)
-   - Without this, none of the Worker logic runs for the landing page
-   - This is a manual user action; we surface it in the plan only
+## Finding 2 — Storefront only emits 1 modulepreload tag
 
-2. **Worker (`docs/cloudflare-worker-current.js`) — landing-specific path**
-   - Detect `hostname === ROOT_DOMAIN` AND `pathname === "/" || /^\/guides/ || === "/theme"`
-   - On miss: fetch origin HTML, then:
-     - Strip `Set-Cookie`, force `Cache-Control: public, max-age=300, s-maxage=3600, stale-while-revalidate=86400`
-     - Run a new `_buildLandingHead()` that injects `<link rel="modulepreload">` for the 3 critical chunks (framework, entry-utils, landing-shell) — discovered by fetching the entry chunk once and regex-extracting its `import "./*.js"` statements, cached in KV under `landing-chunks:v1` (24h TTL), invalidated by entry-chunk hash change
-     - Inject into `<head>` before existing tags
-     - Mirror to `cache.default` via existing `cacheableResponse` / `mirrorToCfCache` so `cf-cache-status: HIT` shows on repeat visits
-   - Bump `WORKER_VERSION` to `8.23.0-landing-cache`
-   - User deploys manually (per existing workflow)
+### Root cause
 
-3. **Verification (post-deploy)**
-   - `curl -sI https://shopbanao.in/` should show `cf-cache-status: HIT` and `x-worker-version: 8.23.0-...` on 2nd hit
-   - HTML head should contain 3 `<link rel="modulepreload">` lines for framework/entry-utils/landing-shell
-   - Expected FCP improvement: 400–600ms on cold load
+The `cold-cache-api` code path (line 5371-5386) skips both `getPrebuiltHead()` and `enrichHeadWithDeepPreloads()`. It calls `injectIntoHtml(shellResult.html, ...)` directly on the raw shell HTML, so:
 
-### Risk
-- Low. Landing has no per-user content; 5min browser / 1h edge cache is safe.
-- Rollback: revert single Worker file + redeploy.
+- The `<!--ENTRY:...-->` marker is never written into the head.
+- The deep-modulepreload enrichment pass never runs.
+- Result: HTML ships with only the entry script tag's implicit preload — 1 modulepreload, not 6-10.
 
----
+Audit confirmed: `x-data-source: cold-cache-api` on the response, only `/assets/index-*.js` preloaded.
 
-## B. Storefront cold-load audit (for comparison)
+### Fix
 
-Run the same cold-load methodology against a real storefront (`serdiyajewellers.shop`) to confirm the Worker's existing v8.22 deep-modulepreload + skeleton work is delivering the expected wins, and to find any remaining bottlenecks.
+In the cold-cache-api path (around line 5371-5386):
 
-### Measurements
+1. Call `getPrebuiltHead(shellResult.html, env)` to get the enriched head with the `ENTRY:` marker.
+2. Call `enrichHeadWithDeepPreloads(prebuiltHead, origin, env)` to splice in modulepreloads for framework, App, storefront-shell, supabase, router-query.
+3. Pass the enriched head through `injectIntoHtml` (or post-process the result to swap `<head>...</head>` with the enriched version).
 
-1. Anonymous `curl` with TTFB, total time, size, headers (3 runs avg)
-2. Inspect `cf-cache-status`, `x-edge-cache`, `x-worker-version`, `x-data-source` headers
-3. Count `<link rel="modulepreload">` tags injected by Worker
-4. Measure each critical chunk in parallel: framework, storefront-shell, App, supabase-vendor
-5. Verify `#sf-skel` skeleton is present and inline data hydration (`__STOREFRONT_DATA__`) is injected
-6. Check R2 image latency: hero/logo TTFB from `cdn.shopbanao.in`
+Apply the same fix to any other `cold-*` branches that bypass the enrichment pass.
 
-### Deliverable
-A short report comparing landing vs storefront, with any new fixes identified scored by impact (no code changes in this phase — findings only).
+### Expected result
 
----
+After the patch, storefront cold HTML should contain 6-10 `<link rel="modulepreload">` tags. Browser fetches framework + App + supabase + storefront-shell in parallel from byte 0 instead of discovering them serially. Cuts ~600-1000ms off cold load on 4G mobile.
 
-## C. Analyze the 142KB framework chunk
+## Finding 3 — `cf-cache-status: MISS` on every storefront hit
 
-The single largest blocker on landing cold load. Goal: identify what's bloating it and whether we can split or trim.
+### Root cause
 
-### Steps
+Two things compound:
 
-1. Read the live chunk via curl + inspect the module graph
-2. Look at `vite.config.ts` `manualChunks` to see what's grouped into `framework`
-3. Identify likely contents (React + ReactDOM + Router + small util libs)
-4. Evaluate split options:
-   - **Split React Router out** → ~30KB saved on landing (LandingApp uses minimal routing; could drop to `<a href>`)
-   - **Move React Query out** if it's bundled here (it shouldn't be on landing)
-   - **Move framer-motion / Radix shared atoms** if leaked
-5. Produce a numbers table: current size, proposed split, projected landing bundle reduction
+1. `setNoStoreHtmlHeaders` (line 1205) sets `Cache-Control: public, max-age=0, must-revalidate, stale-while-revalidate=300` on the client-facing response. CF refuses to edge-cache anything with `max-age=0, must-revalidate`.
+2. The Worker fronts the route and never reads `caches.default.match(request)` before running its logic. CF's cache layer is bypassed entirely — every visitor pays full Worker compute (~290ms TTFB) even when a perfect mirror exists in Cache API.
 
-### Deliverable
-Findings + a follow-up plan (separate plan) if a meaningful win exists. No code changes during analysis.
+The `mirrorToCfCache` helper does store a clean copy under the real request URL (with `max-age=3600`), but nothing reads it back.
 
----
+### Fix
 
-## Technical details (for engineers)
+Two-part change inside the main fetch handler:
 
-```text
-Current cold-load waterfall (shopbanao.in):
-  HTML 180ms (NOT cached)
-    └── index-CdOv1bdp.js  1.1KB  (190ms)   ← only this is in HTML
-          ├── framework-*.js     142KB (320ms)  ← discovered at runtime
-          ├── entry-utils-*.js     5KB (180ms)
-          └── landing-shell-*.js  40KB (180ms)
-                └── React render → FCP
+**a) Read CF Cache API at request entry for cacheable storefront paths.**
 
-After A:
-  HTML 20ms (cf-cache HIT)
-    └── index + framework + entry-utils + landing-shell all in parallel
-          → React render → FCP (~700ms total)
+Right after host + path resolution, before any shell/data work:
+
+```js
+// Only for GET on storefront HTML paths, no auth cookies, no checkout/dashboard/admin.
+if (
+  request.method === "GET" &&
+  isHtmlNavigationPath(pathname) &&
+  !pathname.startsWith("/checkout") &&
+  !pathname.startsWith("/dashboard") &&
+  !pathname.startsWith("/admin") &&
+  !(request.headers.get("cookie") || "").match(/auth|sb-/)
+) {
+  const hit = await caches.default.match(request);
+  if (hit) {
+    const r = new Response(hit.body, hit);
+    r.headers.set("X-Edge-Mirror-Hit", "1");
+    r.headers.set("X-Worker-Version", WORKER_VERSION);
+    return r;
+  }
+}
 ```
 
-### Files touched in A
-- `docs/cloudflare-worker-current.js` (Worker — manual deploy)
-- No app code changes
-- No DB / edge function changes
+This lets a warm CF mirror short-circuit the Worker entirely. After the first hit warms `mirrorToCfCache`, subsequent visitors get sub-50ms TTFB and `cf-cache-status: HIT` (technically still served via Worker, but with `X-Edge-Mirror-Hit: 1` as our metric).
 
-### Order of execution
-1. Ship A (concrete code change → manual deploy)
-2. Run B (measurements only, generates new findings)
-3. Run C (analysis only, may produce a new plan)
+**b) Loosen client cache-control on storefront HTML so CF will store it.**
+
+Change `setNoStoreHtmlHeaders` to send `public, max-age=60, stale-while-revalidate=86400` instead of `max-age=0, must-revalidate`. With 60s of fresh client cache plus background SWR, merchants still see edits within 60s on repeat visits, and Cloudflare's automatic cache will start serving `cf-cache-status: HIT` on its own without requiring our manual mirror.
+
+If you'd rather keep `max-age=0` for instant publish visibility, the manual mirror in (a) is enough — skip (b).
+
+### Expected result
+
+- First visitor: ~290ms TTFB (Worker computes, warms mirror).
+- Repeat visitors: ~30-50ms TTFB, `X-Edge-Mirror-Hit: 1`, Worker compute skipped.
+- After (b) is applied: `cf-cache-status: HIT` shows in Cloudflare analytics, cache rate metric stops being 0%.
+
+## What I will change
+
+- `docs/cloudflare-worker-current.js` only.
+- Bump `WORKER_VERSION` to `8.24.0-edge-hit-and-coldpreload`.
+- No frontend or DB changes.
+
+## What I won't touch
+
+- `r2-upload` / R2 pipeline (working perfectly).
+- Skeleton, theme injection, inline data — all working.
+- Brotli for JS — your dashboard toggle.
+
+## Deploy
+
+After approval I'll patch the file. You then deploy the Worker the usual way (paste/upload to Cloudflare).
+
+## Safety
+
+- Read-side Cache API check is gated to anonymous GET on storefront paths — no risk of leaking auth or serving stale checkout.
+- `cold-cache-api` path keeps identical inject-data behavior, only adds the head enrichment that was missing.
+- Cache-control change (b) is optional; if it causes any merchant-side visibility issue we revert it independently. Manual mirror in (a) is the load-bearing fix.
