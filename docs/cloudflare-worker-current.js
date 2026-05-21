@@ -4771,7 +4771,7 @@ export default {
             // colo that won't serve it back. The slug-subdomain key is always
             // inside the zone, so this is the reliable cache for ad traffic.
             if (!cached) {
-              const slugForKey = await _earlyResolveSlug(earlyUrl.hostname);
+              const slugForKey = await _earlyResolveSlug(earlyUrl.hostname, env);
               if (slugForKey) {
                 const canonical = getCanonicalHtmlCacheKey(slugForKey, earlyPath);
                 if (canonical) {
