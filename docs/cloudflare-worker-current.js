@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.25.0-normalized-edge-key";
+const WORKER_VERSION = "8.25.1-real-host-cache-key";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -439,6 +439,19 @@ function getEarlyCacheKey(hostname, pathname = "/") {
   return new Request(`https://edge-html/${HTML_CACHE_SCHEMA_VERSION}/${hostname.toLowerCase()}${bucket}`);
 }
 
+// v8.25.1: Real-hostname cache key for caches.default mirror.
+// CF's cache.put() requires a Request whose URL hostname is in the zone.
+// Synthetic hosts like `edge-html/...` are silently rejected → permanent MISS.
+// We use the actual hostname + clean pathname (no query, no cookies, no Vary)
+// so all anonymous visitors to the same URL share one cache entry.
+function getCfCacheKey(hostname, pathname) {
+  // PDP/category collapsed to per-slug bucket so they don't cache the wrong inlined data
+  let p = pathname || "/";
+  const m = p.match(/^\/(product|category)\/([a-zA-Z0-9_-]+)\/?$/);
+  if (m) p = `/${m[1]}/${m[2]}/`;
+  return new Request(`https://${hostname.toLowerCase()}${p}`, { method: "GET" });
+}
+
 function isHtmlNavigationPath(pathname) {
   return !pathname.startsWith("/api/") && !pathname.startsWith("/assets/") && !pathname.includes(".");
 }
@@ -505,13 +518,12 @@ async function mirrorToCfCache(ctx, request, response) {
       statusText: cloned.statusText,
       headers,
     });
-    // v8.25.0: store under NORMALIZED key (hostname+path only). Previously we
-    // used the raw `request` which embeds Vary headers — every visitor with a
-    // different cookie/Accept-Encoding combo got a different key → permanent
-    // MISS on the dashboard. Normalized key is identical for all anon visitors
-    // on the same URL across both subdomains AND custom domains.
-    const normKey = getEarlyCacheKey(url.hostname, url.pathname);
-    ctx.waitUntil(cache.put(normKey, toStore).catch(() => {}));
+    // v8.25.1: store under REAL hostname key. CF rejects synthetic hostnames
+    // in cache.put() silently (returns nothing, never errors). Using the real
+    // hostname + clean path makes the write actually land, so subsequent
+    // visitors get HIT. Works identically on subdomains AND custom domains.
+    const cfKey = getCfCacheKey(url.hostname, url.pathname);
+    ctx.waitUntil(cache.put(cfKey, toStore).catch(() => {}));
   } catch {}
 }
 
@@ -4689,12 +4701,13 @@ export default {
         const shouldCheckMirror = !isHtmlNav || (!isAuthed && !isPrivatePath);
         let cached = null;
         if (shouldCheckMirror) {
-          // v8.25.0: for anonymous HTML navs, look up the NORMALIZED key first
-          // (matches what mirrorToCfCache writes). Falls back to raw request
-          // for synthesized responses (redirects, 410s, 404s, assets).
+          // v8.25.1: for anonymous HTML navs, look up the REAL-HOST key first
+          // (matches what mirrorToCfCache writes via getCfCacheKey). Falls
+          // back to raw request for synthesized responses (redirects, 410s,
+          // 404s, assets) which already use raw request as their key.
           if (isHtmlNav && !isAuthed && !isPrivatePath) {
-            const normKey = getEarlyCacheKey(earlyUrl.hostname, earlyPath);
-            cached = await cache.match(normKey);
+            const cfKey = getCfCacheKey(earlyUrl.hostname, earlyPath);
+            cached = await cache.match(cfKey);
           }
           if (!cached) cached = await cache.match(request);
         }
