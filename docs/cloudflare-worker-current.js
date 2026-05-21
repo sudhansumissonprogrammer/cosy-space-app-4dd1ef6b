@@ -4573,6 +4573,23 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
   // Root-domain (no slug) responses still get cached here.
   const contentType = res.headers.get("content-type") || "";
   if (res.status === 200 && contentType.includes("text/html") && !slug) {
+    // v8.23.0: For landing routes (root domain), inject modulepreloads
+    // for framework + landing-shell + entry-utils chunks so the browser
+    // discovers them in parallel instead of via a 4-step JS waterfall.
+    const landingUrl = new URL(request.url);
+    if (isLandingPath(landingUrl.pathname)) {
+      try {
+        const origHtml = await res.text();
+        const enriched = await injectLandingModulepreloads(origHtml, landingUrl.origin, env);
+        res = new Response(enriched, {
+          status: 200,
+          headers: res.headers,
+        });
+      } catch {
+        // If injection fails, fall through with original response.
+        // (res.text() already consumed body — rebuild from origHtml on error path.)
+      }
+    }
     res = makePublicHtmlResponse(res, 3600);
     storeInEdgeCache(ctx, hostname, "", res, request);
   }
