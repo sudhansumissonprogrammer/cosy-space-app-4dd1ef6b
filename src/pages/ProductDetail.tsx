@@ -1369,42 +1369,60 @@ function ShareButtons({ productName, storeSlug, productSlugOrId }: { productName
 
 /* ── Image Gallery with Zoom Icon + Dots Inside Image ── */
 function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }: { images: string[]; productName: string; hasDiscount: number | boolean | null; discountPct: number; onShare?: () => void }) {
-  const [slideIndex, setSlideIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
-  const touchStart = useRef<number | null>(null);
-  const touchStartY = useRef<number | null>(null);
-
   const len = images.length;
-  const activeIndex = len > 0 ? ((slideIndex % len) + len) % len : 0;
+  const canLoop = len > 1;
 
+  const [emblaRef, embla] = useEmblaCarousel({
+    loop: canLoop,
+    align: "center",
+    skipSnaps: false,
+    dragFree: false,
+    duration: 22,
+  });
+
+  // Sync activeIndex with Embla
   useEffect(() => {
+    if (!embla) return;
+    const onSelect = () => setActiveIndex(embla.selectedScrollSnap());
+    embla.on("select", onSelect);
+    embla.on("reInit", onSelect);
+    onSelect();
+    return () => {
+      embla.off("select", onSelect);
+      embla.off("reInit", onSelect);
+    };
+  }, [embla]);
+
+  // Re-init on image-list change
+  useEffect(() => {
+    if (embla) embla.reInit();
     setImageLoaded({});
-    images.forEach((src, idx) => {
-      const img = new Image();
-      img.onload = () => setImageLoaded(prev => ({ ...prev, [idx]: true }));
-      img.src = optimizeImageUrl(src, 800);
-    });
-  }, [images]);
+  }, [images, embla]);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStart.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStart.current === null || touchStartY.current === null) return;
-    const dx = e.changedTouches[0].clientX - touchStart.current;
-    const dy = e.changedTouches[0].clientY - touchStartY.current;
-    if (len > 0 && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-      if (dx < 0) setSlideIndex(s => s + 1);
-      else setSlideIndex(s => s - 1);
+  // Smart preload: only active + 2 neighbours (handles big galleries)
+  useEffect(() => {
+    if (len === 0) return;
+    const want = new Set<number>([activeIndex]);
+    if (len > 1) {
+      want.add((activeIndex + 1) % len);
+      want.add((activeIndex - 1 + len) % len);
     }
-    touchStart.current = null;
-    touchStartY.current = null;
-  };
+    want.forEach((idx) => {
+      if (imageLoaded[idx]) return;
+      const img = new Image();
+      img.onload = () => setImageLoaded((prev) => (prev[idx] ? prev : { ...prev, [idx]: true }));
+      img.src = optimizeImageUrl(images[idx], 800);
+    });
+  }, [activeIndex, images, len, imageLoaded]);
 
-  if (images.length === 0) {
+  const scrollTo = useCallback((i: number) => embla?.scrollTo(i), [embla]);
+  const scrollPrev = useCallback(() => embla?.scrollPrev(), [embla]);
+  const scrollNext = useCallback(() => embla?.scrollNext(), [embla]);
+
+  if (len === 0) {
     return (
       <div className="overflow-hidden rounded-2xl bg-accent">
         <div className="flex aspect-[3/4] sm:aspect-square w-full items-center justify-center">
@@ -1414,18 +1432,14 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
     );
   }
 
-  const isMainLoaded = imageLoaded[activeIndex];
+  // For single-image products, render a fake 2-slide loop so user can still swipe and see same image cycle
+  const renderImages = len === 1 ? [images[0], images[0]] : images;
 
   return (
     <>
       <div className="space-y-1 sm:space-y-2 lg:sticky lg:top-4">
-        <div
-          className="relative overflow-hidden rounded-none sm:rounded-2xl bg-background sm:bg-accent cursor-zoom-in select-none -mx-4 sm:mx-0 px-2 pt-2 pb-1 sm:p-0"
-          onClick={() => setLightboxOpen(true)}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-        >
-          {/* Discount badge — top left */}
+        <div className="relative -mx-4 sm:mx-0 px-2 pt-2 pb-1 sm:p-0">
+          {/* Discount badge */}
           {hasDiscount && discountPct > 0 && (
             <div className="absolute left-3 top-3 z-10">
               <Badge className="bg-emerald-600 text-white text-[11px] font-bold border-0 shadow-lg px-2 py-0.5">
@@ -1434,7 +1448,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
             </div>
           )}
 
-          {/* Share button — top right */}
+          {/* Share button */}
           {onShare && (
             <button
               onClick={(e) => { e.stopPropagation(); onShare(); }}
@@ -1445,20 +1459,38 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
             </button>
           )}
 
-          {/* Skeleton */}
-          {!isMainLoaded && <Skeleton className="aspect-[3/4] sm:aspect-square w-full rounded-none" />}
-          <img
-            key={`${slideIndex}-${images[activeIndex]}`}
-            src={optimizeImageUrl(images[activeIndex], 800)}
-            alt={productName}
-            className={`aspect-[3/4] sm:aspect-square w-full object-contain transition-opacity duration-200 ${isMainLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
-            decoding="async"
-            fetchPriority="high"
-            draggable={false}
-            onLoad={() => setImageLoaded(prev => ({ ...prev, [activeIndex]: true }))}
-          />
+          {/* Embla viewport */}
+          <div
+            ref={emblaRef}
+            className="overflow-hidden rounded-none sm:rounded-2xl bg-background sm:bg-accent cursor-zoom-in select-none"
+          >
+            <div className="flex touch-pan-y">
+              {renderImages.map((src, i) => {
+                const realIdx = len === 1 ? 0 : i;
+                const loaded = imageLoaded[realIdx];
+                return (
+                  <div
+                    key={`${i}-${src}`}
+                    className="relative flex-[0_0_100%] min-w-0"
+                    onClick={() => setLightboxOpen(true)}
+                  >
+                    {!loaded && <Skeleton className="aspect-[3/4] sm:aspect-square w-full rounded-none" />}
+                    <img
+                      src={optimizeImageUrl(src, 800)}
+                      alt={productName}
+                      className={`aspect-[3/4] sm:aspect-square w-full object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+                      decoding="async"
+                      fetchPriority={realIdx === 0 ? "high" : "auto"}
+                      draggable={false}
+                      onLoad={() => setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }))}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-          {/* Zoom/enlarge icon — bottom left */}
+          {/* Zoom/enlarge icon */}
           <button
             onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
             className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-all hover:bg-black/70 active:scale-90"
@@ -1467,24 +1499,22 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
             <Maximize2 className="h-4 w-4" />
           </button>
 
-          {/* Image counter — bottom right on mobile */}
-          {images.length > 1 && (
+          {/* Counter (mobile) */}
+          {len > 1 && (
             <div className="absolute bottom-3 right-3 z-10 sm:hidden rounded-full bg-black/50 backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold text-white tabular-nums">
-              {activeIndex + 1}/{images.length}
+              {activeIndex + 1}/{len}
             </div>
           )}
 
-          {/* Dots — inside image, bottom center */}
-          {images.length > 1 && (
+          {/* Dots */}
+          {len > 1 && (
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5 rounded-full bg-black/30 backdrop-blur-sm px-2.5 py-1.5">
               {images.map((_, i) => (
                 <button
                   key={i}
-                  onClick={(e) => { e.stopPropagation(); setSlideIndex(i); }}
+                  onClick={(e) => { e.stopPropagation(); scrollTo(i); }}
                   className={`rounded-full transition-all duration-300 ${
-                    i === activeIndex
-                      ? "w-5 h-1.5 bg-white"
-                      : "w-1.5 h-1.5 bg-white/50 hover:bg-white/70"
+                    i === activeIndex ? "w-5 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/50 hover:bg-white/70"
                   }`}
                   aria-label={`View image ${i + 1}`}
                 />
@@ -1492,17 +1522,17 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
             </div>
           )}
 
-          {/* Desktop navigation arrows */}
-          {images.length > 1 && (
+          {/* Desktop arrows */}
+          {len > 1 && (
             <>
               <button
-                onClick={(e) => { e.stopPropagation(); setSlideIndex(s => s - 1); }}
+                onClick={(e) => { e.stopPropagation(); scrollPrev(); }}
                 className="absolute left-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-all"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); setSlideIndex(s => s + 1); }}
+                onClick={(e) => { e.stopPropagation(); scrollNext(); }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-all"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -1512,12 +1542,12 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
         </div>
 
         {/* Thumbnail strip — desktop only */}
-        {images.length > 1 && (
+        {len > 1 && (
           <div className="hidden sm:flex gap-2 overflow-x-auto scrollbar-hide px-0.5 py-1">
             {images.map((img, i) => (
               <button
                 key={i}
-                onClick={() => setSlideIndex(i)}
+                onClick={() => scrollTo(i)}
                 className={`h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
                   i === activeIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-muted-foreground/30"
                 }`}
