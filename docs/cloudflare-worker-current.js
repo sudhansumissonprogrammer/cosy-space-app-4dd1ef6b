@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.25.2-custom-domain-zone-key";
+const WORKER_VERSION = "8.26.0-deep-preload-and-cache-fixes";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -471,7 +471,7 @@ function getCanonicalHtmlCacheKey(slug, pathname) {
 // - Custom domains: look up cached domain→slug mapping in caches.default
 //   ONLY (no KV/DB). Returns null on miss; the canonical-key check is
 //   simply skipped and the existing fallbacks handle the request.
-async function _earlyResolveSlug(hostname) {
+async function _earlyResolveSlug(hostname, env = null) {
   if (!hostname) return null;
   const host = hostname.replace(/^www\./, "").toLowerCase().trim();
   if (host.endsWith(`.${ROOT_DOMAIN}`)) {
@@ -479,13 +479,25 @@ async function _earlyResolveSlug(hostname) {
     if (sub && !sub.includes(".")) return sub;
     return null;
   }
+  // Cache API first (sub-ms).
   try {
     const cached = await cache.match(new Request(`https://cache/domain-${host}`));
     if (cached) {
       const data = await cached.json();
-      return data?.slug || null;
+      if (data?.slug) return data.slug;
     }
   } catch {}
+  // v8.26.0: KV fallback (~5ms). Synthetic `https://cache/...` writes are
+  // silently rejected by Cloudflare in some colos → Cache API miss is common
+  // even when KV has a perfectly good mapping. Without this fallback, custom
+  // domains can never resolve their slug in the early path, which means the
+  // canonical-slug cache key (v8.25.2) is never tried, and every visit MISSes.
+  if (env?.STORE_KV) {
+    try {
+      const kvData = await env.STORE_KV.get(`domain:${host}`, { type: "json" });
+      if (kvData?.slug) return kvData.slug;
+    } catch {}
+  }
   return null;
 }
 
@@ -575,10 +587,15 @@ function addDiagnosticHeaders(response, { slug, cacheStatus, dataSource }) {
   res.headers.set("X-Worker-Version", WORKER_VERSION);
   if (slug) res.headers.set("X-Store-Slug", slug);
   res.headers.set("X-Cache-Status", cacheStatus);
-  // v8.20.0: mirror to canonical `cf-cache-status` header so Cloudflare's
-  // dashboard cache-rate widget, Lighthouse, and PSI register Worker
-  // cache hits (they only inspect the standard header name).
-  if (cacheStatus) res.headers.set("cf-cache-status", cacheStatus);
+  // v8.26.0: ONLY overwrite cf-cache-status when we know the answer is a HIT
+  // (cached/edge/memory/kv/warm). For MISS / cold paths, leave cf-cache-status
+  // untouched so Cloudflare's automatic edge cache result is visible. The old
+  // code mirrored every internal status (including MISS) to cf-cache-status,
+  // which permanently masked real CF edge HITs and made the dashboard cache
+  // rate look stuck at 0%.
+  if (cacheStatus && /^(hit|cached|memory|kv|edge|warm)/i.test(cacheStatus)) {
+    res.headers.set("cf-cache-status", "HIT");
+  }
   if (dataSource) res.headers.set("X-Data-Source", dataSource);
   return res;
 }
@@ -1051,7 +1068,7 @@ function injectDeepPreloads(head, deepChunks) {
 // any error so HTML response is never blocked.
 async function enrichHeadWithDeepPreloads(head, origin, env) {
   if (!head) return head;
-  const marker = head.match(/<!--ENTRY:([^>-]+)-->/);
+  const marker = head.match(/<!--ENTRY:([^>]+)-->/);
   if (!marker) return head;
   try {
     const deep = await getDeepChunkPreloads(marker[1], origin, env);
@@ -4759,7 +4776,7 @@ export default {
             // colo that won't serve it back. The slug-subdomain key is always
             // inside the zone, so this is the reliable cache for ad traffic.
             if (!cached) {
-              const slugForKey = await _earlyResolveSlug(earlyUrl.hostname);
+              const slugForKey = await _earlyResolveSlug(earlyUrl.hostname, env);
               if (slugForKey) {
                 const canonical = getCanonicalHtmlCacheKey(slugForKey, earlyPath);
                 if (canonical) {
