@@ -439,6 +439,19 @@ function getEarlyCacheKey(hostname, pathname = "/") {
   return new Request(`https://edge-html/${HTML_CACHE_SCHEMA_VERSION}/${hostname.toLowerCase()}${bucket}`);
 }
 
+// v8.25.1: Real-hostname cache key for caches.default mirror.
+// CF's cache.put() requires a Request whose URL hostname is in the zone.
+// Synthetic hosts like `edge-html/...` are silently rejected → permanent MISS.
+// We use the actual hostname + clean pathname (no query, no cookies, no Vary)
+// so all anonymous visitors to the same URL share one cache entry.
+function getCfCacheKey(hostname, pathname) {
+  // PDP/category collapsed to per-slug bucket so they don't cache the wrong inlined data
+  let p = pathname || "/";
+  const m = p.match(/^\/(product|category)\/([a-zA-Z0-9_-]+)\/?$/);
+  if (m) p = `/${m[1]}/${m[2]}/`;
+  return new Request(`https://${hostname.toLowerCase()}${p}`, { method: "GET" });
+}
+
 function isHtmlNavigationPath(pathname) {
   return !pathname.startsWith("/api/") && !pathname.startsWith("/assets/") && !pathname.includes(".");
 }
