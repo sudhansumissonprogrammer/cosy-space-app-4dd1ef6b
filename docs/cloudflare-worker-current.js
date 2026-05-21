@@ -3262,7 +3262,7 @@ async function fetchAndInjectSlug(request, slug, ctx, env, hostname, pathname, r
     newHeaders,
   );
 
-  await mirrorStreamedHtmlDirect(ctx, request, response, slug);
+  await mirrorStreamedHtmlDirect(ctx, request, response, slug, env);
 
   // v7.7.0 Fix 2: pass already-resolved inlineProducts so warm doesn't refetch.
   ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, pathname, inlineProducts));
@@ -4827,7 +4827,7 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
       }
     }
     res = makePublicHtmlResponse(res, 3600);
-    storeInEdgeCache(ctx, hostname, "", res, request);
+    storeInEdgeCache(ctx, hostname, "", res, request, env);
   }
 
   return addDiagnosticHeaders(res, { slug, cacheStatus: "MISS", dataSource });
@@ -5258,7 +5258,7 @@ export default {
                     fullHeaders.set("X-Cache-Timestamp", new Date().toISOString());
                     for (const [k, v] of Object.entries(SECURITY_HEADERS)) fullHeaders.set(k, v);
                     const fullResponse = new Response(result.html, { status: 200, headers: fullHeaders });
-                    storeInEdgeCache(ctx, hostname, revalSlug, fullResponse, request);
+                    storeInEdgeCache(ctx, hostname, revalSlug, fullResponse, request, env);
                   }
                 }
               } catch {}
@@ -5657,7 +5657,7 @@ export default {
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
           const coldResponse = new Response(enrichedHtml, { status: 200, headers });
-          storeInEdgeCache(ctx, hostname, slug, coldResponse.clone(), request);
+          storeInEdgeCache(ctx, hostname, slug, coldResponse.clone(), request, env);
           ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
           return coldResponse;
         }
@@ -5772,7 +5772,7 @@ export default {
         pdpCategoryInline,
       );
 
-      await mirrorStreamedHtmlDirect(ctx, request, response, slug);
+      await mirrorStreamedHtmlDirect(ctx, request, response, slug, env);
 
       // v7.7.0 Fix 2: pass already-resolved inlineProducts to skip 3rd fetch.
       ctx.waitUntil(_warmFullHtmlInBackground(request, shellResult, slug, ctx, env, hostname, url.pathname, inlineProducts));
@@ -5831,7 +5831,7 @@ export default {
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
           const coldResponse = new Response(enrichedHtml, { status: 200, headers });
-          storeInEdgeCache(ctx, hostname, resolvedSlugCD, coldResponse.clone(), request);
+          storeInEdgeCache(ctx, hostname, resolvedSlugCD, coldResponse.clone(), request, env);
           ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
           return coldResponse;
         }
@@ -5932,7 +5932,7 @@ export default {
         pdpCategoryInlineCD,
       );
 
-      await mirrorStreamedHtmlDirect(ctx, request, responseCD, resolvedSlug);
+      await mirrorStreamedHtmlDirect(ctx, request, responseCD, resolvedSlug, env);
 
       // v7.7.0 Fix 2: pass already-resolved inlineProducts to skip 3rd fetch.
       ctx.waitUntil(_warmFullHtmlInBackground(request, shellResultCD, resolvedSlug, ctx, env, hostname, url.pathname, inlineProductsCDReal));
