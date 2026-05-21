@@ -909,7 +909,7 @@ function _buildPrebuiltHead(html) {
    ============================================================ */
 
 let _memDeepChunks = null;
-const DEEP_CHUNKS_KV_KEY = "deep-chunks:v1";
+const DEEP_CHUNKS_KV_KEY = "deep-chunks:v2"; // v8.24.1 bust stale empty cache
 const DEEP_CHUNKS_TTL = 86400; // 24h
 const DEEP_CHUNK_DASH_PATTERN =
   /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages|landing-)/;
