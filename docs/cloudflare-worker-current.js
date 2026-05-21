@@ -3230,7 +3230,7 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
       await cache.put(earlyKey, fullResponse.clone()).catch(() => {});
       // v8.4.0: ALSO mirror under the real request URL so Cloudflare's
       // automatic edge cache (and the dashboard cache-rate metric) sees a HIT.
-      await mirrorToCfCache(ctx, request, fullResponse).catch?.(() => {});
+      await mirrorToCfCache(ctx, request, fullResponse, slug).catch?.(() => {});
     }
   } catch {}
 }
@@ -3240,8 +3240,9 @@ function storeInEdgeCache(ctx, hostname, slug, response, request = null) {
   const earlyKey = getEarlyCacheKey(hostname);
   ctx.waitUntil(cache.put(earlyKey, response.clone()).catch(() => {}));
   // v8.4.0: when caller passes request, also mirror to CF Cache API for HIT metric.
+  // v8.25.2: pass slug so the canonical zone-key mirror is also written.
   if (request) {
-    mirrorToCfCache(ctx, request, response);
+    mirrorToCfCache(ctx, request, response, slug || null);
   }
 }
 
