@@ -992,6 +992,25 @@ async function enrichHeadWithDeepPreloads(head, origin, env) {
   }
 }
 
+/* v8.24.0: Swap an injected HTML's <head>...</head> with a prebuilt,
+   deep-modulepreload-enriched head. Used by the cold-cache-api code
+   paths which previously skipped enrichment, shipping HTML with only
+   1 modulepreload tag instead of 6-10. */
+async function swapHeadWithEnriched(injectedHtml, shellHtml, origin, env) {
+  if (!injectedHtml || typeof injectedHtml !== "string") return injectedHtml;
+  try {
+    let prebuilt = await getPrebuiltHead(shellHtml, env);
+    prebuilt = await enrichHeadWithDeepPreloads(prebuilt, origin, env);
+    if (!prebuilt) return injectedHtml;
+    // prebuilt is the full <head>...</head> block. Replace the head segment.
+    return injectedHtml.replace(/<head\b[^>]*>[\s\S]*?<\/head>/i, prebuilt);
+  } catch {
+    return injectedHtml;
+  }
+}
+
+
+
 
 /* ============================================================
    v8.23.0 — LANDING MODULEPRELOAD
