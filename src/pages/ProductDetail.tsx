@@ -1368,11 +1368,14 @@ function ShareButtons({ productName, storeSlug, productSlugOrId }: { productName
 
 /* ── Image Gallery with Zoom Icon + Dots Inside Image ── */
 function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }: { images: string[]; productName: string; hasDiscount: number | boolean | null; discountPct: number; onShare?: () => void }) {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [slideIndex, setSlideIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const touchStart = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
+
+  const len = images.length;
+  const activeIndex = len > 0 ? ((slideIndex % len) + len) % len : 0;
 
   useEffect(() => {
     setImageLoaded({});
@@ -1392,9 +1395,9 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
     if (touchStart.current === null || touchStartY.current === null) return;
     const dx = e.changedTouches[0].clientX - touchStart.current;
     const dy = e.changedTouches[0].clientY - touchStartY.current;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-      if (dx < 0 && activeIndex < images.length - 1) setActiveIndex(i => i + 1);
-      if (dx > 0 && activeIndex > 0) setActiveIndex(i => i - 1);
+    if (len > 0 && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) setSlideIndex(s => s + 1);
+      else setSlideIndex(s => s - 1);
     }
     touchStart.current = null;
     touchStartY.current = null;
@@ -1444,7 +1447,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
           {/* Skeleton */}
           {!isMainLoaded && <Skeleton className="aspect-[3/4] sm:aspect-square w-full rounded-none" />}
           <img
-            key={`${activeIndex}-${images[activeIndex]}`}
+            key={`${slideIndex}-${images[activeIndex]}`}
             src={optimizeImageUrl(images[activeIndex], 800)}
             alt={productName}
             className={`aspect-[3/4] sm:aspect-square w-full object-contain transition-opacity duration-200 ${isMainLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
@@ -1476,7 +1479,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
               {images.map((_, i) => (
                 <button
                   key={i}
-                  onClick={(e) => { e.stopPropagation(); setActiveIndex(i); }}
+                  onClick={(e) => { e.stopPropagation(); setSlideIndex(i); }}
                   className={`rounded-full transition-all duration-300 ${
                     i === activeIndex
                       ? "w-5 h-1.5 bg-white"
@@ -1492,13 +1495,13 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
           {images.length > 1 && (
             <>
               <button
-                onClick={(e) => { e.stopPropagation(); setActiveIndex((i) => (i - 1 + images.length) % images.length); }}
+                onClick={(e) => { e.stopPropagation(); setSlideIndex(s => s - 1); }}
                 className="absolute left-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-all"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); setActiveIndex((i) => (i + 1) % images.length); }}
+                onClick={(e) => { e.stopPropagation(); setSlideIndex(s => s + 1); }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-all"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -1513,7 +1516,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
             {images.map((img, i) => (
               <button
                 key={i}
-                onClick={() => setActiveIndex(i)}
+                onClick={() => setSlideIndex(i)}
                 className={`h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
                   i === activeIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-muted-foreground/30"
                 }`}
