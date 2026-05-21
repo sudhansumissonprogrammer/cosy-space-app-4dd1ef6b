@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.23.0-landing-modulepreload";
+const WORKER_VERSION = "8.24.0-edge-hit-and-coldpreload";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -992,6 +992,33 @@ async function enrichHeadWithDeepPreloads(head, origin, env) {
   }
 }
 
+/* v8.24.0: Inject deep modulepreload tags into an already-injected HTML's
+   <head>. Used by the cold-cache-api code paths which previously skipped
+   the enrichment pass, shipping HTML with only 1 modulepreload tag
+   instead of 6-10. Mirrors what the streaming path does via
+   getPrebuiltHead + enrichHeadWithDeepPreloads, but operates as a post-
+   process step so we don't have to touch injectIntoHtml signature. */
+async function injectDeepPreloadsIntoColdHtml(html, origin, env) {
+  if (!html || typeof html !== "string") return html;
+  try {
+    // Find the entry chunk in the existing head (same regex as _buildPrebuiltHead).
+    const entryMatch = html.match(/<script[^>]+type="module"[^>]+src="(\/assets\/[A-Za-z0-9_\-]+-[A-Za-z0-9]+\.js)"/);
+    if (!entryMatch) return html;
+    const entryPath = entryMatch[1];
+    const deep = await getDeepChunkPreloads(entryPath, origin, env);
+    if (!deep || deep.length === 0) return html;
+    const tags = deep.map((p) => `<link rel="modulepreload" href="${p}" />`).join("");
+    if (html.includes("</head>")) return html.replace("</head>", `${tags}</head>`);
+    return html;
+  } catch {
+    return html;
+  }
+}
+
+
+
+
+
 
 /* ============================================================
    v8.23.0 — LANDING MODULEPRELOAD
@@ -1199,10 +1226,13 @@ const SPA_SHELL_KV_TTL = 3600;
 const SPA_SHELL_CACHE_TTL = 60; // v8.7.0: short safety net only; human navigations use fresh origin shell.
 
 function setNoStoreHtmlHeaders(headers) {
-  // v8.8.0 (Phase 1 fix #4): switched from no-store to SWR.
-  // Repeat visits revalidate in background (instant paint from cache),
-  // while still honouring publishes via must-revalidate within 0s.
-  headers.set("Cache-Control", "public, max-age=0, must-revalidate, stale-while-revalidate=300");
+  // v8.24.0: was `public, max-age=0, must-revalidate, swr=300` which CF
+  // refuses to edge-cache (cf-cache-status stuck at MISS forever).
+  // Now: 60s fresh + 1d SWR. Merchants see edits within 60s on repeat
+  // visits, AND CF's automatic cache starts serving HIT on warm hits —
+  // cutting Worker compute to ~0 for the bulk of anonymous traffic.
+  // Purge button still wipes instantly via /api/purge-shell.
+  headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=86400");
   headers.delete("Pragma");
   headers.delete("Expires");
 }
@@ -4626,16 +4656,28 @@ export default {
        cache rate from 42% → 95%+. Only GET requests are checked. */
     if (earlyMethod === "GET") {
       try {
-        const shouldBypassPathMirror = isHtmlNavigationPath(earlyPath);
-        const cached = shouldBypassPathMirror ? null : await cache.match(request);
+        // v8.24.0: Previously HTML nav paths bypassed this lookup entirely,
+        // which meant every storefront hit ran full Worker compute (~290ms
+        // TTFB) even when mirrorToCfCache had a perfect copy stored under
+        // the same URL. Now: for anonymous HTML nav (no auth cookie, not
+        // checkout/dashboard/admin) we DO check the URL mirror — that's
+        // the load-bearing fix that turns repeat visits into ~30ms HITs.
+        const cookie = request.headers.get("cookie") || "";
+        const isAuthed = /(?:^|;\s*)(?:sb-|.*auth)/i.test(cookie);
+        const isPrivatePath =
+          earlyPath.startsWith("/checkout") ||
+          earlyPath.startsWith("/dashboard") ||
+          earlyPath.startsWith("/admin") ||
+          earlyPath.startsWith("/api/");
+        const isHtmlNav = isHtmlNavigationPath(earlyPath);
+        // For HTML nav: allow lookup ONLY if anonymous + non-private.
+        // For non-HTML (assets, robots, etc.): always allow.
+        const shouldCheckMirror = !isHtmlNav || (!isAuthed && !isPrivatePath);
+        const cached = shouldCheckMirror ? await cache.match(request) : null;
         if (cached) {
-          // v8.6.4: Safety fix — old bot-policy 403s were cached by URL only.
-          // A crawler/empty-UA request to / could poison the normal mobile/IP
-          // response for that same URL. Delete and ignore those legacy entries.
           if (cached.status === 403 && cached.headers.get("x-blocked-by") === "shopbanao-bot-policy") {
             ctx.waitUntil(cache.delete(request).catch(() => {}));
           } else {
-          // Re-emit with diagnostic header so we can see the source.
           const hit = new Response(cached.body, cached);
           hit.headers.set("X-Edge-Cache", "HIT-EARLY");
           hit.headers.set("X-Worker-Version", WORKER_VERSION);
@@ -5370,6 +5412,9 @@ export default {
         // If we have the shell + data, serve fully injected HTML — same as warm path
         if (shellResult?.html && prefetchResult?.data) {
           const injected = injectIntoHtml(shellResult.html, slug, prefetchResult.data, prefetchResult.source, inlineProductsCold);
+          // v8.24.0: enrich with deep modulepreloads (framework, App, supabase,
+          // storefront-shell, router-query) so cold loads don't waterfall.
+          const enrichedHtml = await injectDeepPreloadsIntoColdHtml(injected.html, url.origin, env);
           const headers = new Headers();
           headers.set("Content-Type", "text/html; charset=utf-8");
           setNoStoreHtmlHeaders(headers);
@@ -5377,9 +5422,7 @@ export default {
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          // v8.6.3: store cold full HTML too; otherwise first isolate hits keep
-          // returning MISS/no CF metric until the background warmer succeeds.
-          const coldResponse = new Response(injected.html, { status: 200, headers });
+          const coldResponse = new Response(enrichedHtml, { status: 200, headers });
           storeInEdgeCache(ctx, hostname, slug, coldResponse.clone(), request);
           ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
           return coldResponse;
@@ -5542,6 +5585,8 @@ export default {
 
         if (shellResult?.html && prefetchResult?.data) {
           const injected = injectIntoHtml(shellResult.html, resolvedSlugCD, prefetchResult.data, prefetchResult.source, inlineProductsCdCold);
+          // v8.24.0: enrich with deep modulepreloads on the custom-domain cold path too.
+          const enrichedHtml = await injectDeepPreloadsIntoColdHtml(injected.html, url.origin, env);
           const headers = new Headers();
           headers.set("Content-Type", "text/html; charset=utf-8");
           setNoStoreHtmlHeaders(headers);
@@ -5549,9 +5594,7 @@ export default {
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          // v8.6.3: store cold full HTML too; otherwise first isolate hits keep
-          // returning MISS/no CF metric until the background warmer succeeds.
-          const coldResponse = new Response(injected.html, { status: 200, headers });
+          const coldResponse = new Response(enrichedHtml, { status: 200, headers });
           storeInEdgeCache(ctx, hostname, resolvedSlugCD, coldResponse.clone(), request);
           ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
           return coldResponse;
