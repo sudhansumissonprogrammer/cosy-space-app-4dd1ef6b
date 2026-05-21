@@ -163,7 +163,8 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
                 <img
                   src={store.logo_url}
                   alt={store.name}
-                  className="h-14 w-auto max-w-[200px] object-contain"
+                  className="h-14 w-auto max-w-[240px] object-contain"
+                  style={{ transform: "scale(1.5)" }}
                   loading="eager"
                   decoding="sync"
                 />
