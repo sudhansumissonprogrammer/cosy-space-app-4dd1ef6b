@@ -1051,7 +1051,7 @@ function injectDeepPreloads(head, deepChunks) {
 // any error so HTML response is never blocked.
 async function enrichHeadWithDeepPreloads(head, origin, env) {
   if (!head) return head;
-  const marker = head.match(/<!--ENTRY:([^>-]+)-->/);
+  const marker = head.match(/<!--ENTRY:([^>]+)-->/);
   if (!marker) return head;
   try {
     const deep = await getDeepChunkPreloads(marker[1], origin, env);
