@@ -992,22 +992,30 @@ async function enrichHeadWithDeepPreloads(head, origin, env) {
   }
 }
 
-/* v8.24.0: Swap an injected HTML's <head>...</head> with a prebuilt,
-   deep-modulepreload-enriched head. Used by the cold-cache-api code
-   paths which previously skipped enrichment, shipping HTML with only
-   1 modulepreload tag instead of 6-10. */
-async function swapHeadWithEnriched(injectedHtml, shellHtml, origin, env) {
-  if (!injectedHtml || typeof injectedHtml !== "string") return injectedHtml;
+/* v8.24.0: Inject deep modulepreload tags into an already-injected HTML's
+   <head>. Used by the cold-cache-api code paths which previously skipped
+   the enrichment pass, shipping HTML with only 1 modulepreload tag
+   instead of 6-10. Mirrors what the streaming path does via
+   getPrebuiltHead + enrichHeadWithDeepPreloads, but operates as a post-
+   process step so we don't have to touch injectIntoHtml signature. */
+async function injectDeepPreloadsIntoColdHtml(html, origin, env) {
+  if (!html || typeof html !== "string") return html;
   try {
-    let prebuilt = await getPrebuiltHead(shellHtml, env);
-    prebuilt = await enrichHeadWithDeepPreloads(prebuilt, origin, env);
-    if (!prebuilt) return injectedHtml;
-    // prebuilt is the full <head>...</head> block. Replace the head segment.
-    return injectedHtml.replace(/<head\b[^>]*>[\s\S]*?<\/head>/i, prebuilt);
+    // Find the entry chunk in the existing head (same regex as _buildPrebuiltHead).
+    const entryMatch = html.match(/<script[^>]+type="module"[^>]+src="(\/assets\/[A-Za-z0-9_\-]+-[A-Za-z0-9]+\.js)"/);
+    if (!entryMatch) return html;
+    const entryPath = entryMatch[1];
+    const deep = await getDeepChunkPreloads(entryPath, origin, env);
+    if (!deep || deep.length === 0) return html;
+    const tags = deep.map((p) => `<link rel="modulepreload" href="${p}" />`).join("");
+    if (html.includes("</head>")) return html.replace("</head>", `${tags}</head>`);
+    return html;
   } catch {
-    return injectedHtml;
+    return html;
   }
 }
+
+
 
 
 
