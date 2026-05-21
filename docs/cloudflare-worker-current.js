@@ -677,6 +677,12 @@ async function mirrorToCfCache(ctx, request, response, slug = null) {
       if (canonical) writes.push(cache.put(canonical, makeStored()));
     }
     await Promise.allSettled(writes);
+    // v8.27.0: ALSO mirror into KV for global cross-colo HIT-EARLY.
+    // KV write is gated by per-isolate 55s dedup so we never thrash KV.
+    if (slug) {
+      kvHtmlPut(ctx, (request && request.cf && request.cf.env) || null, slug, url.pathname,
+        new Response(buf, { status: cloned.status, headers }));
+    }
   } catch {}
 }
 
