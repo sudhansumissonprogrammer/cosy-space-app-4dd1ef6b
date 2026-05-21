@@ -4701,12 +4701,13 @@ export default {
         const shouldCheckMirror = !isHtmlNav || (!isAuthed && !isPrivatePath);
         let cached = null;
         if (shouldCheckMirror) {
-          // v8.25.0: for anonymous HTML navs, look up the NORMALIZED key first
-          // (matches what mirrorToCfCache writes). Falls back to raw request
-          // for synthesized responses (redirects, 410s, 404s, assets).
+          // v8.25.1: for anonymous HTML navs, look up the REAL-HOST key first
+          // (matches what mirrorToCfCache writes via getCfCacheKey). Falls
+          // back to raw request for synthesized responses (redirects, 410s,
+          // 404s, assets) which already use raw request as their key.
           if (isHtmlNav && !isAuthed && !isPrivatePath) {
-            const normKey = getEarlyCacheKey(earlyUrl.hostname, earlyPath);
-            cached = await cache.match(normKey);
+            const cfKey = getCfCacheKey(earlyUrl.hostname, earlyPath);
+            cached = await cache.match(cfKey);
           }
           if (!cached) cached = await cache.match(request);
         }
