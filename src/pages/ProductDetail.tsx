@@ -1396,11 +1396,13 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
     };
   }, [embla]);
 
-  // Re-init on image-list change
+  // Re-init on image-list change — only reset loaded state when URLs actually change
+  const imagesKey = images.join("|");
   useEffect(() => {
     if (embla) embla.reInit();
     setImageLoaded({});
-  }, [images, embla]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imagesKey, embla]);
 
   // Smart preload: only active + 2 neighbours (handles big galleries)
   useEffect(() => {
@@ -1416,7 +1418,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
       img.onload = () => setImageLoaded((prev) => (prev[idx] ? prev : { ...prev, [idx]: true }));
       img.src = optimizeImageUrl(images[idx], 800);
     });
-  }, [activeIndex, images, len, imageLoaded]);
+  }, [activeIndex, imagesKey, len, imageLoaded]);
 
   const scrollTo = useCallback((i: number) => embla?.scrollTo(i), [embla]);
   const scrollPrev = useCallback(() => embla?.scrollPrev(), [embla]);
@@ -1482,8 +1484,15 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}
+                      ref={(el) => {
+                        if (el && el.complete && el.naturalWidth > 0 && !imageLoaded[realIdx]) {
+                          setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
+                        }
+                      }}
                       onLoad={() => setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }))}
+                      onError={() => setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }))}
                     />
+
                   </div>
                 );
               })}
