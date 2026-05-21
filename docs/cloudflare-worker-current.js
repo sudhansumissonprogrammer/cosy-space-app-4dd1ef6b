@@ -2030,7 +2030,52 @@ function _pvReadVisitorId(request) {
   return m ? m[1] : null;
 }
 
-function recordPageView(request, storeId, pathname) {
+// v8.30.0-ae-pageviews: when false, skip the Supabase bulk-insert and rely
+// entirely on Cloudflare Analytics Engine. Flip after Stage A verification.
+const PV_WRITE_SUPABASE = true;
+
+/**
+ * v8.30.0 — write a pageview to Cloudflare Analytics Engine.
+ * Synchronous in-isolate API (no fetch), zero latency. Silently no-op if the
+ * `AE_PAGEVIEWS` binding hasn't been added yet — safe to deploy before the
+ * binding exists.
+ *
+ *   indexes: [store_id]   (partition key)
+ *   blobs:   [path, visitor_id, country, device, referrer, host]
+ *   doubles: [1]          (unit count; AE sums via sum(_sample_interval))
+ */
+function writePageViewAE(env, request, storeId, pathname) {
+  try {
+    const ds = env && env.AE_PAGEVIEWS;
+    if (!ds || typeof ds.writeDataPoint !== "function") return;
+    const cf = request.cf || {};
+    const ua = request.headers.get("user-agent") || "";
+    const device = /mobile|android|iphone|ipad/i.test(ua)
+      ? "mobile"
+      : /tablet/i.test(ua)
+      ? "tablet"
+      : "desktop";
+    const referrer = (request.headers.get("referer") || "").slice(0, 200);
+    const host = new URL(request.url).hostname;
+    const visitorId = _pvReadVisitorId(request) || "";
+    ds.writeDataPoint({
+      indexes: [String(storeId)],
+      blobs: [
+        pathname.slice(0, 200),
+        visitorId,
+        String(cf.country || ""),
+        device,
+        referrer,
+        host,
+      ],
+      doubles: [1],
+    });
+  } catch (_) {
+    /* never throw from analytics path */
+  }
+}
+
+function recordPageView(env, request, storeId, pathname) {
   if (!storeId) return;
   if (_pvIsBot(request)) return;
   // Only track real page navigations — skip API/asset paths
@@ -2064,6 +2109,13 @@ function recordPageView(request, storeId, pathname) {
   if (existing && existing > now) return; // dedup hit
   _pvDedup.set(key, now + PV_DEDUP_WINDOW_MS);
   _pvPruneIfNeeded();
+
+  // v8.30.0: write to Analytics Engine first (in-isolate, no latency).
+  writePageViewAE(env, request, storeId, pathname);
+
+  // Stage A: also write to Supabase for count verification. Flip
+  // PV_WRITE_SUPABASE=false (Stage B) once AE counts are confirmed.
+  if (!PV_WRITE_SUPABASE) return null;
 
   // Append to in-memory buffer
   _pvBuffer.push({
