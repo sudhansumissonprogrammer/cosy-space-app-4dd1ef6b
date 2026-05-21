@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.30.1-ae-only";
+const WORKER_VERSION = "8.31.0-seo-edge-cache";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -4362,37 +4362,48 @@ async function callEdgeFunction(name, params = {}) {
 
 async function handleSeoFiles(url, slug, hostname) {
   const domain = hostname || url.hostname;
-  if (url.pathname === "/sitemap.xml") {
-    const res = await callEdgeFunction("seo-page", { type: "sitemap", slug, domain });
-    // 301 redirects come from the edge fn when a subdomain request needs to
-    // canonicalize to the store's custom domain. Pass them through unchanged.
-    if (res.status === 301 || res.status === 302) return res;
-    if (res.ok) {
-      const body = await res.text();
-      return new Response(body, {
-        headers: { "Content-Type": "application/xml", "Cache-Control": "public, max-age=3600", ...SECURITY_HEADERS },
-      });
+
+  // v8.31.0 cost-cut: edge-cache sitemap/robots/llms responses per hostname
+  // for 24h. These are tiny static text files that change at most when the
+  // merchant adds a new product; cutting the seo-page edge fn from ~8/hr
+  // to ~1/day per host (a >95% reduction) saves Supabase invocations with
+  // zero SEO impact (Googlebot honors `Cache-Control: public, max-age`).
+  const SEO_FILE_TTL = 86400; // 24h
+  async function serveSeoFile(pathKey, type, contentType) {
+    const cacheKey = new Request(
+      `https://seo-cache/${pathKey}/${encodeURIComponent(domain)}`,
+      { method: "GET" }
+    );
+    const cached = await cache.match(cacheKey);
+    if (cached) {
+      const r = new Response(cached.body, cached);
+      r.headers.set("X-Seo-Cache", "HIT");
+      return r;
     }
+    const res = await callEdgeFunction("seo-page", { type, slug, domain });
+    if (res.status === 301 || res.status === 302) return res; // never cache redirects
+    if (!res.ok) return null;
+    const body = await res.text();
+    const finalRes = new Response(body, {
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": `public, max-age=${SEO_FILE_TTL}, stale-while-revalidate=604800`,
+        "X-Seo-Cache": "MISS",
+        ...SECURITY_HEADERS,
+      },
+    });
+    try { await cache.put(cacheKey, finalRes.clone()); } catch {}
+    return finalRes;
+  }
+
+  if (url.pathname === "/sitemap.xml") {
+    return await serveSeoFile("sitemap", "sitemap", "application/xml");
   }
   if (url.pathname === "/robots.txt") {
-    const res = await callEdgeFunction("seo-page", { type: "robots", slug, domain });
-    if (res.status === 301 || res.status === 302) return res;
-    if (res.ok) {
-      const body = await res.text();
-      return new Response(body, {
-        headers: { "Content-Type": "text/plain", "Cache-Control": "public, max-age=86400", ...SECURITY_HEADERS },
-      });
-    }
+    return await serveSeoFile("robots", "robots", "text/plain");
   }
   if (url.pathname === "/llms.txt") {
-    const res = await callEdgeFunction("seo-page", { type: "llms", slug, domain });
-    if (res.status === 301 || res.status === 302) return res;
-    if (res.ok) {
-      const body = await res.text();
-      return new Response(body, {
-        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600", ...SECURITY_HEADERS },
-      });
-    }
+    return await serveSeoFile("llms", "llms", "text/plain; charset=utf-8");
   }
   return null;
 }

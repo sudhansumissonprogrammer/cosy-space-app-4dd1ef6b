@@ -110,6 +110,12 @@ export function useStorefront(slugOverride?: string) {
     const { store, categories, theme_config } = data as any;
 
     if (store) {
+      // Cost-cut: tell fireMetaCAPI to skip the edge function entirely until
+      // the merchant configures a Meta access token. Avoids per-visitor probe.
+      try {
+        (window as any).__SF_META_CAPI_ENABLED__ = !!(data as any)?.meta_capi_enabled;
+      } catch {}
+
       // Cache the theme in localStorage for instant theme detection on next visit
       try {
         localStorage.setItem(`storefront_theme_${store.slug}`, store.theme);
