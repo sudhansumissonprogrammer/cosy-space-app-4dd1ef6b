@@ -4580,14 +4580,18 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
     if (isLandingPath(landingUrl.pathname)) {
       try {
         const origHtml = await res.text();
-        const enriched = await injectLandingModulepreloads(origHtml, landingUrl.origin, env);
+        let enriched = origHtml;
+        try {
+          enriched = await injectLandingModulepreloads(origHtml, landingUrl.origin, env);
+        } catch {
+          enriched = origHtml;
+        }
         res = new Response(enriched, {
           status: 200,
           headers: res.headers,
         });
       } catch {
-        // If injection fails, fall through with original response.
-        // (res.text() already consumed body — rebuild from origHtml on error path.)
+        // Could not read body — leave res as-is.
       }
     }
     res = makePublicHtmlResponse(res, 3600);
