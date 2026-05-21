@@ -587,10 +587,15 @@ function addDiagnosticHeaders(response, { slug, cacheStatus, dataSource }) {
   res.headers.set("X-Worker-Version", WORKER_VERSION);
   if (slug) res.headers.set("X-Store-Slug", slug);
   res.headers.set("X-Cache-Status", cacheStatus);
-  // v8.20.0: mirror to canonical `cf-cache-status` header so Cloudflare's
-  // dashboard cache-rate widget, Lighthouse, and PSI register Worker
-  // cache hits (they only inspect the standard header name).
-  if (cacheStatus) res.headers.set("cf-cache-status", cacheStatus);
+  // v8.26.0: ONLY overwrite cf-cache-status when we know the answer is a HIT
+  // (cached/edge/memory/kv/warm). For MISS / cold paths, leave cf-cache-status
+  // untouched so Cloudflare's automatic edge cache result is visible. The old
+  // code mirrored every internal status (including MISS) to cf-cache-status,
+  // which permanently masked real CF edge HITs and made the dashboard cache
+  // rate look stuck at 0%.
+  if (cacheStatus && /^(hit|cached|memory|kv|edge|warm)/i.test(cacheStatus)) {
+    res.headers.set("cf-cache-status", "HIT");
+  }
   if (dataSource) res.headers.set("X-Data-Source", dataSource);
   return res;
 }
