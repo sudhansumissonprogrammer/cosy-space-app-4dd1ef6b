@@ -518,13 +518,12 @@ async function mirrorToCfCache(ctx, request, response) {
       statusText: cloned.statusText,
       headers,
     });
-    // v8.25.0: store under NORMALIZED key (hostname+path only). Previously we
-    // used the raw `request` which embeds Vary headers — every visitor with a
-    // different cookie/Accept-Encoding combo got a different key → permanent
-    // MISS on the dashboard. Normalized key is identical for all anon visitors
-    // on the same URL across both subdomains AND custom domains.
-    const normKey = getEarlyCacheKey(url.hostname, url.pathname);
-    ctx.waitUntil(cache.put(normKey, toStore).catch(() => {}));
+    // v8.25.1: store under REAL hostname key. CF rejects synthetic hostnames
+    // in cache.put() silently (returns nothing, never errors). Using the real
+    // hostname + clean path makes the write actually land, so subsequent
+    // visitors get HIT. Works identically on subdomains AND custom domains.
+    const cfKey = getCfCacheKey(url.hostname, url.pathname);
+    ctx.waitUntil(cache.put(cfKey, toStore).catch(() => {}));
   } catch {}
 }
 
