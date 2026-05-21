@@ -1,50 +1,54 @@
-# Plan: make custom-domain Worker caching reliable
+# Worker v8.26.0 — fixes verified deployment gaps
 
-## Goal
-Make storefront HTML caching work correctly for ad traffic on custom domains like `serdiyajewellers.shop`, so repeat anonymous visits return cached HTML instead of running the full Worker pipeline every time.
+## What was actually broken in v8.25.2 (confirmed via live tests)
 
-Expected headers on repeat hits:
+Live test results on `serdiyajewellers.shop` showed:
 
-```text
-x-edge-cache: HIT-EARLY
-cf-cache-status: HIT
-x-worker-version: 8.25.2-custom-domain-zone-key
-x-cache-timestamp: unchanged for the cached object
-```
+- Every request: `cf-cache-status: MISS`, fresh `x-cache-timestamp` each time
+- No `x-edge-cache: HIT-EARLY` or `x-edge-key` header ever appeared
+- Only **1** `<link rel="modulepreload">` in HTML (should be 5–10)
 
-## Current finding
-Live home-page checks now show `serdiyajewellers.shop` can return `cf-cache-status: HIT`, but the Worker should be hardened because custom-domain cache keys are still more fragile than `*.shopbanao.in` keys.
+## Root causes found
 
-The risk is that custom domains can be served from a different hostname context than the Worker zone. If the mirror write and early read do not use the exact same zone-safe key, `cache.put()` appears to succeed but later `cache.match()` does not find it.
+### Bug 1 — Deep modulepreload never injected
+`enrichHeadWithDeepPreloads` used regex `/<!--ENTRY:([^>-]+)-->/`. The `[^>-]` class
+excludes both `>` AND `-`. Vite chunk filenames always contain hyphens
+(`index-CdOv1bdp.js`), so the capture group never matches, so
+`getDeepChunkPreloads(marker[1])` is never called, so no deep preloads
+get injected. Cold loads waterfall through chunks one by one.
 
-## Changes to make
-1. Add one canonical HTML cache-key helper
-   - Build a zone-owned key using the store slug: `https://<slug>.shopbanao.in/<normalized-path>`.
-   - Normalize home, product, and category paths consistently.
-   - Ignore query strings for HTML navigations to prevent ad tracking params from fragmenting cache.
+Fix: change to `[^>]+`.
 
-2. Make custom-domain reads use the same key as writes
-   - On early anonymous HTML navigation, resolve custom domain to store slug using the existing lightweight domain lookup.
-   - Check the canonical slug-subdomain key first.
-   - Fall back to existing real-host/request lookups for safety during rollout.
+### Bug 2 — Canonical-slug cache key never resolved for custom domains
+`_earlyResolveSlug` only checks `cache.match("https://cache/domain-<host>")`.
+Cloudflare silently rejects writes to synthetic hostnames in some colos, so
+this lookup almost always returns null for custom domains. That means the
+canonical-slug cache key (the whole point of v8.25.2) is never tried, only
+the real-host key is, which itself can be unreliable across zones.
 
-3. Make custom-domain writes store under both safe keys
-   - Continue writing the current host key for compatibility.
-   - Also write the canonical slug-subdomain key so custom domains and subdomains share the same cached HTML.
-   - Keep checkout/admin/dashboard/API excluded.
+Fix: fall back to `env.STORE_KV.get("domain:<host>")` (~5ms) when Cache API
+returns nothing. KV already stores this mapping for 24h.
 
-4. Improve diagnostics
-   - Bump Worker version to `8.25.2-custom-domain-zone-key`.
-   - Add a small diagnostic header on HIT showing whether the cache was found by canonical key or fallback key.
-   - Keep existing `x-edge-cache: HIT-EARLY` behavior.
+### Bug 3 — `addDiagnosticHeaders` permanently masked CF cache HITs
+Line 581 unconditionally did `res.headers.set("cf-cache-status", cacheStatus)`
+for any internal status — including MISS, ORIGIN, STREAMING, etc. This
+overwrote Cloudflare's real edge-cache result and made the dashboard cache
+rate look stuck at 0% even when CF was serving from its cache.
 
-5. Validate after deployment
-   - Test `serdiyajewellers.shop`, `imitationworld.in`, and `fitness.shopbanao.in`.
-   - Test `/`, one `/product/...`, and one `/category/...` path per store where available.
-   - Confirm second request returns HIT and timestamp does not change.
+Fix: only mirror to `cf-cache-status: HIT` when the internal status starts
+with hit / cached / memory / kv / edge / warm. Otherwise leave whatever
+Cloudflare set in place.
+
+## Validation after deploy
+1. `curl -sI https://serdiyajewellers.shop/` repeated 3× — expect
+   `cf-cache-status: HIT` and stable `x-cache-timestamp` from request 2 on,
+   `x-edge-cache: HIT-EARLY` with `x-edge-key: canonical-slug` for
+   custom-domain hits.
+2. View HTML source — expect 5+ `<link rel="modulepreload">` tags in `<head>`.
+3. Same for `imitationworld.in` and `fitness.shopbanao.in`.
 
 ## Safety
-- Do not cache logged-in, checkout, dashboard, admin, or API responses.
-- Do not cache responses with auth/session cookies.
-- Do not change database schema or app frontend.
-- Only update the Worker reference file; deployment to Cloudflare remains manual.
+- No DB / RLS changes.
+- No frontend changes.
+- Worker file only — manual deployment required (user pushes via
+  Cloudflare dashboard or wrangler).
