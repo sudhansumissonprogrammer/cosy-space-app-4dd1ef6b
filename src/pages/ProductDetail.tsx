@@ -1484,8 +1484,15 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}
+                      ref={(el) => {
+                        if (el && el.complete && el.naturalWidth > 0 && !imageLoaded[realIdx]) {
+                          setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
+                        }
+                      }}
                       onLoad={() => setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }))}
+                      onError={() => setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }))}
                     />
+
                   </div>
                 );
               })}
