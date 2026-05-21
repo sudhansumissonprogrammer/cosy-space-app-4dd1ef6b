@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.24.0-edge-hit-and-coldpreload";
+const WORKER_VERSION = "8.24.1-deep-preload-regex-fix";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -909,7 +909,7 @@ function _buildPrebuiltHead(html) {
    ============================================================ */
 
 let _memDeepChunks = null;
-const DEEP_CHUNKS_KV_KEY = "deep-chunks:v1";
+const DEEP_CHUNKS_KV_KEY = "deep-chunks:v2"; // v8.24.1 bust stale empty cache
 const DEEP_CHUNKS_TTL = 86400; // 24h
 const DEEP_CHUNK_DASH_PATTERN =
   /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages|landing-)/;
@@ -938,14 +938,19 @@ async function getDeepChunkPreloads(entryPath, origin, env) {
     if (!res.ok) return [];
     const code = await res.text();
     const found = new Set();
-    // Vite emits both static (import"./X.js") and dynamic (import("./X.js"))
-    // forms, plus chunk maps. Match all /assets/*.js refs anywhere.
-    for (const m of code.matchAll(/["'`]\/?(assets\/[A-Za-z0-9_\-]+-[A-Za-z0-9]+\.js)["'`]/g)) {
-      const p = "/" + m[1];
+    // v8.24.1: Vite ACTUALLY emits relative paths in the entry chunk
+    // (e.g. `import{...}from"./entry-utils-DnXwcs32.js"`), not absolute
+    // `/assets/...` strings. Previous regex matched zero chunks → only
+    // 1 modulepreload ever shipped → cold load still waterfalled.
+    // Now match both forms and normalize to /assets/<file>.
+    const RX = /["'`](?:\.\/|\.?\/?assets\/)?([A-Za-z0-9_\-]+-[A-Za-z0-9]{6,})\.js["'`]/g;
+    for (const m of code.matchAll(RX)) {
+      const p = "/assets/" + m[1] + ".js";
       if (p === entryPath) continue;
       if (DEEP_CHUNK_DASH_PATTERN.test(p)) continue;
       found.add(p);
     }
+
     // Storefront-critical chunk names — prioritize these first
     const PRIORITY = /(?:App-|storefront-shell-|supabase-|radix|router-query-|framework-|entry-utils-|icons-|ErrorBoundary-|logError-)/;
     const arr = [...found].sort((a, b) => {
