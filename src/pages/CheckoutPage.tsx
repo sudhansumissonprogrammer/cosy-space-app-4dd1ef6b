@@ -568,8 +568,18 @@ export default function CheckoutPage() {
     applyCoupon(code);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlCoupon, store?.id, subtotal, appliedCoupon, hasActiveCoupons]);
-  useEffect(() => {
-    if (checkoutItems.length === 0) return;
+  // InitiateCheckout — fire ONLY at the moment of real payment intent:
+  //   • COD          → when user clicks "Place Order" (after validation passes)
+  //   • Razorpay     → just before rzp.open() — gateway about to actually load
+  //   • Cashfree     → just before cashfree.checkout() — drop-in about to open
+  // Firing on /checkout mount used to balloon IC counts (every page-view = 1 IC),
+  // which made Meta's IC→Purchase ratio look ~34% and triggered "deceptive funnel"
+  // ad-account flags. Gating to real intent brings the ratio to a healthy 75-90%.
+  const initiateCheckoutFiredRef = useRef(false);
+  const fireInitiateCheckoutOnce = () => {
+    if (initiateCheckoutFiredRef.current) return;
+    if (!store?.id || checkoutItems.length === 0) return;
+    initiateCheckoutFiredRef.current = true;
     const eid = generateEventId();
     const eventData = {
       content_ids: checkoutItems.map((i) => i.productId),
@@ -578,23 +588,19 @@ export default function CheckoutPage() {
       value: subtotal,
       currency,
     };
-    fbPixelTrack("InitiateCheckout", eventData, eid);
-    fireMetaCAPI({
-      storeId: store.id,
-      eventName: "InitiateCheckout",
-      eventId: eid,
-      userEmail: email.trim() || undefined,
-      userPhone: normalizePhone(phone) || undefined,
-      externalId: customer?.id || undefined,
-      customData: {
-        content_ids: eventData.content_ids,
-        contents: eventData.contents,
-        num_items: eventData.num_items,
-        value: subtotal,
-        currency,
-      },
-    });
-  }, []);
+    try { fbPixelTrack("InitiateCheckout", eventData, eid); } catch {}
+    try {
+      fireMetaCAPI({
+        storeId: store.id,
+        eventName: "InitiateCheckout",
+        eventId: eid,
+        userEmail: email.trim() || undefined,
+        userPhone: normalizePhone(phone) || undefined,
+        externalId: customer?.id || undefined,
+        customData: { ...eventData },
+      });
+    } catch {}
+  };
 
   // AddPaymentInfo — Shopify-grade funnel signal.
   // Fires once per resolved payment category (cod / razorpay / cashfree /
@@ -1159,6 +1165,8 @@ export default function CheckoutPage() {
       setPlacing(false);
       toast.error(resp?.error?.description || "Payment failed. You can retry below.");
     });
+    // Real intent signal — fire IC the instant the Razorpay modal is about to open.
+    fireInitiateCheckoutOnce();
     rzp.open();
   };
 
@@ -1223,6 +1231,8 @@ export default function CheckoutPage() {
       // Disable beforeunload lock — Cashfree triggers UPI deep links from top window
       // which would otherwise show the browser's "Leave site?" confirmation popup.
       window.dispatchEvent(new CustomEvent("payment-in-progress"));
+      // Real intent signal — fire IC the instant the Cashfree drop-in is about to open.
+      fireInitiateCheckoutOnce();
       const result = await cashfree.checkout({
         paymentSessionId: cfData.payment_session_id,
         redirectTarget: "_modal",
@@ -1346,6 +1356,8 @@ export default function CheckoutPage() {
 
       // COD flow
       setPlacingStep(3);
+      // COD path — user clicked Place Order with valid details = real intent.
+      fireInitiateCheckoutOnce();
       finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
     } catch (err: any) {
       console.error("[checkout] handlePlaceOrder failed:", err);
