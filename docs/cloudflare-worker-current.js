@@ -5573,6 +5573,8 @@ export default {
 
         if (shellResult?.html && prefetchResult?.data) {
           const injected = injectIntoHtml(shellResult.html, resolvedSlugCD, prefetchResult.data, prefetchResult.source, inlineProductsCdCold);
+          // v8.24.0: enrich with deep modulepreloads on the custom-domain cold path too.
+          const enrichedHtml = await injectDeepPreloadsIntoColdHtml(injected.html, url.origin, env);
           const headers = new Headers();
           headers.set("Content-Type", "text/html; charset=utf-8");
           setNoStoreHtmlHeaders(headers);
@@ -5580,9 +5582,7 @@ export default {
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
           headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-          // v8.6.3: store cold full HTML too; otherwise first isolate hits keep
-          // returning MISS/no CF metric until the background warmer succeeds.
-          const coldResponse = new Response(injected.html, { status: 200, headers });
+          const coldResponse = new Response(enrichedHtml, { status: 200, headers });
           storeInEdgeCache(ctx, hostname, resolvedSlugCD, coldResponse.clone(), request);
           ctx.waitUntil(recordPageView(request, prefetchResult?.data?.store?.id, url.pathname));
           return coldResponse;
