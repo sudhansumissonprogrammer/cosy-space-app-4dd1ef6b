@@ -2030,9 +2030,9 @@ function _pvReadVisitorId(request) {
   return m ? m[1] : null;
 }
 
-// v8.30.0-ae-pageviews: when false, skip the Supabase bulk-insert and rely
-// entirely on Cloudflare Analytics Engine. Flip after Stage A verification.
-const PV_WRITE_SUPABASE = true;
+// v8.30.1-ae-only: flipped to AE-only. Supabase page_views writes disabled.
+// Rollback: set back to true and redeploy worker (~30s).
+const PV_WRITE_SUPABASE = false;
 
 /**
  * v8.30.0 — write a pageview to Cloudflare Analytics Engine.
