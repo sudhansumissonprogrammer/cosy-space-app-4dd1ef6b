@@ -4890,13 +4890,29 @@ export default {
             // the Worker zone; their real-host write occasionally lands in a
             // colo that won't serve it back. The slug-subdomain key is always
             // inside the zone, so this is the reliable cache for ad traffic.
+            let slugForKey = null;
             if (!cached) {
-              const slugForKey = await _earlyResolveSlug(earlyUrl.hostname, env);
+              slugForKey = await _earlyResolveSlug(earlyUrl.hostname, env);
               if (slugForKey) {
                 const canonical = getCanonicalHtmlCacheKey(slugForKey, earlyPath);
                 if (canonical) {
                   cached = await cache.match(canonical);
                   if (cached) hitKey = "canonical-slug";
+                }
+              }
+            }
+            // v8.27.0: KV-backed HTML cache. Global, cross-colo HIT-EARLY.
+            // caches.default is colo-local; KV replicates to all 300+ colos.
+            // First visitor in any colo (after the URL was warmed elsewhere)
+            // gets a sub-15ms response from KV instead of running the full
+            // pipeline. Safe: 60s TTL, anonymous-only, non-private only.
+            if (!cached && env?.STORE_KV) {
+              if (!slugForKey) slugForKey = await _earlyResolveSlug(earlyUrl.hostname, env);
+              if (slugForKey) {
+                const kvHit = await kvHtmlGet(env, slugForKey, earlyPath);
+                if (kvHit) {
+                  cached = kvHit;
+                  hitKey = "kv-html";
                 }
               }
             }
