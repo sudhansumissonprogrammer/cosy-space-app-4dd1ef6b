@@ -36,6 +36,8 @@ const r2Endpoint = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKE
 const ALLOWED_BUCKETS = new Set([
   "product-images",
   "store-assets",
+  "store-logos",
+  "store-banners",
   "category-images",
   "media-library",
   "store-pages",
