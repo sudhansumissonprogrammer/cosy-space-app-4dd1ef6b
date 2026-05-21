@@ -1368,11 +1368,14 @@ function ShareButtons({ productName, storeSlug, productSlugOrId }: { productName
 
 /* ── Image Gallery with Zoom Icon + Dots Inside Image ── */
 function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }: { images: string[]; productName: string; hasDiscount: number | boolean | null; discountPct: number; onShare?: () => void }) {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [slideIndex, setSlideIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const touchStart = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
+
+  const len = images.length;
+  const activeIndex = len > 0 ? ((slideIndex % len) + len) % len : 0;
 
   useEffect(() => {
     setImageLoaded({});
@@ -1392,9 +1395,9 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
     if (touchStart.current === null || touchStartY.current === null) return;
     const dx = e.changedTouches[0].clientX - touchStart.current;
     const dy = e.changedTouches[0].clientY - touchStartY.current;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-      if (dx < 0 && activeIndex < images.length - 1) setActiveIndex(i => i + 1);
-      if (dx > 0 && activeIndex > 0) setActiveIndex(i => i - 1);
+    if (len > 0 && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) setSlideIndex(s => s + 1);
+      else setSlideIndex(s => s - 1);
     }
     touchStart.current = null;
     touchStartY.current = null;
