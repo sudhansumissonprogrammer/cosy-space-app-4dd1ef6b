@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.26.1-direct-stream-html-mirror";
+const WORKER_VERSION = "8.27.0-kv-html-cache";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -464,6 +464,102 @@ function getCfCacheKey(hostname, pathname) {
 function getCanonicalHtmlCacheKey(slug, pathname) {
   if (!slug) return null;
   return new Request(`https://${slug}.${ROOT_DOMAIN}${_normalizeHtmlPath(pathname)}`, { method: "GET" });
+}
+
+/* ============================================================
+   v8.27.0 — KV-BACKED HTML CACHE (global, cross-colo HIT-EARLY)
+   ------------------------------------------------------------
+   caches.default is colo-local: a cache.put() in BOM (Mumbai) does NOT
+   serve in DEL (Delhi), so first-time visitors in each colo still hit
+   the full pipeline. KV replicates globally within seconds, so once
+   any colo warms a URL all 300+ colos can serve it in ~5–15ms.
+
+   Safety:
+   - 60s TTL (matches user's no-stale tolerance; dashboard purge already
+     wipes via existing purge handlers).
+   - Write gated by per-isolate dedup (55s) → at most ~1 write per
+     isolate per minute per URL. Combined with multi-isolate spread,
+     expect ~1.5x the unique URL count in writes/day (very cheap).
+   - Skipped entirely for: authenticated cookies, /checkout, /dashboard,
+     /admin, /api, non-200 responses, non-HTML nav, payloads > 800 KB.
+   - Read is best-effort (5ms timeout via Promise.race not needed —
+     KV global reads avg 2–8ms); MISS falls through to existing
+     CF-cache / canonical / warm pipeline. Zero functional regression.
+   ============================================================ */
+const HTML_KV_TTL_SEC = 60;
+const HTML_KV_MAX_BYTES = 800_000; // 800 KB hard cap (KV value limit is 25 MB)
+const _htmlKvWriteRecent = new Map(); // key → expiresAt
+const HTML_KV_WRITE_DEDUP_MS = 55_000;
+const HTML_KV_WRITE_DEDUP_MAX = 5_000;
+
+function getHtmlKvKey(slug, pathname) {
+  if (!slug) return null;
+  return `html:${slug}${_normalizeHtmlPath(pathname)}`;
+}
+
+function _shouldWriteHtmlKv(key) {
+  const now = Date.now();
+  const exp = _htmlKvWriteRecent.get(key);
+  if (exp && now < exp) return false;
+  if (_htmlKvWriteRecent.size > HTML_KV_WRITE_DEDUP_MAX) {
+    let n = 1000;
+    for (const k of _htmlKvWriteRecent.keys()) {
+      _htmlKvWriteRecent.delete(k);
+      if (--n <= 0) break;
+    }
+  }
+  _htmlKvWriteRecent.set(key, now + HTML_KV_WRITE_DEDUP_MS);
+  return true;
+}
+
+async function kvHtmlGet(env, slug, pathname) {
+  if (!env?.STORE_KV || !slug) return null;
+  const key = getHtmlKvKey(slug, pathname);
+  if (!key) return null;
+  try {
+    const { value, metadata } = await env.STORE_KV.getWithMetadata(key, { type: "arrayBuffer" });
+    if (!value) return null;
+    const headers = new Headers();
+    const meta = metadata || {};
+    if (meta.h && typeof meta.h === "object") {
+      for (const [hk, hv] of Object.entries(meta.h)) {
+        if (typeof hv === "string") headers.set(hk, hv);
+      }
+    }
+    if (!headers.has("Content-Type")) headers.set("Content-Type", "text/html; charset=utf-8");
+    headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=86400");
+    return new Response(value, { status: meta.s || 200, headers });
+  } catch {
+    return null;
+  }
+}
+
+function kvHtmlPut(ctx, env, slug, pathname, response) {
+  try {
+    if (!env?.STORE_KV || !slug || !response || !ctx?.waitUntil) return;
+    if (response.status !== 200) return;
+    const key = getHtmlKvKey(slug, pathname);
+    if (!key) return;
+    if (!_shouldWriteHtmlKv(key)) return;
+    const cloned = response.clone();
+    ctx.waitUntil(
+      (async () => {
+        try {
+          const buf = await cloned.arrayBuffer();
+          if (!buf || buf.byteLength === 0 || buf.byteLength > HTML_KV_MAX_BYTES) return;
+          const h = {};
+          const ct = cloned.headers.get("Content-Type");
+          if (ct) h["Content-Type"] = ct;
+          const link = cloned.headers.get("Link");
+          if (link) h["Link"] = link;
+          await env.STORE_KV.put(key, buf, {
+            expirationTtl: HTML_KV_TTL_SEC,
+            metadata: { s: cloned.status, h },
+          });
+        } catch {}
+      })(),
+    );
+  } catch {}
 }
 
 // Fast, I/O-free slug resolution for the early request path.
