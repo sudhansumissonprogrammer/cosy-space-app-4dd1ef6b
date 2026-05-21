@@ -1165,6 +1165,8 @@ export default function CheckoutPage() {
       setPlacing(false);
       toast.error(resp?.error?.description || "Payment failed. You can retry below.");
     });
+    // Real intent signal — fire IC the instant the Razorpay modal is about to open.
+    fireInitiateCheckoutOnce();
     rzp.open();
   };
 
