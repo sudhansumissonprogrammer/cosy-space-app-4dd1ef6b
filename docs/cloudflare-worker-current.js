@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.25.1-real-host-cache-key";
+const WORKER_VERSION = "8.25.2-custom-domain-zone-key";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -444,12 +444,49 @@ function getEarlyCacheKey(hostname, pathname = "/") {
 // Synthetic hosts like `edge-html/...` are silently rejected → permanent MISS.
 // We use the actual hostname + clean pathname (no query, no cookies, no Vary)
 // so all anonymous visitors to the same URL share one cache entry.
-function getCfCacheKey(hostname, pathname) {
-  // PDP/category collapsed to per-slug bucket so they don't cache the wrong inlined data
+function _normalizeHtmlPath(pathname) {
   let p = pathname || "/";
   const m = p.match(/^\/(product|category)\/([a-zA-Z0-9_-]+)\/?$/);
   if (m) p = `/${m[1]}/${m[2]}/`;
-  return new Request(`https://${hostname.toLowerCase()}${p}`, { method: "GET" });
+  return p;
+}
+
+function getCfCacheKey(hostname, pathname) {
+  return new Request(`https://${hostname.toLowerCase()}${_normalizeHtmlPath(pathname)}`, { method: "GET" });
+}
+
+// v8.25.2: Canonical zone-owned cache key keyed by store slug.
+// Custom domains (e.g. serdiyajewellers.shop) live outside the Worker zone,
+// which makes cache.put() on the real-host key occasionally inconsistent
+// across colos. By ALSO mirroring to `https://<slug>.shopbanao.in<path>`
+// — which is always inside the Worker's zone — both subdomain and
+// custom-domain visitors share one reliable cache entry.
+function getCanonicalHtmlCacheKey(slug, pathname) {
+  if (!slug) return null;
+  return new Request(`https://${slug}.${ROOT_DOMAIN}${_normalizeHtmlPath(pathname)}`, { method: "GET" });
+}
+
+// Fast, I/O-free slug resolution for the early request path.
+// - Subdomains under ROOT_DOMAIN: derive slug from the hostname.
+// - Custom domains: look up cached domain→slug mapping in caches.default
+//   ONLY (no KV/DB). Returns null on miss; the canonical-key check is
+//   simply skipped and the existing fallbacks handle the request.
+async function _earlyResolveSlug(hostname) {
+  if (!hostname) return null;
+  const host = hostname.replace(/^www\./, "").toLowerCase().trim();
+  if (host.endsWith(`.${ROOT_DOMAIN}`)) {
+    const sub = host.slice(0, -(`.${ROOT_DOMAIN}`.length));
+    if (sub && !sub.includes(".")) return sub;
+    return null;
+  }
+  try {
+    const cached = await cache.match(new Request(`https://cache/domain-${host}`));
+    if (cached) {
+      const data = await cached.json();
+      return data?.slug || null;
+    }
+  } catch {}
+  return null;
 }
 
 function isHtmlNavigationPath(pathname) {
