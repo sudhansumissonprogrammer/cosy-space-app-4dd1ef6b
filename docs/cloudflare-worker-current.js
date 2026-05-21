@@ -525,7 +525,7 @@ const STOREFRONT_HTML_MIRROR_PATHS = ["/", "/checkout", "/cart"];
    as a real edge cache hit (the early key is invisible to CF metrics).
    Stripping Set-Cookie + forcing public Cache-Control prevents CF's
    default auto-bypass on cookie/auth responses. */
-async function mirrorToCfCache(ctx, request, response) {
+async function mirrorToCfCache(ctx, request, response, slug = null) {
   try {
     if (!ctx?.waitUntil || !response || request.method !== "GET") return;
     if (/no-store|no-cache|max-age=0/i.test(response.headers.get("Cache-Control") || "")) return;
@@ -550,17 +550,23 @@ async function mirrorToCfCache(ctx, request, response) {
     // sends `no-cache, max-age=0`; leaving that intact makes CF cache rate stay 0%.
     forcePublicHtmlCacheControl(headers, 3600);
     headers.set("X-Edge-Mirror", "1");
-    const toStore = new Response(cloned.body, {
+    // Buffer body once so we can write to multiple cache keys.
+    const buf = await cloned.arrayBuffer();
+    const makeStored = () => new Response(buf, {
       status: cloned.status,
       statusText: cloned.statusText,
       headers,
     });
-    // v8.25.1: store under REAL hostname key. CF rejects synthetic hostnames
-    // in cache.put() silently (returns nothing, never errors). Using the real
-    // hostname + clean path makes the write actually land, so subsequent
-    // visitors get HIT. Works identically on subdomains AND custom domains.
+    // v8.25.1: store under REAL hostname key.
     const cfKey = getCfCacheKey(url.hostname, url.pathname);
-    ctx.waitUntil(cache.put(cfKey, toStore).catch(() => {}));
+    ctx.waitUntil(cache.put(cfKey, makeStored()).catch(() => {}));
+    // v8.25.2: ALSO store under canonical slug-subdomain key (always inside the
+    // Worker zone). Custom-domain visitors fall back to this key when the
+    // real-host write was rejected silently by a cross-zone colo.
+    if (slug) {
+      const canonical = getCanonicalHtmlCacheKey(slug, url.pathname);
+      if (canonical) ctx.waitUntil(cache.put(canonical, makeStored()).catch(() => {}));
+    }
   } catch {}
 }
 
