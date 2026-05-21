@@ -3186,11 +3186,11 @@ async function serveStreamedHtml(
   return new Response(readable, { status: 200, headers: responseHeaders });
 }
 
-async function mirrorStreamedHtmlDirect(ctx, request, response, slug) {
+async function mirrorStreamedHtmlDirect(ctx, request, response, slug, env = null) {
   try {
     if (!ctx?.waitUntil || !response || request.method !== "GET") return;
     const cloned = response.clone();
-    ctx.waitUntil(mirrorToCfCache(ctx, request, cloned, slug));
+    ctx.waitUntil(mirrorToCfCache(ctx, request, cloned, slug, env));
   } catch {}
 }
 
@@ -3361,19 +3361,20 @@ async function _warmFullHtmlInBackground(request, shellResult, slug, ctx, env, h
       await cache.put(earlyKey, fullResponse.clone()).catch(() => {});
       // v8.4.0: ALSO mirror under the real request URL so Cloudflare's
       // automatic edge cache (and the dashboard cache-rate metric) sees a HIT.
-      await mirrorToCfCache(ctx, request, fullResponse, slug).catch?.(() => {});
+      await mirrorToCfCache(ctx, request, fullResponse, slug, env).catch?.(() => {});
     }
   } catch {}
 }
 
-function storeInEdgeCache(ctx, hostname, slug, response, request = null) {
+function storeInEdgeCache(ctx, hostname, slug, response, request = null, env = null) {
   if (/no-store|no-cache|max-age=0/i.test(response?.headers?.get("Cache-Control") || "")) return;
   const earlyKey = getEarlyCacheKey(hostname);
   ctx.waitUntil(cache.put(earlyKey, response.clone()).catch(() => {}));
   // v8.4.0: when caller passes request, also mirror to CF Cache API for HIT metric.
   // v8.25.2: pass slug so the canonical zone-key mirror is also written.
+  // v8.27.0: pass env so KV HTML mirror also fires.
   if (request) {
-    mirrorToCfCache(ctx, request, response, slug || null);
+    mirrorToCfCache(ctx, request, response, slug || null, env);
   }
 }
 
