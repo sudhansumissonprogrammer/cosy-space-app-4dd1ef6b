@@ -58,20 +58,23 @@
         };
       })();
     </script>
-    <!-- Self-hosted fonts — no external network calls to Google -->
+    <!-- Self-hosted fonts — no external network calls to Google.
+         Heading weights use font-display:swap so first-visit users still see
+         the brand font (briefly painted with fallback, then swapped in).
+         Body/regular weights stay :optional to avoid body-text reflow CLS. -->
     <style>
-      @font-face{font-family:'Alegreya SC';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/alegreya-sc-400.woff2') format('woff2')}
-      @font-face{font-family:'Alegreya SC';font-style:normal;font-weight:700;font-display:optional;src:url('/fonts/alegreya-sc-700.woff2') format('woff2')}
+      @font-face{font-family:'Alegreya SC';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/alegreya-sc-400.woff2') format('woff2')}
+      @font-face{font-family:'Alegreya SC';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/alegreya-sc-700.woff2') format('woff2')}
       @font-face{font-family:'Poppins';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/poppins-400.woff2') format('woff2')}
       @font-face{font-family:'Poppins';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/poppins-500.woff2') format('woff2')}
-      @font-face{font-family:'Poppins';font-style:normal;font-weight:600;font-display:optional;src:url('/fonts/poppins-600.woff2') format('woff2')}
-      @font-face{font-family:'Poppins';font-style:normal;font-weight:700;font-display:optional;src:url('/fonts/poppins-700.woff2') format('woff2')}
-      @font-face{font-family:'Poppins';font-style:normal;font-weight:800;font-display:optional;src:url('/fonts/poppins-800.woff2') format('woff2')}
+      @font-face{font-family:'Poppins';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/poppins-600.woff2') format('woff2')}
+      @font-face{font-family:'Poppins';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/poppins-700.woff2') format('woff2')}
+      @font-face{font-family:'Poppins';font-style:normal;font-weight:800;font-display:swap;src:url('/fonts/poppins-800.woff2') format('woff2')}
     </style>
-    <!-- NOTE (ban-risk audit): Removed shared-infra preconnects (Supabase project ID + R2 bucket ID)
-         that previously leaked across every storefront. Worker handles host-specific hints. -->
     <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/outfit-latin.woff2" crossorigin />
+    <!-- Preload the storefront default heading font so :swap window is ~50ms instead of ~400ms -->
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/alegreya-sc-700.woff2" crossorigin fetchpriority="high" />
     <!-- Phase 2 (v8.35): removed fonts.googleapis/fonts.gstatic preconnects + the
          Montserrat Alternates Google Fonts <link>. Montserrat is dashboard-only and
          already self-hosted (public/fonts/montserrat-alternates-*.woff2) — loaded
