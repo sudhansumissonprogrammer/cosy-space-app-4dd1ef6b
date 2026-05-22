@@ -1,4 +1,6 @@
 import { useEffect, useCallback } from "react";
+import { getOrCreateSfVid } from "@/lib/metaEnrichment";
+
 
 declare global {
   interface Window {
