@@ -4,7 +4,9 @@ import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts, PRODUCT_COLUMNS, PAGE_SIZE } from "@/hooks/useStorefrontProducts";
 import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
-import { supabase } from "@/integrations/supabase/client";
+// supabase is dynamic-imported inside the infinite-scroll queryFn (only fires
+// after the user scrolls past the cached first page) to keep the 171KB
+// supabase-js chunk OUT of the storefront-shell static graph.
 import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import { VariantCountProvider } from "@/hooks/useVariantCounts";
@@ -122,6 +124,7 @@ export default function StorefrontHome() {
     queryKey: ["storefront-home-more", store.id, sortBy],
     queryFn: async ({ pageParam = 0 }) => {
       const offset = apiOffset + pageParam * PAGE_SIZE;
+      const { supabase } = await import("@/integrations/supabase/client");
       let query = supabase
         .from("products")
         .select(PRODUCT_COLUMNS)
