@@ -879,14 +879,17 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                       </SelectTrigger>
                       <SelectContent>
                         {categories?.map((cat) => (
-                          <div key={cat.id} className="flex items-center group">
-                            <SelectItem value={cat.name} className="flex-1">
-                              {cat.name}
-                            </SelectItem>
+                          <SelectItem key={cat.id} value={cat.name} className="group pr-9 relative">
+                            <span>{cat.name}</span>
                             <button
                               type="button"
-                              className="mr-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
+                              className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
+                              onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
                               onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
                                 if (confirm(`Delete category "${cat.name}"?`)) {
                                   deleteCategory.mutate(cat.id);
@@ -896,9 +899,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
-                          </div>
+                          </SelectItem>
                         ))}
                       </SelectContent>
+
                     </Select>
                     <Button type="button" size="icon" variant="outline" onClick={() => setShowNewCategory(true)} title="New category">
                       <Plus className="h-4 w-4" />
