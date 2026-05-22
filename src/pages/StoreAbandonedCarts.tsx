@@ -1,5 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import PaginationControls from "@/components/PaginationControls";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
+
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -88,6 +90,18 @@ export default function StoreAbandonedCarts() {
       return true;
     });
   }, [carts, dateFrom, dateTo, showRecovered]);
+
+  // Client-side pagination (20 per page)
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  useEffect(() => { setPage(1); }, [dateFrom, dateTo, showRecovered, activeQuick]);
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+  const pageItems = useMemo(
+    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filtered, page]
+  );
+
 
   // Only non-recovered carts with phone numbers are sendable
   const sendable = useMemo(
@@ -348,7 +362,7 @@ export default function StoreAbandonedCarts() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((c: any) => {
+                  {pageItems.map((c: any) => {
                     const items = Array.isArray(c.cart_items) ? c.cart_items : [];
                     const canSend = !c.recovered && c.customer_phone;
                     const cartDate = new Date(c.created_at);
@@ -404,6 +418,11 @@ export default function StoreAbandonedCarts() {
                   })}
                 </TableBody>
               </Table>
+            </div>
+          )}
+          {totalPages > 1 && (
+            <div className="mt-4">
+              <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
             </div>
           )}
         </CardContent>

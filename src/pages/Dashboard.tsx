@@ -98,24 +98,19 @@ export default function Dashboard() {
     queryKey: ["dashboard-stats", storeId],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const [productsRes, ordersRes, customersRes, viewsRes] = await Promise.all([
-        supabase.from("products").select("id", { count: "exact", head: true }).eq("store_id", storeId!),
-        supabase.from("orders").select("id", { count: "exact", head: true }).eq("store_id", storeId!),
-        supabase.from("customers").select("id", { count: "exact", head: true }).eq("store_id", storeId!),
-        supabase.rpc("get_store_views", { _store_ids: [storeId!] }),
-      ]);
-      const totalViews = (viewsRes.data as any[])?.reduce(
-        (sum: number, r: any) => sum + Number(r.view_count || 0), 0
-      ) || 0;
+      const { data, error } = await supabase.rpc("get_dashboard_stats", { _store_id: storeId! });
+      if (error) throw error;
+      const s = (data as any) || {};
       return {
-        total_products: productsRes.count ?? 0,
-        total_orders: ordersRes.count ?? 0,
-        total_customers: customersRes.count ?? 0,
-        total_views: totalViews,
+        total_products: Number(s.total_products ?? 0),
+        total_orders: Number(s.total_orders ?? 0),
+        total_customers: Number(s.total_customers ?? 0),
+        total_views: Number(s.total_views ?? 0),
       };
     },
     enabled: !!storeId,
   });
+
 
   const { data: ordersData } = useQuery({
     queryKey: ["dashboard-orders-analytics", storeId],
