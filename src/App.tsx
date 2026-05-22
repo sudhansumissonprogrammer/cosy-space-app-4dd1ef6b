@@ -556,30 +556,10 @@ async function prefetchTargetPageData(
             .eq("slug", catSlug)
             .maybeSingle();
           if (error) throw error;
-          if (cat) {
-            queryClient.prefetchInfiniteQuery({
-              queryKey: ["category-products", storeId, cat.name],
-              queryFn: async ({ pageParam = 0 }) => {
-                const { PRODUCT_CARD_FIELDS } = await import("@/lib/productSelectors");
-                const from = pageParam * 14;
-                const to = from + 13;
-                const { data: prods, error: pErr } = await supabase
-                  .from("products")
-                  .select(PRODUCT_CARD_FIELDS)
-                  .eq("store_id", storeId)
-                  .eq("category", cat.name)
-                  .eq("is_active", true)
-                  .order("created_at", { ascending: false })
-                  .order("id", { ascending: true })
-                  .range(from, to);
-                if (pErr) throw pErr;
-                return { products: prods ?? [], page: pageParam };
-              },
-              initialPageParam: 0,
-              staleTime: 2 * 60 * 1000,
-            });
-          }
           return cat;
+          // NOTE: products prefetch removed — orphan cache key (was "category-products"
+          // but CategoryDetail reads "cat-detail-v3"). Worker /api/products already
+          // serves the first page from edge KV cache, so SPA refetch is fast.
         },
         staleTime: 5 * 60 * 1000,
       });
@@ -587,30 +567,11 @@ async function prefetchTargetPageData(
     return;
   }
 
-  // Shop page: /shop
-  if (/\/shop\/?$/.test(path)) {
-    queryClient.prefetchInfiniteQuery({
-      queryKey: ["storefront-shop-all", storeId],
-      queryFn: async ({ pageParam = 0 }) => {
-        const { PRODUCT_CARD_FIELDS } = await import("@/lib/productSelectors");
-        const from = pageParam * 14;
-        const to = from + 13;
-        const { data: prods, error } = await supabase
-          .from("products")
-          .select(PRODUCT_CARD_FIELDS)
-          .eq("store_id", storeId)
-          .eq("is_active", true)
-          .order("created_at", { ascending: false })
-          .order("id", { ascending: true })
-          .range(from, to);
-        if (error) throw error;
-        return { products: prods ?? [], page: pageParam };
-      },
-      initialPageParam: 0,
-      staleTime: 2 * 60 * 1000,
-    });
-  }
+  // Shop page: /shop — no client prefetch (Worker /api/products is KV-cached at edge).
+  // The previous prefetch wrote to "storefront-shop-all" but StorefrontShop reads
+  // "shop-all-v3" — orphan key, wasted DB query. Removed.
 }
+
 
 /** Eagerly start loading the home page chunk so it downloads alongside the layout */
 function prefetchHomeChunk(theme: string) {
