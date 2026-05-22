@@ -51,10 +51,9 @@ function buildGoogleFontsHref(fonts: string[]): string | null {
     .map((font) => `family=${font.replace(/ /g, "+")}:wght@${GOOGLE_FONT_WEIGHTS}`)
     .join("&");
 
-  // display=swap: paint with fallback immediately, then swap in the real font
-  // when it arrives. Previously :optional caused first-visit users to see the
-  // fallback forever (font arrived after the ~100ms decision window).
-  return families ? `https://fonts.googleapis.com/css2?${families}&display=swap` : null;
+  // display=block: keep selected storefront typography from flashing as a
+  // fallback font on cold loads. Worker preloads local heading fonts first.
+  return families ? `https://fonts.googleapis.com/css2?${families}&display=block` : null;
 }
 
 function getButtonRadius(buttonStyle: string | undefined, defaultButtonRadius: string) {

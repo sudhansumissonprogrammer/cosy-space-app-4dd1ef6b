@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/outfit-latin.woff2" crossorigin />
+    <!-- Preload the storefront default brand font before any blocking scripts/styles. -->
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/alegreya-sc-400.woff2" crossorigin fetchpriority="high" />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/alegreya-sc-700.woff2" crossorigin fetchpriority="high" />
     <!-- ─── First-party visitor ID cookie (analytics only) ───
          Sets `sb_vid` if missing. Used server-side by the Worker on the NEXT
          page view to count unique visitors accurately (immune to mobile
@@ -59,22 +64,17 @@
       })();
     </script>
     <!-- Self-hosted fonts — no external network calls to Google.
-         Heading weights use font-display:swap so first-visit users still see
-         the brand font (briefly painted with fallback, then swapped in).
-         Body/regular weights stay :optional to avoid body-text reflow CLS. -->
+         The default storefront brand font uses font-display:block so cold loads
+         do not paint a wrong fallback font before Alegreya SC is ready. -->
     <style>
-      @font-face{font-family:'Alegreya SC';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/alegreya-sc-400.woff2') format('woff2')}
-      @font-face{font-family:'Alegreya SC';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/alegreya-sc-700.woff2') format('woff2')}
+      @font-face{font-family:'Alegreya SC';font-style:normal;font-weight:400;font-display:block;src:url('/fonts/alegreya-sc-400.woff2') format('woff2')}
+      @font-face{font-family:'Alegreya SC';font-style:normal;font-weight:700;font-display:block;src:url('/fonts/alegreya-sc-700.woff2') format('woff2')}
       @font-face{font-family:'Poppins';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/poppins-400.woff2') format('woff2')}
       @font-face{font-family:'Poppins';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/poppins-500.woff2') format('woff2')}
       @font-face{font-family:'Poppins';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/poppins-600.woff2') format('woff2')}
       @font-face{font-family:'Poppins';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/poppins-700.woff2') format('woff2')}
       @font-face{font-family:'Poppins';font-style:normal;font-weight:800;font-display:swap;src:url('/fonts/poppins-800.woff2') format('woff2')}
     </style>
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/outfit-latin.woff2" crossorigin />
-    <!-- Preload the storefront default heading font so :swap window is ~50ms instead of ~400ms -->
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/alegreya-sc-700.woff2" crossorigin fetchpriority="high" />
     <!-- Phase 2 (v8.35): removed fonts.googleapis/fonts.gstatic preconnects + the
          Montserrat Alternates Google Fonts <link>. Montserrat is dashboard-only and
          already self-hosted (public/fonts/montserrat-alternates-*.woff2) — loaded
@@ -146,7 +146,7 @@
           var families=[];
           [hf,bf].forEach(function(f){if(f&&self.indexOf(f)===-1){var seen=families.indexOf(f);if(seen===-1)families.push(f);}});
           if(!families.length)return;
-          var href='https://fonts.googleapis.com/css2?'+families.map(function(f){return'family='+f.replace(/ /g,'+') +':wght@400;600;700'}).join('&')+'&display=swap';
+          var href='https://fonts.googleapis.com/css2?'+families.map(function(f){return'family='+f.replace(/ /g,'+') +':wght@400;600;700'}).join('&')+'&display=block';
           var link=document.createElement('link');link.rel='stylesheet';link.href=href;link.id='storefront-google-fonts';
           link.setAttribute('fetchpriority','high');document.head.appendChild(link);
         }

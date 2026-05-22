@@ -1,5 +1,5 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.34.0 — PRODUCTS PAGE SIZE = 20
+ * SHOPBANAO PRODUCTION ROUTER v8.39.0 — BLOCK BRAND FONT FIRST PAINT
  *
  * Changes from v8.33.0:
  *  v8.34.0 — PRODUCTS_PAGE_SIZE bumped 50 → 20 to standardize storefront
@@ -104,7 +104,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.36.0-data-before-modules";
+const WORKER_VERSION = "8.39.0-block-brand-font";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -1033,41 +1033,38 @@ function buildThemeCssFromConfig(tc) {
     // ready in ~100ms, browser uses fallback and NEVER swaps. Repeat visitors
     // (font cached) get the real font on first paint.
     if (localFonts.length > 0) {
-      // v8.38 — heading-weight (>=600) uses swap so first-visit users see the
-      // brand font instead of fallback. Body weights (<600) stay :optional to
-      // avoid CLS on long body text. Trade-off: brief FOUT on headings only.
+      // v8.39 — The selected heading font must appear on first paint. Use
+      // display:block for the heading family (both regular/bold because many
+      // headers render at 400), while body-only families stay optional.
       let faceCss = "<style data-sf-font-local>";
       for (const fam of localFonts) {
         for (const f of SELF_HOSTED[fam]) {
-          const display = f.weight >= 600 ? "swap" : "optional";
+          const display = fam === headingFont ? "block" : "optional";
           faceCss += `@font-face{font-family:'${fam}';font-style:normal;font-weight:${f.weight};font-display:${display};src:url('${f.url}') format('woff2')}`;
         }
       }
       faceCss += "</style>\n";
       css += faceCss;
 
-      // v8.38 — Preload the heading font (first local family, weight 700 if
-      // available, else 600/400). Cuts the swap window from ~400ms → ~50ms
-      // on cold visits so the FOUT is barely perceptible.
+      // v8.39 — Preload heading regular + bold so the selected font is ready
+      // before first paint across headers rendered at either 400 or 700.
       const headFam = (headingFont && SELF_HOSTED[headingFont]) ? headingFont : localFonts[0];
       if (headFam && SELF_HOSTED[headFam]) {
-        const pick = SELF_HOSTED[headFam].find((f) => f.weight === 700)
-          || SELF_HOSTED[headFam].find((f) => f.weight === 600)
-          || SELF_HOSTED[headFam][0];
-        if (pick) {
-          css += `<link rel="preload" as="font" type="font/woff2" href="${pick.url}" crossorigin fetchpriority="high" data-sf-font="1" />\n`;
+        const picks = SELF_HOSTED[headFam].filter((f) => f.weight === 400 || f.weight === 700 || f.weight === 600);
+        const urls = [...new Set((picks.length ? picks : [SELF_HOSTED[headFam][0]]).map((f) => f.url))];
+        for (const url of urls) {
+          css += `<link rel="preload" as="font" type="font/woff2" href="${url}" crossorigin fetchpriority="high" data-sf-font="1" />\n`;
         }
       }
     }
 
-    // v8.38 — Google Fonts CSS uses display=swap (was :optional) so theme
-    // headings render in the chosen font on first visit. Same-origin trick
-    // can come later; swap is the right default for brand fonts.
+    // v8.39 — Google Fonts CSS uses display=block so non-self-hosted selected
+    // heading fonts do not flash as fallback on cold visits.
     if (remoteFonts.length > 0) {
       const families = remoteFonts
         .map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600;700`)
         .join("&");
-      const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+      const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=block`;
       css += `<link rel="preconnect" href="https://fonts.googleapis.com" />\n`;
       css += `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n`;
       css += `<link rel="preload" as="style" href="${googleFontsHref}" fetchpriority="high" data-sf-font="1" />\n`;
@@ -3209,7 +3206,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
 
   let injectedHtml = html.replace(
     "<head>",
-    `<head>${injection}${ogMeta}${jsonLd}${inlineThemeCss}${productImagePreloads}${lcpPreload}${cssPreload}${modulePreloads}`,
+    `<head>${inlineThemeCss}${productImagePreloads}${lcpPreload}${cssPreload}${modulePreloads}${injection}${ogMeta}${jsonLd}`,
   );
   // Inject skeleton + invisible product preloader grid before #root.
   // The grid's <img> tags are read by the preload-scanner, queueing image
@@ -3309,7 +3306,7 @@ async function serveStreamedHtml(
       headChunk = headChunk.slice(0, headChunk.indexOf("</head>"));
       headChunk = headChunk.replace(
         "<head>",
-        `<head>${slugScript}${themeCss}${productImagePreloads}${perRouteSeoHead}${prebuiltHead || ""}`,
+        `<head>${themeCss}${productImagePreloads}${perRouteSeoHead}${prebuiltHead || ""}${slugScript}`,
       );
       headChunk += "</head>";
 
