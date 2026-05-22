@@ -1,5 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import PaginationControls from "@/components/PaginationControls";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
+
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
