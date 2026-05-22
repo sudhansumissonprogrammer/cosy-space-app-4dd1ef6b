@@ -1033,30 +1033,41 @@ function buildThemeCssFromConfig(tc) {
     // ready in ~100ms, browser uses fallback and NEVER swaps. Repeat visitors
     // (font cached) get the real font on first paint.
     if (localFonts.length > 0) {
+      // v8.38 — heading-weight (>=600) uses swap so first-visit users see the
+      // brand font instead of fallback. Body weights (<600) stay :optional to
+      // avoid CLS on long body text. Trade-off: brief FOUT on headings only.
       let faceCss = "<style data-sf-font-local>";
       for (const fam of localFonts) {
         for (const f of SELF_HOSTED[fam]) {
-          faceCss += `@font-face{font-family:'${fam}';font-style:normal;font-weight:${f.weight};font-display:optional;src:url('${f.url}') format('woff2')}`;
+          const display = f.weight >= 600 ? "swap" : "optional";
+          faceCss += `@font-face{font-family:'${fam}';font-style:normal;font-weight:${f.weight};font-display:${display};src:url('${f.url}') format('woff2')}`;
         }
       }
       faceCss += "</style>\n";
       css += faceCss;
+
+      // v8.38 — Preload the heading font (first local family, weight 700 if
+      // available, else 600/400). Cuts the swap window from ~400ms → ~50ms
+      // on cold visits so the FOUT is barely perceptible.
+      const headFam = (headingFont && SELF_HOSTED[headingFont]) ? headingFont : localFonts[0];
+      if (headFam && SELF_HOSTED[headFam]) {
+        const pick = SELF_HOSTED[headFam].find((f) => f.weight === 700)
+          || SELF_HOSTED[headFam].find((f) => f.weight === 600)
+          || SELF_HOSTED[headFam][0];
+        if (pick) {
+          css += `<link rel="preload" as="font" type="font/woff2" href="${pick.url}" crossorigin fetchpriority="high" data-sf-font="1" />\n`;
+        }
+      }
     }
 
-    // v8.13 — Same-origin font proxy via /sf-font/proxy?u=<gstatic-url>.
-    // Removes the 2-hop Google Fonts dance (DNS+TLS to fonts.googleapis.com
-    // for CSS, then DNS+TLS to fonts.gstatic.com for woff2 = 400-800ms India).
-    // Now: 1 hop, same TCP connection as HTML, ~100-200ms. display=optional
-    // means zero FOUT. Works for ANY of Google's 1500 families.
+    // v8.38 — Google Fonts CSS uses display=swap (was :optional) so theme
+    // headings render in the chosen font on first visit. Same-origin trick
+    // can come later; swap is the right default for brand fonts.
     if (remoteFonts.length > 0) {
       const families = remoteFonts
         .map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600;700`)
         .join("&");
-      const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=optional`;
-      // Stylesheet still loaded from Google (small, ~1KB, well-cached) — but
-      // its @font-face src URLs point to gstatic, which means the woff2 hop
-      // can't be avoided without rewriting CSS server-side. Phase 2b will do
-      // that. For now: keep behavior, just flip to display=optional.
+      const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=swap`;
       css += `<link rel="preconnect" href="https://fonts.googleapis.com" />\n`;
       css += `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n`;
       css += `<link rel="preload" as="style" href="${googleFontsHref}" fetchpriority="high" data-sf-font="1" />\n`;

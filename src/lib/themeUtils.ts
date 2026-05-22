@@ -51,9 +51,10 @@ function buildGoogleFontsHref(fonts: string[]): string | null {
     .map((font) => `family=${font.replace(/ /g, "+")}:wght@${GOOGLE_FONT_WEIGHTS}`)
     .join("&");
 
-  // display=optional: browser uses fallback if font not ready in ~100ms and NEVER swaps,
-  // eliminating FOUT/CLS. Repeat visitors (font cached) get the real font on first paint.
-  return families ? `https://fonts.googleapis.com/css2?${families}&display=optional` : null;
+  // display=swap: paint with fallback immediately, then swap in the real font
+  // when it arrives. Previously :optional caused first-visit users to see the
+  // fallback forever (font arrived after the ~100ms decision window).
+  return families ? `https://fonts.googleapis.com/css2?${families}&display=swap` : null;
 }
 
 function getButtonRadius(buttonStyle: string | undefined, defaultButtonRadius: string) {
