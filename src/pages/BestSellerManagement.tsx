@@ -117,6 +117,14 @@ export default function BestSellerManagement() {
   const fmt = (v: number) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency }).format(v);
 
+  const totalPages = Math.max(1, Math.ceil((products?.length || 0) / PAGE_SIZE));
+  useEffect(() => { if (page > totalPages) setPage(1); }, [totalPages, page]);
+  const pageStart = (page - 1) * PAGE_SIZE;
+  const pagedProducts = useMemo(
+    () => (products || []).slice(pageStart, pageStart + PAGE_SIZE),
+    [products, pageStart]
+  );
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-6">
       <div className="flex items-center justify-between">
