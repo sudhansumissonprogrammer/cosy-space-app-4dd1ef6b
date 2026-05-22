@@ -5062,6 +5062,12 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
 
 export default {
   async fetch(request, env, ctx) {
+    const _res = await _handleFetch(request, env, ctx);
+    return finalizeResponse(request, _res);
+  },
+};
+
+async function _handleFetch(request, env, ctx) {
     // FIX #5: Record request start time immediately
     const requestStart = Date.now();
 
