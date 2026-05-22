@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import PaginationControls from "@/components/PaginationControls";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +38,8 @@ export default function BestSellerManagement() {
   const queryClient = useQueryClient();
   const purgeStore = useStorePurge(storeId);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["best-sellers-manage", storeId],
