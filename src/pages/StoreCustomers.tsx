@@ -27,7 +27,7 @@ export default function StoreCustomers() {
   const queryClient = useQueryClient();
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
 
-  const { data: store } = useStoreData(storeId);
+  const { data: store, isLoading: storeLoading } = useStoreData(storeId);
 
   const { pull, refreshing } = usePullToRefresh({
     onRefresh: async () => {
