@@ -14,6 +14,9 @@
 
 const FBC_COOKIE = "_fbc";
 const FBC_TTL_DAYS = 90; // Meta's recommended lifetime
+const SF_VID_COOKIE = "sf_vid";
+const SF_VID_TTL_DAYS = 730; // 2y — Meta external_id should be stable
+const SF_VID_LS_KEY = "__sf_vid__";
 
 function setCookie(name: string, value: string, days: number) {
   if (typeof document === "undefined") return;
