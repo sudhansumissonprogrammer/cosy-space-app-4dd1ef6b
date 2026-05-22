@@ -29,6 +29,17 @@ async function fetchProducts(storeId: string): Promise<any[]> {
     } catch { /* fall through */ }
   }
 
+  // 1b. Phase 3: top 20 products are now bundled into the shell RPC and inlined
+  // by the Worker as window.__STOREFRONT_DATA__.products_preview. When present,
+  // skip the /api/products round-trip entirely on cold home loads.
+  try {
+    const shellPreview = (window as any).__STOREFRONT_DATA__?.products_preview;
+    if (Array.isArray(shellPreview) && shellPreview.length > 0) {
+      const matchesStore = !storeId || shellPreview[0]?.store_id === storeId;
+      if (matchesStore) return shellPreview;
+    }
+  } catch { /* ignore */ }
+
   // 2. Check if index.html prefetch already has products in flight
   const prefetchPromise = (window as any).__PRODUCTS_PREFETCH__;
   if (prefetchPromise) {
@@ -38,6 +49,7 @@ async function fetchProducts(storeId: string): Promise<any[]> {
       if (Array.isArray(result) && result.length > 0) return result;
     } catch { /* fall through */ }
   }
+
 
   const hostname = window.location.hostname;
   const isLocal = hostname === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
