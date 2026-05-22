@@ -362,7 +362,7 @@ export default function StoreAbandonedCarts() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((c: any) => {
+                  {pageItems.map((c: any) => {
                     const items = Array.isArray(c.cart_items) ? c.cart_items : [];
                     const canSend = !c.recovered && c.customer_phone;
                     const cartDate = new Date(c.created_at);
@@ -420,8 +420,17 @@ export default function StoreAbandonedCarts() {
               </Table>
             </div>
           )}
+          {totalPages > 1 && (
+            <div className="mt-4">
+              <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
+            </div>
+          )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
     </div>
   );
 }
