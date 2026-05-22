@@ -34,7 +34,7 @@ interface Props {
   
 }
 
-export default function ProductCardStyle4({ product, slug, store, onVariantRequired }: Props) {
+export default function ProductCardStyle4({ product, slug, store, priority = false, onVariantRequired }: Props) {
   const [hoverLoaded, setHoverLoaded] = useState(false);
   const { items, addToCart, updateQuantity } = useCart();
   const existing = items.find(
