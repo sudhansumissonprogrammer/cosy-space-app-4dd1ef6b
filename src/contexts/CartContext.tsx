@@ -133,7 +133,9 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
           currency,
         };
         pixelMod.fbPixelTrack("ViewCart", data, eid);
-        capiMod.fireMetaCAPI({ storeId, eventName: "ViewCart", eventId: eid, customData: data });
+        // CAPI skipped for ViewCart — non-standard Meta event, no algo value, ~15% edge-call reduction.
+        // Pixel still fires browser-side for analytics. Money events (VC/ATC/IC/Purchase) keep dual-fire.
+        void capiMod;
       }).catch(() => {});
     }
   }, [storeId, items, currency]);
