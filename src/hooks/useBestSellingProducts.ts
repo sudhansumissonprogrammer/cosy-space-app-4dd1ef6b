@@ -4,7 +4,7 @@ import { useMemo } from "react";
 const BEST_SELLER_COLUMNS =
   "id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id,display_order";
 
-export const BEST_SELLER_PAGE_SIZE = 12;
+export const BEST_SELLER_PAGE_SIZE = 20;
 
 /**
  * Fetches best-selling products with infinite scroll (12 per page).

@@ -29,7 +29,7 @@ const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSelli
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 
-const BATCH_SIZE = 12;
+const BATCH_SIZE = 20;
 
 const BEST_SELLER_COLS =
   "id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id,display_order";
