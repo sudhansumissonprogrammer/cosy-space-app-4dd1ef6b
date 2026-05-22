@@ -37,7 +37,7 @@ interface ProductFormProps {
 }
 
 export default function ProductForm({ productId, onClose }: ProductFormProps) {
-  const { storeId, storeSlug } = useStoreSlugParam();
+  const { storeId, storeSlug, store: paramStore } = useStoreSlugParam();
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
