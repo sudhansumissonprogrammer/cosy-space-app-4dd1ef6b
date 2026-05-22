@@ -52,7 +52,7 @@ function AdminChatTab() {
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: (query) => (typeof document !== "undefined" && document.visibilityState === "visible") ? 15000 : false,
+    refetchInterval: (query) => (typeof document !== "undefined" && document.visibilityState === "visible") ? 60000 : false,
     refetchOnWindowFocus: true,
   });
 
