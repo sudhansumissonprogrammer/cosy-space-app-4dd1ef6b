@@ -117,7 +117,7 @@ export default function ProductsList() { // v2
     }
   }, []);
 
-  const { data: store } = useStoreData(storeId);
+  const { data: store, isLoading: storeLoading } = useStoreData(storeId);
   const purgeStore = useStorePurge(storeId);
 
   const { data: limitInfo } = useQuery({
