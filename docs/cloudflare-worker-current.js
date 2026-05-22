@@ -1033,29 +1033,27 @@ function buildThemeCssFromConfig(tc) {
     // ready in ~100ms, browser uses fallback and NEVER swaps. Repeat visitors
     // (font cached) get the real font on first paint.
     if (localFonts.length > 0) {
-      // v8.38 — heading-weight (>=600) uses swap so first-visit users see the
-      // brand font instead of fallback. Body weights (<600) stay :optional to
-      // avoid CLS on long body text. Trade-off: brief FOUT on headings only.
+      // v8.39 — The selected heading font must appear on first paint. Use
+      // display:block for the heading family (both regular/bold because many
+      // headers render at 400), while body-only families stay optional.
       let faceCss = "<style data-sf-font-local>";
       for (const fam of localFonts) {
         for (const f of SELF_HOSTED[fam]) {
-          const display = f.weight >= 600 ? "swap" : "optional";
+          const display = fam === headingFont ? "block" : "optional";
           faceCss += `@font-face{font-family:'${fam}';font-style:normal;font-weight:${f.weight};font-display:${display};src:url('${f.url}') format('woff2')}`;
         }
       }
       faceCss += "</style>\n";
       css += faceCss;
 
-      // v8.38 — Preload the heading font (first local family, weight 700 if
-      // available, else 600/400). Cuts the swap window from ~400ms → ~50ms
-      // on cold visits so the FOUT is barely perceptible.
+      // v8.39 — Preload heading regular + bold so the selected font is ready
+      // before first paint across headers rendered at either 400 or 700.
       const headFam = (headingFont && SELF_HOSTED[headingFont]) ? headingFont : localFonts[0];
       if (headFam && SELF_HOSTED[headFam]) {
-        const pick = SELF_HOSTED[headFam].find((f) => f.weight === 700)
-          || SELF_HOSTED[headFam].find((f) => f.weight === 600)
-          || SELF_HOSTED[headFam][0];
-        if (pick) {
-          css += `<link rel="preload" as="font" type="font/woff2" href="${pick.url}" crossorigin fetchpriority="high" data-sf-font="1" />\n`;
+        const picks = SELF_HOSTED[headFam].filter((f) => f.weight === 400 || f.weight === 700 || f.weight === 600);
+        const urls = [...new Set((picks.length ? picks : [SELF_HOSTED[headFam][0]]).map((f) => f.url))];
+        for (const url of urls) {
+          css += `<link rel="preload" as="font" type="font/woff2" href="${url}" crossorigin fetchpriority="high" data-sf-font="1" />\n`;
         }
       }
     }
