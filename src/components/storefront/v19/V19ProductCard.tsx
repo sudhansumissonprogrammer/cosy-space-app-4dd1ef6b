@@ -81,7 +81,9 @@ export default function V19ProductCard({ product, slug, store, priority = false 
               alt={product.name}
               className={`h-full w-full object-cover ${outOfStock ? "opacity-50" : ""}`}
               loading={priority ? "eager" : "lazy"}
-              fetchPriority={priority ? "high" : "auto"}
+              decoding={priority ? "sync" : "async"}
+              fetchPriority={priority ? "high" : "low"}
+
               width={280}
               height={280}
             />

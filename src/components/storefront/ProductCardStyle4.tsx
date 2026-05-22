@@ -88,9 +88,10 @@ export default function ProductCardStyle4({ product, slug, store, onVariantRequi
               width={200}
               height={200}
               className={`h-full w-full object-cover transition-all duration-500 ${hasSecond && hoverLoaded ? "group-hover/img:opacity-0" : ""}`}
-              loading="lazy"
-              decoding="async"
-              fetchPriority="low"
+              loading={priority ? "eager" : "lazy"}
+              decoding={priority ? "sync" : "async"}
+              fetchPriority={priority ? "high" : "low"}
+
             />
             {hasSecond && hoverLoaded && (
               <img src={optimizeImageUrl(images[1], 400, 72)} alt={product.name} width={400} height={400} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover/img:opacity-100" loading="lazy" fetchPriority="low" />
