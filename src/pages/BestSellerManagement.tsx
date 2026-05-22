@@ -159,7 +159,9 @@ export default function BestSellerManagement() {
         </div>
       ) : (
         <div className="space-y-2">
-          {products.map((product, idx) => (
+          {pagedProducts.map((product, localIdx) => {
+            const idx = pageStart + localIdx;
+            return (
             <div
               key={product.id}
               draggable
@@ -237,8 +239,12 @@ export default function BestSellerManagement() {
                 </Button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
+      )}
+      {products && products.length > 0 && (
+        <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
       )}
     </div>
   );
