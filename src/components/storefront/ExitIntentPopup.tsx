@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Gift, X } from "lucide-react";
 import { toast } from "sonner";
-import { fireMetaCAPI } from "@/lib/metaCapi";
+
 
 interface ExitIntentPopupProps {
   storeId: string;
