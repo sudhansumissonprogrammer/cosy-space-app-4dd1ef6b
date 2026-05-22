@@ -92,14 +92,8 @@ export default function StoreCustomers() {
 
   const currencySymbol = store?.currency === "INR" ? "₹" : store?.currency === "USD" ? "$" : (store?.currency || "$");
 
-  if (!store && !isLoading && !storeLoading && storeId) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-12">
-        <p className="text-muted-foreground">Store not found</p>
-        <Button asChild variant="outline"><Link to="/dashboard/stores">Back to stores</Link></Button>
-      </div>
-    );
-  }
+  // No early "Store not found" return — caused React error #300 (hook-count mismatch
+  // in conditionally-mounted Sheet/Dialog children). Empty state below handles no-store.
 
   return (
     <div className="space-y-6">
