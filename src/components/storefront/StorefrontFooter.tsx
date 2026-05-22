@@ -36,15 +36,19 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
   const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
   const [email, setEmail] = useState("");
 
-  // Public contact email (set by store owner). Fetched via secure RPC.
+  // Phase 3: owner_email is bundled in the storefront shell. Skip the RPC entirely
+  // when the field is present (null or a string). Only fall back to the RPC for
+  // legacy cached shells that predate the inlining (shellEmail === undefined).
+  const shellEmail = (store as any).owner_email as string | null | undefined;
   const { data: ownerEmail } = useQuery({
     queryKey: ["store-public-email", store.id],
     queryFn: async () => {
       const { data } = await supabase.rpc("get_store_public_email", { _store_id: store.id });
       return ((data as string) || "").trim();
     },
-    enabled: !!store.id,
+    enabled: !!store.id && shellEmail === undefined,
     staleTime: 10 * 60 * 1000,
+    initialData: shellEmail === undefined ? undefined : (shellEmail || "").trim(),
   });
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
