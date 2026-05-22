@@ -130,14 +130,14 @@ export function setCapiUser(user: CapiUser | null): void {
     const pixelId = (window as any).__SF_PIXEL_INITED__;
     if (!pixelId || typeof (window as any).fbq !== "function") return;
     const am: Record<string, string> = {};
-    if (user.email) am.em = user.email.trim().toLowerCase();
-    if (user.phone) am.ph = user.phone.replace(/\D/g, "");
-    if (user.externalId) am.external_id = user.externalId;
-    if (user.firstName) am.fn = user.firstName.trim().toLowerCase();
-    if (user.lastName) am.ln = user.lastName.trim().toLowerCase();
-    if (user.city) am.ct = user.city.trim().toLowerCase().replace(/\s+/g, "");
-    if (user.state) am.st = user.state.trim().toLowerCase().replace(/\s+/g, "");
-    if (user.zipCode) am.zp = user.zipCode.trim().toLowerCase().replace(/\s+/g, "");
+    if (merged.email) am.em = merged.email.trim().toLowerCase();
+    if (merged.phone) am.ph = merged.phone.replace(/\D/g, "");
+    if (merged.externalId) am.external_id = merged.externalId;
+    if (merged.firstName) am.fn = merged.firstName.trim().toLowerCase();
+    if (merged.lastName) am.ln = merged.lastName.trim().toLowerCase();
+    if (merged.city) am.ct = merged.city.trim().toLowerCase().replace(/\s+/g, "");
+    if (merged.state) am.st = merged.state.trim().toLowerCase().replace(/\s+/g, "");
+    if (merged.zipCode) am.zp = merged.zipCode.trim().toLowerCase().replace(/\s+/g, "");
     if (Object.keys(am).length > 0) {
       (window as any).fbq("init", pixelId, am);
     }
