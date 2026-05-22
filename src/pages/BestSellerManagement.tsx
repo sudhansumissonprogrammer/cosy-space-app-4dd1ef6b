@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import PaginationControls from "@/components/PaginationControls";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +38,8 @@ export default function BestSellerManagement() {
   const queryClient = useQueryClient();
   const purgeStore = useStorePurge(storeId);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["best-sellers-manage", storeId],
@@ -114,6 +117,14 @@ export default function BestSellerManagement() {
   const fmt = (v: number) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency }).format(v);
 
+  const totalPages = Math.max(1, Math.ceil((products?.length || 0) / PAGE_SIZE));
+  useEffect(() => { if (page > totalPages) setPage(1); }, [totalPages, page]);
+  const pageStart = (page - 1) * PAGE_SIZE;
+  const pagedProducts = useMemo(
+    () => (products || []).slice(pageStart, pageStart + PAGE_SIZE),
+    [products, pageStart]
+  );
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-6">
       <div className="flex items-center justify-between">
@@ -148,7 +159,9 @@ export default function BestSellerManagement() {
         </div>
       ) : (
         <div className="space-y-2">
-          {products.map((product, idx) => (
+          {pagedProducts.map((product, localIdx) => {
+            const idx = pageStart + localIdx;
+            return (
             <div
               key={product.id}
               draggable
@@ -226,8 +239,12 @@ export default function BestSellerManagement() {
                 </Button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
+      )}
+      {products && products.length > 0 && (
+        <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
       )}
     </div>
   );

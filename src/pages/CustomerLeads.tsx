@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import PaginationControls from "@/components/PaginationControls";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,6 +83,15 @@ export default function CustomerLeads() {
   const visibleLeads = useMemo(
     () => enrichedLeads.filter((l) => !l.hasOrdered),
     [enrichedLeads]
+  );
+
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(visibleLeads.length / PAGE_SIZE));
+  useEffect(() => { if (page > totalPages) setPage(1); }, [totalPages, page]);
+  const pagedLeads = useMemo(
+    () => visibleLeads.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [visibleLeads, page]
   );
 
   // Fetch slugs for products referenced by leads — to build deep product links
@@ -188,7 +198,7 @@ export default function CustomerLeads() {
             <>
               {/* Mobile card list — everything visible, no horizontal scroll */}
               <div className="space-y-3 sm:hidden">
-                {visibleLeads.map((lead) => {
+                {pagedLeads.map((lead) => {
                   const sendWhatsApp = () => {
                     const phone = lead.phone.replace(/[^0-9+]/g, "");
                     const message = buildRecoveryMessage(lead);
@@ -295,7 +305,7 @@ export default function CustomerLeads() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {visibleLeads.map((lead) => (
+                    {pagedLeads.map((lead) => (
                       <TableRow key={lead.id}>
                         <TableCell className="font-medium">
                           {lead.name || <span className="text-muted-foreground">—</span>}
@@ -367,6 +377,7 @@ export default function CustomerLeads() {
                   </TableBody>
                 </Table>
               </div>
+              <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
             </>
           ) : (
             <div className="flex flex-col items-center justify-center gap-3 py-12">
