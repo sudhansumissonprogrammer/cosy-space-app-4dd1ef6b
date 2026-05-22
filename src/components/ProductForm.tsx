@@ -106,8 +106,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
     enabled: !!user && !isEditing,
   });
 
-  // Load store
-  const { data: store } = useStoreData(storeId);
+  // Load store (fall back to slug-resolved store to avoid an infinite spinner
+  // when useStoreData hasn't hydrated yet, e.g. admin-view or direct deep-link)
+  const { data: storeFull } = useStoreData(storeId);
+  const store = storeFull || paramStore;
   const purgeStore = useStorePurge(storeId);
 
   // Categories
