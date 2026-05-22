@@ -6202,14 +6202,14 @@ async function _handleFetch(request, env, ctx) {
       );
       return cacheableResponse(ctx, request, r, 3600);
     }
-  },
+}
 
-  /* ============================================================
-     SCHEDULED HANDLER — DB Keepalive + Full Store Warming
-     FIX #14: Warm ALL stores (not just top 20), concurrency=10
-     FIX #15: Fetch shell ONCE before the loop, reuse for all stores
-     ============================================================ */
-  async scheduled(event, env, ctx) {
+/* ============================================================
+   SCHEDULED HANDLER — DB Keepalive + Full Store Warming
+   FIX #14: Warm ALL stores (not just top 20), concurrency=10
+   FIX #15: Fetch shell ONCE before the loop, reuse for all stores
+   ============================================================ */
+async function _handleScheduled(event, env, ctx) {
     const keepaliveStart = Date.now();
     // Flush any pending page-view rows so the buffer never holds data >1 cron interval
     try {
