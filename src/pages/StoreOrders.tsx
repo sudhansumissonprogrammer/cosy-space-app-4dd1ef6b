@@ -318,7 +318,7 @@ export default function StoreOrders() {
     },
   });
 
-  if (!store && !isLoading) {
+  if (!store && !isLoading && !storeLoading && storeId) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-12">
         <p className="text-muted-foreground">Store not found</p>
