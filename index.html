@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/outfit-latin.woff2" crossorigin />
+    <!-- Preload the storefront default brand font before any blocking scripts/styles. -->
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/alegreya-sc-400.woff2" crossorigin fetchpriority="high" />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/alegreya-sc-700.woff2" crossorigin fetchpriority="high" />
     <!-- ─── First-party visitor ID cookie (analytics only) ───
          Sets `sb_vid` if missing. Used server-side by the Worker on the NEXT
          page view to count unique visitors accurately (immune to mobile
@@ -70,11 +75,6 @@
       @font-face{font-family:'Poppins';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/poppins-700.woff2') format('woff2')}
       @font-face{font-family:'Poppins';font-style:normal;font-weight:800;font-display:swap;src:url('/fonts/poppins-800.woff2') format('woff2')}
     </style>
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/outfit-latin.woff2" crossorigin />
-    <!-- Preload the storefront default brand font before first paint. -->
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/alegreya-sc-400.woff2" crossorigin fetchpriority="high" />
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/alegreya-sc-700.woff2" crossorigin fetchpriority="high" />
     <!-- Phase 2 (v8.35): removed fonts.googleapis/fonts.gstatic preconnects + the
          Montserrat Alternates Google Fonts <link>. Montserrat is dashboard-only and
          already self-hosted (public/fonts/montserrat-alternates-*.woff2) — loaded
