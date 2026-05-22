@@ -3320,9 +3320,20 @@ async function serveStreamedHtml(
         `${skeleton}${productPreloaderGrid}<div id="root">`,
       );
 
+      // v8.36.0: place __STOREFRONT_DATA__ BEFORE the first <script type="module">
+      // so React modules can read it on first render. Previously we injected it
+      // before </body> — which technically runs before modules execute, but any
+      // race left consumers (TrustStrip, Footer email, etc.) doing a redundant
+      // REST call on cold loads. Pre-module placement removes that risk entirely.
       if (storefrontResult?.data) {
         const jsonStr = JSON.stringify(storefrontResult.data).replace(/<\/script/gi, "<\\/script");
-        bodyChunk = bodyChunk.replace("</body>", `<script>window.__STOREFRONT_DATA__=${jsonStr};</script></body>`);
+        const dataScript = `<script>window.__STOREFRONT_DATA__=${jsonStr};</script>`;
+        const moduleIdx = bodyChunk.search(/<script\b[^>]*\btype=["']module["']/i);
+        if (moduleIdx !== -1) {
+          bodyChunk = bodyChunk.slice(0, moduleIdx) + dataScript + bodyChunk.slice(moduleIdx);
+        } else {
+          bodyChunk = bodyChunk.replace("</body>", `${dataScript}</body>`);
+        }
       }
 
       if (storefrontResult?.data?.store && !pdpCategoryInline?.kind) {
