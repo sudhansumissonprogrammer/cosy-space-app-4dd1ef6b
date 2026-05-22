@@ -1049,8 +1049,7 @@ function buildThemeCssFromConfig(tc) {
       // v8.38 — Preload the heading font (first local family, weight 700 if
       // available, else 600/400). Cuts the swap window from ~400ms → ~50ms
       // on cold visits so the FOUT is barely perceptible.
-      const headFam = headingFont && SELF_HOSTED[headingFam = headingFont] ? headingFont : localFonts[0];
-      var headingFam;
+      const headFam = (headingFont && SELF_HOSTED[headingFont]) ? headingFont : localFonts[0];
       if (headFam && SELF_HOSTED[headFam]) {
         const pick = SELF_HOSTED[headFam].find((f) => f.weight === 700)
           || SELF_HOSTED[headFam].find((f) => f.weight === 600)
