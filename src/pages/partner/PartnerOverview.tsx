@@ -32,8 +32,18 @@ export default function PartnerOverview() {
 
   useEffect(() => {
     refresh();
-    const id = setInterval(refresh, 30_000);
-    return () => clearInterval(id);
+    const tick = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") refresh();
+    };
+    const id = setInterval(tick, 60_000);
+    const onVis = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partner.id]);
 
