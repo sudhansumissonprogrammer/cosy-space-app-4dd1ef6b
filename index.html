@@ -246,7 +246,7 @@
         }).catch(function(){return null});
 
         function buildProductsUrl(sid){
-          return supaUrl+'/rest/v1/products?store_id=eq.'+sid+'&is_active=eq.true&order=is_best_selling.desc,created_at.desc,id.asc&limit=14&select=id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id';
+          return supaUrl+'/rest/v1/products?store_id=eq.'+sid+'&is_active=eq.true&order=is_best_selling.desc,created_at.desc,id.asc&limit=20&select=id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id';
         }
         var productsPromise;
         if(boot&&boot.sid){
