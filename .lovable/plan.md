@@ -1,71 +1,48 @@
-## Deep audit findings
+## Goal
 
-### 1. PAGE_SIZE is correct at 50 (do NOT drop to 20)
-- Worker hardcodes `PRODUCTS_PAGE_SIZE = 50` in `docs/cloudflare-worker-current.js` (line 2028).
-- Worker builds `offset = page * 50` and `limit = 50`.
-- If client `useInfiniteProducts.ts` drops to 20 without a Worker redeploy, page 1 client (`offset 20`) calls Worker which fetches `offset 50` → **duplicate + missing rows, broken pagination**.
-- Conclusion from my earlier message was wrong. Keeping 50 in both is safe; reducing requires a coordinated Worker deploy you must do manually.
+Push Shop/Category first-page reads through the Worker edge cache so cold loads stop hitting PostgREST. Today `/api/products` returns JSON but **without** the `s-maxage` / `cf-cache-status` / `x-edge-source` headers — Cloudflare's edge can't cache it, so every Shop visit runs the Worker + Supabase. Goal: lift cache hit rate from ~0% to ~90% on Shop, mirroring what Category already does.
 
-### 2. 🔴 Bug — Shop prefetch in `App.tsx` is dead code (orphan cache key)
-- `App.tsx` line ~599 prefetches into key `["storefront-shop-all", storeId]` with PAGE_SIZE=14.
-- `StorefrontShop.tsx` reads from key `["shop-all-v3", storeId, "__all__", "default", 50]`.
-- Keys never match → prefetched 14 rows sit in cache unused, Shop refetches 50 from Worker anyway.
-- **Two queries fire per /shop click. Fix = delete the dead prefetch block (the Worker /api/products is already fast — CF cache + KV).**
-- Same orphan-key bug exists for the category prefetch (`["category-products", storeId, cat.name]` vs hook key `["cat-detail-v3", storeId, cat.name, "default", 50]`). Delete that too.
+## Scope
 
-### 3. 🟡 Card image lazy-loading incomplete on Style4, V19, V20
-- ✅ Style1/2/3 correct: `loading={priority?"eager":"lazy"}` + `decoding` + `fetchPriority`.
-- ⚠️ Style4 (`ProductCardStyle4.tsx` line 91): hardcoded `loading="lazy"` — even first 4 LCP cards lazy-load. Hurts LCP on menu-style storefronts.
-- ⚠️ V19/V20 cards: have `loading={priority?...}` but missing `decoding` + `fetchPriority`.
+Storefront list views only: `/shop` and `/category/:slug`. PDP, cart, checkout untouched.
 
-### 4. 🟡 Best Sellers page — no pagination
-- `StorefrontBestSellers.tsx` loads full list. Confirm and add 20/page infinite scroll matching Shop pattern.
+## Changes
 
-### 5. Already correctly done (no action)
-- Shop/Category infinite scroll with IntersectionObserver — ✅
-- `priority={index < 4}` on first 4 cards — ✅
-- Lazy-imported VariantPickerDialog — ✅
-- `useVariantCount` per card (1 small query each, batched by React Query) — acceptable
-- Worker /api/products edge cache (60s CF + KV) — ✅
+1. **DB — `get_shop_page` RPC** (new)
+   - `get_shop_page(_store_slug text, _limit int default 50) returns json`
+   - Returns `{ store_id, products: [...], total }` using the same column set and ordering as `_fetchProductsFromDb` (display_order, is_best_selling, created_at, id).
+   - `STABLE SECURITY DEFINER`, `search_path = public`. Single function, no overloads — follow DROP-FIRST rule from the overload-safety memory.
 
-## Changes to ship
+2. **Worker — `/api/shop` endpoint + inline injection**
+   - Mirror `handleCategoryApi`: KV `shop:v{ver}:{domain}:l50`, Cache API 5 min, KV 24 h, version-keyed under existing `pv:{domain}` counter (so `/api/purge-store` invalidates it too).
+   - Inject `window.__SHOP_INLINE__` into the SSR HTML when `pathname === "/shop"` (analogous to `__CATEGORY_INLINE__`). Resolve from cache/KV only — no DB hit in the critical render path.
+   - **Fix `/api/products` headers**: ensure every return path (`cache-api`, `kv`, `origin`, `origin-coalesced`, fallback) goes through `buildProductResponse` / sets `Content-Type: application/json`, `Cache-Control: public, max-age=300, s-maxage=86400, stale-while-revalidate=86400`, `Vary: Accept-Encoding`, and the `x-edge-source` header. The current production response is missing these — that's why CF won't cache it.
 
-### A. Remove orphaned Shop + Category prefetches in `src/App.tsx`
-Delete two prefetch blocks (~Shop block lines ~595–615, Category nested infinite prefetch ~565–585). They write to query keys nothing reads. Net effect: -1 wasted DB query per /shop and /category click; cleaner cache.
+3. **Client**
+   - `src/lib/storefrontEdgeApi.ts`: add `fetchShopEdge(limit=50)` → `GET /api/shop?limit=50`.
+   - `src/hooks/useInfiniteProducts.ts` (page 0, no filter, no sort branch only):
+     1. Reuse `window.__SHOP_INLINE__` if present.
+     2. Else `fetchShopEdge()`.
+     3. Else current `/api/products` path (unchanged).
+   - `src/pages/StorefrontShop.tsx`: no UI change. Hook handles the new path.
+   - Category: no change — already uses `fetchCategoryEdge` + `__CATEGORY_INLINE__`.
 
-### B. Fix `ProductCardStyle4.tsx` priority handling
-Change line 91 from hardcoded `loading="lazy"` to:
-```tsx
-loading={priority ? "eager" : "lazy"}
-decoding={priority ? "sync" : "async"}
-fetchPriority={priority ? "high" : "low"}
-```
-Hover image (line 96) stays lazy/low — correct.
+## Safety
 
-### C. Add `decoding` + `fetchPriority` to V19/V20 cards
-`V19ProductCard.tsx` and `V20ProductCard.tsx` — extend their existing `loading={priority?...}` attribute with `decoding` and `fetchPriority` matching Style1/2/3 pattern.
+- Additive only. New RPC + new Worker route. Existing `/api/products` keeps working; we only fix its response headers.
+- Page 0 inline reuse already exists for the home; this extends the same pattern to `/shop`. No new schema columns, no RLS changes.
+- Worker uses the same `pv:{domain}` version key, so existing purge flow invalidates Shop automatically.
+- Preview/localhost paths fall back to direct Supabase via existing `isProductionHost` guard.
+- Manual Worker deploy required (per Core rule): I'll update `docs/cloudflare-worker-current.js`; user deploys.
 
-### D. Paginate Best Sellers (`StorefrontBestSellers.tsx`)
-- Switch from `useStorefrontProducts` filter to `useInfiniteProducts` with `category` filter, or a new infinite query with `.eq("is_best_selling", true).range(...)`.
-- PAGE_SIZE 20 (acceptable here because it's a direct Supabase call, not the Worker /api/products path).
-- Reuse `ProductCardSkeleton` + IntersectionObserver pattern from `StorefrontShop.tsx`.
+## Expected impact
 
-### Excluded from this batch (require coordinated changes)
-- **Dropping PAGE_SIZE to 20** — needs Worker redeploy in lockstep. Will queue for next session if you want.
-- **Routing Shop first page through `get_storefront_data` RPC** (item F from prior analysis) — bigger architecture move, separate session.
-- **Variant counts batching** — micro-optimization, low impact.
+- Shop first-page Supabase egress: ~90% reduction (KV 24 h hit rate, same as Category today).
+- Worker requests for Shop: ~25% reduction from `__SHOP_INLINE__` reuse on `/shop` direct loads.
+- `/api/products` becomes CF-edge-cacheable for the long-tail filtered combos.
 
-## Risk
+## Out of scope
 
-- A: Zero. Removing dead code that never reads back what it writes.
-- B/C: Zero. Pure attribute additions on `<img>`; falls back to native browser defaults if anything off.
-- D: Low. New query path mirrors proven Shop pattern; behind existing `/best-sellers` route only.
-
-## Files touched
-- `src/App.tsx` (delete 2 prefetch blocks)
-- `src/components/storefront/ProductCardStyle4.tsx`
-- `src/components/storefront/v19/V19ProductCard.tsx`
-- `src/components/storefront/v20/V20ProductCard.tsx`
-- `src/pages/StorefrontBestSellers.tsx`
-
-No Worker change, no DB migration, no RLS change.
+- Changing `PAGE_SIZE` (stays 50 to match Worker key).
+- Server-side pagination for Abandoned Carts, Best Seller, etc.
+- `product_images` denormalization (deferred — high blast radius).
