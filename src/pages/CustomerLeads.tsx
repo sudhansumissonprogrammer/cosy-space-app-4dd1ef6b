@@ -377,6 +377,7 @@ export default function CustomerLeads() {
                   </TableBody>
                 </Table>
               </div>
+              <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
             </>
           ) : (
             <div className="flex flex-col items-center justify-center gap-3 py-12">
