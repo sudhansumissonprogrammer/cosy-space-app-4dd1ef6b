@@ -104,7 +104,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.35.0-stream-cold-html";
+const WORKER_VERSION = "8.36.0-data-before-modules";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
