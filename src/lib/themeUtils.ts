@@ -11,8 +11,12 @@ const FONT_READY_TIMEOUT_MS = 3000;
 // Only fonts that are actually bundled in the app should be treated as self-hosted.
 const SELF_HOSTED_FONTS = new Set([
   DEFAULT_BODY_FONT,
+  DEFAULT_HEADING_FONT,
+  "Poppins",
+  "Outfit",
   "Plus Jakarta Sans",
   "Montserrat Alternates",
+  "Mulish",
 ]);
 
 function normalizeGoogleFontName(font: string): string {

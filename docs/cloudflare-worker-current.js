@@ -3266,7 +3266,10 @@ async function serveStreamedHtml(
         const varName = pdpCategoryInline.kind === "product" ? "__PRODUCT_INLINE__" : "__CATEGORY_INLINE__";
         pdpCatHint = `window.${varName}=${safeJson};`;
       }
-      const slugScript = `<script>window.__STORE_SLUG__="${escapeHtml(slug)}";${themeHint}${productsHint}${pdpCatHint}</script>`;
+      // Set __SF_WORKER__ in the first injected script, before index.html's
+      // bootstrap script executes. That lets the app skip its preview-only
+      // shell/products/font fallback fetches on real Worker-served storefronts.
+      const slugScript = `<script>window.__SF_WORKER__=true;window.__STORE_SLUG__="${escapeHtml(slug)}";${themeHint}${productsHint}${pdpCatHint}</script>`;
 
       const productImagePreloads = inlineProducts
         ? _buildProductImagePreloads(inlineProducts, 6)
