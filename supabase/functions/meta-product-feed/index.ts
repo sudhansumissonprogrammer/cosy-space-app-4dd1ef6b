@@ -92,7 +92,6 @@ Deno.serve(async (req) => {
         qty === null || qty === undefined || Number(qty) > 0
           ? "in stock"
           : "out of stock";
-      const currency = store.currency || "INR";
       const regularPrice = `${Number(p.price || 0).toFixed(2)} ${currency}`;
       const salePrice = p.sale_price && Number(p.sale_price) > 0 && Number(p.sale_price) < Number(p.price || 0)
         ? `${Number(p.sale_price).toFixed(2)} ${currency}`
