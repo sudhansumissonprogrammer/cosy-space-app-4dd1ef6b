@@ -185,6 +185,7 @@ export default function StorefrontShell({
   // Persist ?fbclid → _fbc cookie + expose store id globally for tracking helpers
   useEffect(() => {
     ensureFbcPersisted();
+    getOrCreateSfVid(); // stable anon external_id for Pixel + CAPI
     if (store?.id) (window as any).__SF_STORE_ID__ = store.id;
   }, [store?.id]);
 
