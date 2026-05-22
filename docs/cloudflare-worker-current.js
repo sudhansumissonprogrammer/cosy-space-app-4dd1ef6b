@@ -1058,14 +1058,13 @@ function buildThemeCssFromConfig(tc) {
       }
     }
 
-    // v8.38 — Google Fonts CSS uses display=swap (was :optional) so theme
-    // headings render in the chosen font on first visit. Same-origin trick
-    // can come later; swap is the right default for brand fonts.
+    // v8.39 — Google Fonts CSS uses display=block so non-self-hosted selected
+    // heading fonts do not flash as fallback on cold visits.
     if (remoteFonts.length > 0) {
       const families = remoteFonts
         .map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600;700`)
         .join("&");
-      const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+      const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=block`;
       css += `<link rel="preconnect" href="https://fonts.googleapis.com" />\n`;
       css += `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n`;
       css += `<link rel="preload" as="style" href="${googleFontsHref}" fetchpriority="high" data-sf-font="1" />\n`;
