@@ -56,14 +56,9 @@ export default function StorefrontSearchBar({
       ]).then(([pixelMod, capiMod, gaMod]) => {
         const eid = pixelMod.generateEventId();
         pixelMod.fbPixelTrack("Search", { search_string: q }, eid);
-        if (storeId) {
-          capiMod.fireMetaCAPI({
-            storeId,
-            eventName: "Search",
-            eventId: eid,
-            customData: { search_string: q } as any,
-          });
-        }
+        // CAPI skipped for Search — low signal value unless running search ads, ~5% edge-call reduction.
+        // Pixel browser event still fires; merchants who need server Search can re-enable later.
+        void capiMod; void storeId;
         gaMod.ga4Track("search", { search_term: q });
       }).catch(() => {});
     }, 900);

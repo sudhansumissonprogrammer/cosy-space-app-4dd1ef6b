@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Gift, X } from "lucide-react";
 import { toast } from "sonner";
-import { fireMetaCAPI } from "@/lib/metaCapi";
+
 
 interface ExitIntentPopupProps {
   storeId: string;
@@ -78,18 +78,8 @@ export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupP
       setCopied(true);
       toast.success("Coupon code copied!");
       
-      // Fire as a custom event — NOT the standard "Lead" event.
-      // Standard Lead expects buyer-intent with PII (form submit). Firing it for
-      // a clipboard copy with no email/phone inflates Lead count with low-quality
-      // conversions and degrades EMQ score → Meta scrutiny.
-      fireMetaCAPI({
-        storeId,
-        eventName: "CouponCopied",
-        customData: {
-          content_type: "coupon",
-          content_ids: [coupon.id],
-        },
-      });
+      // CouponCopied CAPI removed — custom event with no PII has zero Meta algo value
+      // and just burns edge invocations. Pixel browser tracking is enough for funnel analytics.
 
       setTimeout(() => setShow(false), 1500);
     } catch {
