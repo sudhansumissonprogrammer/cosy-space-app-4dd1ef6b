@@ -8,7 +8,7 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
-import { ensureFbcPersisted } from "@/lib/metaEnrichment";
+import { ensureFbcPersisted, getOrCreateSfVid } from "@/lib/metaEnrichment";
 import { useGA4 } from "@/hooks/useGA4";
 
 import { buildThemeStyle, getResolvedThemeFonts, loadGoogleFonts } from "@/lib/themeUtils";
@@ -185,6 +185,7 @@ export default function StorefrontShell({
   // Persist ?fbclid → _fbc cookie + expose store id globally for tracking helpers
   useEffect(() => {
     ensureFbcPersisted();
+    getOrCreateSfVid(); // stable anon external_id for Pixel + CAPI
     if (store?.id) (window as any).__SF_STORE_ID__ = store.id;
   }, [store?.id]);
 

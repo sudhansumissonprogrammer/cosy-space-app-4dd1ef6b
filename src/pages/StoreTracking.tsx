@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity } from "lucide-react";
+import MetaCapiSetupWizard from "@/components/dashboard/MetaCapiSetupWizard";
 
 export default function StoreTracking() {
   const { storeId, storeSlug } = useStoreSlugParam();
@@ -253,47 +254,13 @@ export default function StoreTracking() {
           </CardContent>
         </Card>
 
-        {/* Server-Side CAPI */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Server className="h-5 w-5 text-emerald-600" />
-              Conversions API (CAPI)
-            </CardTitle>
-            <CardDescription>Server-side tracking for better ad performance — bypasses ad blockers</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="meta-token">Access Token</Label>
-              <Input
-                id="meta-token"
-                type="password"
-                placeholder="Enter your Meta CAPI access token"
-                value={metaAccessToken}
-                onChange={(e) => setMetaAccessToken(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Get this from Meta Events Manager → Settings → Conversions API → Generate Access Token.
-              </p>
-            </div>
-            {facebookPixelId && metaAccessToken && (
-              <div className="flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-3">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                  Dual tracking active — client-side pixel + server-side CAPI with deduplication
-                </p>
-              </div>
-            )}
-            {facebookPixelId && !metaAccessToken && (
-              <div className="flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3">
-                <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-                <p className="text-xs text-amber-700 dark:text-amber-400">
-                  Add CAPI token for 20-30% better ad match rates (recommended by Meta)
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Server-Side CAPI — Guided Setup Wizard */}
+        <MetaCapiSetupWizard
+          pixelId={facebookPixelId}
+          accessToken={metaAccessToken}
+          onAccessTokenChange={setMetaAccessToken}
+        />
+
 
         {/* Product Feed */}
         {store?.slug && (

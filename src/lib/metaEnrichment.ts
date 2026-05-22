@@ -14,6 +14,9 @@
 
 const FBC_COOKIE = "_fbc";
 const FBC_TTL_DAYS = 90; // Meta's recommended lifetime
+const SF_VID_COOKIE = "sf_vid";
+const SF_VID_TTL_DAYS = 730; // 2y — Meta external_id should be stable
+const SF_VID_LS_KEY = "__sf_vid__";
 
 function setCookie(name: string, value: string, days: number) {
   if (typeof document === "undefined") return;
@@ -58,6 +61,37 @@ export function ensureFbcPersisted(): void {
 }
 
 /**
+ * Get or create an always-on first-party visitor ID for Pixel + CAPI
+ * `external_id`. Persists in cookie (cross-tab) AND localStorage (cookie
+ * cleared fallback). Anonymous visitors get a stable ID → EMQ +1.5 pts.
+ *
+ * Safe on SSR (returns empty string) and on cookie-blocked browsers
+ * (falls back to localStorage; still stable across reloads).
+ */
+export function getOrCreateSfVid(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    const fromCookie = getCookie(SF_VID_COOKIE);
+    if (fromCookie) {
+      try { localStorage.setItem(SF_VID_LS_KEY, fromCookie); } catch {}
+      return fromCookie;
+    }
+    let id = "";
+    try { id = localStorage.getItem(SF_VID_LS_KEY) || ""; } catch {}
+    if (!id) {
+      id = (typeof crypto !== "undefined" && (crypto as any).randomUUID)
+        ? (crypto as any).randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+    }
+    setCookie(SF_VID_COOKIE, id, SF_VID_TTL_DAYS);
+    try { localStorage.setItem(SF_VID_LS_KEY, id); } catch {}
+    return id;
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Global user-data registry. fireMetaCAPI() reads this on every call.
  * StorefrontShell sets it when the storefront customer logs in / out.
  */
@@ -84,7 +118,10 @@ export function setCapiUser(user: CapiUser | null): void {
     delete window.__SF_CAPI_USER__;
     return;
   }
-  window.__SF_CAPI_USER__ = user;
+  // Always-on external_id: default to anon visitor cookie if caller didn't supply one.
+  const externalId = user.externalId || getOrCreateSfVid() || undefined;
+  const merged: CapiUser = { ...user, externalId };
+  window.__SF_CAPI_USER__ = merged;
 
   // Mirror to Pixel Advanced Matching for the pixel-only path.
   // Meta auto-hashes plaintext em/ph/external_id/fn/ln/ct/st/zp passed to fbq("init").
@@ -93,14 +130,14 @@ export function setCapiUser(user: CapiUser | null): void {
     const pixelId = (window as any).__SF_PIXEL_INITED__;
     if (!pixelId || typeof (window as any).fbq !== "function") return;
     const am: Record<string, string> = {};
-    if (user.email) am.em = user.email.trim().toLowerCase();
-    if (user.phone) am.ph = user.phone.replace(/\D/g, "");
-    if (user.externalId) am.external_id = user.externalId;
-    if (user.firstName) am.fn = user.firstName.trim().toLowerCase();
-    if (user.lastName) am.ln = user.lastName.trim().toLowerCase();
-    if (user.city) am.ct = user.city.trim().toLowerCase().replace(/\s+/g, "");
-    if (user.state) am.st = user.state.trim().toLowerCase().replace(/\s+/g, "");
-    if (user.zipCode) am.zp = user.zipCode.trim().toLowerCase().replace(/\s+/g, "");
+    if (merged.email) am.em = merged.email.trim().toLowerCase();
+    if (merged.phone) am.ph = merged.phone.replace(/\D/g, "");
+    if (merged.externalId) am.external_id = merged.externalId;
+    if (merged.firstName) am.fn = merged.firstName.trim().toLowerCase();
+    if (merged.lastName) am.ln = merged.lastName.trim().toLowerCase();
+    if (merged.city) am.ct = merged.city.trim().toLowerCase().replace(/\s+/g, "");
+    if (merged.state) am.st = merged.state.trim().toLowerCase().replace(/\s+/g, "");
+    if (merged.zipCode) am.zp = merged.zipCode.trim().toLowerCase().replace(/\s+/g, "");
     if (Object.keys(am).length > 0) {
       (window as any).fbq("init", pixelId, am);
     }
