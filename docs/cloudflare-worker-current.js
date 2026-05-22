@@ -97,7 +97,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.31.0-seo-edge-cache";
+const WORKER_VERSION = "8.32.0-fingerprint-strip";
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -688,7 +688,6 @@ async function mirrorToCfCache(ctx, request, response, slug = null, env = null) 
 
 function addDiagnosticHeaders(response, { slug, cacheStatus, dataSource }) {
   const res = new Response(response.body, response);
-  res.headers.set("X-Worker-Version", WORKER_VERSION);
   if (slug) res.headers.set("X-Store-Slug", slug);
   res.headers.set("X-Cache-Status", cacheStatus);
   // v8.26.0: ONLY overwrite cf-cache-status when we know the answer is a HIT
@@ -710,7 +709,6 @@ function addCorsHeaders(response, source) {
   res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.headers.set("Access-Control-Allow-Headers", "Content-Type");
   res.headers.set("X-Products-Source", source || "unknown");
-  res.headers.set("X-Worker-Version", WORKER_VERSION);
   return res;
 }
 
@@ -991,10 +989,7 @@ function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname, inlinePro
 
   // Preconnect to Supabase storage so image TLS/TCP is already warm by the
   // time the preload scanner starts the actual image fetches.
-  const preconnects =
-    `<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />` +
-    `<link rel="dns-prefetch" href="${SUPABASE_URL}" />` +
-    `<link rel="preconnect" href="https://dqepeywgftbpxeeqfuwt.supabase.co/storage" crossorigin />`;
+  const preconnects = "";  // v8.32: removed shared-infra preconnect leak
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -1056,9 +1051,7 @@ function _buildPrebuiltHead(html) {
   if (_memPrebuiltHead) return _memPrebuiltHead;
 
   let head = "";
-  head += `<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />`;
-  head += `<link rel="dns-prefetch" href="${SUPABASE_URL}" />`;
-  head += `<link rel="preconnect" href="https://dqepeywgftbpxeeqfuwt.supabase.co/storage" crossorigin />`;
+  // v8.32: removed shared-infra preconnect leak (was leaking same Supabase project ID across 100 stores)
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
   if (cssMatch) {
@@ -2644,7 +2637,6 @@ async function proxyToOriginCached(request, ctx) {
   if (cached) {
     const hit = new Response(request.method === "HEAD" ? null : cached.body, cached);
     hit.headers.set("X-Static-Asset-Cache", "HIT");
-    hit.headers.set("X-Worker-Version", WORKER_VERSION);
     return hit;
   }
 
@@ -2935,9 +2927,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
     injection += `window.__STOREFRONT_DATA__=${jsonStr};`;
   }
   injection += `</script>\n`;
-  injection += `<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />\n`;
-  injection += `<link rel="dns-prefetch" href="${SUPABASE_URL}" />\n`;
-  injection += `<link rel="preconnect" href="https://dqepeywgftbpxeeqfuwt.supabase.co/storage" crossorigin />\n`;
+  // v8.32: removed shared-infra preconnect leak
 
   let inlineThemeCss = "";
   let bgColor = "#ffffff";
@@ -5055,7 +5045,6 @@ export default {
           const hit = new Response(cached.body, cached);
           hit.headers.set("X-Edge-Cache", "HIT-EARLY");
           hit.headers.set("cf-cache-status", "HIT");
-          hit.headers.set("X-Worker-Version", WORKER_VERSION);
           if (hitKey) hit.headers.set("X-Edge-Key", hitKey);
           return hit;
           }
@@ -5353,7 +5342,6 @@ export default {
             headers: {
               ETag: cachedEtag,
               "Cache-Control": earlyHit.headers.get("Cache-Control") || "public, max-age=3600",
-              "X-Worker-Version": WORKER_VERSION,
               "X-Cache-Status": "HIT-304",
               "X-Store-Slug": cachedSlug,
             },
@@ -5422,7 +5410,6 @@ export default {
       let fontHit = await fontCache.match(fontCacheKey);
       if (fontHit) {
         const h = new Headers(fontHit.headers);
-        h.set("X-Worker-Version", WORKER_VERSION);
         h.set("X-Font-Cache", "HIT");
         return new Response(fontHit.body, { status: fontHit.status, headers: h });
       }
@@ -5431,7 +5418,6 @@ export default {
         const h = new Headers(fontResp.headers);
         h.set("Cache-Control", "public, max-age=31536000, immutable");
         h.set("Access-Control-Allow-Origin", "*");
-        h.set("X-Worker-Version", WORKER_VERSION);
         h.set("X-Font-Cache", "MISS");
         const cached = new Response(fontResp.body, { status: 200, headers: h });
         ctx.waitUntil(fontCache.put(fontCacheKey, cached.clone()));
@@ -5796,7 +5782,6 @@ export default {
           setNoStoreHtmlHeaders(headers);
           headers.set("X-Store-Slug", slug);
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
-          headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
           const coldResponse = new Response(enrichedHtml, { status: 200, headers });
           storeInEdgeCache(ctx, hostname, slug, coldResponse.clone(), request, env);
@@ -5815,7 +5800,6 @@ export default {
           headers.set("Cache-Control", "no-store");
           headers.set("X-Store-Slug", slug);
           headers.set("X-Data-Source", "cold-shell-only");
-          headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
           // v7.6.0 Fix A: warm call removed — cold-shell-only path already
           return new Response(html, { status: 200, headers });
@@ -5970,7 +5954,6 @@ export default {
           setNoStoreHtmlHeaders(headers);
           headers.set("X-Store-Slug", resolvedSlugCD);
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
-          headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
           const coldResponse = new Response(enrichedHtml, { status: 200, headers });
           storeInEdgeCache(ctx, hostname, resolvedSlugCD, coldResponse.clone(), request, env);
@@ -5988,7 +5971,6 @@ export default {
           headers.set("Cache-Control", "no-store");
           headers.set("X-Store-Slug", resolvedSlugCD);
           headers.set("X-Data-Source", "cold-shell-only");
-          headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
           // v7.6.0 Fix A: warm call removed — cold-shell-only path
           return new Response(html, { status: 200, headers });
@@ -6098,7 +6080,6 @@ export default {
           headers: {
             "Content-Type": "text/html; charset=utf-8",
             "Cache-Control": "public, max-age=3600",
-            "X-Worker-Version": WORKER_VERSION,
             ...SECURITY_HEADERS,
           },
         },
