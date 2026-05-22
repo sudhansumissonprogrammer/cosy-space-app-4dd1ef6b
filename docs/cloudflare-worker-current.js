@@ -6502,5 +6502,4 @@ async function _handleScheduled(event, env, ctx) {
     } catch (err) {
       console.log(`[keepalive] failed: ${err?.message || err}`);
     }
-  },
-};
+}
