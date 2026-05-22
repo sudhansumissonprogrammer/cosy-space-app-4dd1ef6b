@@ -211,8 +211,9 @@ export default function MediaLibrary() {
           </CardContent>
         </Card>
       ) : (
+        <>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 sm:gap-3">
-          {filteredMedia.map((item) => {
+          {pagedMedia.map((item) => {
             const isSelected = selected.has(item.id);
             const isCopied = copiedId === item.id;
             return (
@@ -253,6 +254,8 @@ export default function MediaLibrary() {
             );
           })}
         </div>
+        <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
+        </>
       )}
 
       {/* Bulk delete dialog */}
