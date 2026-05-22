@@ -140,7 +140,8 @@ export function fireMetaCAPI(params: CAPIEventParams) {
   const u = getCapiUser();
   const userEmail = params.userEmail ?? u.email;
   const userPhone = params.userPhone ?? u.phone;
-  const externalId = params.externalId ?? u.externalId;
+  // Always-on external_id: explicit > registry > anon visitor cookie.
+  const externalId = params.externalId ?? u.externalId ?? getOrCreateSfVid() ?? undefined;
   const firstName = params.firstName ?? u.firstName;
   const lastName = params.lastName ?? u.lastName;
   const city = params.city ?? u.city;
