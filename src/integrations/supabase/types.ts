@@ -2998,6 +2998,7 @@ export type Database = {
         Args: { _limit?: number; _product_id: string }
         Returns: string[]
       }
+      get_dashboard_stats: { Args: { _store_id: string }; Returns: Json }
       get_own_cashfree_secret: { Args: { _store_id: string }; Returns: string }
       get_own_domain_token: { Args: { _store_id: string }; Returns: string }
       get_own_payment_secret: { Args: { _store_id: string }; Returns: string }
