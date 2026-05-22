@@ -89,7 +89,7 @@ export default function StoreOrders() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
 
-  const { data: store } = useStoreData(storeId);
+  const { data: store, isLoading: storeLoading } = useStoreData(storeId);
 
   // Count query for server-side pagination
   const { data: orderCount } = useQuery({
