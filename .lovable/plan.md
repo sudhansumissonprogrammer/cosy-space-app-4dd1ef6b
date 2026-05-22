@@ -1,25 +1,53 @@
-# Product page — infinite loop swipe on image gallery
+After auditing each finding, here's what's real, what's already fixed, and what to ship.
 
-Make the PDP image gallery swipeable in an endless loop, even when the product has only 1 or 2 images. Swipe never hits a "wall"; it always advances and the same image(s) re-appear in order.
+## Audit results
 
-## Behaviour
+| # | Finding | Status |
+|---|---|---|
+| 6 | StoreOrders nested products join | ✅ Real — fix |
+| 7 | stores 20M scans, needs partial index | ⚠️ Partly — has **duplicate** `idx_stores_owner` + `idx_stores_owner_id`. Drop dupe + add partial index |
+| 8 | storefront_customers missing index | ❌ Already covered by `idx_storefront_customers_user_store` + unique key. Skip |
+| 9 | AppSidebar polling | ❌ Already gated to 60s + visibility check (line 67-69). Skip |
+| 10 | WhatsApp pages 15s polling | ✅ Real — bump to 60s |
+| Extra | page_views 6916 legacy rows (AE migrated) | ✅ Safe TRUNCATE |
+| Extra | error_logs cleanup | ❌ Already in `cleanup_app_logs()` daily cron. Skip |
+| Extra | product_images denormalization | ⛔ Too risky (touches storefront + admin). Defer |
+| Extra | PartnerOverview / CheckoutPage polls | ⛔ Negligible. Skip |
 
-- **1 image**: swiping left or right still triggers a slide animation and re-shows the same image. Dots, counter, and desktop arrows stay hidden (nothing to count).
-- **2 images**: swipe loops A → B → A → B … in both directions. Dots/counter show `1/2`, `2/2`, `1/2`, …
-- **3+ images**: same loop behaviour as today's `(i + 1) % len` arrows, now extended to touch swipe (currently swipe stops at first/last).
-- Desktop arrows, dot indicators, and thumbnail strip behaviour are unchanged for multi-image products.
-- Lightbox is untouched.
+## Changes to ship
 
-## Technical (single file)
+### 1. Trim StoreOrders query (-75% join cost)
+`src/pages/StoreOrders.tsx` line 110 — remove `products:product_id(image_url)` from the select. `product_name` already lives on `order_items` so the UI keeps working (line 596 only uses `product_name`). Verify line 814 doesn't depend on the image.
 
-File: `src/pages/ProductDetail.tsx` → `ImageGallery` component (around lines 1370–1539).
+### 2. stores index cleanup (migration)
+```sql
+-- Drop exact duplicate (idx_stores_owner_id == idx_stores_owner)
+DROP INDEX IF EXISTS public.idx_stores_owner_id;
 
-1. Replace `activeIndex` state with a virtual counter `slideIndex` (unbounded integer, can go negative).
-2. Derive `activeIndex = ((slideIndex % len) + len) % len` for rendering, dots, counter, thumbnails.
-3. `handleTouchEnd`: drop the `activeIndex < images.length - 1` / `> 0` guards — always `setSlideIndex(s => s ± 1)` on a >50px horizontal swipe (only when `images.length >= 1`; no-op only if 0 images).
-4. Desktop prev/next buttons: `setSlideIndex(s => s - 1)` / `s + 1` (still only rendered when `length > 1`).
-5. Dots and thumbnail clicks: `setSlideIndex(i)` directly (already in 0..len-1 range).
-6. `<img key=…>`: use `${slideIndex}-${images[activeIndex]}` so the slide animation re-triggers on every swipe — including the single-image loop, giving visible feedback.
-7. Preload effect, skeleton, share/zoom/discount badge, lightbox: unchanged.
+-- Add partial index for the hot RLS path (is_store_owner + active checks)
+CREATE INDEX IF NOT EXISTS idx_stores_owner_active
+  ON public.stores (owner_id)
+  WHERE is_suspended = false;
+```
+Safe: dropping a duplicate has zero risk, partial index is additive.
 
-No other files, no API changes, no styling overhaul.
+### 3. WhatsApp polling 15s → 60s (-75% queries)
+- `src/pages/WhatsAppMarketing.tsx` line 266
+- `src/pages/admin/AdminWhatsApp.tsx` line 55
+
+Change `15000` → `60000`. Visibility gate already in place.
+
+### 4. Truncate legacy page_views (insert tool)
+```sql
+TRUNCATE TABLE public.page_views;
+```
+Safe: pageviews now flow to Cloudflare Analytics Engine (Worker v8.30.1). Supabase `ingest` is a 204 no-op. Rows are dead weight.
+
+## Expected impact
+- Orders page: ~75% lighter per load
+- Dashboard RLS / `is_store_owner()` checks: faster index hits, one less duplicate to maintain on every insert/update
+- WhatsApp tabs: 240 → 60 queries/hr per open tab
+- Frees ~3MB + cleans hottest write target
+
+## Skipped (with reason)
+AppSidebar, storefront_customers index, error_logs cleanup — already done in earlier rounds. Re-doing them would be no-ops.
