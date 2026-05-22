@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity } from "lucide-react";
+import MetaCapiSetupWizard from "@/components/dashboard/MetaCapiSetupWizard";
 
 export default function StoreTracking() {
   const { storeId, storeSlug } = useStoreSlugParam();
