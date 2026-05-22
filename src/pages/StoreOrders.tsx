@@ -96,23 +96,8 @@ export default function StoreOrders() {
   const store = fetchedStore ?? dashboardStore.store ?? slugStore.store;
   const storeLoading = dashboardStore.isLoading || fetchedStoreLoading;
 
-  // Count query for server-side pagination
-  const { data: orderCount } = useQuery({
-    queryKey: ["website-orders-count", storeId, statusFilter],
-    staleTime: 2 * 60 * 1000,
-    queryFn: async () => {
-      let query = supabase
-        .from("orders")
-        .select("id", { count: "exact", head: true })
-        .eq("store_id", storeId!);
-      if (statusFilter) query = query.eq("status", statusFilter);
-      const { count, error } = await query;
-      if (error) throw error;
-      return count ?? 0;
-    },
-    enabled: !!storeId,
-  });
-
+  // Server-pagination state (count comes from the same query as the list — no extra round-trip)
+  const [orderCount, setOrderCount] = useState<number>(0);
   const pagination = usePagination(orderCount);
 
   const { data: allOrders, isLoading } = useQuery({
@@ -121,17 +106,22 @@ export default function StoreOrders() {
     queryFn: async () => {
       let query = supabase
         .from("orders")
-        .select("id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, payment_type, advance_paid, balance_due, order_items(id, product_name, quantity, unit_price, total, product_id, products:product_id(image_url))")
+        .select(
+          "id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, payment_type, advance_paid, balance_due, order_items(id, product_name, quantity, unit_price, total, product_id, products:product_id(image_url))",
+          { count: "exact" }
+        )
         .eq("store_id", storeId!)
         .order("created_at", { ascending: false })
         .range(pagination.from, pagination.to);
       if (statusFilter) query = query.eq("status", statusFilter);
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       if (error) throw error;
+      if (typeof count === "number") setOrderCount(count);
       return data as any[];
     },
     enabled: !!storeId,
   });
+
 
   const filteredOrders = useMemo(() => {
     if (!allOrders) return [];
