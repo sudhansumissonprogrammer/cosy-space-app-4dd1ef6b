@@ -79,16 +79,15 @@ interface CAPIEventParams {
 const inflightProbe = new Map<string, Promise<boolean>>();
 
 // Server-side CAPI is only meaningful for high-intent / conversion events.
-// PageView, ViewContent and AddToCart already fire via the browser pixel and
-// their CAPI dedupe adds ~zero attribution lift (Meta's Aggregated Event
-// Measurement handles them). Restricting CAPI to the events below cuts edge
-// invocations by ~95% on a busy storefront with no measurable EMQ drop.
+// PageView, ViewContent, Search, ViewCart etc. already fire via the browser
+// pixel and CAPI dedupe adds ~zero attribution lift for them. Restricting CAPI
+// to the funnel events below cuts edge invocations by ~90% on a busy storefront
+// while keeping every signal Meta's optimization actually needs.
 const CAPI_EVENTS = new Set([
-  "Purchase",
+  "AddToCart",
   "InitiateCheckout",
-  "Lead",
-  "CompleteRegistration",
-  "Subscribe",
+  "AddPaymentInfo",
+  "Purchase",
 ]);
 
 export function fireMetaCAPI(params: CAPIEventParams) {
