@@ -17,14 +17,17 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   const printRef = useRef<HTMLDivElement>(null);
   const [sending, setSending] = useState(false);
 
+  // Phase 3: prefer shell-bundled owner_email; only fall back to RPC for legacy shells.
+  const shellEmail = (store as any)?.owner_email as string | null | undefined;
   const { data: ownerEmail } = useQuery({
     queryKey: ["store-public-email", store?.id],
     queryFn: async () => {
       const { data } = await supabase.rpc("get_store_public_email", { _store_id: store.id });
       return (data as string) || "";
     },
-    enabled: !!store?.id,
+    enabled: !!store?.id && shellEmail === undefined,
     staleTime: 300000,
+    initialData: shellEmail === undefined ? undefined : (shellEmail || ""),
   });
 
   const items = order.order_items || [];
