@@ -3207,7 +3207,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
 
   let injectedHtml = html.replace(
     "<head>",
-    `<head>${injection}${ogMeta}${jsonLd}${inlineThemeCss}${productImagePreloads}${lcpPreload}${cssPreload}${modulePreloads}`,
+    `<head>${inlineThemeCss}${productImagePreloads}${lcpPreload}${cssPreload}${modulePreloads}${injection}${ogMeta}${jsonLd}`,
   );
   // Inject skeleton + invisible product preloader grid before #root.
   // The grid's <img> tags are read by the preload-scanner, queueing image
