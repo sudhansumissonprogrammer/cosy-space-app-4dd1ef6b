@@ -42,6 +42,7 @@ import FAB from "@/components/dashboard/FAB";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/dashboard/PullToRefreshIndicator";
 import { cleanImageUrl } from "@/lib/imageOptimize";
+import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 
 type SortOption = "title-asc" | "title-desc" | "date-new" | "date-old";
 type StatusFilter = "all" | "active" | "draft";
@@ -55,7 +56,10 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 ];
 
 export default function ProductsList() { // v2
-  const { storeId, storeSlug } = useStoreSlugParam();
+  const slugStore = useStoreSlugParam();
+  const dashboardStore = useDashboardStore();
+  const storeId = slugStore.storeId ?? dashboardStore.storeId;
+  const storeSlug = slugStore.storeSlug ?? dashboardStore.storeSlug;
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
@@ -117,7 +121,9 @@ export default function ProductsList() { // v2
     }
   }, []);
 
-  const { data: store, isLoading: storeLoading } = useStoreData(storeId);
+  const { data: fetchedStore, isLoading: fetchedStoreLoading } = useStoreData(storeId);
+  const store = fetchedStore ?? dashboardStore.store ?? slugStore.store;
+  const storeLoading = dashboardStore.isLoading || fetchedStoreLoading;
   const purgeStore = useStorePurge(storeId);
 
   const { data: limitInfo } = useQuery({
@@ -322,15 +328,6 @@ export default function ProductsList() { // v2
     setBulkStockChange("");
   };
 
-  if (!store && !isLoading && !storeLoading && storeId) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-12">
-        <p className="text-muted-foreground">Store not found</p>
-        <Button asChild variant="outline"><Link to="/dashboard/stores">Back to stores</Link></Button>
-      </div>
-    );
-  }
-
   const exportCSV = () => {
     if (!allProducts || allProducts.length === 0) return;
     const headers = ["name","price","sale_price","description","category","stock_quantity","sku","slug","is_active","currency","image_url"];
@@ -359,6 +356,15 @@ export default function ProductsList() { // v2
       await queryClient.invalidateQueries({ queryKey: ["products", storeId] });
     },
   });
+
+  if (!store && !isLoading && !storeLoading && !storeId && user) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-12">
+        <p className="text-muted-foreground">Store not found</p>
+        <Button asChild variant="outline"><Link to="/dashboard/stores">Back to stores</Link></Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
