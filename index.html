@@ -164,7 +164,7 @@
               if(sd&&sd.store&&sd.store.id){
                 var supaUrl='https://dqepeywgftbpxeeqfuwt.supabase.co';
                 var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk';
-                var prodUrl=supaUrl+'/rest/v1/products?store_id=eq.'+sd.store.id+'&is_active=eq.true&order=is_best_selling.desc,created_at.desc,id.asc&limit=14&select=id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id';
+                var prodUrl=supaUrl+'/rest/v1/products?store_id=eq.'+sd.store.id+'&is_active=eq.true&order=is_best_selling.desc,created_at.desc,id.asc&limit=20&select=id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id';
                 window.__PRODUCTS_PREFETCH__=fetch(prodUrl,{headers:{'apikey':key,'Authorization':'Bearer '+key}}).then(function(r){return r.json()}).catch(function(){return null});
               }
             }catch(e){}
