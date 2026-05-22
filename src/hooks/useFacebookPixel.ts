@@ -97,7 +97,14 @@ export function useFacebookPixel(pixelId: string | null | undefined) {
     // Init + PageView fire immediately via shim (queued until script loads)
     // — but skip if inline script already did it (avoids double PageView).
     if (!alreadyInited) {
-      window.fbq("init", pixelId);
+      // Always-on Advanced Matching: pass anon visitor ID as external_id
+      // so EMQ stays high even for logged-out browsers.
+      const sfVid = getOrCreateSfVid();
+      if (sfVid) {
+        window.fbq("init", pixelId, { external_id: sfVid });
+      } else {
+        window.fbq("init", pixelId);
+      }
       window.fbq("track", "PageView");
       (window as any).__SF_PIXEL_INITED__ = pixelId;
     }
