@@ -357,14 +357,11 @@ export default function ProductsList() { // v2
     },
   });
 
-  if (!store && !isLoading && !storeLoading && !storeId && user) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-12">
-        <p className="text-muted-foreground">Store not found</p>
-        <Button asChild variant="outline"><Link to="/dashboard/stores">Back to stores</Link></Button>
-      </div>
-    );
-  }
+  // Note: no early "Store not found" return here.
+  // Conditional returns after hooks caused React error #300 because the JSX
+  // below contains conditionally-mounted children (Sheets, Dialogs, BulkEditDialog)
+  // — toggling between early-return and full-render causes hook-count mismatches.
+  // If there is no store, the products query stays disabled and the empty state shows.
 
   return (
     <div className="space-y-3">
