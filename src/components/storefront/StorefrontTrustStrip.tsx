@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 
 interface StorefrontTrustStripProps {
   storeId: string;
@@ -13,9 +12,21 @@ interface StorefrontTrustStripProps {
  * Mobile: vertical stack (list). Desktop: horizontal 4-column grid.
  */
 export default function StorefrontTrustStrip({ storeId, currency = "INR" }: StorefrontTrustStripProps) {
+  // Phase 4: shipping_config is bundled into the storefront shell and inlined by
+  // the Worker as window.__STOREFRONT_DATA__.shipping_config. Use it as the
+  // seed so we never block render on a Supabase round-trip, and only fall
+  // back to a direct query when the shell is missing (legacy cached HTML).
+  const shellShipping =
+    typeof window !== "undefined" &&
+    (window as any).__STOREFRONT_DATA__?.store?.id === storeId
+      ? (window as any).__STOREFRONT_DATA__?.shipping_config ?? null
+      : undefined;
+
   const { data: shippingConfig } = useQuery({
     queryKey: ["storefront-shipping-config", storeId],
     queryFn: async () => {
+      // Lazy import keeps supabase-js out of the storefront-shell critical path.
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data } = await supabase
         .from("store_shipping_config")
         .select("free_shipping_above, flat_rate, is_active")
@@ -23,8 +34,11 @@ export default function StorefrontTrustStrip({ storeId, currency = "INR" }: Stor
         .maybeSingle();
       return data;
     },
+    enabled: !!storeId && shellShipping === undefined,
+    initialData: shellShipping === undefined ? undefined : shellShipping,
     staleTime: 10 * 60 * 1000,
   });
+
 
   const currencySymbol = currency === "USD" ? "$" : "₹";
   const threshold = shippingConfig?.free_shipping_above;
