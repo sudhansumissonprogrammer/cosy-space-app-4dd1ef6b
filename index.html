@@ -138,7 +138,7 @@
         /* If Worker already injected fonts (data-sf-font), skip — single source of truth.
            Otherwise (preview/localhost), fall back to dynamic Google Fonts injection. */
         function injectGFont(hf,bf){
-          if(document.querySelector('link[data-sf-font]'))return;
+          if(window.__SF_WORKER__||document.querySelector('link[data-sf-font],style[data-sf-font-local]'))return;
           var self=['Inter','Outfit','Alegreya SC','Poppins','Montserrat Alternates'];
           var families=[];
           [hf,bf].forEach(function(f){if(f&&self.indexOf(f)===-1){var seen=families.indexOf(f);if(seen===-1)families.push(f);}});
@@ -187,6 +187,7 @@
           }
         }
         if(!slug)return;
+        if(window.__SF_WORKER__)return;
 
         var supaUrl='https://dqepeywgftbpxeeqfuwt.supabase.co';
         var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk';
