@@ -688,7 +688,6 @@ async function mirrorToCfCache(ctx, request, response, slug = null, env = null) 
 
 function addDiagnosticHeaders(response, { slug, cacheStatus, dataSource }) {
   const res = new Response(response.body, response);
-  res.headers.set("X-Worker-Version", WORKER_VERSION);
   if (slug) res.headers.set("X-Store-Slug", slug);
   res.headers.set("X-Cache-Status", cacheStatus);
   // v8.26.0: ONLY overwrite cf-cache-status when we know the answer is a HIT
@@ -710,7 +709,6 @@ function addCorsHeaders(response, source) {
   res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.headers.set("Access-Control-Allow-Headers", "Content-Type");
   res.headers.set("X-Products-Source", source || "unknown");
-  res.headers.set("X-Worker-Version", WORKER_VERSION);
   return res;
 }
 
@@ -2644,7 +2642,6 @@ async function proxyToOriginCached(request, ctx) {
   if (cached) {
     const hit = new Response(request.method === "HEAD" ? null : cached.body, cached);
     hit.headers.set("X-Static-Asset-Cache", "HIT");
-    hit.headers.set("X-Worker-Version", WORKER_VERSION);
     return hit;
   }
 
@@ -5055,7 +5052,6 @@ export default {
           const hit = new Response(cached.body, cached);
           hit.headers.set("X-Edge-Cache", "HIT-EARLY");
           hit.headers.set("cf-cache-status", "HIT");
-          hit.headers.set("X-Worker-Version", WORKER_VERSION);
           if (hitKey) hit.headers.set("X-Edge-Key", hitKey);
           return hit;
           }
@@ -5353,7 +5349,6 @@ export default {
             headers: {
               ETag: cachedEtag,
               "Cache-Control": earlyHit.headers.get("Cache-Control") || "public, max-age=3600",
-              "X-Worker-Version": WORKER_VERSION,
               "X-Cache-Status": "HIT-304",
               "X-Store-Slug": cachedSlug,
             },
@@ -5796,7 +5791,6 @@ export default {
           setNoStoreHtmlHeaders(headers);
           headers.set("X-Store-Slug", slug);
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
-          headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
           const coldResponse = new Response(enrichedHtml, { status: 200, headers });
           storeInEdgeCache(ctx, hostname, slug, coldResponse.clone(), request, env);
@@ -5815,7 +5809,6 @@ export default {
           headers.set("Cache-Control", "no-store");
           headers.set("X-Store-Slug", slug);
           headers.set("X-Data-Source", "cold-shell-only");
-          headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
           // v7.6.0 Fix A: warm call removed — cold-shell-only path already
           return new Response(html, { status: 200, headers });
@@ -5970,7 +5963,6 @@ export default {
           setNoStoreHtmlHeaders(headers);
           headers.set("X-Store-Slug", resolvedSlugCD);
           headers.set("X-Data-Source", `cold-${prefetchResult.source}`);
-          headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
           const coldResponse = new Response(enrichedHtml, { status: 200, headers });
           storeInEdgeCache(ctx, hostname, resolvedSlugCD, coldResponse.clone(), request, env);
@@ -5988,7 +5980,6 @@ export default {
           headers.set("Cache-Control", "no-store");
           headers.set("X-Store-Slug", resolvedSlugCD);
           headers.set("X-Data-Source", "cold-shell-only");
-          headers.set("X-Worker-Version", WORKER_VERSION);
           for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
           // v7.6.0 Fix A: warm call removed — cold-shell-only path
           return new Response(html, { status: 200, headers });
@@ -6098,7 +6089,6 @@ export default {
           headers: {
             "Content-Type": "text/html; charset=utf-8",
             "Cache-Control": "public, max-age=3600",
-            "X-Worker-Version": WORKER_VERSION,
             ...SECURITY_HEADERS,
           },
         },
