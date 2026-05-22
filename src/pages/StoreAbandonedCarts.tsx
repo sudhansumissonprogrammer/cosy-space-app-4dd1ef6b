@@ -91,6 +91,18 @@ export default function StoreAbandonedCarts() {
     });
   }, [carts, dateFrom, dateTo, showRecovered]);
 
+  // Client-side pagination (20 per page)
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  useEffect(() => { setPage(1); }, [dateFrom, dateTo, showRecovered, activeQuick]);
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+  const pageItems = useMemo(
+    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filtered, page]
+  );
+
+
   // Only non-recovered carts with phone numbers are sendable
   const sendable = useMemo(
     () => filtered.filter((c: any) => !c.recovered && c.customer_phone),
