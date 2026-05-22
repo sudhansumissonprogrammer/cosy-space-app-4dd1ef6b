@@ -114,7 +114,7 @@ export default function StorefrontShell({
   useMetaTags({
     title: (store as any)?.meta_title || (store ? `${store.name} — ${notFoundLabel}` : undefined),
     description: (store as any)?.meta_description || store?.description || undefined,
-    ogImage: (store as any)?.og_image_url || store?.logo_url || undefined,
+    ogImage: (store as any)?.og_image_url || (store as any)?.banner_url || store?.logo_url || undefined,
     storeSlug: store?.slug,
     customDomain: (store as any)?.custom_domain,
   });
