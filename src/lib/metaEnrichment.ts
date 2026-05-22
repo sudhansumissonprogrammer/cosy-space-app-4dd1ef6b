@@ -57,6 +57,7 @@ export function ensureFbcPersisted(): void {
     setCookie(FBC_COOKIE, fbc, FBC_TTL_DAYS);
   } catch {
     /* noop */
+  }
 }
 
 /**
