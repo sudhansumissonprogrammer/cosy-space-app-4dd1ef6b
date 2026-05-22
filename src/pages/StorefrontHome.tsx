@@ -124,6 +124,7 @@ export default function StorefrontHome() {
     queryKey: ["storefront-home-more", store.id, sortBy],
     queryFn: async ({ pageParam = 0 }) => {
       const offset = apiOffset + pageParam * PAGE_SIZE;
+      const { supabase } = await import("@/integrations/supabase/client");
       let query = supabase
         .from("products")
         .select(PRODUCT_COLUMNS)
