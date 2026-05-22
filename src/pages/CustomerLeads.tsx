@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import PaginationControls from "@/components/PaginationControls";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,6 +83,15 @@ export default function CustomerLeads() {
   const visibleLeads = useMemo(
     () => enrichedLeads.filter((l) => !l.hasOrdered),
     [enrichedLeads]
+  );
+
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(visibleLeads.length / PAGE_SIZE));
+  useEffect(() => { if (page > totalPages) setPage(1); }, [totalPages, page]);
+  const pagedLeads = useMemo(
+    () => visibleLeads.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [visibleLeads, page]
   );
 
   // Fetch slugs for products referenced by leads — to build deep product links
