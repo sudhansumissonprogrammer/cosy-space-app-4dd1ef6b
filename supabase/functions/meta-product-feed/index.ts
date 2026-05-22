@@ -75,6 +75,7 @@ Deno.serve(async (req) => {
       "availability",
       "condition",
       "price",
+      "sale_price",
       "link",
       "image_link",
       "brand",
@@ -84,17 +85,26 @@ Deno.serve(async (req) => {
     const rows: string[] = [headers.join(",")];
 
     for (const p of products || []) {
+      // Use real column (stock_quantity). NULL = untracked → treat as in stock.
+      // Numeric 0 (or negative) = out of stock. Anything > 0 = in stock.
+      const qty = p.stock_quantity;
       const availability =
-        p.stock === null || p.stock === undefined || p.stock > 0
+        qty === null || qty === undefined || Number(qty) > 0
           ? "in stock"
           : "out of stock";
+      const currency = store.currency || "INR";
+      const regularPrice = `${Number(p.price || 0).toFixed(2)} ${currency}`;
+      const salePrice = p.sale_price && Number(p.sale_price) > 0 && Number(p.sale_price) < Number(p.price || 0)
+        ? `${Number(p.sale_price).toFixed(2)} ${currency}`
+        : "";
       rows.push([
         csvEscape(p.id),
         csvEscape(p.name),
         csvEscape((p.description || p.name || "").slice(0, 5000)),
         csvEscape(availability),
         csvEscape("new"),
-        csvEscape(`${Number(p.price || 0).toFixed(2)} ${currency}`),
+        csvEscape(regularPrice),
+        csvEscape(salePrice),
         csvEscape(`${baseUrl}/product/${p.slug || p.id}`),
         csvEscape(p.image_url || ""),
         csvEscape(store.name || ""),
