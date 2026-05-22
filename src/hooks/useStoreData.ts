@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdminView } from "@/contexts/AdminViewContext";
@@ -11,13 +11,18 @@ import { useIsAdminView } from "@/contexts/AdminViewContext";
 export function useStoreData(storeId?: string) {
   const { user } = useAuth();
   const isAdminView = useIsAdminView();
+  const queryClient = useQueryClient();
 
   return useQuery({
     queryKey: ["store", storeId],
     staleTime: 10 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
+    initialData: () => storeId ? queryClient.getQueryData(["store", storeId]) : undefined,
     queryFn: async () => {
       if (isAdminView) {
+        const cached = queryClient.getQueryData(["store", storeId!]);
+        if (cached) return cached as any;
+
         // Admin view: fetch via admin RPC using store id
         // First try to find the slug for this store id
         const { data: adminData, error: adminError } = await supabase.rpc(
@@ -36,9 +41,9 @@ export function useStoreData(storeId?: string) {
         .select("*")
         .eq("id", storeId!)
         .eq("owner_id", user!.id)
-        .single();
+        .maybeSingle();
       if (error) throw error;
-      return data;
+      return data ?? null;
     },
     enabled: !!storeId && (isAdminView || !!user),
   });
