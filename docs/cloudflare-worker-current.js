@@ -3307,7 +3307,7 @@ async function serveStreamedHtml(
       headChunk = headChunk.slice(0, headChunk.indexOf("</head>"));
       headChunk = headChunk.replace(
         "<head>",
-        `<head>${slugScript}${themeCss}${productImagePreloads}${perRouteSeoHead}${prebuiltHead || ""}`,
+        `<head>${themeCss}${productImagePreloads}${perRouteSeoHead}${prebuiltHead || ""}${slugScript}`,
       );
       headChunk += "</head>";
 
