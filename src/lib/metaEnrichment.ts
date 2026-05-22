@@ -57,6 +57,36 @@ export function ensureFbcPersisted(): void {
     setCookie(FBC_COOKIE, fbc, FBC_TTL_DAYS);
   } catch {
     /* noop */
+}
+
+/**
+ * Get or create an always-on first-party visitor ID for Pixel + CAPI
+ * `external_id`. Persists in cookie (cross-tab) AND localStorage (cookie
+ * cleared fallback). Anonymous visitors get a stable ID → EMQ +1.5 pts.
+ *
+ * Safe on SSR (returns empty string) and on cookie-blocked browsers
+ * (falls back to localStorage; still stable across reloads).
+ */
+export function getOrCreateSfVid(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    const fromCookie = getCookie(SF_VID_COOKIE);
+    if (fromCookie) {
+      try { localStorage.setItem(SF_VID_LS_KEY, fromCookie); } catch {}
+      return fromCookie;
+    }
+    let id = "";
+    try { id = localStorage.getItem(SF_VID_LS_KEY) || ""; } catch {}
+    if (!id) {
+      id = (typeof crypto !== "undefined" && (crypto as any).randomUUID)
+        ? (crypto as any).randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+    }
+    setCookie(SF_VID_COOKIE, id, SF_VID_TTL_DAYS);
+    try { localStorage.setItem(SF_VID_LS_KEY, id); } catch {}
+    return id;
+  } catch {
+    return "";
   }
 }
 
