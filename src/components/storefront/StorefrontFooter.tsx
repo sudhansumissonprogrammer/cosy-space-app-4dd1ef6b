@@ -5,7 +5,7 @@ import { MapPin, Clock, MessageCircle, Instagram, Facebook, Send, Mail } from "l
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import type { StoreData } from "@/layouts/StorefrontLayout";
-import { storefrontPath } from "@/lib/subdomain";
+import { storefrontPath, isCustomDomainHost } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -251,19 +251,21 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
             </p>
             <PaymentIcons />
           </div>
-          <p className="text-xs opacity-50 flex items-center justify-center gap-1">
-            Powered by{" "}
-            <a
-              href="https://shopbanao.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 underline hover:opacity-100 transition-opacity"
-              style={{ color: "inherit" }}
-            >
-              <img src={shopbanaoLogo} alt="ShopBanao" className="h-5 w-auto inline-block" loading="lazy" />
-              ShopBanao
-            </a>
-          </p>
+          {!isCustomDomainHost() && (
+            <p className="text-xs opacity-50 flex items-center justify-center gap-1">
+              Powered by{" "}
+              <a
+                href="https://shopbanao.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 underline hover:opacity-100 transition-opacity"
+                style={{ color: "inherit" }}
+              >
+                <img src={shopbanaoLogo} alt="ShopBanao" className="h-5 w-auto inline-block" loading="lazy" />
+                ShopBanao
+              </a>
+            </p>
+          )}
         </div>
       </div>
     </footer>
