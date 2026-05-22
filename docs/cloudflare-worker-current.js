@@ -989,10 +989,7 @@ function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname, inlinePro
 
   // Preconnect to Supabase storage so image TLS/TCP is already warm by the
   // time the preload scanner starts the actual image fetches.
-  const preconnects =
-    `<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />` +
-    `<link rel="dns-prefetch" href="${SUPABASE_URL}" />` +
-    `<link rel="preconnect" href="https://dqepeywgftbpxeeqfuwt.supabase.co/storage" crossorigin />`;
+  const preconnects = "";  // v8.32: removed shared-infra preconnect leak
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -1054,9 +1051,7 @@ function _buildPrebuiltHead(html) {
   if (_memPrebuiltHead) return _memPrebuiltHead;
 
   let head = "";
-  head += `<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />`;
-  head += `<link rel="dns-prefetch" href="${SUPABASE_URL}" />`;
-  head += `<link rel="preconnect" href="https://dqepeywgftbpxeeqfuwt.supabase.co/storage" crossorigin />`;
+  // v8.32: removed shared-infra preconnect leak (was leaking same Supabase project ID across 100 stores)
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
   if (cssMatch) {
@@ -2932,9 +2927,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
     injection += `window.__STOREFRONT_DATA__=${jsonStr};`;
   }
   injection += `</script>\n`;
-  injection += `<link rel="preconnect" href="${SUPABASE_URL}" crossorigin />\n`;
-  injection += `<link rel="dns-prefetch" href="${SUPABASE_URL}" />\n`;
-  injection += `<link rel="preconnect" href="https://dqepeywgftbpxeeqfuwt.supabase.co/storage" crossorigin />\n`;
+  // v8.32: removed shared-infra preconnect leak
 
   let inlineThemeCss = "";
   let bgColor = "#ffffff";
@@ -5417,7 +5410,6 @@ export default {
       let fontHit = await fontCache.match(fontCacheKey);
       if (fontHit) {
         const h = new Headers(fontHit.headers);
-        h.set("X-Worker-Version", WORKER_VERSION);
         h.set("X-Font-Cache", "HIT");
         return new Response(fontHit.body, { status: fontHit.status, headers: h });
       }
@@ -5426,7 +5418,6 @@ export default {
         const h = new Headers(fontResp.headers);
         h.set("Cache-Control", "public, max-age=31536000, immutable");
         h.set("Access-Control-Allow-Origin", "*");
-        h.set("X-Worker-Version", WORKER_VERSION);
         h.set("X-Font-Cache", "MISS");
         const cached = new Response(fontResp.body, { status: 200, headers: h });
         ctx.waitUntil(fontCache.put(fontCacheKey, cached.clone()));
