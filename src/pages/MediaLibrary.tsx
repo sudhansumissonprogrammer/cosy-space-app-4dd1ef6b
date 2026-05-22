@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
+import PaginationControls from "@/components/PaginationControls";
 import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStoreData } from "@/hooks/useStoreData";
@@ -63,6 +64,16 @@ export default function MediaLibrary() {
   const filteredMedia = search.trim()
     ? media?.filter((m) => m.file_name.toLowerCase().includes(search.toLowerCase()))
     : media;
+
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil((filteredMedia?.length || 0) / PAGE_SIZE));
+  useEffect(() => { setPage(1); }, [search]);
+  useEffect(() => { if (page > totalPages) setPage(1); }, [totalPages, page]);
+  const pagedMedia = useMemo(
+    () => (filteredMedia || []).slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredMedia, page]
+  );
 
   const handleUpload = async (files: FileList | null) => {
     if (!files || !storeId || !user) return;
