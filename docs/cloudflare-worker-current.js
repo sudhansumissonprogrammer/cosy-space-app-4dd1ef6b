@@ -1,5 +1,5 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.34.0 — PRODUCTS PAGE SIZE = 20
+ * SHOPBANAO PRODUCTION ROUTER v8.39.0 — BLOCK BRAND FONT FIRST PAINT
  *
  * Changes from v8.33.0:
  *  v8.34.0 — PRODUCTS_PAGE_SIZE bumped 50 → 20 to standardize storefront
@@ -104,7 +104,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.36.0-data-before-modules";
+const WORKER_VERSION = "8.39.0-block-brand-font";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
