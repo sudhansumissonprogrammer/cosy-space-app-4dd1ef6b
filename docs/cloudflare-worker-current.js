@@ -104,7 +104,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.34.0-products-page-size-20";
+const WORKER_VERSION = "8.35.0-stream-cold-html";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -5874,6 +5874,26 @@ async function _handleFetch(request, env, ctx) {
       // awaits the prefetch (already supported in StorefrontLayout.logic.ts),
       // and renders → ONE skeleton only, identical to the warm path.
       if (!_memShell) {
+        // v8.35.0 Phase 1: stream cold-path HTML head before awaiting Supabase RPC.
+        // Buffered cold path was the #1 FCP bottleneck (~1.9s TTFB measured on
+        // serdiyajewellers.shop) because Promise.all blocked the entire HTML on
+        // the slowest leg (~700ms RPC). Routing through fetchAndInjectSlug reuses
+        // the warm-path streaming pipeline: head flushes as soon as origin shell
+        // arrives (~150ms), body waits for RPC. Behind STREAM_HTML="1" so we can
+        // flip per-environment and roll back instantly by unsetting the env var.
+        if (env?.STREAM_HTML === "1") {
+          try {
+            const { response } = await fetchAndInjectSlug(
+              request, slug, ctx, env, hostname, url.pathname, requestStart,
+            );
+            if (response) {
+              ctx.waitUntil(recordPageView(env, request, undefined, url.pathname));
+              return addDiagnosticHeaders(response, { slug, cacheStatus: "MISS", dataSource: "stream-cold" });
+            }
+          } catch {
+            /* fall through to legacy buffered cold path on any failure */
+          }
+        }
         // v8.7.0 TTFB-cut: previous deadline of 1300ms blocked HTML flush
         // on cold-cache hits, producing ~2.2s real-world TTFB. The fallback
         // path immediately below (_buildPrefetchPromiseScript) injects a
@@ -6059,6 +6079,24 @@ async function _handleFetch(request, env, ctx) {
     // Always serve real React shell + injected data on cold start; never use
     // the document.write swap pattern that caused 2-3 skeleton flashes.
     if (!_memShell) {
+      // v8.35.0 Phase 1: same streaming-cold treatment for custom-domain cold path.
+      // Behind STREAM_HTML="1". Falls through to legacy buffered path on any error.
+      if (env?.STREAM_HTML === "1") {
+        const resolvedSlugStream = await resolveDomain(cleanDomain, env).catch(() => null);
+        if (resolvedSlugStream) {
+          try {
+            const { response } = await fetchAndInjectSlug(
+              request, resolvedSlugStream, ctx, env, hostname, url.pathname, requestStart,
+            );
+            if (response) {
+              ctx.waitUntil(recordPageView(env, request, undefined, url.pathname));
+              return addDiagnosticHeaders(response, { slug: resolvedSlugStream, cacheStatus: "MISS", dataSource: "stream-cold-cd" });
+            }
+          } catch {
+            /* fall through to legacy buffered cold path */
+          }
+        }
+      }
       const resolvedSlugCD = await resolveDomain(cleanDomain, env);
       if (resolvedSlugCD) {
         // v6.7.0: Same fix as subdomain path — eliminate self-call subrequest.
