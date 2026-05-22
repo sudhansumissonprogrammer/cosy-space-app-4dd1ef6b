@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 // supabase is dynamic-imported inside the preview/localhost fallback only
 // to keep the 171KB supabase chunk OUT of the storefront-shell static graph.
 
-const PAGE_SIZE = 14;
+const PAGE_SIZE = 20;
 
 /** Lightweight column list — avoids fetching heavy fields (product_images, product_variants) */
 const PRODUCT_COLUMNS =

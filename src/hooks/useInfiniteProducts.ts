@@ -2,11 +2,11 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Worker /api/products page size is 50 — match it so pagination aligns
- * with edge cache keys. Larger initial batch means most visitors never
- * trigger a second /api/products fetch (saves ~1.5k Worker req/day).
+ * Worker /api/products page size is 20 — must match PRODUCTS_PAGE_SIZE
+ * in docs/cloudflare-worker-current.js so offset arithmetic stays aligned
+ * with edge cache keys and inline-products hydration.
  */
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 
 const PRODUCT_COLUMNS =
   "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";

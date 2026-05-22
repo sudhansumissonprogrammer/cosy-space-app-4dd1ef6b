@@ -1,48 +1,64 @@
 ## Goal
+Make every storefront product grid load **20 products per page** (Shop, Category, Home, Best Sellers, V14, V16). Coordinate Cloudflare Worker so pagination offsets stay aligned.
 
-Push Shop/Category first-page reads through the Worker edge cache so cold loads stop hitting PostgREST. Today `/api/products` returns JSON but **without** the `s-maxage` / `cf-cache-status` / `x-edge-source` headers — Cloudflare's edge can't cache it, so every Shop visit runs the Worker + Supabase. Goal: lift cache hit rate from ~0% to ~90% on Shop, mirroring what Category already does.
+## Current state (audit)
 
-## Scope
+| Surface | File | Current | Target |
+|---|---|---|---|
+| Shop page | `src/hooks/useInfiniteProducts.ts` | **50** | 20 |
+| Category page | uses `useInfiniteProducts` | **50** | 20 |
+| Home grid (default + V14) | `src/hooks/useStorefrontProducts.ts` | **14** | 20 |
+| Home V16 grid | `src/pages/StorefrontHomeV16.tsx` (`BATCH_SIZE`) | **12** | 20 |
+| Best-seller carousel (home) | `src/hooks/useBestSellingProducts.ts` | **12** | 20 |
+| Best Sellers full page | `src/pages/StorefrontBestSellers.tsx` | **20** ✅ | — |
+| Worker `/api/products` | `docs/cloudflare-worker-current.js` (`PRODUCTS_PAGE_SIZE`) | **50** | 20 |
+| Worker inline `__PRODUCTS_INLINE__` | same file | first 50 | first 20 |
 
-Storefront list views only: `/shop` and `/category/:slug`. PDP, cart, checkout untouched.
+**Not changing** (intentional):
+- `ProductDetail.tsx` related-products `limit(50)` — discovery list, not paged.
+- `bot-render` `limit(50)` — one-shot SEO render for crawlers.
+- V19/V20 ProductDetail `limit(20)` — already 20.
+- Dashboard pages (Leads, Media, Best Seller mgmt, Carts) — already 20.
+
+## Why Worker must change in lockstep
+
+`useInfiniteProducts` requests page N from `/api/products?page=N`. The Worker computes `offset = page * PRODUCTS_PAGE_SIZE`. If client uses 20 but Worker uses 50, page 2 returns products 50–99 instead of 20–39 → duplicate/missing rows on Shop and Category.
+
+The Worker also inlines the first page of products into the storefront HTML (`window.__PRODUCTS_INLINE__`) and the Shop/Category hooks seed React Query with that inline slice. Inline size must equal the new page size so the next infinite-scroll fetch starts at the correct offset.
 
 ## Changes
 
-1. **DB — `get_shop_page` RPC** (new)
-   - `get_shop_page(_store_slug text, _limit int default 50) returns json`
-   - Returns `{ store_id, products: [...], total }` using the same column set and ordering as `_fetchProductsFromDb` (display_order, is_best_selling, created_at, id).
-   - `STABLE SECURITY DEFINER`, `search_path = public`. Single function, no overloads — follow DROP-FIRST rule from the overload-safety memory.
+### 1. Client (5 files — one constant each)
+- `src/hooks/useInfiniteProducts.ts` → `PAGE_SIZE = 20`
+- `src/hooks/useStorefrontProducts.ts` → `PAGE_SIZE = 20`
+- `src/hooks/useBestSellingProducts.ts` → `BEST_SELLER_PAGE_SIZE = 20`
+- `src/pages/StorefrontHomeV16.tsx` → `BATCH_SIZE = 20`
+- (Verify `StorefrontBestSellers.tsx` — already 20, no change)
 
-2. **Worker — `/api/shop` endpoint + inline injection**
-   - Mirror `handleCategoryApi`: KV `shop:v{ver}:{domain}:l50`, Cache API 5 min, KV 24 h, version-keyed under existing `pv:{domain}` counter (so `/api/purge-store` invalidates it too).
-   - Inject `window.__SHOP_INLINE__` into the SSR HTML when `pathname === "/shop"` (analogous to `__CATEGORY_INLINE__`). Resolve from cache/KV only — no DB hit in the critical render path.
-   - **Fix `/api/products` headers**: ensure every return path (`cache-api`, `kv`, `origin`, `origin-coalesced`, fallback) goes through `buildProductResponse` / sets `Content-Type: application/json`, `Cache-Control: public, max-age=300, s-maxage=86400, stale-while-revalidate=86400`, `Vary: Accept-Encoding`, and the `x-edge-source` header. The current production response is missing these — that's why CF won't cache it.
+### 2. Worker (`docs/cloudflare-worker-current.js`)
+- Bump `PRODUCTS_PAGE_SIZE = 20` (line 2028).
+- Bump version to `v8.34.0` and update header comment.
+- No other logic changes — inline + `/api/products` route both derive from this constant.
 
-3. **Client**
-   - `src/lib/storefrontEdgeApi.ts`: add `fetchShopEdge(limit=50)` → `GET /api/shop?limit=50`.
-   - `src/hooks/useInfiniteProducts.ts` (page 0, no filter, no sort branch only):
-     1. Reuse `window.__SHOP_INLINE__` if present.
-     2. Else `fetchShopEdge()`.
-     3. Else current `/api/products` path (unchanged).
-   - `src/pages/StorefrontShop.tsx`: no UI change. Hook handles the new path.
-   - Category: no change — already uses `fetchCategoryEdge` + `__CATEGORY_INLINE__`.
+### 3. Cache invalidation (post-deploy)
+- After Worker deploys, run **`/api/purge-store`** for active stores (or wait 24 h KV TTL). Old cached 50-item responses must clear so the new 20-item shape becomes authoritative.
 
-## Safety
+## Risks & mitigation
 
-- Additive only. New RPC + new Worker route. Existing `/api/products` keeps working; we only fix its response headers.
-- Page 0 inline reuse already exists for the home; this extends the same pattern to `/shop`. No new schema columns, no RLS changes.
-- Worker uses the same `pv:{domain}` version key, so existing purge flow invalidates Shop automatically.
-- Preview/localhost paths fall back to direct Supabase via existing `isProductionHost` guard.
-- Manual Worker deploy required (per Core rule): I'll update `docs/cloudflare-worker-current.js`; user deploys.
+| Risk | Mitigation |
+|---|---|
+| Worker not deployed → client/worker mismatch breaks pagination | Land code + Worker file in the same commit. Remind user to deploy Worker before merging client. |
+| Stale CF cache serves old 50-item page after deploy | Purge KV + edge cache via existing `/api/purge-store` route. |
+| More fetches per scroll (20 vs 50 = 2.5× requests) | Acceptable — each fetch is edge-cached (≥90% HIT), so origin load is unchanged. UX feels faster (smaller payloads, quicker first paint). |
+| Home V14 / Home grid showed 14 items before — visual layout may have row count assumptions | 20 is a clean multiple of 2/4/5 columns, so grid still aligns. |
 
-## Expected impact
+## Deploy order
+1. Merge client + Worker file changes together.
+2. User deploys Worker (`wrangler deploy` / dashboard).
+3. Hit `/api/purge-store` for the busiest 2–3 stores to clear stale cache.
+4. Verify on `serdiyajewellers.shop`: Shop page should load 20, "Load more" should fetch the next 20 starting at offset 20.
 
-- Shop first-page Supabase egress: ~90% reduction (KV 24 h hit rate, same as Category today).
-- Worker requests for Shop: ~25% reduction from `__SHOP_INLINE__` reuse on `/shop` direct loads.
-- `/api/products` becomes CF-edge-cacheable for the long-tail filtered combos.
-
-## Out of scope
-
-- Changing `PAGE_SIZE` (stays 50 to match Worker key).
-- Server-side pagination for Abandoned Carts, Best Seller, etc.
-- `product_images` denormalization (deferred — high blast radius).
+## Expected benefit
+- 60% smaller first-page payload (20 rows vs 50) → faster TTFB and lower CDN bandwidth.
+- Same Supabase egress (cache hit rate already 90%+, more requests just split the same data).
+- Consistent page size across every storefront surface → predictable UX, easier debugging.

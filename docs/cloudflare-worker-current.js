@@ -1,7 +1,14 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.19.0 — LONG-TAIL KV GATE
+ * SHOPBANAO PRODUCTION ROUTER v8.34.0 — PRODUCTS PAGE SIZE = 20
  *
- * Changes from v8.18.0:
+ * Changes from v8.33.0:
+ *  v8.34.0 — PRODUCTS_PAGE_SIZE bumped 50 → 20 to standardize storefront
+ *            pagination across Shop, Category, Home, and Best Sellers.
+ *            Inline __PRODUCTS_INLINE__ also caps at 20 (derived from same
+ *            constant). Client (useInfiniteProducts PAGE_SIZE) updated in
+ *            lockstep. Purge active store caches after deploy so old
+ *            50-item cached responses don't conflict with new offsets.
+ *
  *  v8.19.0 — Three more KV-write cuts (~50% on top of v8.18.0):
  *            (B) Second-hit gate for PDP + Category + filtered Products.
  *                First miss writes Cache API only; KV write only on the 2nd
@@ -2022,10 +2029,11 @@ async function prefetchStorefrontDataWithDeadline(slug, ctx, env, deadlineMs) {
 
 const PRODUCTS_CACHE_TTL = 300;
 const PRODUCTS_KV_TTL = 86400; // v8.1.0 cost-cut: 2h → 24h (purge bumps version)
-// Bumped 20 → 50 (2025-04): bigger initial batch means most visitors
-// never trigger a second /api/products page request. Inline products
-// also get the larger set, so first paint shows more cards.
-const PRODUCTS_PAGE_SIZE = 50;
+// v8.34.0 (2026-05): standardized to 20 across all storefront surfaces
+// (Shop, Category, Home, Best Sellers). MUST match PAGE_SIZE in
+// src/hooks/useInfiniteProducts.ts — offsets and inline-hydration depend
+// on this constant being identical on client + worker.
+const PRODUCTS_PAGE_SIZE = 20;
 const PRODUCT_COLUMNS =
   "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
 
