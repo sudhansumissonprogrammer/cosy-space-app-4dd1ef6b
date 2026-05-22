@@ -5065,6 +5065,9 @@ export default {
     const _res = await _handleFetch(request, env, ctx);
     return finalizeResponse(request, _res);
   },
+  async scheduled(event, env, ctx) {
+    return _handleScheduled(event, env, ctx);
+  },
 };
 
 async function _handleFetch(request, env, ctx) {
