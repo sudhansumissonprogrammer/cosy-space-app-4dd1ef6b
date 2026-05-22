@@ -104,7 +104,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.33.0-bot-strip-header-scrub";
+const WORKER_VERSION = "8.34.0-products-page-size-20";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
