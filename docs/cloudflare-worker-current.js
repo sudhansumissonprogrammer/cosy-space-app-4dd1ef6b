@@ -97,7 +97,114 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.32.0-fingerprint-strip";
+const WORKER_VERSION = "8.33.0-bot-strip-header-scrub";
+
+/* ============================================================
+   v8.33.0 — Meta-ban-prevention layer (P0 + P1)
+   ------------------------------------------------------------
+   P0 (bot-strip): When a known social/Meta/Google crawler UA
+   hits ANY HTML page, we strip ALL tracker scripts (Pixel,
+   GTM, GA, fbevents, inline fbq()/gtag() init blocks) before
+   returning. This is the #1 defense Shopdeck uses — Meta's
+   crawler can't link our 100+ stores via a shared Pixel ID
+   if the Pixel never loads for their bot.
+
+   P1 (header scrub): On custom-domain responses (host !=
+   *.shopbanao.in, *.lovable.app), strip platform-fingerprint
+   headers (x-worker-version, x-store-slug, x-shell-source,
+   x-data-source, x-cache-*, x-edge-*, etc). Subdomain hosts
+   keep them for our own debugging. Kills the "identical
+   header shape across 20 stores" cluster signal.
+
+   Both run in finalizeResponse() at the very end of fetch().
+   ============================================================ */
+const FINGERPRINT_HEADERS = [
+  "x-worker-version", "x-store-slug", "x-shell-source", "x-data-source",
+  "x-cache-status", "x-cache-timestamp", "x-edge-cache", "x-edge-key",
+  "x-edge-mirror", "x-edge-cached", "x-products-source",
+  "x-static-asset-cache", "x-seo-cache", "x-bot-cache",
+  "x-sb-img-cache", "x-font-cache", "x-image-routing",
+  "x-sb-proxy-cache",
+];
+
+const BOT_UA_RE = /facebookexternalhit|meta-externalagent|facebookbot|twitterbot|linkedinbot|slackbot|whatsapp|telegrambot|discordbot|pinterestbot|bingpreview|googlebot|googleimageproxy|adsbot-google|mediapartners-google|developers\.google\.com\/\+\/web\/snippet|embedly|quora link preview/i;
+
+function _isBotUA(req) {
+  try { return BOT_UA_RE.test(req.headers.get("user-agent") || ""); }
+  catch { return false; }
+}
+
+function _isPlatformHost(req) {
+  try {
+    const h = new URL(req.url).hostname.toLowerCase();
+    if (h === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(h)) return true;
+    if (h === "shopbanao.in" || h.endsWith(".shopbanao.in")) return true;
+    if (h.endsWith(".lovable.app") || h.endsWith(".lovableproject.com")) return true;
+    return false;
+  } catch { return true; } // fail-open: keep debug headers
+}
+
+async function _stripTrackersForBot(response) {
+  try {
+    const ct = (response.headers.get("content-type") || "").toLowerCase();
+    if (!ct.includes("text/html")) return response;
+    let html = await response.text();
+    // External tracker scripts
+    html = html.replace(
+      /<script\b[^>]*\b(?:src|href)\s*=\s*["'][^"']*(?:connect\.facebook\.net|fbevents\.js|googletagmanager\.com|google-analytics\.com|gtag\/js|googleadservices\.com)[^"']*["'][^>]*>\s*<\/script>/gi,
+      ""
+    );
+    // Inline scripts containing fbq(), gtag(), or dataLayer init
+    html = html.replace(
+      /<script\b(?![^>]*\bsrc=)[^>]*>[\s\S]*?(?:fbq\s*\(|gtag\s*\(|dataLayer\s*=|_fbq\s*=)[\s\S]*?<\/script>/gi,
+      ""
+    );
+    // <noscript> tracking pixels
+    html = html.replace(
+      /<noscript\b[^>]*>[\s\S]*?(?:facebook\.com\/tr|google-analytics\.com|googletagmanager\.com)[\s\S]*?<\/noscript>/gi,
+      ""
+    );
+    const headers = new Headers(response.headers);
+    headers.delete("content-length");
+    headers.set("x-bot-mode", "stripped"); // will itself be stripped on custom domains below
+    return new Response(html, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  } catch {
+    return response;
+  }
+}
+
+async function finalizeResponse(request, response) {
+  try {
+    // P0: bot UA → strip trackers from HTML
+    if (_isBotUA(request)) {
+      response = await _stripTrackersForBot(response);
+    }
+    // P1: custom domain → strip fingerprint headers
+    if (!_isPlatformHost(request)) {
+      const h = new Headers(response.headers);
+      let mutated = false;
+      for (const k of FINGERPRINT_HEADERS) {
+        if (h.has(k)) { h.delete(k); mutated = true; }
+      }
+      // Also strip the bot-mode marker on custom domains
+      if (h.has("x-bot-mode")) { h.delete("x-bot-mode"); mutated = true; }
+      if (mutated) {
+        response = new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: h,
+        });
+      }
+    }
+  } catch {
+    // Fail open — never break a response over fingerprint scrubbing
+  }
+  return response;
+}
 
 /* ============================================================
    v7.7.0 — RACE + DEDUP FIX (on top of v7.6.0)
@@ -4955,6 +5062,15 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
 
 export default {
   async fetch(request, env, ctx) {
+    const _res = await _handleFetch(request, env, ctx);
+    return finalizeResponse(request, _res);
+  },
+  async scheduled(event, env, ctx) {
+    return _handleScheduled(event, env, ctx);
+  },
+};
+
+async function _handleFetch(request, env, ctx) {
     // FIX #5: Record request start time immediately
     const requestStart = Date.now();
 
@@ -6086,14 +6202,14 @@ export default {
       );
       return cacheableResponse(ctx, request, r, 3600);
     }
-  },
+}
 
-  /* ============================================================
-     SCHEDULED HANDLER — DB Keepalive + Full Store Warming
-     FIX #14: Warm ALL stores (not just top 20), concurrency=10
-     FIX #15: Fetch shell ONCE before the loop, reuse for all stores
-     ============================================================ */
-  async scheduled(event, env, ctx) {
+/* ============================================================
+   SCHEDULED HANDLER — DB Keepalive + Full Store Warming
+   FIX #14: Warm ALL stores (not just top 20), concurrency=10
+   FIX #15: Fetch shell ONCE before the loop, reuse for all stores
+   ============================================================ */
+async function _handleScheduled(event, env, ctx) {
     const keepaliveStart = Date.now();
     // Flush any pending page-view rows so the buffer never holds data >1 cron interval
     try {
@@ -6386,5 +6502,4 @@ export default {
     } catch (err) {
       console.log(`[keepalive] failed: ${err?.message || err}`);
     }
-  },
-};
+}
