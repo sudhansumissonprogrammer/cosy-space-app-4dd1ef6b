@@ -198,7 +198,7 @@ export default function CustomerLeads() {
             <>
               {/* Mobile card list — everything visible, no horizontal scroll */}
               <div className="space-y-3 sm:hidden">
-                {visibleLeads.map((lead) => {
+                {pagedLeads.map((lead) => {
                   const sendWhatsApp = () => {
                     const phone = lead.phone.replace(/[^0-9+]/g, "");
                     const message = buildRecoveryMessage(lead);
@@ -305,7 +305,7 @@ export default function CustomerLeads() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {visibleLeads.map((lead) => (
+                    {pagedLeads.map((lead) => (
                       <TableRow key={lead.id}>
                         <TableCell className="font-medium">
                           {lead.name || <span className="text-muted-foreground">—</span>}
