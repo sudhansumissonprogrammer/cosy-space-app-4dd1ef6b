@@ -89,7 +89,7 @@ export default function StoreOrders() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
 
-  const { data: store } = useStoreData(storeId);
+  const { data: store, isLoading: storeLoading } = useStoreData(storeId);
 
   // Count query for server-side pagination
   const { data: orderCount } = useQuery({
@@ -318,7 +318,7 @@ export default function StoreOrders() {
     },
   });
 
-  if (!store && !isLoading) {
+  if (!store && !isLoading && !storeLoading && storeId) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-12">
         <p className="text-muted-foreground">Store not found</p>

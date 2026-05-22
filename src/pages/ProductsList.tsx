@@ -117,7 +117,7 @@ export default function ProductsList() { // v2
     }
   }, []);
 
-  const { data: store } = useStoreData(storeId);
+  const { data: store, isLoading: storeLoading } = useStoreData(storeId);
   const purgeStore = useStorePurge(storeId);
 
   const { data: limitInfo } = useQuery({
@@ -322,7 +322,7 @@ export default function ProductsList() { // v2
     setBulkStockChange("");
   };
 
-  if (!store && !isLoading) {
+  if (!store && !isLoading && !storeLoading && storeId) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-12">
         <p className="text-muted-foreground">Store not found</p>

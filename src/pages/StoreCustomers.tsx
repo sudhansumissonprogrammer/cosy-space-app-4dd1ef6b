@@ -27,7 +27,7 @@ export default function StoreCustomers() {
   const queryClient = useQueryClient();
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
 
-  const { data: store } = useStoreData(storeId);
+  const { data: store, isLoading: storeLoading } = useStoreData(storeId);
 
   const { pull, refreshing } = usePullToRefresh({
     onRefresh: async () => {
@@ -92,7 +92,7 @@ export default function StoreCustomers() {
 
   const currencySymbol = store?.currency === "INR" ? "₹" : store?.currency === "USD" ? "$" : (store?.currency || "$");
 
-  if (!store && !isLoading) {
+  if (!store && !isLoading && !storeLoading && storeId) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-12">
         <p className="text-muted-foreground">Store not found</p>
