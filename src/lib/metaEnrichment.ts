@@ -118,7 +118,10 @@ export function setCapiUser(user: CapiUser | null): void {
     delete window.__SF_CAPI_USER__;
     return;
   }
-  window.__SF_CAPI_USER__ = user;
+  // Always-on external_id: default to anon visitor cookie if caller didn't supply one.
+  const externalId = user.externalId || getOrCreateSfVid() || undefined;
+  const merged: CapiUser = { ...user, externalId };
+  window.__SF_CAPI_USER__ = merged;
 
   // Mirror to Pixel Advanced Matching for the pixel-only path.
   // Meta auto-hashes plaintext em/ph/external_id/fn/ln/ct/st/zp passed to fbq("init").
