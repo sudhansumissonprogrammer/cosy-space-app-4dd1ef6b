@@ -146,7 +146,7 @@
           var families=[];
           [hf,bf].forEach(function(f){if(f&&self.indexOf(f)===-1){var seen=families.indexOf(f);if(seen===-1)families.push(f);}});
           if(!families.length)return;
-          var href='https://fonts.googleapis.com/css2?'+families.map(function(f){return'family='+f.replace(/ /g,'+') +':wght@400;600;700'}).join('&')+'&display=swap';
+          var href='https://fonts.googleapis.com/css2?'+families.map(function(f){return'family='+f.replace(/ /g,'+') +':wght@400;600;700'}).join('&')+'&display=block';
           var link=document.createElement('link');link.rel='stylesheet';link.href=href;link.id='storefront-google-fonts';
           link.setAttribute('fetchpriority','high');document.head.appendChild(link);
         }
