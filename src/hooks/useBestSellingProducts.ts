@@ -7,13 +7,37 @@ const BEST_SELLER_COLUMNS =
 export const BEST_SELLER_PAGE_SIZE = 20;
 
 /**
- * Fetches best-selling products with infinite scroll (12 per page).
+ * Phase 3 (v8.36): try to seed the first page from window.__STOREFRONT_DATA__.products_preview
+ * which is ordered with best_selling first. Saves one REST round-trip on cold loads.
+ */
+function getInlinedBestSellers(storeId: string): any[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const sd: any = (window as any).__STOREFRONT_DATA__;
+    if (!sd?.products_preview || !Array.isArray(sd.products_preview)) return null;
+    if (sd?.store?.id && sd.store.id !== storeId) return null;
+    const bests = sd.products_preview.filter((p: any) => p?.is_best_selling === true);
+    return bests;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetches best-selling products with infinite scroll (20 per page).
  * Sorted by display_order so the merchant's manual order is respected.
  */
 export function useBestSellingProducts(storeId: string | undefined) {
   const query = useInfiniteQuery({
     queryKey: ["storefront-best-sellers", storeId],
     queryFn: async ({ pageParam = 0 }) => {
+      // Page 0: prefer inlined preview to skip the REST round-trip.
+      if (pageParam === 0 && storeId) {
+        const inlined = getInlinedBestSellers(storeId);
+        if (inlined && inlined.length > 0) {
+          return { products: inlined.slice(0, BEST_SELLER_PAGE_SIZE), page: 0 };
+        }
+      }
       const { supabase } = await import("@/integrations/supabase/client");
       const offset = pageParam * BEST_SELLER_PAGE_SIZE;
       const { data, error } = await supabase
