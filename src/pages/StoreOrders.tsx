@@ -38,6 +38,7 @@ import SwipeableOrderRow from "@/components/dashboard/SwipeableOrderRow";
 import FAB from "@/components/dashboard/FAB";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/dashboard/PullToRefreshIndicator";
+import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 
 const STATUS_OPTIONS = ["confirmed", "shipped", "delivered", "cancelled", "partially_paid"] as const;
 
@@ -53,7 +54,9 @@ const statusColor = (status: string) => {
 };
 
 export default function StoreOrders() {
-  const { storeId } = useStoreSlugParam();
+  const slugStore = useStoreSlugParam();
+  const dashboardStore = useDashboardStore();
+  const storeId = slugStore.storeId ?? dashboardStore.storeId;
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
@@ -89,7 +92,9 @@ export default function StoreOrders() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
 
-  const { data: store, isLoading: storeLoading } = useStoreData(storeId);
+  const { data: fetchedStore, isLoading: fetchedStoreLoading } = useStoreData(storeId);
+  const store = fetchedStore ?? dashboardStore.store ?? slugStore.store;
+  const storeLoading = dashboardStore.isLoading || fetchedStoreLoading;
 
   // Count query for server-side pagination
   const { data: orderCount } = useQuery({
@@ -318,7 +323,7 @@ export default function StoreOrders() {
     },
   });
 
-  if (!store && !isLoading && !storeLoading && storeId) {
+  if (!store && !isLoading && !storeLoading && !storeId && user) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-12">
         <p className="text-muted-foreground">Store not found</p>
