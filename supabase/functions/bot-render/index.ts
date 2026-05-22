@@ -647,6 +647,24 @@ Deno.serve(async (req) => {
     });
   }
 
+  // og:image fallback chain: og_image_url → banner_url → logo_url → first product image.
+  // Backfill store.og_image_url so every downstream builder (categories, legal, contact,
+  // not-found) inherits the product fallback without per-callsite changes.
+  if (!store.og_image_url && !store.banner_url && !store.logo_url) {
+    const { data: firstProd } = await supabase
+      .from("products")
+      .select("image_url")
+      .eq("store_id", store.id)
+      .eq("is_active", true)
+      .not("image_url", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (firstProd?.image_url) {
+      (store as any).og_image_url = firstProd.image_url;
+    }
+  }
+
   // Build canonical URL
   // Sanitize domain to prevent injection
   const safeDomain = domain ? domain.replace(/[^a-zA-Z0-9.\-]/g, "") : null;
