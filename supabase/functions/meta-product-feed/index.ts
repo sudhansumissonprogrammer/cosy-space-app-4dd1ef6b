@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
 
     const { data: products } = await supabase
       .from("products")
-      .select("id, name, description, price, image_url, stock, is_active, slug, category")
+      .select("id, name, description, price, sale_price, image_url, stock_quantity, is_active, slug, category")
       .eq("store_id", store.id)
       .eq("is_active", true)
       .limit(5000);
