@@ -507,8 +507,8 @@ export default function ProductDetail() {
       return;
     }
 
-    // Theme 16: show phone modal instead of direct checkout
-    if ((store as any).theme === "theme-16") {
+    // Theme 16 / 21: show phone modal instead of direct checkout
+    if ((store as any).theme === "theme-16" || (store as any).theme === "theme-21") {
       // Add to cart first so checkout has the item
       addToCart({
         productId: product.id,
