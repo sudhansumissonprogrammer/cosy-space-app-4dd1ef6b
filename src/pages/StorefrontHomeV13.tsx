@@ -10,6 +10,7 @@ import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
+import { HomeBestSellingSection } from "@/components/storefront/HomeSharedSections";
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 
 /* ── Veg / Non-Veg indicator ── */
