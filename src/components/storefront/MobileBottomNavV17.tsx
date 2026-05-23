@@ -5,7 +5,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
-import { useWishlist } from "@/contexts/WishlistContext";
+
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
