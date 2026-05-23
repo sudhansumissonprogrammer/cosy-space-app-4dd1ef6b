@@ -4,10 +4,9 @@
  * Includes cart button as elevated circle.
  */
 import { Link, useLocation } from "react-router-dom";
-import { Home, Store, LayoutGrid, Heart, ClipboardList, ShoppingCart } from "lucide-react";
+import { Home, Store, LayoutGrid, ShoppingCart, ClipboardList } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
-import { useWishlist } from "@/contexts/WishlistContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
@@ -15,14 +14,13 @@ const navItems = [
   { key: "home", label: "Home", icon: Home, path: "" },
   { key: "shop", label: "Shop", icon: Store, path: "shop" },
   { key: "categories", label: "Categories", icon: LayoutGrid, path: "categories" },
-  { key: "wishlist", label: "Wishlist", icon: Heart, path: "wishlist" },
+  { key: "cart", label: "Cart", icon: ShoppingCart, path: "cart" },
   { key: "orders", label: "Orders", icon: ClipboardList, path: "account" },
 ];
 
 export default function MobileBottomNavModern({ store }: { store: StoreData }) {
   const location = useLocation();
-  const { cartCount, openCart, cartBounce } = useCart();
-  const { wishlistCount } = useWishlist();
+  const { cartCount, openCart } = useCart();
   const { user } = useStorefrontAuth();
   const isCheckout = location.pathname.includes("/checkout");
   const isProductDetail = location.pathname.includes("/product/");
@@ -60,11 +58,14 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
         >
           {navItems.map((item) => {
             const active = getActive(item.path);
-            const count = item.key === "wishlist" ? wishlistCount : 0;
+            const count = item.key === "cart" ? cartCount : 0;
+            const isCart = item.key === "cart";
+            const handleClick = isCart ? (e: React.MouseEvent) => { e.preventDefault(); openCart(); } : undefined;
             return (
               <Link
                 key={item.key}
                 to={getTo(item.path)}
+                onClick={handleClick}
                 className="relative flex items-center justify-center outline-none"
                 aria-label={item.label}
               >
@@ -115,26 +116,6 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
           })}
         </div>
 
-        {/* Elevated cart circle */}
-        <button
-          onClick={openCart}
-          className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-[0_4px_24px_rgba(0,0,0,0.12)] transition-transform duration-200 active:scale-90 ${cartBounce ? "cart-bounce" : ""}`}
-          style={{
-            backgroundColor: "var(--storefront-primary, hsl(var(--primary)))",
-          }}
-          aria-label={`Cart${cartCount > 0 ? `, ${cartCount} items` : ""}`}
-        >
-          <ShoppingCart
-            className="h-[18px] w-[18px]"
-            strokeWidth={1.8}
-            style={{ color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
-          />
-          {cartCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground min-w-[18px] h-[18px] px-1">
-              {cartCount > 9 ? "9+" : cartCount}
-            </span>
-          )}
-        </button>
       </div>
     </nav>
   );

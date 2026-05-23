@@ -5,7 +5,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
-import { useWishlist } from "@/contexts/WishlistContext";
+
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
@@ -57,14 +57,12 @@ const navItems = [
   { key: "home", label: "Home", Icon: HomeIcon, path: "" },
   { key: "orders", label: "Orders", Icon: OrdersIcon, path: "account" },
   { key: "shop", label: "Shop", Icon: ShopIcon, path: "shop" },
-  { key: "wishlist", label: "Wishlist", Icon: WishlistIcon, path: "wishlist" },
   { key: "cart", label: "Cart", Icon: CartIcon, path: "__cart__" },
 ];
 
 export default function MobileBottomNavV17({ store }: { store: StoreData }) {
   const location = useLocation();
   const { cartCount, openCart, cartBounce } = useCart();
-  const { wishlistCount } = useWishlist();
   const { user } = useStorefrontAuth();
   const isCheckout = location.pathname.includes("/checkout");
   const isProductDetail = location.pathname.includes("/product/");
@@ -88,7 +86,6 @@ export default function MobileBottomNavV17({ store }: { store: StoreData }) {
   };
 
   const getBadge = (key: string) => {
-    if (key === "wishlist") return wishlistCount || 0;
     if (key === "cart") return cartCount || 0;
     return 0;
   };
