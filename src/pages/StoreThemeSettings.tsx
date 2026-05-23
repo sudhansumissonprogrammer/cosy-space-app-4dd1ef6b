@@ -1592,7 +1592,14 @@ export default function StoreThemeSettings() {
             storeSlug={store.slug}
             iframeKey={iframeKey}
             onIframeReady={setupPreviewIframe}
+            registerIframe={(iframe) => {
+              // Bind drawer iframe to the same refs used by theme-apply reload
+              // so applying a theme on mobile actually refreshes the preview.
+              (iframeRef as React.MutableRefObject<HTMLIFrameElement | null>).current = iframe;
+              (iframeDesktopRef as React.MutableRefObject<HTMLIFrameElement | null>).current = iframe;
+            }}
           />
+
         )}
 
         {/* Sticky save bar (#6) */}
