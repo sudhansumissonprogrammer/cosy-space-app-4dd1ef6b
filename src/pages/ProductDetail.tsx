@@ -133,7 +133,7 @@ export default function ProductDetail() {
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
 
-  const { addToCart, items, cartTotal, closeCart } = useCart();
+  const { addToCart, items, cartTotal, closeCart, openCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const queryClient = useQueryClient();
   const mainThemeConfig = useStorefrontThemeConfig(store?.id);
