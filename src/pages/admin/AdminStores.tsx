@@ -27,7 +27,7 @@ export default function AdminStores() {
     queryKey: ["admin-stores-count"],
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
-      const { count, error } = await supabase.from("stores").select("*", { count: "exact", head: true });
+      const { count, error } = await supabase.from("stores").select("id", { count: "exact", head: true });
       if (error) throw error;
       return count;
     },
