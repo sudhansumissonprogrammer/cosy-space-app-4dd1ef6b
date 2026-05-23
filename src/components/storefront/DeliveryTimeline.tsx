@@ -105,14 +105,11 @@ export default function DeliveryTimeline() {
         .dt[data-play="1"] .dt-fill-1 { animation: dt-fill-1 .55s linear .45s forwards; }
         .dt[data-play="1"] .dt-fill-2 { animation: dt-fill-2 .70s linear 1.20s forwards; }
 
-        /* Truck: two-leg journey then fades out */
+        /* Truck: continuous left → right loop */
         .dt[data-play="1"] .dt-truck-wrap {
-          animation:
-            dt-truck-1 .55s linear .45s forwards,
-            dt-truck-2 .70s linear 1.20s forwards,
-            dt-truck-out .35s var(--expo) 1.95s forwards;
+          animation: dt-truck-loop 3.4s linear .45s infinite;
         }
-        .dt[data-play="1"] .dt-truck { animation: dt-bounce .35s ease-in-out infinite; }
+        .dt[data-play="1"] .dt-truck { animation: dt-bounce .55s ease-in-out infinite; }
 
         /* Dates + labels rise after their step's icon lands */
         .dt[data-play="1"] .dt-date,
