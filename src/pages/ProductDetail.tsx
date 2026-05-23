@@ -1468,7 +1468,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
           {/* Embla viewport */}
           <div
             ref={emblaRef}
-            className="overflow-hidden rounded-none sm:rounded-2xl bg-background sm:bg-accent cursor-zoom-in select-none"
+            className="overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none"
           >
             <div className="flex touch-pan-y">
               {renderImages.map((src, i) => {
