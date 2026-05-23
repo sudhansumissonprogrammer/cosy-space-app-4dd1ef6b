@@ -1441,7 +1441,7 @@ export default function StoreThemeSettings() {
           </AccordionContent>
         </AccordionItem>
 
-        {currentTheme === "theme-16" && (
+        {(currentTheme === "theme-16" || currentTheme === "theme-21") && (
           <AccordionItem value="bilingual" className="rounded-xl border border-border bg-card px-4">
             <AccordionTrigger className="hover:no-underline">
               <div className="flex flex-col items-start text-left">
