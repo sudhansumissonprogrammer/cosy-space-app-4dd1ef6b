@@ -3303,7 +3303,7 @@ async function serveStreamedHtml(
       const storefrontResult = earlyStorefrontResult || (await storefrontPromise);
 
       const skeletonMuted = getSkeletonMuted(textColor);
-      const skeleton = buildSkeleton(bgColor, skeletonMuted, true, (storefrontResult && storefrontResult.data && storefrontResult.data.store && storefrontResult.data.store.name) || "", textColor);
+      const skeleton = buildSkeleton(bgColor, skeletonMuted, true, (storefrontResult && storefrontResult.data && storefrontResult.data.store && storefrontResult.data.store.name) || "", textColor, (themeLite && (themeLite.pc || themeLite.primary_color)) || "#004643");
 
       let preloaderProductsJson = inlineProducts || "";
       if (Array.isArray(storefrontResult?.data?.products) && storefrontResult.data.products.length > 0) {
