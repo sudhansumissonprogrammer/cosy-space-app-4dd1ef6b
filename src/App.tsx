@@ -582,6 +582,8 @@ async function prefetchTargetPageData(
 /** Eagerly start loading the home page chunk so it downloads alongside the layout */
 function prefetchHomeChunk(theme: string) {
   switch (theme) {
+    case "theme-21": return import("./pages/StorefrontHomeV21");
+    case "theme-20": return import("./pages/StorefrontHomeV20");
     case "theme-19": return import("./pages/StorefrontHomeV19");
     case "theme-18": return import("./pages/StorefrontHomeV18");
     case "theme-17": return import("./pages/StorefrontHomeV17");
