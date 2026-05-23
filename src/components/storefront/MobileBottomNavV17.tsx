@@ -63,7 +63,6 @@ const navItems = [
 export default function MobileBottomNavV17({ store }: { store: StoreData }) {
   const location = useLocation();
   const { cartCount, openCart, cartBounce } = useCart();
-  const isCheckout = location.pathname.includes("/checkout");
   const { user } = useStorefrontAuth();
   const isCheckout = location.pathname.includes("/checkout");
   const isProductDetail = location.pathname.includes("/product/");
@@ -87,7 +86,6 @@ export default function MobileBottomNavV17({ store }: { store: StoreData }) {
   };
 
   const getBadge = (key: string) => {
-    if (key === "wishlist") return wishlistCount || 0;
     if (key === "cart") return cartCount || 0;
     return 0;
   };
