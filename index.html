@@ -558,11 +558,14 @@
         var isLandingPath=(p==='/'||p==='/theme'||p==='/guides'||p.indexOf('/guides/')===0);
         if(!isSf && isLandingHost && isLandingPath){
           if(inline){inline.style.display='none';}
-          /* v9.0: Show landing skeleton IMMEDIATELY at T+0 (was delayed 3s).
-             The skeleton is pixel-perfect vs Hero.tsx — when React mounts,
-             the crossfade is invisible (same layout/colors/copy). Net effect:
-             user sees the hero shell from first paint instead of 3s of blank. */
-          if(landing){ landing.style.display='block'; }
+          /* v9.1: Show landing skeleton after 2s (was 3s). If React mounts
+             before then, skeleton never shows — no flicker. If React is slow,
+             user sees the pixel-perfect hero shell 1s sooner. */
+          if(landing){
+            window.__LANDING_SKEL_TIMER__ = setTimeout(function(){
+              if(landing && !window.__LANDING_HERO_READY__) landing.style.display='block';
+            }, 2000);
+          }
         }else if(!isSf){
           if(inline){inline.style.display='none';}
           if(landing){landing.style.display='none';}
