@@ -585,6 +585,7 @@
         function killNow(){
           if(done) return;
           done=true;
+          try{ if(window.__LANDING_SKEL_TIMER__) clearTimeout(window.__LANDING_SKEL_TIMER__); }catch(e){}
           ['sf-skel','inline-skel','landing-skel'].forEach(function(id){
             var s=document.getElementById(id);
             if(!s) return;
