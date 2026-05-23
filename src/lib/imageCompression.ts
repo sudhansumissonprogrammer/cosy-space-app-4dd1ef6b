@@ -19,7 +19,7 @@ const DEFAULT_MAX_DIMENSION = 1200; // Sharpness ceiling for retina screens
 const DOWNSCALE_STEPS = [1200, 1000, 900, 800] as const; // Progressive fallbacks
 const DEFAULT_START_QUALITY = 0.9; // Starting quality — high but not max
 const HEAVY_START_QUALITY = 0.86; // Slightly lower start for big photos
-const MIN_QUALITY = 0.72; // Floor — below this WebP starts looking soft
+const MIN_QUALITY = 0.78; // Floor — below this WebP starts looking soft
 const QUALITY_STEP = 0.03; // Finer steps → more chances to land in band
 
 /** @deprecated Multi-size variants removed — single 800w upload only */
