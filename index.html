@@ -345,16 +345,54 @@
         </div>
       </div>
     </div>
+    <!-- Landing-only branded skeleton — shown ONLY on shopbanao.in root + /theme + /guides.
+         Matches the Bauhaus hero (yellow badge, big black headline, red CTA, blue panel
+         on right) so the user sees something instantly instead of a blank white screen
+         while the React landing bundle loads. Auto-hidden by the script below once
+         either (a) the host is a storefront, or (b) #root has real React content. -->
+    <div id="landing-skel" aria-hidden="true" style="display:none;position:fixed;inset:0;min-height:100vh;background:#fafaf7;z-index:2147482999;pointer-events:none;overflow:hidden;transition:opacity .25s ease-out">
+      <nav style="height:56px;background:#fffffe;border-bottom:4px solid #111;display:flex;align-items:center;justify-content:space-between;padding:0 16px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="height:40px;width:40px;background:#111;border-radius:4px"></div>
+          <div class="sf-ph" style="height:18px;width:110px"></div>
+        </div>
+        <div style="height:32px;width:84px;background:#e63946;border:2px solid #111;box-shadow:3px 3px 0 #111"></div>
+      </nav>
+      <div style="padding:56px 20px 0;max-width:1200px;margin:0 auto">
+        <div style="display:inline-block;padding:6px 12px;background:#ffd60a;border:2px solid #111;box-shadow:2px 2px 0 #111;margin-bottom:24px">
+          <div class="sf-ph" style="height:11px;width:120px;background:#111;opacity:.7"></div>
+        </div>
+        <div class="sf-ph" style="height:34px;width:90%;max-width:560px;margin-bottom:14px;background:#111;opacity:.85"></div>
+        <div class="sf-ph" style="height:34px;width:70%;max-width:440px;margin-bottom:14px;background:#111;opacity:.85"></div>
+        <div class="sf-ph" style="height:34px;width:55%;max-width:340px;margin-bottom:26px;background:#111;opacity:.85"></div>
+        <div class="sf-ph" style="height:14px;width:80%;max-width:420px;margin-bottom:10px"></div>
+        <div class="sf-ph" style="height:14px;width:65%;max-width:340px;margin-bottom:30px"></div>
+        <div style="display:flex;gap:12px;margin-bottom:32px">
+          <div style="height:46px;width:150px;background:#e63946;border:2px solid #111;box-shadow:4px 4px 0 #111"></div>
+          <div style="height:46px;width:130px;background:#fffffe;border:2px solid #111;box-shadow:4px 4px 0 #111"></div>
+        </div>
+        <div style="display:flex;gap:18px">
+          <div class="sf-ph" style="height:14px;width:120px"></div>
+          <div class="sf-ph" style="height:14px;width:110px"></div>
+          <div class="sf-ph" style="height:14px;width:120px"></div>
+        </div>
+      </div>
+    </div>
     <div id="root"></div>
     <script>
       /* Skeleton visibility logic.
+         - Storefront hosts → keep #inline-skel (product-grid skeleton).
+         - Landing host (shopbanao.in root + /theme + /guides) → show #landing-skel,
+           hide #inline-skel. This makes landing paint a branded hero shell at T+0
+           instead of a blank white page while the React bundle loads.
          v6.3.0: If Worker already injected #sf-skel (sets window.__SF_WORKER__),
-         remove the inline duplicate immediately — Worker skeleton is the single
-         source of truth in production. Otherwise fall back to route-based hiding. */
+         remove inline skeletons immediately — Worker is single source of truth. */
       (function(){
+        var inline=document.getElementById('inline-skel');
+        var landing=document.getElementById('landing-skel');
         if(window.__SF_WORKER__){
-          var sk=document.getElementById('inline-skel');
-          if(sk){sk.style.display='none';if(sk.remove)sk.remove();}
+          if(inline){inline.style.display='none';if(inline.remove)inline.remove();}
+          if(landing){landing.style.display='none';if(landing.remove)landing.remove();}
           return;
         }
         var p=location.pathname;var h=location.hostname;
@@ -363,7 +401,17 @@
           var sub=h.replace('.shopbanao.in','');if(sub&&sub.indexOf('.')===-1)isSf=true;
         }
         if(!isSf && window.__STORE_SLUG__)isSf=true;
-        if(!isSf){var sk=document.getElementById('inline-skel');if(sk)sk.style.display='none';}
+        var isLandingHost=(h==='shopbanao.in'||h==='www.shopbanao.in'||h==='localhost'||h.endsWith('.lovable.app')||h.endsWith('.lovableproject.com'));
+        var isLandingPath=(p==='/'||p==='/theme'||p==='/guides'||p.indexOf('/guides/')===0);
+        if(!isSf && isLandingHost && isLandingPath){
+          if(inline){inline.style.display='none';}
+          if(landing){landing.style.display='block';}
+        }else if(!isSf){
+          if(inline){inline.style.display='none';}
+          if(landing){landing.style.display='none';}
+        }else{
+          if(landing){landing.style.display='none';}
+        }
       })();
     </script>
     <script>
