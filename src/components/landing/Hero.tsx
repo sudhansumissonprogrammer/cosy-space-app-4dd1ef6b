@@ -1,7 +1,9 @@
+import { useEffect } from "react";
 import { ArrowRight, ShieldCheck, CreditCard, Globe, Package, TrendingUp, ExternalLink } from "lucide-react";
 import overlaysMobile from "@/assets/showcase-overlays-mobile.webp";
 import serdiyaMobile from "@/assets/showcase-serdiya-mobile.webp";
 import { onAuthCtaIntent } from "@/lib/prefetchLandingAuth";
+
 
 // Native phone screenshot ratio (~9:19.5). Reserve space to prevent CLS.
 const PHONE_ASPECT = "9 / 19.5";
@@ -56,6 +58,15 @@ const HERO = {
 
 const Hero = () => {
   const { headline, sub } = HERO;
+
+  // Signal the index.html skeleton remover that the REAL hero is now mounted
+  // so it can crossfade out only after our DOM exists.
+  useEffect(() => {
+    (window as any).__LANDING_HERO_READY__ = true;
+    window.dispatchEvent(new Event("landing:hero-ready"));
+  }, []);
+
+
 
   return (
     <section className="border-b-4 border-foreground">
