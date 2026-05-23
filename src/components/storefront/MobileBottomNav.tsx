@@ -83,7 +83,7 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
               }}
             >
               <div
-                className={`relative flex items-center justify-center rounded-full transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${item.active ? "px-3 py-0.5" : "px-1 py-0.5"}`}
+                className={`relative flex items-center justify-center rounded-full transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${item.active ? "px-3 py-0.5" : "px-1 py-0.5"} ${bouncing ? "cart-bounce" : ""}`}
                 style={item.active ? { backgroundColor: "color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 14%, transparent)" } : undefined}
               >
                 <item.icon className="h-[18px] w-[18px]" strokeWidth={item.active ? 2.5 : 1.8} />
