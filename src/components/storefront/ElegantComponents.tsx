@@ -5,7 +5,7 @@
 import { useState, lazy, Suspense } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { ShoppingCart, Heart, User, Search, Home, LayoutGrid, X, ChevronRight } from "lucide-react";
+import { ShoppingCart, Heart, User, Search, Home, LayoutGrid, X, ChevronRight, ClipboardList } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
@@ -95,7 +95,7 @@ export function ElegantTabBar({ store, colors, useTextForActive = false }: { sto
   const basePath = storefrontPath(store.slug);
   const tabs = [
     { icon: Home, label: "Home", to: basePath, matchExact: true },
-    { icon: User, label: "Account", to: storefrontPath(store.slug, user ? "account" : "login"), match: "account" },
+    { icon: ClipboardList, label: "Orders", to: storefrontPath(store.slug, user ? "account" : "login"), match: "account" },
     { icon: LayoutGrid, label: "Shop", to: storefrontPath(store.slug, "shop"), match: "shop" },
     { icon: Heart, label: "Wishlist", to: storefrontPath(store.slug, "wishlist"), match: "wishlist", badge: wishlistCount },
     { icon: ShoppingCart, label: "Cart", to: "__cart__", match: "__cart__", badge: cartCount, isCart: true },

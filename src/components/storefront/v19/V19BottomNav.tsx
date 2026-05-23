@@ -4,7 +4,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, LayoutGrid, ShoppingCart, User, ArrowRight } from "lucide-react";
+import { Home, LayoutGrid, ShoppingCart, ClipboardList, ArrowRight } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
@@ -25,7 +25,7 @@ export default function V19BottomNav({ store }: { store: any }) {
     { key: "home", label: "Home", icon: Home, to: storePath, match: (p: string) => p === storePath || p === storePath + "/" },
     { key: "categories", label: "Categories", icon: LayoutGrid, to: storefrontPath(slug, "categories"), match: (p: string) => p.includes("/categories") || p.includes("/category/") },
     { key: "cart", label: "Cart", icon: ShoppingCart, to: storefrontPath(slug, "cart"), match: (p: string) => p.includes("/cart"), badge: cartCount },
-    { key: "account", label: "Account", icon: User, to: storefrontPath(slug, user ? "account" : "login"), match: (p: string) => p.includes("/account") || p.includes("/login") },
+    { key: "orders", label: "Orders", icon: ClipboardList, to: storefrontPath(slug, user ? "account" : "login"), match: (p: string) => p.includes("/account") || p.includes("/login") },
   ];
 
   const navRef = useRef<HTMLDivElement>(null);
