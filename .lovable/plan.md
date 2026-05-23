@@ -1,94 +1,74 @@
+## Goal
+Swiggy-style "fly product into cart" animation on every Add-to-Cart, then SideCart slides in once the arc lands. Works across all 21 themes.
 
-# Landing page sub-3s plan — Worker HTML + R2 + font fix
+## Current state
+- `src/lib/flyToCart.ts` exists but renders a tiny "+1" bubble with a linear transition — not the rich product-image arc Swiggy uses.
+- Only **V19 / V20** product cards call it. PDP, Style1/3/4 cards, QuickView, VariantPicker, FBT, V19/V20 PDP do not.
+- `data-cart-target` anchor exists only on V19/V20 headers. Other themes have no target, so the bubble would have nowhere to land.
+- `addToCart` in `CartContext` opens SideCart **immediately**, colliding with any pre-open animation.
 
-## Why landing feels 8–10s blank (root cause from code + perf trace)
+## Plan
 
-Measured numbers: TTFB 596ms, First Paint 840ms, **FCP 3.66s**, transfer 1.3MB. On slow 4G that 3.6s easily becomes 8–10s. Three culprits combined:
+### 1. Rewrite `src/lib/flyToCart.ts` (Swiggy-grade)
+- New signature: `flyToCart(source, { imageUrl?, label?, productName? })`.
+- Render a **circular product thumbnail** (40px, white ring + soft drop-shadow) when `imageUrl` given; fall back to "+1" bubble.
+- Replace linear translate with a **parabolic arc** via WAAPI (`element.animate`) using 3 keyframes:
+  - 0%: at source, scale 0.9, opacity 0 → 1 (60ms pop-in)
+  - 45%: lifted (midpoint Y minus ~120px), scale 1.1, slight rotate 8°
+  - 100%: at cart icon, scale 0.25, rotate -6°, opacity 0.4
+  - Easing `cubic-bezier(.5,-0.2,.2,1)` (overshoot top, gravity drop)
+  - Duration 720ms total
+- Add a faint **motion-trail dot** that follows 80ms behind for "tail" feel.
+- On completion: pulse target with existing `cart-target-absorb` class + dispatch `cart:fly-landed` CustomEvent.
+- Honor `prefers-reduced-motion` (skip animation, just bump cart).
 
-1. **Alegreya SC font is `font-display: block`** (index.html line 70–71). This is the #1 blank-screen reason. `block` literally hides ALL text using this font for up to ~3 seconds until the 172KB font downloads. Because the headline and "ShopBanao" wordmark in nav both use Alegreya SC, the page paints white until the font arrives. Combined with React mount time, this is what users see as "blank for 4–5 seconds after first load."
-2. **Landing is 100% client-rendered React.** Worker sends `<div id="root">` empty. Browser must download framework chunk + landing-shell + run React mount → only then DOM exists. No HTML hero markup at edge.
-3. **Hero images bundled via Vite** (`@/assets/showcase-overlays-mobile.webp`, `serdiya-mobile.webp`). They get fingerprinted URLs, no edge cache hit on R2/CDN, no Worker preload. ~1.5s to load.
+### 2. New helper `src/lib/addToCartAnimated.ts`
+Single entry point used everywhere:
+```ts
+addToCartAnimated({ item, source, imageUrl, addToCart, openCart })
+```
+- Calls `addToCart(item, { silent: true })` so the side drawer stays closed.
+- Runs `flyToCart` with the product image.
+- After ~720ms (or on `cart:fly-landed`), calls `openCart()` so the drawer slides in **after** the arc lands.
+- If reduced-motion: opens cart immediately.
 
-Worker already does the heavy lifting for storefronts (skeleton, font injection, modulepreload, KV cache). Landing currently gets only modulepreload injection — NO skeleton, NO HTML, NO image preload.
+### 3. Add `data-cart-target` everywhere
+Cart icon must exist as a landing pad in every theme:
+- `DesktopNavBar.tsx` (header cart button — used by V1, V2, V10–V18)
+- `MobileBottomNav.tsx`, `MobileBottomNavModern.tsx`, `MobileBottomNavV15.tsx`, `MobileBottomNavV17.tsx` (now show Cart icon)
+- `V17CartBadge.tsx`
+- Storefront layouts that render their own header cart (audit V3, V11, V13, V18, V21 layouts).
+- The selector picks the **topmost on desktop / bottommost on mobile** automatically, so adding both header + bottom-nav is safe.
 
-## Target after fix
+### 4. Wire the helper into every Add-to-Cart call site
+Replace the current raw `addToCart(...)` + auto-open in each:
+- `src/pages/ProductDetail.tsx` (sticky bar Add-to-Cart)
+- `src/pages/V19ProductDetail.tsx`, `src/pages/V20ProductDetail.tsx`
+- `src/components/storefront/ProductCardStyle1.tsx` (most-used)
+- `src/components/storefront/ProductCardStyle3.tsx`, `ProductCardStyle4.tsx`
+- `src/components/storefront/QuickViewModal.tsx`
+- `src/components/storefront/VariantPickerDialog.tsx`
+- `src/components/storefront/pdp/FrequentlyBoughtTogether.tsx`
+- `src/components/storefront/v19/V19ProductCard.tsx`, `v20/V20ProductCard.tsx` (already animated — switch to new helper for consistency + post-arc cart open)
+- `src/components/storefront/CartUpsell.tsx` (already inside cart — keep silent, no fly)
+- `src/components/CreateOrderDialog.tsx` (admin only — leave untouched)
 
-- **First Paint**: 840ms → ~300ms (Worker-injected hero HTML visible immediately)
-- **FCP**: 3.66s → ~600ms (no font-display:block blocking text)
-- **LCP**: ~2.5s → ~1.2s (hero image preloaded from R2 via Worker)
-- **Perceived blank**: 4–5s → 0s (HTML is in the response)
-- **Full load on 4G India**: 10s → 3–4s
+Each call gets `source = e.currentTarget` and `imageUrl = product.image_url` (or selected variant image).
 
-## What we will build
+### 5. Visual polish
+- Cart-target absorb pulse: existing V19/V20 CSS lifted into a shared global rule in `src/index.css` so every theme gets the bump (uses `--storefront-primary`).
+- Tiny haptic on mobile (`navigator.vibrate?.(8)`) when arc lands.
 
-### 1. Fix font-display:block (biggest single win — instant)
-- `index.html`: change Alegreya SC `font-display:block` → `font-display:optional` (matches storefront pattern in memory: "Secondary fonts use font-display:optional to prevent CLS").
-- Drop the two `<link rel=preload>` for Alegreya SC on landing (172KB off critical path). Landing uses it only for the wordmark and one inline span — a graceful fallback to system serif for 200ms is fine.
-- Keep Inter + Outfit preloads (already `font-display:optional`).
+### Out of scope
+- Wishlist heart animation, price count-up, bottom-nav pill morph (deferred from earlier audit).
+- Theme-specific button micro-interactions.
 
-This alone removes the 3-second forced-blank window.
+## Files touched (≈14)
+- `src/lib/flyToCart.ts` (rewrite)
+- `src/lib/addToCartAnimated.ts` (new)
+- `src/index.css` (shared absorb keyframes)
+- `src/contexts/CartContext.tsx` (no API change; helper passes `silent`)
+- ~10 product card / PDP / dialog files (swap to helper, add `data-cart-target` where needed)
 
-### 2. Worker: pre-render landing HTML skeleton at edge
-Add a new branch in `docs/cloudflare-worker-current.js` for `isLandingPath()` (already exists). When the root domain serves landing HTML, inject **static hero markup** into `<div id="root">…</div>` so the page is never blank.
-
-Markup is hard-coded in the Worker (same approach as the storefront skeleton `#sf-skel`):
-- Navbar (logo + ShopBanao wordmark + Start Free button) — exact same Tailwind classes
-- Hero left column: badge "7-Day Free Trial" + H1 headline + sub paragraph + 2 CTA buttons + trust row
-- Hero right column placeholder (blue panel + phone mockup `<img>` from R2 with `fetchpriority=high`)
-- Add `data-sf-landing="1"` marker
-
-React (LandingApp/Hero) checks for `window.__SF_LANDING_HYDRATE__` (set by Worker) and the existing DOM matches — React 18 hydration replaces it seamlessly. If markup doesn't match exactly, React just re-renders (no flash because the visible content is identical).
-
-Cache this synthesized HTML at edge with `cacheableResponse()` (existing helper, memory: "Cache rate fix for synthesized responses"). TTL 1 hour, stale-while-revalidate 24h. Purged on deploy.
-
-### 3. R2: migrate landing hero images
-Two images need to live on `cdn.shopbanao.in`:
-- `showcase-overlays-mobile.webp` (~25KB)
-- `showcase-serdiya-mobile.webp` (~25KB)
-- `shopbanao-logo.webp` (~5KB)
-
-Upload them via a one-time `r2-upload-landing-assets` edge function (reuses existing R2 SigV4 helper from `r2-upload`). Then update `Hero.tsx` + `Navbar.tsx` to use the CDN URL directly instead of Vite imports.
-
-Worker injects `<link rel=preload as=image fetchpriority=high href=https://cdn.shopbanao.in/landing/overlays-mobile.webp>` in landing HTML head — image starts downloading at byte 0 of HTML, parallel with JS.
-
-### 4. Worker: inline critical CSS for landing
-Worker extracts the ~6KB of CSS actually used by hero+navbar (Tailwind utility classes for first viewport) and inlines it in `<style>` inside `<head>`. The external CSS bundle still loads but no longer blocks first paint. Same pattern as `#sf-skel` inline styles already in Worker.
-
-### 5. Drop the 2s `/~api/analytics` blocking call
-Already shimmed to sendBeacon in index.html lines 37–65, but the request still takes 2s. Add the same skip path used for landing in Worker: do NOT call `/~api/analytics` for landing pageviews; write to Cloudflare Analytics Engine (already used for AE pageviews per memory). One less XHR on critical path.
-
-### 6. Defer below-fold JS chunks more aggressively
-`Index.tsx` already uses `LazyMount` for below-fold. Verify the framework + landing-shell are the only chunks in initial modulepreload (Worker already does this via `LANDING_PRIORITY` regex line 1346). Confirm no leak — current code looks correct; just spot-check after deploy.
-
-## File changes summary
-
-| File | Change |
-|------|--------|
-| `index.html` | Alegreya SC: block→optional; drop 2 alegreya preload links |
-| `docs/cloudflare-worker-current.js` | New `synthesizeLandingHtml()` injects hero+nav DOM, critical CSS, hero image preload; called from landing branch (around line 5061) |
-| `src/components/landing/Hero.tsx` | Use `https://cdn.shopbanao.in/landing/...webp` URLs instead of Vite import; mark hero `<img>` with `id="hero-img-lcp"` so Worker can match preload |
-| `src/components/landing/Navbar.tsx` | Use CDN URL for logo |
-| `supabase/functions/r2-upload-landing-assets/index.ts` | One-time admin-triggered fn that uploads 3 landing assets to R2 (or do it manually via existing r2-upload UI) |
-
-No DB migrations. No new env vars.
-
-## Deployment order (so nothing breaks)
-
-1. Upload 3 landing images to R2 (one-time, via existing admin UI). Verify CDN URLs respond.
-2. Ship code changes (Hero/Navbar use CDN, index.html font fix). Lovable auto-deploys frontend.
-3. Update `docs/cloudflare-worker-current.js` with new landing synthesis logic. **You manually deploy the Worker** (per project rule — Worker is not Vite-bundled).
-4. Purge Cloudflare cache for `shopbanao.in/` and `shopbanao.in/theme` so the new synthesized HTML is generated fresh.
-5. Re-measure on PageSpeed Insights mobile (India).
-
-## Risk & rollback
-
-- Hydration mismatch warning if Worker markup drifts from React Hero output — wrapped in `suppressHydrationWarning` on the root section. Visual content matches so no flash.
-- If Worker synthesis breaks: a feature flag `__SF_LANDING_SYNTH__` env var in Worker; flip to false to fall back to plain index.html (current behavior).
-- Font fallback: if Alegreya SC misses the 100ms window with `font-display:optional`, system serif shows for that session only (next visit it's cached and renders correctly).
-
-## Technical detail (devs only)
-
-- Worker `synthesizeLandingHtml(origHtml, url)` runs only when `isLandingPath(url.pathname) && url.hostname === "shopbanao.in"`. Uses string injection (not HTMLRewriter) because the markup is static — avoids HTMLRewriter cold-start cost.
-- Cache key: `landing:v1:${path}`. Purge on `/api/purge` Worker route with prefix `landing:`.
-- React 18 hydration: `Hero.tsx` stays a client component; the synthesized HTML matches its initial render (no `Math.random()` on first paint — A/B variant must read from cookie sent server-side OR default to variant 0 for first paint, then swap silently after hydration).
-- The `hero_ab` localStorage A/B test currently uses `Math.random()` during render — this WILL cause hydration mismatch. Fix: always render variant 0 on first paint, swap after `useEffect` mount if user is in variant 1. Same content size so no CLS.
+## Risk
+Very low — pure presentation layer, no business logic. WAAPI is supported in every modern browser; reduced-motion users get instant cart open.
