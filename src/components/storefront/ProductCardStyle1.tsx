@@ -8,6 +8,8 @@ import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/im
 import { getProductRating, getDiscountPercent } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
+import { setPdpPreload } from "@/lib/pdpPreload";
+import { resolveProductImages as _resolve } from "@/lib/imageOptimize";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 
 
@@ -50,12 +52,28 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
   const handleIncrement = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); updateQuantity(product.id, undefined, cartQty + 1); };
   const handleDecrement = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); updateQuantity(product.id, undefined, cartQty - 1); };
 
+  const primePdp = () => {
+    prefetchProductDetail();
+    try {
+      const imgs = _resolve(product);
+      setPdpPreload({
+        slug: product.slug || product.id,
+        image: imgs[0] || "",
+        name: product.name,
+        price: product.price as any,
+        salePrice: (product.sale_price as any) ?? null,
+        currency: (store as any).currency || "₹",
+      });
+    } catch {}
+  };
+
   return (
     <div
       className="card-tilt group relative overflow-hidden rounded-2xl transition-all duration-300 ease-out cursor-pointer"
       style={{ boxShadow: cardShadow, contain: priority ? undefined : "layout style", contentVisibility: priority ? undefined : "auto", backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 10%, transparent)" }}
-      onMouseEnter={(e) => { prefetchProductDetail(); setHoverLoaded(true); e.currentTarget.style.boxShadow = cardHoverShadow; }}
-      onTouchStart={prefetchProductDetail}
+      onMouseEnter={(e) => { primePdp(); setHoverLoaded(true); e.currentTarget.style.boxShadow = cardHoverShadow; }}
+      onTouchStart={primePdp}
+      onPointerDown={primePdp}
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = cardShadow; }}
     >
       <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block p-1 pb-0">
