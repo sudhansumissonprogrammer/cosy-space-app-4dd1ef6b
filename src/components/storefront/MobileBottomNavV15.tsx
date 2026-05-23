@@ -63,14 +63,14 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
                   <item.icon
                     className="shrink-0 transition-all duration-400"
                     style={{
-                      width: active ? 18 : 20,
-                      height: active ? 18 : 20,
+                      width: active ? 16 : 18,
+                      height: active ? 16 : 18,
                       color: active ? "var(--storefront-bg, hsl(var(--background)))" : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 70%, transparent)",
                     }}
                     strokeWidth={active ? 2.2 : 1.6}
                   />
                   <span
-                    className={`text-[11px] font-semibold whitespace-nowrap overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                    className={`text-[10px] font-semibold whitespace-nowrap overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                       active
                         ? "max-w-[56px] opacity-100"
                         : "max-w-0 opacity-0"
@@ -95,7 +95,7 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
           style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}
           aria-label={`Cart${cartCount > 0 ? `, ${cartCount} items` : ""}`}
         >
-          <ShoppingCart className="h-5 w-5" strokeWidth={1.6} style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 80%, transparent)" }} />
+          <ShoppingCart className="h-[18px] w-[18px]" strokeWidth={1.6} style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 80%, transparent)" }} />
           {cartCount > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground min-w-[18px] h-[18px]">
               {cartCount > 9 ? "9+" : cartCount}

@@ -82,7 +82,7 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
                 >
                   <item.icon
                     className={`shrink-0 transition-all duration-[400ms] ${
-                      active ? "h-[17px] w-[17px]" : "h-5 w-5"
+                      active ? "h-[15px] w-[15px]" : "h-[18px] w-[18px]"
                     }`}
                     strokeWidth={active ? 2.4 : 1.6}
                     style={{
@@ -97,7 +97,7 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
                     </span>
                   )}
                   <span
-                    className={`text-[11px] font-semibold whitespace-nowrap overflow-hidden transition-all duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                    className={`text-[10px] font-semibold whitespace-nowrap overflow-hidden transition-all duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                       active ? "max-w-[70px] opacity-100" : "max-w-0 opacity-0"
                     }`}
                     style={{
@@ -125,7 +125,7 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
           aria-label={`Cart${cartCount > 0 ? `, ${cartCount} items` : ""}`}
         >
           <ShoppingCart
-            className="h-5 w-5"
+            className="h-[18px] w-[18px]"
             strokeWidth={1.8}
             style={{ color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
           />

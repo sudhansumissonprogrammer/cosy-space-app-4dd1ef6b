@@ -106,17 +106,17 @@ export default function V19BottomNav({ store }: { store: any }) {
                 style={{ color: active ? GREEN : "#6b7280" }}
               >
                 <div className="relative" {...(item.key === "cart" ? { "data-cart-target": "" } : {})}>
-                  <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.4 : 1.8} />
+                  <Icon className="h-[19px] w-[19px]" strokeWidth={active ? 2.4 : 1.8} />
                   {item.badge && item.badge > 0 ? (
                     <span
-                      className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] rounded-full text-white text-[9px] font-bold flex items-center justify-center px-1"
+                      className="absolute -top-1.5 -right-2 min-w-[14px] h-[14px] rounded-full text-white text-[8px] font-bold flex items-center justify-center px-1"
                       style={{ background: GREEN }}
                     >
                       {item.badge > 9 ? "9+" : item.badge}
                     </span>
                   ) : null}
                 </div>
-                <span className="text-[10px] font-semibold">{item.label}</span>
+                <span className="text-[9px] font-semibold">{item.label}</span>
               </Link>
             );
           })}
