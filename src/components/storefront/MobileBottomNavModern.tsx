@@ -4,10 +4,9 @@
  * Includes cart button as elevated circle.
  */
 import { Link, useLocation } from "react-router-dom";
-import { Home, Store, LayoutGrid, Heart, ClipboardList, ShoppingCart } from "lucide-react";
+import { Home, Store, LayoutGrid, ShoppingCart, ClipboardList } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
-import { useWishlist } from "@/contexts/WishlistContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
@@ -15,7 +14,7 @@ const navItems = [
   { key: "home", label: "Home", icon: Home, path: "" },
   { key: "shop", label: "Shop", icon: Store, path: "shop" },
   { key: "categories", label: "Categories", icon: LayoutGrid, path: "categories" },
-  { key: "wishlist", label: "Wishlist", icon: Heart, path: "wishlist" },
+  { key: "cart", label: "Cart", icon: ShoppingCart, path: "cart" },
   { key: "orders", label: "Orders", icon: ClipboardList, path: "account" },
 ];
 
