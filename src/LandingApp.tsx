@@ -11,6 +11,9 @@
  *   - Supabase client (only loaded if user navigates to /login etc.)
  *   - DashboardProviders bundle (Auth, Toaster, TooltipProvider, Sonner)
  *   - All prewarm IIFEs that scan window.location for storefront paths
+ *   - react-helmet-async — only Guides routes use it, so it's lazy-loaded
+ *     via a wrapper component inside those route chunks (saves ~15KB
+ *     off the landing initial bundle)
  *
  * IMPORTANT: Landing's Navbar/Footer use plain <a href> for cross-app links
  * (/login, /signup, /dashboard). Browsers do a hard navigation which then
@@ -18,13 +21,14 @@
  */
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { HelmetProvider } from "react-helmet-async";
 import Index from "./pages/Index";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const ThemeShowcase = lazy(() => import("./pages/ThemeShowcase"));
-const Guides = lazy(() => import("./pages/Guides"));
-const GuideDetail = lazy(() => import("./pages/GuideDetail"));
+// Wrap Guides + GuideDetail in a single chunk that includes HelmetProvider.
+// This keeps react-helmet-async OFF the landing critical path.
+const GuidesWithHelmet = lazy(() => import("./routes/GuidesRoute"));
+const GuideDetailWithHelmet = lazy(() => import("./routes/GuideDetailRoute"));
 
 // NOTE: We deliberately do NOT statically import or prefetch App.tsx from
 // landing code. Any `import("./App")` here causes Rollup to add a
@@ -35,37 +39,35 @@ const GuideDetail = lazy(() => import("./pages/GuideDetail"));
 const LandingApp = () => {
   return (
     <ErrorBoundary>
-      <HelmetProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route
-              path="/theme"
-              element={
-                <Suspense fallback={<div className="min-h-screen bg-background" />}>
-                  <ThemeShowcase />
-                </Suspense>
-              }
-            />
-            <Route
-              path="/guides"
-              element={
-                <Suspense fallback={<div className="min-h-screen bg-background" />}>
-                  <Guides />
-                </Suspense>
-              }
-            />
-            <Route
-              path="/guides/:slug"
-              element={
-                <Suspense fallback={<div className="min-h-screen bg-background" />}>
-                  <GuideDetail />
-                </Suspense>
-              }
-            />
-          </Routes>
-        </BrowserRouter>
-      </HelmetProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route
+            path="/theme"
+            element={
+              <Suspense fallback={<div className="min-h-screen bg-background" />}>
+                <ThemeShowcase />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/guides"
+            element={
+              <Suspense fallback={<div className="min-h-screen bg-background" />}>
+                <GuidesWithHelmet />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/guides/:slug"
+            element={
+              <Suspense fallback={<div className="min-h-screen bg-background" />}>
+                <GuideDetailWithHelmet />
+              </Suspense>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
     </ErrorBoundary>
   );
 };
