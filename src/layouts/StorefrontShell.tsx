@@ -31,6 +31,8 @@ const SmartInstallPrompt = lazy(() => import("@/components/SmartInstallPrompt"))
 const ExitIntentPopup = lazy(() => import("@/components/storefront/ExitIntentPopup"));
 const BackToTop = lazy(() => import("@/components/storefront/BackToTop"));
 const CartPlusOneOverlay = lazy(() => import("@/components/storefront/CartPlusOneOverlay"));
+const StickyCartBar = lazy(() => import("@/components/storefront/StickyCartBar"));
+const OrderConfettiOverlay = lazy(() => import("@/components/storefront/OrderConfettiOverlay"));
 
 /** Defers ExitIntentPopup mounting by 5 seconds to keep initial load fast */
 function DeferredExitIntent({ storeId, storeName }: { storeId: string; storeName: string }) {
@@ -327,6 +329,16 @@ export default function StorefrontShell({
       {overlaysReady && (
         <Suspense fallback={null}>
           <CartPlusOneOverlay />
+        </Suspense>
+      )}
+      {overlaysReady && showSideCart && (
+        <Suspense fallback={null}>
+          <StickyCartBar slug={store.slug} currency={store.currency || "INR"} />
+        </Suspense>
+      )}
+      {overlaysReady && (
+        <Suspense fallback={null}>
+          <OrderConfettiOverlay />
         </Suspense>
       )}
     </div>

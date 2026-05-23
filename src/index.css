@@ -467,6 +467,61 @@
   animation: qty-bounce 0.3s ease-out;
 }
 
+/* ── Cart breathe pulse (when items inside) ── */
+@keyframes cart-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+.cart-breathe {
+  animation: cart-breathe 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cart-breathe { animation: none !important; }
+}
+
+/* ── Sticky Proceed-to-Cart bar slide-up ── */
+@keyframes sticky-cart-slide-up {
+  0%   { transform: translateY(120%); opacity: 0; }
+  60%  { transform: translateY(-6px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes sticky-cart-arrow-nudge {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(4px); }
+}
+.sticky-cart-bar {
+  animation: sticky-cart-slide-up 520ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.sticky-cart-arrow {
+  animation: sticky-cart-arrow-nudge 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sticky-cart-bar,
+  .sticky-cart-arrow { animation: none !important; }
+}
+
+/* ── Confetti burst (order placed) ── */
+@keyframes confetti-burst {
+  0%   { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translate(var(--cx, 0), var(--cy, 0)) rotate(var(--cr, 720deg)) scale(0.4); opacity: 0; }
+}
+.confetti-piece {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 14px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 9999;
+  animation: confetti-burst 1700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti-piece { display: none !important; }
+}
+
 /* ── Premium UX: Scroll progress indicator ── */
 .scroll-progress-bar {
   position: fixed;

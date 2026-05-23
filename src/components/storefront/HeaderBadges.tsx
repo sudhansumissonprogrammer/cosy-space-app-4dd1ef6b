@@ -7,12 +7,13 @@ import { storefrontPath } from "@/lib/subdomain";
 
 export function CartBadge() {
   const { cartCount, openCart } = useCart();
+  const hasItems = cartCount > 0;
   return (
-    <button onClick={openCart} className="relative" aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
-      <div className="flex h-9 w-9 items-center justify-center rounded-md transition-colors" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+    <button onClick={openCart} className="relative" aria-label={`Shopping cart${hasItems ? `, ${cartCount} items` : ''}`}>
+      <div className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${hasItems ? 'cart-breathe' : ''}`} style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
         <ShoppingCart className="h-5 w-5" aria-hidden="true" />
       </div>
-      {cartCount > 0 && (
+      {hasItems && (
         <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--foreground)))", color: "var(--storefront-btn-text, hsl(var(--background)))" }} aria-hidden="true">
           {cartCount > 99 ? "99+" : cartCount}
         </span>
