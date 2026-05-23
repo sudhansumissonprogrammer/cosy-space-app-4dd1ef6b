@@ -1129,8 +1129,8 @@ export default function ProductDetail() {
         document.body
       )}
 
-      {/* Theme-16 Buy Now Phone Modal */}
-      {(store as any).theme === "theme-16" && (
+      {/* Theme 16 / 21 Buy Now Phone Modal */}
+      {((store as any).theme === "theme-16" || (store as any).theme === "theme-21") && (
         <Suspense fallback={null}>
           <BuyNowPhoneModal
             open={buyNowModalOpen}
