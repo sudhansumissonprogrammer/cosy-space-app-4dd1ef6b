@@ -345,33 +345,184 @@
         </div>
       </div>
     </div>
-    <!-- Landing-only branded skeleton — shown ONLY on shopbanao.in root + /theme + /guides.
-         Matches the Bauhaus hero (yellow badge, big black headline, red CTA, blue panel
-         on right) so the user sees something instantly instead of a blank white screen
-         while the React landing bundle loads. Auto-hidden by the script below once
-         either (a) the host is a storefront, or (b) #root has real React content. -->
-    <div id="landing-skel" aria-hidden="true" style="display:none;position:fixed;inset:0;min-height:100vh;background:#fafaf7;z-index:2147482999;pointer-events:none;overflow:hidden;transition:opacity .25s ease-out;font-family:'Outfit',Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#111">
-      <nav style="height:56px;background:#fffffe;border-bottom:4px solid #111;display:flex;align-items:center;justify-content:space-between;padding:0 16px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="height:36px;width:36px;background:#e63946;border:2px solid #111;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px">S</div>
-          <span style="font-weight:900;font-size:16px;letter-spacing:-.02em">ShopBanao</span>
+    <!-- Landing-only branded skeleton — pixel-perfect match of Hero.tsx + Navbar.tsx.
+         Uses real bauhaus tokens (HSL → hex), real logo from /landing/, same nav links,
+         same right-panel blue showcase, same mobile bottom strip, same Lucide icons
+         (inlined as SVG). When React hydrates, the transition is invisible because
+         layout/colors/structure already match.
+         Token map: bg=#f4f6f9 fg=#121826 mut=#4a5366 red=#d11d24 blue=#0f4ebd yel=#ecb725 -->
+    <div id="landing-skel" aria-hidden="true" style="display:none;position:fixed;inset:0;min-height:100vh;background:#f4f6f9;z-index:2147482999;pointer-events:none;overflow:hidden;transition:opacity .25s ease-out;font-family:'Outfit',Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#121826">
+      <!-- NAV (matches Navbar.tsx exactly) -->
+      <nav style="background:#fff;border-bottom:4px solid #121826">
+        <div style="max-width:80rem;margin:0 auto;padding:0 12px;display:flex;align-items:center;justify-content:space-between;height:56px" class="ls-nav-row">
+          <a href="/" style="display:flex;align-items:center;gap:0;text-decoration:none;color:inherit">
+            <img src="/landing/shopbanao-logo.webp" alt="ShopBanao" width="64" height="64" style="height:56px;width:auto;display:block" fetchpriority="high" decoding="async"/>
+            <span style="font-family:'Alegreya SC',Georgia,serif;font-weight:700;font-size:24px;color:#121826;margin-left:-4px">ShopBanao</span>
+          </a>
+          <div class="ls-nav-links" style="display:none;align-items:center;gap:32px">
+            <span style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px">Features</span>
+            <span style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px">Pricing</span>
+            <span style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px">For Sellers</span>
+            <span style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px">Partners</span>
+            <span style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px">FAQ</span>
+            <span style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px">Store Owner Login</span>
+          </div>
+          <div class="ls-nav-cta" style="display:none;align-items:center">
+            <span style="background:#d11d24;color:#fff;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:12px;padding:8px 16px;border:2px solid #121826;box-shadow:4px 4px 0 #121826">Start Free</span>
+          </div>
+          <div class="ls-nav-burger" style="padding:8px;border:2px solid #121826;width:40px;height:40px;box-sizing:border-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </div>
         </div>
-        <div style="height:32px;display:flex;align-items:center;padding:0 14px;background:#e63946;color:#fff;border:2px solid #111;box-shadow:3px 3px 0 #111;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.08em">Sign Up</div>
       </nav>
-      <div style="padding:56px 20px 0;max-width:1200px;margin:0 auto">
-        <div style="display:inline-block;padding:6px 12px;background:#ffd60a;border:2px solid #111;box-shadow:2px 2px 0 #111;margin-bottom:24px;font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.12em">7-Day Free Trial</div>
-        <h1 style="font-weight:900;font-size:clamp(28px,5.5vw,60px);line-height:1.1;letter-spacing:-.02em;margin:0 0 18px;max-width:760px">Launch Your Own Store in 5 Minutes — No Commission, No Coding with <span style="color:#e63946;font-style:italic;font-family:'Alegreya SC',serif;font-size:1.15em">ShopBanao</span></h1>
-        <p style="font-weight:500;font-size:clamp(14px,2vw,18px);line-height:1.5;color:#555;margin:0 0 28px;max-width:520px">Keep 100% of your revenue. Your branded store with custom domain &amp; UPI payments — live in 10 minutes.</p>
-        <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap">
-          <div style="height:46px;display:flex;align-items:center;gap:8px;padding:0 22px;background:#e63946;color:#fff;border:2px solid #111;box-shadow:4px 4px 0 #111;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.08em">Start Free Trial →</div>
-          <div style="height:46px;display:flex;align-items:center;padding:0 22px;background:#fffffe;color:#111;border:2px solid #111;box-shadow:4px 4px 0 #111;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.08em">View Themes</div>
+
+      <!-- HERO SECTION (matches Hero.tsx <section className="border-b-4 border-foreground">) -->
+      <section style="border-bottom:4px solid #121826">
+        <div style="padding:56px 20px 0;min-height:72svh;display:flex;flex-direction:column;justify-content:center" class="ls-hero-pad">
+          <div style="display:grid;grid-template-columns:1fr;gap:0;max-width:80rem;margin:0 auto;width:100%" class="ls-hero-grid">
+            <!-- LEFT column -->
+            <div style="display:flex;flex-direction:column;justify-content:center">
+              <div style="display:inline-flex;align-items:center;gap:8px;border:2px solid #121826;padding:6px 12px;margin-bottom:24px;box-shadow:3px 3px 0 #121826;background:#ecb725;width:fit-content">
+                <span style="font-weight:700;text-transform:uppercase;letter-spacing:.12em;font-size:10px;color:#121826">7-Day Free Trial</span>
+              </div>
+              <h1 style="font-weight:900;font-size:28px;letter-spacing:-.02em;line-height:1.1;color:#121826;margin:0 0 16px" class="ls-hero-h1">
+                Launch Your Own Store in 5 Minutes —<br/>No Commission, No Coding with <span style="color:#d11d24;font-style:italic;font-family:'Alegreya SC',Georgia,serif;font-weight:700;font-size:1.15em">ShopBanao</span>
+              </h1>
+              <p style="font-weight:500;font-size:14px;color:#4a5366;line-height:1.6;margin:0 0 28px;max-width:28rem" class="ls-hero-sub">
+                Keep 100% of your revenue. Your branded store with custom domain &amp; UPI payments — live in 10 minutes.
+              </p>
+              <div style="display:flex;flex-direction:row;gap:12px;margin-bottom:24px">
+                <span style="display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#d11d24;color:#fff;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:12px;padding:12px 20px;border:2px solid #121826;box-shadow:4px 4px 0 #121826">
+                  Start Free Trial
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </span>
+                <span style="display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:#121826;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:12px;padding:12px 20px;border:2px solid #121826;box-shadow:4px 4px 0 #121826">
+                  View Themes
+                </span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="display:inline-flex;align-items:center;gap:6px;color:#4a5366;font-weight:500;font-size:11px;white-space:nowrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#0f4ebd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                  Zero Commission
+                </span>
+                <span style="display:inline-flex;align-items:center;gap:6px;color:#4a5366;font-weight:500;font-size:11px;white-space:nowrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#0f4ebd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                  UPI Payments
+                </span>
+                <span style="display:inline-flex;align-items:center;gap:6px;color:#4a5366;font-weight:500;font-size:11px;white-space:nowrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#0f4ebd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                  Custom Domain
+                </span>
+              </div>
+            </div>
+
+            <!-- RIGHT column — desktop only (matches lg:flex bg-bauhaus-blue) -->
+            <div class="ls-hero-right" style="display:none;background:#0f4ebd;align-items:flex-end;justify-content:center;position:relative;overflow:hidden;min-height:520px;margin-right:-48px">
+              <div style="position:absolute;inset:0;opacity:.1;background-image:radial-gradient(#fff 2px,transparent 2px);background-size:20px 20px"></div>
+              <div style="position:absolute;top:-64px;right:-64px;width:256px;height:256px;border-radius:9999px;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1)"></div>
+              <div style="position:absolute;bottom:-80px;left:-80px;width:288px;height:288px;border-radius:9999px;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.1)"></div>
+              <div style="position:relative;z-index:10;display:flex;align-items:flex-end;gap:20px;padding:0 24px 24px">
+                <div style="width:190px;transform:rotate(-3deg) translateY(12px)">
+                  <div style="background:#121826;border-radius:22px;padding:3px;box-shadow:0 25px 50px -12px rgba(0,0,0,.25)">
+                    <div style="border-radius:19px;overflow:hidden;aspect-ratio:9/19.5">
+                      <img src="/landing/showcase-overlays-mobile.webp" alt="Overlays" width="190" height="411" style="width:100%;height:100%;object-fit:cover;display:block" fetchpriority="high" decoding="async"/>
+                    </div>
+                  </div>
+                </div>
+                <div style="width:190px;transform:rotate(3deg) translateY(-12px)">
+                  <div style="background:#121826;border-radius:22px;padding:3px;box-shadow:0 25px 50px -12px rgba(0,0,0,.25)">
+                    <div style="border-radius:19px;overflow:hidden;aspect-ratio:9/19.5">
+                      <img src="/landing/showcase-serdiya-mobile.webp" alt="Serdiya" width="190" height="411" style="width:100%;height:100%;object-fit:cover;display:block" decoding="async"/>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style="position:absolute;bottom:20px;left:20px;background:#fff;border:3px solid #121826;box-shadow:8px 8px 0 #121826;padding:12px;width:176px;z-index:20">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                  <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#4a5366">Revenue</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#d11d24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                </div>
+                <div style="font-size:20px;font-weight:900;color:#121826">₹12,450</div>
+                <div style="font-size:9px;font-weight:700;color:#d11d24;margin-top:2px">↑ 23% from yesterday</div>
+              </div>
+              <div style="position:absolute;top:20px;right:20px;background:#fff;border:3px solid #121826;box-shadow:4px 4px 0 #121826;padding:10px;width:128px;z-index:20">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                  <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#4a5366">Orders</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#0f4ebd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                </div>
+                <div style="font-size:18px;font-weight:900;color:#121826">34</div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div style="display:flex;gap:20px;flex-wrap:wrap;color:#555;font-weight:500;font-size:12px">
-          <span>🛡 Zero Commission</span>
-          <span>💳 UPI Payments</span>
-          <span>🌐 Custom Domain</span>
+
+        <!-- MOBILE bottom blue panel + 3 stat cells (matches lg:hidden block in Hero) -->
+        <div class="ls-hero-mobile" style="background:#0f4ebd;border-top:4px solid #121826">
+          <div style="display:flex;justify-content:center;gap:16px;padding:24px 20px;overflow:hidden">
+            <div style="width:145px;transform:rotate(-2deg)">
+              <div style="background:#121826;border-radius:22px;padding:3px">
+                <div style="border-radius:19px;overflow:hidden;aspect-ratio:9/19.5">
+                  <img src="/landing/showcase-overlays-mobile.webp" alt="Overlays" width="145" height="314" style="width:100%;height:100%;object-fit:cover;display:block" decoding="async"/>
+                </div>
+              </div>
+            </div>
+            <div style="width:145px;transform:rotate(2deg)">
+              <div style="background:#121826;border-radius:22px;padding:3px">
+                <div style="border-radius:19px;overflow:hidden;aspect-ratio:9/19.5">
+                  <img src="/landing/showcase-serdiya-mobile.webp" alt="Serdiya" width="145" height="314" style="width:100%;height:100%;object-fit:cover;display:block" decoding="async"/>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);border-top:4px solid #121826">
+            <div style="background:#fff;border-right:2px solid #121826;padding:12px">
+              <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#4a5366;margin-bottom:4px">Revenue</div>
+              <div style="font-size:16px;font-weight:900;color:#121826">₹12,450</div>
+              <div style="font-size:9px;font-weight:700;color:#d11d24">↑ 23%</div>
+            </div>
+            <div style="background:#fff;border-right:2px solid #121826;padding:12px">
+              <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#4a5366;margin-bottom:4px">Orders</div>
+              <div style="font-size:16px;font-weight:900;color:#121826">34</div>
+            </div>
+            <div style="background:#ecb725;padding:12px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+              <div style="display:flex;gap:6px;margin-bottom:6px">
+                <div style="width:12px;height:12px;border-radius:9999px;background:#d11d24"></div>
+                <div style="width:12px;height:12px;background:#0f4ebd"></div>
+                <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid #121826"></div>
+              </div>
+              <span style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#121826">Store Live</span>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <!-- Responsive rules — show desktop nav links + right panel ≥768px, hide mobile parts -->
+      <style>
+        @media (min-width:768px){
+          #landing-skel .ls-nav-row{height:80px;padding:0 24px}
+          #landing-skel .ls-nav-row img{height:64px}
+          #landing-skel .ls-nav-row a > span{font-size:30px}
+          #landing-skel .ls-nav-links{display:flex !important}
+          #landing-skel .ls-nav-cta{display:flex !important}
+          #landing-skel .ls-nav-burger{display:none}
+          #landing-skel .ls-hero-h1{font-size:36px;margin-bottom:20px}
+          #landing-skel .ls-hero-sub{font-size:16px}
+          #landing-skel .ls-hero-pad{padding:64px 32px 0}
+        }
+        @media (min-width:1024px){
+          #landing-skel .ls-hero-pad{padding:0 48px;min-height:0}
+          #landing-skel .ls-hero-grid{grid-template-columns:1fr 1fr}
+          #landing-skel .ls-hero-h1{font-size:48px}
+          #landing-skel .ls-hero-sub{font-size:18px}
+          #landing-skel .ls-hero-right{display:flex !important}
+          #landing-skel .ls-hero-mobile{display:none}
+          #landing-skel .ls-hero-grid > div:first-child{padding:80px 0}
+        }
+        @media (min-width:1280px){
+          #landing-skel .ls-hero-h1{font-size:60px}
+          #landing-skel .ls-hero-pad{padding:0 64px}
+        }
+      </style>
     </div>
     <div id="root"></div>
     <script>
