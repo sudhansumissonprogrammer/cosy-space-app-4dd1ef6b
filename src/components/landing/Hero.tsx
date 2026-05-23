@@ -59,6 +59,15 @@ const HERO = {
 const Hero = () => {
   const { headline, sub } = HERO;
 
+  // Signal the index.html skeleton remover that the REAL hero is now mounted
+  // so it can crossfade out only after our DOM exists.
+  useEffect(() => {
+    (window as any).__LANDING_HERO_READY__ = true;
+    window.dispatchEvent(new Event("landing:hero-ready"));
+  }, []);
+
+
+
   return (
     <section className="border-b-4 border-foreground">
       <div className="px-5 sm:px-8 lg:px-12 xl:px-16 py-14 sm:py-16 lg:py-0 min-h-[72svh] sm:min-h-0 flex flex-col justify-center">

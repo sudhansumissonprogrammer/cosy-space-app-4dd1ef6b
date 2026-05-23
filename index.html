@@ -351,7 +351,7 @@
          (inlined as SVG). When React hydrates, the transition is invisible because
          layout/colors/structure already match.
          Token map: bg=#f4f6f9 fg=#121826 mut=#4a5366 red=#d11d24 blue=#0f4ebd yel=#ecb725 -->
-    <div id="landing-skel" aria-hidden="true" style="display:none;position:fixed;inset:0;min-height:100vh;background:#f4f6f9;z-index:2147482999;pointer-events:none;overflow:hidden;transition:opacity .25s ease-out;font-family:'Outfit',Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#121826">
+    <div id="landing-skel" aria-hidden="true" style="display:none;position:fixed;inset:0;min-height:100vh;background:#f5f6f9;z-index:2147482999;pointer-events:none;overflow:hidden;transition:opacity .45s ease-out;font-family:'Outfit',Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#121826">
       <!-- NAV (matches Navbar.tsx exactly) -->
       <nav style="background:#fff;border-bottom:4px solid #121826">
         <div style="max-width:80rem;margin:0 auto;padding:0 12px;display:flex;align-items:center;justify-content:space-between;height:56px" class="ls-nav-row">
@@ -574,76 +574,62 @@
            4. Then hide both skeletons instantly */
       (function(){
         var done=false;
-        var dataReady=false;
-
         function killNow(){
           if(done) return;
           done=true;
           ['sf-skel','inline-skel','landing-skel'].forEach(function(id){
             var s=document.getElementById(id);
             if(!s) return;
-            /* Fade out smoothly so user never sees a blank flash */
             s.style.opacity='0';
             s.style.pointerEvents='none';
-            setTimeout(function(){
-              if(s.parentNode) s.parentNode.removeChild(s);
-            },220);
+            setTimeout(function(){ if(s.parentNode) s.parentNode.removeChild(s); },480);
           });
         }
-
+        function fadeAfterTwoFrames(){
+          requestAnimationFrame(function(){ requestAnimationFrame(killNow); });
+        }
         function hasRealContent(){
           var root=document.getElementById('root');
           if(!root) return false;
-          /* Real content = wrapper has substantial height. We do NOT wait for
-             images to finish decoding — Supabase image-transform can take 2-3s
-             per image, which would block FCP unnecessarily. The product card
-             grid reserves layout space (aspect-ratio), so fading the skeleton
-             on first commit shows the user the page structure immediately
-             while images stream in progressively (browser-native behavior). */
           var totalHeight=0;
           var kids=root.children;
-          for(var i=0;i<kids.length;i++){
-            totalHeight+=kids[i].offsetHeight;
-          }
-          /* Need real React content (not just early shell). 120px is enough
-             for mobile nav + first content row; waiting for 400px can keep
-             the skeleton visible too long on cold mobile loads. */
+          for(var i=0;i<kids.length;i++){ totalHeight+=kids[i].offsetHeight; }
           return totalHeight>=120;
+        }
+
+        var isLanding=(location.pathname==='/'||location.pathname==='/theme'||location.pathname==='/guides'||location.pathname.indexOf('/guides/')===0);
+
+        if(isLanding){
+          /* Wait for Hero.tsx mount signal — guarantees React DOM exists
+             before we crossfade. This eliminates the visible "swap" because
+             the skeleton (same colors/layout) just dissolves over the
+             already-painted React content. */
+          if(window.__LANDING_HERO_READY__){ fadeAfterTwoFrames(); }
+          else { window.addEventListener('landing:hero-ready', fadeAfterTwoFrames, {once:true}); }
         }
 
         function waitForPaint(){
           if(done) return;
-          if(hasRealContent()){
-            requestAnimationFrame(function(){
-              requestAnimationFrame(killNow);
-            });
-            return;
-          }
-          /* Poll every 32ms (~2 frames) up to ~10s after start */
+          if(hasRealContent()){ fadeAfterTwoFrames(); return; }
           if(waitForPaint._tries===undefined) waitForPaint._tries=0;
           waitForPaint._tries++;
           if(waitForPaint._tries>300){killNow();return;}
           setTimeout(waitForPaint,32);
         }
 
-        window.addEventListener('storefront:content-ready',function(){
-          dataReady=true;
-          waitForPaint();
-        },{once:true});
+        window.addEventListener('storefront:content-ready',function(){ waitForPaint(); },{once:true});
 
-        /* Also start polling immediately — handles cases where the
-           content-ready event fires before this listener attaches, or where
-           a page (e.g. error/empty state) never dispatches it but still
-           paints valid content. */
-        if(document.readyState!=='loading'){
-          setTimeout(waitForPaint,200);
-        }else{
-          document.addEventListener('DOMContentLoaded',function(){setTimeout(waitForPaint,200);},{once:true});
+        if(!isLanding){
+          if(document.readyState!=='loading'){
+            setTimeout(waitForPaint,200);
+          }else{
+            document.addEventListener('DOMContentLoaded',function(){setTimeout(waitForPaint,200);},{once:true});
+          }
         }
 
-        /* Hard fallback: 12s timeout */
         setTimeout(killNow,12000);
       })();
+
     </script>
     <script>
       (function(){
