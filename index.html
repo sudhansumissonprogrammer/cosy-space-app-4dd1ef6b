@@ -65,11 +65,13 @@
       })();
     </script>
     <!-- Self-hosted fonts — no external network calls to Google.
-         The default storefront brand font uses font-display:block so cold loads
-         do not paint a wrong fallback font before Alegreya SC is ready. -->
+         Alegreya SC uses font-display:optional so it NEVER blocks paint. On a
+         cold load the system serif fallback shows briefly; on the next visit
+         the cached font swaps in. Previously font-display:block held first
+         paint for ~3s on cold mobile loads — single biggest landing win. -->
     <style>
-      @font-face{font-family:'Alegreya SC';font-style:normal;font-weight:400;font-display:block;src:url('/fonts/alegreya-sc-400.woff2') format('woff2')}
-      @font-face{font-family:'Alegreya SC';font-style:normal;font-weight:700;font-display:block;src:url('/fonts/alegreya-sc-700.woff2') format('woff2')}
+      @font-face{font-family:'Alegreya SC';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/alegreya-sc-400.woff2') format('woff2')}
+      @font-face{font-family:'Alegreya SC';font-style:normal;font-weight:700;font-display:optional;src:url('/fonts/alegreya-sc-700.woff2') format('woff2')}
       @font-face{font-family:'Poppins';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/poppins-400.woff2') format('woff2')}
       @font-face{font-family:'Poppins';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/poppins-500.woff2') format('woff2')}
       @font-face{font-family:'Poppins';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/poppins-600.woff2') format('woff2')}
