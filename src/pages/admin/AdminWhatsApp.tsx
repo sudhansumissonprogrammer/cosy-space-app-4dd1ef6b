@@ -368,7 +368,11 @@ function AdminBulkTab() {
   const { data: platformConfig } = useQuery({
     queryKey: ["platform-config-admin"],
     queryFn: async () => {
-      const { data } = await supabase.from("platform_config").select("*").limit(1).single();
+      const { data } = await supabase
+        .from("platform_config")
+        .select("id, platform_name, default_currency, wa_phone_number_id, wa_business_phone")
+        .limit(1)
+        .single();
       return data;
     },
   });
