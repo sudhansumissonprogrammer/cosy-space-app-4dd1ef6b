@@ -40,7 +40,8 @@ export default function AdminStores() {
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("stores").select("*")
+        .from("stores")
+        .select("id, owner_id, name, slug, logo_url, is_suspended, is_verified, created_at")
         .order("created_at", { ascending: false })
         .range(pagination.from, pagination.to);
       if (error) throw error;
