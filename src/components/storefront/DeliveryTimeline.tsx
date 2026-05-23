@@ -155,7 +155,7 @@ export default function DeliveryTimeline() {
         </div>
 
         {/* ── Truck (single journey, no infinite loop) ── */}
-        <div aria-hidden="true" className="dt-truck-wrap pointer-events-none absolute top-6"
+        <div aria-hidden="true" className="dt-truck-wrap pointer-events-none absolute top-6 z-20"
              style={{ transform: "translate(-50%, -50%)" }}>
           <div className="dt-truck flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-2 ring-card">
             <Truck className="h-3.5 w-3.5" strokeWidth={2.25} />
