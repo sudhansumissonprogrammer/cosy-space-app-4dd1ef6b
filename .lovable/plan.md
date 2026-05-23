@@ -1,139 +1,94 @@
-## Goal
 
-Cut serdiyajewellers.shop (and every storefront) cold-load FCP from ~3.2 s to **1.2 – 1.5 s** without changing behavior or risking ban/SEO. Done in 4 small, reversible phases — each phase is independently shippable and measurable.
+# Landing page sub-3s plan — Worker HTML + R2 + font fix
 
-## Measured baseline (cold load, real browser)
+## Why landing feels 8–10s blank (root cause from code + perf trace)
 
-| Metric | Now |
-|---|---|
-| HTML document loaded | 1969 ms |
-| First Paint | 2032 ms |
-| FCP | **3248 ms** |
-| Slowest XHRs | products 1073 ms, shipping 822 ms, get_store_public_email 808 ms, shell 761 ms |
-| Duplicate fonts | `/fonts/alegreya-sc-*` (self-host) **and** `fonts.gstatic.com/alegreyasc/*` (Google) — both fire |
+Measured numbers: TTFB 596ms, First Paint 840ms, **FCP 3.66s**, transfer 1.3MB. On slow 4G that 3.6s easily becomes 8–10s. Three culprits combined:
 
-## Root causes confirmed in the code
+1. **Alegreya SC font is `font-display: block`** (index.html line 70–71). This is the #1 blank-screen reason. `block` literally hides ALL text using this font for up to ~3 seconds until the 172KB font downloads. Because the headline and "ShopBanao" wordmark in nav both use Alegreya SC, the page paints white until the font arrives. Combined with React mount time, this is what users see as "blank for 4–5 seconds after first load."
+2. **Landing is 100% client-rendered React.** Worker sends `<div id="root">` empty. Browser must download framework chunk + landing-shell + run React mount → only then DOM exists. No HTML hero markup at edge.
+3. **Hero images bundled via Vite** (`@/assets/showcase-overlays-mobile.webp`, `serdiya-mobile.webp`). They get fingerprinted URLs, no edge cache hit on R2/CDN, no Worker preload. ~1.5s to load.
 
-1. **Worker awaits shell RPC before flushing HTML.** `docs/cloudflare-worker-current.js` calls `prefetchStorefrontDataWithDeadline(...)` then builds the full string in `injectIntoHtml()` and only then returns the `Response`. Browser sees byte-0 only after the Supabase round-trip.
-2. **Font duplication.** Worker’s `SELF_HOSTED` map keys on the exact font name (`"Alegreya SC"`). If the store’s `theme_config.heading_font` is stored as `"Alegreya"` or any variant, Worker falls through to Google Fonts AND `index.html`'s fallback `injectGFont(...)` (lines 136-146) can also fire. Also `index.html` line 81 unconditionally loads Montserrat Alternates via Google on every route, including storefronts.
-3. **Post-paint serial Supabase calls.** Even though Worker inlines `__STOREFRONT_DATA__`, the React app still fires:
-   - `rpc/get_store_public_email` (808 ms) — for the "contact owner" link
-   - `store_shipping_config` (822 ms) — for TrustStrip/Cart
-   - `products` (1073 ms) — when Worker didn’t inline products
-   - `rpc/get_storefront_shell` (761 ms) — because `useStorefront` re-fires when the Worker’s injected data races with the in-page prefetch and the bridge timeout fires.
-4. **`supabase-js` chunk loads on storefront home.** `src/layouts/StorefrontLayout.logic.ts` does `await import("@/integrations/supabase/client")` even when data is already inlined.
+Worker already does the heavy lifting for storefronts (skeleton, font injection, modulepreload, KV cache). Landing currently gets only modulepreload injection — NO skeleton, NO HTML, NO image preload.
 
-## Phase 1 — Streaming HTML in the Worker  (biggest win, -1200 ms FCP)
+## Target after fix
 
-**Files:** `docs/cloudflare-worker-current.js` only.
+- **First Paint**: 840ms → ~300ms (Worker-injected hero HTML visible immediately)
+- **FCP**: 3.66s → ~600ms (no font-display:block blocking text)
+- **LCP**: ~2.5s → ~1.2s (hero image preloaded from R2 via Worker)
+- **Perceived blank**: 4–5s → 0s (HTML is in the response)
+- **Full load on 4G India**: 10s → 3–4s
 
-Convert `injectIntoHtml(...)` from "build string → return Response" to a `TransformStream` pipeline:
+## What we will build
 
-```text
-fetch(originHtmlPromise)                  ── start in parallel
-fetch(get_storefront_shell RPC)           ── start in parallel
-writer.write(<head> + skeleton CSS + font preloads + LCP preload)   ← T+30ms, browser starts CSS/JS
-await shell                                                          ← T+700ms
-writer.write(<meta og>, <title>, theme CSS, __STOREFRONT_DATA__ script)
-writer.write(<body> + skeleton)
-writer.close()
-```
+### 1. Fix font-display:block (biggest single win — instant)
+- `index.html`: change Alegreya SC `font-display:block` → `font-display:optional` (matches storefront pattern in memory: "Secondary fonts use font-display:optional to prevent CLS").
+- Drop the two `<link rel=preload>` for Alegreya SC on landing (172KB off critical path). Landing uses it only for the wordmark and one inline span — a graceful fallback to system serif for 200ms is fine.
+- Keep Inter + Outfit preloads (already `font-display:optional`).
 
-Implementation steps:
-1. Add a new helper `streamStorefrontHtml(slug, ctx, env, hostname)` that returns `new Response(readable, { headers: ... })`.
-2. Move only the *static, store-independent* parts of `injectIntoHtml` (skeleton, critical product-card CSS, Inter font preload, hardcoded `<link rel=preload>` for /assets/*.css) into a `buildEarlyHead()` function that runs synchronously.
-3. Move the *store-dependent* parts (OG meta, theme CSS, `__STOREFRONT_DATA__`, hero preload) into `buildLateHead(shell)` that runs after the RPC resolves.
-4. Pipe via `TransformStream`, flush early chunk, then await shell, then flush late chunk + body.
-5. Cache the streaming response via `ctx.waitUntil(cache.put(...))` only after both halves are committed (use a `TeeStream` so cache gets the full HTML).
-6. Routes already covered by `_memShell` / KV stay synchronous (single write).
+This alone removes the 3-second forced-blank window.
 
-Roll-out safety:
-- Behind a Worker env flag `STREAM_HTML="1"`. Default off. Flip on for one custom domain first (`serdiyajewellers.shop`), measure, then enable globally.
-- Add `X-Stream: early|full` header for observability.
-- Roll back = unset env var, redeploy (≈30 s).
+### 2. Worker: pre-render landing HTML skeleton at edge
+Add a new branch in `docs/cloudflare-worker-current.js` for `isLandingPath()` (already exists). When the root domain serves landing HTML, inject **static hero markup** into `<div id="root">…</div>` so the page is never blank.
 
-Expected: HTML head arrives at ~150 ms (instead of 1900 ms). FCP drops by ~1.2 s.
+Markup is hard-coded in the Worker (same approach as the storefront skeleton `#sf-skel`):
+- Navbar (logo + ShopBanao wordmark + Start Free button) — exact same Tailwind classes
+- Hero left column: badge "7-Day Free Trial" + H1 headline + sub paragraph + 2 CTA buttons + trust row
+- Hero right column placeholder (blue panel + phone mockup `<img>` from R2 with `fetchpriority=high`)
+- Add `data-sf-landing="1"` marker
 
-## Phase 2 — Fix font duplication  (-600 to -800 ms FCP)
+React (LandingApp/Hero) checks for `window.__SF_LANDING_HYDRATE__` (set by Worker) and the existing DOM matches — React 18 hydration replaces it seamlessly. If markup doesn't match exactly, React just re-renders (no flash because the visible content is identical).
 
-**Files:** `docs/cloudflare-worker-current.js`, `index.html`.
+Cache this synthesized HTML at edge with `cacheableResponse()` (existing helper, memory: "Cache rate fix for synthesized responses"). TTL 1 hour, stale-while-revalidate 24h. Purged on deploy.
 
-1. **Normalize font names in Worker `SELF_HOSTED` lookup.** Add a helper `normalizeFontName(s)` that lowercases + trims, and use a normalized map so `"alegreya sc"`, `"Alegreya SC"`, `"Alegreya"` all hit the local files when we ship them. Add the most-used Indian merchant fonts to the self-hosted folder (`Playfair Display`, `Cormorant Garamond`, `Lora`, `Cinzel`) — one-time `bun add` of the woff2s into `public/fonts/`.
-2. **Worker: skip Google Fonts entirely when every requested family is self-hosted.** Today the code already does this, but verify the `remoteFonts.length > 0` branch genuinely is empty for this store post-normalization.
-3. **`index.html`: remove the storefront fallback `injectGFont(...)` when the Worker marker is present.** Line 134 already guards on `document.querySelector('link[data-sf-font]')`. Add a second guard: if `window.__SF_WORKER__` is true, skip the entire fallback block — prevents the race where the React fallback fires before the Worker’s `<link data-sf-font>` is parsed.
-4. **`index.html` line 81 (Montserrat Alternates Google stylesheet): move into the dashboard-only path.** This font is only used by the dashboard; it shouldn’t be on the storefront critical path. Replace with a runtime injection inside `src/main.tsx`'s existing `loadFonts()` dashboard branch.
-5. **Audit `serdiyajewellers` theme_config.** Read the row and confirm `heading_font` value matches the self-hosted whitelist key after normalization. If not, write a one-off migration that normalizes existing rows.
+### 3. R2: migrate landing hero images
+Two images need to live on `cdn.shopbanao.in`:
+- `showcase-overlays-mobile.webp` (~25KB)
+- `showcase-serdiya-mobile.webp` (~25KB)
+- `shopbanao-logo.webp` (~5KB)
 
-Roll-out safety:
-- Pure additive changes for Worker (normalization can’t miss a font, it only catches more).
-- `index.html` change is a 1-line guard — easy to revert.
-- Test on preview + serdiyajewellers + one other live store before rolling broadly.
+Upload them via a one-time `r2-upload-landing-assets` edge function (reuses existing R2 SigV4 helper from `r2-upload`). Then update `Hero.tsx` + `Navbar.tsx` to use the CDN URL directly instead of Vite imports.
 
-Expected: FCP gap (currently 1216 ms between FP and FCP) collapses to ~300 ms.
+Worker injects `<link rel=preload as=image fetchpriority=high href=https://cdn.shopbanao.in/landing/overlays-mobile.webp>` in landing HTML head — image starts downloading at byte 0 of HTML, parallel with JS.
 
-## Phase 3 — Inline everything React asks for  (-1000 ms perceived, products visible 1 s earlier)
+### 4. Worker: inline critical CSS for landing
+Worker extracts the ~6KB of CSS actually used by hero+navbar (Tailwind utility classes for first viewport) and inlines it in `<style>` inside `<head>`. The external CSS bundle still loads but no longer blocks first paint. Same pattern as `#sf-skel` inline styles already in Worker.
 
-**Files:** `supabase/migrations/*.sql` (new), `src/layouts/StorefrontLayout.logic.ts`, hooks that fetch `shipping_config` / `store_public_email`.
+### 5. Drop the 2s `/~api/analytics` blocking call
+Already shimmed to sendBeacon in index.html lines 37–65, but the request still takes 2s. Add the same skip path used for landing in Worker: do NOT call `/~api/analytics` for landing pageviews; write to Cloudflare Analytics Engine (already used for AE pageviews per memory). One less XHR on critical path.
 
-1. **Extend `get_storefront_shell` RPC** to additionally return:
-   - `shipping_config` (already partially there per code — verify it’s in payload)
-   - `owner_email` (the column `get_store_public_email` returns)
-   - `products_preview`: top 20 active products with the same `select=` list the React app uses, ordered by `is_best_selling.desc, created_at.desc, id.asc`
-   
-   Use the `DROP FUNCTION IF EXISTS` + `CREATE OR REPLACE` pattern (memory rule: an event trigger blocks overloads).
-2. **Worker:** inline the new payload into `window.__STOREFRONT_DATA__` (already does shell — just stop trimming the new fields). Set `window.__PRODUCTS_INLINE__ = true` when products are present so `index.html` skips the parallel products fetch entirely.
-3. **`StorefrontLayout.logic.ts`:** when injected payload contains `shipping_config` / `products_preview` / `owner_email`, seed the matching React Query keys so child pages skip the network round-trip:
-   - `["storefront-shipping-config", store.id]`
-   - `["storefront-products-preview", store.id]`
-   - `["storefront-owner-email", store.id]`
-4. **Audit and delete the now-dead direct Supabase calls** (`rpc/get_store_public_email`, `store_shipping_config`, the early `products?store_id=...` fetch in `index.html` lines 161-171 and 248-267).
+### 6. Defer below-fold JS chunks more aggressively
+`Index.tsx` already uses `LazyMount` for below-fold. Verify the framework + landing-shell are the only chunks in initial modulepreload (Worker already does this via `LANDING_PRIORITY` regex line 1346). Confirm no leak — current code looks correct; just spot-check after deploy.
 
-Roll-out safety:
-- New RPC ships first; React keeps its old calls. Verify shell payload size grows by ≤ 8 KB (still well under Worker’s safe streaming chunk size).
-- Then flip React to read from injected data. If anything missing, the existing hooks fall back to the old fetch automatically (already coded that way).
-- Old `get_store_public_email` RPC stays around (no DROP) for one release cycle in case a non-home route still calls it.
+## File changes summary
 
-Expected: products + shipping + owner-email round-trips disappear → ~1 s saved on visible product paint.
+| File | Change |
+|------|--------|
+| `index.html` | Alegreya SC: block→optional; drop 2 alegreya preload links |
+| `docs/cloudflare-worker-current.js` | New `synthesizeLandingHtml()` injects hero+nav DOM, critical CSS, hero image preload; called from landing branch (around line 5061) |
+| `src/components/landing/Hero.tsx` | Use `https://cdn.shopbanao.in/landing/...webp` URLs instead of Vite import; mark hero `<img>` with `id="hero-img-lcp"` so Worker can match preload |
+| `src/components/landing/Navbar.tsx` | Use CDN URL for logo |
+| `supabase/functions/r2-upload-landing-assets/index.ts` | One-time admin-triggered fn that uploads 3 landing assets to R2 (or do it manually via existing r2-upload UI) |
 
-## Phase 4 — Drop supabase-js from the storefront critical path  (-200 to -300 ms script duration)
+No DB migrations. No new env vars.
 
-**Files:** `vite.config.ts`, `src/layouts/StorefrontLayout.logic.ts`, `src/hooks/useStorefrontProducts.ts`, `src/hooks/useStorefrontThemeConfig.ts`.
+## Deployment order (so nothing breaks)
 
-1. Create a tiny `src/lib/storefrontRest.ts` that does plain `fetch()` against `https://<project>.supabase.co/rest/v1/...` with the anon key — no `@supabase/supabase-js` import. Used only for read-only storefront queries.
-2. Replace `import("@/integrations/supabase/client")` in storefront hooks with the tiny REST helper.
-3. Confirm via the bundle visualizer (`ANALYZE=1 bun run build`) that the `supabase` chunk no longer lands on the storefront homepage graph.
-4. Keep the full client for dashboard/checkout/auth.
+1. Upload 3 landing images to R2 (one-time, via existing admin UI). Verify CDN URLs respond.
+2. Ship code changes (Hero/Navbar use CDN, index.html font fix). Lovable auto-deploys frontend.
+3. Update `docs/cloudflare-worker-current.js` with new landing synthesis logic. **You manually deploy the Worker** (per project rule — Worker is not Vite-bundled).
+4. Purge Cloudflare cache for `shopbanao.in/` and `shopbanao.in/theme` so the new synthesized HTML is generated fresh.
+5. Re-measure on PageSpeed Insights mobile (India).
 
-Roll-out safety:
-- Strictly additive; the heavy client stays for non-storefront flows.
-- A11y/auth/checkout paths untouched.
+## Risk & rollback
 
-Expected: -55 KB JS off cold path, -200 ms script duration, smoother INP.
+- Hydration mismatch warning if Worker markup drifts from React Hero output — wrapped in `suppressHydrationWarning` on the root section. Visual content matches so no flash.
+- If Worker synthesis breaks: a feature flag `__SF_LANDING_SYNTH__` env var in Worker; flip to false to fall back to plain index.html (current behavior).
+- Font fallback: if Alegreya SC misses the 100ms window with `font-display:optional`, system serif shows for that session only (next visit it's cached and renders correctly).
 
-## Projected timeline after all phases
+## Technical detail (devs only)
 
-| Phase | Cumulative FCP | Cumulative TTI |
-|---|---|---|
-| Baseline | 3248 ms | 2316 ms |
-| After P1 (stream) | ~2050 ms | ~1900 ms |
-| After P2 (fonts) | ~1300 ms | ~1900 ms |
-| After P3 (inline) | ~1200 ms | ~1500 ms |
-| After P4 (no supa-js) | **~1150 ms** | **~1300 ms** |
-
-## Rollout & guardrails
-
-- One phase per deploy. Wait 24 h between phases, compare Cloudflare RUM + a fresh `browser--performance_profile` on serdiyajewellers + one other live store.
-- All worker changes behind env flags (`STREAM_HTML`, `INLINE_PRODUCTS_V2`). Roll back = unset flag, redeploy.
-- DB migration uses DROP-FIRST per project rule; PGRST203 event trigger will catch overload mistakes.
-- No change to: auth, payments, RLS, R2 pipeline, ban-risk scrubbers, Meta CAPI, custom domains, SEO `<title>`/canonical logic.
-
-## What is explicitly NOT in this plan
-
-- Migrating edge functions to Workers (Category A from previous chat) — separate workstream, no FCP impact.
-- Changing theme system, layouts, or designs.
-- Touching dashboard/admin/checkout performance.
-- Image pipeline changes — already on R2/cdn.shopbanao.in and fast.
-
-## First action when you approve
-
-Implement **Phase 1 only**: write `streamStorefrontHtml()` in `docs/cloudflare-worker-current.js` behind `STREAM_HTML="1"`. Hand you the updated worker file to paste/deploy, then re-measure on serdiyajewellers before touching Phase 2.
+- Worker `synthesizeLandingHtml(origHtml, url)` runs only when `isLandingPath(url.pathname) && url.hostname === "shopbanao.in"`. Uses string injection (not HTMLRewriter) because the markup is static — avoids HTMLRewriter cold-start cost.
+- Cache key: `landing:v1:${path}`. Purge on `/api/purge` Worker route with prefix `landing:`.
+- React 18 hydration: `Hero.tsx` stays a client component; the synthesized HTML matches its initial render (no `Math.random()` on first paint — A/B variant must read from cookie sent server-side OR default to variant 0 for first paint, then swap silently after hydration).
+- The `hero_ab` localStorage A/B test currently uses `Math.random()` during render — this WILL cause hydration mismatch. Fix: always render variant 0 on first paint, swap after `useEffect` mount if user is in variant 1. Same content size so no CLS.
