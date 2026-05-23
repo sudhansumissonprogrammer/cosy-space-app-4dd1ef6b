@@ -136,7 +136,7 @@ export default function ProductDetail() {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const queryClient = useQueryClient();
   const mainThemeConfig = useStorefrontThemeConfig(store?.id);
-  const bilingualCta = (store as any)?.theme === "theme-16" && !!(mainThemeConfig as any)?.bilingual_cta;
+  const bilingualCta = ((store as any)?.theme === "theme-16" || (store as any)?.theme === "theme-21") && !!(mainThemeConfig as any)?.bilingual_cta;
 
   // Fetch store shipping config for free shipping threshold
   const { data: shippingConfig } = useQuery({
@@ -507,8 +507,8 @@ export default function ProductDetail() {
       return;
     }
 
-    // Theme 16: show phone modal instead of direct checkout
-    if ((store as any).theme === "theme-16") {
+    // Theme 16 / 21: show phone modal instead of direct checkout
+    if ((store as any).theme === "theme-16" || (store as any).theme === "theme-21") {
       // Add to cart first so checkout has the item
       addToCart({
         productId: product.id,
@@ -1129,8 +1129,8 @@ export default function ProductDetail() {
         document.body
       )}
 
-      {/* Theme-16 Buy Now Phone Modal */}
-      {(store as any).theme === "theme-16" && (
+      {/* Theme 16 / 21 Buy Now Phone Modal */}
+      {((store as any).theme === "theme-16" || (store as any).theme === "theme-21") && (
         <Suspense fallback={null}>
           <BuyNowPhoneModal
             open={buyNowModalOpen}

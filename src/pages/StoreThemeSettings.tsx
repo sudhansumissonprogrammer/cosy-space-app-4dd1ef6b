@@ -248,6 +248,12 @@ const THEME_RECOMMENDATIONS: Record<string, string[]> = {
     "lux-emerald-gold", "ocean-teal", "emerald-luxe", "crimson-royale", "midnight-navy",
     "lux-white-champagne", "lilac-mist", "coral-sunset", "saffron-bloom", "mint-fresh",
   ],
+  "theme-21": [
+    "plum-cream", "crimson-sand", "ghost-persian", "royal-gold", "elegant-black-white", "teal-elegance", "teal-conversion", "teal-minimal", "teal-blaze",
+    "lux-black-gold", "lux-cream-brown", "velvet-merlot",
+    "lux-emerald-gold", "ocean-teal", "emerald-luxe", "crimson-royale", "midnight-navy",
+    "lux-white-champagne", "lilac-mist", "coral-sunset", "saffron-bloom", "mint-fresh",
+  ],
   "theme-17": [
     "systumm-green", "elegant-black-white", "lux-black-gold", "emerald-luxe", "midnight-navy", "velvet-merlot",
     "crimson-royale", "ghost-persian", "teal-elegance", "plum-cream", "ocean-teal",
@@ -400,6 +406,12 @@ const THEME_DEFAULTS: Record<string, ThemeConfig> = {
     marquee_text: "Free delivery on all orders! • Shop everything • Pay on delivery",
     marquee_enabled: true, product_card_style: "style-1", category_style: "style-4", header_logo_alignment: "left", mobile_nav_enabled: true, mobile_nav_style: "classic", header_style: "normal",
   },
+  "theme-21": {
+    primary_color: "#000000", accent_color: "#000000", text_color: "#000000", background_color: "#ffffff",
+    heading_font: "Alegreya SC", body_font: "Inter", button_style: "rounded",
+    marquee_gradient: "linear-gradient(90deg, #000000, #333333, #000000)",
+    marquee_text: DEFAULT_MARQUEE_TEXT, marquee_enabled: true, product_card_style: "style-1", category_style: "style-1", header_logo_alignment: "left", mobile_nav_enabled: true, mobile_nav_style: "classic", header_style: "normal",
+  },
 };
 
 const THEMES = [
@@ -418,6 +430,7 @@ const THEMES = [
   { id: "theme-18", name: "Dark Streetwear", description: "All-black editorial layout with edge-to-edge product grids", available: true },
   { id: "theme-19", name: "Quick Commerce Grocery", description: "Blinkit-style green header, yellow category tiles, ADD-to-stepper cards — built for grocery & quick delivery", available: true },
   { id: "theme-20", name: "Multi Purpose", description: "Versatile Blinkit-style layout adaptable for any category — green header, category tiles, ADD-to-stepper cards", available: true },
+  { id: "theme-21", name: "Premium Store 1", description: "Premium classic + Quick Buy storefront — phone-first Buy Now flow & elegant layout", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
@@ -853,6 +866,7 @@ export default function StoreThemeSettings() {
       "theme-18": "linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #333333 100%)",
       "theme-19": "linear-gradient(135deg, #FFD33D 0%, #036B52 50%, #0F0B0A 100%)",
       "theme-20": "linear-gradient(135deg, #FFD33D 0%, #036B52 50%, #0F0B0A 100%)",
+      "theme-21": "linear-gradient(135deg, #ffffff 0%, #000000 50%, #333333 100%)",
     };
     return map[id] || "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)";
   };
@@ -1163,7 +1177,7 @@ export default function StoreThemeSettings() {
         </Section>
       )}
 
-      {(currentTheme === "theme-1" || currentTheme === "theme-14" || currentTheme === "theme-15" || currentTheme === "theme-16" || currentTheme === "theme-18") && (
+      {(currentTheme === "theme-1" || currentTheme === "theme-14" || currentTheme === "theme-15" || currentTheme === "theme-16" || currentTheme === "theme-18" || currentTheme === "theme-21") && (
         <>
           <Section title="Header Style" hint="How the desktop header looks against the page.">
             <div className="grid grid-cols-3 gap-3">
@@ -1427,7 +1441,7 @@ export default function StoreThemeSettings() {
           </AccordionContent>
         </AccordionItem>
 
-        {currentTheme === "theme-16" && (
+        {(currentTheme === "theme-16" || currentTheme === "theme-21") && (
           <AccordionItem value="bilingual" className="rounded-xl border border-border bg-card px-4">
             <AccordionTrigger className="hover:no-underline">
               <div className="flex flex-col items-start text-left">
