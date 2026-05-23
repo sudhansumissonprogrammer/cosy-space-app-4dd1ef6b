@@ -43,6 +43,7 @@ const StorefrontLayoutV17 = lazy(() => import("./layouts/StorefrontLayoutV17"));
 const StorefrontLayoutV18 = lazy(() => import("./layouts/StorefrontLayoutV18"));
 const StorefrontLayoutV19 = lazy(() => import("./layouts/StorefrontLayoutV19"));
 const StorefrontLayoutV20 = lazy(() => import("./layouts/StorefrontLayoutV20"));
+const StorefrontLayoutV21 = lazy(() => import("./layouts/StorefrontLayoutV21"));
 
 // Storefront home pages — ALL lazy loaded
 const StorefrontHome = lazy(() => import("./pages/StorefrontHome"));
