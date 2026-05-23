@@ -1002,7 +1002,10 @@ export default function ProductDetail() {
               className={`fixed left-0 right-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur-md transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                 stickyBarVisible ? "translate-y-0" : "translate-y-full"
               }`}
-              style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+              style={{
+                paddingBottom: "env(safe-area-inset-bottom)",
+                fontFamily: "var(--storefront-body-font, inherit)",
+              }}
             >
               <div className="mx-auto max-w-6xl p-3">
                 <div className="flex items-center gap-3">
@@ -1016,9 +1019,9 @@ export default function ProductDetail() {
                       />
                     )}
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{product.name}</p>
+                      <p className="text-sm font-semibold text-foreground truncate" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>{product.name}</p>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-extrabold text-foreground">{formatPrice((variantPrice * quantity), currency)}</span>
+                        <span className="text-sm font-extrabold text-foreground" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>{formatPrice((variantPrice * quantity), currency)}</span>
                         {hasDiscount && (
                           <span className="text-[10px] text-emerald-600 font-semibold">{discountPct}% OFF</span>
                         )}
@@ -1027,7 +1030,7 @@ export default function ProductDetail() {
                   </div>
                   {/* Mobile price */}
                   <div className="flex sm:hidden flex-col items-start shrink-0 min-w-0 leading-tight">
-                    <p className="text-sm font-extrabold text-foreground whitespace-nowrap">
+                    <p className="text-sm font-extrabold text-foreground whitespace-nowrap" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>
                       {formatPrice((variantPrice * quantity), currency)}
                     </p>
                     {hasDiscount && discountPct > 0 && (
@@ -1044,6 +1047,7 @@ export default function ProductDetail() {
                       className={`btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-all ${
                         justAdded ? "bg-emerald-600 text-white" : "btn-gold"
                       }`}
+                      style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}
                       onClick={handleAddToCart}
                     >
                       {justAdded ? (
@@ -1060,7 +1064,7 @@ export default function ProductDetail() {
                     </button>
                     <button
                       className="btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-all"
-                      style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
+                      style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", fontFamily: "var(--storefront-heading-font, inherit)" }}
                       onClick={handleBuyNow}
                     >
                       <ShoppingBag className="h-3.5 w-3.5" />
