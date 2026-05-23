@@ -60,6 +60,7 @@ const StorefrontHomeV17 = lazy(() => import("./pages/StorefrontHomeV17"));
 const StorefrontHomeV18 = lazy(() => import("./pages/StorefrontHomeV18"));
 const StorefrontHomeV19 = lazy(() => import("./pages/StorefrontHomeV19"));
 const StorefrontHomeV20 = lazy(() => import("./pages/StorefrontHomeV20"));
+const StorefrontHomeV21 = lazy(() => import("./pages/StorefrontHomeV21"));
 const StorefrontBestSellers = lazy(() => import("./pages/StorefrontBestSellers"));
 const StorefrontShop = lazy(() => import("./pages/StorefrontShop"));
 const StorefrontCategoriesPage = lazy(() => import("./pages/StorefrontCategories"));
