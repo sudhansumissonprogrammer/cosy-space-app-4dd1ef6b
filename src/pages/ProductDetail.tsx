@@ -742,14 +742,22 @@ export default function ProductDetail() {
               {!isV18 && <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Qty</Label>}
               <div className={`flex items-center overflow-hidden ${isV18 ? 'border border-white/40' : 'rounded-xl border border-border'}`}>
                 <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  onClick={(e) => {
+                    setQuantity(Math.max(1, quantity - 1));
+                    const el = e.currentTarget.parentElement?.querySelector<HTMLSpanElement>("[data-qty-value]");
+                    if (el) { el.classList.remove("qty-bounce"); void el.offsetWidth; el.classList.add("qty-bounce"); }
+                  }}
                   className={`flex items-center justify-center transition-colors active:scale-90 ${isV18 ? 'h-11 w-11 text-white hover:bg-white/10' : 'h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-accent'}`}
                 >
                   <Minus className={isV18 ? "h-4 w-4" : "h-3.5 w-3.5"} />
                 </button>
-                <span className={`text-center text-sm font-bold ${isV18 ? 'w-12' : 'w-10'}`} style={isV18 ? { color: "#ffffff", ...v18Font } : {}}>{quantity}</span>
+                <span data-qty-value className={`text-center text-sm font-bold tabular-nums ${isV18 ? 'w-12' : 'w-10'}`} style={isV18 ? { color: "#ffffff", ...v18Font } : {}}>{quantity}</span>
                 <button
-                  onClick={() => setQuantity(quantity + 1)}
+                  onClick={(e) => {
+                    setQuantity(quantity + 1);
+                    const el = e.currentTarget.parentElement?.querySelector<HTMLSpanElement>("[data-qty-value]");
+                    if (el) { el.classList.remove("qty-bounce"); void el.offsetWidth; el.classList.add("qty-bounce"); }
+                  }}
                   className={`flex items-center justify-center transition-colors active:scale-90 ${isV18 ? 'h-11 w-11 text-white hover:bg-white/10' : 'h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-accent'}`}
                 >
                   <Plus className={isV18 ? "h-4 w-4" : "h-3.5 w-3.5"} />
