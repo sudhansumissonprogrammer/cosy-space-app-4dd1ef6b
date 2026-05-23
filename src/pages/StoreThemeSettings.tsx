@@ -865,6 +865,7 @@ export default function StoreThemeSettings() {
       "theme-18": "linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #333333 100%)",
       "theme-19": "linear-gradient(135deg, #FFD33D 0%, #036B52 50%, #0F0B0A 100%)",
       "theme-20": "linear-gradient(135deg, #FFD33D 0%, #036B52 50%, #0F0B0A 100%)",
+      "theme-21": "linear-gradient(135deg, #ffffff 0%, #000000 50%, #333333 100%)",
     };
     return map[id] || "linear-gradient(135deg, #F8FAFC 0%, #3B82F6 50%, #F97316 100%)";
   };
