@@ -46,28 +46,16 @@ const PhoneMockup = ({ img, label, url, className = "", priority = false }: { im
   </a>
 );
 
-const heroVariants = [
-  {
-    headline: <>Launch Your Own Store in 5 Minutes —<br />No Commission, No Coding with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
-    sub: "Keep 100% of your revenue. Your branded store with custom domain & UPI payments — live in 10 minutes.",
-  },
-  {
-    headline: <>Launch Your Own Store in 5 Minutes —<br />No Commission, No Coding with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
-    sub: "Keep 100% of your revenue. Your branded store with custom domain & UPI payments — live in 10 minutes.",
-  },
-];
+// Single hero variant — previous A/B test had two identical variants (dead code).
+// Removed `Math.random()` at render time which was wasteful and would block any
+// future SSR/edge-prerender step with a hydration mismatch.
+const HERO = {
+  headline: <>Launch Your Own Store in 5 Minutes —<br />No Commission, No Coding with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
+  sub: "Keep 100% of your revenue. Your branded store with custom domain & UPI payments — live in 10 minutes.",
+};
 
 const Hero = () => {
-  // Simple A/B: variant 0 (outcome-based) vs variant 1 (original)
-  const variant = typeof window !== "undefined"
-    ? (parseInt(localStorage.getItem("hero_ab") ?? String(Math.random() < 0.5 ? 0 : 1)) || 0)
-    : 0;
-
-  if (typeof window !== "undefined" && !localStorage.getItem("hero_ab")) {
-    localStorage.setItem("hero_ab", String(variant));
-  }
-
-  const { headline, sub } = heroVariants[variant] ?? heroVariants[0];
+  const { headline, sub } = HERO;
 
   return (
     <section className="border-b-4 border-foreground">
