@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/outfit-latin.woff2" crossorigin />
+    <!-- Landing hero LCP images — preload so they paint instantly inside #landing-skel
+         (browser preload scanner can't discover them via inline <img>). -->
+    <link rel="preload" as="image" href="/landing/shopbanao-logo.webp" fetchpriority="high" />
+    <link rel="preload" as="image" href="/landing/showcase-overlays-mobile.webp" fetchpriority="high" media="(min-width: 1024px)" />
     <!-- Speed up React mount on landing: prefetch the entry chunk early.
          In production Vite emits modulepreload for downstream chunks automatically. -->
     <link rel="modulepreload" href="/src/main.tsx" />
@@ -354,7 +358,7 @@
          (inlined as SVG). When React hydrates, the transition is invisible because
          layout/colors/structure already match.
          Token map: bg=#f4f6f9 fg=#121826 mut=#4a5366 red=#d11d24 blue=#0f4ebd yel=#ecb725 -->
-    <div id="landing-skel" aria-hidden="false" style="display:none;position:absolute;top:0;left:0;right:0;min-height:100vh;background:#f5f6f9;z-index:2147482999;pointer-events:auto;overflow:visible;transition:opacity .45s ease-out;font-family:'Outfit',Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#121826">
+    <div id="landing-skel" aria-hidden="false" style="display:none;position:absolute;top:0;left:0;right:0;min-height:100vh;background:#f5f6f9;z-index:2147482999;pointer-events:auto;overflow:visible;transition:opacity .22s ease-out;font-family:'Outfit',Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#121826">
       <!-- NAV (matches Navbar.tsx exactly) -->
       <nav style="background:#fff;border-bottom:4px solid #121826">
         <div style="max-width:80rem;margin:0 auto;padding:0 12px;display:flex;align-items:center;justify-content:space-between;height:56px" class="ls-nav-row">
@@ -554,15 +558,11 @@
         var isLandingPath=(p==='/'||p==='/theme'||p==='/guides'||p.indexOf('/guides/')===0);
         if(!isSf && isLandingHost && isLandingPath){
           if(inline){inline.style.display='none';}
-          /* Delay landing skeleton by 3s — if React mounts before then,
-             we never show the demo skeleton at all (no visible swap).
-             Only acts as a fallback for slow connections. */
-          if(landing){
-            window.__LANDING_SKEL_TIMER__ = setTimeout(function(){
-              if(window.__LANDING_HERO_READY__) return;
-              if(landing) landing.style.display='block';
-            }, 3000);
-          }
+          /* v9.0: Show landing skeleton IMMEDIATELY at T+0 (was delayed 3s).
+             The skeleton is pixel-perfect vs Hero.tsx — when React mounts,
+             the crossfade is invisible (same layout/colors/copy). Net effect:
+             user sees the hero shell from first paint instead of 3s of blank. */
+          if(landing){ landing.style.display='block'; }
         }else if(!isSf){
           if(inline){inline.style.display='none';}
           if(landing){landing.style.display='none';}
@@ -594,7 +594,7 @@
             if(!s) return;
             s.style.opacity='0';
             s.style.pointerEvents='none';
-            setTimeout(function(){ if(s.parentNode) s.parentNode.removeChild(s); },480);
+            setTimeout(function(){ if(s.parentNode) s.parentNode.removeChild(s); },240);
           });
         }
         function fadeAfterTwoFrames(){
