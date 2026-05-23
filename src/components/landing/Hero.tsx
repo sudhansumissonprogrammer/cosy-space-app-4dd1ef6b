@@ -1,7 +1,9 @@
+import { useEffect } from "react";
 import { ArrowRight, ShieldCheck, CreditCard, Globe, Package, TrendingUp, ExternalLink } from "lucide-react";
 import overlaysMobile from "@/assets/showcase-overlays-mobile.webp";
 import serdiyaMobile from "@/assets/showcase-serdiya-mobile.webp";
 import { onAuthCtaIntent } from "@/lib/prefetchLandingAuth";
+
 
 // Native phone screenshot ratio (~9:19.5). Reserve space to prevent CLS.
 const PHONE_ASPECT = "9 / 19.5";
