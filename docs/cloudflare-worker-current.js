@@ -3126,7 +3126,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
 
   const skeletonMuted = getSkeletonMuted(textColor);
   // FIX #11: Pass actual bgColor — v8.21.0: also pass store name for instant FCP
-  const skeleton = buildSkeleton(bgColor, skeletonMuted, true, (storefrontData && storefrontData.store && storefrontData.store.name) || "", textColor);
+  const skeleton = buildSkeleton(bgColor, skeletonMuted, true, (storefrontData && storefrontData.store && storefrontData.store.name) || "", textColor, primaryColor);
 
   // LCP preload: hero image (mobile_hero > banner > logo)
   let lcpPreload = "";
