@@ -433,7 +433,7 @@
         function killNow(){
           if(done) return;
           done=true;
-          ['sf-skel','inline-skel'].forEach(function(id){
+          ['sf-skel','inline-skel','landing-skel'].forEach(function(id){
             var s=document.getElementById(id);
             if(!s) return;
             /* Fade out smoothly so user never sees a blank flash */
