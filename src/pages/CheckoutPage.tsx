@@ -1681,7 +1681,8 @@ export default function CheckoutPage() {
               <Input id="street" placeholder="House/Flat No., Building, Street" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
             </div>
             {/* City + State — always visible, auto-filled from pincode when possible */}
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-3">
+
               <div className="space-y-1">
                 <Label htmlFor="city" className="text-xs">{t("City", "शहर")} *</Label>
                 <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
