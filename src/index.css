@@ -395,6 +395,41 @@
   animation: cart-bounce 0.5s ease-out;
 }
 
+/* ── Fly-to-cart: landing pulse on cart icon ── */
+@keyframes cart-target-absorb-pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.32); }
+  60%  { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+@keyframes cart-target-absorb-ring {
+  0%   { transform: scale(0.6); opacity: 0.55; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+[data-cart-target] { position: relative; }
+[data-cart-target]::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 999px;
+  background: var(--storefront-primary, hsl(var(--primary)));
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+[data-cart-target].cart-target-absorb {
+  animation: cart-target-absorb-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+[data-cart-target].cart-target-absorb::after {
+  animation: cart-target-absorb-ring 560ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-cart-target].cart-target-absorb,
+  [data-cart-target].cart-target-absorb::after {
+    animation: none !important;
+  }
+}
+
 /* ── Premium UX: Page transition fade ── */
 @keyframes page-fade-in {
   from {

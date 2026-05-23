@@ -83,6 +83,7 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
               }}
             >
               <div
+                {...(item.key === "cart" ? { "data-cart-target": "" } : {})}
                 className={`relative flex items-center justify-center rounded-full transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${item.active ? "px-3 py-0.5" : "px-1 py-0.5"} ${bouncing ? "cart-bounce" : ""}`}
                 style={item.active ? { backgroundColor: "color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 14%, transparent)" } : undefined}
               >

@@ -70,6 +70,7 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
                 aria-label={item.label}
               >
                 <div
+                  {...(isCart ? { "data-cart-target": "" } : {})}
                   className={`relative flex items-center gap-1.5 rounded-full transition-all duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                     active ? "px-3 py-1.5" : "px-2 py-1.5"
                   }`}

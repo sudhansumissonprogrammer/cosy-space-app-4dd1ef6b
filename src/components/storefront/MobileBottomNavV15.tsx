@@ -57,6 +57,7 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
                 aria-label={item.label}
               >
                 <div
+                  {...(isCart ? { "data-cart-target": "" } : {})}
                   className={`relative flex items-center gap-1.5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                     active
                       ? "pl-2.5 pr-3.5 py-1.5"

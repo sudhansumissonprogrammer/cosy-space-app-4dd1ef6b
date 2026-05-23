@@ -219,6 +219,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
             {/* Cart */}
             <button
               onClick={openCart}
+              data-cart-target
               className="relative flex h-9 w-9 items-center justify-center rounded-md transition-all hover:opacity-70 active:scale-[0.93]"
               aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ""}`}
             >

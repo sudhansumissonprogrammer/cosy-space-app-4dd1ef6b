@@ -133,7 +133,7 @@ export default function ProductDetail() {
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
 
-  const { addToCart, items, cartTotal, closeCart } = useCart();
+  const { addToCart, items, cartTotal, closeCart, openCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const queryClient = useQueryClient();
   const mainThemeConfig = useStorefrontThemeConfig(store?.id);
@@ -482,7 +482,7 @@ export default function ProductDetail() {
 
   const hasVariants = (variants || []).length > 0;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e?: React.MouseEvent) => {
     if (hasVariants && !selectedVariant) {
       toast.error("Please select a variant first"); setVariantPromptOpen(true);
       document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -496,12 +496,21 @@ export default function ProductDetail() {
       price: variantPrice,
       image: product.image_url || undefined,
       quantity,
+    }, { silent: true });
+
+    // Fly-to-cart from the button, then open SideCart once arc lands.
+    import("@/lib/flyToCart").then(({ flyToCart }) => {
+      const source = (e?.currentTarget as Element) || null;
+      const duration = flyToCart(source, { imageUrl: product.image_url || undefined });
+      window.setTimeout(() => openCart(), duration > 0 ? duration - 60 : 0);
     });
+
     setJustAdded(true);
     setCartBounce(true);
     setTimeout(() => setJustAdded(false), 1500);
     setTimeout(() => setCartBounce(false), 600);
   };
+
 
   const handleBuyNow = () => {
     if (hasVariants && !selectedVariant) {

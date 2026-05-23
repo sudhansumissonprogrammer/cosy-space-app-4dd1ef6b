@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { toast } from "sonner";
+import { flyToCart } from "@/lib/flyToCart";
 
 interface Product {
   id: string;
@@ -17,7 +18,7 @@ interface Product {
 }
 
 export function useProductCardActions(product: Product) {
-  const { addToCart, items, updateQuantity } = useCart();
+  const { addToCart, openCart, items, updateQuantity } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const [heartBursting, setHeartBursting] = useState(false);
   const [addedFlash, setAddedFlash] = useState(false);
@@ -37,14 +38,24 @@ export function useProductCardActions(product: Product) {
       onVariantRequired();
       return;
     }
-    addToCart({
-      productId: product.id,
-      name: product.name,
-      price: effectivePrice,
-      image: product.image_url || undefined,
-      quantity: 1,
-    });
-    // Brief "✓ Added" morph on the button (P2)
+    // Add silently — we'll open the SideCart once the fly-arc lands so the
+    // drawer slide-in doesn't collide with the animation.
+    addToCart(
+      {
+        productId: product.id,
+        name: product.name,
+        price: effectivePrice,
+        image: product.image_url || undefined,
+        quantity: 1,
+      },
+      { silent: true },
+    );
+
+    const source = (e.currentTarget as Element) || null;
+    const duration = flyToCart(source, { imageUrl: product.image_url || undefined });
+    // If animation skipped (no target / reduced motion) → open immediately.
+    window.setTimeout(() => openCart(), duration > 0 ? duration - 60 : 0);
+
     setAddedFlash(true);
     window.setTimeout(() => setAddedFlash(false), 1100);
   };
@@ -79,3 +90,4 @@ export function useProductCardActions(product: Product) {
     updateQuantity,
   };
 }
+

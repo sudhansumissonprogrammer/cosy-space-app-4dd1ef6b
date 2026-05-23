@@ -5,6 +5,7 @@ export default function V17CartBadge() {
   return (
     <button
       onClick={openCart}
+      data-cart-target
       className="relative flex h-10 w-10 items-center justify-center rounded-md transition-opacity hover:opacity-70 active:scale-[0.93]"
       aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ""}`}
     >

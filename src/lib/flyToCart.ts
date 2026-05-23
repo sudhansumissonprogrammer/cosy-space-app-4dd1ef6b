@@ -1,22 +1,23 @@
 /**
- * Fly-to-cart micro-interaction.
+ * Swiggy-style fly-to-cart micro-interaction.
  *
- * Animates a small "+1" bubble from the click origin (or source element)
- * towards the nearest visible cart icon (any element marked
- * `data-cart-target`). Falls back gracefully when no target is found
- * or when the user prefers reduced motion.
+ * Flies a circular product image from the click origin to the nearest
+ * visible cart icon (`[data-cart-target]`) along a parabolic arc using
+ * the Web Animations API. On landing, pulses the cart icon and dispatches
+ * a `cart:fly-landed` CustomEvent so callers can open the SideCart after
+ * the arc completes.
  *
- * Usage:
- *   flyToCart(event.currentTarget, { label: "+1" });
+ * Falls back gracefully when no target is found or the user prefers
+ * reduced motion — in both cases it returns 0 so callers can open the
+ * cart immediately.
  */
 
 interface FlyOptions {
+  imageUrl?: string;
   label?: string;
-  color?: string; // bubble background
-  textColor?: string; // bubble text color
-  size?: number; // px
-  duration?: number; // ms
-  fromRect?: DOMRect; // override origin rect
+  size?: number;
+  duration?: number;
+  fromRect?: DOMRect;
 }
 
 function pickTarget(): HTMLElement | null {
@@ -28,12 +29,10 @@ function pickTarget(): HTMLElement | null {
     const style = window.getComputedStyle(el);
     if (style.visibility === "hidden" || style.display === "none") return false;
     if (parseFloat(style.opacity || "1") < 0.1) return false;
-    // Must be inside the viewport (allow partial)
     if (rect.bottom < 0 || rect.top > window.innerHeight) return false;
     return true;
   });
   if (targets.length === 0) return null;
-  // Prefer the topmost (header) cart icon for desktop, bottom (mobile nav) on mobile
   const isMobile = window.matchMedia("(max-width: 767px)").matches;
   targets.sort((a, b) => {
     const ay = a.getBoundingClientRect().top;
@@ -43,68 +42,160 @@ function pickTarget(): HTMLElement | null {
   return targets[0];
 }
 
-export function flyToCart(source: Element | DOMRect | null, opts: FlyOptions = {}) {
-  if (typeof window === "undefined" || typeof document === "undefined") return;
-  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+function pulseTarget(target: HTMLElement) {
+  target.classList.add("cart-target-absorb");
+  setTimeout(() => target.classList.remove("cart-target-absorb"), 520);
+  try { (navigator as any).vibrate?.(8); } catch {}
+  try {
+    window.dispatchEvent(new CustomEvent("cart:fly-landed"));
+  } catch {}
+}
+
+/**
+ * Returns the animation duration in ms (0 if skipped — caller can open cart instantly).
+ */
+export function flyToCart(source: Element | DOMRect | null, opts: FlyOptions = {}): number {
+  if (typeof window === "undefined" || typeof document === "undefined") return 0;
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return 0;
 
   const target = pickTarget();
-  if (!target) return;
+  if (!target) return 0;
 
   const fromRect: DOMRect | null =
     opts.fromRect
-      ?? (source instanceof Element ? source.getBoundingClientRect() : null);
-  if (!fromRect) return;
+      ?? (source instanceof Element ? source.getBoundingClientRect() : (source as DOMRect | null));
+  if (!fromRect) return 0;
 
   const toRect = target.getBoundingClientRect();
 
-  const size = opts.size ?? 26;
+  const hasImage = !!opts.imageUrl;
+  const size = opts.size ?? (hasImage ? 56 : 28);
+  const duration = opts.duration ?? 720;
+
   const startX = fromRect.left + fromRect.width / 2 - size / 2;
   const startY = fromRect.top + fromRect.height / 2 - size / 2;
   const endX = toRect.left + toRect.width / 2 - size / 2;
   const endY = toRect.top + toRect.height / 2 - size / 2;
 
-  const bubble = document.createElement("div");
-  bubble.textContent = opts.label ?? "+1";
-  Object.assign(bubble.style, {
+  // Parabolic arc — lift the midpoint up by 25% of vertical distance (min 90px).
+  const dx = endX - startX;
+  const dy = endY - startY;
+  const arcLift = Math.max(90, Math.abs(dy) * 0.25 + Math.abs(dx) * 0.08);
+
+  // Build the flyer
+  const flyer = document.createElement("div");
+  Object.assign(flyer.style, {
     position: "fixed",
     left: `${startX}px`,
     top: `${startY}px`,
     width: `${size}px`,
     height: `${size}px`,
     borderRadius: "999px",
-    background: opts.color
-      ?? "var(--storefront-primary, #036B52)",
-    color: opts.textColor ?? "var(--storefront-btn-text, #ffffff)",
-    fontSize: "12px",
-    fontWeight: "800",
-    letterSpacing: "-0.01em",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+    overflow: "hidden",
     pointerEvents: "none",
     zIndex: "10000",
     boxShadow:
-      "0 6px 18px -4px rgba(0,0,0,0.35), 0 0 0 2px rgba(255,255,255,0.85)",
-    transform: "translate3d(0,0,0) scale(1)",
-    transition: "transform 650ms cubic-bezier(0.55, 0, 0.1, 1), opacity 650ms ease-out",
+      "0 10px 24px -6px rgba(0,0,0,0.35), 0 0 0 3px rgba(255,255,255,0.92)",
+    background:
+      hasImage
+        ? "var(--storefront-bg, #fff)"
+        : "var(--storefront-primary, hsl(var(--primary)))",
+    color: "var(--storefront-btn-text, #fff)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "12px",
+    fontWeight: "800",
     willChange: "transform, opacity",
+    backfaceVisibility: "hidden",
   } as CSSStyleDeclaration);
 
-  document.body.appendChild(bubble);
+  if (hasImage) {
+    const img = document.createElement("img");
+    img.src = opts.imageUrl!;
+    img.alt = "";
+    img.decoding = "async";
+    Object.assign(img.style, {
+      width: "100%",
+      height: "100%",
+      objectFit: "cover",
+      objectPosition: "center",
+      display: "block",
+    } as CSSStyleDeclaration);
+    flyer.appendChild(img);
+  } else {
+    flyer.textContent = opts.label ?? "+1";
+  }
 
-  // Force layout, then animate
-  void bubble.offsetWidth;
+  document.body.appendChild(flyer);
 
-  const dx = endX - startX;
-  const dy = endY - startY;
-  bubble.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(0.35)`;
-  bubble.style.opacity = "0.2";
+  // Faint trailing dot for the "tail" feel
+  const tail = document.createElement("div");
+  Object.assign(tail.style, {
+    position: "fixed",
+    left: `${startX + size / 2 - 5}px`,
+    top: `${startY + size / 2 - 5}px`,
+    width: "10px",
+    height: "10px",
+    borderRadius: "999px",
+    background: "var(--storefront-primary, hsl(var(--primary)))",
+    opacity: "0.55",
+    pointerEvents: "none",
+    zIndex: "9999",
+    willChange: "transform, opacity",
+    filter: "blur(1px)",
+  } as CSSStyleDeclaration);
+  document.body.appendChild(tail);
 
-  const cleanup = () => {
-    bubble.remove();
-    // Trigger a tiny "absorb" pulse on the target
-    target.classList.add("cart-target-absorb");
-    setTimeout(() => target.classList.remove("cart-target-absorb"), 480);
+  const midX = dx / 2;
+  const midY = dy / 2 - arcLift;
+
+  const easing = "cubic-bezier(.55,.05,.25,1)";
+
+  const flyerAnim = flyer.animate(
+    [
+      { transform: "translate3d(0,0,0) scale(0.6) rotate(-8deg)", opacity: 0 },
+      { transform: "translate3d(0,0,0) scale(1.08) rotate(-4deg)", opacity: 1, offset: 0.12 },
+      {
+        transform: `translate3d(${midX}px, ${midY}px, 0) scale(1) rotate(8deg)`,
+        opacity: 1,
+        offset: 0.55,
+      },
+      {
+        transform: `translate3d(${dx}px, ${dy}px, 0) scale(0.22) rotate(18deg)`,
+        opacity: 0.25,
+      },
+    ],
+    { duration, easing, fill: "forwards" },
+  );
+
+  tail.animate(
+    [
+      { transform: "translate3d(0,0,0) scale(1)", opacity: 0.55 },
+      {
+        transform: `translate3d(${midX}px, ${midY}px, 0) scale(0.85)`,
+        opacity: 0.4,
+        offset: 0.55,
+      },
+      {
+        transform: `translate3d(${dx}px, ${dy}px, 0) scale(0.15)`,
+        opacity: 0,
+      },
+    ],
+    { duration: duration + 80, easing, fill: "forwards", delay: 90 },
+  );
+
+  flyerAnim.onfinish = () => {
+    flyer.remove();
+    tail.remove();
+    pulseTarget(target);
   };
-  setTimeout(cleanup, (opts.duration ?? 650) + 30);
+
+  // Safety cleanup in case onfinish never fires
+  setTimeout(() => {
+    if (flyer.isConnected) flyer.remove();
+    if (tail.isConnected) tail.remove();
+  }, duration + 400);
+
+  return duration;
 }
