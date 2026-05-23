@@ -936,7 +936,13 @@ export default function CheckoutPage() {
         return { city: place["place name"] as string, state: place.state as string };
       };
       try {
-        const result = await Promise.any([fromPostalPincode(), fromZippopotam()]);
+        const result = await new Promise<{ city: string; state: string }>((resolve, reject) => {
+          let rejected = 0;
+          const tryOne = (p: Promise<{ city: string; state: string }>) => p.then(resolve).catch(() => { if (++rejected === 2) reject(new Error("all failed")); });
+          tryOne(fromPostalPincode());
+          tryOne(fromZippopotam());
+        });
+
         setCity(result.city || "");
         setState(result.state || "");
       } catch {} finally { setPincodeLoading(false); }
