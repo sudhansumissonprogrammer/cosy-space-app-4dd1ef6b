@@ -177,6 +177,7 @@ const _path = window.location.pathname;
 
     // Fire the layout chunk import — runs in parallel with React/index.js parsing
     const layoutImports: Record<string, () => Promise<any>> = {
+      "theme-21": () => import("./layouts/StorefrontLayoutV21"),
       "theme-20": () => import("./layouts/StorefrontLayoutV20"),
       "theme-19": () => import("./layouts/StorefrontLayoutV19"),
       "theme-18": () => import("./layouts/StorefrontLayoutV18"),
