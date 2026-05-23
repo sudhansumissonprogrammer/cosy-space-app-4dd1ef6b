@@ -12,7 +12,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 /* Custom SVG icons matching systumm.shop exactly */
 function HomeIcon() {
   return (
-    <svg width="20" height="20" fill="none">
+    <svg width="18" height="18" fill="none">
       <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M10 15.001v-2.5M8.392 2.353 2.617 6.977c-.65.517-1.066 1.609-.924 2.425L2.8 16.035c.2 1.183 1.333 2.141 2.533 2.141h9.332c1.192 0 2.333-.966 2.533-2.141l1.108-6.633c.134-.816-.283-1.908-.924-2.425l-5.775-4.616c-.891-.716-2.333-.716-3.216-.008Z" />
     </svg>
   );
