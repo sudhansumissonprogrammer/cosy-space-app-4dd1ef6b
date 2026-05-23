@@ -74,19 +74,69 @@ const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const V19ProductDetail = lazy(() => import("./pages/V19ProductDetail"));
 const V20ProductDetail = lazy(() => import("./pages/V20ProductDetail"));
-const ProductDetailSkeleton = () => (
-  <div className="mx-auto max-w-6xl px-4 py-8 space-y-4">
-    <div className="h-8 w-48 rounded bg-muted/60" />
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div className="aspect-square rounded-xl bg-muted/60" />
-      <div className="space-y-4">
-        <div className="h-6 w-3/4 rounded bg-muted/60" />
-        <div className="h-4 w-1/2 rounded bg-muted/60" />
-        <div className="h-10 w-32 rounded bg-muted/60" />
+import { getPdpPreload } from "@/lib/pdpPreload";
+
+const ProductDetailSkeleton = () => {
+  const p = typeof window !== "undefined" ? getPdpPreload() : null;
+  const price = p?.salePrice ?? p?.price ?? null;
+  const original = p?.salePrice ? p?.price : null;
+  return (
+    <div className="mx-auto max-w-6xl px-4 pb-8 pt-2 sm:py-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+        <div className="relative aspect-square overflow-hidden rounded-xl bg-muted/40">
+          {p?.image ? (
+            <img
+              src={p.image}
+              alt={p.name}
+              fetchPriority="high"
+              decoding="sync"
+              className="absolute inset-0 h-full w-full object-cover animate-in fade-in duration-150"
+            />
+          ) : null}
+        </div>
+        <div className="space-y-3 pt-1">
+          {p?.name ? (
+            <h1 className="text-xl sm:text-2xl font-semibold leading-snug line-clamp-2">{p.name}</h1>
+          ) : (
+            <div className="h-6 w-3/4 rounded bg-muted/60" />
+          )}
+          {price != null ? (
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold">{p?.currency || "₹"}{Number(price).toFixed(0)}</span>
+              {original != null && (
+                <span className="text-sm line-through opacity-50">{p?.currency || "₹"}{Number(original).toFixed(0)}</span>
+              )}
+            </div>
+          ) : (
+            <div className="h-7 w-32 rounded bg-muted/60" />
+          )}
+          <div className="h-4 w-1/2 rounded bg-muted/50" />
+          <div className="flex gap-2 pt-2">
+            <div className="h-11 flex-1 rounded-lg bg-muted/60" />
+            <div className="h-11 flex-1 rounded-lg bg-muted/60" />
+          </div>
+          <div className="h-24 w-full rounded-lg bg-muted/40 mt-4" />
+        </div>
       </div>
+    </div>
+  );
+};
+
+const CategoryDetailSkeleton = () => (
+  <div className="mx-auto max-w-7xl px-4 py-4 space-y-4">
+    <div className="h-6 w-40 rounded bg-muted/60" />
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="space-y-2">
+          <div className="aspect-[3/4] rounded-xl bg-muted/50" />
+          <div className="h-3 w-3/4 rounded bg-muted/50" />
+          <div className="h-3 w-1/2 rounded bg-muted/40" />
+        </div>
+      ))}
     </div>
   </div>
 );
+
 const CategoryDetail = lazy(() => import("./pages/CategoryDetail"));
 const StorefrontLogin = lazy(() => import("./pages/StorefrontLogin"));
 const StorefrontSignup = lazy(() => import("./pages/StorefrontSignup"));
@@ -351,7 +401,7 @@ const storefrontChildRoutes = (theme: string) => {
       <Route path="shipping-policy" element={<StorefrontShippingPolicy />} />
       <Route path="terms" element={<StorefrontTerms />} />
       <Route path="privacy-policy" element={<StorefrontPrivacyPolicy />} />
-      <Route path="category/:categorySlug" element={<CategoryDetail />} />
+      <Route path="category/:categorySlug" element={<Suspense fallback={<CategoryDetailSkeleton />}><CategoryDetail /></Suspense>} />
       <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-20" ? <V20ProductDetail /> : theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
       <Route path="cart" element={theme === "theme-20" ? <V20CartPage /> : theme === "theme-19" ? <V19CartPage /> : <CartPage />} />
       <Route path="wishlist" element={<WishlistPage />} />

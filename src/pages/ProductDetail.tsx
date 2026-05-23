@@ -182,6 +182,8 @@ export default function ProductDetail() {
     requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
     });
+    // Clear the route-transition preload now that the real PDP is mounted.
+    import("@/lib/pdpPreload").then(m => m.clearPdpPreload()).catch(() => {});
   }, [productSlug]);
 
   const getCachedProduct = () => {
