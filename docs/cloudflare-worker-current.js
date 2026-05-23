@@ -3040,13 +3040,16 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
   let inlineThemeCss = "";
   let bgColor = "#ffffff";
   let textColor = "#1a1a1a";
+  let primaryColor = "#004643";
 
   if (storefrontData?.theme_config) {
     const themeResult = buildThemeCssFromConfig(storefrontData.theme_config);
     inlineThemeCss = themeResult.css;
     bgColor = themeResult.bgColor;
     textColor = themeResult.textColor;
+    primaryColor = themeResult.primaryColor || primaryColor;
   }
+
 
   const logoUrl = storefrontData?.store?.logo_url || "";
   let ogMeta = "";
