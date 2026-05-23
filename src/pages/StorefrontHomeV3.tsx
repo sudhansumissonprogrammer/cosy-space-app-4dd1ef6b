@@ -315,6 +315,10 @@ export default function StorefrontHomeV3() {
         isLoading={!storeCategories}
         categoryStyle={themeConfig?.category_style || "style-1"}
       />
+      {/* Best Sellers */}
+      {products && (
+        <HomeBestSellingSection products={products} slug={slug!} store={store} cardStyle={cardStyle} />
+      )}
 
       {/* Flash Deals */}
       {products && <FlashDeals products={products} slug={slug!} store={store} />}
