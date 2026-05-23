@@ -57,7 +57,6 @@ const navItems = [
   { key: "home", label: "Home", Icon: HomeIcon, path: "" },
   { key: "orders", label: "Orders", Icon: OrdersIcon, path: "account" },
   { key: "shop", label: "Shop", Icon: ShopIcon, path: "shop" },
-  { key: "wishlist", label: "Wishlist", Icon: WishlistIcon, path: "wishlist" },
   { key: "cart", label: "Cart", Icon: CartIcon, path: "__cart__" },
 ];
 
