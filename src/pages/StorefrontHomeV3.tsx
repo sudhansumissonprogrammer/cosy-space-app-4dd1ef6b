@@ -11,6 +11,7 @@ import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { getDiscountPercent } from "@/lib/productUtils";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
+import { HomeBestSellingSection } from "@/components/storefront/HomeSharedSections";
 import { Skeleton } from "@/components/ui/skeleton";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import { storefrontPath } from "@/lib/subdomain";
