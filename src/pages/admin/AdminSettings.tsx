@@ -23,7 +23,11 @@ export default function AdminSettings() {
   const { data: config, isLoading } = useQuery({
     queryKey: ["platform-config"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("platform_config").select("*").limit(1).single();
+      const { data, error } = await (supabase as any)
+        .from("platform_config")
+        .select("id, platform_name, default_currency, wa_phone_number_id, wa_business_phone")
+        .limit(1)
+        .single();
       if (error) throw error;
       return data as { id: string; platform_name: string; default_currency: string; wa_phone_number_id: string | null; wa_access_token: string | null; wa_business_phone: string | null };
     },
@@ -42,16 +46,18 @@ export default function AdminSettings() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!config?.id) throw new Error("No config found");
+      const updatePayload: Record<string, string | null> = {
+        platform_name: platformName,
+        default_currency: defaultCurrency,
+        wa_phone_number_id: waPhoneNumberId || null,
+        wa_business_phone: waBusinessPhone || null,
+        updated_at: new Date().toISOString(),
+      };
+      if (waAccessToken.trim()) updatePayload.wa_access_token = waAccessToken.trim();
+
       const { error } = await (supabase as any)
         .from("platform_config")
-        .update({
-          platform_name: platformName,
-          default_currency: defaultCurrency,
-          wa_phone_number_id: waPhoneNumberId || null,
-          wa_access_token: waAccessToken || null,
-          wa_business_phone: waBusinessPhone || null,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("id", config.id);
       if (error) throw error;
     },
