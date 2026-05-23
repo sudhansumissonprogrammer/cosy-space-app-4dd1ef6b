@@ -49,10 +49,10 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
       className="fixed bottom-0 inset-x-0 z-40 sm:hidden pointer-events-none"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
-      <div className="flex items-end justify-center gap-2 px-3 pb-2.5 pointer-events-auto">
+      <div className="flex items-end justify-center gap-2 px-3 pb-1.5 pointer-events-auto">
         {/* Main floating pill */}
         <div
-          className="flex items-center justify-around rounded-[28px] px-1.5 py-1.5 flex-1 shadow-[0_4px_24px_rgba(0,0,0,0.12)]"
+          className="flex items-center justify-around rounded-[28px] px-1.5 py-1 flex-1 shadow-[0_4px_24px_rgba(0,0,0,0.12)]"
           style={{
             backgroundColor: "var(--storefront-bg, hsl(var(--card)))",
             border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)",
@@ -70,7 +70,7 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
               >
                 <div
                   className={`relative flex items-center gap-1.5 rounded-full transition-all duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
-                    active ? "px-3 py-2" : "p-2"
+                    active ? "px-3 py-1.5" : "px-2 py-1.5"
                   }`}
                   style={
                     active

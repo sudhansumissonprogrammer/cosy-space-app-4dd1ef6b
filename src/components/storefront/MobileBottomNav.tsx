@@ -68,7 +68,7 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
             <Link
               key={item.label}
               to={item.to}
-              className="relative flex flex-1 flex-col items-center gap-0.5 py-2.5 transition-all active:scale-[0.93]"
+              className="relative flex flex-1 flex-col items-center gap-0.5 py-1.5 transition-all active:scale-[0.93]"
               style={{
                 color: item.active
                   ? "var(--storefront-primary, hsl(var(--primary)))"
@@ -76,7 +76,7 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
               }}
             >
               <div
-                className={`relative flex items-center justify-center rounded-full transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${item.active ? "px-3 py-1" : "px-1 py-1"}`}
+                className={`relative flex items-center justify-center rounded-full transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${item.active ? "px-3 py-0.5" : "px-1 py-0.5"}`}
                 style={item.active ? { backgroundColor: "color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 14%, transparent)" } : undefined}
               >
                 <item.icon className="h-5 w-5" strokeWidth={item.active ? 2.5 : 1.8} />
