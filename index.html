@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/outfit-latin.woff2" crossorigin />
+    <!-- Speed up React mount on landing: prefetch the entry chunk early.
+         In production Vite emits modulepreload for downstream chunks automatically. -->
+    <link rel="modulepreload" href="/src/main.tsx" />
     <!-- Alegreya SC is a secondary accent font (wordmark + 1 inline span on landing).
          Dropped from preload + switched to font-display:optional below so it can
          NEVER block first paint. Was previously causing a ~3s blank screen on cold
