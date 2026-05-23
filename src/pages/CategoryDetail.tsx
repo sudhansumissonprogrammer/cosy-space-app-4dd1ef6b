@@ -228,14 +228,8 @@ export default function CategoryDetail() {
         <span className="text-sm font-semibold text-muted-foreground">Back</span>
       </div>
 
-      {/* Hero category banner */}
-      {category && (
-        <CategoryHeroBanner
-          name={category.name}
-          imageUrl={category.image_url}
-          count={rawProducts.length}
-        />
-      )}
+
+
 
       <ShopFilterBar
         total={totalEstimate || rawProducts.length}
