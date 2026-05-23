@@ -52,9 +52,7 @@ export function useProductCardActions(product: Product) {
     );
 
     const source = (e.currentTarget as Element) || null;
-    const duration = flyToCart(source, { imageUrl: product.image_url || undefined });
-    // If animation skipped (no target / reduced motion) → open immediately.
-    window.setTimeout(() => openCart(), duration > 0 ? duration - 60 : 0);
+    flyToCart(source, { imageUrl: product.image_url || undefined });
 
     setAddedFlash(true);
     window.setTimeout(() => setAddedFlash(false), 1100);
