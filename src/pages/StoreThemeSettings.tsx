@@ -1177,7 +1177,7 @@ export default function StoreThemeSettings() {
         </Section>
       )}
 
-      {(currentTheme === "theme-1" || currentTheme === "theme-14" || currentTheme === "theme-15" || currentTheme === "theme-16" || currentTheme === "theme-18") && (
+      {(currentTheme === "theme-1" || currentTheme === "theme-14" || currentTheme === "theme-15" || currentTheme === "theme-16" || currentTheme === "theme-18" || currentTheme === "theme-21") && (
         <>
           <Section title="Header Style" hint="How the desktop header looks against the page.">
             <div className="grid grid-cols-3 gap-3">
