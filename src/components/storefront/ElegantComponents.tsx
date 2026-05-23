@@ -107,12 +107,12 @@ export function ElegantTabBar({ store, colors, useTextForActive = false }: { sto
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-      <div className="flex items-center justify-around py-1.5 border-t" style={{ backgroundColor: `var(--storefront-bg, ${colors.defaultBg})`, borderColor: `var(--storefront-text, ${colors.defaultText})10` }}>
+      <div className="flex items-center justify-around py-0.5 border-t" style={{ backgroundColor: `var(--storefront-bg, ${colors.defaultBg})`, borderColor: `var(--storefront-text, ${colors.defaultText})10` }}>
         {tabs.map((tab) => {
           const isActive = tab.matchExact ? location.pathname === basePath || location.pathname === basePath + "/" : location.pathname.includes(tab.match!);
           const TabIcon = tab.icon;
           const content = (
-            <div className="flex flex-col items-center justify-center gap-0.5 py-1 px-2" style={{ minWidth: "52px" }}>
+            <div className="flex flex-col items-center justify-center gap-0.5 py-0.5 px-2" style={{ minWidth: "52px" }}>
               <div className="relative flex items-center justify-center" style={{ width: "24px", height: "24px" }}>
                 <TabIcon className="h-[22px] w-[22px] transition-colors" style={{ color: isActive ? activeColor : `var(--storefront-text, ${colors.defaultText})60` }} />
                 {tab.badge != null && tab.badge > 0 && <span className="absolute -right-2 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: `var(--storefront-primary, ${colors.defaultPrimary})`, color: "#fff" }}>{tab.badge > 9 ? "9+" : tab.badge}</span>}
