@@ -100,7 +100,7 @@ export default function MobileBottomNavV17({ store }: { store: StoreData }) {
         fontFamily: "var(--v17-heading-font, 'Cormorant Garamond', serif)",
       }}
     >
-      <div className="flex items-center justify-around" style={{ height: "56px", padding: "0 15px" }}>
+      <div className="flex items-center justify-around" style={{ height: "48px", padding: "0 15px" }}>
         {navItems.map((item) => {
           const active = getActive(item.path);
           const badge = getBadge(item.key);
