@@ -198,6 +198,7 @@ const _path = window.location.pathname;
     const isHome = path === "/" || /\/store\/[^/]+\/?$/.test(path);
     if (isHome) {
       const homeImports: Record<string, () => Promise<any>> = {
+        "theme-21": () => import("./pages/StorefrontHomeV21"),
         "theme-20": () => import("./pages/StorefrontHomeV20"),
         "theme-19": () => import("./pages/StorefrontHomeV19"),
         "theme-18": () => import("./pages/StorefrontHomeV18"),
