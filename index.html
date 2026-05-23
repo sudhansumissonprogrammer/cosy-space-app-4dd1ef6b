@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/outfit-latin.woff2" crossorigin />
+    <!-- Speed up React mount on landing: prefetch the entry chunk early.
+         In production Vite emits modulepreload for downstream chunks automatically. -->
+    <link rel="modulepreload" href="/src/main.tsx" />
     <!-- Alegreya SC is a secondary accent font (wordmark + 1 inline span on landing).
          Dropped from preload + switched to font-display:optional below so it can
          NEVER block first paint. Was previously causing a ~3s blank screen on cold
@@ -351,7 +354,7 @@
          (inlined as SVG). When React hydrates, the transition is invisible because
          layout/colors/structure already match.
          Token map: bg=#f4f6f9 fg=#121826 mut=#4a5366 red=#d11d24 blue=#0f4ebd yel=#ecb725 -->
-    <div id="landing-skel" aria-hidden="true" style="display:none;position:fixed;inset:0;min-height:100vh;background:#f5f6f9;z-index:2147482999;pointer-events:none;overflow:hidden;transition:opacity .45s ease-out;font-family:'Outfit',Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#121826">
+    <div id="landing-skel" aria-hidden="false" style="display:none;position:absolute;top:0;left:0;right:0;min-height:100vh;background:#f5f6f9;z-index:2147482999;pointer-events:auto;overflow:visible;transition:opacity .45s ease-out;font-family:'Outfit',Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#121826">
       <!-- NAV (matches Navbar.tsx exactly) -->
       <nav style="background:#fff;border-bottom:4px solid #121826">
         <div style="max-width:80rem;margin:0 auto;padding:0 12px;display:flex;align-items:center;justify-content:space-between;height:56px" class="ls-nav-row">
@@ -360,15 +363,15 @@
             <span style="font-family:'Alegreya SC',Georgia,serif;font-weight:700;font-size:24px;color:#121826;margin-left:-4px">ShopBanao</span>
           </a>
           <div class="ls-nav-links" style="display:none;align-items:center;gap:32px">
-            <span style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px">Features</span>
-            <span style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px">Pricing</span>
-            <span style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px">For Sellers</span>
-            <span style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px">Partners</span>
-            <span style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px">FAQ</span>
-            <span style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px">Store Owner Login</span>
+            <a href="/#features" style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px;color:inherit;text-decoration:none">Features</a>
+            <a href="/#pricing" style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px;color:inherit;text-decoration:none">Pricing</a>
+            <a href="/#sellers" style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px;color:inherit;text-decoration:none">For Sellers</a>
+            <a href="/partners" style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px;color:inherit;text-decoration:none">Partners</a>
+            <a href="/#faq" style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px;color:inherit;text-decoration:none">FAQ</a>
+            <a href="/login" style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:14px;color:inherit;text-decoration:none">Store Owner Login</a>
           </div>
           <div class="ls-nav-cta" style="display:none;align-items:center">
-            <span style="background:#d11d24;color:#fff;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:12px;padding:8px 16px;border:2px solid #121826;box-shadow:4px 4px 0 #121826">Start Free</span>
+            <a href="/signup" style="background:#d11d24;color:#fff;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:12px;padding:8px 16px;border:2px solid #121826;box-shadow:4px 4px 0 #121826;text-decoration:none">Start Free</a>
           </div>
           <div class="ls-nav-burger" style="padding:8px;border:2px solid #121826;width:40px;height:40px;box-sizing:border-box">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -392,13 +395,13 @@
                 Keep 100% of your revenue. Your branded store with custom domain &amp; UPI payments — live in 10 minutes.
               </p>
               <div style="display:flex;flex-direction:row;gap:12px;margin-bottom:24px">
-                <span style="display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#d11d24;color:#fff;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:12px;padding:12px 20px;border:2px solid #121826;box-shadow:4px 4px 0 #121826">
+                <a href="/signup" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#d11d24;color:#fff;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:12px;padding:12px 20px;border:2px solid #121826;box-shadow:4px 4px 0 #121826;text-decoration:none">
                   Start Free Trial
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                </span>
-                <span style="display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:#121826;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:12px;padding:12px 20px;border:2px solid #121826;box-shadow:4px 4px 0 #121826">
+                </a>
+                <a href="/theme" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:#121826;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:12px;padding:12px 20px;border:2px solid #121826;box-shadow:4px 4px 0 #121826;text-decoration:none">
                   View Themes
-                </span>
+                </a>
               </div>
               <div style="display:flex;align-items:center;gap:12px">
                 <span style="display:inline-flex;align-items:center;gap:6px;color:#4a5366;font-weight:500;font-size:11px;white-space:nowrap">
@@ -551,7 +554,15 @@
         var isLandingPath=(p==='/'||p==='/theme'||p==='/guides'||p.indexOf('/guides/')===0);
         if(!isSf && isLandingHost && isLandingPath){
           if(inline){inline.style.display='none';}
-          if(landing){landing.style.display='block';}
+          /* Delay landing skeleton by 3s — if React mounts before then,
+             we never show the demo skeleton at all (no visible swap).
+             Only acts as a fallback for slow connections. */
+          if(landing){
+            window.__LANDING_SKEL_TIMER__ = setTimeout(function(){
+              if(window.__LANDING_HERO_READY__) return;
+              if(landing) landing.style.display='block';
+            }, 3000);
+          }
         }else if(!isSf){
           if(inline){inline.style.display='none';}
           if(landing){landing.style.display='none';}
@@ -577,6 +588,7 @@
         function killNow(){
           if(done) return;
           done=true;
+          try{ if(window.__LANDING_SKEL_TIMER__) clearTimeout(window.__LANDING_SKEL_TIMER__); }catch(e){}
           ['sf-skel','inline-skel','landing-skel'].forEach(function(id){
             var s=document.getElementById(id);
             if(!s) return;
