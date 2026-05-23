@@ -1074,7 +1074,7 @@ function getSkeletonMuted(textColor) {
 function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname, inlineProducts) {
   const themeCss = themeLite ? buildThemeCssFromConfig(themeLite).css : "";
   const skeletonMuted = themeLite ? getSkeletonMuted(themeLite.tc || themeLite.text_color || "#1a1a1a") : "#e8e8e8";
-  const skeleton = buildSkeleton(bgColor, skeletonMuted, false, (themeLite && (themeLite.name || themeLite.store_name)) || slug || "", (themeLite && (themeLite.tc || themeLite.text_color)) || "#1a1a1a");
+  const skeleton = buildSkeleton(bgColor, skeletonMuted, false, (themeLite && (themeLite.name || themeLite.store_name)) || slug || "", (themeLite && (themeLite.tc || themeLite.text_color)) || "#1a1a1a", (themeLite && (themeLite.pc || themeLite.primary_color)) || "#004643");
   const safeSlug = (slug || "").replace(/[<>"'&]/g, "");
 
   // Build canonical URL
