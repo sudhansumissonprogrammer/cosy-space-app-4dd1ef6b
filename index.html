@@ -551,7 +551,15 @@
         var isLandingPath=(p==='/'||p==='/theme'||p==='/guides'||p.indexOf('/guides/')===0);
         if(!isSf && isLandingHost && isLandingPath){
           if(inline){inline.style.display='none';}
-          if(landing){landing.style.display='block';}
+          /* Delay landing skeleton by 3s — if React mounts before then,
+             we never show the demo skeleton at all (no visible swap).
+             Only acts as a fallback for slow connections. */
+          if(landing){
+            window.__LANDING_SKEL_TIMER__ = setTimeout(function(){
+              if(window.__LANDING_HERO_READY__) return;
+              if(landing) landing.style.display='block';
+            }, 3000);
+          }
         }else if(!isSf){
           if(inline){inline.style.display='none';}
           if(landing){landing.style.display='none';}
