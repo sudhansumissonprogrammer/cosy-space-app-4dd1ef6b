@@ -10,7 +10,7 @@ import { ArrowLeft, Search } from "lucide-react";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
-import { CartBadge, WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
+import { WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
 
 import { useSmartHeader } from "@/hooks/useSmartHeader";
 import PageTransition from "@/components/storefront/PageTransition";
