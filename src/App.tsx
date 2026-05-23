@@ -410,6 +410,7 @@ function getLayoutComponent(theme: string) {
 
 function prefetchLayoutChunk(theme: string) {
   switch (theme) {
+    case "theme-21": return import("./layouts/StorefrontLayoutV21");
     case "theme-20": return import("./layouts/StorefrontLayoutV20");
     case "theme-19": return import("./layouts/StorefrontLayoutV19");
     case "theme-18": return import("./layouts/StorefrontLayoutV18");
