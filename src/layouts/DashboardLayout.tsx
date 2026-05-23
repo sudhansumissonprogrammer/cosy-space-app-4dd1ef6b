@@ -308,7 +308,7 @@ export default function DashboardLayout() {
         <SidebarProvider>
           <DynamicPwaManifest storeName="ShopBanao" logoUrl="/images/shopbanao-logo.png" themeColor="#4361ee" startUrl="/dashboard" />
           <SmartInstallPrompt appName="ShopBanao" primaryColor="#4361ee" textColor="#ffffff" delay={15000} logoUrl="/images/shopbanao-logo.png" />
-          <div className="min-h-screen flex w-full font-dashboard">
+          <div className="min-h-screen flex w-full font-dashboard [&_*]:font-dashboard">
             <AppSidebar />
             <div className="flex-1 flex flex-col min-w-0">
               {isAdminView && (
@@ -389,7 +389,7 @@ export default function DashboardLayout() {
     <DynamicPwaManifest storeName="ShopBanao" logoUrl="/images/shopbanao-logo.png" themeColor="#4361ee" startUrl="/dashboard" />
     <SmartInstallPrompt appName="ShopBanao" primaryColor="#4361ee" textColor="#ffffff" delay={10000} logoUrl="/images/shopbanao-logo.png" />
     <div
-      className="min-h-screen flex flex-col bg-background font-dashboard"
+      className="min-h-screen flex flex-col bg-background font-dashboard [&_*]:font-dashboard"
       
     >
       {isAdminView && (
