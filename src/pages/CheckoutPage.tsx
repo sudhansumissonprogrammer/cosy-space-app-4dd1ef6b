@@ -913,22 +913,42 @@ export default function CheckoutPage() {
     }
   };
 
-  // Pincode auto-fill for Indian pincodes
+  // Pincode auto-fill for Indian pincodes — races two endpoints for fastest fill
   const handlePincodeChange = async (val: string) => {
     setPincode(val);
     if (val.length === 6 && /^\d{6}$/.test(val)) {
       setPincodeLoading(true);
-      try {
+      const fromPostalPincode = async () => {
         const res = await fetch(`https://api.postalpincode.in/pincode/${val}`);
         const data = await res.json();
         if (data?.[0]?.Status === "Success" && data[0].PostOffice?.length > 0) {
           const po = data[0].PostOffice[0];
-          setCity(po.District || "");
-          setState(po.State || "");
+          return { city: po.District as string, state: po.State as string };
         }
+        throw new Error("no data");
+      };
+      const fromZippopotam = async () => {
+        const res = await fetch(`https://api.zippopotam.us/in/${val}`);
+        if (!res.ok) throw new Error("no data");
+        const data = await res.json();
+        const place = data?.places?.[0];
+        if (!place) throw new Error("no data");
+        return { city: place["place name"] as string, state: place.state as string };
+      };
+      try {
+        const result = await new Promise<{ city: string; state: string }>((resolve, reject) => {
+          let rejected = 0;
+          const tryOne = (p: Promise<{ city: string; state: string }>) => p.then(resolve).catch(() => { if (++rejected === 2) reject(new Error("all failed")); });
+          tryOne(fromPostalPincode());
+          tryOne(fromZippopotam());
+        });
+
+        setCity(result.city || "");
+        setState(result.state || "");
       } catch {} finally { setPincodeLoading(false); }
     }
   };
+
 
   // Browser geolocation + Google Geocoding for accurate address
   const handleUseMyLocation = async () => {
@@ -1661,7 +1681,8 @@ export default function CheckoutPage() {
               <Input id="street" placeholder="House/Flat No., Building, Street" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
             </div>
             {/* City + State — always visible, auto-filled from pincode when possible */}
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-3">
+
               <div className="space-y-1">
                 <Label htmlFor="city" className="text-xs">{t("City", "शहर")} *</Label>
                 <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
