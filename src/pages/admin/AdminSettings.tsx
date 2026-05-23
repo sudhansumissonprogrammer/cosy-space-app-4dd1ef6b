@@ -46,16 +46,18 @@ export default function AdminSettings() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!config?.id) throw new Error("No config found");
+      const updatePayload: Record<string, string | null> = {
+        platform_name: platformName,
+        default_currency: defaultCurrency,
+        wa_phone_number_id: waPhoneNumberId || null,
+        wa_business_phone: waBusinessPhone || null,
+        updated_at: new Date().toISOString(),
+      };
+      if (waAccessToken.trim()) updatePayload.wa_access_token = waAccessToken.trim();
+
       const { error } = await (supabase as any)
         .from("platform_config")
-        .update({
-          platform_name: platformName,
-          default_currency: defaultCurrency,
-          wa_phone_number_id: waPhoneNumberId || null,
-          wa_access_token: waAccessToken || null,
-          wa_business_phone: waBusinessPhone || null,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("id", config.id);
       if (error) throw error;
     },
