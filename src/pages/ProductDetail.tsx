@@ -498,11 +498,10 @@ export default function ProductDetail() {
       quantity,
     }, { silent: true });
 
-    // Fly-to-cart from the button, then open SideCart once arc lands.
+    // Fly-to-cart animation only — do not auto-open the SideCart.
     import("@/lib/flyToCart").then(({ flyToCart }) => {
       const source = (e?.currentTarget as Element) || null;
-      const duration = flyToCart(source, { imageUrl: product.image_url || undefined });
-      window.setTimeout(() => openCart(), duration > 0 ? duration - 60 : 0);
+      flyToCart(source, { imageUrl: product.image_url || undefined });
     });
 
     setJustAdded(true);
