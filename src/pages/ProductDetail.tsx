@@ -836,6 +836,9 @@ export default function ProductDetail() {
             </div>
           )}
 
+          {/* Delivery timeline (Order → Shipping → Delivery) */}
+          {!isOutOfStock && <DeliveryTimeline />}
+
           {/* Checkout Trust Block — hidden in V18 */}
           {!isV18 && !isOutOfStock && (
             <div className="mt-5 rounded-2xl border border-border overflow-hidden">
