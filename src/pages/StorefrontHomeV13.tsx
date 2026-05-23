@@ -521,6 +521,12 @@ export default function StorefrontHomeV13() {
         </div>
       )}
 
+      {/* Best Sellers */}
+      {products.length > 0 && (
+        <HomeBestSellingSection products={products} slug={store?.slug || ""} store={store as any} cardStyle={cardStyle} />
+      )}
+
+
       {/* Search + Filters */}
       <MenuSearchBar
         value={searchQuery}
