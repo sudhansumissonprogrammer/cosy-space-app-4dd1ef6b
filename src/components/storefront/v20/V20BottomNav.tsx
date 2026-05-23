@@ -85,7 +85,7 @@ export default function V20BottomNav({ store }: { store: any }) {
         className="fixed bottom-0 inset-x-0 z-40 md:hidden bg-white border-t"
         style={{ borderColor: "#e5e7eb", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
-        <div ref={navRef} className="relative flex items-stretch justify-around h-[60px]">
+        <div ref={navRef} className="relative flex items-stretch justify-around h-[52px]">
           {pill && (
             <span
               className="nav-pill-indicator"
