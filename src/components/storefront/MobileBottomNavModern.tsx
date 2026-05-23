@@ -58,11 +58,14 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
         >
           {navItems.map((item) => {
             const active = getActive(item.path);
-            const count = item.key === "wishlist" ? wishlistCount : 0;
+            const count = item.key === "cart" ? cartCount : 0;
+            const isCart = item.key === "cart";
+            const handleClick = isCart ? (e: React.MouseEvent) => { e.preventDefault(); openCart(); } : undefined;
             return (
               <Link
                 key={item.key}
                 to={getTo(item.path)}
+                onClick={handleClick}
                 className="relative flex items-center justify-center outline-none"
                 aria-label={item.label}
               >
