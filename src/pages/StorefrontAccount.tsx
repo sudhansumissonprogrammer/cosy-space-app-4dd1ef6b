@@ -27,12 +27,14 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { normalizePhone } from "@/lib/phoneUtils";
 
 function OrdersTab({ customerId, store }: { customerId: string; store: StoreData }) {
+function OrdersTab({ customerId, store }: { customerId: string; store: StoreData }) {
+  const qc = useQueryClient();
   const { data: orders, isLoading } = useQuery({
     queryKey: ["storefront-customer-orders", customerId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("*, order_items(*)")
+        .select("*, order_items(*, products(image_url))")
         .eq("storefront_customer_id", customerId)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -40,16 +42,67 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: "cancelled" })
+        .eq("id", orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["storefront-customer-orders", customerId] });
+      toast.success("Order cancelled");
+    },
+    onError: (e: any) => toast.error(e?.message || "Unable to cancel order"),
+  });
+
+  const ownerPhone = store.whatsapp_number ? normalizePhone(store.whatsapp_number) : "";
+  const waLink = ownerPhone ? `https://wa.me/${ownerPhone.replace(/\D/g, "")}` : "";
+  const telLink = ownerPhone ? `tel:${ownerPhone}` : "";
+
+  const HelpCard = (
+    ownerPhone ? (
+      <Card className="border-dashed">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <HelpCircle className="h-5 w-5 mt-0.5 text-primary shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">Help & Support</p>
+              <p className="text-xs mt-0.5" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)" }}>
+                Need help with an order? Contact the store directly.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                <a href={waLink} target="_blank" rel="noopener noreferrer"
+                   className="inline-flex items-center gap-1.5 rounded-md bg-[#25D366] px-3 py-1.5 text-xs font-semibold text-white">
+                  <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                </a>
+                <a href={telLink}
+                   className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold"
+                   style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 20%, transparent)" }}>
+                  <Phone className="h-3.5 w-3.5" /> {ownerPhone}
+                </a>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    ) : null
+  );
+
   if (isLoading) return <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}</div>;
 
   if (!orders?.length) {
     return (
-      <div className="py-12 text-center" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>
-        <Package className="mx-auto mb-3 h-10 w-10" />
-        <p>No orders yet</p>
-        <Button asChild variant="outline" className="mt-4">
-          <Link to={storefrontPath(store.slug)}>Start Shopping</Link>
-        </Button>
+      <div className="space-y-4">
+        <div className="py-12 text-center" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>
+          <Package className="mx-auto mb-3 h-10 w-10" />
+          <p>No orders yet</p>
+          <Button asChild variant="outline" className="mt-4">
+            <Link to={storefrontPath(store.slug)}>Start Shopping</Link>
+          </Button>
+        </div>
+        {HelpCard}
       </div>
     );
   }
@@ -67,9 +120,11 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
 
   return (
     <div className="space-y-4">
+      {HelpCard}
       {orders.map((order: any) => {
         const currentIdx = STATUSES.indexOf(order.status);
         const isCancelled = order.status === "cancelled";
+        const canCancel = order.status === "pending" || order.status === "confirmed";
         return (
           <Card key={order.id}>
             <CardContent className="p-4">
@@ -114,13 +169,29 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
                 </div>
               )}
 
-              <div className="space-y-1">
-                {order.order_items?.map((item: any) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span>{item.product_name} × {item.quantity}</span>
-                    <span className="font-medium">{store.currency} {item.total}</span>
-                  </div>
-                ))}
+              <div className="space-y-2">
+                {order.order_items?.map((item: any) => {
+                  const img = item.products?.image_url || item.image_url;
+                  return (
+                    <div key={item.id} className="flex items-center gap-3 text-sm">
+                      {img ? (
+                        <img src={img} alt={item.product_name} loading="lazy"
+                             className="h-12 w-12 rounded-md object-cover border"
+                             style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }} />
+                      ) : (
+                        <div className="h-12 w-12 rounded-md flex items-center justify-center border"
+                             style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)", backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 5%, transparent)" }}>
+                          <Package className="h-5 w-5 opacity-40" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="line-clamp-1">{item.product_name}</p>
+                        <p className="text-xs" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}>Qty: {item.quantity}</p>
+                      </div>
+                      <span className="font-medium whitespace-nowrap">{store.currency} {item.total}</span>
+                    </div>
+                  );
+                })}
               </div>
               <Separator className="my-2" />
               <div className="flex justify-between font-semibold text-sm">
@@ -138,6 +209,37 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
                     <span style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>Balance on Delivery</span>
                     <span className="font-semibold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{store.currency} {Number(order.balance_due).toFixed(0)}</span>
                   </div>
+                </div>
+              )}
+
+              {canCancel && (
+                <div className="mt-3 pt-3 border-t" style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full text-destructive hover:text-destructive">
+                        <XCircle className="h-4 w-4 mr-1.5" /> Cancel Order
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will cancel your order. This action cannot be undone. The store owner will be notified automatically.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Keep Order</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={() => cancelMutation.mutate(order.id)}
+                          disabled={cancelMutation.isPending}
+                        >
+                          {cancelMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                          Yes, Cancel Order
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               )}
             </CardContent>
