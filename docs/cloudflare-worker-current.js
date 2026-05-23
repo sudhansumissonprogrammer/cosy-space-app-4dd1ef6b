@@ -909,39 +909,24 @@ function getSkeletonCleanupScript(fallbackMs = 12000) {
   })()</script>`;
 }
 
-function buildSkeleton(bgColor, skeletonMuted, includeCleanup = true, storeName = "", textColor = "#1a1a1a") {
-  // FIX #11: Use actual store bgColor instead of hardcoded #ffffff
+function buildSkeleton(bgColor, skeletonMuted, includeCleanup = true, storeName = "", textColor = "#1a1a1a", primaryColor = "#004643") {
+  // Custom loader (uiverse "mean-puma-17") — nested rotating rings using
+  // the store's brand primary color. Shown ONLY on initial store load;
+  // all in-app skeletons (PDP, category, etc.) remain untouched.
   const skelBg = bgColor || "#ffffff";
-  const skelBase = "#f0f0f0";
-  const skelShimmer = "#e0e0e0";
+  const ringColor = primaryColor || "#004643";
 
-  const shimmerKeyframes = `<style id="sf-skel-anim">@keyframes sf-shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}.sf-ph{background:linear-gradient(90deg,${skelBase} 25%,${skelShimmer} 50%,${skelBase} 75%);background-size:800px 100%;animation:sf-shimmer 1.4s ease-in-out infinite;border-radius:4px}</style>`;
+  const spinnerCss = `<style id="sf-skel-anim">@keyframes sf-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}#sf-skel .sf-spin-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:150px;height:150px}#sf-skel .sf-ring{position:absolute;inset:0;border:5px solid transparent;border-radius:50%;border-top-color:${ringColor};animation:sf-spin 5s cubic-bezier(0.17,0.49,0.96,0.79) infinite}#sf-skel .sf-ring>.sf-ring{inset:4.95px}</style>`;
 
   // v6.3.0: Set __SF_WORKER__ flag BEFORE skeleton so index.html knows Worker
-  // already injected its skeleton — inline skeleton fallback is suppressed.
-  let s = `<script>window.__SF_WORKER__=true;</script>${shimmerKeyframes}<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${skelBg};z-index:2147483000;pointer-events:none;overflow:hidden">`;
-  s += `<nav style="height:56px;background:${skelBg};border-bottom:1px solid #ececec;display:flex;align-items:center;padding:0 16px;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">`;
-  s += `<div class="sf-ph" style="height:32px;width:32px;border-radius:8px;flex-shrink:0"></div>`;
-  // Store name text removed per user request — show placeholder bar only
-  s += `<div class="sf-ph" style="height:12px;width:80px"></div>`;
-  s += `<div style="flex:1"></div>`;
-  s += `<div class="sf-ph" style="width:28px;height:28px;border-radius:50%"></div>`;
-  s += `</nav>`;
-  s += `<div class="sf-ph" style="height:6px;width:100%;border-radius:0;margin-bottom:16px"></div>`;
-  s += `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 12px">`;
-  for (let i = 0; i < 4; i++) {
-    s += `<div style="border-radius:12px;overflow:hidden;background:${skelBg};border:1px solid #ececec;box-shadow:0 1px 4px rgba(0,0,0,0.05)">`;
-    s += `<div class="sf-ph" style="width:100%;aspect-ratio:4/5;border-radius:0"></div>`;
-    s += `<div style="padding:10px 10px 12px">`;
-    s += `<div class="sf-ph" style="height:11px;width:75%;margin-bottom:8px"></div>`;
-    s += `<div class="sf-ph" style="height:11px;width:45%;margin-bottom:10px"></div>`;
-    s += `<div class="sf-ph" style="height:28px;width:100%;border-radius:6px"></div>`;
-    s += `</div></div>`;
-  }
-  s += `</div></div>`;
+  // already injected its loader — inline fallback is suppressed.
+  let s = `<script>window.__SF_WORKER__=true;</script>${spinnerCss}<div id="sf-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:${skelBg};z-index:2147483000;pointer-events:none;overflow:hidden">`;
+  s += `<div class="sf-spin-wrap"><div class="sf-ring"><div class="sf-ring"><div class="sf-ring"><div class="sf-ring"><div class="sf-ring"><div class="sf-ring"></div></div></div></div></div></div></div>`;
+  s += `</div>`;
   if (includeCleanup) s += getSkeletonCleanupScript();
   return s;
 }
+
 
 function buildThemeCssFromConfig(tc) {
   const primaryColor = tc.primary_color || tc.pc || "#004643";
@@ -1089,7 +1074,7 @@ function getSkeletonMuted(textColor) {
 function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname, inlineProducts) {
   const themeCss = themeLite ? buildThemeCssFromConfig(themeLite).css : "";
   const skeletonMuted = themeLite ? getSkeletonMuted(themeLite.tc || themeLite.text_color || "#1a1a1a") : "#e8e8e8";
-  const skeleton = buildSkeleton(bgColor, skeletonMuted, false, (themeLite && (themeLite.name || themeLite.store_name)) || slug || "", (themeLite && (themeLite.tc || themeLite.text_color)) || "#1a1a1a");
+  const skeleton = buildSkeleton(bgColor, skeletonMuted, false, (themeLite && (themeLite.name || themeLite.store_name)) || slug || "", (themeLite && (themeLite.tc || themeLite.text_color)) || "#1a1a1a", (themeLite && (themeLite.pc || themeLite.primary_color)) || "#004643");
   const safeSlug = (slug || "").replace(/[<>"'&]/g, "");
 
   // Build canonical URL
@@ -3055,13 +3040,16 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
   let inlineThemeCss = "";
   let bgColor = "#ffffff";
   let textColor = "#1a1a1a";
+  let primaryColor = "#004643";
 
   if (storefrontData?.theme_config) {
     const themeResult = buildThemeCssFromConfig(storefrontData.theme_config);
     inlineThemeCss = themeResult.css;
     bgColor = themeResult.bgColor;
     textColor = themeResult.textColor;
+    primaryColor = themeResult.primaryColor || primaryColor;
   }
+
 
   const logoUrl = storefrontData?.store?.logo_url || "";
   let ogMeta = "";
@@ -3138,7 +3126,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
 
   const skeletonMuted = getSkeletonMuted(textColor);
   // FIX #11: Pass actual bgColor — v8.21.0: also pass store name for instant FCP
-  const skeleton = buildSkeleton(bgColor, skeletonMuted, true, (storefrontData && storefrontData.store && storefrontData.store.name) || "", textColor);
+  const skeleton = buildSkeleton(bgColor, skeletonMuted, true, (storefrontData && storefrontData.store && storefrontData.store.name) || "", textColor, primaryColor);
 
   // LCP preload: hero image (mobile_hero > banner > logo)
   let lcpPreload = "";
@@ -3315,7 +3303,7 @@ async function serveStreamedHtml(
       const storefrontResult = earlyStorefrontResult || (await storefrontPromise);
 
       const skeletonMuted = getSkeletonMuted(textColor);
-      const skeleton = buildSkeleton(bgColor, skeletonMuted, true, (storefrontResult && storefrontResult.data && storefrontResult.data.store && storefrontResult.data.store.name) || "", textColor);
+      const skeleton = buildSkeleton(bgColor, skeletonMuted, true, (storefrontResult && storefrontResult.data && storefrontResult.data.store && storefrontResult.data.store.name) || "", textColor, (themeLite && (themeLite.pc || themeLite.primary_color)) || "#004643");
 
       let preloaderProductsJson = inlineProducts || "";
       if (Array.isArray(storefrontResult?.data?.products) && storefrontResult.data.products.length > 0) {
