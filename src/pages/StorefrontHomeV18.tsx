@@ -86,7 +86,8 @@ export default function StorefrontHomeV18() {
   const { products, isLoading: productsLoading } = useStorefrontProducts(store?.id);
   const bsQuery = useBestSellingProducts(store?.id);
   const bestSellers = bsQuery.products;
-  const showBestSellers = store?.best_selling_carousel && bestSellers.length > 0;
+  // Always show Best Sellers section if any product is toggled as best-selling
+  const showBestSellers = bestSellers.length > 0;
 
   useStoreJsonLd({
     storeName: store?.name || "",
