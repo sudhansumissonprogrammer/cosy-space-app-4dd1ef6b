@@ -79,15 +79,15 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
                 className={`relative flex items-center justify-center rounded-full transition-all duration-[400ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${item.active ? "px-3 py-0.5" : "px-1 py-0.5"}`}
                 style={item.active ? { backgroundColor: "color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 14%, transparent)" } : undefined}
               >
-                <item.icon className="h-5 w-5" strokeWidth={item.active ? 2.5 : 1.8} />
+                <item.icon className="h-[18px] w-[18px]" strokeWidth={item.active ? 2.5 : 1.8} />
                 {count > 0 && (
-                  <span className="absolute -right-2 -top-1.5 flex items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground min-w-[18px] h-[18px] px-0.5">
+                  <span className="absolute -right-2 -top-1.5 flex items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground min-w-[16px] h-[16px] px-0.5">
                     {count > 9 ? "9+" : count}
                   </span>
                 )}
               </div>
               <span
-                className="text-[11px] font-medium leading-none"
+                className="text-[10px] font-medium leading-none"
                 style={{ fontFamily: "var(--storefront-body-font, inherit)" }}
               >
                 {item.label}
