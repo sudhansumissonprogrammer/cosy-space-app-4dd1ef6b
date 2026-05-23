@@ -110,7 +110,11 @@ export default function MobileBottomNavV17({ store }: { store: StoreData }) {
 
           const content = (
             <div className="flex flex-col items-center justify-center gap-0.5 relative" style={{ lineHeight: 1 }}>
-              <div className="relative" style={{ color: itemColor }}>
+              <div
+                {...(isCart ? { "data-cart-target": "" } : {})}
+                className="relative"
+                style={{ color: itemColor }}
+              >
                 <item.Icon />
                 {badge > 0 && (
                   <span
