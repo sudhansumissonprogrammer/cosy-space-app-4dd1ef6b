@@ -4,7 +4,7 @@
  * Cart is a separate elevated circle on the right.
  */
 import { Link, useLocation } from "react-router-dom";
-import { Home, Store, Heart, ClipboardList, ShoppingCart } from "lucide-react";
+import { Home, Store, ShoppingCart, ClipboardList } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
 import type { Tables } from "@/integrations/supabase/types";
@@ -14,7 +14,7 @@ type StoreData = Tables<"stores">;
 const navItems = [
   { key: "home", label: "Home", icon: Home, path: "" },
   { key: "shop", label: "Shop", icon: Store, path: "shop" },
-  { key: "wishlist", label: "Wishlist", icon: Heart, path: "wishlist" },
+  { key: "cart", label: "Cart", icon: ShoppingCart, path: "cart" },
   { key: "orders", label: "Orders", icon: ClipboardList, path: "account" },
 ];
 
