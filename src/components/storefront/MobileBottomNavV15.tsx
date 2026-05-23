@@ -45,15 +45,19 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
         <div className="flex items-center justify-around rounded-full shadow-[0_2px_20px_rgba(0,0,0,0.10)] px-2 py-1 flex-1" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}>
           {navItems.map((item) => {
             const active = getActive(item.path);
+            const isCart = item.key === "cart";
+            const handleClick = isCart ? (e: React.MouseEvent) => { e.preventDefault(); openCart(); } : undefined;
+            const badge = isCart ? cartCount : 0;
             return (
               <Link
                 key={item.key}
                 to={item.path === "" ? storePath : storefrontPath(store.slug, item.path)}
+                onClick={handleClick}
                 className="relative flex items-center justify-center outline-none"
                 aria-label={item.label}
               >
                 <div
-                  className={`flex items-center gap-1.5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                  className={`relative flex items-center gap-1.5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                     active
                       ? "pl-2.5 pr-3.5 py-1.5"
                       : "p-2"
@@ -69,6 +73,11 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
                     }}
                     strokeWidth={active ? 2.2 : 1.6}
                   />
+                  {badge > 0 && !active && (
+                    <span className="absolute -right-0.5 -top-0.5 flex items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground min-w-[15px] h-[15px] px-0.5">
+                      {badge > 9 ? "9+" : badge}
+                    </span>
+                  )}
                   <span
                     className={`text-[10px] font-semibold whitespace-nowrap overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                       active
@@ -87,21 +96,6 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
             );
           })}
         </div>
-
-        {/* Cart — separate elevated circle */}
-        <button
-          onClick={openCart}
-          className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-[0_2px_20px_rgba(0,0,0,0.10)] transition-transform duration-200 active:scale-95"
-          style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}
-          aria-label={`Cart${cartCount > 0 ? `, ${cartCount} items` : ""}`}
-        >
-          <ShoppingCart className="h-[18px] w-[18px]" strokeWidth={1.6} style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 80%, transparent)" }} />
-          {cartCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground min-w-[18px] h-[18px]">
-              {cartCount > 9 ? "9+" : cartCount}
-            </span>
-          )}
-        </button>
       </div>
     </nav>
   );
