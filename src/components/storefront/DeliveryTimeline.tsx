@@ -72,9 +72,7 @@ export default function DeliveryTimeline() {
         @keyframes dt-line    { 0%{opacity:0;transform:scaleX(0)} 1%{opacity:1} 100%{opacity:1;transform:scaleX(1)} }
         @keyframes dt-fill-1  { 0%{transform:scaleX(0)} 100%{transform:scaleX(1)} }
         @keyframes dt-fill-2  { 0%{transform:scaleX(0)} 100%{transform:scaleX(1)} }
-        @keyframes dt-truck-1 { 0%{opacity:0;left:16.66%} 8%{opacity:1} 100%{opacity:1;left:50%} }
-        @keyframes dt-truck-2 { 0%{opacity:1;left:50%} 100%{opacity:1;left:83.33%} }
-        @keyframes dt-truck-out { 0%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-50%) scale(.6)} }
+        @keyframes dt-truck-loop { 0%{opacity:0;left:16.66%} 6%{opacity:1} 94%{opacity:1;left:83.33%} 100%{opacity:0;left:83.33%} }
         @keyframes dt-bounce  { 0%,100%{margin-top:0} 50%{margin-top:-2px} }
         @keyframes dt-stamp   { 0%{opacity:0;transform:scale(0) rotate(-30deg)} 70%{transform:scale(1.3) rotate(0)} 100%{opacity:1;transform:scale(1) rotate(0)} }
         @keyframes dt-particle{ 0%{opacity:0;transform:translate(-50%,-50%) scale(0)} 20%{opacity:1} 100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)} }
@@ -107,14 +105,11 @@ export default function DeliveryTimeline() {
         .dt[data-play="1"] .dt-fill-1 { animation: dt-fill-1 .55s linear .45s forwards; }
         .dt[data-play="1"] .dt-fill-2 { animation: dt-fill-2 .70s linear 1.20s forwards; }
 
-        /* Truck: two-leg journey then fades out */
+        /* Truck: continuous left → right loop */
         .dt[data-play="1"] .dt-truck-wrap {
-          animation:
-            dt-truck-1 .55s linear .45s forwards,
-            dt-truck-2 .70s linear 1.20s forwards,
-            dt-truck-out .35s var(--expo) 1.95s forwards;
+          animation: dt-truck-loop 3.4s linear .45s infinite;
         }
-        .dt[data-play="1"] .dt-truck { animation: dt-bounce .35s ease-in-out infinite; }
+        .dt[data-play="1"] .dt-truck { animation: dt-bounce .55s ease-in-out infinite; }
 
         /* Dates + labels rise after their step's icon lands */
         .dt[data-play="1"] .dt-date,
