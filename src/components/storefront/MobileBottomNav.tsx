@@ -68,7 +68,7 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
             <Link
               key={item.label}
               to={item.to}
-              className="relative flex flex-1 flex-col items-center gap-0.5 py-2.5 transition-all active:scale-[0.93]"
+              className="relative flex flex-1 flex-col items-center gap-0.5 py-1.5 transition-all active:scale-[0.93]"
               style={{
                 color: item.active
                   ? "var(--storefront-primary, hsl(var(--primary)))"
