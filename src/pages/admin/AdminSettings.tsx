@@ -23,7 +23,11 @@ export default function AdminSettings() {
   const { data: config, isLoading } = useQuery({
     queryKey: ["platform-config"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("platform_config").select("*").limit(1).single();
+      const { data, error } = await (supabase as any)
+        .from("platform_config")
+        .select("id, platform_name, default_currency, wa_phone_number_id, wa_business_phone")
+        .limit(1)
+        .single();
       if (error) throw error;
       return data as { id: string; platform_name: string; default_currency: string; wa_phone_number_id: string | null; wa_access_token: string | null; wa_business_phone: string | null };
     },
