@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/outfit-latin.woff2" crossorigin />
-    <!-- Preload the storefront default brand font before any blocking scripts/styles. -->
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/alegreya-sc-400.woff2" crossorigin fetchpriority="high" />
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/alegreya-sc-700.woff2" crossorigin fetchpriority="high" />
+    <!-- Alegreya SC is a secondary accent font (wordmark + 1 inline span on landing).
+         Dropped from preload + switched to font-display:optional below so it can
+         NEVER block first paint. Was previously causing a ~3s blank screen on cold
+         mobile loads. Saves 172KB off the landing critical path. -->
     <!-- ─── First-party visitor ID cookie (analytics only) ───
          Sets `sb_vid` if missing. Used server-side by the Worker on the NEXT
          page view to count unique visitors accurately (immune to mobile
