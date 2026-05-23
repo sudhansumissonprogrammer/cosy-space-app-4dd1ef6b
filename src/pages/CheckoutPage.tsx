@@ -913,22 +913,36 @@ export default function CheckoutPage() {
     }
   };
 
-  // Pincode auto-fill for Indian pincodes
+  // Pincode auto-fill for Indian pincodes — races two endpoints for fastest fill
   const handlePincodeChange = async (val: string) => {
     setPincode(val);
     if (val.length === 6 && /^\d{6}$/.test(val)) {
       setPincodeLoading(true);
-      try {
+      const fromPostalPincode = async () => {
         const res = await fetch(`https://api.postalpincode.in/pincode/${val}`);
         const data = await res.json();
         if (data?.[0]?.Status === "Success" && data[0].PostOffice?.length > 0) {
           const po = data[0].PostOffice[0];
-          setCity(po.District || "");
-          setState(po.State || "");
+          return { city: po.District as string, state: po.State as string };
         }
+        throw new Error("no data");
+      };
+      const fromZippopotam = async () => {
+        const res = await fetch(`https://api.zippopotam.us/in/${val}`);
+        if (!res.ok) throw new Error("no data");
+        const data = await res.json();
+        const place = data?.places?.[0];
+        if (!place) throw new Error("no data");
+        return { city: place["place name"] as string, state: place.state as string };
+      };
+      try {
+        const result = await Promise.any([fromPostalPincode(), fromZippopotam()]);
+        setCity(result.city || "");
+        setState(result.state || "");
       } catch {} finally { setPincodeLoading(false); }
     }
   };
+
 
   // Browser geolocation + Google Geocoding for accurate address
   const handleUseMyLocation = async () => {
