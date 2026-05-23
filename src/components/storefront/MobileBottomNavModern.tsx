@@ -116,26 +116,6 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
           })}
         </div>
 
-        {/* Elevated cart circle */}
-        <button
-          onClick={openCart}
-          className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-[0_4px_24px_rgba(0,0,0,0.12)] transition-transform duration-200 active:scale-90 ${cartBounce ? "cart-bounce" : ""}`}
-          style={{
-            backgroundColor: "var(--storefront-primary, hsl(var(--primary)))",
-          }}
-          aria-label={`Cart${cartCount > 0 ? `, ${cartCount} items` : ""}`}
-        >
-          <ShoppingCart
-            className="h-[18px] w-[18px]"
-            strokeWidth={1.8}
-            style={{ color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
-          />
-          {cartCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground min-w-[18px] h-[18px] px-1">
-              {cartCount > 9 ? "9+" : cartCount}
-            </span>
-          )}
-        </button>
       </div>
     </nav>
   );
