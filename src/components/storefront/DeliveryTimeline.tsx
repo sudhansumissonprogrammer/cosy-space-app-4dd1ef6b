@@ -1,10 +1,21 @@
-import { ShoppingBag, Truck, PackageCheck, Check, Sparkles } from "lucide-react";
+import { ShoppingBag, Truck, PackageCheck, Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 /**
- * Premium 3-step delivery timeline.
- * Glass card · gradient progress rail · double-ring nodes · looping truck pill.
- * Uses semantic tokens (primary, foreground, muted, card, border) so it adapts to every theme.
+ * Cinematic 3-step delivery timeline.
+ * One choreographed 2.5s sequence on scroll-in, then quiet ambient state.
+ *
+ * Timeline:
+ *   0.00s  Card rises + fades in
+ *   0.15s  Order icon pops (spring overshoot)
+ *   0.45s  Truck departs order → shipping; line 1 fills primary in sync
+ *   0.95s  Shipping icon pops as truck "delivers" it
+ *   1.20s  Truck departs shipping → delivery; line 2 fills
+ *   1.85s  Delivery icon bursts, 6-particle confetti, check stamp lands
+ *   2.30s  Truck fades out (story over)
+ *   loop   Only the delivery circle "breathes" + tiny live dot pulses next to date
+ *
+ * Respects prefers-reduced-motion (renders static state).
  */
 function fmt(d: Date) {
   const day = d.getDate();
@@ -25,12 +36,12 @@ export default function DeliveryTimeline() {
   const orderLabel = fmt(today).day;
   const shipLabel = fmt(ship).day;
   const delivMonth = fmt(delivStart).raw.toLocaleString("en-IN", { month: "short" });
-  const delivLabel = `${delivMonth} ${fmt(delivStart).raw.getDate()}–${fmt(delivEnd).raw.getDate()}`;
+  const delivLabel = `${delivMonth} ${fmt(delivStart).raw.getDate()} - ${fmt(delivEnd).raw.getDate()}`;
 
   const steps = [
-    { icon: ShoppingBag,  date: orderLabel, label: "Order Today",   sub: "Confirmed" },
-    { icon: Truck,        date: shipLabel,  label: "Shipping",      sub: "Dispatched" },
-    { icon: PackageCheck, date: delivLabel, label: "Delivery",      sub: "Est. Arrival" },
+    { icon: ShoppingBag,  date: orderLabel, label: "Order Today" },
+    { icon: Truck,        date: shipLabel,  label: "Shipping" },
+    { icon: PackageCheck, date: delivLabel, label: "Delivery" },
   ];
 
   const ref = useRef<HTMLDivElement | null>(null);
@@ -50,129 +61,99 @@ export default function DeliveryTimeline() {
   return (
     <div
       ref={ref}
-      className="dt relative mt-5 rounded-2xl border border-border/70 bg-card p-4 pt-5 sm:p-5 overflow-hidden shadow-sm"
+      className="dt mt-5 rounded-2xl border border-border bg-card p-4 sm:p-5 overflow-hidden"
       data-play={visible ? "1" : "0"}
-      style={{
-        backgroundImage:
-          "radial-gradient(120% 80% at 0% 0%, hsl(var(--primary)/0.06), transparent 55%), radial-gradient(120% 80% at 100% 100%, hsl(var(--primary)/0.05), transparent 55%)",
-      }}
     >
       <style>{`
-        @keyframes dt-card-in { 0%{opacity:0;transform:translateY(10px)} 100%{opacity:1;transform:translateY(0)} }
-        @keyframes dt-pop     { 0%{opacity:0;transform:scale(.55)} 60%{transform:scale(1.14)} 100%{opacity:1;transform:scale(1)} }
+        /* ── Keyframes ─────────────────────────────────────────────── */
+        @keyframes dt-card-in { 0%{opacity:0;transform:translateY(12px)} 100%{opacity:1;transform:translateY(0)} }
+        @keyframes dt-pop     { 0%{opacity:0;transform:scale(.4)} 60%{transform:scale(1.18)} 100%{opacity:1;transform:scale(1)} }
         @keyframes dt-rise    { 0%{opacity:0;transform:translateY(6px)} 100%{opacity:1;transform:translateY(0)} }
-        @keyframes dt-rail    { 0%{transform:scaleX(0)} 100%{transform:scaleX(1)} }
+        @keyframes dt-line    { 0%{opacity:0;transform:scaleX(0)} 1%{opacity:1} 100%{opacity:1;transform:scaleX(1)} }
+        @keyframes dt-fill-1  { 0%{transform:scaleX(0)} 100%{transform:scaleX(1)} }
+        @keyframes dt-fill-2  { 0%{transform:scaleX(0)} 100%{transform:scaleX(1)} }
         @keyframes dt-truck-loop { 0%{opacity:0;left:16.66%} 6%{opacity:1} 94%{opacity:1;left:83.33%} 100%{opacity:0;left:83.33%} }
-        @keyframes dt-bob     { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2px)} }
-        @keyframes dt-stamp   { 0%{opacity:0;transform:scale(0) rotate(-25deg)} 70%{transform:scale(1.25) rotate(0)} 100%{opacity:1;transform:scale(1) rotate(0)} }
-        @keyframes dt-particle{ 0%{opacity:0;transform:translate(-50%,-50%) scale(0)} 25%{opacity:1} 100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)} }
-        @keyframes dt-breathe { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
-        @keyframes dt-halo    { 0%,100%{opacity:.35;transform:scale(1)} 50%{opacity:.7;transform:scale(1.15)} }
-        @keyframes dt-live    { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.6);opacity:.45} }
-        @keyframes dt-shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+        @keyframes dt-bounce  { 0%,100%{margin-top:0} 50%{margin-top:-2px} }
+        @keyframes dt-stamp   { 0%{opacity:0;transform:scale(0) rotate(-30deg)} 70%{transform:scale(1.3) rotate(0)} 100%{opacity:1;transform:scale(1) rotate(0)} }
+        @keyframes dt-particle{ 0%{opacity:0;transform:translate(-50%,-50%) scale(0)} 20%{opacity:1} 100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)} }
+        @keyframes dt-breathe { 0%,100%{transform:scale(1)} 50%{transform:scale(1.045)} }
+        @keyframes dt-live    { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:.5} }
+        @keyframes dt-glow    { 0%,100%{box-shadow:0 0 0 0 hsl(var(--primary)/0)} 50%{box-shadow:0 0 14px 1px hsl(var(--primary)/.35)} }
 
+        /* ── Spring curves ─────────────────────────────────────────── */
         .dt { --spring:cubic-bezier(.34,1.56,.64,1); --expo:cubic-bezier(.22,1,.36,1); }
 
-        .dt .dt-node, .dt .dt-date, .dt .dt-label, .dt .dt-sub, .dt .dt-rail-fill,
-        .dt .dt-truck-wrap, .dt .dt-stamp, .dt .dt-particle, .dt .dt-live, .dt .dt-halo { opacity:0; }
-        .dt[data-play="0"] { opacity:0; transform:translateY(10px); }
-        .dt[data-play="1"] { animation: dt-card-in .6s var(--expo) forwards; }
+        /* ── Initial hidden state ──────────────────────────────────── */
+        .dt .dt-icon, .dt .dt-date, .dt .dt-label, .dt .dt-line,
+        .dt .dt-fill, .dt .dt-truck-wrap, .dt .dt-stamp, .dt .dt-particle, .dt .dt-live { opacity:0; }
+        .dt[data-play="0"] { opacity:0; transform:translateY(12px); }
 
-        .dt[data-play="1"] .dt-node { animation: dt-pop .55s var(--spring) forwards; }
-        .dt[data-play="1"] .dt-step-0 .dt-node { animation-delay:.15s; }
-        .dt[data-play="1"] .dt-step-1 .dt-node { animation-delay:.95s; }
-        .dt[data-play="1"] .dt-step-2 .dt-node { animation-delay:1.75s; }
+        /* ── Play sequence ─────────────────────────────────────────── */
+        .dt[data-play="1"] { animation: dt-card-in .55s var(--expo) forwards; }
 
-        .dt[data-play="1"] .dt-rail-fill { opacity:1; transform-origin:left center; }
-        .dt[data-play="1"] .dt-rail-fill-1 { animation: dt-rail .55s linear .45s forwards; }
-        .dt[data-play="1"] .dt-rail-fill-2 { animation: dt-rail .70s linear 1.10s forwards; }
+        .dt[data-play="1"] .dt-icon       { animation: dt-pop .55s var(--spring) forwards; }
+        .dt[data-play="1"] .dt-step-0 .dt-icon { animation-delay:.15s; }
+        .dt[data-play="1"] .dt-step-1 .dt-icon { animation-delay:.95s; }
+        .dt[data-play="1"] .dt-step-2 .dt-icon { animation-delay:1.85s; }
 
-        /* Truck: continuous loop across the whole rail */
-        .dt[data-play="1"] .dt-truck-wrap { animation: dt-truck-loop 3.6s linear .4s infinite; }
-        .dt[data-play="1"] .dt-truck { animation: dt-bob .6s ease-in-out infinite; }
+        .dt[data-play="1"] .dt-line { animation: dt-line .35s var(--expo) forwards; transform-origin:left center; }
+        .dt[data-play="1"] .dt-line-1 { animation-delay:.35s; }
+        .dt[data-play="1"] .dt-line-2 { animation-delay:1.10s; }
 
+        /* Progress fill — gray dashed turns primary as truck passes */
+        .dt[data-play="1"] .dt-fill { opacity:1; transform-origin:left center; }
+        .dt[data-play="1"] .dt-fill-1 { animation: dt-fill-1 .55s linear .45s forwards; }
+        .dt[data-play="1"] .dt-fill-2 { animation: dt-fill-2 .70s linear 1.20s forwards; }
+
+        /* Truck: continuous left → right loop */
+        .dt[data-play="1"] .dt-truck-wrap {
+          animation: dt-truck-loop 3.4s linear .45s infinite;
+        }
+        .dt[data-play="1"] .dt-truck { animation: dt-bounce .55s ease-in-out infinite; }
+
+        /* Dates + labels rise after their step's icon lands */
         .dt[data-play="1"] .dt-date,
-        .dt[data-play="1"] .dt-label,
-        .dt[data-play="1"] .dt-sub { animation: dt-rise .4s var(--expo) forwards; }
-        .dt[data-play="1"] .dt-step-0 .dt-date  { animation-delay:.28s; }
+        .dt[data-play="1"] .dt-label { animation: dt-rise .4s var(--expo) forwards; }
+        .dt[data-play="1"] .dt-step-0 .dt-date  { animation-delay:.25s; }
         .dt[data-play="1"] .dt-step-1 .dt-date  { animation-delay:1.05s; }
-        .dt[data-play="1"] .dt-step-2 .dt-date  { animation-delay:1.85s; }
-        .dt[data-play="1"] .dt-step-0 .dt-label,
-        .dt[data-play="1"] .dt-step-0 .dt-sub   { animation-delay:.34s; }
-        .dt[data-play="1"] .dt-step-1 .dt-label,
-        .dt[data-play="1"] .dt-step-1 .dt-sub   { animation-delay:1.12s; }
-        .dt[data-play="1"] .dt-step-2 .dt-label,
-        .dt[data-play="1"] .dt-step-2 .dt-sub   { animation-delay:1.92s; }
+        .dt[data-play="1"] .dt-step-2 .dt-date  { animation-delay:1.95s; }
+        .dt[data-play="1"] .dt-step-0 .dt-label { animation-delay:.32s; }
+        .dt[data-play="1"] .dt-step-1 .dt-label { animation-delay:1.12s; }
+        .dt[data-play="1"] .dt-step-2 .dt-label { animation-delay:2.02s; }
 
-        .dt[data-play="1"] .dt-stamp { animation: dt-stamp .45s var(--spring) 1.95s forwards; }
-        .dt[data-play="1"] .dt-particle { animation: dt-particle .8s var(--expo) 1.78s forwards; }
-        .dt[data-play="1"] .dt-step-2 .dt-node-inner { animation: dt-breathe 3.2s ease-in-out 2.6s infinite; }
-        .dt[data-play="1"] .dt-step-2 .dt-halo { animation: dt-rise .3s var(--expo) 2.0s forwards, dt-halo 2.6s ease-in-out 2.4s infinite; }
-        .dt[data-play="1"] .dt-live { animation: dt-rise .3s var(--expo) 2.1s forwards, dt-live 1.8s ease-in-out 2.5s infinite; }
-
-        .dt-shimmer { background: linear-gradient(90deg, transparent 0%, hsl(var(--primary-foreground)/0.4) 50%, transparent 100%); background-size:200% 100%; animation: dt-shimmer 2.2s linear infinite; }
+        /* Delivery hero: stamp + particles + ambient breathe + live dot */
+        .dt[data-play="1"] .dt-stamp { animation: dt-stamp .45s var(--spring) 2.05s forwards; }
+        .dt[data-play="1"] .dt-particle { animation: dt-particle .7s var(--expo) 1.85s forwards; }
+        .dt[data-play="1"] .dt-delivery-circle { animation: dt-breathe 3.2s ease-in-out 2.6s infinite, dt-glow 3.2s ease-in-out 2.6s infinite; }
+        .dt[data-play="1"] .dt-live { animation: dt-rise .3s var(--expo) 2.3s forwards, dt-live 1.8s ease-in-out 2.6s infinite; }
 
         @media (prefers-reduced-motion: reduce) {
           .dt, .dt * { animation: none !important; opacity: 1 !important; transform: none !important; }
-          .dt .dt-truck-wrap, .dt .dt-particle, .dt .dt-rail-fill { display: none !important; }
+          .dt .dt-truck-wrap, .dt .dt-particle, .dt .dt-fill { display: none !important; }
         }
       `}</style>
 
-      {/* Ornamental corner sparkle */}
-      <Sparkles aria-hidden className="absolute right-3 top-3 h-3.5 w-3.5 text-primary/40" strokeWidth={1.5} />
-
-      <div className="relative flex items-start justify-between pt-1">
-        {/* ── Rail base (rounded gradient track) ── */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-[26px] h-[3px] rounded-full"
-          style={{
-            left: "16.66%",
-            right: "16.66%",
-            background:
-              "linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--border)) 50%, hsl(var(--muted)) 100%)",
-          }}
-        />
-
-        {/* Rail fill segment 1 (left → middle) */}
-        <div
-          aria-hidden="true"
-          className="dt-rail-fill dt-rail-fill-1 pointer-events-none absolute top-[26px] h-[3px] rounded-full overflow-hidden"
-          style={{
-            left: "16.66%",
-            right: "50%",
-            background: "linear-gradient(90deg, hsl(var(--primary)/0.85), hsl(var(--primary)))",
-            transformOrigin: "left center",
-            boxShadow: "0 0 10px hsl(var(--primary)/0.35)",
-          }}
-        >
-          <div className="dt-shimmer absolute inset-0" />
+      <div className="relative flex items-start justify-between">
+        {/* ── Dashed base lines (gray) ── */}
+        <div aria-hidden="true" className="dt-line dt-line-1 pointer-events-none absolute top-6 h-px"
+             style={{ left: "16.66%", right: "50%",
+                      backgroundImage: "linear-gradient(to right, hsl(var(--border)) 50%, transparent 0%)",
+                      backgroundSize: "8px 1px", backgroundRepeat: "repeat-x" }}>
+          <div className="dt-fill dt-fill-1 absolute inset-0" style={{ background: "hsl(var(--primary))" }} />
         </div>
 
-        {/* Rail fill segment 2 (middle → right) */}
-        <div
-          aria-hidden="true"
-          className="dt-rail-fill dt-rail-fill-2 pointer-events-none absolute top-[26px] h-[3px] rounded-full overflow-hidden"
-          style={{
-            left: "50%",
-            right: "16.66%",
-            background: "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary)/0.85))",
-            transformOrigin: "left center",
-            boxShadow: "0 0 10px hsl(var(--primary)/0.35)",
-          }}
-        >
-          <div className="dt-shimmer absolute inset-0" />
+        <div aria-hidden="true" className="dt-line dt-line-2 pointer-events-none absolute top-6 h-px"
+             style={{ left: "50%", right: "16.66%",
+                      backgroundImage: "linear-gradient(to right, hsl(var(--border)) 50%, transparent 0%)",
+                      backgroundSize: "8px 1px", backgroundRepeat: "repeat-x" }}>
+          <div className="dt-fill dt-fill-2 absolute inset-0" style={{ background: "hsl(var(--primary))" }} />
         </div>
 
-        {/* ── Looping truck pill ── */}
-        <div
-          aria-hidden="true"
-          className="dt-truck-wrap pointer-events-none absolute top-[26px] z-20"
-          style={{ transform: "translate(-50%, -50%)" }}
-        >
-          <div className="dt-truck flex items-center gap-1 rounded-full bg-primary px-2 py-1 shadow-[0_6px_14px_hsl(var(--primary)/0.45)] ring-2 ring-card">
-            <Truck className="h-3 w-3 text-primary-foreground" strokeWidth={2.5} />
-            <span className="h-1 w-1 rounded-full bg-primary-foreground/80" />
+        {/* ── Truck (single journey, no infinite loop) ── */}
+        <div aria-hidden="true" className="dt-truck-wrap pointer-events-none absolute top-6 z-20"
+             style={{ transform: "translate(-50%, -50%)" }}>
+          <div className="dt-truck flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-2 ring-card">
+            <Truck className="h-3.5 w-3.5" strokeWidth={2.25} />
           </div>
         </div>
 
@@ -182,39 +163,27 @@ export default function DeliveryTimeline() {
           const isLast = i === steps.length - 1;
           return (
             <div key={i} className={`dt-step-${i} relative z-10 flex flex-1 flex-col items-center gap-2 text-center`}>
-              <div className="dt-node relative">
-                {/* halo (delivery only, ambient) */}
-                {isLast && (
-                  <span aria-hidden className="dt-halo absolute inset-0 -m-1 rounded-full"
-                    style={{ background: "radial-gradient(circle, hsl(var(--primary)/0.35) 0%, transparent 70%)" }} />
-                )}
-                <div
-                  className={`dt-node-inner relative flex h-[52px] w-[52px] items-center justify-center rounded-full border-[2.5px] bg-card ${
-                    isLast ? "border-primary" : "border-foreground/25"
-                  }`}
-                  style={
-                    isLast
-                      ? { backgroundImage: "linear-gradient(135deg, hsl(var(--primary)/0.12), hsl(var(--card)) 60%)", boxShadow: "0 4px 14px hsl(var(--primary)/0.18)" }
-                      : { backgroundImage: "linear-gradient(135deg, hsl(var(--muted)/0.5), hsl(var(--card)))" }
-                  }
-                >
-                  <Icon className={`h-5 w-5 ${isLast ? "text-primary" : "text-foreground/80"}`} strokeWidth={1.9} />
+              <div className="dt-icon relative">
+                <div className={`dt-delivery-circle relative flex h-12 w-12 items-center justify-center rounded-full border-2 bg-card ${
+                  isLast ? "border-primary" : "border-foreground/70"
+                }`}>
+                  <Icon className={`h-5 w-5 ${isLast ? "text-primary" : "text-foreground"}`} strokeWidth={1.75} />
 
                   {isLast && (
                     <>
-                      {/* confetti burst */}
+                      {/* Confetti burst */}
                       {[
-                        { dx: "-24px", dy: "-20px", color: "hsl(var(--primary))" },
-                        { dx: "24px",  dy: "-20px", color: "#22c55e" },
-                        { dx: "-28px", dy: "4px",   color: "#f59e0b" },
-                        { dx: "28px",  dy: "4px",   color: "hsl(var(--primary))" },
-                        { dx: "-14px", dy: "-28px", color: "#22c55e" },
-                        { dx: "14px",  dy: "-28px", color: "#f59e0b" },
+                        { dx: "-22px", dy: "-18px", color: "hsl(var(--primary))" },
+                        { dx: "22px",  dy: "-18px", color: "#22c55e" },
+                        { dx: "-26px", dy: "4px",   color: "#f59e0b" },
+                        { dx: "26px",  dy: "4px",   color: "hsl(var(--primary))" },
+                        { dx: "-14px", dy: "-26px", color: "#22c55e" },
+                        { dx: "14px",  dy: "-26px", color: "#f59e0b" },
                       ].map((p, k) => (
                         <span key={k} aria-hidden="true" className="dt-particle absolute left-1/2 top-1/2 h-1.5 w-1.5 rounded-full"
                               style={{ background: p.color, ["--dx" as any]: p.dx, ["--dy" as any]: p.dy } as React.CSSProperties} />
                       ))}
-                      {/* green check stamp */}
+                      {/* Green check stamp */}
                       <span aria-hidden="true"
                             className="dt-stamp absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-green-500 text-white shadow ring-2 ring-card">
                         <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
@@ -223,38 +192,18 @@ export default function DeliveryTimeline() {
                   )}
                 </div>
               </div>
-
-              <div
-                className="dt-date text-[13px] font-semibold leading-tight text-foreground inline-flex items-center gap-1 justify-center"
-                style={{ fontFamily: "var(--storefront-heading-font, inherit)", letterSpacing: "0.01em" }}
-              >
+              <div className="dt-date text-[13px] font-semibold text-foreground leading-tight inline-flex items-center gap-1 justify-center">
                 {s.date}
                 {isLast && (
-                  <span aria-hidden="true" className="dt-live ml-0.5 inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
+                  <span aria-hidden="true" className="dt-live inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
                 )}
               </div>
-              <div className={`dt-label text-[10px] font-semibold uppercase tracking-[0.14em] leading-tight ${isLast ? "text-primary" : "text-muted-foreground"}`}>
+              <div className={`dt-label text-[11px] leading-tight ${isLast ? "text-primary" : "text-muted-foreground"}`}>
                 {s.label}
-              </div>
-              <div className="dt-sub text-[9.5px] text-muted-foreground/80 leading-tight -mt-1">
-                {s.sub}
               </div>
             </div>
           );
         })}
-      </div>
-
-      {/* Footer pill */}
-      <div className="mt-4 flex justify-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-          </span>
-          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Free Shipping · Cash on Delivery
-          </span>
-        </div>
       </div>
     </div>
   );
