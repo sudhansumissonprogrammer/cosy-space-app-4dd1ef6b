@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/outfit-latin.woff2" crossorigin />
+    <!-- Landing hero LCP images — preload so they paint instantly inside #landing-skel
+         (browser preload scanner can't discover them via inline <img>). -->
+    <link rel="preload" as="image" href="/landing/shopbanao-logo.webp" fetchpriority="high" />
+    <link rel="preload" as="image" href="/landing/showcase-overlays-mobile.webp" fetchpriority="high" media="(min-width: 1024px)" />
     <!-- Speed up React mount on landing: prefetch the entry chunk early.
          In production Vite emits modulepreload for downstream chunks automatically. -->
     <link rel="modulepreload" href="/src/main.tsx" />
