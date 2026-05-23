@@ -63,7 +63,7 @@ const navItems = [
 export default function MobileBottomNavV17({ store }: { store: StoreData }) {
   const location = useLocation();
   const { cartCount, openCart, cartBounce } = useCart();
-  const { wishlistCount } = useWishlist();
+  const isCheckout = location.pathname.includes("/checkout");
   const { user } = useStorefrontAuth();
   const isCheckout = location.pathname.includes("/checkout");
   const isProductDetail = location.pathname.includes("/product/");
