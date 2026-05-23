@@ -27,7 +27,6 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { normalizePhone } from "@/lib/phoneUtils";
 
 function OrdersTab({ customerId, store }: { customerId: string; store: StoreData }) {
-function OrdersTab({ customerId, store }: { customerId: string; store: StoreData }) {
   const qc = useQueryClient();
   const { data: orders, isLoading } = useQuery({
     queryKey: ["storefront-customer-orders", customerId],
