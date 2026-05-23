@@ -316,6 +316,34 @@ export default function StorefrontHomeV20() {
         </section>
       )}
 
+      {(() => {
+        const bestSellers = (allProducts.length > 0 ? allProducts : products).filter(
+          (p: any) => p.is_best_selling,
+        );
+        if (bestSellers.length === 0) return null;
+        const allHref = storefrontPath(slug, "shop");
+        return (
+          <section>
+            <Link to={allHref} className="v20-cat-strip" aria-label="View all best sellers">
+              <span className="v20-cat-strip-title">Best Sellers</span>
+              <span className="v20-cat-strip-cta">
+                View all <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.5} />
+              </span>
+            </Link>
+            <HorizontalScroller ariaLabel="Best Sellers">
+              {bestSellers.slice(0, 10).map((p: any, i: number) => (
+                <div
+                  key={p.id}
+                  className="flex-shrink-0 snap-start w-[44%] sm:w-[30%] md:w-[24%] lg:w-[19%] xl:w-[16%]"
+                >
+                  <V20ProductCard product={p} slug={slug} store={store} priority={i < 2} lowPriority={i >= 4} />
+                </div>
+              ))}
+            </HorizontalScroller>
+          </section>
+        );
+      })()}
+
       {visibleCategories.map((cat, idx) => {
         const items = getCategoryItems(cat).slice(0, 8);
         if (items.length === 0) return null;
