@@ -430,6 +430,7 @@ const THEMES = [
   { id: "theme-18", name: "Dark Streetwear", description: "All-black editorial layout with edge-to-edge product grids", available: true },
   { id: "theme-19", name: "Quick Commerce Grocery", description: "Blinkit-style green header, yellow category tiles, ADD-to-stepper cards — built for grocery & quick delivery", available: true },
   { id: "theme-20", name: "Multi Purpose", description: "Versatile Blinkit-style layout adaptable for any category — green header, category tiles, ADD-to-stepper cards", available: true },
+  { id: "theme-21", name: "Premium Store 1", description: "Premium classic + Quick Buy storefront — phone-first Buy Now flow & elegant layout", available: true },
 ];
 
 /* ── Helper: compute lighter tint ── */
