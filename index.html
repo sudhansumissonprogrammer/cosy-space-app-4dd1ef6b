@@ -303,16 +303,11 @@
   <body>
     <!-- Inline preview/localhost loader — MIRRORS the Cloudflare Worker's
          #sf-skel loader (nested rotating rings, uiverse "mean-puma-17"). -->
-     <style id="sf-skel-anim">
+    <style id="sf-skel-anim">
       @keyframes sf-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-      @keyframes sf-spin-rev{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
       #inline-skel .sf-spin-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:150px;height:150px}
-      #inline-skel .sf-ring{position:absolute;inset:0;border:5px solid transparent;border-radius:50%;border-top-color:var(--storefront-primary,#004643);animation:sf-spin 1.2s linear infinite;will-change:transform}
-      #inline-skel .sf-ring>.sf-ring{inset:4.95px;animation:sf-spin-rev 1.6s linear infinite}
-      #inline-skel .sf-ring>.sf-ring>.sf-ring{animation:sf-spin 2s linear infinite}
-      #inline-skel .sf-ring>.sf-ring>.sf-ring>.sf-ring{animation:sf-spin-rev 2.4s linear infinite}
-      #inline-skel .sf-ring>.sf-ring>.sf-ring>.sf-ring>.sf-ring{animation:sf-spin 2.8s linear infinite}
-      #inline-skel .sf-ring>.sf-ring>.sf-ring>.sf-ring>.sf-ring>.sf-ring{animation:sf-spin-rev 3.2s linear infinite}
+      #inline-skel .sf-ring{position:absolute;inset:0;border:5px solid transparent;border-radius:50%;border-top-color:var(--storefront-primary,#004643);animation:sf-spin 5s cubic-bezier(0.17,0.49,0.96,0.79) infinite}
+      #inline-skel .sf-ring>.sf-ring{inset:4.95px}
     </style>
     <div id="inline-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:var(--storefront-bg,#ffffff);z-index:2147483000;pointer-events:none;overflow:hidden;transition:opacity .22s ease-out">
       <div class="sf-spin-wrap">
