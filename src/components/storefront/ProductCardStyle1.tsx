@@ -156,7 +156,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
             onClick={(e) => { createRipple(e); handleAdd(e); }}
             disabled={isAdding}
           >
-            {isAdding ? (<><Loader2 className="h-3 w-3 animate-spin" /><span className="whitespace-nowrap">Adding...</span></>) : justAdded ? (<><Check className="h-3 w-3" strokeWidth={3} /><span className="whitespace-nowrap">Added ✓</span></>) : (<><ShoppingCart className="h-3 w-3" /><span className="whitespace-nowrap">{bilingualCta ? "Add to Cart / कार्ट में जोड़ें" : "Add to Cart"}</span></>)}
+            {isAdding ? (<><Loader2 className="h-3 w-3 animate-spin" /><span className="whitespace-nowrap">Adding...</span></>) : justAdded ? (<><Check className="h-3 w-3" strokeWidth={3} /><span className="whitespace-nowrap">Added ✓</span></>) : (<><ShoppingCart className="h-3 w-3" /><span className="whitespace-nowrap">Add to Cart</span></>)}
           </button>
         )}
       </div>
