@@ -7,6 +7,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Home, Store, ShoppingCart, ClipboardList } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
+import { navTap } from "@/lib/navHaptic";
 import type { Tables } from "@/integrations/supabase/types";
 
 type StoreData = Tables<"stores">;
@@ -46,7 +47,8 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
           {navItems.map((item) => {
             const active = getActive(item.path);
             const isCart = item.key === "cart";
-            const handleClick = isCart ? (e: React.MouseEvent) => { e.preventDefault(); openCart(); } : undefined;
+            const baseTap = isCart ? (e: React.MouseEvent) => { e.preventDefault(); openCart(); } : undefined;
+            const handleClick = (e: React.MouseEvent) => { navTap(); baseTap?.(e); };
             const badge = isCart ? cartCount : 0;
             return (
               <Link
