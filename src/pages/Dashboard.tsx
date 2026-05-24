@@ -222,6 +222,11 @@ export default function Dashboard() {
         <HeroRevenue storeId={storeId} currencySymbol={currencySymbol} />
       )}
 
+      {/* Today Insights — sessions, conversion, unique visitors + CTA to detailed analytics */}
+      {storeId && !isWhatsAppOnly && (
+        <TodayInsights storeId={storeId} storeSlug={store?.slug || ""} currencySymbol={currencySymbol} />
+      )}
+
       {/* Store URL — compact strip */}
       {store?.slug && (
         <div className="flex items-center gap-2 rounded-xl border bg-accent/20 px-3 py-2">
