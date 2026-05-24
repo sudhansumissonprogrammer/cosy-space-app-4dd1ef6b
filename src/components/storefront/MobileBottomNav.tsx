@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, ShoppingBag, LayoutGrid, ClipboardList, ShoppingCart } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
 import { navTap } from "@/lib/navHaptic";
