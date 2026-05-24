@@ -1483,7 +1483,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
           {/* Embla viewport */}
           <div
             ref={emblaRef}
-            className="overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none"
+            className="overflow-hidden rounded-xl sm:rounded-2xl bg-background cursor-zoom-in select-none border border-border mx-3 sm:mx-0"
           >
             <div className="flex touch-pan-y">
               {renderImages.map((src, i) => {
@@ -1499,7 +1499,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
                     <img
                       src={optimizeImageUrl(src, 800)}
                       alt={productName}
-                      className={`w-full h-auto max-h-[80vh] object-contain bg-muted/30 transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+                      className={`mx-auto w-auto h-auto max-h-[60vh] max-w-full object-contain bg-muted/30 transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}
