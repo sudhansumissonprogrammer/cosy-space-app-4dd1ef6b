@@ -237,7 +237,7 @@ export default function StoreAnalytics() {
     filteredViews.current.forEach((v: any) => {
       const day = v.created_at.slice(0, 10);
       if (!map[day]) map[day] = new Set();
-      map[day].add(uniqVisitorKey(v));
+      map[day].add(sessionKey(v));
     });
     return Object.entries(map)
       .map(([date, set]) => ({ date, views: set.size }))
