@@ -1,74 +1,83 @@
 ## Goal
-Swiggy-style "fly product into cart" animation on every Add-to-Cart, then SideCart slides in once the arc lands. Works across all 21 themes.
 
-## Current state
-- `src/lib/flyToCart.ts` exists but renders a tiny "+1" bubble with a linear transition — not the rich product-image arc Swiggy uses.
-- Only **V19 / V20** product cards call it. PDP, Style1/3/4 cards, QuickView, VariantPicker, FBT, V19/V20 PDP do not.
-- `data-cart-target` anchor exists only on V19/V20 headers. Other themes have no target, so the bubble would have nowhere to land.
-- `addToCart` in `CartContext` opens SideCart **immediately**, colliding with any pre-open animation.
+Show the same nested-rings spinner loader (currently used for storefront cold loads) on every "blank wait" moment users currently see in the platform — dashboard, login, signup, partner login/dashboard, admin, and after dashboard refresh / PWA cold launch.
 
-## Plan
+Today, only storefront hosts and the landing page get a branded loader. Everything else falls back to a plain white screen during the React bundle + auth check.
 
-### 1. Rewrite `src/lib/flyToCart.ts` (Swiggy-grade)
-- New signature: `flyToCart(source, { imageUrl?, label?, productName? })`.
-- Render a **circular product thumbnail** (40px, white ring + soft drop-shadow) when `imageUrl` given; fall back to "+1" bubble.
-- Replace linear translate with a **parabolic arc** via WAAPI (`element.animate`) using 3 keyframes:
-  - 0%: at source, scale 0.9, opacity 0 → 1 (60ms pop-in)
-  - 45%: lifted (midpoint Y minus ~120px), scale 1.1, slight rotate 8°
-  - 100%: at cart icon, scale 0.25, rotate -6°, opacity 0.4
-  - Easing `cubic-bezier(.5,-0.2,.2,1)` (overshoot top, gravity drop)
-  - Duration 720ms total
-- Add a faint **motion-trail dot** that follows 80ms behind for "tail" feel.
-- On completion: pulse target with existing `cart-target-absorb` class + dispatch `cart:fly-landed` CustomEvent.
-- Honor `prefers-reduced-motion` (skip animation, just bump cart).
+## What's in place today (`index.html`)
 
-### 2. New helper `src/lib/addToCartAnimated.ts`
-Single entry point used everywhere:
-```ts
-addToCartAnimated({ item, source, imageUrl, addToCart, openCart })
+```text
+#inline-skel  → nested-ring spinner (storefront cold load fallback)
+#landing-skel → branded Bauhaus hero shell (shopbanao.in landing)
+
+Visibility router (line ~506):
+  if storefront host     → show #inline-skel
+  else if landing path   → show #landing-skel (after 2s)
+  else                   → HIDE BOTH   ← dashboard / login / partner = blank
 ```
-- Calls `addToCart(item, { silent: true })` so the side drawer stays closed.
-- Runs `flyToCart` with the product image.
-- After ~720ms (or on `cart:fly-landed`), calls `openCart()` so the drawer slides in **after** the arc lands.
-- If reduced-motion: opens cart immediately.
 
-### 3. Add `data-cart-target` everywhere
-Cart icon must exist as a landing pad in every theme:
-- `DesktopNavBar.tsx` (header cart button — used by V1, V2, V10–V18)
-- `MobileBottomNav.tsx`, `MobileBottomNavModern.tsx`, `MobileBottomNavV15.tsx`, `MobileBottomNavV17.tsx` (now show Cart icon)
-- `V17CartBadge.tsx`
-- Storefront layouts that render their own header cart (audit V3, V11, V13, V18, V21 layouts).
-- The selector picks the **topmost on desktop / bottommost on mobile** automatically, so adding both header + bottom-nav is safe.
+The fade-out logic (`waitForPaint` polling `#root` height ≥ 120 → kill skel) already handles non-landing routes correctly — we just never let the skeleton appear for them.
 
-### 4. Wire the helper into every Add-to-Cart call site
-Replace the current raw `addToCart(...)` + auto-open in each:
-- `src/pages/ProductDetail.tsx` (sticky bar Add-to-Cart)
-- `src/pages/V19ProductDetail.tsx`, `src/pages/V20ProductDetail.tsx`
-- `src/components/storefront/ProductCardStyle1.tsx` (most-used)
-- `src/components/storefront/ProductCardStyle3.tsx`, `ProductCardStyle4.tsx`
-- `src/components/storefront/QuickViewModal.tsx`
-- `src/components/storefront/VariantPickerDialog.tsx`
-- `src/components/storefront/pdp/FrequentlyBoughtTogether.tsx`
-- `src/components/storefront/v19/V19ProductCard.tsx`, `v20/V20ProductCard.tsx` (already animated — switch to new helper for consistency + post-arc cart open)
-- `src/components/storefront/CartUpsell.tsx` (already inside cart — keep silent, no fly)
-- `src/components/CreateOrderDialog.tsx` (admin only — leave untouched)
+## Change
 
-Each call gets `source = e.currentTarget` and `imageUrl = product.image_url` (or selected variant image).
+### 1. `index.html` — visibility router (~lines 506–538)
 
-### 5. Visual polish
-- Cart-target absorb pulse: existing V19/V20 CSS lifted into a shared global rule in `src/index.css` so every theme gets the bump (uses `--storefront-primary`).
-- Tiny haptic on mobile (`navigator.vibrate?.(8)`) when arc lands.
+Extend the "else" branch so `#inline-skel` stays visible on app-shell routes:
 
-### Out of scope
-- Wishlist heart animation, price count-up, bottom-nav pill morph (deferred from earlier audit).
-- Theme-specific button micro-interactions.
+```text
+dashboardPaths = /dashboard, /login, /signup, /admin, /partners/login,
+                 /partners/dashboard, /partners (any /partners/* except landing),
+                 /forgot-password, /reset-password, /auth/callback
+```
 
-## Files touched (≈14)
-- `src/lib/flyToCart.ts` (rewrite)
-- `src/lib/addToCartAnimated.ts` (new)
-- `src/index.css` (shared absorb keyframes)
-- `src/contexts/CartContext.tsx` (no API change; helper passes `silent`)
-- ~10 product card / PDP / dialog files (swap to helper, add `data-cart-target` where needed)
+For these paths:
+- Keep `#inline-skel` shown (it's already mounted as `position:fixed; inset:0`).
+- Switch its background + ring color to the platform brand (`#4361ee` primary, `#f8fafc` bg) instead of the storefront teal fallback, so it doesn't look "storey-ish" on the dashboard.
+- Hide `#landing-skel`.
 
-## Risk
-Very low — pure presentation layer, no business logic. WAAPI is supported in every modern browser; reduced-motion users get instant cart open.
+### 2. `index.html` — inline-skel styles (~line 306–316)
+
+Add a `data-app-shell="1"` modifier the visibility router can toggle. When set, the spinner uses:
+- `background: #f8fafc` (matches dashboard bg)
+- ring `border-top-color: #4361ee` (platform primary)
+
+Storefront/preview keeps the existing CSS-var theming (already working).
+
+### 3. `index.html` — fade-out (~line 600–606)
+
+Already correct: `waitForPaint` runs on non-landing routes once `DOMContentLoaded` fires, polls `#root` for real content, then crossfades the skel out. No change needed — just verify the 12s hard-kill remains.
+
+### 4. Dashboard route boundary — keep skel until first paint
+
+`<ProtectedRoute>` currently renders an empty `<div className="min-h-screen bg-background" />` while auth loads, which **paints into `#root` and trips `hasRealContent()` early**, killing the skel before the real dashboard mounts.
+
+Fix: change that placeholder to a 0-height fragment (or `min-h-0`) so the skel stays up until `Dashboard.tsx` actually renders content. Same for any `loading` fallback inside `DashboardLayout` / partner layout that paints a full-screen empty div.
+
+Files to touch:
+- `src/components/ProtectedRoute.tsx` — return `null` instead of empty min-h-screen div
+- `src/layouts/DashboardLayout.tsx` — verify its loading state doesn't paint a >120px placeholder
+- `src/layouts/PartnerLayout.tsx` — same check
+- `src/pages/StoresList.tsx` — its spinner div paints; switch to `return null` so the inline-skel stays visible until `/dashboard` actually mounts
+
+### 5. PWA / refresh behavior
+
+No code needed. Because `#inline-skel` is already in `index.html` and shown at T+0, every hard navigation (PWA cold start, browser refresh, address-bar load) automatically gets the spinner. Only SPA in-app navigations skip it (those use the existing `NavigationProgress` bar — correct behavior).
+
+## Out of scope
+
+- SPA-internal navigation loaders (already handled by `NavigationProgress`).
+- Storefront skeleton (unchanged — Worker owns it).
+- Landing skeleton (unchanged).
+
+## Acceptance
+
+| Scenario | Before | After |
+|---|---|---|
+| `shopbanao.in/login` cold | blank ~1.5s | spinner → form |
+| `shopbanao.in/dashboard` cold | blank | spinner → dashboard |
+| PWA launch into dashboard | blank | spinner → dashboard |
+| Refresh on dashboard | blank | spinner → dashboard |
+| Partner login/dashboard cold | blank | spinner → page |
+| Landing `/` | branded hero skel (unchanged) | unchanged |
+| Storefront cold | Worker skel (unchanged) | unchanged |
+| SPA nav inside dashboard | top progress bar (unchanged) | unchanged |
