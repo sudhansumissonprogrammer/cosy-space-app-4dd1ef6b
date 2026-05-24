@@ -24,6 +24,8 @@ import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import { estimateDelivery, type DeliveryEstimate } from "@/lib/deliveryEstimate";
 import { loadCashfree } from "@/lib/loadCashfree";
+import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
+
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 
 declare global {
