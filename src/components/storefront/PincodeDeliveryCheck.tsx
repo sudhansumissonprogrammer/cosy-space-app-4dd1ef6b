@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MapPin, Truck, BadgeIndianRupee, CheckCircle2, X, Loader2, LocateFixed } from "lucide-react";
 import { estimateDelivery } from "@/lib/deliveryEstimate";
-import { navHaptic } from "@/lib/navHaptic";
+import { navTap } from "@/lib/navHaptic";
 
 interface Props {
   storeId: string;
