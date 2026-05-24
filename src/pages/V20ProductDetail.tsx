@@ -371,6 +371,7 @@ export default function V20ProductDetail() {
 
       {/* PDP enhancements: urgency + delivery + coupon */}
       <StockUrgencyStrip stock={product.stock_quantity} />
+      <PincodeDeliveryCheck storeId={store?.id || ""} price={effectivePrice} />
       <DeliveryEtaPill />
       <CouponTeaser storeId={store?.id || ""} orderTotal={effectivePrice} />
 
