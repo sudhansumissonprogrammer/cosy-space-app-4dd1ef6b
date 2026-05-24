@@ -60,6 +60,8 @@ Deno.serve(async (req) => {
       abandoned_cart_id,
       checkout_token,
       meta,
+      visitor_id,
+      session_id,
     }: {
       store_id: string;
       order: {
@@ -95,7 +97,12 @@ Deno.serve(async (req) => {
         fbp?: string;
         event_source_url?: string;
       };
+      // Strict analytics: link this order back to the visitor session that
+      // produced it so conversion rate = orders / unique sessions is accurate.
+      visitor_id?: string | null;
+      session_id?: string | null;
     } = await req.json();
+
 
     if (!store_id || !order || !Array.isArray(items) || items.length === 0) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
