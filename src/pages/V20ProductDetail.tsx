@@ -22,7 +22,6 @@ import { ZoomHint } from "@/components/storefront/ZoomableGallery";
 import {
   DeliveryEtaPill, CouponTeaser, TopReviewsStrip, BundleCard, StockUrgencyStrip, StickyAddInfo,
 } from "@/components/storefront/PdpEnhancements";
-import PincodeDeliveryCheck from "@/components/storefront/PincodeDeliveryCheck";
 
 const ZoomableGallery = lazy(() => import("@/components/storefront/ZoomableGallery"));
 
@@ -371,7 +370,6 @@ export default function V20ProductDetail() {
 
       {/* PDP enhancements: urgency + delivery + coupon */}
       <StockUrgencyStrip stock={product.stock_quantity} />
-      <PincodeDeliveryCheck storeId={store?.id || ""} price={effectivePrice} />
       <DeliveryEtaPill />
       <CouponTeaser storeId={store?.id || ""} orderTotal={effectivePrice} />
 
