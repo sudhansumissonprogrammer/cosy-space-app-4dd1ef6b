@@ -5395,6 +5395,22 @@ async function _handleFetch(request, env, ctx) {
       }
     }
 
+    // ─── v8.40.0: /meta.json edge short-circuit (PWA probe, ~859 hits/day) ───
+    // Origin returns 404 + Set-Cookie which bypasses cache, so every probe hits
+    // the origin. Synthesize a stable empty JSON with 1-day cache here.
+    if (url.pathname === "/meta.json") {
+      return new Response("{}", {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Cache-Control": "public, max-age=86400, s-maxage=86400",
+          "Access-Control-Allow-Origin": "*",
+          "X-Worker-Version": WORKER_VERSION,
+          "X-Static-Asset-Cache": "SYNTH",
+        },
+      });
+    }
+
     // ─── STATIC ASSETS ───
     const isStaticAsset =
       url.pathname.startsWith("/assets/") ||
