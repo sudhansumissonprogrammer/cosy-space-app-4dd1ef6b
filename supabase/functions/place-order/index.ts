@@ -60,6 +60,8 @@ Deno.serve(async (req) => {
       abandoned_cart_id,
       checkout_token,
       meta,
+      visitor_id,
+      session_id,
     }: {
       store_id: string;
       order: {
@@ -95,7 +97,12 @@ Deno.serve(async (req) => {
         fbp?: string;
         event_source_url?: string;
       };
+      // Strict analytics: link this order back to the visitor session that
+      // produced it so conversion rate = orders / unique sessions is accurate.
+      visitor_id?: string | null;
+      session_id?: string | null;
     } = await req.json();
+
 
     if (!store_id || !order || !Array.isArray(items) || items.length === 0) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -219,6 +226,8 @@ Deno.serve(async (req) => {
         buyer_fbp: meta?.fbp || null,
         meta_event_id: meta?.event_id || null,
         meta_event_source_url: meta?.event_source_url || null,
+        visitor_id: visitor_id || null,
+        session_id: session_id || null,
       })
       .select("id")
       .single();
@@ -226,6 +235,7 @@ Deno.serve(async (req) => {
     if (orderErr || !createdOrder) {
       throw orderErr ?? new Error("Failed to create order");
     }
+
 
     const orderItems = items.map((item) => ({
       order_id: createdOrder.id,

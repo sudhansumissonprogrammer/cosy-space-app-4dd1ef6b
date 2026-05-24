@@ -82,23 +82,26 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-  // Page views — pull visitor_id/visitor_ip so we can compute unique sessions.
-  // A "session" = unique visitor per day, NOT raw row count (raw rows inflate
-  // numbers ~5-10x because every SPA navigation pushes a page_view).
+  // Page views — pull session_id + is_bot for strict accuracy.
+  //   - Bots are filtered out completely (Meta crawler, Google bot, etc.)
+  //   - Sessions = unique session_id (30-min sliding) → matches GA4
+  //   - Unique visitors = unique visitor_id (2y persistent) → real humans
   const { data: pageViews } = useQuery({
     queryKey: ["analytics-views", storeIds],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("page_views")
-        .select("created_at, path, visitor_id, visitor_ip")
+        .select("created_at, path, visitor_id, visitor_ip, session_id, is_bot")
         .in("store_id", storeIds)
+        .eq("is_bot", false)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data as any[];
     },
     enabled: storeIds.length > 0,
   });
+
 
   // Customers
   const { data: customers } = useQuery({
@@ -163,18 +166,19 @@ export default function StoreAnalytics() {
   const priorAOV = priorOrders > 0 ? priorRevenue / priorOrders : 0;
   const aovChange = priorAOV > 0 ? ((avgOrderValue - priorAOV) / priorAOV) * 100 : undefined;
 
-  // Sessions = unique visitor (by visitor_id, fallback to IP) within the range.
-  // This matches GA/Shopify semantics and prevents inflation from SPA navigations.
-  const uniqVisitorKey = (v: any) => v.visitor_id || v.visitor_ip || "anon";
+  // Sessions = unique session_id (30-min sliding window) — matches GA4 exactly.
+  // Falls back to visitor_id, then IP, for legacy rows written before session_id existed.
+  const sessionKey = (v: any) => v.session_id || v.visitor_id || v.visitor_ip || "anon";
   const totalSessions = useMemo(
-    () => new Set(filteredViews.current.map(uniqVisitorKey)).size,
+    () => new Set(filteredViews.current.map(sessionKey)).size,
     [filteredViews.current]
   );
   const priorSessions = useMemo(
-    () => new Set(filteredViews.prior.map(uniqVisitorKey)).size,
+    () => new Set(filteredViews.prior.map(sessionKey)).size,
     [filteredViews.prior]
   );
   const sessionsChange = priorSessions > 0 ? ((totalSessions - priorSessions) / priorSessions) * 100 : undefined;
+
 
   const conversionRate = totalSessions > 0 ? (totalOrders / totalSessions) * 100 : 0;
   const priorConversion = priorSessions > 0 ? (priorOrders / priorSessions) * 100 : 0;
@@ -233,7 +237,7 @@ export default function StoreAnalytics() {
     filteredViews.current.forEach((v: any) => {
       const day = v.created_at.slice(0, 10);
       if (!map[day]) map[day] = new Set();
-      map[day].add(uniqVisitorKey(v));
+      map[day].add(sessionKey(v));
     });
     return Object.entries(map)
       .map(([date, set]) => ({ date, views: set.size }))

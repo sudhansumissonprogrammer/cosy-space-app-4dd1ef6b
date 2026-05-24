@@ -651,6 +651,7 @@ export type Database = {
           payment_type: string
           pincode: string | null
           razorpay_order_id: string | null
+          session_id: string | null
           state: string | null
           status: string
           store_id: string
@@ -660,6 +661,7 @@ export type Database = {
           tracking_number: string | null
           tracking_url: string | null
           updated_at: string
+          visitor_id: string | null
         }
         Insert: {
           advance_paid?: number
@@ -685,6 +687,7 @@ export type Database = {
           payment_type?: string
           pincode?: string | null
           razorpay_order_id?: string | null
+          session_id?: string | null
           state?: string | null
           status?: string
           store_id: string
@@ -694,6 +697,7 @@ export type Database = {
           tracking_number?: string | null
           tracking_url?: string | null
           updated_at?: string
+          visitor_id?: string | null
         }
         Update: {
           advance_paid?: number
@@ -719,6 +723,7 @@ export type Database = {
           payment_type?: string
           pincode?: string | null
           razorpay_order_id?: string | null
+          session_id?: string | null
           state?: string | null
           status?: string
           store_id?: string
@@ -728,6 +733,7 @@ export type Database = {
           tracking_number?: string | null
           tracking_url?: string | null
           updated_at?: string
+          visitor_id?: string | null
         }
         Relationships: [
           {
@@ -764,7 +770,9 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_bot: boolean
           path: string | null
+          session_id: string | null
           store_id: string
           visitor_id: string | null
           visitor_ip: string | null
@@ -772,7 +780,9 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_bot?: boolean
           path?: string | null
+          session_id?: string | null
           store_id: string
           visitor_id?: string | null
           visitor_ip?: string | null
@@ -780,7 +790,9 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_bot?: boolean
           path?: string | null
+          session_id?: string | null
           store_id?: string
           visitor_id?: string | null
           visitor_ip?: string | null
