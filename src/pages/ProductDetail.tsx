@@ -918,14 +918,7 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Frequently Bought Together — hidden in V18, deferred until near viewport */}
-          {!isV18 && (
-            <DeferUntilVisible rootMargin="600px" minHeight={220}>
-              <Suspense fallback={null}>
-                <FrequentlyBoughtTogether storeId={store.id} storeSlug={store.slug} currentProductId={product.id} currentCategory={product.category} currency={currency} addToCart={addToCart} productImage={product.image_url} />
-              </Suspense>
-            </DeferUntilVisible>
-          )}
+          {/* Frequently Bought Together — removed per user request */}
 
           {/* V18: SKU & Categories */}
           {isV18 && (
