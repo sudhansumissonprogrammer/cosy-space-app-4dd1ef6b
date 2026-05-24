@@ -2234,8 +2234,10 @@ function recordPageView(env, request, storeId, pathname) {
   _pvDedup.set(key, now + PV_DEDUP_WINDOW_MS);
   _pvPruneIfNeeded();
 
-  // v8.30.0: write to Analytics Engine first (in-isolate, no latency).
-  writePageViewAE(env, request, storeId, pathname);
+  // v8.45.0: AE writes removed — Supabase page_views is the single source of
+  // truth. Browser beacon (usePageviewBeacon) is the primary writer; the
+  // Worker writes here too on cold/MISS requests as a safety net.
+
 
   // Stage A: also write to Supabase for count verification. Flip
   // PV_WRITE_SUPABASE=false (Stage B) once AE counts are confirmed.
