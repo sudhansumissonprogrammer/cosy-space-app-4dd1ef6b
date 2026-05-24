@@ -82,7 +82,7 @@ export default function PincodeDeliveryCheck({
   codEnabled = true,
 }: Props) {
   const initial = useMemo(() => readSaved(storeId), [storeId]);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(!initial.pin);
   const [pin, setPin] = useState(initial.pin);
   const [city, setCity] = useState(initial.city);
   const [checking, setChecking] = useState(false);
@@ -92,11 +92,6 @@ export default function PincodeDeliveryCheck({
     initial.pin ? estimateDelivery(initial.pin) : null
   );
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Open expanded auto when first time
-  useEffect(() => {
-    if (!initial.pin) setExpanded(false); // start collapsed; user taps to open
-  }, [initial.pin]);
 
   useEffect(() => {
     if (expanded) setTimeout(() => inputRef.current?.focus(), 80);
@@ -243,36 +238,7 @@ export default function PincodeDeliveryCheck({
     );
   }
 
-  // CTA pill (collapsed default)
-  if (!expanded) {
-    return (
-      <div className="mx-4 mb-3">
-        <button
-          onClick={() => setExpanded(true)}
-          className="w-full group flex items-center gap-3 rounded-xl border border-dashed border-gray-300 bg-white px-3 py-2.5 hover:border-gray-400 active:scale-[0.99] transition"
-        >
-          <div className="relative">
-            <div className="h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center">
-              <MapPin className="h-4.5 w-4.5 text-gray-700" strokeWidth={2.4} />
-            </div>
-            <span className="absolute top-0 right-0 flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-            </span>
-          </div>
-          <div className="flex-1 text-left min-w-0">
-            <div className="text-[13px] font-extrabold text-gray-900 leading-tight">
-              Check delivery & COD availability
-            </div>
-            <div className="text-[11px] text-gray-500 leading-tight mt-0.5">
-              Enter your pincode to see exact delivery date
-            </div>
-          </div>
-          <span className="shrink-0 text-[11px] font-bold text-gray-500 group-hover:text-gray-800">→</span>
-        </button>
-      </div>
-    );
-  }
+  // (removed collapsed CTA pill — widget opens directly into input)
 
   // Expanded — input + actions
   return (
