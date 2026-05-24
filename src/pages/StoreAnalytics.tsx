@@ -442,9 +442,10 @@ export default function StoreAnalytics() {
         <MetricCard title="Avg Order" value={avgOrderValue.toFixed(0)} prefix={sym} icon={ShoppingCart} change={aovChange} />
       </div>
 
-      {/* Conversion & Returning */}
+      {/* Conversion, Returning & Unique Visitors */}
       <div className="grid grid-cols-2 gap-2.5">
-        <MetricCard title="Conversion" value={conversionRate.toFixed(1)} suffix="%" icon={ArrowUpRight} change={conversionChange} />
+        <MetricCard title="Unique Visitors" value={totalVisitors} icon={Users} change={visitorsChange} />
+        <MetricCard title="Conversion" value={conversionRate.toFixed(2)} suffix="%" icon={ArrowUpRight} change={conversionChange} />
         <MetricCard title="Returning" value={returningRate.toFixed(1)} suffix="%" icon={Repeat} />
       </div>
 
