@@ -15,13 +15,12 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
   const { cartCount, openCart, cartBounce } = useCart();
   const isCheckout = location.pathname.includes("/checkout");
   const isProductDetail = location.pathname.includes("/product/");
+  const shouldHide = isCheckout || isProductDetail;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
   const [pill, setPill] = useState<{ x: number; w: number; ready: boolean }>({ x: 0, w: 0, ready: false });
   const [poppedKey, setPoppedKey] = useState<string | null>(null);
-
-  if (isCheckout || isProductDetail) return null;
 
   const currentPath = location.pathname;
 
@@ -51,7 +50,7 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
 
   // Measure the active item and position the sliding pill under it.
   useLayoutEffect(() => {
-    if (!activeKey) {
+    if (shouldHide || !activeKey) {
       setPill((p) => ({ ...p, ready: false }));
       return;
     }
@@ -75,7 +74,7 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
       ro.disconnect();
       window.removeEventListener("orientationchange", measure);
     };
-  }, [activeKey, currentPath]);
+  }, [activeKey, currentPath, shouldHide]);
 
   const handleTap = (key: string, extra?: (e: React.MouseEvent) => void) => (e: React.MouseEvent) => {
     navTap();
@@ -83,6 +82,8 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
     window.setTimeout(() => setPoppedKey((k) => (k === key ? null : k)), 380);
     extra?.(e);
   };
+
+  if (shouldHide) return null;
 
   return (
     <nav
