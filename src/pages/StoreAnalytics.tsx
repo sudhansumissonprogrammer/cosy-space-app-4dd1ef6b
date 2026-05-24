@@ -168,7 +168,7 @@ export default function StoreAnalytics() {
 
   // Sessions = unique session_id (30-min sliding window) — matches GA4 exactly.
   // Falls back to visitor_id, then IP, for legacy rows written before session_id existed.
-  const sessionKey = (v: any) => v.session_id || v.visitor_id || v.visitor_ip || "anon";
+  const sessionKey = (v: any) => v.session_id || v.visitor_id || "anon";
   const totalSessions = useMemo(
     () => new Set(filteredViews.current.map(sessionKey)).size,
     [filteredViews.current]
