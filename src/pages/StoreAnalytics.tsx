@@ -270,17 +270,28 @@ export default function StoreAnalytics() {
   }, [filtered.current]);
 
   const viewsByDay = useMemo(() => {
-    // Group by day and count UNIQUE visitors that day (a session).
+    // Recent (last 30d): unique sessions per day from raw page_views.
     const map: Record<string, Set<string>> = {};
     filteredViews.current.forEach((v: any) => {
       const day = v.created_at.slice(0, 10);
       if (!map[day]) map[day] = new Set();
       map[day].add(sessionKey(v));
     });
-    return Object.entries(map)
-      .map(([date, set]) => ({ date, views: set.size }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }, [filteredViews.current]);
+    const recent = Object.entries(map).map(([date, set]) => ({ date, views: set.size }));
+
+    // Older (>30d): use page_views_daily rollup so 90d/all charts stay complete.
+    const older = useRollup && viewsDaily
+      ? viewsDaily
+          .filter((r: any) => {
+            const d = parseISO(r.date);
+            return isAfter(d, rangeStart) && isBefore(d, rollupCutoff);
+          })
+          .map((r: any) => ({ date: r.date, views: Number(r.sessions) || 0 }))
+      : [];
+
+    return [...older, ...recent].sort((a, b) => a.date.localeCompare(b.date));
+  }, [filteredViews.current, viewsDaily, useRollup, rangeStart]);
+
 
   const topPages = useMemo(() => {
     const map: Record<string, number> = {};
