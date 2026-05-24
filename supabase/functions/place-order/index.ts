@@ -226,6 +226,8 @@ Deno.serve(async (req) => {
         buyer_fbp: meta?.fbp || null,
         meta_event_id: meta?.event_id || null,
         meta_event_source_url: meta?.event_source_url || null,
+        visitor_id: visitor_id || null,
+        session_id: session_id || null,
       })
       .select("id")
       .single();
@@ -233,6 +235,7 @@ Deno.serve(async (req) => {
     if (orderErr || !createdOrder) {
       throw orderErr ?? new Error("Failed to create order");
     }
+
 
     const orderItems = items.map((item) => ({
       order_id: createdOrder.id,
