@@ -82,23 +82,26 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-  // Page views — pull visitor_id/visitor_ip so we can compute unique sessions.
-  // A "session" = unique visitor per day, NOT raw row count (raw rows inflate
-  // numbers ~5-10x because every SPA navigation pushes a page_view).
+  // Page views — pull session_id + is_bot for strict accuracy.
+  //   - Bots are filtered out completely (Meta crawler, Google bot, etc.)
+  //   - Sessions = unique session_id (30-min sliding) → matches GA4
+  //   - Unique visitors = unique visitor_id (2y persistent) → real humans
   const { data: pageViews } = useQuery({
     queryKey: ["analytics-views", storeIds],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("page_views")
-        .select("created_at, path, visitor_id, visitor_ip")
+        .select("created_at, path, visitor_id, visitor_ip, session_id, is_bot")
         .in("store_id", storeIds)
+        .eq("is_bot", false)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data as any[];
     },
     enabled: storeIds.length > 0,
   });
+
 
   // Customers
   const { data: customers } = useQuery({
