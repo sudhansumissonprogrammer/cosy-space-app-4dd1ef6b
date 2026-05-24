@@ -429,7 +429,7 @@
   position: absolute;
   left: 22%;
   right: 22%;
-  bottom: 4px;
+  bottom: -2px;
   height: 3px;
   border-radius: 4px;
   background: var(--storefront-primary, hsl(var(--primary)));
