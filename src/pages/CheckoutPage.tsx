@@ -817,8 +817,13 @@ export default function CheckoutPage() {
           fbp: metaCookiesRef.current.fbp || undefined,
           event_source_url: window.location.href,
         },
+        // Strict analytics: link order → visitor/session so we can compute
+        // accurate conversion rate (orders ÷ unique sessions).
+        visitor_id: (() => { try { return getVisitorId(); } catch { return null; } })(),
+        session_id: (() => { try { return getOrCreateSessionId(); } catch { return null; } })(),
       },
     });
+
 
     if (error) {
       throw new Error(error.message || "Failed to place order");
