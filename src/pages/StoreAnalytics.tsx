@@ -16,9 +16,9 @@ import {
   TrendingUp, TrendingDown, ShoppingBag, Eye, DollarSign, Users,
   ShoppingCart, Repeat, ArrowUpRight, Package, BarChart3, CalendarIcon,
 } from "lucide-react";
-import { format, subDays, startOfDay, isAfter, parseISO, differenceInDays, isBefore } from "date-fns";
+import { format, subDays, startOfDay, endOfDay, parseISO, differenceInDays } from "date-fns";
 
-type DateRange = "7d" | "30d" | "90d" | "custom" | "all";
+type DateRange = "today" | "yesterday" | "7d" | "30d" | "90d" | "custom" | "all";
 
 function MetricCard({
   title, value, change, icon: Icon, prefix = "", suffix = "",
@@ -136,36 +136,67 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-  const rangeDays = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : dateRange === "90d" ? 90 : dateRange === "custom" && customFrom && customTo ? differenceInDays(customTo, customFrom) || 1 : 9999;
-  const rangeStart = dateRange === "custom" && customFrom ? startOfDay(customFrom) : startOfDay(subDays(new Date(), rangeDays));
-  const rangeEnd = dateRange === "custom" && customTo ? startOfDay(subDays(customTo, -1)) : new Date();
-  const priorStart = startOfDay(subDays(rangeStart, rangeDays));
+  // Range computation — all bounds are inclusive [start, end] in ms.
+  const now = new Date();
+  let rangeStart: Date;
+  let rangeEnd: Date;
+  let priorStart: Date;
+  let priorEnd: Date;
+
+  if (dateRange === "today") {
+    rangeStart = startOfDay(now);
+    rangeEnd = now;
+    priorStart = startOfDay(subDays(now, 1));
+    priorEnd = endOfDay(subDays(now, 1));
+  } else if (dateRange === "yesterday") {
+    rangeStart = startOfDay(subDays(now, 1));
+    rangeEnd = endOfDay(subDays(now, 1));
+    priorStart = startOfDay(subDays(now, 2));
+    priorEnd = endOfDay(subDays(now, 2));
+  } else if (dateRange === "custom" && customFrom && customTo) {
+    rangeStart = startOfDay(customFrom);
+    rangeEnd = endOfDay(customTo);
+    const span = differenceInDays(customTo, customFrom) || 1;
+    priorStart = startOfDay(subDays(customFrom, span));
+    priorEnd = startOfDay(customFrom);
+  } else if (dateRange === "all") {
+    rangeStart = new Date(0);
+    rangeEnd = now;
+    priorStart = new Date(0);
+    priorEnd = new Date(0);
+  } else {
+    const days = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
+    rangeStart = startOfDay(subDays(now, days - 1));
+    rangeEnd = now;
+    priorStart = startOfDay(subDays(now, days * 2 - 1));
+    priorEnd = startOfDay(subDays(now, days - 1));
+  }
+  const rangeDays = dateRange === "today" || dateRange === "yesterday"
+    ? 1
+    : dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : dateRange === "90d" ? 90
+    : dateRange === "custom" && customFrom && customTo ? (differenceInDays(customTo, customFrom) || 1)
+    : 9999;
+
+  const inRange = (iso: string, start: Date, end: Date) => {
+    const t = parseISO(iso).getTime();
+    return t >= start.getTime() && t <= end.getTime();
+  };
 
   const filtered = useMemo(() => {
     if (!allOrders) return { current: [], prior: [] };
-    const current = allOrders.filter((o: any) => {
-      if (dateRange === "all") return true;
-      const d = parseISO(o.created_at);
-      return isAfter(d, rangeStart) && (dateRange !== "custom" || isBefore(d, rangeEnd));
-    });
-    const prior = allOrders.filter((o: any) => {
-      const d = parseISO(o.created_at);
-      return isAfter(d, priorStart) && !isAfter(d, rangeStart);
-    });
+    const current = allOrders.filter((o: any) =>
+      dateRange === "all" ? true : inRange(o.created_at, rangeStart, rangeEnd)
+    );
+    const prior = allOrders.filter((o: any) => inRange(o.created_at, priorStart, priorEnd));
     return { current, prior };
   }, [allOrders, dateRange, customFrom, customTo]);
 
   const filteredViews = useMemo(() => {
     if (!pageViews) return { current: [], prior: [] };
-    const current = pageViews.filter((v: any) => {
-      if (dateRange === "all") return true;
-      const d = parseISO(v.created_at);
-      return isAfter(d, rangeStart) && (dateRange !== "custom" || isBefore(d, rangeEnd));
-    });
-    const prior = pageViews.filter((v: any) => {
-      const d = parseISO(v.created_at);
-      return isAfter(d, priorStart) && !isAfter(d, rangeStart);
-    });
+    const current = pageViews.filter((v: any) =>
+      dateRange === "all" ? true : inRange(v.created_at, rangeStart, rangeEnd)
+    );
+    const prior = pageViews.filter((v: any) => inRange(v.created_at, priorStart, priorEnd));
     return { current, prior };
   }, [pageViews, dateRange, customFrom, customTo]);
 
@@ -184,39 +215,54 @@ export default function StoreAnalytics() {
   const priorAOV = priorOrders > 0 ? priorRevenue / priorOrders : 0;
   const aovChange = priorAOV > 0 ? ((avgOrderValue - priorAOV) / priorAOV) * 100 : undefined;
 
-  // Sessions = unique session_id (30-min sliding window) — matches GA4 exactly.
-  // Falls back to visitor_id, then IP, for legacy rows written before session_id existed.
   const sessionKey = (v: any) => v.session_id || v.visitor_id || "anon";
+  const visitorKey = (v: any) => v.visitor_id || v.session_id || "anon";
 
-  // For periods entirely inside the last 30 days, use raw page_views (exact uniques).
-  // For ranges that reach further back, sum daily rollup totals for the older portion
-  // and add raw uniques for the recent (last 30d) portion.
   const useRollup = rangeDays > 30 || dateRange === "all";
-  const rollupCutoff = subDays(new Date(), 30);
+  const rollupCutoff = startOfDay(subDays(now, 30)); // raw window starts here
 
-  const rawSessions = (rows: any[]) => new Set(rows.map(sessionKey)).size;
-
-  const rollupSessions = useMemo(() => {
-    if (!useRollup || !viewsDaily) return 0;
+  const sumRollup = (field: "sessions" | "visitors" | "pageviews", start: Date, end: Date) => {
+    if (!viewsDaily) return 0;
     return viewsDaily
       .filter((r: any) => {
         const d = parseISO(r.date);
-        return isAfter(d, rangeStart) && isBefore(d, rollupCutoff);
+        return d.getTime() >= start.getTime() && d.getTime() < end.getTime();
       })
-      .reduce((s: number, r: any) => s + (Number(r.sessions) || 0), 0);
-  }, [viewsDaily, useRollup, rangeStart]);
+      .reduce((s: number, r: any) => s + (Number(r[field]) || 0), 0);
+  };
 
-  const totalSessions = useMemo(
-    () => rawSessions(filteredViews.current) + rollupSessions,
-    [filteredViews.current, rollupSessions]
-  );
-  const priorSessions = useMemo(
-    () => rawSessions(filteredViews.prior),
-    [filteredViews.prior]
-  );
+  const rawUnique = (rows: any[], key: (v: any) => string) => new Set(rows.map(key)).size;
+
+  const totalSessions = useMemo(() => {
+    const raw = rawUnique(filteredViews.current, sessionKey);
+    const rollup = useRollup ? sumRollup("sessions", rangeStart, rollupCutoff) : 0;
+    return raw + rollup;
+  }, [filteredViews.current, useRollup, viewsDaily, rangeStart]);
+
+  const priorSessions = useMemo(() => {
+    const raw = rawUnique(filteredViews.prior, sessionKey);
+    // If prior period extends past the raw 30-day window, top up from rollup.
+    const needsRollup = priorStart.getTime() < rollupCutoff.getTime();
+    const rollupEnd = priorEnd.getTime() < rollupCutoff.getTime() ? priorEnd : rollupCutoff;
+    const rollup = needsRollup ? sumRollup("sessions", priorStart, rollupEnd) : 0;
+    return raw + rollup;
+  }, [filteredViews.prior, viewsDaily, priorStart, priorEnd]);
   const sessionsChange = priorSessions > 0 ? ((totalSessions - priorSessions) / priorSessions) * 100 : undefined;
 
+  const totalVisitors = useMemo(() => {
+    const raw = rawUnique(filteredViews.current, visitorKey);
+    const rollup = useRollup ? sumRollup("visitors", rangeStart, rollupCutoff) : 0;
+    return raw + rollup;
+  }, [filteredViews.current, useRollup, viewsDaily, rangeStart]);
 
+  const priorVisitors = useMemo(() => {
+    const raw = rawUnique(filteredViews.prior, visitorKey);
+    const needsRollup = priorStart.getTime() < rollupCutoff.getTime();
+    const rollupEnd = priorEnd.getTime() < rollupCutoff.getTime() ? priorEnd : rollupCutoff;
+    const rollup = needsRollup ? sumRollup("visitors", priorStart, rollupEnd) : 0;
+    return raw + rollup;
+  }, [filteredViews.prior, viewsDaily, priorStart, priorEnd]);
+  const visitorsChange = priorVisitors > 0 ? ((totalVisitors - priorVisitors) / priorVisitors) * 100 : undefined;
 
   const conversionRate = totalSessions > 0 ? (totalOrders / totalSessions) * 100 : 0;
   const priorConversion = priorSessions > 0 ? (priorOrders / priorSessions) * 100 : 0;
@@ -283,8 +329,8 @@ export default function StoreAnalytics() {
     const older = useRollup && viewsDaily
       ? viewsDaily
           .filter((r: any) => {
-            const d = parseISO(r.date);
-            return isAfter(d, rangeStart) && isBefore(d, rollupCutoff);
+            const t = parseISO(r.date).getTime();
+            return t >= rangeStart.getTime() && t < rollupCutoff.getTime();
           })
           .map((r: any) => ({ date: r.date, views: Number(r.sessions) || 0 }))
       : [];
@@ -334,10 +380,12 @@ export default function StoreAnalytics() {
 
       {/* Date range tabs */}
       <Tabs value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
-        <TabsList className="h-8 w-full grid grid-cols-5">
-          <TabsTrigger value="7d" className="text-xs h-7">7 days</TabsTrigger>
-          <TabsTrigger value="30d" className="text-xs h-7">30 days</TabsTrigger>
-          <TabsTrigger value="90d" className="text-xs h-7">90 days</TabsTrigger>
+        <TabsList className="h-8 w-full grid grid-cols-7">
+          <TabsTrigger value="today" className="text-xs h-7">Today</TabsTrigger>
+          <TabsTrigger value="yesterday" className="text-xs h-7">Yest.</TabsTrigger>
+          <TabsTrigger value="7d" className="text-xs h-7">7d</TabsTrigger>
+          <TabsTrigger value="30d" className="text-xs h-7">30d</TabsTrigger>
+          <TabsTrigger value="90d" className="text-xs h-7">90d</TabsTrigger>
           <TabsTrigger value="all" className="text-xs h-7">All</TabsTrigger>
           <TabsTrigger value="custom" className="text-xs h-7">Custom</TabsTrigger>
         </TabsList>
@@ -394,9 +442,10 @@ export default function StoreAnalytics() {
         <MetricCard title="Avg Order" value={avgOrderValue.toFixed(0)} prefix={sym} icon={ShoppingCart} change={aovChange} />
       </div>
 
-      {/* Conversion & Returning */}
+      {/* Conversion, Returning & Unique Visitors */}
       <div className="grid grid-cols-2 gap-2.5">
-        <MetricCard title="Conversion" value={conversionRate.toFixed(1)} suffix="%" icon={ArrowUpRight} change={conversionChange} />
+        <MetricCard title="Unique Visitors" value={totalVisitors} icon={Users} change={visitorsChange} />
+        <MetricCard title="Conversion" value={conversionRate.toFixed(2)} suffix="%" icon={ArrowUpRight} change={conversionChange} />
         <MetricCard title="Returning" value={returningRate.toFixed(1)} suffix="%" icon={Repeat} />
       </div>
 

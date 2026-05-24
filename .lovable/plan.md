@@ -1,83 +1,68 @@
-## Goal
+# Accurate analytics (Today / Yesterday / 7d / 30d) + dashboard parity
 
-Show the same nested-rings spinner loader (currently used for storefront cold loads) on every "blank wait" moment users currently see in the platform — dashboard, login, signup, partner login/dashboard, admin, and after dashboard refresh / PWA cold launch.
+Goal: dashboard home and analytics page show the **same numbers** for the same period, every "Orders" count excludes `pending` & `cancelled`, and we add **Today / Yesterday** ranges plus sessions, unique visitors and conversion on the dashboard home.
 
-Today, only storefront hosts and the landing page get a branded loader. Everything else falls back to a plain white screen during the React bundle + auth check.
+## 1. Database — fix order count in `get_dashboard_stats`
 
-## What's in place today (`index.html`)
+Migration: rewrite the RPC so `total_orders` only counts revenue-bearing statuses (same set used everywhere else in the app).
 
-```text
-#inline-skel  → nested-ring spinner (storefront cold load fallback)
-#landing-skel → branded Bauhaus hero shell (shopbanao.in landing)
-
-Visibility router (line ~506):
-  if storefront host     → show #inline-skel
-  else if landing path   → show #landing-skel (after 2s)
-  else                   → HIDE BOTH   ← dashboard / login / partner = blank
+```sql
+-- statuses kept consistent across UI: confirmed, shipped, delivered, partially_paid
+SELECT COUNT(*) INTO _total_orders
+FROM orders
+WHERE store_id = _store_id
+  AND status IN ('confirmed','shipped','delivered','partially_paid');
 ```
 
-The fade-out logic (`waitForPaint` polling `#root` height ≥ 120 → kill skel) already handles non-landing routes correctly — we just never let the skeleton appear for them.
-
-## Change
-
-### 1. `index.html` — visibility router (~lines 506–538)
-
-Extend the "else" branch so `#inline-skel` stays visible on app-shell routes:
-
-```text
-dashboardPaths = /dashboard, /login, /signup, /admin, /partners/login,
-                 /partners/dashboard, /partners (any /partners/* except landing),
-                 /forgot-password, /reset-password, /auth/callback
+Also exclude bot pageviews from `total_views`:
+```sql
+SELECT COUNT(*) FROM page_views WHERE store_id = _store_id AND is_bot = false;
 ```
 
-For these paths:
-- Keep `#inline-skel` shown (it's already mounted as `position:fixed; inset:0`).
-- Switch its background + ring color to the platform brand (`#4361ee` primary, `#f8fafc` bg) instead of the storefront teal fallback, so it doesn't look "storey-ish" on the dashboard.
-- Hide `#landing-skel`.
+## 2. StoreAnalytics page — add Today / Yesterday + bugfixes
 
-### 2. `index.html` — inline-skel styles (~line 306–316)
+File: `src/pages/StoreAnalytics.tsx`
 
-Add a `data-app-shell="1"` modifier the visibility router can toggle. When set, the spinner uses:
-- `background: #f8fafc` (matches dashboard bg)
-- ring `border-top-color: #4361ee` (platform primary)
+- Add `"today" | "yesterday"` to the `DateRange` union and two new TabsTriggers ("Today", "Yesterday") before "7 days". Grid becomes `grid-cols-7`.
+- Compute `rangeStart` / `rangeEnd` / `priorStart` / `priorEnd` for the new buckets:
+  - **today**: start = startOfDay(now), end = now, prior = yesterday full day.
+  - **yesterday**: start/end = full prior day; prior = the day before.
+- Replace the current `isAfter(d, rangeStart)` filters with an inclusive `[rangeStart, rangeEnd]` range so single-day buckets work (today's 00:00 row must be included). Apply same fix to `filtered.prior` and `filteredViews`.
+- **Sessions prior-period bug**: when range > 30d the rollup is added to `current` but `prior` only uses raw rows (which are empty older than 30d), so % change is wrong. Add a `rollupSessions(priorStart, rangeStart)` term to `priorSessions` using the same `page_views_daily` source.
+- Add **Unique Visitors** metric card (distinct `visitor_id`, raw + `visitors` column from rollup) alongside Sessions / Conversion. Same raw+rollup merge pattern.
 
-Storefront/preview keeps the existing CSS-var theming (already working).
+## 3. Dashboard home — Today Summary with sessions / visitors / conversion + CTA
 
-### 3. `index.html` — fade-out (~line 600–606)
+File: `src/pages/Dashboard.tsx` (and a small new component `src/components/dashboard/TodayInsights.tsx`).
 
-Already correct: `waitForPaint` runs on non-landing routes once `DOMContentLoaded` fires, polls `#root` for real content, then crossfades the skel out. No change needed — just verify the 12s hard-kill remains.
+- New card "Today" that shows 4 tiles: **Orders**, **Revenue**, **Sessions**, **Conversion %**, plus a small secondary line for **Unique Visitors**. All numbers filtered to `created_at >= startOfDay(now)`, `is_bot=false`, status in revenue set.
+- Single React Query keyed `["today-insights", storeId]`, parallel fetches:
+  - `orders` (today, revenue statuses) → orders, revenue
+  - `page_views` (today, is_bot=false) → distinct `session_id` and distinct `visitor_id`
+  - conversion = orders / sessions × 100
+- Add a **"View detailed analytics →"** button at the card footer that calls `navigate(`/dashboard/stores/${storeSlug}/analytics`)`.
+- Mount this component on the Dashboard right under `HeroRevenue`, replacing the existing `TodaySummary` (which only shows orders/revenue/customers) so we don't duplicate.
 
-### 4. Dashboard route boundary — keep skel until first paint
+## 4. Sitewide order-count audit (verify, no changes needed where already correct)
 
-`<ProtectedRoute>` currently renders an empty `<div className="min-h-screen bg-background" />` while auth loads, which **paints into `#root` and trips `hasRealContent()` early**, killing the skel before the real dashboard mounts.
+Already correct (revenue statuses applied): `HeroRevenue.tsx`, `TodaySummary.tsx`, Dashboard `ordersData`, `StoreAnalytics.tsx`.
 
-Fix: change that placeholder to a 0-height fragment (or `min-h-0`) so the skel stays up until `Dashboard.tsx` actually renders content. Same for any `loading` fallback inside `DashboardLayout` / partner layout that paints a full-screen empty div.
+Will be corrected by the RPC change in step 1: Dashboard "Orders" stat card (uses `stats.total_orders`).
 
-Files to touch:
-- `src/components/ProtectedRoute.tsx` — return `null` instead of empty min-h-screen div
-- `src/layouts/DashboardLayout.tsx` — verify its loading state doesn't paint a >120px placeholder
-- `src/layouts/PartnerLayout.tsx` — same check
-- `src/pages/StoresList.tsx` — its spinner div paints; switch to `return null` so the inline-skel stays visible until `/dashboard` actually mounts
+Out of scope (operational lists, not analytics): `StoreOrders.tsx`, `AdminOrders.tsx`, `RecentOrders.tsx` — these correctly show all orders including pending so the merchant can act on them.
 
-### 5. PWA / refresh behavior
+## Technical notes
 
-No code needed. Because `#inline-skel` is already in `index.html` and shown at T+0, every hard navigation (PWA cold start, browser refresh, address-bar load) automatically gets the spinner. Only SPA in-app navigations skip it (those use the existing `NavigationProgress` bar — correct behavior).
+- All new date math uses `date-fns` (`startOfDay`, `endOfDay`, `subDays`) — already imported.
+- Sessions still use `session_id` (30-min sliding window) per the existing `visitorSession.ts` contract.
+- `page_views_daily` rollup is the source of truth for any day older than 30 days; raw `page_views` covers the last 30 days. The today/yesterday tabs always land in the raw window so they get exact counts.
+- No worker changes required.
+- No edge function changes required.
 
-## Out of scope
+## Verification checklist
 
-- SPA-internal navigation loaders (already handled by `NavigationProgress`).
-- Storefront skeleton (unchanged — Worker owns it).
-- Landing skeleton (unchanged).
-
-## Acceptance
-
-| Scenario | Before | After |
-|---|---|---|
-| `shopbanao.in/login` cold | blank ~1.5s | spinner → form |
-| `shopbanao.in/dashboard` cold | blank | spinner → dashboard |
-| PWA launch into dashboard | blank | spinner → dashboard |
-| Refresh on dashboard | blank | spinner → dashboard |
-| Partner login/dashboard cold | blank | spinner → page |
-| Landing `/` | branded hero skel (unchanged) | unchanged |
-| Storefront cold | Worker skel (unchanged) | unchanged |
-| SPA nav inside dashboard | top progress bar (unchanged) | unchanged |
+- Today tab: numbers match the Dashboard "Today" card exactly.
+- 7d/30d Orders count equals `COUNT(orders WHERE status IN revenue set)` in that range.
+- Dashboard stat card "Orders" no longer includes pending.
+- Conversion = Orders / Sessions for the selected range (both pages).
+- Unique Visitors ≤ Sessions in every range.
