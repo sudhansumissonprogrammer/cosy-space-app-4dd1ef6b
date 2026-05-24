@@ -1446,7 +1446,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
   if (len === 0) {
     return (
       <div className="overflow-hidden rounded-2xl bg-accent">
-        <div className="flex aspect-square w-full items-center justify-center">
+        <div className="flex aspect-[3/4] sm:aspect-square w-full items-center justify-center">
           <Package className="h-16 w-16 text-muted-foreground/30" />
         </div>
       </div>
@@ -1458,8 +1458,8 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
 
   return (
     <>
-      <div className="space-y-0 sm:space-y-2 lg:sticky lg:top-4">
-        <div className="relative -mx-4 sm:mx-0 px-2 pt-2 pb-0 sm:p-0">
+      <div className="space-y-1 sm:space-y-2 lg:sticky lg:top-4">
+        <div className="relative -mx-4 sm:mx-0 px-2 pt-2 pb-1 sm:p-0">
           {/* Discount badge */}
           {hasDiscount && discountPct > 0 && (
             <div className="absolute left-3 top-3 z-10">
@@ -1495,11 +1495,11 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
                     className="relative flex-[0_0_100%] min-w-0"
                     onClick={() => setLightboxOpen(true)}
                   >
-                    {!loaded && <Skeleton className="aspect-square w-full rounded-none" />}
+                    {!loaded && <Skeleton className="aspect-[3/4] sm:aspect-square w-full rounded-none" />}
                     <img
                       src={optimizeImageUrl(src, 800)}
                       alt={productName}
-                      className={`aspect-square w-full object-cover sm:object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+                      className={`aspect-[3/4] sm:aspect-square w-full object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}
