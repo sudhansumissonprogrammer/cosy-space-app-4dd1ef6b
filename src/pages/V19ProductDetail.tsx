@@ -25,6 +25,7 @@ import { ZoomHint } from "@/components/storefront/ZoomableGallery";
 import {
   DeliveryEtaPill, CouponTeaser, TopReviewsStrip, BundleCard, StockUrgencyStrip, StickyAddInfo,
 } from "@/components/storefront/PdpEnhancements";
+import PincodeDeliveryCheck from "@/components/storefront/PincodeDeliveryCheck";
 
 const ZoomableGallery = lazy(() => import("@/components/storefront/ZoomableGallery"));
 
