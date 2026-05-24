@@ -1,8 +1,13 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.43.0 — PAGEVIEW IMMEDIATE FLUSH
+ * SHOPBANAO PRODUCTION ROUTER v8.45.0 — SUPABASE-ONLY PAGEVIEWS
  *
- * Changes from v8.42.0:
+ * Changes from v8.43.0:
+ *  v8.45.0 — Removed Cloudflare Analytics Engine writes. Supabase page_views
+ *            is the single source of truth. Browser beacon is primary writer;
+ *            Worker writes as safety net on cold/MISS only. The AE_PAGEVIEWS
+ *            binding can be removed from the Cloudflare dashboard.
  *  v8.43.0 — Pageview writes now flush immediately instead of waiting for
+
  *            100 buffered rows / 60s. Low-traffic Worker isolates were dying
  *            before batch flush, leaving page_views empty and dashboard
  *            Sessions/Conversion at zero.
