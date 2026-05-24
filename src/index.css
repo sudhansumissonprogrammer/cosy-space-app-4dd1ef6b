@@ -423,17 +423,17 @@
   pointer-events: none;
   will-change: transform, width;
 }
-/* Top accent bar — sits on the nav's top border, above active item (Razorpay-style) */
+/* Bottom accent bar — sits at the bottom of the active item */
 .nav-pill-indicator::before {
   content: "";
   position: absolute;
   left: 20%;
   right: 20%;
-  top: -5px;
+  bottom: -4px;
   height: 2.5px;
-  border-radius: 0 0 4px 4px;
+  border-radius: 4px;
   background: var(--storefront-primary, hsl(var(--primary)));
-  box-shadow: 0 3px 8px -1px color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 60%, transparent);
+  box-shadow: 0 0 8px 0 color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 60%, transparent);
 }
 .nav-pill-indicator[data-ready="false"] {
   opacity: 0;
