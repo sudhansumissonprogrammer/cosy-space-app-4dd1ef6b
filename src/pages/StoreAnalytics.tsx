@@ -82,25 +82,43 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-  // Page views — pull session_id + is_bot for strict accuracy.
-  //   - Bots are filtered out completely (Meta crawler, Google bot, etc.)
-  //   - Sessions = unique session_id (30-min sliding) → matches GA4
-  //   - Unique visitors = unique visitor_id (2y persistent) → real humans
+  // Page views — raw is kept for 30 days only. For older periods we read
+  // from page_views_daily (rollup, kept forever). We always cap the raw
+  // query at the last 30 days so the dashboard never pulls millions of rows.
   const { data: pageViews } = useQuery({
     queryKey: ["analytics-views", storeIds],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
+      const since = subDays(new Date(), 30).toISOString();
       const { data, error } = await supabase
         .from("page_views")
         .select("created_at, path, visitor_id, session_id, is_bot")
         .in("store_id", storeIds)
         .eq("is_bot", false)
+        .gte("created_at", since)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data as any[];
     },
     enabled: storeIds.length > 0,
   });
+
+  // Historical daily rollups — used for ranges > 30 days (90d / custom / all)
+  const { data: viewsDaily } = useQuery({
+    queryKey: ["analytics-views-daily", storeIds],
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("page_views_daily")
+        .select("date, pageviews, sessions, visitors")
+        .in("store_id", storeIds)
+        .order("date", { ascending: true });
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+    enabled: storeIds.length > 0,
+  });
+
 
 
   // Customers
