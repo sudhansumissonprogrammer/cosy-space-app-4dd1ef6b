@@ -82,7 +82,7 @@ export default function PincodeDeliveryCheck({
   codEnabled = true,
 }: Props) {
   const initial = useMemo(() => readSaved(storeId), [storeId]);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(!initial.pin);
   const [pin, setPin] = useState(initial.pin);
   const [city, setCity] = useState(initial.city);
   const [checking, setChecking] = useState(false);
@@ -92,11 +92,6 @@ export default function PincodeDeliveryCheck({
     initial.pin ? estimateDelivery(initial.pin) : null
   );
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Open expanded auto when first time
-  useEffect(() => {
-    if (!initial.pin) setExpanded(false); // start collapsed; user taps to open
-  }, [initial.pin]);
 
   useEffect(() => {
     if (expanded) setTimeout(() => inputRef.current?.focus(), 80);
