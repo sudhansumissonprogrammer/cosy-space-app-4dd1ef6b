@@ -92,7 +92,7 @@ export default function StoreAnalytics() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("page_views")
-        .select("created_at, path, visitor_id, visitor_ip, session_id, is_bot")
+        .select("created_at, path, visitor_id, session_id, is_bot")
         .in("store_id", storeIds)
         .eq("is_bot", false)
         .order("created_at", { ascending: true });
