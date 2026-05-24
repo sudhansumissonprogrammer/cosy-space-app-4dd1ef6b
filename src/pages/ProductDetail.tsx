@@ -42,6 +42,7 @@ const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedPr
 
 import PdpAskWhatsApp from "@/components/storefront/PdpAskWhatsApp";
 import DeliveryTimeline from "@/components/storefront/DeliveryTimeline";
+import PincodeDeliveryCheck from "@/components/storefront/PincodeDeliveryCheck";
 
 interface Variant {
   id: string;
