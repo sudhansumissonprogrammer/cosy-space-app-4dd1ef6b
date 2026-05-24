@@ -10,6 +10,7 @@ import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { ensureFbcPersisted, getOrCreateSfVid } from "@/lib/metaEnrichment";
 import { useGA4 } from "@/hooks/useGA4";
+import { usePageviewBeacon } from "@/hooks/usePageviewBeacon";
 
 import { buildThemeStyle, getResolvedThemeFonts, loadGoogleFonts } from "@/lib/themeUtils";
 import StorefrontNotFound from "@/components/storefront/StorefrontNotFound";
@@ -195,6 +196,12 @@ export default function StorefrontShell({
   // (jsonb on stores). Stores without GA4 set up: hook is a no-op.
   const ga4Id = (store as any)?.features?.ga4_measurement_id || null;
   useGA4(ga4Id, pathname);
+
+  // v8.44.1: client-side pageview beacon → page_views.
+  // The Worker can't see ~95% of visits (Cloudflare CDN serves cached
+  // HTML directly), so analytics dashboard sessions/conversion would
+  // otherwise stay at zero. This insert fires once per route change.
+  usePageviewBeacon(store?.id);
 
   // Capture ?coupon=CODE from any storefront URL into sessionStorage so it survives
   // navigation through product → cart → checkout (where it auto-applies).
