@@ -1,20 +1,23 @@
-// Client-side pageview beacon.
+// Client-side pageview beacon — strict accuracy edition.
 //
 // Why this exists (v8.44.1):
 //   The Cloudflare Worker writes pageviews on cold/MISS requests, but
-//   Cloudflare's CDN cache layer serves cached HTML to ~95% of visits
-//   WITHOUT invoking the Worker at all (no X-Worker-Version header on
-//   responses confirms this). Result: page_views was empty → Sessions
-//   and Conversion in StoreAnalytics stayed at zero.
+//   Cloudflare's CDN cache serves ~95% of visits without invoking the
+//   Worker. We need a browser-side beacon to capture cache hits.
 //
-// Fix: every storefront route change fires a tiny insert from the
-// browser, exactly like GA4 / Plausible / Meta Pixel do. Bypasses cache
-// entirely. Dedupes per pathname inside a single navigation so SPA
-// effects don't double-count.
+// Strict accuracy guarantees (v8.46.0):
+//   - visitor_id (2y persistent) → unique humans, never inflated
+//   - session_id (30-min sliding) → real sessions, not raw rows
+//   - is_bot flag → bots that DO run JS get marked + excluded in dashboard
+//   - per-pathname dedup → SPA effects don't double-count
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getOrCreateSfVid } from "@/lib/metaEnrichment";
+import {
+  getOrCreateSessionId,
+  getVisitorId,
+  isLikelyBot,
+} from "@/lib/visitorSession";
 
 export function usePageviewBeacon(storeId: string | undefined | null) {
   const { pathname } = useLocation();
@@ -22,8 +25,6 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
 
   useEffect(() => {
     if (!storeId) return;
-    // Skip private paths — checkout/account aren't useful "visit" signals
-    // and they're already excluded from the Worker's count.
     if (
       pathname.startsWith("/checkout") ||
       pathname.startsWith("/dashboard") ||
@@ -35,13 +36,10 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
     if (lastPath.current === pathname) return;
     lastPath.current = pathname;
 
-    const vid = (() => {
-      try { return getOrCreateSfVid(); } catch { return null; }
-    })();
+    const vid = getVisitorId();
+    const sid = getOrCreateSessionId();
+    const bot = isLikelyBot();
 
-    // Fire-and-forget. Failures are silent — analytics must never break
-    // navigation. We don't await; the supabase-js client batches POSTs
-    // and the response is irrelevant to UI.
     try {
       supabase
         .from("page_views")
@@ -49,6 +47,8 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
           store_id: storeId,
           path: pathname.slice(0, 500),
           visitor_id: vid || null,
+          session_id: sid,
+          is_bot: bot,
         })
         .then(() => {}, () => {});
     } catch {}
