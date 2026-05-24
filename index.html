@@ -534,8 +534,26 @@
             }, 2000);
           }
         }else if(!isSf){
-          if(inline){inline.style.display='none';}
+          /* App-shell routes (dashboard, login, signup, admin, partners,
+             password flows, auth callback, PWA cold launches into these).
+             Show the spinner with platform-brand colors until React paints. */
+          var isAppShell = (
+            p.indexOf('/dashboard')===0 ||
+            p.indexOf('/admin')===0 ||
+            p.indexOf('/partners')===0 ||
+            p==='/login' || p==='/signup' ||
+            p==='/forgot-password' || p==='/reset-password' ||
+            p.indexOf('/auth/')===0
+          );
           if(landing){landing.style.display='none';}
+          if(inline){
+            if(isAppShell){
+              inline.setAttribute('data-app-shell','1');
+              /* already display:block by default */
+            }else{
+              inline.style.display='none';
+            }
+          }
         }else{
           if(landing){landing.style.display='none';}
         }
