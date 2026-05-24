@@ -816,12 +816,19 @@ export default function ProductDetail() {
 
                   {showBuyNow && (
                     <button
-                      className="btn-press flex h-12 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
+                      className="btn-press flex h-12 w-full items-center justify-center gap-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
                       style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
                       onClick={handleBuyNow}
                     >
-                      <ShoppingBag className="h-4 w-4" />
-                      {bilingualCta ? "Buy Now / अभी खरीदें" : "Buy Now"}
+                      <span className="flex items-center gap-1.5">
+                        <ShoppingBag className="h-4 w-4" />
+                        {bilingualCta ? "Buy Now / अभी खरीदें" : "Buy Now"}
+                      </span>
+                      <span className="flex items-center -space-x-1.5">
+                        <img src="/icons/gpay-round.svg" alt="GPay" className="h-5 w-5 rounded-full ring-1 ring-white bg-white object-contain" />
+                        <img src="/icons/phonepe-round.png" alt="PhonePe" className="h-5 w-5 rounded-full ring-1 ring-white bg-white object-contain" />
+                        <img src="/icons/paytm-round.png" alt="Paytm" className="h-5 w-5 rounded-full ring-1 ring-white bg-white object-contain" />
+                      </span>
                     </button>
                   )}
                 </div>
@@ -1078,12 +1085,19 @@ export default function ProductDetail() {
                       )}
                     </button>
                     <button
-                      className="btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-all"
+                      className="btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-all"
                       style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", fontFamily: "var(--storefront-heading-font, inherit)" }}
                       onClick={handleBuyNow}
                     >
-                      <ShoppingBag className="h-3.5 w-3.5" />
-                      {bilingualCta ? "Buy / खरीदें" : "Buy Now"}
+                      <span className="flex items-center gap-1.5">
+                        <ShoppingBag className="h-3.5 w-3.5" />
+                        {bilingualCta ? "Buy / खरीदें" : "Buy Now"}
+                      </span>
+                      <span className="flex items-center -space-x-1">
+                        <img src="/icons/gpay-round.svg" alt="GPay" className="h-4 w-4 rounded-full ring-1 ring-white bg-white object-contain" />
+                        <img src="/icons/phonepe-round.png" alt="PhonePe" className="h-4 w-4 rounded-full ring-1 ring-white bg-white object-contain" />
+                        <img src="/icons/paytm-round.png" alt="Paytm" className="h-4 w-4 rounded-full ring-1 ring-white bg-white object-contain" />
+                      </span>
                     </button>
                   </div>
                 </div>
