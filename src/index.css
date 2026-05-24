@@ -395,6 +395,47 @@
   animation: cart-bounce 0.5s ease-out;
 }
 
+/* ── Bottom-nav: icon pop on tap ── */
+@keyframes nav-icon-pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.28); }
+  60%  { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+.nav-icon-pop {
+  animation: nav-icon-pop 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Bottom-nav: sliding pill indicator ── */
+.nav-pill-indicator {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 38px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 14%, transparent);
+  transform: translate(var(--pill-x, 0px), -50%);
+  width: var(--pill-w, 0px);
+  transition:
+    transform 380ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    width 320ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 200ms ease-out;
+  pointer-events: none;
+  will-change: transform, width;
+}
+.nav-pill-indicator[data-ready="false"] {
+  opacity: 0;
+}
+
+/* ── Page transition: subtle slide+fade on storefront route change ── */
+@keyframes sf-page-enter {
+  0%   { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.sf-page-enter {
+  animation: sf-page-enter 180ms ease-out both;
+}
+
 /* ── Fly-to-cart: landing pulse on cart icon ── */
 @keyframes cart-target-absorb-pop {
   0%   { transform: scale(1); }
