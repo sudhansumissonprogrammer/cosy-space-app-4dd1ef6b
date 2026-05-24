@@ -380,10 +380,12 @@ export default function StoreAnalytics() {
 
       {/* Date range tabs */}
       <Tabs value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
-        <TabsList className="h-8 w-full grid grid-cols-5">
-          <TabsTrigger value="7d" className="text-xs h-7">7 days</TabsTrigger>
-          <TabsTrigger value="30d" className="text-xs h-7">30 days</TabsTrigger>
-          <TabsTrigger value="90d" className="text-xs h-7">90 days</TabsTrigger>
+        <TabsList className="h-8 w-full grid grid-cols-7">
+          <TabsTrigger value="today" className="text-xs h-7">Today</TabsTrigger>
+          <TabsTrigger value="yesterday" className="text-xs h-7">Yest.</TabsTrigger>
+          <TabsTrigger value="7d" className="text-xs h-7">7d</TabsTrigger>
+          <TabsTrigger value="30d" className="text-xs h-7">30d</TabsTrigger>
+          <TabsTrigger value="90d" className="text-xs h-7">90d</TabsTrigger>
           <TabsTrigger value="all" className="text-xs h-7">All</TabsTrigger>
           <TabsTrigger value="custom" className="text-xs h-7">Custom</TabsTrigger>
         </TabsList>
