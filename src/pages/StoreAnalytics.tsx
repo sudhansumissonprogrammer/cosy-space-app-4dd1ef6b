@@ -329,8 +329,8 @@ export default function StoreAnalytics() {
     const older = useRollup && viewsDaily
       ? viewsDaily
           .filter((r: any) => {
-            const d = parseISO(r.date);
-            return isAfter(d, rangeStart) && isBefore(d, rollupCutoff);
+            const t = parseISO(r.date).getTime();
+            return t >= rangeStart.getTime() && t < rollupCutoff.getTime();
           })
           .map((r: any) => ({ date: r.date, views: Number(r.sessions) || 0 }))
       : [];
