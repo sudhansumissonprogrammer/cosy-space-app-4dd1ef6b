@@ -427,13 +427,13 @@
 .nav-pill-indicator::before {
   content: "";
   position: absolute;
-  left: 20%;
-  right: 20%;
-  bottom: -4px;
-  height: 2.5px;
+  left: 22%;
+  right: 22%;
+  bottom: 4px;
+  height: 3px;
   border-radius: 4px;
   background: var(--storefront-primary, hsl(var(--primary)));
-  box-shadow: 0 0 8px 0 color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 60%, transparent);
+  box-shadow: 0 0 10px 0 color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 70%, transparent);
 }
 .nav-pill-indicator[data-ready="false"] {
   opacity: 0;
