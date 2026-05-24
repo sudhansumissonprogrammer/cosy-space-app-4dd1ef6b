@@ -187,15 +187,35 @@ export default function StoreAnalytics() {
   // Sessions = unique session_id (30-min sliding window) — matches GA4 exactly.
   // Falls back to visitor_id, then IP, for legacy rows written before session_id existed.
   const sessionKey = (v: any) => v.session_id || v.visitor_id || "anon";
+
+  // For periods entirely inside the last 30 days, use raw page_views (exact uniques).
+  // For ranges that reach further back, sum daily rollup totals for the older portion
+  // and add raw uniques for the recent (last 30d) portion.
+  const useRollup = rangeDays > 30 || dateRange === "all";
+  const rollupCutoff = subDays(new Date(), 30);
+
+  const rawSessions = (rows: any[]) => new Set(rows.map(sessionKey)).size;
+
+  const rollupSessions = useMemo(() => {
+    if (!useRollup || !viewsDaily) return 0;
+    return viewsDaily
+      .filter((r: any) => {
+        const d = parseISO(r.date);
+        return isAfter(d, rangeStart) && isBefore(d, rollupCutoff);
+      })
+      .reduce((s: number, r: any) => s + (Number(r.sessions) || 0), 0);
+  }, [viewsDaily, useRollup, rangeStart]);
+
   const totalSessions = useMemo(
-    () => new Set(filteredViews.current.map(sessionKey)).size,
-    [filteredViews.current]
+    () => rawSessions(filteredViews.current) + rollupSessions,
+    [filteredViews.current, rollupSessions]
   );
   const priorSessions = useMemo(
-    () => new Set(filteredViews.prior.map(sessionKey)).size,
+    () => rawSessions(filteredViews.prior),
     [filteredViews.prior]
   );
   const sessionsChange = priorSessions > 0 ? ((totalSessions - priorSessions) / priorSessions) * 100 : undefined;
+
 
 
   const conversionRate = totalSessions > 0 ? (totalOrders / totalSessions) * 100 : 0;
