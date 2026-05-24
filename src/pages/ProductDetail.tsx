@@ -824,10 +824,10 @@ export default function ProductDetail() {
                         <ShoppingBag className="h-4 w-4" />
                         {bilingualCta ? "Buy Now / अभी खरीदें" : "Buy Now"}
                       </span>
-                      <span className="flex items-center -space-x-1.5">
-                        <img src="/icons/gpay-round.svg" alt="GPay" className="h-5 w-5 rounded-full ring-1 ring-white bg-white object-contain" />
-                        <img src="/icons/phonepe-round.png" alt="PhonePe" className="h-5 w-5 rounded-full ring-1 ring-white bg-white object-contain" />
-                        <img src="/icons/paytm-round.png" alt="Paytm" className="h-5 w-5 rounded-full ring-1 ring-white bg-white object-contain" />
+                      <span className="flex items-center -space-x-1">
+                        <img src="/icons/gpay-round.webp" alt="GPay" width={16} height={16} loading="lazy" decoding="async" className="h-4 w-4 rounded-full ring-1 ring-white bg-white object-contain" />
+                        <img src="/icons/phonepe-round.webp" alt="PhonePe" width={16} height={16} loading="lazy" decoding="async" className="h-4 w-4 rounded-full ring-1 ring-white bg-white object-contain" />
+                        <img src="/icons/paytm-round.webp" alt="Paytm" width={16} height={16} loading="lazy" decoding="async" className="h-4 w-4 rounded-full ring-1 ring-white bg-white object-contain" />
                       </span>
                     </button>
                   )}
@@ -1094,9 +1094,9 @@ export default function ProductDetail() {
                         {bilingualCta ? "Buy / खरीदें" : "Buy Now"}
                       </span>
                       <span className="flex items-center -space-x-1">
-                        <img src="/icons/gpay-round.svg" alt="GPay" className="h-4 w-4 rounded-full ring-1 ring-white bg-white object-contain" />
-                        <img src="/icons/phonepe-round.png" alt="PhonePe" className="h-4 w-4 rounded-full ring-1 ring-white bg-white object-contain" />
-                        <img src="/icons/paytm-round.png" alt="Paytm" className="h-4 w-4 rounded-full ring-1 ring-white bg-white object-contain" />
+                        <img src="/icons/gpay-round.webp" alt="GPay" width={14} height={14} loading="lazy" decoding="async" className="h-3.5 w-3.5 rounded-full ring-1 ring-white bg-white object-contain" />
+                        <img src="/icons/phonepe-round.webp" alt="PhonePe" width={14} height={14} loading="lazy" decoding="async" className="h-3.5 w-3.5 rounded-full ring-1 ring-white bg-white object-contain" />
+                        <img src="/icons/paytm-round.webp" alt="Paytm" width={14} height={14} loading="lazy" decoding="async" className="h-3.5 w-3.5 rounded-full ring-1 ring-white bg-white object-contain" />
                       </span>
                     </button>
                   </div>
