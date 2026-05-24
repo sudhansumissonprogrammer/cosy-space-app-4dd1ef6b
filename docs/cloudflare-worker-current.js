@@ -5313,6 +5313,7 @@ async function _handleFetch(request, env, ctx) {
       const shouldCheckMirror = !isHtmlNav || (!isAuthed && !isPrivatePath);
       let cached = null;
       let hitKey = null;
+      let slugForKey = null;
       if (shouldCheckMirror) {
         // v8.25.1: for anonymous HTML navs, look up the REAL-HOST key first
         // (matches what mirrorToCfCache writes via getCfCacheKey). Falls
@@ -5326,7 +5327,6 @@ async function _handleFetch(request, env, ctx) {
           // the Worker zone; their real-host write occasionally lands in a
           // colo that won't serve it back. The slug-subdomain key is always
           // inside the zone, so this is the reliable cache for ad traffic.
-          let slugForKey = null;
           if (!cached) {
             slugForKey = await _earlyResolveSlug(earlyUrl.hostname, env);
             if (slugForKey) {
@@ -5366,6 +5366,20 @@ async function _handleFetch(request, env, ctx) {
           hit.headers.set("X-Edge-Cache", "HIT-EARLY");
           hit.headers.set("cf-cache-status", "HIT");
           if (hitKey) hit.headers.set("X-Edge-Key", hitKey);
+          // v8.44.0: record pageview on the HIT-EARLY path too. Without this,
+          // ~95% of real visits (cache HITs) were never written to page_views,
+          // leaving the analytics dashboard at zero Sessions/Conversion.
+          if (isHtmlNav && !isAuthed && !isPrivatePath) {
+            ctx.waitUntil(
+              (async () => {
+                try {
+                  let slug = slugForKey || (await _earlyResolveSlug(earlyUrl.hostname, env));
+                  const info = slug ? await _resolveStoreInfo(slug, earlyUrl.hostname, env) : null;
+                  await recordPageView(env, request, info?.storeId, earlyPath);
+                } catch {}
+              })(),
+            );
+          }
           return hit;
         }
       }
