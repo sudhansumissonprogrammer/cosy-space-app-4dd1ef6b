@@ -82,25 +82,43 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-  // Page views — pull session_id + is_bot for strict accuracy.
-  //   - Bots are filtered out completely (Meta crawler, Google bot, etc.)
-  //   - Sessions = unique session_id (30-min sliding) → matches GA4
-  //   - Unique visitors = unique visitor_id (2y persistent) → real humans
+  // Page views — raw is kept for 30 days only. For older periods we read
+  // from page_views_daily (rollup, kept forever). We always cap the raw
+  // query at the last 30 days so the dashboard never pulls millions of rows.
   const { data: pageViews } = useQuery({
     queryKey: ["analytics-views", storeIds],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
+      const since = subDays(new Date(), 30).toISOString();
       const { data, error } = await supabase
         .from("page_views")
         .select("created_at, path, visitor_id, session_id, is_bot")
         .in("store_id", storeIds)
         .eq("is_bot", false)
+        .gte("created_at", since)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data as any[];
     },
     enabled: storeIds.length > 0,
   });
+
+  // Historical daily rollups — used for ranges > 30 days (90d / custom / all)
+  const { data: viewsDaily } = useQuery({
+    queryKey: ["analytics-views-daily", storeIds],
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("page_views_daily")
+        .select("date, pageviews, sessions, visitors")
+        .in("store_id", storeIds)
+        .order("date", { ascending: true });
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+    enabled: storeIds.length > 0,
+  });
+
 
 
   // Customers
@@ -169,15 +187,35 @@ export default function StoreAnalytics() {
   // Sessions = unique session_id (30-min sliding window) — matches GA4 exactly.
   // Falls back to visitor_id, then IP, for legacy rows written before session_id existed.
   const sessionKey = (v: any) => v.session_id || v.visitor_id || "anon";
+
+  // For periods entirely inside the last 30 days, use raw page_views (exact uniques).
+  // For ranges that reach further back, sum daily rollup totals for the older portion
+  // and add raw uniques for the recent (last 30d) portion.
+  const useRollup = rangeDays > 30 || dateRange === "all";
+  const rollupCutoff = subDays(new Date(), 30);
+
+  const rawSessions = (rows: any[]) => new Set(rows.map(sessionKey)).size;
+
+  const rollupSessions = useMemo(() => {
+    if (!useRollup || !viewsDaily) return 0;
+    return viewsDaily
+      .filter((r: any) => {
+        const d = parseISO(r.date);
+        return isAfter(d, rangeStart) && isBefore(d, rollupCutoff);
+      })
+      .reduce((s: number, r: any) => s + (Number(r.sessions) || 0), 0);
+  }, [viewsDaily, useRollup, rangeStart]);
+
   const totalSessions = useMemo(
-    () => new Set(filteredViews.current.map(sessionKey)).size,
-    [filteredViews.current]
+    () => rawSessions(filteredViews.current) + rollupSessions,
+    [filteredViews.current, rollupSessions]
   );
   const priorSessions = useMemo(
-    () => new Set(filteredViews.prior.map(sessionKey)).size,
+    () => rawSessions(filteredViews.prior),
     [filteredViews.prior]
   );
   const sessionsChange = priorSessions > 0 ? ((totalSessions - priorSessions) / priorSessions) * 100 : undefined;
+
 
 
   const conversionRate = totalSessions > 0 ? (totalOrders / totalSessions) * 100 : 0;
@@ -232,17 +270,28 @@ export default function StoreAnalytics() {
   }, [filtered.current]);
 
   const viewsByDay = useMemo(() => {
-    // Group by day and count UNIQUE visitors that day (a session).
+    // Recent (last 30d): unique sessions per day from raw page_views.
     const map: Record<string, Set<string>> = {};
     filteredViews.current.forEach((v: any) => {
       const day = v.created_at.slice(0, 10);
       if (!map[day]) map[day] = new Set();
       map[day].add(sessionKey(v));
     });
-    return Object.entries(map)
-      .map(([date, set]) => ({ date, views: set.size }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }, [filteredViews.current]);
+    const recent = Object.entries(map).map(([date, set]) => ({ date, views: set.size }));
+
+    // Older (>30d): use page_views_daily rollup so 90d/all charts stay complete.
+    const older = useRollup && viewsDaily
+      ? viewsDaily
+          .filter((r: any) => {
+            const d = parseISO(r.date);
+            return isAfter(d, rangeStart) && isBefore(d, rollupCutoff);
+          })
+          .map((r: any) => ({ date: r.date, views: Number(r.sessions) || 0 }))
+      : [];
+
+    return [...older, ...recent].sort((a, b) => a.date.localeCompare(b.date));
+  }, [filteredViews.current, viewsDaily, useRollup, rangeStart]);
+
 
   const topPages = useMemo(() => {
     const map: Record<string, number> = {};
