@@ -1,5 +1,11 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.39.0 — BLOCK BRAND FONT FIRST PAINT
+ * SHOPBANAO PRODUCTION ROUTER v8.43.0 — PAGEVIEW IMMEDIATE FLUSH
+ *
+ * Changes from v8.42.0:
+ *  v8.43.0 — Pageview writes now flush immediately instead of waiting for
+ *            100 buffered rows / 60s. Low-traffic Worker isolates were dying
+ *            before batch flush, leaving page_views empty and dashboard
+ *            Sessions/Conversion at zero.
  *
  * Changes from v8.33.0:
  *  v8.34.0 — PRODUCTS_PAGE_SIZE bumped 50 → 20 to standardize storefront
@@ -104,7 +110,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.42.0-pv-dual-write";
+const WORKER_VERSION = "8.43.0-pv-immediate-flush";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
