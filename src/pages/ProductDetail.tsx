@@ -1495,11 +1495,11 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
                     className="relative flex-[0_0_100%] min-w-0"
                     onClick={() => setLightboxOpen(true)}
                   >
-                    {!loaded && <Skeleton className="aspect-[3/4] sm:aspect-square w-full rounded-none" />}
+                    {!loaded && <Skeleton className="aspect-[4/5] sm:aspect-square w-full rounded-none" />}
                     <img
                       src={optimizeImageUrl(src, 800)}
                       alt={productName}
-                      className={`aspect-[3/4] sm:aspect-square w-full object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+                      className={`aspect-[4/5] sm:aspect-square w-full object-contain bg-muted/30 transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}
