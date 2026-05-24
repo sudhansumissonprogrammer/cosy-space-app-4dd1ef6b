@@ -82,14 +82,16 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-  // Page views
+  // Page views — pull visitor_id/visitor_ip so we can compute unique sessions.
+  // A "session" = unique visitor per day, NOT raw row count (raw rows inflate
+  // numbers ~5-10x because every SPA navigation pushes a page_view).
   const { data: pageViews } = useQuery({
     queryKey: ["analytics-views", storeIds],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("page_views")
-        .select("created_at, path")
+        .select("created_at, path, visitor_id, visitor_ip")
         .in("store_id", storeIds)
         .order("created_at", { ascending: true });
       if (error) throw error;
@@ -161,8 +163,17 @@ export default function StoreAnalytics() {
   const priorAOV = priorOrders > 0 ? priorRevenue / priorOrders : 0;
   const aovChange = priorAOV > 0 ? ((avgOrderValue - priorAOV) / priorAOV) * 100 : undefined;
 
-  const totalSessions = filteredViews.current.length;
-  const priorSessions = filteredViews.prior.length;
+  // Sessions = unique visitor (by visitor_id, fallback to IP) within the range.
+  // This matches GA/Shopify semantics and prevents inflation from SPA navigations.
+  const uniqVisitorKey = (v: any) => v.visitor_id || v.visitor_ip || "anon";
+  const totalSessions = useMemo(
+    () => new Set(filteredViews.current.map(uniqVisitorKey)).size,
+    [filteredViews.current]
+  );
+  const priorSessions = useMemo(
+    () => new Set(filteredViews.prior.map(uniqVisitorKey)).size,
+    [filteredViews.prior]
+  );
   const sessionsChange = priorSessions > 0 ? ((totalSessions - priorSessions) / priorSessions) * 100 : undefined;
 
   const conversionRate = totalSessions > 0 ? (totalOrders / totalSessions) * 100 : 0;
@@ -217,13 +228,16 @@ export default function StoreAnalytics() {
   }, [filtered.current]);
 
   const viewsByDay = useMemo(() => {
-    const map: Record<string, { date: string; views: number }> = {};
+    // Group by day and count UNIQUE visitors that day (a session).
+    const map: Record<string, Set<string>> = {};
     filteredViews.current.forEach((v: any) => {
       const day = v.created_at.slice(0, 10);
-      if (!map[day]) map[day] = { date: day, views: 0 };
-      map[day].views += 1;
+      if (!map[day]) map[day] = new Set();
+      map[day].add(uniqVisitorKey(v));
     });
-    return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+    return Object.entries(map)
+      .map(([date, set]) => ({ date, views: set.size }))
+      .sort((a, b) => a.date.localeCompare(b.date));
   }, [filteredViews.current]);
 
   const topPages = useMemo(() => {
