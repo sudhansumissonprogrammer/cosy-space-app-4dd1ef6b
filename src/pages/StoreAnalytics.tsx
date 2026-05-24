@@ -163,8 +163,17 @@ export default function StoreAnalytics() {
   const priorAOV = priorOrders > 0 ? priorRevenue / priorOrders : 0;
   const aovChange = priorAOV > 0 ? ((avgOrderValue - priorAOV) / priorAOV) * 100 : undefined;
 
-  const totalSessions = filteredViews.current.length;
-  const priorSessions = filteredViews.prior.length;
+  // Sessions = unique visitor (by visitor_id, fallback to IP) within the range.
+  // This matches GA/Shopify semantics and prevents inflation from SPA navigations.
+  const uniqVisitorKey = (v: any) => v.visitor_id || v.visitor_ip || "anon";
+  const totalSessions = useMemo(
+    () => new Set(filteredViews.current.map(uniqVisitorKey)).size,
+    [filteredViews.current]
+  );
+  const priorSessions = useMemo(
+    () => new Set(filteredViews.prior.map(uniqVisitorKey)).size,
+    [filteredViews.prior]
+  );
   const sessionsChange = priorSessions > 0 ? ((totalSessions - priorSessions) / priorSessions) * 100 : undefined;
 
   const conversionRate = totalSessions > 0 ? (totalOrders / totalSessions) * 100 : 0;
