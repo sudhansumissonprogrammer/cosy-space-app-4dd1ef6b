@@ -5,6 +5,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
+import { navTap } from "@/lib/navHaptic";
 
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
@@ -162,14 +163,23 @@ export default function MobileBottomNavV17({ store }: { store: StoreData }) {
 
           if (isCart) {
             return (
-              <button key={item.key} onClick={openCart} className="flex-1 flex items-center justify-center h-full">
+              <button
+                key={item.key}
+                onClick={() => { navTap(); openCart(); }}
+                className="flex-1 flex items-center justify-center h-full"
+              >
                 {content}
               </button>
             );
           }
 
           return (
-            <Link key={item.key} to={getTo(item.path)} className="flex-1 flex items-center justify-center h-full">
+            <Link
+              key={item.key}
+              to={getTo(item.path)}
+              onClick={navTap}
+              className="flex-1 flex items-center justify-center h-full"
+            >
               {content}
             </Link>
           );
