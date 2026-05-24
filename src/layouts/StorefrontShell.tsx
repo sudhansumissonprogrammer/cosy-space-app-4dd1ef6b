@@ -331,11 +331,6 @@ export default function StorefrontShell({
           <CartPlusOneOverlay />
         </Suspense>
       )}
-      {overlaysReady && showSideCart && (
-        <Suspense fallback={null}>
-          <StickyCartBar slug={store.slug} currency={store.currency || "INR"} />
-        </Suspense>
-      )}
       {overlaysReady && (
         <Suspense fallback={null}>
           <OrderConfettiOverlay />
