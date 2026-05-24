@@ -16,9 +16,9 @@ import {
   TrendingUp, TrendingDown, ShoppingBag, Eye, DollarSign, Users,
   ShoppingCart, Repeat, ArrowUpRight, Package, BarChart3, CalendarIcon,
 } from "lucide-react";
-import { format, subDays, startOfDay, isAfter, parseISO, differenceInDays, isBefore } from "date-fns";
+import { format, subDays, startOfDay, endOfDay, parseISO, differenceInDays } from "date-fns";
 
-type DateRange = "7d" | "30d" | "90d" | "custom" | "all";
+type DateRange = "today" | "yesterday" | "7d" | "30d" | "90d" | "custom" | "all";
 
 function MetricCard({
   title, value, change, icon: Icon, prefix = "", suffix = "",
