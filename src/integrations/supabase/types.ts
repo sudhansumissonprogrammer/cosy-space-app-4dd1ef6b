@@ -775,7 +775,6 @@ export type Database = {
           session_id: string | null
           store_id: string
           visitor_id: string | null
-          visitor_ip: string | null
         }
         Insert: {
           created_at?: string
@@ -785,7 +784,6 @@ export type Database = {
           session_id?: string | null
           store_id: string
           visitor_id?: string | null
-          visitor_ip?: string | null
         }
         Update: {
           created_at?: string
@@ -795,7 +793,6 @@ export type Database = {
           session_id?: string | null
           store_id?: string
           visitor_id?: string | null
-          visitor_ip?: string | null
         }
         Relationships: [
           {
@@ -813,6 +810,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      page_views_daily: {
+        Row: {
+          bot_views: number
+          created_at: string
+          date: string
+          pageviews: number
+          sessions: number
+          store_id: string
+          visitors: number
+        }
+        Insert: {
+          bot_views?: number
+          created_at?: string
+          date: string
+          pageviews?: number
+          sessions?: number
+          store_id: string
+          visitors?: number
+        }
+        Update: {
+          bot_views?: number
+          created_at?: string
+          date?: string
+          pageviews?: number
+          sessions?: number
+          store_id?: string
+          visitors?: number
+        }
+        Relationships: []
       }
       partner_audit_logs: {
         Row: {
