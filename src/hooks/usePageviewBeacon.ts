@@ -40,6 +40,19 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
     const sid = getOrCreateSessionId();
     const bot = isLikelyBot();
 
+    // v8.46.1 Option D — hourly dedup across reloads/back-forward.
+    // Key = visitor+path+hour. sessionStorage clears on tab close.
+    // Cuts pageview writes ~40-60%. Visitors/Sessions stay accurate
+    // (those are unique-counted from visitor_id/session_id, not row count).
+    try {
+      const hourBucket = Math.floor(Date.now() / 3_600_000);
+      const dedupKey = `pv:${vid || sid}:${pathname}:${hourBucket}`;
+      if (sessionStorage.getItem(dedupKey)) return;
+      sessionStorage.setItem(dedupKey, "1");
+    } catch {
+      // sessionStorage blocked — fall through and insert
+    }
+
     try {
       supabase
         .from("page_views")
