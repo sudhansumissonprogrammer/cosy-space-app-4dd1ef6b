@@ -916,7 +916,7 @@ function buildSkeleton(bgColor, skeletonMuted, includeCleanup = true, storeName 
   const skelBg = bgColor || "#ffffff";
   const ringColor = primaryColor || "#004643";
 
-  const spinnerCss = `<style id="sf-skel-anim">@keyframes sf-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}#sf-skel .sf-spin-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:150px;height:150px}#sf-skel .sf-ring{position:absolute;inset:0;border:5px solid transparent;border-radius:50%;border-top-color:${ringColor};animation:sf-spin 5s cubic-bezier(0.17,0.49,0.96,0.79) infinite}#sf-skel .sf-ring>.sf-ring{inset:4.95px}</style>`;
+  const spinnerCss = `<style id="sf-skel-anim">@keyframes sf-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes sf-spin-rev{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}#sf-skel .sf-spin-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:150px;height:150px}#sf-skel .sf-ring{position:absolute;inset:0;border:5px solid transparent;border-radius:50%;border-top-color:${ringColor};animation:sf-spin 1.2s linear infinite;will-change:transform}#sf-skel .sf-ring>.sf-ring{inset:4.95px;animation:sf-spin-rev 1.6s linear infinite}#sf-skel .sf-ring>.sf-ring>.sf-ring{animation:sf-spin 2s linear infinite}#sf-skel .sf-ring>.sf-ring>.sf-ring>.sf-ring{animation:sf-spin-rev 2.4s linear infinite}#sf-skel .sf-ring>.sf-ring>.sf-ring>.sf-ring>.sf-ring{animation:sf-spin 2.8s linear infinite}#sf-skel .sf-ring>.sf-ring>.sf-ring>.sf-ring>.sf-ring>.sf-ring{animation:sf-spin-rev 3.2s linear infinite}</style>`;
 
   // v6.3.0: Set __SF_WORKER__ flag BEFORE skeleton so index.html knows Worker
   // already injected its loader — inline fallback is suppressed.
