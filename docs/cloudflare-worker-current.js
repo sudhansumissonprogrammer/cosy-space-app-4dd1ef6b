@@ -2104,11 +2104,13 @@ const PV_DEDUP_MAX = 5000;
 const _pvDedup = new Map(); // key -> expiresAt
 
 // Batching config
-// v8.2.0 Fix #4: Larger batches + longer flush window cut Supabase
-// page_views INSERT subrequests by ~70% (one bulk write per minute
-// per Worker instance instead of every 5s).
-const PV_BATCH_MAX_SIZE = 100; // flush when buffer hits this many rows (was 25)
-const PV_BATCH_MAX_AGE_MS = 60_000; // or when oldest row is this old (was 5s)
+// v8.43.0 Fix: Worker isolates on low-traffic stores die before the 100-row /
+// 60s age threshold ever triggers, so buffered rows are lost in memory and
+// page_views stays empty. Flush every record — the 30-min per-(store,visitor,
+// path) dedup above already caps write volume to ~1 INSERT per real session
+// page, which is well within Supabase limits.
+const PV_BATCH_MAX_SIZE = 1; // flush immediately (was 100, lost rows on cold isolates)
+const PV_BATCH_MAX_AGE_MS = 60_000; // unused at size=1, kept for future tuning
 const _pvBuffer = []; // pending rows
 let _pvBufferOldestAt = 0; // timestamp of first row in current buffer
 
