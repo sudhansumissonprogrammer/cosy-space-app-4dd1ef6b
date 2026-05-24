@@ -8,6 +8,7 @@ import { Home, Store, LayoutGrid, ShoppingCart, ClipboardList } from "lucide-rea
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
+import { navTap } from "@/lib/navHaptic";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 const navItems = [
@@ -60,7 +61,8 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
             const active = getActive(item.path);
             const count = item.key === "cart" ? cartCount : 0;
             const isCart = item.key === "cart";
-            const handleClick = isCart ? (e: React.MouseEvent) => { e.preventDefault(); openCart(); } : undefined;
+            const baseTap = isCart ? (e: React.MouseEvent) => { e.preventDefault(); openCart(); } : undefined;
+            const handleClick = (e: React.MouseEvent) => { navTap(); baseTap?.(e); };
             return (
               <Link
                 key={item.key}
