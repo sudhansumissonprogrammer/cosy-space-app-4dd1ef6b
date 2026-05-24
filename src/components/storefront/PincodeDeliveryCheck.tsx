@@ -137,7 +137,7 @@ export default function PincodeDeliveryCheck({
     persist(storeId, clean, resolvedCity);
     setChecking(false);
     setExpanded(false);
-    navHaptic();
+    navTap();
   };
 
   const onChangePin = (v: string) => {
