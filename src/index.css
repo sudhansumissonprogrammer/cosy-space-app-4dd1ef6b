@@ -406,14 +406,14 @@
   animation: nav-icon-pop 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ── Bottom-nav: sliding pill indicator ── */
+/* ── Bottom-nav: sliding pill + top accent line (Razorpay-style) ── */
 .nav-pill-indicator {
   position: absolute;
   top: 50%;
   left: 0;
   height: 38px;
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 14%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 12%, transparent);
   transform: translate(var(--pill-x, 0px), -50%);
   width: var(--pill-w, 0px);
   transition:
@@ -422,6 +422,18 @@
     opacity 200ms ease-out;
   pointer-events: none;
   will-change: transform, width;
+}
+/* Top accent bar — sits flush with the nav's top border */
+.nav-pill-indicator::before {
+  content: "";
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: -14px;
+  height: 2.5px;
+  border-radius: 0 0 4px 4px;
+  background: var(--storefront-primary, hsl(var(--primary)));
+  box-shadow: 0 4px 10px -2px color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 55%, transparent);
 }
 .nav-pill-indicator[data-ready="false"] {
   opacity: 0;
