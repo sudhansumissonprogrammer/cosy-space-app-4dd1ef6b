@@ -2131,9 +2131,12 @@ function _pvReadVisitorId(request) {
   return m ? m[1] : null;
 }
 
-// v8.30.1-ae-only: flipped to AE-only. Supabase page_views writes disabled.
-// Rollback: set back to true and redeploy worker (~30s).
-const PV_WRITE_SUPABASE = false;
+// v8.42.0: dual-write re-enabled. Dashboard analytics (Sessions, Conversion)
+// read from Supabase page_views; AE-only mode left the table empty so those
+// metrics flat-lined. With the 30-min per-(store,visitor,path) dedup + 100-row
+// bulk batching above, write volume stays bounded (~one INSERT per minute per
+// isolate). AE writes continue in parallel for long-term retention.
+const PV_WRITE_SUPABASE = true;
 
 /**
  * v8.30.0 — write a pageview to Cloudflare Analytics Engine.
