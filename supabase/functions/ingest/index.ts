@@ -196,7 +196,6 @@ async function handleView(req: Request) {
   await supabase.from("page_views").insert({
     store_id,
     path: cleanPath,
-    visitor_ip: ip,
   });
 
   return new Response(JSON.stringify({ success: true }), {
