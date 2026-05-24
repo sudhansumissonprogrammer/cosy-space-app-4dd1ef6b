@@ -1446,7 +1446,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
   if (len === 0) {
     return (
       <div className="overflow-hidden rounded-2xl bg-accent">
-        <div className="flex aspect-[3/4] sm:aspect-square w-full items-center justify-center">
+        <div className="flex aspect-square w-full items-center justify-center">
           <Package className="h-16 w-16 text-muted-foreground/30" />
         </div>
       </div>
