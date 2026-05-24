@@ -82,14 +82,16 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-  // Page views
+  // Page views — pull visitor_id/visitor_ip so we can compute unique sessions.
+  // A "session" = unique visitor per day, NOT raw row count (raw rows inflate
+  // numbers ~5-10x because every SPA navigation pushes a page_view).
   const { data: pageViews } = useQuery({
     queryKey: ["analytics-views", storeIds],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("page_views")
-        .select("created_at, path")
+        .select("created_at, path, visitor_id, visitor_ip")
         .in("store_id", storeIds)
         .order("created_at", { ascending: true });
       if (error) throw error;
