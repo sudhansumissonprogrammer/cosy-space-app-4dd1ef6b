@@ -32,9 +32,8 @@ export default function StoresList() {
     }
   }, [store, isLoading, navigate]);
 
-  return (
-    <div className="flex items-center justify-center py-12">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-    </div>
-  );
+  // Return null so the index.html #inline-skel spinner remains visible until
+  // we redirect to /dashboard (or /dashboard/stores/create) — avoids a brief
+  // blank spinner-on-spinner flash.
+  return null;
 }
