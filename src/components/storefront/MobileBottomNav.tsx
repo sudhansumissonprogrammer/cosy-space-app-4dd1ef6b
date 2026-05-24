@@ -44,7 +44,7 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
       active: isActive("cart"),
       onClick: (e: React.MouseEvent) => { e.preventDefault(); openCart(); },
     },
-    { key: "orders", label: "Orders", icon: ClipboardList, to: storefrontPath(store.slug, "account"), active: isActive("account") },
+    { key: "orders", label: "Orders", icon: ClipboardList, to: storefrontPath(store.slug, "account"), active: isActive("account") || isActive("login") || isActive("orders") },
   ];
 
   const activeKey = navItems.find((i) => i.active)?.key ?? null;
