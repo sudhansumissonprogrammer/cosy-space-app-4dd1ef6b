@@ -10,6 +10,7 @@ import { useMetaTags } from "@/hooks/useMetaTags";
 import { useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { ensureFbcPersisted, getOrCreateSfVid } from "@/lib/metaEnrichment";
 import { useGA4 } from "@/hooks/useGA4";
+import { usePageviewBeacon } from "@/hooks/usePageviewBeacon";
 
 import { buildThemeStyle, getResolvedThemeFonts, loadGoogleFonts } from "@/lib/themeUtils";
 import StorefrontNotFound from "@/components/storefront/StorefrontNotFound";
