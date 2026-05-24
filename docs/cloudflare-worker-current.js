@@ -5723,6 +5723,18 @@ async function _handleFetch(request, env, ctx) {
         );
       }
 
+      // v8.44.0: record pageview on edge cache HIT too (previously only
+      // MISS/cold paths recorded → ~95% of real visits were invisible to
+      // Supabase analytics, so Sessions/Conversion stayed at zero).
+      ctx.waitUntil(
+        (async () => {
+          try {
+            const info = cachedSlug ? await _resolveStoreInfo(cachedSlug, hostname, env) : null;
+            await recordPageView(env, request, info?.storeId, url.pathname);
+          } catch {}
+        })(),
+      );
+
       return addDiagnosticHeaders(earlyHit, { slug: cachedSlug, cacheStatus: "HIT", dataSource: cachedDataSource });
     }
   }
