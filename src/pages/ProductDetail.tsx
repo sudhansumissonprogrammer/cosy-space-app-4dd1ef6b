@@ -1499,16 +1499,20 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
                     <img
                       src={optimizeImageUrl(src, 800)}
                       alt={productName}
-                      className={`aspect-[4/5] sm:aspect-square w-full object-contain bg-muted/30 transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+                      className={`w-full h-auto max-h-[80vh] object-contain bg-muted/30 transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}
                       ref={(el) => {
                         if (el && el.complete && el.naturalWidth > 0 && !imageLoaded[realIdx]) {
                           setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
+                          embla?.reInit();
                         }
                       }}
-                      onLoad={() => setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }))}
+                      onLoad={() => {
+                        setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
+                        embla?.reInit();
+                      }}
                       onError={() => setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }))}
                     />
 
