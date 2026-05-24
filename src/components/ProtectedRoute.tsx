@@ -4,9 +4,11 @@ import { useAuth } from "@/contexts/AuthContext";
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
 
-  // When loading=false (no stored session), skip spinner entirely
+  // Render nothing while auth resolves so the index.html #inline-skel spinner
+  // stays visible until the real dashboard content paints (otherwise an empty
+  // full-screen div would trip waitForPaint and kill the loader prematurely).
   if (loading) {
-    return <div className="min-h-screen bg-background" />;
+    return null;
   }
 
   if (!session) {
