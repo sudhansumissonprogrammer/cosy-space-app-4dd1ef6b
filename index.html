@@ -308,12 +308,16 @@
       #inline-skel .sf-spin-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:150px;height:150px}
       #inline-skel .sf-ring{position:absolute;inset:0;border:5px solid transparent;border-radius:50%;border-top-color:var(--storefront-primary,#004643);animation:sf-spin 5s cubic-bezier(0.17,0.49,0.96,0.79) infinite}
       #inline-skel .sf-ring>.sf-ring{inset:4.95px}
+      /* App-shell mode (dashboard/login/signup/admin/partners): swap to platform brand */
+      #inline-skel[data-app-shell="1"]{background:#f8fafc !important}
+      #inline-skel[data-app-shell="1"] .sf-ring{border-top-color:#4361ee}
     </style>
     <div id="inline-skel" aria-hidden="true" style="position:fixed;inset:0;min-height:100vh;background:var(--storefront-bg,#ffffff);z-index:2147483000;pointer-events:none;overflow:hidden;transition:opacity .22s ease-out">
       <div class="sf-spin-wrap">
         <div class="sf-ring"><div class="sf-ring"><div class="sf-ring"><div class="sf-ring"><div class="sf-ring"><div class="sf-ring"></div></div></div></div></div></div>
       </div>
     </div>
+
 
     <!-- Landing-only branded skeleton — pixel-perfect match of Hero.tsx + Navbar.tsx.
          Uses real bauhaus tokens (HSL → hex), real logo from /landing/, same nav links,
@@ -530,8 +534,26 @@
             }, 2000);
           }
         }else if(!isSf){
-          if(inline){inline.style.display='none';}
+          /* App-shell routes (dashboard, login, signup, admin, partners,
+             password flows, auth callback, PWA cold launches into these).
+             Show the spinner with platform-brand colors until React paints. */
+          var isAppShell = (
+            p.indexOf('/dashboard')===0 ||
+            p.indexOf('/admin')===0 ||
+            p.indexOf('/partners')===0 ||
+            p==='/login' || p==='/signup' ||
+            p==='/forgot-password' || p==='/reset-password' ||
+            p.indexOf('/auth/')===0
+          );
           if(landing){landing.style.display='none';}
+          if(inline){
+            if(isAppShell){
+              inline.setAttribute('data-app-shell','1');
+              /* already display:block by default */
+            }else{
+              inline.style.display='none';
+            }
+          }
         }else{
           if(landing){landing.style.display='none';}
         }

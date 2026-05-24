@@ -48,7 +48,9 @@ export default function PartnerLayout() {
   }, [session, authLoading, navigate]);
 
   if (loading || !partner) {
-    return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+    // Return null so index.html #inline-skel stays visible until partner data
+    // is ready and the real layout paints.
+    return null;
   }
 
   const tabs = [
