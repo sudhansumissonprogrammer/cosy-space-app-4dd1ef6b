@@ -228,13 +228,16 @@ export default function StoreAnalytics() {
   }, [filtered.current]);
 
   const viewsByDay = useMemo(() => {
-    const map: Record<string, { date: string; views: number }> = {};
+    // Group by day and count UNIQUE visitors that day (a session).
+    const map: Record<string, Set<string>> = {};
     filteredViews.current.forEach((v: any) => {
       const day = v.created_at.slice(0, 10);
-      if (!map[day]) map[day] = { date: day, views: 0 };
-      map[day].views += 1;
+      if (!map[day]) map[day] = new Set();
+      map[day].add(uniqVisitorKey(v));
     });
-    return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+    return Object.entries(map)
+      .map(([date, set]) => ({ date, views: set.size }))
+      .sort((a, b) => a.date.localeCompare(b.date));
   }, [filteredViews.current]);
 
   const topPages = useMemo(() => {
