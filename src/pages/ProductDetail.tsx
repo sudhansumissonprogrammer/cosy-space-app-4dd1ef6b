@@ -42,6 +42,7 @@ const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedPr
 
 import PdpAskWhatsApp from "@/components/storefront/PdpAskWhatsApp";
 import DeliveryTimeline from "@/components/storefront/DeliveryTimeline";
+import PincodeDeliveryCheck from "@/components/storefront/PincodeDeliveryCheck";
 
 interface Variant {
   id: string;
@@ -854,8 +855,18 @@ export default function ProductDetail() {
             </div>
           )}
 
+          {/* Pincode serviceability + COD check */}
+          {!isOutOfStock && (
+            <PincodeDeliveryCheck
+              storeId={store.id}
+              price={basePrice}
+              freeShippingAbove={shippingConfig?.free_shipping_above ?? null}
+            />
+          )}
+
           {/* Delivery timeline (Order → Shipping → Delivery) */}
           {!isOutOfStock && <DeliveryTimeline />}
+
 
           {/* Checkout Trust Block — hidden in V18 */}
           {!isV18 && !isOutOfStock && (
