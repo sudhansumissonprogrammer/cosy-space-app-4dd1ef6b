@@ -1506,12 +1506,12 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
                       ref={(el) => {
                         if (el && el.complete && el.naturalWidth > 0 && !imageLoaded[realIdx]) {
                           setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
-                          emblaApi?.reInit();
+                          embla?.reInit();
                         }
                       }}
                       onLoad={() => {
                         setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }));
-                        emblaApi?.reInit();
+                        embla?.reInit();
                       }}
                       onError={() => setImageLoaded((prev) => (prev[realIdx] ? prev : { ...prev, [realIdx]: true }))}
                     />
