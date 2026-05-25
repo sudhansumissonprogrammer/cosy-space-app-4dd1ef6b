@@ -23,7 +23,7 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center gap-8">
           <a href="/#features" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">Features</a>
-          <a href="/#pricing" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">Pricing</a>
+          
           <a href="/#sellers" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">For Sellers</a>
           <a href="/partners" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">Partners</a>
           <a href="/#faq" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">FAQ</a>
@@ -56,7 +56,7 @@ const Navbar = () => {
       {mobileOpen && (
         <div className="md:hidden border-t-4 border-foreground bg-bauhaus-white px-4 py-6 space-y-4">
           <a href="/#features" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>Features</a>
-          <a href="/#pricing" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>Pricing</a>
+          
           <a href="/#sellers" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>For Sellers</a>
           <a href="/partners" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>Partners</a>
           <a href="/#faq" className="block font-bold uppercase tracking-wider text-foreground" onClick={() => setMobileOpen(false)}>FAQ</a>

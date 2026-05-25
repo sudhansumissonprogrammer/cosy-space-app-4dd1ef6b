@@ -6,7 +6,6 @@ import logo from "@/assets/shopbanao-logo.webp";
 const Footer = () => {
   const productLinks: { label: string; href: string }[] = [
     { label: "Features", href: "/#features" },
-    { label: "Pricing", href: "/#pricing" },
     { label: "Themes", href: "/#themes" },
     { label: "FAQ", href: "/#faq" },
   ];
