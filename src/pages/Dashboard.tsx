@@ -21,6 +21,7 @@ import TopProducts from "@/components/dashboard/TopProducts";
 import StoreChecklist from "@/components/dashboard/StoreChecklist";
 import QueryErrorState from "@/components/QueryErrorState";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
+import WalletAccountCard from "@/components/billing/WalletAccountCard";
 import { useCountUp } from "@/hooks/useCountUp";
 
 function ShimmerBlock({ className }: { className?: string }) {
@@ -248,6 +249,11 @@ export default function Dashboard() {
       {/* Quick Actions */}
       {storeId && (
         <QuickActions storeId={storeId} storeSlug={store?.slug || ""} storeName={store?.name} isWhatsAppOnly={isWhatsAppOnly} />
+      )}
+
+      {/* Wallet card — commission-mode stores only */}
+      {storeId && (store as any)?.billing_mode === "commission" && (
+        <WalletAccountCard storeId={storeId} storeSlug={store?.slug} variant="compact" />
       )}
 
       {isLoading ? (
