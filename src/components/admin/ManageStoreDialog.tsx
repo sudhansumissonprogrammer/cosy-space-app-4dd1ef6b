@@ -56,7 +56,7 @@ export default function ManageStoreDialog({ storeId, open, onOpenChange, default
           .eq("store_id", storeId).maybeSingle(),
         supabase.from("plans").select("*").eq("is_active", true).order("price"),
         supabase.from("subscription_payments" as any)
-          .select("id, amount, status, created_at, provider, payment_id")
+          .select("id, amount, status, created_at, payment_method, cashfree_payment_id")
           .eq("store_id", storeId).order("created_at", { ascending: false }).limit(10),
         supabase.from("stores").select("owner_id").eq("id", storeId).maybeSingle(),
       ]);
@@ -399,7 +399,7 @@ function SubscriptionPanel({ storeId, assignment, plans, payments, onSaved }: an
                 {payments.map((p: any) => (
                   <TableRow key={p.id}>
                     <TableCell className="text-sm">{format(new Date(p.created_at), "MMM d, yyyy")}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{p.provider || "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{p.payment_method || "—"}</TableCell>
                     <TableCell className="text-right tabular-nums">₹{Number(p.amount).toFixed(2)}</TableCell>
                     <TableCell><Badge variant={p.status === "paid" ? "default" : "secondary"}>{p.status}</Badge></TableCell>
                   </TableRow>
