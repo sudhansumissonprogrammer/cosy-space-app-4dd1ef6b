@@ -1097,9 +1097,21 @@ export default function StoreThemeSettings() {
   );
 
   const applyFontCombo = (heading: string, body: string) => {
-    setConfig((prev) => ({ ...prev, heading_font: heading, body_font: body }));
+    setConfig((prev) => ({ ...prev, heading_font: heading, body_font: body, font_preset: null }));
     setDirty(true);
-    sendToIframe({ ...config, heading_font: heading, body_font: body });
+    sendToIframe({ ...config, heading_font: heading, body_font: body, font_preset: null });
+  };
+
+  const applyPremiumPreset = (preset: FontPreset) => {
+    const next = {
+      ...config,
+      heading_font: preset.heading,
+      body_font: preset.body,
+      font_preset: preset.id,
+    };
+    setConfig(next);
+    setDirty(true);
+    sendToIframe(next);
   };
 
   const renderTypographySection = () => {
