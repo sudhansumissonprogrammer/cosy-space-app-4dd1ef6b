@@ -1,7 +1,7 @@
 // src/components/dashboard/PushNotificationManager.tsx
 // Settings card to enable/disable push notifications on the current device.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -16,6 +16,7 @@ import {
   unsubscribePush,
   isCurrentDeviceSubscribed,
   sendTestPush,
+  syncExistingPushSubscription,
   installForegroundPushListener,
 } from "@/lib/ownerPush";
 
@@ -41,11 +42,25 @@ export default function PushNotificationManager({ storeId }: Props) {
   const [testing, setTesting] = useState(false);
   const [thisEndpoint, setThisEndpoint] = useState<string | null>(null);
 
+  const refreshDevices = useCallback(async () => {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth?.user) return;
+    const { data } = await supabase
+      .from("push_subscriptions")
+      .select("id, device_label, enabled, last_used_at, endpoint")
+      .eq("user_id", auth.user.id)
+      .order("last_used_at", { ascending: false });
+    setDevices((data || []) as DeviceRow[]);
+  }, []);
+
   useEffect(() => {
     setSupported(isPushSupported());
     setPermission(getPushPermission());
-    isCurrentDeviceSubscribed().then(setThisDeviceSubscribed);
-    refreshDevices();
+    isCurrentDeviceSubscribed().then(async (subscribed) => {
+      setThisDeviceSubscribed(subscribed);
+      if (subscribed) await syncExistingPushSubscription(storeId);
+      await refreshDevices();
+    });
     const cleanup = installForegroundPushListener();
 
     // Get current device endpoint to mark it in the list
@@ -56,18 +71,7 @@ export default function PushNotificationManager({ storeId }: Props) {
         .catch(() => {});
     }
     return cleanup;
-  }, []);
-
-  async function refreshDevices() {
-    const { data: auth } = await supabase.auth.getUser();
-    if (!auth?.user) return;
-    const { data } = await supabase
-      .from("push_subscriptions")
-      .select("id, device_label, enabled, last_used_at, endpoint")
-      .eq("user_id", auth.user.id)
-      .order("last_used_at", { ascending: false });
-    setDevices((data || []) as DeviceRow[]);
-  }
+  }, [refreshDevices, storeId]);
 
   async function handleEnable() {
     setLoading(true);
@@ -117,7 +121,7 @@ export default function PushNotificationManager({ storeId }: Props) {
 
   async function handleTest() {
     setTesting(true);
-    const res = await sendTestPush();
+    const res = await sendTestPush(storeId);
     setTesting(false);
     toast({
       title: res.ok ? "Test sent ✅" : "Test failed",
