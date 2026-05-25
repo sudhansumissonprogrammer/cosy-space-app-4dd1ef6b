@@ -19,6 +19,7 @@ import ThemeCategoryStyleIcon from "@/components/dashboard/theme/ThemeCategorySt
 const FONT_OPTIONS = [
   "Alegreya SC",
   "Inter",
+  "Marcellus",
   "Montserrat Alternates",
   "Playfair Display",
   "Lora",
@@ -31,6 +32,19 @@ const FONT_OPTIONS = [
   "Merriweather",
   "DM Sans",
   "Space Grotesk",
+];
+
+/**
+ * One-click typography combinations.
+ * Heading font is used for titles + product names.
+ * Body font is used for product card text + UI copy.
+ */
+const FONT_COMBINATIONS: { id: string; name: string; heading: string; body: string; tag?: string }[] = [
+  { id: "marcellus-poppins", name: "Marcellus + Poppins", heading: "Marcellus", body: "Poppins", tag: "Elegant" },
+  { id: "alegreya-inter", name: "Alegreya SC + Inter", heading: "Alegreya SC", body: "Inter", tag: "Classic" },
+  { id: "playfair-lora", name: "Playfair + Lora", heading: "Playfair Display", body: "Lora", tag: "Editorial" },
+  { id: "poppins-inter", name: "Poppins + Inter", heading: "Poppins", body: "Inter", tag: "Modern" },
+  { id: "space-dm", name: "Space Grotesk + DM Sans", heading: "Space Grotesk", body: "DM Sans", tag: "Tech" },
 ];
 
 const BUTTON_STYLES = [
@@ -487,6 +501,26 @@ export default function StoreThemeSettings() {
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const iframeDesktopRef = useRef<HTMLIFrameElement>(null);
+
+  // Load all preset combo fonts in the dashboard so preset preview cards
+  // render in their real typeface (Marcellus, Playfair, etc.).
+  useEffect(() => {
+    if (document.getElementById("theme-combo-fonts")) return;
+    const families = Array.from(
+      new Set(FONT_COMBINATIONS.flatMap((c) => [c.heading, c.body]))
+    ).filter((f) => f !== "Inter" && f !== "Alegreya SC" && f !== "Poppins"); // already loaded
+    // Always include Poppins 500 + Marcellus to guarantee the headline preset renders.
+    const all = Array.from(new Set([...families, "Marcellus", "Poppins"]));
+    const href =
+      "https://fonts.googleapis.com/css2?" +
+      all.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;500;600;700`).join("&") +
+      "&display=swap";
+    const link = document.createElement("link");
+    link.id = "theme-combo-fonts";
+    link.rel = "stylesheet";
+    link.href = href;
+    document.head.appendChild(link);
+  }, []);
 
   useEffect(() => {
     if (themeConfig) {
@@ -1054,8 +1088,58 @@ export default function StoreThemeSettings() {
     </Section>
   );
 
-  const renderTypographySection = () => (
+  const applyFontCombo = (heading: string, body: string) => {
+    setConfig((prev) => ({ ...prev, heading_font: heading, body_font: body }));
+    setDirty(true);
+    sendToIframe({ ...config, heading_font: heading, body_font: body });
+  };
+
+  const renderTypographySection = () => {
+    const activeComboId = FONT_COMBINATIONS.find(
+      (c) => c.heading === config.heading_font && c.body === config.body_font
+    )?.id;
+    return (
     <Section title="Typography" hint="Heading font is used for titles & product names. Body font is used for descriptions & UI text.">
+      {/* One-click combinations */}
+      <div className="mb-5">
+        <Label className="text-xs mb-2 block">Font Combinations</Label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {FONT_COMBINATIONS.map((combo) => {
+            const isActive = activeComboId === combo.id;
+            return (
+              <button
+                key={combo.id}
+                type="button"
+                onClick={() => applyFontCombo(combo.heading, combo.body)}
+                className={`relative text-left rounded-xl border-2 px-3.5 py-3 transition-all ${
+                  isActive
+                    ? "border-primary bg-primary/5 shadow-sm"
+                    : "border-border hover:border-primary/40 hover:bg-accent/40"
+                }`}
+              >
+                {isActive && (
+                  <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="h-3 w-3" />
+                  </div>
+                )}
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{combo.name}</span>
+                  {combo.tag && (
+                    <span className="text-[9px] font-bold uppercase tracking-wider rounded-full bg-foreground/10 px-1.5 py-0.5">{combo.tag}</span>
+                  )}
+                </div>
+                <p className="mt-1.5 text-xl leading-tight" style={{ fontFamily: combo.heading, fontWeight: 600 }}>
+                  Your Store Name
+                </p>
+                <p className="text-[13px] leading-tight" style={{ fontFamily: combo.body, fontWeight: 500 }}>
+                  Beautiful Product Title
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label className="text-xs">Heading Font</Label>
@@ -1083,7 +1167,8 @@ export default function StoreThemeSettings() {
         </div>
       </div>
     </Section>
-  );
+    );
+  };
 
   const renderLayoutSection = () => (
     <Section title="Button Style" hint="Affects all primary buttons (Add to cart, Buy now, etc).">
