@@ -1160,6 +1160,109 @@ export default function StoreThemeSettings() {
         </div>
       </div>
 
+      {/* Premium Brand Presets — full typographic systems (font + weight + casing + tracking) */}
+      <div className="mb-5 mt-6">
+        <div className="mb-2 flex items-center justify-between">
+          <Label className="text-xs">Premium Brand Presets</Label>
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Inspired by world-class brands
+          </span>
+        </div>
+        <p className="mb-3 text-[11px] text-muted-foreground">
+          One click applies the full typography system — fonts, weights, button casing & letter-spacing — across your entire storefront.
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {PREMIUM_PRESETS.map((p) => {
+            const isActive = config.font_preset === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => applyPremiumPreset(p)}
+                className={`relative overflow-hidden rounded-2xl border-2 p-4 text-left transition-all ${
+                  isActive
+                    ? "border-primary bg-primary/5 shadow-md"
+                    : "border-border hover:border-primary/40 hover:bg-accent/30"
+                }`}
+              >
+                {isActive && (
+                  <div className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow">
+                    <Check className="h-3.5 w-3.5" />
+                  </div>
+                )}
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground">{p.name}</span>
+                  <span className="rounded-full bg-foreground/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+                    {p.tag}
+                  </span>
+                </div>
+
+                {/* True-to-spec live preview */}
+                <div className="space-y-1.5 rounded-lg bg-background/60 p-3 ring-1 ring-border/60">
+                  <p
+                    className="leading-none"
+                    style={{
+                      fontFamily: p.heading,
+                      fontWeight: p.headingWeight,
+                      letterSpacing: p.headingTracking,
+                      fontSize: "1.35rem",
+                    }}
+                  >
+                    Your Store Name
+                  </p>
+                  <p
+                    className="leading-tight"
+                    style={{
+                      fontFamily: p.body,
+                      fontWeight: p.productTitleWeight,
+                      fontSize: "0.85rem",
+                    }}
+                  >
+                    Beautiful Product Title
+                  </p>
+                  <p
+                    className="leading-snug text-muted-foreground"
+                    style={{
+                      fontFamily: p.body,
+                      fontWeight: p.bodyWeight,
+                      fontSize: "0.72rem",
+                    }}
+                  >
+                    Soft cotton blend, ethically crafted.
+                  </p>
+                  <div className="flex items-center justify-between pt-1.5">
+                    <span
+                      className="inline-block rounded-md bg-foreground px-3 py-1.5 text-background"
+                      style={{
+                        fontFamily: p.body,
+                        fontWeight: p.btnWeight,
+                        textTransform: p.btnCase as any,
+                        letterSpacing: p.btnTracking,
+                        fontSize: "0.7rem",
+                      }}
+                    >
+                      Add to cart
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: p.body,
+                        fontWeight: p.priceWeight,
+                        fontSize: "1rem",
+                      }}
+                    >
+                      ₹1,299
+                    </span>
+                  </div>
+                </div>
+
+                <p className="mt-2 text-[10px] text-muted-foreground line-clamp-1">{p.bestFor}</p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label className="text-xs">Heading Font</Label>
