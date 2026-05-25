@@ -21,7 +21,7 @@ import {
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
   Receipt, ShoppingCart, Store, ChevronDown, ExternalLink, Palette,
   Search, User, Bell, X, BarChart3, MessageSquare, Clock, RefreshCw,
-  Grid3X3, FileText, Star,
+  Grid3X3, FileText, Star, Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -39,12 +39,14 @@ function MobileMenu({
   storeSlug,
   pendingOrders,
   isWhatsAppOnly,
+  isCommissionMode,
 }: {
   open: boolean;
   onClose: () => void;
   storeSlug: string | undefined;
   pendingOrders: number;
   isWhatsAppOnly: boolean;
+  isCommissionMode: boolean;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -99,12 +101,13 @@ function MobileMenu({
           : []),
         {
           title: "Payments & Shipping",
-          items: filterItems([
+          items: [
             { label: "Payments", icon: CreditCard, path: `/dashboard/stores/${storeSlug}/payments`, menuKey: "payments" },
+            ...(isCommissionMode ? [{ label: "Wallet", icon: Wallet, path: `/dashboard/stores/${storeSlug}/wallet`, menuKey: "wallet" }] : []),
             ...(!isWhatsAppOnly ? [{ label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeSlug}/coupons`, menuKey: "coupons" }] : []),
             { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeSlug}/shipping`, menuKey: "shipping" },
             { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeSlug}/tax`, menuKey: "tax_gst" },
-          ]),
+          ].filter((i) => i.menuKey === "wallet" || isVisible(i.menuKey)),
         },
         {
           title: "Marketing",
