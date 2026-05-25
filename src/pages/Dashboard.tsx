@@ -22,6 +22,7 @@ import StoreChecklist from "@/components/dashboard/StoreChecklist";
 import QueryErrorState from "@/components/QueryErrorState";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import WalletAccountCard from "@/components/billing/WalletAccountCard";
+import LowBalanceDialog from "@/components/billing/LowBalanceDialog";
 import { useCountUp } from "@/hooks/useCountUp";
 
 function ShimmerBlock({ className }: { className?: string }) {
