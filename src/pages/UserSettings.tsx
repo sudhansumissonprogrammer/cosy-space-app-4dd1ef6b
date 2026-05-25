@@ -140,7 +140,7 @@ export default function UserSettings() {
       if (error) throw error;
       return data;
     },
-    enabled: !!user && !storePlanAssignment,
+    enabled: !!user && !storePlanAssignment && !isCommissionMode,
   });
 
   useEffect(() => {
