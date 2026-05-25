@@ -216,8 +216,29 @@ export async function syncExistingPushSubscription(
     if (Notification.permission !== "granted") return { ok: false, reason: "permission_denied" };
 
     const reg = await withTimeout(getPushRegistration(), 10000, "service_worker_not_ready");
-    const sub = await reg.pushManager.getSubscription();
+    let sub = await reg.pushManager.getSubscription();
     if (!sub) return { ok: false, reason: "no_browser_subscription" };
+
+    const vapidKey = await getServerVapidKey();
+    const vapidBytes = urlBase64ToUint8Array(vapidKey);
+    const existingKey = sub.options?.applicationServerKey
+      ? new Uint8Array(sub.options.applicationServerKey as ArrayBuffer)
+      : null;
+    const matches =
+      existingKey &&
+      existingKey.length === vapidBytes.length &&
+      existingKey.every((b, i) => b === vapidBytes[i]);
+    if (!matches) {
+      await sub.unsubscribe().catch(() => false);
+      sub = await withTimeout(
+        reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: vapidBytes as BufferSource,
+        }),
+        15000,
+        "push_subscribe_timeout",
+      );
+    }
 
     const saved = await saveSubscriptionToDatabase(user.id, storeId, sub);
     if (!saved.ok) return saved;
