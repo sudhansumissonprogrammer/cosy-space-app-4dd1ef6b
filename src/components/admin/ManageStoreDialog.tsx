@@ -82,6 +82,11 @@ export default function ManageStoreDialog({ storeId, open, onOpenChange, default
   const mode: Mode = (store?.billing_mode ?? "subscription") as Mode;
   const isCommission = mode === "commission";
 
+  // If dialog opened on Wallet tab but store is in subscription mode, swap to Billing.
+  useEffect(() => {
+    if (open && tab === "wallet" && store && !isCommission) setTab("billing");
+  }, [open, tab, store, isCommission]);
+
   const invalidateAll = () => {
     refetch();
     qc.invalidateQueries({ queryKey: ["admin-wallets"] });
