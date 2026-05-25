@@ -23,6 +23,14 @@ Deno.serve(async (req) => {
     let activeExpired = 0;
     let suspended = 0;
 
+    // Fetch all stores in commission billing mode — these skip subscription billing entirely
+    const { data: commissionStores } = await supabase
+      .from("stores")
+      .select("id")
+      .eq("billing_mode", "commission");
+    const commissionStoreIds = new Set((commissionStores || []).map((s: any) => s.id));
+    const isCommission = (storeId: string) => commissionStoreIds.has(storeId);
+
     // 1. Trialing → past_due (trial ended, no payment) — only for paid plans
     const { data: expiredTrials } = await supabase
       .from("store_plan_assignments")
@@ -32,6 +40,7 @@ Deno.serve(async (req) => {
 
     for (const row of expiredTrials || []) {
       const r = row as any;
+      if (isCommission(r.store_id)) continue;
       // Skip overridden plans
       if (r.is_free_lifetime) {
         await supabase.from("store_plan_assignments").update({ billing_status: "lifetime" }).eq("id", r.id);
@@ -62,6 +71,7 @@ Deno.serve(async (req) => {
 
     for (const row of expiredActive || []) {
       const r = row as any;
+      if (isCommission(r.store_id)) continue;
       if (r.is_free_lifetime || r.is_one_time) continue;
       const price = Number(r.custom_price ?? r.plans?.price ?? 0);
       if (price <= 0) continue;
@@ -82,9 +92,10 @@ Deno.serve(async (req) => {
       .lt("grace_period_ends_at", now);
 
     for (const row of expiredGrace || []) {
+      if (isCommission((row as any).store_id)) continue;
       await supabase.from("store_plan_assignments")
         .update({ billing_status: "suspended" })
-        .eq("id", row.id);
+        .eq("id", (row as any).id);
       suspended++;
     }
 
