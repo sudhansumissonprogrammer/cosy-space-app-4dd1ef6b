@@ -1632,26 +1632,44 @@ export type Database = {
         Row: {
           auth: string
           created_at: string
+          device_label: string | null
+          enabled: boolean
           endpoint: string
           id: string
+          last_used_at: string
           p256dh: string
-          store_id: string
+          sound_enabled: boolean
+          store_id: string | null
+          user_agent: string | null
+          user_id: string | null
         }
         Insert: {
           auth: string
           created_at?: string
+          device_label?: string | null
+          enabled?: boolean
           endpoint: string
           id?: string
+          last_used_at?: string
           p256dh: string
-          store_id: string
+          sound_enabled?: boolean
+          store_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
         }
         Update: {
           auth?: string
           created_at?: string
+          device_label?: string | null
+          enabled?: boolean
           endpoint?: string
           id?: string
+          last_used_at?: string
           p256dh?: string
-          store_id?: string
+          sound_enabled?: boolean
+          store_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
