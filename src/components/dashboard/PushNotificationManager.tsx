@@ -95,9 +95,10 @@ export default function PushNotificationManager({ storeId }: Props) {
     setThisDeviceSubscribed(true);
     setPermission(getPushPermission());
     await refreshDevices();
-    const reg = await navigator.serviceWorker.ready;
-    const s = await reg.pushManager.getSubscription();
-    setThisEndpoint(s?.endpoint || null);
+    navigator.serviceWorker.ready
+      .then((reg) => reg.pushManager.getSubscription())
+      .then((s) => setThisEndpoint(s?.endpoint || null))
+      .catch(() => setThisEndpoint(null));
     toast({
       title: "🔔 Notifications enabled",
       description: "You'll get instant alerts on this device for new orders.",
@@ -195,7 +196,7 @@ export default function PushNotificationManager({ storeId }: Props) {
           <div className="flex gap-2">
             {thisDeviceSubscribed ? (
               <>
-                <Button size="sm" variant="outline" onClick={handleTest} disabled={testing}>
+                <Button type="button" size="sm" variant="outline" onClick={handleTest} disabled={testing}>
                   {testing ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
@@ -203,12 +204,12 @@ export default function PushNotificationManager({ storeId }: Props) {
                   )}
                   <span className="ml-1">Test</span>
                 </Button>
-                <Button size="sm" variant="outline" onClick={handleDisable} disabled={loading}>
+                <Button type="button" size="sm" variant="outline" onClick={handleDisable} disabled={loading}>
                   Disable
                 </Button>
               </>
             ) : (
-              <Button size="sm" onClick={handleEnable} disabled={loading || permission === "denied"}>
+              <Button type="button" size="sm" onClick={handleEnable} disabled={loading || permission === "denied"}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enable"}
               </Button>
             )}
@@ -249,6 +250,7 @@ export default function PushNotificationManager({ storeId }: Props) {
                       onCheckedChange={(v) => toggleDevice(d.id, v)}
                     />
                     <Button
+                      type="button"
                       size="sm"
                       variant="ghost"
                       className="text-destructive hover:text-destructive"

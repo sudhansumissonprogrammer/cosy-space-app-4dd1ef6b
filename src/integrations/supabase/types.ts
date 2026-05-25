@@ -3063,6 +3063,10 @@ export type Database = {
       get_own_domain_token: { Args: { _store_id: string }; Returns: string }
       get_own_payment_secret: { Args: { _store_id: string }; Returns: string }
       get_own_store_meta_token: { Args: { _store_id: string }; Returns: string }
+      get_own_store_private_settings: {
+        Args: { _store_id: string }
+        Returns: Json
+      }
       get_platform_config_public: {
         Args: never
         Returns: {
