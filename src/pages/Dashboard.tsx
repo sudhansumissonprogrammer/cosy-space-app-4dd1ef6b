@@ -145,6 +145,7 @@ export default function Dashboard() {
   })();
 
   const totalRevenue = ordersData?.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) || 0;
+  const isCommissionMode = (store as any)?.billing_mode === "commission";
 
   if (storeLoading) return <DashboardSkeleton />;
 
@@ -248,11 +249,11 @@ export default function Dashboard() {
 
       {/* Quick Actions */}
       {storeId && (
-        <QuickActions storeId={storeId} storeSlug={store?.slug || ""} storeName={store?.name} isWhatsAppOnly={isWhatsAppOnly} />
+        <QuickActions storeId={storeId} storeSlug={store?.slug || ""} storeName={store?.name} isWhatsAppOnly={isWhatsAppOnly} showWallet={isCommissionMode} />
       )}
 
       {/* Wallet card — commission-mode stores only */}
-      {storeId && (store as any)?.billing_mode === "commission" && (
+      {storeId && isCommissionMode && (
         <WalletAccountCard storeId={storeId} storeSlug={store?.slug} variant="compact" />
       )}
 
