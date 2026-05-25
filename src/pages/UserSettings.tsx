@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import BillingSection from "@/components/billing/BillingSection";
+import WalletAccountCard from "@/components/billing/WalletAccountCard";
 
 const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6MB
 
