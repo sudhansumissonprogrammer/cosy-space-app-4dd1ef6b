@@ -132,6 +132,16 @@ export default function Dashboard() {
     enabled: !!storeId && !isWhatsAppOnly,
   });
 
+  const { data: walletSummary } = useQuery({
+    queryKey: ["store-wallet", storeId],
+    enabled: !!storeId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_store_wallet_summary", { _store_id: storeId! });
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
   const ordersByMonth = (() => {
     if (!ordersData) return [];
     const map: Record<string, { month: string; orders: number; revenue: number }> = {};
@@ -145,7 +155,7 @@ export default function Dashboard() {
   })();
 
   const totalRevenue = ordersData?.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) || 0;
-  const isCommissionMode = (store as any)?.billing_mode === "commission";
+  const isCommissionMode = (store as any)?.billing_mode === "commission" || (walletSummary as any)?.billing_mode === "commission";
 
   if (storeLoading) return <DashboardSkeleton />;
 
