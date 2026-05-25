@@ -5,10 +5,28 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-// Generated VAPID public key (matches edge function VAPID_PUBLIC_KEY).
-// Safe to expose publicly — that is its purpose.
-const VAPID_PUBLIC_KEY =
+// VAPID public key is fetched from the server so client + server can never
+// drift. (Hardcoded fallback only used if the fetch fails.)
+const VAPID_PUBLIC_KEY_FALLBACK =
   "BJu3Q6iOP6xBdN5sFE2ibfcIROFY4f7pie8pCkFEqztk7TS2fMS23sxLOsrhK91OGmqkkkn9ap812BF2y3AIAe4";
+
+let _vapidKeyCache: string | null = null;
+async function getServerVapidKey(): Promise<string> {
+  if (_vapidKeyCache) return _vapidKeyCache;
+  try {
+    const { data } = await supabase.functions.invoke("get-vapid-public", {
+      method: "GET" as any,
+    });
+    const key = (data as any)?.key;
+    if (key && typeof key === "string" && key.length > 50) {
+      _vapidKeyCache = key;
+      return key;
+    }
+  } catch {
+    // fall through
+  }
+  return VAPID_PUBLIC_KEY_FALLBACK;
+}
 
 export function isPushSupported(): boolean {
   return (
