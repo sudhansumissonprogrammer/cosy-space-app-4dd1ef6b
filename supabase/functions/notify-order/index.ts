@@ -231,7 +231,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { order_id, customer_email } = await req.json();
+    const { order_id, customer_email, push_only = false } = await req.json();
     if (!order_id) {
       return new Response(JSON.stringify({ error: "order_id required" }), {
         status: 400,
@@ -278,7 +278,7 @@ Deno.serve(async (req) => {
     let queueWorked = false;
 
     // Send customer confirmation with invoice
-    if (normalizedEmail) {
+    if (!push_only && normalizedEmail) {
       const customerHtml = buildInvoiceHtml(order, items, storeData, false, normalizedEmail);
       const subject = `Order Confirmed - ${storeName} #${order_id.slice(0, 8).toUpperCase()}`;
 
@@ -292,7 +292,7 @@ Deno.serve(async (req) => {
     }
 
     // Send owner notification with invoice
-    if (ownerEmail) {
+    if (!push_only && ownerEmail) {
       const ownerHtml = buildInvoiceHtml(order, items, storeData, true, normalizedEmail);
       const subject = `🛍️ New Order #${order_id.slice(0, 8).toUpperCase()} - ${storeName}`;
 
@@ -353,7 +353,7 @@ Deno.serve(async (req) => {
       console.error("Push notification trigger error:", (e as Error).message);
     }
 
-    console.log(`notify-order completed for ${order_id}, customer: ${normalizedEmail}, owner: ${ownerEmail}, queue: ${queueWorked}`);
+    console.log(`notify-order completed for ${order_id}, push_only: ${push_only}, customer: ${normalizedEmail}, owner: ${ownerEmail}, queue: ${queueWorked}`);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
