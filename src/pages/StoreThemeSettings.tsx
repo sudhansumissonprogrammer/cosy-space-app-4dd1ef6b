@@ -515,14 +515,12 @@ export default function StoreThemeSettings() {
   // render in their real typeface (Marcellus, Playfair, etc.).
   useEffect(() => {
     if (document.getElementById("theme-combo-fonts")) return;
-    const families = Array.from(
-      new Set(FONT_COMBINATIONS.flatMap((c) => [c.heading, c.body]))
-    ).filter((f) => f !== "Inter" && f !== "Alegreya SC" && f !== "Poppins"); // already loaded
-    // Always include Poppins 500 + Marcellus to guarantee the headline preset renders.
-    const all = Array.from(new Set([...families, "Marcellus", "Poppins"]));
+    const legacy = FONT_COMBINATIONS.flatMap((c) => [c.heading, c.body]);
+    const all = Array.from(new Set([...legacy, ...PRESET_FONT_FAMILIES, "Marcellus", "Poppins"]))
+      .filter((f) => f !== "Inter" && f !== "Alegreya SC"); // already self-hosted
     const href =
       "https://fonts.googleapis.com/css2?" +
-      all.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;500;600;700`).join("&") +
+      all.map((f) => `family=${f.replace(/ /g, "+")}:wght@300;400;500;600;700;800`).join("&") +
       "&display=swap";
     const link = document.createElement("link");
     link.id = "theme-combo-fonts";
