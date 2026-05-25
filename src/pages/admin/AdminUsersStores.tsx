@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import { Store, Ban, CheckCircle, Trash2, Search, BadgeCheck, Users, ExternalLink, Wallet } from "lucide-react";
 import { format } from "date-fns";
 import { TableSkeleton } from "@/components/admin/AdminSkeletons";
+import ManageStoreDialog from "@/components/admin/ManageStoreDialog";
+import { Settings2 } from "lucide-react";
 
 interface UserStoreRow {
   user_id: string;
@@ -40,6 +42,7 @@ export default function AdminUsersStores() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [manageStoreId, setManageStoreId] = useState<string | null>(null);
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["admin-users-stores"],
