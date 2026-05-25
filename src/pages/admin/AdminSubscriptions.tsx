@@ -243,7 +243,11 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
                           <TableCell>
                             <Badge variant="secondary">parked</Badge>
                           </TableCell>
-                          <TableCell></TableCell>
+                          <TableCell>
+                            <Button size="sm" variant="default" onClick={() => setManageId(assignment.store_id)}>
+                              <Settings2 className="mr-1 h-3 w-3" /> Manage
+                            </Button>
+                          </TableCell>
                         </>
                       ) : (
                         <>
