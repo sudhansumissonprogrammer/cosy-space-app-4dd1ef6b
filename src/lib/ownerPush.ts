@@ -5,6 +5,14 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+interface VapidPublicResponse {
+  key?: string;
+}
+
+interface PushSendResponse {
+  sent?: number;
+}
+
 // VAPID public key is fetched from the server so client + server can never
 // drift. (Hardcoded fallback only used if the fetch fails.)
 const VAPID_PUBLIC_KEY_FALLBACK =
@@ -15,9 +23,9 @@ async function getServerVapidKey(): Promise<string> {
   if (_vapidKeyCache) return _vapidKeyCache;
   try {
     const { data } = await supabase.functions.invoke("get-vapid-public", {
-      method: "GET" as any,
+      method: "GET",
     });
-    const key = (data as any)?.key;
+    const key = (data as VapidPublicResponse | null)?.key;
     if (key && typeof key === "string" && key.length > 50) {
       _vapidKeyCache = key;
       return key;
@@ -200,8 +208,8 @@ export async function subscribePush(
     if (!saved.ok) return saved;
 
     return { ok: true };
-  } catch (e: any) {
-    return { ok: false, reason: e?.message || "unknown_error" };
+  } catch (e: unknown) {
+    return { ok: false, reason: e instanceof Error ? e.message : "unknown_error" };
   }
 }
 
@@ -243,8 +251,8 @@ export async function syncExistingPushSubscription(
     const saved = await saveSubscriptionToDatabase(user.id, storeId, sub);
     if (!saved.ok) return saved;
     return { ok: true, endpoint: sub.endpoint };
-  } catch (e: any) {
-    return { ok: false, reason: e?.message || "unknown_error" };
+  } catch (e: unknown) {
+    return { ok: false, reason: e instanceof Error ? e.message : "unknown_error" };
   }
 }
 
@@ -310,7 +318,7 @@ export async function sendTestPush(storeId?: string): Promise<{ ok: boolean; mes
     },
   });
   if (error) return { ok: false, message: error.message };
-  const sent = (data as any)?.sent || 0;
+  const sent = (data as PushSendResponse | null)?.sent || 0;
   return {
     ok: sent > 0,
     message: sent > 0 ? `Sent to ${sent} device(s)` : "No saved devices found. Tap Disable, then Enable again.",
@@ -323,8 +331,7 @@ export async function sendTestPush(storeId?: string): Promise<{ ok: boolean; mes
  */
 export function playChaChing(): void {
   try {
-    const Ctx =
-      (window as any).AudioContext || (window as any).webkitAudioContext;
+    const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) return;
     const ctx = new Ctx();
     const now = ctx.currentTime;
