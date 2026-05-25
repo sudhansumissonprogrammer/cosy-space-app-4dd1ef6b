@@ -263,6 +263,9 @@ export default function StoreSettings() {
         }}
         className="space-y-6"
       >
+        {/* ── Push Notifications ── */}
+        <PushNotificationManager storeId={storeId} />
+
         {/* ── 1. Basic Info ── */}
         <Card>
           <CardHeader>
