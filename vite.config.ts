@@ -83,8 +83,8 @@ export default defineConfig(({ mode }) => ({
       injectRegister: null,
       includeAssets: ["favicon.ico", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
-        name: "Storivo — Online Store",
-        short_name: "Storivo",
+        name: "ShopBanao — Online Store",
+        short_name: "ShopBanao",
         description: "Create your online store with WhatsApp ordering",
         theme_color: "#4361ee",
         background_color: "#f5f6fa",

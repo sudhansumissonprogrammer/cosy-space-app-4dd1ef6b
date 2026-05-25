@@ -5595,13 +5595,20 @@ async function _handleFetch(request, env, ctx) {
   }
 
   // ─── STATIC ASSETS ───
+  if (url.pathname === "/sw-push.js" || url.pathname === "/sw.js" || url.pathname === "/manifest.webmanifest") {
+    const freshStatic = await proxyToOrigin(request);
+    const freshRes = new Response(freshStatic.body, freshStatic);
+    freshRes.headers.set("Cache-Control", "no-cache, must-revalidate, max-age=0");
+    freshRes.headers.delete("Set-Cookie");
+    freshRes.headers.delete("set-cookie");
+    freshRes.headers.set("X-Static-Asset-Cache", "BYPASS-PWA");
+    return freshRes;
+  }
+
   const isStaticAsset =
     url.pathname.startsWith("/assets/") ||
     url.pathname.startsWith("/static/") ||
     url.pathname === "/registerSW.js" ||
-    url.pathname === "/sw-push.js" ||
-    url.pathname === "/manifest.webmanifest" ||
-    url.pathname === "/sw.js" ||
     url.pathname === "/favicon.ico" ||
     (url.pathname.includes(".") &&
       !url.pathname.startsWith("/api") &&

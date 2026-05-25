@@ -94,7 +94,13 @@ Deno.serve(async (req) => {
           await webpush.sendNotification(
             { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
             payload,
-            { TTL: 60 * 60 * 24 }, // 24h
+            {
+              TTL: 60 * 60 * 24, // 24h
+              headers: {
+                Urgency: "high",
+                Topic: String(tag || "shopbanao-order").replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 32),
+              },
+            },
           );
           // Mark as used
           await supabase
