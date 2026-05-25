@@ -32,12 +32,19 @@ const FONT_OPTIONS = [
   "Merriweather",
   "DM Sans",
   "Space Grotesk",
+  // Premium preset fonts
+  "Manrope",
+  "Fraunces",
+  "Cormorant Garamond",
+  "DM Serif Display",
+  "Jost",
+  "Plus Jakarta Sans",
+  "Bodoni Moda",
+  "Syne",
 ];
 
 /**
- * One-click typography combinations.
- * Heading font is used for titles + product names.
- * Body font is used for product card text + UI copy.
+ * One-click typography combinations (legacy small section).
  */
 const FONT_COMBINATIONS: { id: string; name: string; heading: string; body: string; tag?: string }[] = [
   { id: "marcellus-poppins", name: "Marcellus + Poppins", heading: "Marcellus", body: "Poppins", tag: "Elegant" },
