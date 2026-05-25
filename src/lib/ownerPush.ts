@@ -138,13 +138,30 @@ export async function subscribePush(
       "service_worker_not_ready",
     );
 
+    const vapidKey = await getServerVapidKey();
+    const vapidBytes = urlBase64ToUint8Array(vapidKey);
+
     let sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      // If the cached subscription used a different VAPID key, drop it so we
+      // re-subscribe with the current one. Otherwise FCM will reject every push.
+      const existingKey = sub.options?.applicationServerKey
+        ? new Uint8Array(sub.options.applicationServerKey as ArrayBuffer)
+        : null;
+      const matches =
+        existingKey &&
+        existingKey.length === vapidBytes.length &&
+        existingKey.every((b, i) => b === vapidBytes[i]);
+      if (!matches) {
+        await sub.unsubscribe().catch(() => false);
+        sub = null;
+      }
+    }
     if (!sub) {
-      const vapidKey = await getServerVapidKey();
       sub = await withTimeout(
         reg.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
+          applicationServerKey: vapidBytes as BufferSource,
         }),
         15000,
         "push_subscribe_timeout",
