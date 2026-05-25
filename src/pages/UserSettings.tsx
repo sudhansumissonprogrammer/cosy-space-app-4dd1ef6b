@@ -124,7 +124,7 @@ export default function UserSettings() {
       if (error) throw error;
       return data;
     },
-    enabled: !!userStore?.id && !isCommissionMode,
+    enabled: !!userStore?.id,
   });
 
   // Fallback to subscriptions if no store plan assignment
@@ -140,7 +140,7 @@ export default function UserSettings() {
       if (error) throw error;
       return data;
     },
-    enabled: !!user && !storePlanAssignment && !isCommissionMode,
+    enabled: !!user && !storePlanAssignment,
   });
 
   useEffect(() => {
