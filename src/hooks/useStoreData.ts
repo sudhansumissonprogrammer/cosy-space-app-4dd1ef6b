@@ -21,6 +21,7 @@ export function useStoreData(storeId?: string) {
     staleTime: 10 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
     initialData: () => storeId ? queryClient.getQueryData(["store", storeId]) : undefined,
+    initialDataUpdatedAt: 0,
     queryFn: async () => {
       if (isAdminView) {
         const cached = queryClient.getQueryData(["store", storeId!]);
