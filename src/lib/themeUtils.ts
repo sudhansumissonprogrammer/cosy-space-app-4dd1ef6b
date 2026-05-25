@@ -2,7 +2,10 @@
  * Shared theme utility functions — extracted from layout files to avoid duplication.
  */
 
-const GOOGLE_FONT_WEIGHTS = "400;500;600;700";
+// Include 300 (light) and 800 (extrabold) so brand presets like Swiggy / CRED /
+// Plus Jakarta (priceWeight 800) and editorial presets (light body) actually
+// load real glyphs instead of letting the browser fake-bold them.
+const GOOGLE_FONT_WEIGHTS = "300;400;500;600;700;800";
 const DEFAULT_HEADING_FONT = "Alegreya SC";
 const DEFAULT_BODY_FONT = "Inter";
 const DEFAULT_TEXT_COLOR = "#1a1a1a";

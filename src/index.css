@@ -980,6 +980,16 @@
   font-weight: var(--storefront-heading-weight, inherit);
   letter-spacing: var(--storefront-heading-tracking, normal);
 }
+/* Body / paragraph text — applies preset body weight site-wide */
+.storefront-font,
+.storefront-font p,
+.storefront-font li,
+.storefront-font span:not([data-sf="price"]):not(.sf-price),
+.storefront-font a:not([role="button"]),
+.storefront-font label,
+.storefront-font td {
+  font-weight: var(--storefront-body-weight, inherit);
+}
 /* Product titles — opt-in class on storefront cards */
 .storefront-font .sf-product-title,
 .storefront-font [data-sf="product-title"] {
