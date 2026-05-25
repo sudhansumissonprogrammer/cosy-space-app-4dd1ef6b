@@ -157,7 +157,7 @@ export default function AdminUsersStores() {
       </div>
 
       {isLoading ? (
-        <TableSkeleton columns={8} rows={6} />
+        <TableSkeleton columns={9} rows={6} />
       ) : filtered && filtered.length > 0 ? (
         <Card>
           <CardContent className="p-0">
@@ -237,6 +237,29 @@ export default function AdminUsersStores() {
                           {row.is_verified ? <><BadgeCheck className="mr-1 h-3 w-3" /> Yes</> : "No"}
                         </Badge>
                       ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+
+                    {/* Billing mode */}
+                    <TableCell>
+                      {row.store_id ? (() => {
+                        const mode = billingModes?.get(row.store_id!) ?? "subscription";
+                        const isCommission = mode === "commission";
+                        return (
+                          <Badge
+                            variant={isCommission ? "default" : "outline"}
+                            className="cursor-pointer"
+                            onClick={() => setBillingMode.mutate({
+                              storeId: row.store_id!,
+                              mode: isCommission ? "subscription" : "commission",
+                            })}
+                            title="Click to toggle billing mode"
+                          >
+                            {isCommission ? <><Wallet className="mr-1 h-3 w-3" /> Commission</> : "Subscription"}
+                          </Badge>
+                        );
+                      })() : (
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </TableCell>
