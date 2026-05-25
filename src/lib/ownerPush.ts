@@ -362,16 +362,36 @@ export function playChaChing(): void {
 }
 
 /**
- * Wire up an in-page listener for SW push messages (plays cha-ching when foreground).
+ * Wire up an in-page listener for SW push messages.
+ * - Plays cha-ching sound (foreground)
+ * - Shows a Shopify-style in-app toast with order details
  * Call once on dashboard mount.
  */
 export function installForegroundPushListener(): () => void {
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
     return () => {};
   }
-  const handler = (e: MessageEvent) => {
-    if (e.data?.type === "PUSH_RECEIVED") {
-      playChaChing();
+  const handler = async (e: MessageEvent) => {
+    if (e.data?.type !== "PUSH_RECEIVED") return;
+    playChaChing();
+    try {
+      const { toast } = await import("sonner");
+      const p = e.data.payload || {};
+      const title = p.title || "New Order";
+      const body = p.body || "";
+      const url = p.url || "/dashboard";
+      toast(title, {
+        description: body,
+        duration: 10000,
+        action: {
+          label: "View",
+          onClick: () => {
+            window.location.href = url;
+          },
+        },
+      });
+    } catch {
+      /* noop */
     }
   };
   navigator.serviceWorker.addEventListener("message", handler);
