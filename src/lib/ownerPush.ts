@@ -57,6 +57,15 @@ function getDeviceLabel(): string {
   return `${browser} on ${os}`;
 }
 
+/** Race a promise against a timeout (ms). */
+function withTimeout<T>(p: Promise<T>, ms: number, reason: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(reason)), ms);
+    p.then((v) => { clearTimeout(t); resolve(v); })
+     .catch((e) => { clearTimeout(t); reject(e); });
+  });
+}
+
 /**
  * Subscribe the current device to push notifications.
  * Requires the user to be authenticated.
@@ -73,48 +82,44 @@ export async function subscribePush(
     return { ok: false, reason: "iframe_blocked" };
   }
 
-  const { data: auth } = await supabase.auth.getUser();
-  const user = auth?.user;
-  if (!user) return { ok: false, reason: "not_authenticated" };
+  try {
+    const { data: auth } = await supabase.auth.getUser();
+    const user = auth?.user;
+    if (!user) return { ok: false, reason: "not_authenticated" };
 
-  const perm = await Notification.requestPermission();
-  if (perm !== "granted") return { ok: false, reason: "permission_denied" };
+    const perm = await withTimeout(
+      Promise.resolve(Notification.requestPermission()),
+      20000,
+      "permission_timeout",
+    );
+    if (perm !== "granted") return { ok: false, reason: "permission_denied" };
 
-  const reg = await navigator.serviceWorker.ready;
-  let sub = await reg.pushManager.getSubscription();
-  if (!sub) {
-    sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
-    });
-  }
+    // serviceWorker.ready hangs forever if SW never activates — cap at 10s
+    const reg = await withTimeout(
+      navigator.serviceWorker.ready,
+      10000,
+      "service_worker_not_ready",
+    );
 
-  const p256dh = arrayBufferToBase64(sub.getKey("p256dh"));
-  const authKey = arrayBufferToBase64(sub.getKey("auth"));
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await withTimeout(
+        reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
+        }),
+        15000,
+        "push_subscribe_timeout",
+      );
+    }
 
-  // Upsert by endpoint (unique per device+browser)
-  const { error } = await supabase.from("push_subscriptions").upsert(
-    {
-      user_id: user.id,
-      store_id: storeId || null,
-      endpoint: sub.endpoint,
-      p256dh,
-      auth: authKey,
-      device_label: getDeviceLabel(),
-      user_agent: navigator.userAgent.slice(0, 500),
-      enabled: true,
-      last_used_at: new Date().toISOString(),
-    },
-    { onConflict: "store_id,endpoint" } as any,
-  );
+    const p256dh = arrayBufferToBase64(sub.getKey("p256dh"));
+    const authKey = arrayBufferToBase64(sub.getKey("auth"));
 
-  if (error) {
-    // Fallback: try simple insert with delete-then-insert
-    await supabase
-      .from("push_subscriptions")
-      .delete()
-      .eq("endpoint", sub.endpoint)
-      .eq("user_id", user.id);
+    // Delete any prior row for this endpoint, then insert fresh.
+    // Avoids onConflict ambiguity between (store_id,endpoint) unique and user-only rows.
+    await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+
     const { error: insErr } = await supabase.from("push_subscriptions").insert({
       user_id: user.id,
       store_id: storeId || null,
@@ -126,9 +131,11 @@ export async function subscribePush(
       enabled: true,
     });
     if (insErr) return { ok: false, reason: insErr.message };
-  }
 
-  return { ok: true };
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, reason: e?.message || "unknown_error" };
+  }
 }
 
 export async function unsubscribePush(): Promise<{ ok: boolean }> {
