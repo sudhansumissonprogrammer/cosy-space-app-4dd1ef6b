@@ -81,6 +81,9 @@ export default function PushNotificationManager({ storeId }: Props) {
         not_authenticated: "Please sign in first.",
         permission_denied:
           "Notification permission was blocked. Enable it in your browser settings to receive order alerts.",
+        permission_timeout: "Permission prompt timed out. Tap Enable again and choose Allow.",
+        service_worker_not_ready: "App service worker isn't ready yet. Refresh the page and try again.",
+        push_subscribe_timeout: "Couldn't reach the push server. Check your internet and try again.",
       };
       toast({
         title: "Couldn't enable notifications",
