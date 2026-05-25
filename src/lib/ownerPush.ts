@@ -331,7 +331,10 @@ export async function sendTestPush(storeId?: string): Promise<{ ok: boolean; mes
  */
 export function playChaChing(): void {
   try {
-    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const Ctx =
+      window.AudioContext ||
+      (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
     if (!Ctx) return;
     const ctx = new Ctx();
     const now = ctx.currentTime;
