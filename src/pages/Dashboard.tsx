@@ -251,6 +251,11 @@ export default function Dashboard() {
         <QuickActions storeId={storeId} storeSlug={store?.slug || ""} storeName={store?.name} isWhatsAppOnly={isWhatsAppOnly} />
       )}
 
+      {/* Wallet card — commission-mode stores only */}
+      {storeId && (store as any)?.billing_mode === "commission" && (
+        <WalletAccountCard storeId={storeId} storeSlug={store?.slug} variant="compact" />
+      )}
+
       {isLoading ? (
         <DashboardSkeleton />
       ) : (
