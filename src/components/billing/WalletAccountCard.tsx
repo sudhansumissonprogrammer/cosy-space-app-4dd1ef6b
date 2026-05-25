@@ -166,17 +166,11 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
             ) : null}
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-2 text-xs">
+          <div className="pt-2 text-xs">
             <div className="rounded-lg border p-3">
               <p className="text-muted-foreground">Total recharged</p>
               <p className="text-base font-bold tabular-nums">
                 ₹{Number(wallet.total_recharged).toFixed(2)}
-              </p>
-            </div>
-            <div className="rounded-lg border p-3">
-              <p className="text-muted-foreground">Total commission paid</p>
-              <p className="text-base font-bold tabular-nums">
-                ₹{Number(wallet.total_charged).toFixed(2)}
               </p>
             </div>
           </div>
