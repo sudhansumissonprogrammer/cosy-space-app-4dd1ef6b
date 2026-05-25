@@ -196,6 +196,9 @@ export function buildThemeStyle(
   // Footer text color: contrasts against primary (used as footer bg)
   const footerTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
 
+  const preset = getPresetById(themeConfig?.font_preset);
+  const presetVars = presetCssVars(preset);
+
   const defaultThemeStyle: React.CSSProperties = {
     "--storefront-primary": primaryColor,
     "--storefront-primary-light": primaryLight,
@@ -209,6 +212,7 @@ export function buildThemeStyle(
     "--storefront-btn-text": btnTextColor,
     "--storefront-footer-text": footerTextColor,
     ...baseOverrides,
+    ...presetVars,
   } as any;
 
   const themeStyle: React.CSSProperties = {
