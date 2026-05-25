@@ -15,6 +15,7 @@ import ThemeSectionNav, { ThemeSectionId, ThemeSectionMeta } from "@/components/
 import ThemeStickySaveBar from "@/components/dashboard/theme/ThemeStickySaveBar";
 import ThemeMobilePreviewDrawer from "@/components/dashboard/theme/ThemeMobilePreviewDrawer";
 import ThemeCategoryStyleIcon from "@/components/dashboard/theme/ThemeCategoryStyleIcon";
+import { PREMIUM_PRESETS, PRESET_FONT_FAMILIES, type FontPreset } from "@/lib/fontPresets";
 
 const FONT_OPTIONS = [
   "Alegreya SC",
@@ -32,12 +33,19 @@ const FONT_OPTIONS = [
   "Merriweather",
   "DM Sans",
   "Space Grotesk",
+  // Premium preset fonts
+  "Manrope",
+  "Fraunces",
+  "Cormorant Garamond",
+  "DM Serif Display",
+  "Jost",
+  "Plus Jakarta Sans",
+  "Bodoni Moda",
+  "Syne",
 ];
 
 /**
- * One-click typography combinations.
- * Heading font is used for titles + product names.
- * Body font is used for product card text + UI copy.
+ * One-click typography combinations (legacy small section).
  */
 const FONT_COMBINATIONS: { id: string; name: string; heading: string; body: string; tag?: string }[] = [
   { id: "marcellus-poppins", name: "Marcellus + Poppins", heading: "Marcellus", body: "Poppins", tag: "Elegant" },
@@ -326,6 +334,7 @@ interface ThemeConfig {
   mobile_nav_style: string;
   header_style: string;
   bilingual_cta?: boolean;
+  font_preset?: string | null;
 }
 
 const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
@@ -506,14 +515,12 @@ export default function StoreThemeSettings() {
   // render in their real typeface (Marcellus, Playfair, etc.).
   useEffect(() => {
     if (document.getElementById("theme-combo-fonts")) return;
-    const families = Array.from(
-      new Set(FONT_COMBINATIONS.flatMap((c) => [c.heading, c.body]))
-    ).filter((f) => f !== "Inter" && f !== "Alegreya SC" && f !== "Poppins"); // already loaded
-    // Always include Poppins 500 + Marcellus to guarantee the headline preset renders.
-    const all = Array.from(new Set([...families, "Marcellus", "Poppins"]));
+    const legacy = FONT_COMBINATIONS.flatMap((c) => [c.heading, c.body]);
+    const all = Array.from(new Set([...legacy, ...PRESET_FONT_FAMILIES, "Marcellus", "Poppins"]))
+      .filter((f) => f !== "Inter" && f !== "Alegreya SC"); // already self-hosted
     const href =
       "https://fonts.googleapis.com/css2?" +
-      all.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;500;600;700`).join("&") +
+      all.map((f) => `family=${f.replace(/ /g, "+")}:wght@300;400;500;600;700;800`).join("&") +
       "&display=swap";
     const link = document.createElement("link");
     link.id = "theme-combo-fonts";
@@ -542,6 +549,7 @@ export default function StoreThemeSettings() {
         mobile_nav_style: (themeConfig as any).mobile_nav_style || "classic",
         header_style: themeConfig.header_style || "normal",
         bilingual_cta: (themeConfig as any).bilingual_cta ?? false,
+        font_preset: (themeConfig as any).font_preset ?? null,
       });
     } else {
       setConfig(defaults);
@@ -1089,9 +1097,21 @@ export default function StoreThemeSettings() {
   );
 
   const applyFontCombo = (heading: string, body: string) => {
-    setConfig((prev) => ({ ...prev, heading_font: heading, body_font: body }));
+    setConfig((prev) => ({ ...prev, heading_font: heading, body_font: body, font_preset: null }));
     setDirty(true);
-    sendToIframe({ ...config, heading_font: heading, body_font: body });
+    sendToIframe({ ...config, heading_font: heading, body_font: body, font_preset: null });
+  };
+
+  const applyPremiumPreset = (preset: FontPreset) => {
+    const next = {
+      ...config,
+      heading_font: preset.heading,
+      body_font: preset.body,
+      font_preset: preset.id,
+    };
+    setConfig(next);
+    setDirty(true);
+    sendToIframe(next);
   };
 
   const renderTypographySection = () => {
@@ -1139,6 +1159,109 @@ export default function StoreThemeSettings() {
           })}
         </div>
       </div>
+
+      {/* Premium Brand Presets — full typographic systems (font + weight + casing + tracking) */}
+      <div className="mb-5 mt-6">
+        <div className="mb-2 flex items-center justify-between">
+          <Label className="text-xs">Premium Brand Presets</Label>
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Inspired by world-class brands
+          </span>
+        </div>
+        <p className="mb-3 text-[11px] text-muted-foreground">
+          One click applies the full typography system — fonts, weights, button casing & letter-spacing — across your entire storefront.
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {PREMIUM_PRESETS.map((p) => {
+            const isActive = config.font_preset === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => applyPremiumPreset(p)}
+                className={`relative overflow-hidden rounded-2xl border-2 p-4 text-left transition-all ${
+                  isActive
+                    ? "border-primary bg-primary/5 shadow-md"
+                    : "border-border hover:border-primary/40 hover:bg-accent/30"
+                }`}
+              >
+                {isActive && (
+                  <div className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow">
+                    <Check className="h-3.5 w-3.5" />
+                  </div>
+                )}
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground">{p.name}</span>
+                  <span className="rounded-full bg-foreground/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+                    {p.tag}
+                  </span>
+                </div>
+
+                {/* True-to-spec live preview */}
+                <div className="space-y-1.5 rounded-lg bg-background/60 p-3 ring-1 ring-border/60">
+                  <p
+                    className="leading-none"
+                    style={{
+                      fontFamily: p.heading,
+                      fontWeight: p.headingWeight,
+                      letterSpacing: p.headingTracking,
+                      fontSize: "1.35rem",
+                    }}
+                  >
+                    Your Store Name
+                  </p>
+                  <p
+                    className="leading-tight"
+                    style={{
+                      fontFamily: p.body,
+                      fontWeight: p.productTitleWeight,
+                      fontSize: "0.85rem",
+                    }}
+                  >
+                    Beautiful Product Title
+                  </p>
+                  <p
+                    className="leading-snug text-muted-foreground"
+                    style={{
+                      fontFamily: p.body,
+                      fontWeight: p.bodyWeight,
+                      fontSize: "0.72rem",
+                    }}
+                  >
+                    Soft cotton blend, ethically crafted.
+                  </p>
+                  <div className="flex items-center justify-between pt-1.5">
+                    <span
+                      className="inline-block rounded-md bg-foreground px-3 py-1.5 text-background"
+                      style={{
+                        fontFamily: p.body,
+                        fontWeight: p.btnWeight,
+                        textTransform: p.btnCase as any,
+                        letterSpacing: p.btnTracking,
+                        fontSize: "0.7rem",
+                      }}
+                    >
+                      Add to cart
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: p.body,
+                        fontWeight: p.priceWeight,
+                        fontSize: "1rem",
+                      }}
+                    >
+                      ₹1,299
+                    </span>
+                  </div>
+                </div>
+
+                <p className="mt-2 text-[10px] text-muted-foreground line-clamp-1">{p.bestFor}</p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">

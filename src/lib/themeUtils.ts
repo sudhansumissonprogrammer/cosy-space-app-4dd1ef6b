@@ -165,6 +165,8 @@ export function getEdgeThemeHint(): { pc: string; bg: string; tc: string; ac: st
 }
 
 /** Build CSS variable style object from theme config + optional preview override */
+import { getPresetById, presetCssVars } from "./fontPresets";
+
 export function buildThemeStyle(
   themeConfig: Record<string, any> | null,
   previewOverride: Record<string, string> | null,
@@ -194,6 +196,9 @@ export function buildThemeStyle(
   // Footer text color: contrasts against primary (used as footer bg)
   const footerTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
 
+  const preset = getPresetById(themeConfig?.font_preset);
+  const presetVars = presetCssVars(preset);
+
   const defaultThemeStyle: React.CSSProperties = {
     "--storefront-primary": primaryColor,
     "--storefront-primary-light": primaryLight,
@@ -207,6 +212,7 @@ export function buildThemeStyle(
     "--storefront-btn-text": btnTextColor,
     "--storefront-footer-text": footerTextColor,
     ...baseOverrides,
+    ...presetVars,
   } as any;
 
   const themeStyle: React.CSSProperties = {

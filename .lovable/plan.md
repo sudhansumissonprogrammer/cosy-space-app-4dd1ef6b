@@ -1,68 +1,71 @@
-# Accurate analytics (Today / Yesterday / 7d / 30d) + dashboard parity
+## Goal
+Add all 10 premium font combination presets ("Swiggy", "Tanishq Luxury", "Glossier", etc.) as one-click brand-style presets in the Theme → Typography page. When a merchant clicks a preset and saves, the **entire storefront** (headings, product titles, body, buttons, prices) instantly adopts that brand's exact typography — fonts, weights, casing, and letter-spacing.
 
-Goal: dashboard home and analytics page show the **same numbers** for the same period, every "Orders" count excludes `pending` & `cancelled`, and we add **Today / Yesterday** ranges plus sessions, unique visitors and conversion on the dashboard home.
+## What changes in the Dashboard (StoreThemeSettings.tsx)
 
-## 1. Database — fix order count in `get_dashboard_stats`
+Keep the existing small "Font Combinations" block untouched, and add a new dedicated section below it:
 
-Migration: rewrite the RPC so `total_orders` only counts revenue-bearing statuses (same set used everywhere else in the app).
+**New section: "Premium Brand Presets"** (10 large cards in a 1-col mobile / 2-col desktop grid)
 
-```sql
--- statuses kept consistent across UI: confirmed, shipped, delivered, partially_paid
-SELECT COUNT(*) INTO _total_orders
-FROM orders
-WHERE store_id = _store_id
-  AND status IN ('confirmed','shipped','delivered','partially_paid');
+Each card renders a true-to-spec live preview:
 ```
-
-Also exclude bot pageviews from `total_views`:
-```sql
-SELECT COUNT(*) FROM page_views WHERE store_id = _store_id AND is_bot = false;
+┌─────────────────────────────────┐
+│ SWIGGY STYLE      [FOOD/D2C] ✓ │
+│ Your Store Name      (Manrope 800, -1px)
+│ Beautiful Product   (Manrope 600)
+│ Soft cotton kurti…  (Manrope 400)
+│ [ ADD TO CART ]     (Manrope 700, UPPER, +0.5)
+│ ₹1,299              (Manrope 800)
+└─────────────────────────────────┘
 ```
+Click → applies preset → saves → storefront updates instantly.
 
-## 2. StoreAnalytics page — add Today / Yesterday + bugfixes
+## The 10 presets (with full typographic spec)
 
-File: `src/pages/StoreAnalytics.tsx`
+| # | Name | Heading | Body | Btn case | Btn track | Best for |
+|---|------|---------|------|----------|-----------|----------|
+| 1 | Swiggy Style | Manrope 700 | Manrope 400 | UPPER | 0.5 | Food / quick commerce |
+| 2 | Luxury Editorial | Playfair Display 700 (-0.5) | Inter 400 | UPPER | 1.5 | Jewellery |
+| 3 | Modern Glossier | Fraunces 600 | Inter 400 | sentence | 0 | Beauty / wellness |
+| 4 | Soft Luxury | Cormorant Garamond 300 | Montserrat 400 | UPPER | 2.0 | Designer fashion |
+| 5 | Bold Editorial | DM Serif Display 400 | Jost 400 | sentence | 0 | Apparel / lifestyle |
+| 6 | Airbnb Modern | Plus Jakarta 800 (-1) | Plus Jakarta 400 | sentence | 0 | Home / travel |
+| 7 | Gucci Ultra-Luxury | Bodoni Moda 700 (-0.5) | Inter 400 | UPPER | 2.5 | Perfume / luxury |
+| 8 | CRED Bold | Syne 800 (-1) | Inter 400 | sentence | 0 | Sneakers / gen-z |
+| 9 | Royal Indian | Marcellus 400 (+1) | Poppins 400 | UPPER | 1.5 | Bridal / ethnic |
+| 10 | Minimal Modern | DM Sans 700 (-0.5) | DM Sans 400 | sentence | 0 | Electronics / minimal |
 
-- Add `"today" | "yesterday"` to the `DateRange` union and two new TabsTriggers ("Today", "Yesterday") before "7 days". Grid becomes `grid-cols-7`.
-- Compute `rangeStart` / `rangeEnd` / `priorStart` / `priorEnd` for the new buckets:
-  - **today**: start = startOfDay(now), end = now, prior = yesterday full day.
-  - **yesterday**: start/end = full prior day; prior = the day before.
-- Replace the current `isAfter(d, rangeStart)` filters with an inclusive `[rangeStart, rangeEnd]` range so single-day buckets work (today's 00:00 row must be included). Apply same fix to `filtered.prior` and `filteredViews`.
-- **Sessions prior-period bug**: when range > 30d the rollup is added to `current` but `prior` only uses raw rows (which are empty older than 30d), so % change is wrong. Add a `rollupSessions(priorStart, rangeStart)` term to `priorSessions` using the same `page_views_daily` source.
-- Add **Unique Visitors** metric card (distinct `visitor_id`, raw + `visitors` column from rollup) alongside Sessions / Conversion. Same raw+rollup merge pattern.
+## How the storefront actually uses the weights/casing
 
-## 3. Dashboard home — Today Summary with sessions / visitors / conversion + CTA
+Today the storefront only consumes `--storefront-heading-font` and `--storefront-body-font`. To honor weight/casing/tracking, I'll:
 
-File: `src/pages/Dashboard.tsx` (and a small new component `src/components/dashboard/TodayInsights.tsx`).
+1. **Extend `theme_config`** with one new column: `font_preset` (text, nullable) — stores the preset id. No schema breakage; column already small.
+2. **Inject 6 new CSS vars** in `buildThemeStyle()` based on the active preset:
+   - `--storefront-heading-weight` (e.g. 700)
+   - `--storefront-heading-tracking` (e.g. -0.5px)
+   - `--storefront-body-weight` (400)
+   - `--storefront-btn-weight` (700)
+   - `--storefront-btn-case` (uppercase / none)
+   - `--storefront-btn-tracking` (0.5px)
+   - `--storefront-price-weight` (800)
+3. **Add 5 small CSS rules** in `index.css` under `.storefront-font` scope:
+   - `h1,h2,h3,h4 { font-weight: var(--storefront-heading-weight); letter-spacing: var(--storefront-heading-tracking); }`
+   - Storefront `<button>` primary → uses btn-weight, btn-case (text-transform), btn-tracking
+   - `.sf-price` class → uses price-weight
+4. **Tag price spans** with `className="sf-price"` in 4 spots (ProductCard, ProductDetail, CartItem, CheckoutSummary).
 
-- New card "Today" that shows 4 tiles: **Orders**, **Revenue**, **Sessions**, **Conversion %**, plus a small secondary line for **Unique Visitors**. All numbers filtered to `created_at >= startOfDay(now)`, `is_bot=false`, status in revenue set.
-- Single React Query keyed `["today-insights", storeId]`, parallel fetches:
-  - `orders` (today, revenue statuses) → orders, revenue
-  - `page_views` (today, is_bot=false) → distinct `session_id` and distinct `visitor_id`
-  - conversion = orders / sessions × 100
-- Add a **"View detailed analytics →"** button at the card footer that calls `navigate(`/dashboard/stores/${storeSlug}/analytics`)`.
-- Mount this component on the Dashboard right under `HeroRevenue`, replacing the existing `TodaySummary` (which only shows orders/revenue/customers) so we don't duplicate.
+## Files to touch
+- `src/pages/StoreThemeSettings.tsx` — expand FONT_COMBINATIONS to 10 full presets with weights/casing, add "Premium Brand Presets" section with realistic preview cards
+- `src/lib/themeUtils.ts` — extend `buildThemeStyle()` to emit the 6 new CSS vars from the active preset
+- `src/hooks/useThemePreview.ts` — mirror the same 6 vars for live iframe preview
+- `src/index.css` — add `.storefront-font` rules consuming the new vars
+- `src/components/storefront/ProductCard.tsx`, `pages/ProductDetail.tsx`, `pages/CartPage.tsx`, `pages/CheckoutPage.tsx` — add `className="sf-price"` to existing price elements (no logic change)
+- Migration: add `font_preset text` to `theme_configs` table
 
-## 4. Sitewide order-count audit (verify, no changes needed where already correct)
+## Save behavior
+On preset click → sets `heading_font`, `body_font`, `font_preset` in local state → existing "Save" button persists to DB → storefront re-renders with full typography applied across every page.
 
-Already correct (revenue statuses applied): `HeroRevenue.tsx`, `TodaySummary.tsx`, Dashboard `ordersData`, `StoreAnalytics.tsx`.
-
-Will be corrected by the RPC change in step 1: Dashboard "Orders" stat card (uses `stats.total_orders`).
-
-Out of scope (operational lists, not analytics): `StoreOrders.tsx`, `AdminOrders.tsx`, `RecentOrders.tsx` — these correctly show all orders including pending so the merchant can act on them.
-
-## Technical notes
-
-- All new date math uses `date-fns` (`startOfDay`, `endOfDay`, `subDays`) — already imported.
-- Sessions still use `session_id` (30-min sliding window) per the existing `visitorSession.ts` contract.
-- `page_views_daily` rollup is the source of truth for any day older than 30 days; raw `page_views` covers the last 30 days. The today/yesterday tabs always land in the raw window so they get exact counts.
-- No worker changes required.
-- No edge function changes required.
-
-## Verification checklist
-
-- Today tab: numbers match the Dashboard "Today" card exactly.
-- 7d/30d Orders count equals `COUNT(orders WHERE status IN revenue set)` in that range.
-- Dashboard stat card "Orders" no longer includes pending.
-- Conversion = Orders / Sessions for the selected range (both pages).
-- Unique Visitors ≤ Sessions in every range.
+## Out of scope
+- Won't change color, button radius, layout, or any non-typographic setting
+- Won't touch dashboard typography (dashboard keeps Montserrat Alternates)
+- Won't add paid fonts; all 10 are free Google Fonts
