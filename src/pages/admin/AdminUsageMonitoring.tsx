@@ -27,6 +27,10 @@ interface StoreUsage {
   views_today: number;
   views_7d: number;
   avg_daily_views: number;
+  visitors_today: number;
+  visitors_7d: number;
+  sessions_today: number;
+  sessions_7d: number;
   customer_count: number;
   wa_messages_sent: number;
   category_count: number;
@@ -34,7 +38,7 @@ interface StoreUsage {
   abandoned_carts: number;
 }
 
-type SortKey = "views_today" | "views_7d" | "total_page_views" | "orders_today" | "orders_7d" | "total_orders" | "product_count" | "image_count" | "wa_messages_sent" | "store_name";
+type SortKey = "views_today" | "views_7d" | "total_page_views" | "visitors_today" | "visitors_7d" | "sessions_today" | "sessions_7d" | "orders_today" | "orders_7d" | "total_orders" | "product_count" | "image_count" | "wa_messages_sent" | "store_name";
 
 const USAGE_TIERS = {
   heavy: { minViews: 500, color: "text-destructive", bg: "bg-destructive/10", label: "Heavy" },
