@@ -334,6 +334,7 @@ interface ThemeConfig {
   mobile_nav_style: string;
   header_style: string;
   bilingual_cta?: boolean;
+  font_preset?: string | null;
 }
 
 const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
