@@ -21,7 +21,7 @@ import {
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
   Receipt, ShoppingCart, Store, ChevronDown, ExternalLink, Palette,
   Search, User, Bell, X, BarChart3, MessageSquare, Clock, RefreshCw,
-  Grid3X3, FileText, Star,
+  Grid3X3, FileText, Star, Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -39,12 +39,14 @@ function MobileMenu({
   storeSlug,
   pendingOrders,
   isWhatsAppOnly,
+  isCommissionMode,
 }: {
   open: boolean;
   onClose: () => void;
   storeSlug: string | undefined;
   pendingOrders: number;
   isWhatsAppOnly: boolean;
+  isCommissionMode: boolean;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -99,12 +101,13 @@ function MobileMenu({
           : []),
         {
           title: "Payments & Shipping",
-          items: filterItems([
+          items: [
             { label: "Payments", icon: CreditCard, path: `/dashboard/stores/${storeSlug}/payments`, menuKey: "payments" },
+            ...(isCommissionMode ? [{ label: "Wallet", icon: Wallet, path: `/dashboard/stores/${storeSlug}/wallet`, menuKey: "wallet" }] : []),
             ...(!isWhatsAppOnly ? [{ label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeSlug}/coupons`, menuKey: "coupons" }] : []),
             { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeSlug}/shipping`, menuKey: "shipping" },
             { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeSlug}/tax`, menuKey: "tax_gst" },
-          ]),
+          ].filter((i) => i.menuKey === "wallet" || isVisible(i.menuKey)),
         },
         {
           title: "Marketing",
@@ -236,7 +239,16 @@ export default function DashboardLayout() {
   const ownStoreId = !isAdminView ? ownStore?.id : undefined;
   const { data: billingState } = useBillingState(ownStoreId);
   const isProfileRoute = location.pathname.startsWith("/dashboard/settings");
-  const isCommissionMode = (ownStore as any)?.billing_mode === "commission";
+  const { data: walletSummary } = useQuery({
+    queryKey: ["store-wallet", storeId],
+    enabled: !!storeId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_store_wallet_summary", { _store_id: storeId! });
+      if (error) throw error;
+      return data as any;
+    },
+  });
+  const isCommissionMode = (store as any)?.billing_mode === "commission" || (walletSummary as any)?.billing_mode === "commission";
   const billingBlocked =
     !isAdminView &&
     !!ownStoreId &&
@@ -520,6 +532,7 @@ export default function DashboardLayout() {
         storeSlug={storeSlug}
         pendingOrders={pendingOrders}
         isWhatsAppOnly={isWhatsAppOnly}
+        isCommissionMode={isCommissionMode}
       />
     </div>
     </DashboardStoreProvider>

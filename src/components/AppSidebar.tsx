@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard, Settings, LogOut, Package, Upload, ShoppingBag,
   Users, UserCheck, Globe, Store, Plus, CreditCard, Tag, Truck, Receipt,
@@ -102,7 +103,17 @@ export function AppSidebar() {
       ].filter((i) => isVisible(i.menuKey))
     : [];
 
-  const isCommissionMode = (store as any)?.billing_mode === "commission";
+  const { data: walletSummary } = useQuery({
+    queryKey: ["store-wallet", storeId],
+    enabled: !!storeId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_store_wallet_summary", { _store_id: storeId! });
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
+  const isCommissionMode = (store as any)?.billing_mode === "commission" || (walletSummary as any)?.billing_mode === "commission";
 
   const paymentItems = storeSlug
     ? [
