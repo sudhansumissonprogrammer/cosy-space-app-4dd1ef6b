@@ -172,12 +172,14 @@ if ("serviceWorker" in navigator) {
         navigator.serviceWorker.getRegistrations(),
         caches.keys().catch(() => [] as string[]),
       ]).then(([registrations, keys]) => {
-        Promise.all(registrations.map((r) => r.unregister()))
+        Promise.all(registrations
+          .filter((r) => !r.active?.scriptURL.includes("/sw-push.js"))
+          .map((r) => r.unregister()))
           .then(() => Promise.all(keys.map((k) => caches.delete(k))))
           .catch(() => {});
       });
     }
-    // Do NOT register SW on live hosts — ever.
+    // Do NOT register caching SW on live hosts. Push registers /sw-push.js on demand.
   } else if (isSafeSwHost()) {
     // ── PREVIEW/LOCAL ONLY: Normal SW registration (idle) ──
     const registerSW = () => {

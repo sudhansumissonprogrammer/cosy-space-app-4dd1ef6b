@@ -57,6 +57,25 @@ function getDeviceLabel(): string {
   return `${browser} on ${os}`;
 }
 
+async function getPushRegistration(): Promise<ServiceWorkerRegistration> {
+  const existing = await navigator.serviceWorker.getRegistration("/");
+  if (existing?.active?.scriptURL.includes("/sw-push.js")) return existing;
+
+  if (existing) {
+    await existing.unregister().catch(() => false);
+  }
+
+  const registration = await navigator.serviceWorker.register("/sw-push.js", {
+    scope: "/",
+    updateViaCache: "none",
+  });
+  await registration.update().catch(() => undefined);
+
+  if (registration.active) return registration;
+
+  return navigator.serviceWorker.ready;
+}
+
 /** Race a promise against a timeout (ms). */
 function withTimeout<T>(p: Promise<T>, ms: number, reason: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -94,9 +113,9 @@ export async function subscribePush(
     );
     if (perm !== "granted") return { ok: false, reason: "permission_denied" };
 
-    // serviceWorker.ready hangs forever if SW never activates — cap at 10s
+    // Register a push-only worker on demand; it has no fetch/cache behavior.
     const reg = await withTimeout(
-      navigator.serviceWorker.ready,
+      getPushRegistration(),
       10000,
       "service_worker_not_ready",
     );
@@ -141,7 +160,7 @@ export async function subscribePush(
 export async function unsubscribePush(): Promise<{ ok: boolean }> {
   if (!isPushSupported()) return { ok: false };
   try {
-    const reg = await navigator.serviceWorker.ready;
+    const reg = await getPushRegistration();
     const sub = await reg.pushManager.getSubscription();
     if (sub) {
       const endpoint = sub.endpoint;
@@ -164,7 +183,8 @@ export async function unsubscribePush(): Promise<{ ok: boolean }> {
 export async function isCurrentDeviceSubscribed(): Promise<boolean> {
   if (!isPushSupported()) return false;
   try {
-    const reg = await navigator.serviceWorker.ready;
+    const reg = await navigator.serviceWorker.getRegistration("/");
+    if (!reg) return false;
     const sub = await reg.pushManager.getSubscription();
     return !!sub;
   } catch {
