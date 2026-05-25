@@ -170,6 +170,7 @@ export default function AdminUsersStores() {
                   <TableHead className="text-center">Orders</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Verified</TableHead>
+                  <TableHead>Billing</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead className="w-48"></TableHead>
                 </TableRow>
