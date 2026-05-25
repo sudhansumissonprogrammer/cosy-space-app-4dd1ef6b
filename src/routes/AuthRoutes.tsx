@@ -53,6 +53,7 @@ const StoreAnalytics = lazy(() => import("@/pages/StoreAnalytics"));
 const UserSettings = lazy(() => import("@/pages/UserSettings"));
 const CustomerLeads = lazy(() => import("@/pages/CustomerLeads"));
 const StorePayments = lazy(() => import("@/pages/StorePayments"));
+const StoreWallet = lazy(() => import("@/pages/StoreWallet"));
 const StoreCoupons = lazy(() => import("@/pages/StoreCoupons"));
 const StoreShipping = lazy(() => import("@/pages/StoreShipping"));
 const StoreTaxSettings = lazy(() => import("@/pages/StoreTaxSettings"));
