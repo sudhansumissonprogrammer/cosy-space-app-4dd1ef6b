@@ -2,10 +2,7 @@
  * Shared theme utility functions — extracted from layout files to avoid duplication.
  */
 
-// Include 300 (light) and 800 (extrabold) so brand presets like Swiggy / CRED /
-// Plus Jakarta (priceWeight 800) and editorial presets (light body) actually
-// load real glyphs instead of letting the browser fake-bold them.
-const GOOGLE_FONT_WEIGHTS = "300;400;500;600;700;800";
+const GOOGLE_FONT_WEIGHTS = "400;500;600;700";
 const DEFAULT_HEADING_FONT = "Alegreya SC";
 const DEFAULT_BODY_FONT = "Inter";
 const DEFAULT_TEXT_COLOR = "#1a1a1a";
@@ -168,8 +165,6 @@ export function getEdgeThemeHint(): { pc: string; bg: string; tc: string; ac: st
 }
 
 /** Build CSS variable style object from theme config + optional preview override */
-import { getPresetById, presetCssVars } from "./fontPresets";
-
 export function buildThemeStyle(
   themeConfig: Record<string, any> | null,
   previewOverride: Record<string, string> | null,
@@ -199,9 +194,6 @@ export function buildThemeStyle(
   // Footer text color: contrasts against primary (used as footer bg)
   const footerTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
 
-  const preset = getPresetById(themeConfig?.font_preset);
-  const presetVars = presetCssVars(preset);
-
   const defaultThemeStyle: React.CSSProperties = {
     "--storefront-primary": primaryColor,
     "--storefront-primary-light": primaryLight,
@@ -215,7 +207,6 @@ export function buildThemeStyle(
     "--storefront-btn-text": btnTextColor,
     "--storefront-footer-text": footerTextColor,
     ...baseOverrides,
-    ...presetVars,
   } as any;
 
   const themeStyle: React.CSSProperties = {

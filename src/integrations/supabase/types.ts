@@ -1998,7 +1998,6 @@ export type Database = {
           button_style: string
           category_style: string
           created_at: string
-          font_preset: string | null
           header_logo_alignment: string
           header_style: string
           heading_font: string
@@ -2022,7 +2021,6 @@ export type Database = {
           button_style?: string
           category_style?: string
           created_at?: string
-          font_preset?: string | null
           header_logo_alignment?: string
           header_style?: string
           heading_font?: string
@@ -2046,7 +2044,6 @@ export type Database = {
           button_style?: string
           category_style?: string
           created_at?: string
-          font_preset?: string | null
           header_logo_alignment?: string
           header_style?: string
           heading_font?: string
