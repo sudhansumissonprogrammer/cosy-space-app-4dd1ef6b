@@ -399,7 +399,7 @@ function SubscriptionPanel({ storeId, assignment, plans, payments, onSaved }: an
                 {payments.map((p: any) => (
                   <TableRow key={p.id}>
                     <TableCell className="text-sm">{format(new Date(p.created_at), "MMM d, yyyy")}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{p.provider || "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{p.payment_method || "—"}</TableCell>
                     <TableCell className="text-right tabular-nums">₹{Number(p.amount).toFixed(2)}</TableCell>
                     <TableCell><Badge variant={p.status === "paid" ? "default" : "secondary"}>{p.status}</Badge></TableCell>
                   </TableRow>
