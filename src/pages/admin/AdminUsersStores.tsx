@@ -14,11 +14,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Store, Ban, CheckCircle, Trash2, Search, BadgeCheck, Users, ExternalLink, Wallet } from "lucide-react";
+import { Store, Ban, CheckCircle, Trash2, Search, BadgeCheck, Users, ExternalLink, Settings2 } from "lucide-react";
 import { format } from "date-fns";
 import { TableSkeleton } from "@/components/admin/AdminSkeletons";
 import ManageStoreDialog from "@/components/admin/ManageStoreDialog";
-import { Settings2 } from "lucide-react";
 
 interface UserStoreRow {
   user_id: string;
@@ -35,7 +34,6 @@ interface UserStoreRow {
   store_created_at: string | null;
   product_count: number;
   order_count: number;
-  billing_mode?: string | null;
 }
 
 export default function AdminUsersStores() {
@@ -63,59 +61,6 @@ export default function AdminUsersStores() {
       queryClient.invalidateQueries({ queryKey: ["admin-users-stores"] });
       queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
       toast.success("User updated");
-    },
-    onError: (err: any) => toast.error(err.message),
-  });
-
-  const toggleSuspend = useMutation({
-    mutationFn: async ({ storeId, suspend }: { storeId: string; suspend: boolean }) => {
-      const { error } = await supabase.from("stores").update({ is_suspended: suspend }).eq("id", storeId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users-stores"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
-      toast.success("Store updated");
-    },
-    onError: (err: any) => toast.error(err.message),
-  });
-
-  const toggleVerify = useMutation({
-    mutationFn: async ({ storeId, verified }: { storeId: string; verified: boolean }) => {
-      const { error } = await (supabase as any).from("stores").update({ is_verified: verified }).eq("id", storeId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users-stores"] });
-      toast.success("Verification updated");
-    },
-    onError: (err: any) => toast.error(err.message),
-  });
-
-  // Map of store_id → billing_mode (since RPC may not return it). Fetched once.
-  const { data: billingModes } = useQuery({
-    queryKey: ["admin-store-billing-modes"],
-    staleTime: 2 * 60 * 1000,
-    queryFn: async () => {
-      const { data } = await supabase.from("stores").select("id, billing_mode");
-      const m = new Map<string, string>();
-      (data ?? []).forEach((r: any) => m.set(r.id, r.billing_mode ?? "subscription"));
-      return m;
-    },
-  });
-
-  const setBillingMode = useMutation({
-    mutationFn: async ({ storeId, mode }: { storeId: string; mode: "subscription" | "commission" }) => {
-      const { data, error } = await supabase.functions.invoke("admin-wallet-controls", {
-        body: { action: "set_billing_mode", store_id: storeId, mode },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-store-billing-modes"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-wallets"] });
-      toast.success("Billing mode updated");
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -160,7 +105,7 @@ export default function AdminUsersStores() {
       </div>
 
       {isLoading ? (
-        <TableSkeleton columns={9} rows={6} />
+        <TableSkeleton columns={8} rows={6} />
       ) : filtered && filtered.length > 0 ? (
         <Card>
           <CardContent className="p-0">
@@ -173,7 +118,6 @@ export default function AdminUsersStores() {
                   <TableHead className="text-center">Orders</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Verified</TableHead>
-                  <TableHead>Billing</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead className="w-48"></TableHead>
                 </TableRow>
@@ -181,7 +125,6 @@ export default function AdminUsersStores() {
               <TableBody>
                 {filtered.map((row) => (
                   <TableRow key={row.user_id}>
-                    {/* User column */}
                     <TableCell>
                       <div>
                         <p className="text-sm font-medium text-foreground">{row.full_name || "—"}</p>
@@ -189,7 +132,6 @@ export default function AdminUsersStores() {
                       </div>
                     </TableCell>
 
-                    {/* Store column */}
                     <TableCell>
                       {row.store_id ? (
                         <div className="flex items-center gap-2">
@@ -210,17 +152,14 @@ export default function AdminUsersStores() {
                       )}
                     </TableCell>
 
-                    {/* Products */}
                     <TableCell className="text-center text-sm text-muted-foreground">
                       {row.store_id ? row.product_count : "—"}
                     </TableCell>
 
-                    {/* Orders */}
                     <TableCell className="text-center text-sm text-muted-foreground">
                       {row.store_id ? row.order_count : "—"}
                     </TableCell>
 
-                    {/* Status */}
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         {row.is_blocked && <Badge variant="destructive">Blocked</Badge>}
@@ -229,14 +168,9 @@ export default function AdminUsersStores() {
                       </div>
                     </TableCell>
 
-                    {/* Verified */}
                     <TableCell>
                       {row.store_id ? (
-                        <Badge
-                          variant={row.is_verified ? "default" : "outline"}
-                          className="cursor-pointer"
-                          onClick={() => toggleVerify.mutate({ storeId: row.store_id!, verified: !row.is_verified })}
-                        >
+                        <Badge variant={row.is_verified ? "default" : "outline"}>
                           {row.is_verified ? <><BadgeCheck className="mr-1 h-3 w-3" /> Yes</> : "No"}
                         </Badge>
                       ) : (
@@ -244,38 +178,12 @@ export default function AdminUsersStores() {
                       )}
                     </TableCell>
 
-                    {/* Billing mode */}
-                    <TableCell>
-                      {row.store_id ? (() => {
-                        const mode = billingModes?.get(row.store_id!) ?? "subscription";
-                        const isCommission = mode === "commission";
-                        return (
-                          <Badge
-                            variant={isCommission ? "default" : "outline"}
-                            className="cursor-pointer"
-                            onClick={() => setBillingMode.mutate({
-                              storeId: row.store_id!,
-                              mode: isCommission ? "subscription" : "commission",
-                            })}
-                            title="Click to toggle billing mode"
-                          >
-                            {isCommission ? <><Wallet className="mr-1 h-3 w-3" /> Commission</> : "Subscription"}
-                          </Badge>
-                        );
-                      })() : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-
-                    {/* Joined */}
                     <TableCell className="text-sm text-muted-foreground">
                       {format(new Date(row.user_created_at), "MMM d, yyyy")}
                     </TableCell>
 
-                    {/* Actions */}
                     <TableCell>
                       <div className="flex gap-1">
-                        {/* Manage (per-store dialog) */}
                         {row.store_id && (
                           <Button
                             variant="default"
@@ -287,7 +195,6 @@ export default function AdminUsersStores() {
                           </Button>
                         )}
 
-                        {/* Open store dashboard */}
                         {row.store_id && row.store_slug && (
                           <Button
                             variant="outline"
@@ -299,7 +206,6 @@ export default function AdminUsersStores() {
                           </Button>
                         )}
 
-                        {/* Block/Unblock user */}
                         {row.is_blocked ? (
                           <Button variant="outline" size="sm" onClick={() => toggleBlock.mutate({ userId: row.user_id, block: false })}>
                             <CheckCircle className="mr-1 h-3 w-3" /> Unblock
@@ -310,37 +216,6 @@ export default function AdminUsersStores() {
                           </Button>
                         )}
 
-                        {/* Suspend/Activate store */}
-                        {row.store_id && (
-                          row.is_suspended ? (
-                            <Button variant="outline" size="sm" onClick={() => toggleSuspend.mutate({ storeId: row.store_id!, suspend: false })}>
-                              <CheckCircle className="mr-1 h-3 w-3" /> Activate
-                            </Button>
-                          ) : (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm"><Ban className="mr-1 h-3 w-3" /> Suspend</Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Suspend "{row.store_name}"?</AlertDialogTitle>
-                                  <AlertDialogDescription>This store will be hidden from the public.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => toggleSuspend.mutate({ storeId: row.store_id!, suspend: true })}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  >
-                                    Suspend
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )
-                        )}
-
-                        {/* Delete store */}
                         {row.store_id && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
