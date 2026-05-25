@@ -195,9 +195,30 @@ export async function firePurchaseCapi(
 
     // 6. Build event.
     const contentIds = (items || []).map((i) => i.product_id).filter(Boolean) as string[];
+    // Defense-in-depth: a stored URL from an old test order on
+    // *.lovableproject.com / *.lovable.dev must NEVER be sent to Meta —
+    // it dilutes domain authority + EMQ. Drop it and use the canonical
+    // store URL instead.
+    const isLovableHost = (url: string | null | undefined): boolean => {
+      if (!url) return false;
+      try {
+        const h = new URL(url).hostname;
+        return (
+          h === "localhost" ||
+          h === "127.0.0.1" ||
+          h.endsWith(".lovableproject.com") ||
+          h.endsWith(".lovable.dev") ||
+          h.endsWith(".sandbox.lovable.dev")
+        );
+      } catch { return false; }
+    };
+    const storedUrl = isLovableHost((order as any).meta_event_source_url)
+      ? null
+      : (order as any).meta_event_source_url;
+    const overrideUrl = isLovableHost(opts.eventSourceUrl) ? null : opts.eventSourceUrl;
     const eventSourceUrl =
-      opts.eventSourceUrl ||
-      (order as any).meta_event_source_url ||
+      overrideUrl ||
+      storedUrl ||
       (store.custom_domain
         ? `https://${store.custom_domain}/checkout`
         : `https://${store.slug}.shopbanao.in/checkout`);

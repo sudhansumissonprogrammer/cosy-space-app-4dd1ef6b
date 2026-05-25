@@ -813,12 +813,30 @@ export default function CheckoutPage() {
         // Meta tracking signals — server stores these on the order row and uses
         // them for the server-side Purchase CAPI event (with the SAME event_id as
         // the browser Pixel call below, so Meta dedupes them automatically).
-        meta: {
-          event_id: purchaseEventIdRef.current,
-          fbc: metaCookiesRef.current.fbc || undefined,
-          fbp: metaCookiesRef.current.fbp || undefined,
-          event_source_url: window.location.href,
-        },
+        meta: (() => {
+          // Sanitize event_source_url: strip query/fragment (PII) and drop
+          // entirely on Lovable preview/editor hosts so the server-side
+          // Purchase CAPI later falls back to the canonical custom-domain /
+          // shopbanao.in URL instead of leaking lovableproject.com to Meta.
+          let safeUrl: string | undefined;
+          try {
+            const u = new URL(window.location.href);
+            const h = u.hostname;
+            const isPreview =
+              h === "localhost" ||
+              h === "127.0.0.1" ||
+              h.endsWith(".lovableproject.com") ||
+              h.endsWith(".lovable.dev") ||
+              h.endsWith(".sandbox.lovable.dev");
+            if (!isPreview) safeUrl = `${u.origin}${u.pathname}`;
+          } catch { /* noop */ }
+          return {
+            event_id: purchaseEventIdRef.current,
+            fbc: metaCookiesRef.current.fbc || undefined,
+            fbp: metaCookiesRef.current.fbp || undefined,
+            event_source_url: safeUrl,
+          };
+        })(),
         // Strict analytics: link order → visitor/session so we can compute
         // accurate conversion rate (orders ÷ unique sessions).
         visitor_id: (() => { try { return getVisitorId(); } catch { return null; } })(),
