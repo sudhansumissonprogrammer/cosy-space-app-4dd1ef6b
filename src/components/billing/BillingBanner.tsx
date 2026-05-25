@@ -14,19 +14,22 @@ export default function BillingBanner() {
     setDismissed(sessionStorage.getItem("billing-banner-dismissed"));
   }, []);
 
-  const { data: storeId } = useQuery({
+  const { data: store } = useQuery({
     queryKey: ["my-store-id-banner", user?.id],
     queryFn: async () => {
       const { data } = await supabase
-        .from("stores").select("id").eq("owner_id", user!.id).limit(1).maybeSingle();
-      return data?.id || null;
+        .from("stores").select("id, billing_mode").eq("owner_id", user!.id).limit(1).maybeSingle();
+      return data || null;
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
   });
 
+  const storeId = store?.id || null;
   const { data: state } = useBillingState(storeId);
 
+  // Commission-mode stores never see the subscription paywall banner.
+  if ((store as any)?.billing_mode === "commission") return null;
   if (!state) return null;
   if (state.is_free_lifetime || state.is_one_time) return null;
   if (state.billing_status === "active") return null;

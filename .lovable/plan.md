@@ -1,79 +1,63 @@
-## Goal
+## Audit — what's already correct vs leaking
 
-Now that `ManageStoreDialog` is the single source of truth for per-store admin (Overview, Billing, Wallet, Danger), strip the old duplicate UI from the four admin pages so there is zero overlap, and fix bugs found during the audit.
+I traced every place the owner dashboard renders subscription/billing UI and compared against `stores.billing_mode`.
 
-## Issues found
+**Already correct (commission mode is respected):**
+- `AppSidebar.tsx` — "Wallet" menu item only appears when `billing_mode === "commission"`.
+- `DashboardLayout.tsx` — the paywall (`BillingPaywall`) is bypassed when commission mode (`!isCommissionMode` guard on `billingBlocked`).
+- `StoreWallet.tsx` — page itself gates to commission and shows a "Wallet is only for commission stores" message otherwise.
 
-### 1. Overlapping/duplicate UI (built before ManageStoreDialog, now redundant)
+**Leaks (subscription UI still shown to commission stores):**
 
+1. **`BillingBanner`** (rendered in `DashboardLayout` for both desktop + mobile)
+   Does its own `stores → id` query and reads `useBillingState`. It does **not** check `billing_mode`. For a commission store, `billing_state.billing_status` can still be `trialing` / `past_due`, so the yellow/red "Pay Now" strip keeps appearing at the top of every dashboard page.
 
-| Page                     | Duplicate to remove                                                                                                      | Why redundant                                                                                                                                                                 |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AdminWallets.tsx`       | `AdjustDialog` (Adjust button) and `ConfigDialog` (Config button) — lines 185–288                                        | ManageStoreDialog → Wallet tab does the exact same adjust + commission-config                                                                                                 |
-| `AdminSubscriptions.tsx` | `StoreOverrideDialog` (Edit button) and `BillingActions` (+30d / ⏸) — lines 332–537, 677–736                             | ManageStoreDialog → Billing tab covers plan, custom name/price/limit, free-lifetime, one-time, status, period dates, notes. Quick +30d/suspend are confusing duplicates       |
-| `AdminUsersStores.tsx`   | Billing-mode toggle badge in the "Billing" column — lines 247–268; also `setBillingMode` mutation + `billingModes` query | ManageStoreDialog → top bar already switches mode atomically and parks subscription. Inline toggle bypasses parking → can desync with `store_plan_assignments.billing_status` |
-| `AdminUsersStores.tsx`   | Verify badge inline toggle (lines 233–245)                                                                               | Lives in Manage → Danger. Keep column as **read-only badge** for at-a-glance, drop the click-to-toggle                                                                        |
-| `AdminStores.tsx`        | Verify badge inline toggle, inline Suspend AlertDialog                                                                   | Manage → Danger owns these                                                                                                                                                    |
+2. **`UserSettings.tsx` → `<BillingSection />`**
+   Renders unconditionally. For commission stores it shows the "Billing & Subscription" card with plan name, "Pay ₹X/mo" button and subscription payments history — none of which apply.
 
+3. **`UserSettings.tsx` → "Current Plan" card**
+   Shows `storePlanAssignment` / `subscription` plan info. Meaningless in commission mode (plan is "parked as lifetime" by the admin dialog).
 
-Quick actions worth keeping in tables: **Open Dashboard**, **Delete store** (destructive, useful one-click), **Block/Unblock user** in AdminUsersStores (acts on user, not store).
+4. **No wallet summary on Account/Profile** — commission owners can only see balance by navigating to `/dashboard/stores/:slug/wallet`. The Account page (which is also where the paywall redirects users) has zero wallet context.
 
-### 2. Bug: AdminStores column header/body mismatch
+5. **`userStore` query in `UserSettings`** only selects `id` — has no `billing_mode`, so we can't gate without extending it.
 
-`AdminStores.tsx` headers (lines 119–127) declare: Store, Slug, Owner ID, Status, **Verified, Created**, actions.
-Body (lines 130–156) renders in order: Store, Slug, Owner ID, Status, **Created (line 147), Verified (line 149–156)**, actions.
-→ Verified value renders under "Created" header and vice-versa. Swap to match.
+## Plan
 
-### 3. Bug: AdminUsersStores re-fetches `billing_mode` separately
+### A. Make `BillingBanner` billing-mode aware
+- Extend the inner `stores` select to `id, billing_mode`.
+- Early-return `null` when `billing_mode === "commission"`.
+- (Optional cleanup) Reuse `useMyStore` instead of running a parallel query — same payload is already cached.
 
-`get_admin_users_stores` RPC returns rows without `billing_mode`, so a second query `admin-store-billing-modes` is fired and joined client-side. Since the inline mode toggle is being removed (issue #1), drop the second query entirely and read `billing_mode` from a single small fetch only if a column still needs it. We can keep a tiny `stores.select("id, billing_mode")` if we want a read-only "Billing" badge column, or drop the column entirely (cleaner — billing mode is visible inside Manage).
+### B. Extend `UserSettings.userStore` query
+- Select `id, slug, billing_mode` (still cheap).
+- Derive `isCommissionMode` once.
 
-### 4. ManageStoreDialog small polish
+### C. Hide subscription UI on Account page when commission
+- Conditionally render `<BillingSection />` only when `!isCommissionMode`.
+- Conditionally render the "Current Plan" card only when `!isCommissionMode`.
 
-- `OverviewTab` "Open dashboard" link uses `/dashboard/stores/{slug}/products` — same pattern as AdminUsersStores. OK.
-- `WalletPanel.balance_after` is rendered but `wallet_charge_order`/`wallet_adjust` ledger rows may not have `balance_after`. Verify field exists in `store_wallet_ledger`; if not, hide the column.
-- Mode-switch buttons disable correctly (good).
+### D. Add a `WalletAccountCard` on the Account page (commission mode only)
+A compact card placed where `BillingSection` used to be, showing:
+- Current balance (red if negative / amber if below `low_balance_threshold`)
+- Total recharged, total commission paid
+- Commission %, min recharge
+- "Recharge wallet" button → reuses the same Cashfree flow already in `StoreWallet.tsx`
+- "View full history" link → `/dashboard/stores/:slug/wallet`
 
-## Changes
+Implementation: factor the recharge dialog + `get_store_wallet_summary` query out of `StoreWallet.tsx` into a small shared component (`src/components/billing/WalletAccountCard.tsx`) used by both `UserSettings.tsx` and `StoreWallet.tsx` so behaviour stays in sync.
 
-### A. `src/pages/admin/AdminWallets.tsx`
+### E. Verify no other leaks
+Grep confirms the only subscription-leaning UI inside the owner dashboard surface is `BillingBanner`, `BillingPaywall`, `BillingSection`, and the Account page's "Current Plan" card. All four are handled above. Sidebar, paywall, and StoreWallet page are already mode-aware. Nothing else in `src/pages/dashboard/**` or `src/components/dashboard/**` references billing/subscription.
 
-- Delete `AdjustDialog` and `ConfigDialog` components (lines 185–288) and remove their imports/usage.
-- Action column = single **Manage** button.
-- Remove unused icons (`Plus`, `Minus`, `Settings2` only if no other use).
+### Files touched
 
-### B. `src/pages/admin/AdminSubscriptions.tsx`
+- `src/components/billing/BillingBanner.tsx` — add `billing_mode` to inner query, early-return when commission.
+- `src/pages/UserSettings.tsx` — fetch `billing_mode + slug`, gate `BillingSection` and "Current Plan" card, render `WalletAccountCard` when commission.
+- `src/components/billing/WalletAccountCard.tsx` (**new**) — extracted balance card + recharge dialog reusing existing edge functions (`wallet-cashfree-create-order`, `wallet-cashfree-verify`).
+- `src/pages/StoreWallet.tsx` — replace duplicated balance card + recharge dialog with `<WalletAccountCard variant="full" />` (keeps the long ledger list below); pure refactor, no behaviour change.
 
-- Delete `StoreOverrideDialog` (lines 332–538) and `BillingActions` (lines 677–736) components.
-- In `StorePlansSection` row actions for subscription-mode stores, keep only **Manage**.
-- Commission-mode row already has only Manage — no change.
-- Remove now-unused imports (`Dialog*`, `Switch`, `Textarea`, `Pencil` if unused).
-
-### C. `src/pages/admin/AdminUsersStores.tsx`
-
-- Remove `setBillingMode` mutation and `billingModes` query.
-- Drop the "Billing" column entirely (it's visible inside Manage and avoids the extra query).
-- Verified column → read-only badge (no onClick).
-- Keep: Manage, Open Dashboard, Block/Unblock user, Delete store. Remove inline Suspend (lives in Manage → Danger).
-
-### D. `src/pages/admin/AdminStores.tsx`
-
-- Fix column order: swap so body matches header (Verified before Created), or reorder header to match body — pick one consistent order: **Store, Slug, Owner ID, Status, Verified, Created, actions**, and reorder TableCells accordingly.
-- Keep Manage + Delete only. Remove inline Suspend AlertDialog and Verify badge toggle.
-
-### E. `src/components/admin/ManageStoreDialog.tsx`
-
-- Confirm `store_wallet_ledger.balance_after` column exists; if not, drop that `TableCell`/`TableHead`.
-- Minor: when `defaultTab="wallet"` but store is in subscription mode, fall back to `billing` (avoid landing on a disabled tab).
-
-## Out of scope
-
-- No schema changes; all RPCs and policies already support every action.
-- No edge-function changes; `admin-wallet-controls` already handles `set_billing_mode`, `update_config`, `wallet_adjust`, `get_summary`.
-
-## Verification
-
-1. Open each admin page → confirm a single **Manage** button per row, no duplicate Edit/Config/+30d controls.
-2. AdminStores: Status, Verified, Created columns line up with their headers.
-3. Open Manage → Billing tab swaps Subscription ⇄ Commission form correctly; switching mode parks subscription as `lifetime` (commission) or restores `active`.
-4. Wallet adjust + commission-config save and reflect immediately in `AdminWallets` row totals. do all safely
+### Out of scope
+- No DB / RPC / edge-function changes — `get_store_wallet_summary` already returns everything needed.
+- No admin-side changes — those were finished in the previous loop.
+- No change to subscription-mode UX (stays exactly as today).
