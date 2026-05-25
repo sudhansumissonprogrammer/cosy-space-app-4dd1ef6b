@@ -104,8 +104,15 @@ Deno.serve(async (req) => {
           return { id: s.id, ok: true };
         } catch (err: any) {
           const status = err?.statusCode;
+          console.error("push send fail", {
+            id: s.id,
+            status,
+            body: err?.body,
+            headers: err?.headers,
+            message: String(err?.message || err),
+            endpoint_host: (() => { try { return new URL(s.endpoint).host; } catch { return null; } })(),
+          });
           if (status === 404 || status === 410) {
-            // Gone / Not Registered — remove dead subscription
             expiredIds.push(s.id);
           }
           return { id: s.id, ok: false, status, error: String(err?.message || err) };
