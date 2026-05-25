@@ -1,13 +1,22 @@
 /**
- * sw-push.js — Push notification handler imported into the VitePWA service worker.
+ * sw-push.js — Push-only service worker.
  *
- * Registered via workbox.importScripts in vite.config.ts.
+ * It is also imported by the VitePWA worker in preview/local builds.
+ * No fetch handler is registered, so it never caches or serves app pages.
  * Handles:
  *   - 'push'              → showNotification (rich UI with vibration)
  *   - 'notificationclick' → focus dashboard or open target URL
  *
  * Foreground tabs receive a postMessage so the dashboard can play a sound.
  */
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
