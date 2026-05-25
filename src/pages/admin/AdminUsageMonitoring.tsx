@@ -187,14 +187,14 @@ export default function AdminUsageMonitoring() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b">
-                    {Array.from({ length: 11 }).map((_, j) => (
+                    {Array.from({ length: 13 }).map((_, j) => (
                       <td key={j} className="px-4 py-3"><Skeleton className="h-4 w-16" /></td>
                     ))}
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">No stores found</td>
+                  <td colSpan={13} className="px-4 py-8 text-center text-muted-foreground">No stores found</td>
                 </tr>
               ) : (
                 filtered.map((store) => {
@@ -219,7 +219,10 @@ export default function AdminUsageMonitoring() {
                           )}
                         </div>
                       </td>
+                      <MetricCell value={store.visitors_today} highlight={store.visitors_today >= 200} />
+                      <MetricCell value={store.sessions_today} />
                       <MetricCell value={store.views_today} highlight={store.views_today >= 500} />
+                      <MetricCell value={store.visitors_7d} />
                       <MetricCell value={store.views_7d} />
                       <MetricCell value={store.avg_daily_views} />
                       <MetricCell value={store.orders_today} highlight={store.orders_today >= 50} />
@@ -227,7 +230,6 @@ export default function AdminUsageMonitoring() {
                       <MetricCell value={store.total_orders} />
                       <MetricCell value={store.product_count} />
                       <MetricCell value={store.image_count} />
-                      <MetricCell value={store.wa_messages_sent} />
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${tier.bg} ${tier.color}`}>
                           {tier.label === "Heavy" && <AlertTriangle className="h-3 w-3" />}
