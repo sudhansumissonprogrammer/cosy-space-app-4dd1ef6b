@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Settings, LogOut, Package, Upload, ShoppingBag,
   Users, UserCheck, Globe, Store, Plus, CreditCard, Tag, Truck, Receipt,
   ShoppingCart, Palette, BarChart3, MessageSquare, FolderOpen, Image as ImageIcon,
-  Clock, FileText, Star,
+  Clock, FileText, Star, Wallet,
 } from "lucide-react";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { NavLink } from "@/components/NavLink";
@@ -102,13 +102,16 @@ export function AppSidebar() {
       ].filter((i) => isVisible(i.menuKey))
     : [];
 
+  const isCommissionMode = (store as any)?.billing_mode === "commission";
+
   const paymentItems = storeSlug
     ? [
         { title: "Payments", url: `/dashboard/stores/${storeSlug}/payments`, icon: CreditCard, menuKey: "payments" },
+        ...(isCommissionMode ? [{ title: "Wallet", url: `/dashboard/stores/${storeSlug}/wallet`, icon: Wallet, menuKey: "wallet" }] : []),
         ...(!isWhatsAppOnly ? [{ title: "Coupons", url: `/dashboard/stores/${storeSlug}/coupons`, icon: Tag, menuKey: "coupons" }] : []),
         { title: "Shipping", url: `/dashboard/stores/${storeSlug}/shipping`, icon: Truck, menuKey: "shipping" },
         { title: "Tax / GST", url: `/dashboard/stores/${storeSlug}/tax`, icon: Receipt, menuKey: "tax_gst" },
-      ].filter((i) => isVisible(i.menuKey))
+      ].filter((i) => i.menuKey === "wallet" || isVisible(i.menuKey))
     : [];
 
   const marketingItems = storeSlug

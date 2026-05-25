@@ -14,7 +14,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Store, Ban, CheckCircle, Trash2, Search, BadgeCheck, Users, ExternalLink } from "lucide-react";
+import { Store, Ban, CheckCircle, Trash2, Search, BadgeCheck, Users, ExternalLink, Wallet } from "lucide-react";
 import { format } from "date-fns";
 import { TableSkeleton } from "@/components/admin/AdminSkeletons";
 
@@ -33,6 +33,7 @@ interface UserStoreRow {
   store_created_at: string | null;
   product_count: number;
   order_count: number;
+  billing_mode?: string | null;
 }
 
 export default function AdminUsersStores() {
@@ -88,6 +89,34 @@ export default function AdminUsersStores() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  // Map of store_id → billing_mode (since RPC may not return it). Fetched once.
+  const { data: billingModes } = useQuery({
+    queryKey: ["admin-store-billing-modes"],
+    staleTime: 2 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await supabase.from("stores").select("id, billing_mode");
+      const m = new Map<string, string>();
+      (data ?? []).forEach((r: any) => m.set(r.id, r.billing_mode ?? "subscription"));
+      return m;
+    },
+  });
+
+  const setBillingMode = useMutation({
+    mutationFn: async ({ storeId, mode }: { storeId: string; mode: "subscription" | "commission" }) => {
+      const { data, error } = await supabase.functions.invoke("admin-wallet-controls", {
+        body: { action: "set_billing_mode", store_id: storeId, mode },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-store-billing-modes"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-wallets"] });
+      toast.success("Billing mode updated");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const deleteStore = useMutation({
     mutationFn: async (storeId: string) => {
       const { error } = await supabase.from("stores").delete().eq("id", storeId);
@@ -128,7 +157,7 @@ export default function AdminUsersStores() {
       </div>
 
       {isLoading ? (
-        <TableSkeleton columns={8} rows={6} />
+        <TableSkeleton columns={9} rows={6} />
       ) : filtered && filtered.length > 0 ? (
         <Card>
           <CardContent className="p-0">
@@ -141,6 +170,7 @@ export default function AdminUsersStores() {
                   <TableHead className="text-center">Orders</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Verified</TableHead>
+                  <TableHead>Billing</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead className="w-48"></TableHead>
                 </TableRow>
@@ -207,6 +237,29 @@ export default function AdminUsersStores() {
                           {row.is_verified ? <><BadgeCheck className="mr-1 h-3 w-3" /> Yes</> : "No"}
                         </Badge>
                       ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+
+                    {/* Billing mode */}
+                    <TableCell>
+                      {row.store_id ? (() => {
+                        const mode = billingModes?.get(row.store_id!) ?? "subscription";
+                        const isCommission = mode === "commission";
+                        return (
+                          <Badge
+                            variant={isCommission ? "default" : "outline"}
+                            className="cursor-pointer"
+                            onClick={() => setBillingMode.mutate({
+                              storeId: row.store_id!,
+                              mode: isCommission ? "subscription" : "commission",
+                            })}
+                            title="Click to toggle billing mode"
+                          >
+                            {isCommission ? <><Wallet className="mr-1 h-3 w-3" /> Commission</> : "Subscription"}
+                          </Badge>
+                        );
+                      })() : (
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </TableCell>

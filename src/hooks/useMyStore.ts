@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
  */
 
 const MY_STORE_COLUMNS =
-  "id, name, slug, logo_url, currency, order_mode, whatsapp_number, theme, features, is_suspended, custom_domain" as const;
+  "id, name, slug, logo_url, currency, order_mode, whatsapp_number, theme, features, is_suspended, custom_domain, billing_mode" as const;
 
 const LS_KEY_PREFIX = "sf:my-store:v1:";
 const LS_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24h — stale data is fine; RQ refetches in bg
