@@ -275,6 +275,18 @@ export default function AdminUsersStores() {
                     {/* Actions */}
                     <TableCell>
                       <div className="flex gap-1">
+                        {/* Manage (per-store dialog) */}
+                        {row.store_id && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => setManageStoreId(row.store_id)}
+                            title="Manage store settings (billing, wallet, danger)"
+                          >
+                            <Settings2 className="mr-1 h-3 w-3" /> Manage
+                          </Button>
+                        )}
+
                         {/* Open store dashboard */}
                         {row.store_id && row.store_slug && (
                           <Button
@@ -367,6 +379,13 @@ export default function AdminUsersStores() {
           </CardContent>
         </Card>
       )}
+
+      <ManageStoreDialog
+        storeId={manageStoreId}
+        open={!!manageStoreId}
+        onOpenChange={(o) => { if (!o) setManageStoreId(null); }}
+        defaultTab="overview"
+      />
     </div>
   );
 }
