@@ -236,9 +236,11 @@ export default function DashboardLayout() {
   const ownStoreId = !isAdminView ? ownStore?.id : undefined;
   const { data: billingState } = useBillingState(ownStoreId);
   const isProfileRoute = location.pathname.startsWith("/dashboard/settings");
+  const isCommissionMode = (ownStore as any)?.billing_mode === "commission";
   const billingBlocked =
     !isAdminView &&
     !!ownStoreId &&
+    !isCommissionMode &&
     (billingState?.billing_status === "past_due" || billingState?.billing_status === "suspended") &&
     billingState?.requires_payment === true;
   const showPaywall = billingBlocked && !isProfileRoute;
