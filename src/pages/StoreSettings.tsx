@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Link, useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QRCodeSVG } from "qrcode.react";
+import PushNotificationManager from "@/components/dashboard/PushNotificationManager";
 
 /** Generate a URL-safe slug from a store name */
 function generateSlug(name: string): string {
@@ -262,6 +263,9 @@ export default function StoreSettings() {
         }}
         className="space-y-6"
       >
+        {/* ── Push Notifications ── */}
+        <PushNotificationManager storeId={storeId} />
+
         {/* ── 1. Basic Info ── */}
         <Card>
           <CardHeader>

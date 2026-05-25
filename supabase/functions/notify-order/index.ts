@@ -304,6 +304,47 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 🔔 Fire push notification to store owner's devices (best-effort, parallel with email)
+    try {
+      const ownerId = storeData?.owner_id;
+      if (ownerId) {
+        const itemCount = items.reduce(
+          (n: number, i: any) => n + (Number(i.quantity) || 1),
+          0,
+        );
+        const firstItemName = items[0]?.product_name || "items";
+        const itemSummary =
+          items.length > 1
+            ? `${firstItemName} +${items.length - 1} more`
+            : firstItemName;
+        const currency = order.currency || storeData?.currency || "INR";
+        const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency + " ";
+        const customerName = order.customer_name || "A customer";
+        const body = `${customerName} ordered ${itemSummary} — ${sym}${Number(order.total).toFixed(0)}`;
+
+        // Fire and forget — don't block email send
+        fetch(`${supabaseUrl}/functions/v1/send-owner-push`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceRoleKey}`,
+            apikey: serviceRoleKey,
+          },
+          body: JSON.stringify({
+            user_id: ownerId,
+            store_id: order.store_id,
+            title: `🎉 New Order from ${storeName}`,
+            body,
+            url: `/store/orders`,
+            tag: `order-${order_id}`,
+            data: { order_id, total: order.total, currency },
+          }),
+        }).catch((e) => console.error("send-owner-push fire-and-forget error:", e));
+      }
+    } catch (e) {
+      console.error("Push notification trigger error:", (e as Error).message);
+    }
+
     console.log(`notify-order completed for ${order_id}, customer: ${normalizedEmail}, owner: ${ownerEmail}, queue: ${queueWorked}`);
 
     return new Response(JSON.stringify({ success: true }), {
