@@ -13,7 +13,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Store, Ban, CheckCircle, Trash2, Search, BadgeCheck } from "lucide-react";
+import { Store, Ban, CheckCircle, Trash2, Search, BadgeCheck, Settings2 } from "lucide-react";
+import ManageStoreDialog from "@/components/admin/ManageStoreDialog";
 import { format } from "date-fns";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
@@ -22,6 +23,7 @@ import { TableSkeleton } from "@/components/admin/AdminSkeletons";
 export default function AdminStores() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [manageId, setManageId] = useState<string | null>(null);
 
   const { data: countData } = useQuery({
     queryKey: ["admin-stores-count"],
@@ -154,6 +156,9 @@ export default function AdminStores() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
+                          <Button variant="default" size="sm" onClick={() => setManageId(store.id)}>
+                            <Settings2 className="mr-1 h-3 w-3" /> Manage
+                          </Button>
                           {store.is_suspended ? (
                             <Button variant="outline" size="sm" onClick={() => toggleSuspend.mutate({ storeId: store.id, suspend: false })}>
                               <CheckCircle className="mr-1 h-3 w-3" /> Activate
@@ -204,6 +209,13 @@ export default function AdminStores() {
           </CardContent>
         </Card>
       )}
+
+      <ManageStoreDialog
+        storeId={manageId}
+        open={!!manageId}
+        onOpenChange={(o) => { if (!o) setManageId(null); }}
+        defaultTab="overview"
+      />
     </div>
   );
 }

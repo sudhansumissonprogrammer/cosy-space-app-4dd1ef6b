@@ -1,123 +1,96 @@
 
-# Commission-Based Billing + Store Wallet
+# Per-Store Admin Management Dialog
 
-Add a second billing mode alongside the existing subscription system. Each store stays on **Subscription** by default — nothing about subscription flow changes. Admin can switch a store to **Commission** mode, which activates a prepaid wallet. Every confirmed/paid/shipped/delivered order debits commission (default 3% of order total) from the wallet. Stores top up via Cashfree (min ₹700).
+Goal: from `/admin/users-stores` (and `/admin/stores`), clicking a store opens **one unified panel** that shows everything for that store and lets you switch between **Subscription** and **Commission** billing — with the right config visible for whichever mode is on. No overlap, no conflicts.
 
----
+## What the user sees
 
-## 1. Billing mode model
+Click a store row → "Manage Store" dialog (large, tabbed) opens.
 
-- New column `stores.billing_mode` → `'subscription'` (default) | `'commission'`.
-- Only admin can change it (RLS + admin edge function).
-- When mode = `subscription`: existing subscription flow unchanged. Wallet UI hidden. Partner referrals continue to work.
-- When mode = `commission`:
-  - Store's `store_plan_assignments.billing_status` is forced to `lifetime` so paywalls/cron leave it alone (no subscription dues, no suspension from billing-cron).
-  - Wallet becomes the source of truth. If wallet balance < 0 (or < a configurable threshold), store is "billing-blocked" — checkout still works but admin gets alerted and storefront shows a soft warning (configurable later).
-  - Store is **excluded from partner referral commission** (rule enforced in `create_partner_commission_on_paid` trigger + `attach-referral` edge fn).
+```text
+┌─ Manage Store: Metrobazaar (/metrobazaar) ─────────────────┐
+│ Owner: demo@gmail.com   Created: Apr 26   [Visit ↗]        │
+│                                                            │
+│ Billing Mode:  ( ) Subscription   (•) Commission   [Save]  │
+│ ─────────────────────────────────────────────────────────  │
+│ [Overview] [Billing] [Wallet] [Danger]                     │
+│                                                            │
+│  ── Overview tab ──                                        │
+│   Products: 4  Orders: 0  Customers: 0  Status: Active     │
+│   Verified: No   Suspended: No                             │
+│                                                            │
+│  ── Billing tab (changes by mode) ──                       │
+│   IF subscription:                                         │
+│     • Current plan + custom name/price/product limit       │
+│     • Status (trialing/active/past_due/suspended/lifetime) │
+│     • Trial end / period end / grace end (editable)        │
+│     • Mark as free-lifetime toggle                         │
+│     • Recent subscription payments (last 10)               │
+│   IF commission:                                           │
+│     • Commission % (editable, default 3)                   │
+│     • Min recharge (₹) (editable, default 700)             │
+│     • Low-balance threshold (editable, default 100)        │
+│     • Active toggle                                        │
+│                                                            │
+│  ── Wallet tab (commission mode only) ──                   │
+│     Balance  Total recharged  Total charged                │
+│     [Credit ₹] [Debit ₹] with note                         │
+│     Last 50 ledger entries (date / kind / amt / balance)   │
+│     Last 20 recharges (date / amt / status)                │
+│                                                            │
+│  ── Danger tab ──                                          │
+│     Suspend / Unsuspend store                              │
+│     Verify / Unverify                                      │
+│     Block / Unblock owner                                  │
+└────────────────────────────────────────────────────────────┘
+```
 
-## 2. New tables
+The **Billing tab body swaps entirely** based on `stores.billing_mode` — subscription fields are hidden in commission mode and vice-versa, so there is zero visual overlap.
 
-- **`store_commission_config`** — one row per commission-mode store
-  - `store_id` (unique), `commission_percentage` (default 3.00), `min_recharge` (default 700), `low_balance_threshold` (default 100), `is_active`
-- **`store_wallets`**
-  - `store_id` (unique), `balance` numeric default 0, `total_recharged`, `total_charged`, `updated_at`
-- **`store_wallet_ledger`** — every credit/debit (immutable audit trail)
-  - `store_id`, `direction` (`credit`|`debit`), `amount`, `kind` (`recharge`|`order_commission`|`refund`|`admin_adjustment`), `order_id` (nullable), `recharge_id` (nullable), `balance_after`, `notes`, `created_at`
-- **`store_wallet_recharges`** — Cashfree top-up records (mirrors `subscription_payments` shape so we reuse the proven flow)
-  - `store_id`, `cashfree_order_id` (unique), `cashfree_payment_id`, `amount`, `status` (`pending`|`paid`|`failed`|`refunded`), `payment_method`, `paid_at`, `raw_payload`, timestamps
-- **`store_order_commissions`** — per-order commission record (idempotent via unique `order_id`)
-  - `order_id` (unique), `store_id`, `order_total`, `percentage`, `commission_amount`, `status` (`charged`|`reversed`|`skipped_subscription`), `ledger_id`, `created_at`
+## What this replaces / consolidates
 
-All tables: RLS — admin full access, store owner read-only for own store. Ledger/commissions never UPDATEable by owners.
+- The "Edit Config" dialog on `/admin/wallets` → still works there, but is now also reachable from the per-store dialog.
+- The "Store Plans" tab on `/admin/subscriptions` → still exists for bulk view, but per-store editing happens in the dialog (single source of truth).
+- The wallet adjust/config flows already exist as the `admin-wallet-controls` edge function — we just call it from the new dialog.
 
-## 3. Commission charging trigger
+## Implementation (technical)
 
-PostgreSQL trigger on `orders` (AFTER INSERT, AFTER UPDATE OF status):
-- Fires once per order when status transitions into one of `confirmed`, `shipped`, `delivered`, `partially_paid`.
-- Idempotent: check `store_order_commissions.order_id` first.
-- If `stores.billing_mode <> 'commission'` → insert row with status `skipped_subscription` and exit (audit only, no charge).
-- Else: compute `commission = round(orders.total * pct / 100, 2)`, debit wallet (locked row update), write ledger row, insert commission row with status `charged`.
-- If status moves to `cancelled`/`refunded` after being charged → reverse: credit wallet back, ledger `refund`, commission row → `reversed`.
+**New file: `src/components/admin/ManageStoreDialog.tsx`**
+- Props: `{ storeId, open, onOpenChange }`.
+- Data sources (all in one `useQuery`):
+  - `admin-wallet-controls` `get_summary` action → returns `store`, `wallet`, `config`, `ledger`, `recharges`.
+  - `store_plan_assignments` row + `plans` join → for subscription tab.
+  - `subscription_payments` last 10 → recent payments.
+- Mutations (all via existing endpoints, no new edge fns):
+  - **Mode switch** → `admin-wallet-controls` `action: set_billing_mode`.
+  - **Commission config** → `action: update_config`.
+  - **Wallet credit/debit** → `action: wallet_adjust`.
+  - **Subscription edit** (custom price/name/limit, status, trial/period/grace, is_free_lifetime) → direct `supabase.from('store_plan_assignments').update()` (admin RLS already allows).
+  - **Suspend / verify / block** → existing `stores` / `profiles` updates.
 
-Functions are `SECURITY DEFINER` with locked-row pattern (same as existing `wallet_credit_commission`).
+**Wire-up:**
+- `AdminUsersStores.tsx`: make the store cell clickable → opens dialog with that `store_id`. Keep the existing inline suspend/verify buttons.
+- `AdminStores.tsx`: same — store row click opens the dialog.
+- `AdminWallets.tsx`: row click opens the dialog (Wallet tab focused).
+- `AdminSubscriptions.tsx` → `StorePlansSection`: row "Manage" button opens the dialog (Billing tab focused).
 
-## 4. Cashfree wallet top-up (mirror of subscription flow)
+**Backend changes needed:** none. Every RPC / edge action / RLS policy required already exists from prior turns (`admin_set_billing_mode`, `wallet_adjust_store`, `store_commission_config` upsert, admin SELECT on `stores`/`store_plan_assignments`).
 
-Reuses the same proven Cashfree pattern as `cashfree-create-order` / `cashfree-verify-payment` / `cashfree-webhook` — **separate edge functions** so the two flows never collide:
+**Conflict-avoidance guarantees:**
+- Mode switch already calls `admin_set_billing_mode` which atomically flips `billing_status` between `'lifetime'` (commission parks the subscription) and `'active'` — paywall + sidebar + banners already key off `billing_mode`, so the dialog's Save is the only state mutation needed.
+- Billing-tab body renders only the section matching current `billing_mode` → no overlap.
+- Wallet tab disabled / hidden when `billing_mode = 'subscription'`.
 
-- **`wallet-cashfree-create-order`** — auth required; validates `amount >= store_commission_config.min_recharge`; creates Cashfree order; inserts `store_wallet_recharges` row with status `pending`.
-- **`wallet-cashfree-verify`** — client polls after redirect; verifies status with Cashfree; on `PAID`, calls SQL fn `wallet_apply_recharge(_recharge_id)` (idempotent: only credits if status was `pending`).
-- **`wallet-cashfree-webhook`** — server-to-server confirmation (verify_jwt=false); same idempotent apply.
+## Out of scope (will not touch)
 
-`wallet_apply_recharge` updates `store_wallets.balance += amount`, inserts ledger row `kind='recharge'`, sets recharge to `paid`.
+- Order/commission charge logic (already correct).
+- Cron / paywall (already mode-aware).
+- Adding new tables or new edge functions.
 
-**Conflict prevention**: the two flows write to completely separate tables (`subscription_payments` vs `store_wallet_recharges`) and use a different Cashfree order_id prefix (`SUBPAY_` vs `WALLET_`). The shared Cashfree credentials live in the same store config — no change there.
+## File list
 
-## 5. Admin UI (in `AdminUsersStores` / `AdminSubscriptions`)
-
-- Per-store toggle: **Subscription** ⇄ **Commission** (with confirmation dialog explaining the switch).
-- When commission: admin can set `commission_percentage`, `min_recharge`, do wallet adjustments (credit/debit with note), view ledger, view recharge history.
-- New page **AdminWallets** — list of all commission-mode stores with balance, last recharge, total charged, low-balance flag.
-
-## 6. Store owner UI (Dashboard)
-
-- New sidebar item **Wallet** — only visible when `billing_mode = 'commission'`.
-- Page shows: current balance, recent ledger (debits per order with order link, credits per recharge), "Recharge" button.
-- Recharge dialog: amount input (min ₹700 enforced both client + server), Cashfree checkout.
-- Order list shows a small "₹X commission" badge per charged order.
-- Existing **Billing/Subscription** pages are hidden for commission stores (replaced by Wallet).
-
-## 7. Partner referral exclusion
-
-- `create_partner_commission_on_paid` (existing trigger) gets an early `RETURN NEW` if the store is in commission mode.
-- `attach-referral` edge fn rejects attaching a referral to a commission-mode store with a clear error.
-- Already-attached referrals on a store that later switches to commission: stop earning new commissions (trigger guard handles it), existing approved/paid commissions are untouched.
-
-## 8. Safety / conflict checklist
-
-- Subscription cron (`billing-cron`) skips stores with `billing_mode='commission'` (extra WHERE clause).
-- `BillingPaywall` component checks `billing_mode` and renders nothing for commission stores.
-- Cashfree webhook signature verification (same logic as existing webhook) — no shortcut.
-- All wallet mutations go through `SECURITY DEFINER` functions with `FOR UPDATE` row locks → no race on concurrent orders + recharges.
-- `store_wallet_ledger.balance_after` written inside the same transaction = tamper-evident audit.
-- No `auth.users` FK on wallet tables (project rule).
-- Migration includes the `DROP FUNCTION IF EXISTS` guard for any storefront RPC we touch (we don't touch any).
-
-## Technical details
-
-**New DB objects**
-- Tables: `store_commission_config`, `store_wallets`, `store_wallet_ledger`, `store_wallet_recharges`, `store_order_commissions`
-- Column: `stores.billing_mode text not null default 'subscription'`
-- Functions: `wallet_charge_order(_order_id)`, `wallet_reverse_order(_order_id)`, `wallet_apply_recharge(_recharge_id)`, `wallet_adjust_store(_store_id, _direction, _amount, _note)`, `is_store_commission_mode(_store_id)`
-- Triggers: `tg_order_commission_charge` on `orders`, modify `create_partner_commission_on_paid` to skip commission-mode stores
-
-**New edge functions**
-- `wallet-cashfree-create-order`, `wallet-cashfree-verify`, `wallet-cashfree-webhook` (verify_jwt=false in `supabase/config.toml`)
-- `admin-set-billing-mode` (admin-only, switches mode + ensures wallet/config rows exist)
-- `admin-wallet-adjust` (admin manual credit/debit)
-
-**New frontend**
-- `src/pages/StoreWallet.tsx` (owner)
-- `src/pages/admin/AdminWallets.tsx` (admin list)
-- `src/components/admin/BillingModeToggle.tsx`
-- `src/components/wallet/WalletBalanceCard.tsx`, `RechargeDialog.tsx`, `WalletLedgerTable.tsx`
-- `src/hooks/useStoreWallet.ts`
-- Routing + sidebar updates in `AppSidebar.tsx` and dashboard router
-- Hide `BillingSection` / `BillingPaywall` when `billing_mode='commission'`
-
-**Existing files touched (small surgical edits only)**
-- `supabase/functions/billing-cron/index.ts` — skip commission stores
-- `supabase/functions/attach-referral/index.ts` — reject commission stores
-- DB migration updates `create_partner_commission_on_paid` to skip
-- `AppSidebar.tsx`, `DashboardLayout.tsx` — conditional Wallet nav
-
-**Defaults**
-- commission_percentage: 3.00
-- min_recharge: 700
-- charged statuses: `confirmed, shipped, delivered, partially_paid` (matches dashboard revenue calc)
-- low_balance_threshold: 100
-
-**Out of scope (will ask before adding)**
-- Auto-suspend storefront on zero balance (currently soft warning only)
-- Auto-recharge / saved payment method
-- GST invoice generation for recharges
+- Create: `src/components/admin/ManageStoreDialog.tsx`
+- Edit: `src/pages/admin/AdminUsersStores.tsx` (open dialog on row click)
+- Edit: `src/pages/admin/AdminStores.tsx` (open dialog on row click)
+- Edit: `src/pages/admin/AdminWallets.tsx` (open dialog on row click, default tab=wallet)
+- Edit: `src/pages/admin/AdminSubscriptions.tsx` (replace per-row edit with dialog open, default tab=billing)

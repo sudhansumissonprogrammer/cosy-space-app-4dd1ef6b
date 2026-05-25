@@ -24,6 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Crown, Store, Settings2, Search } from "lucide-react";
+import ManageStoreDialog from "@/components/admin/ManageStoreDialog";
 
 export default function AdminSubscriptions() {
   const queryClient = useQueryClient();
@@ -113,6 +114,7 @@ function GlobalPlansSection({ plans, queryClient }: { plans: any[]; queryClient:
 
 function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: any }) {
   const [search, setSearch] = useState("");
+  const [manageId, setManageId] = useState<string | null>(null);
 
   const { data: stores, isLoading: storesLoading } = useQuery({
     queryKey: ["admin-stores-for-plan-assignments"],
@@ -241,7 +243,11 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
                           <TableCell>
                             <Badge variant="secondary">parked</Badge>
                           </TableCell>
-                          <TableCell></TableCell>
+                          <TableCell>
+                            <Button size="sm" variant="default" onClick={() => setManageId(assignment.store_id)}>
+                              <Settings2 className="mr-1 h-3 w-3" /> Manage
+                            </Button>
+                          </TableCell>
                         </>
                       ) : (
                         <>
@@ -282,6 +288,9 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
+                              <Button size="sm" variant="default" onClick={() => setManageId(assignment.store_id)}>
+                                <Settings2 className="mr-1 h-3 w-3" /> Manage
+                              </Button>
                               <StoreOverrideDialog
                                 assignment={assignment}
                                 plans={plans}
@@ -309,6 +318,13 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
           </CardContent>
         </Card>
       )}
+
+      <ManageStoreDialog
+        storeId={manageId}
+        open={!!manageId}
+        onOpenChange={(o) => { if (!o) setManageId(null); }}
+        defaultTab="billing"
+      />
     </div>
   );
 }

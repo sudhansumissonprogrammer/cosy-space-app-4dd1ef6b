@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { Wallet, Search, Settings2, Plus, Minus } from "lucide-react";
 import { format } from "date-fns";
+import ManageStoreDialog from "@/components/admin/ManageStoreDialog";
 
 interface Row {
   store_id: string;
@@ -39,6 +40,7 @@ async function callControl(body: any) {
 export default function AdminWallets() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [manageId, setManageId] = useState<string | null>(null);
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["admin-wallets"],
@@ -154,6 +156,9 @@ export default function AdminWallets() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        <Button variant="default" size="sm" onClick={() => setManageId(r.store_id)}>
+                          <Settings2 className="mr-1 h-3 w-3" /> Manage
+                        </Button>
                         <AdjustDialog row={r} onDone={() => qc.invalidateQueries({ queryKey: ["admin-wallets"] })} />
                         <ConfigDialog row={r} onDone={() => qc.invalidateQueries({ queryKey: ["admin-wallets"] })} />
                       </div>
@@ -166,6 +171,13 @@ export default function AdminWallets() {
           </CardContent>
         </Card>
       )}
+
+      <ManageStoreDialog
+        storeId={manageId}
+        open={!!manageId}
+        onOpenChange={(o) => { if (!o) setManageId(null); }}
+        defaultTab="wallet"
+      />
     </div>
   );
 }
