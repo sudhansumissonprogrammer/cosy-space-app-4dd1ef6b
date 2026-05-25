@@ -27,6 +27,10 @@ interface StoreUsage {
   views_today: number;
   views_7d: number;
   avg_daily_views: number;
+  visitors_today: number;
+  visitors_7d: number;
+  sessions_today: number;
+  sessions_7d: number;
   customer_count: number;
   wa_messages_sent: number;
   category_count: number;
@@ -34,7 +38,7 @@ interface StoreUsage {
   abandoned_carts: number;
 }
 
-type SortKey = "views_today" | "views_7d" | "total_page_views" | "orders_today" | "orders_7d" | "total_orders" | "product_count" | "image_count" | "wa_messages_sent" | "store_name";
+type SortKey = "views_today" | "views_7d" | "total_page_views" | "visitors_today" | "visitors_7d" | "sessions_today" | "sessions_7d" | "orders_today" | "orders_7d" | "total_orders" | "product_count" | "image_count" | "wa_messages_sent" | "store_name";
 
 const USAGE_TIERS = {
   heavy: { minViews: 500, color: "text-destructive", bg: "bg-destructive/10", label: "Heavy" },
@@ -96,6 +100,8 @@ export default function AdminUsageMonitoring() {
     return {
       totalStores: stores.length,
       totalViewsToday: stores.reduce((s, st) => s + st.views_today, 0),
+      totalVisitorsToday: stores.reduce((s, st) => s + (st.visitors_today || 0), 0),
+      totalSessionsToday: stores.reduce((s, st) => s + (st.sessions_today || 0), 0),
       totalOrdersToday: stores.reduce((s, st) => s + st.orders_today, 0),
       totalProducts: stores.reduce((s, st) => s + st.product_count, 0),
       totalImages: stores.reduce((s, st) => s + st.image_count, 0),
@@ -121,10 +127,10 @@ export default function AdminUsageMonitoring() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
             { label: "Total Stores", value: summary.totalStores, icon: Database, color: "text-primary" },
+            { label: "Visitors Today", value: summary.totalVisitorsToday.toLocaleString(), icon: Users, color: "text-indigo-600" },
+            { label: "Sessions Today", value: summary.totalSessionsToday.toLocaleString(), icon: Activity, color: "text-cyan-600" },
             { label: "Views Today", value: summary.totalViewsToday.toLocaleString(), icon: Eye, color: "text-blue-600" },
             { label: "Orders Today", value: summary.totalOrdersToday, icon: ShoppingCart, color: "text-emerald-600" },
-            { label: "Total Products", value: summary.totalProducts.toLocaleString(), icon: Package, color: "text-purple-600" },
-            { label: "Total Images", value: summary.totalImages.toLocaleString(), icon: HardDrive, color: "text-amber-600" },
             { label: "Heavy Users", value: summary.heavyUsers, icon: AlertTriangle, color: "text-destructive" },
           ].map(({ label, value, icon: Icon, color }) => (
             <Card key={label} className="border shadow-none">
@@ -163,7 +169,10 @@ export default function AdminUsageMonitoring() {
             <thead>
               <tr className="border-b bg-muted/30">
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Store</th>
+                <SortHeader label="Visitors Today" sortKey="visitors_today" current={sortKey} asc={sortAsc} onClick={handleSort} />
+                <SortHeader label="Sessions Today" sortKey="sessions_today" current={sortKey} asc={sortAsc} onClick={handleSort} />
                 <SortHeader label="Views Today" sortKey="views_today" current={sortKey} asc={sortAsc} onClick={handleSort} />
+                <SortHeader label="Visitors 7d" sortKey="visitors_7d" current={sortKey} asc={sortAsc} onClick={handleSort} />
                 <SortHeader label="Views 7d" sortKey="views_7d" current={sortKey} asc={sortAsc} onClick={handleSort} />
                 <SortHeader label="Avg/Day" sortKey="total_page_views" current={sortKey} asc={sortAsc} onClick={handleSort} />
                 <SortHeader label="Orders Today" sortKey="orders_today" current={sortKey} asc={sortAsc} onClick={handleSort} />
@@ -171,7 +180,6 @@ export default function AdminUsageMonitoring() {
                 <SortHeader label="Total Orders" sortKey="total_orders" current={sortKey} asc={sortAsc} onClick={handleSort} />
                 <SortHeader label="Products" sortKey="product_count" current={sortKey} asc={sortAsc} onClick={handleSort} />
                 <SortHeader label="Images" sortKey="image_count" current={sortKey} asc={sortAsc} onClick={handleSort} />
-                <SortHeader label="WA Msgs" sortKey="wa_messages_sent" current={sortKey} asc={sortAsc} onClick={handleSort} />
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Tier</th>
               </tr>
             </thead>
@@ -179,14 +187,14 @@ export default function AdminUsageMonitoring() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b">
-                    {Array.from({ length: 11 }).map((_, j) => (
+                    {Array.from({ length: 13 }).map((_, j) => (
                       <td key={j} className="px-4 py-3"><Skeleton className="h-4 w-16" /></td>
                     ))}
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">No stores found</td>
+                  <td colSpan={13} className="px-4 py-8 text-center text-muted-foreground">No stores found</td>
                 </tr>
               ) : (
                 filtered.map((store) => {
@@ -211,7 +219,10 @@ export default function AdminUsageMonitoring() {
                           )}
                         </div>
                       </td>
+                      <MetricCell value={store.visitors_today} highlight={store.visitors_today >= 200} />
+                      <MetricCell value={store.sessions_today} />
                       <MetricCell value={store.views_today} highlight={store.views_today >= 500} />
+                      <MetricCell value={store.visitors_7d} />
                       <MetricCell value={store.views_7d} />
                       <MetricCell value={store.avg_daily_views} />
                       <MetricCell value={store.orders_today} highlight={store.orders_today >= 50} />
@@ -219,7 +230,6 @@ export default function AdminUsageMonitoring() {
                       <MetricCell value={store.total_orders} />
                       <MetricCell value={store.product_count} />
                       <MetricCell value={store.image_count} />
-                      <MetricCell value={store.wa_messages_sent} />
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${tier.bg} ${tier.color}`}>
                           {tier.label === "Heavy" && <AlertTriangle className="h-3 w-3" />}
