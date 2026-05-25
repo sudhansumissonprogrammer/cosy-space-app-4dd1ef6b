@@ -21,6 +21,7 @@ import TopProducts from "@/components/dashboard/TopProducts";
 import StoreChecklist from "@/components/dashboard/StoreChecklist";
 import QueryErrorState from "@/components/QueryErrorState";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
+import WalletAccountCard from "@/components/billing/WalletAccountCard";
 import { useCountUp } from "@/hooks/useCountUp";
 
 function ShimmerBlock({ className }: { className?: string }) {
