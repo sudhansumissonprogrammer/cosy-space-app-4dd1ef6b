@@ -120,7 +120,7 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
-        .select("id, name, slug, logo_url")
+        .select("id, name, slug, logo_url, billing_mode")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as any[];
