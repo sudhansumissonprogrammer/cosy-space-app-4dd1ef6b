@@ -124,7 +124,7 @@ export default function UserSettings() {
       if (error) throw error;
       return data;
     },
-    enabled: !!userStore?.id,
+    enabled: !!userStore?.id && !isCommissionMode,
   });
 
   // Fallback to subscriptions if no store plan assignment
