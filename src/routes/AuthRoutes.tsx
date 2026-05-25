@@ -147,6 +147,7 @@ export default function AuthRoutes() {
           <Route path="stores/:storeSlug/domain" element={<StoreDomain />} />
           <Route path="stores/:storeSlug/leads" element={<CustomerLeads />} />
           <Route path="stores/:storeSlug/payments" element={<StorePayments />} />
+          <Route path="stores/:storeSlug/wallet" element={<StoreWallet />} />
           <Route path="stores/:storeSlug/coupons" element={<StoreCoupons />} />
           <Route path="stores/:storeSlug/shipping" element={<StoreShipping />} />
           <Route path="stores/:storeSlug/tax" element={<StoreTaxSettings />} />
