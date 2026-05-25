@@ -318,6 +318,13 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
           </CardContent>
         </Card>
       )}
+
+      <ManageStoreDialog
+        storeId={manageId}
+        open={!!manageId}
+        onOpenChange={(o) => { if (!o) setManageId(null); }}
+        defaultTab="billing"
+      />
     </div>
   );
 }
