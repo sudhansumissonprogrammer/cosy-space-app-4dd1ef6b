@@ -502,6 +502,26 @@ export default function StoreThemeSettings() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const iframeDesktopRef = useRef<HTMLIFrameElement>(null);
 
+  // Load all preset combo fonts in the dashboard so preset preview cards
+  // render in their real typeface (Marcellus, Playfair, etc.).
+  useEffect(() => {
+    if (document.getElementById("theme-combo-fonts")) return;
+    const families = Array.from(
+      new Set(FONT_COMBINATIONS.flatMap((c) => [c.heading, c.body]))
+    ).filter((f) => f !== "Inter" && f !== "Alegreya SC" && f !== "Poppins"); // already loaded
+    // Always include Poppins 500 + Marcellus to guarantee the headline preset renders.
+    const all = Array.from(new Set([...families, "Marcellus", "Poppins"]));
+    const href =
+      "https://fonts.googleapis.com/css2?" +
+      all.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;500;600;700`).join("&") +
+      "&display=swap";
+    const link = document.createElement("link");
+    link.id = "theme-combo-fonts";
+    link.rel = "stylesheet";
+    link.href = href;
+    document.head.appendChild(link);
+  }, []);
+
   useEffect(() => {
     if (themeConfig) {
       setConfig({
