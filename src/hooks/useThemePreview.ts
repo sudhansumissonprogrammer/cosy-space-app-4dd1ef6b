@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { loadGoogleFonts } from "@/lib/themeUtils";
+import { getPresetById, presetCssVars } from "@/lib/fontPresets";
 
 /**
  * Listens for postMessage from admin dashboard iframe parent
