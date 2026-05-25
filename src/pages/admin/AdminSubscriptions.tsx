@@ -120,7 +120,7 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
-        .select("id, name, slug, logo_url")
+        .select("id, name, slug, logo_url, billing_mode")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as any[];
@@ -206,10 +206,11 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
                 {filtered.map((assignment: any) => {
                   const store = assignment.stores as any;
                   const plan = assignment.plans as any;
+                  const isCommission = store?.billing_mode === "commission";
                   const hasOverride = assignment.custom_plan_name || assignment.is_free_lifetime || assignment.is_one_time || assignment.custom_price != null || assignment.custom_product_limit != null;
 
                   return (
-                    <TableRow key={assignment.id}>
+                    <TableRow key={assignment.id} className={isCommission ? "bg-muted/30" : undefined}>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {store?.logo_url ? (
@@ -225,53 +226,74 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          <Crown className="mr-1 h-3 w-3" />
-                          {assignment.custom_plan_name || plan?.name || "No plan assigned"}
-                        </Badge>
-                        {assignment.custom_plan_name && (
-                          <span className="ml-1 text-xs text-muted-foreground">(custom)</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {hasOverride ? (
-                          <div className="flex flex-wrap gap-1">
-                            {assignment.is_free_lifetime && <Badge variant="secondary" className="text-xs">Free Lifetime</Badge>}
-                            {assignment.is_one_time && <Badge variant="secondary" className="text-xs">One-time</Badge>}
-                            {assignment.custom_price != null && <Badge variant="secondary" className="text-xs">₹{assignment.custom_price}/mo</Badge>}
-                            {assignment.custom_product_limit != null && <Badge variant="secondary" className="text-xs">{assignment.custom_product_limit} products</Badge>}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Global defaults</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <BillingCell assignment={assignment} />
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={assignment.billing_status === "active" || assignment.billing_status === "lifetime" || assignment.billing_status === "one_time_paid" ? "default" : "secondary"}>
-                          {assignment.is_free_lifetime
-                            ? "lifetime"
-                            : assignment.is_one_time
-                              ? "one-time"
-                              : assignment.billing_status === "lifetime"
-                                ? "active" /* legacy data fix: show monthly plans as active */
-                                : (assignment.billing_status || assignment.status)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <StoreOverrideDialog
-                            assignment={assignment}
-                            plans={plans}
-                            onSuccess={invalidate}
-                          />
-                          {!assignment.is_unassigned && (
-                            <BillingActions assignment={assignment} onSuccess={invalidate} />
-                          )}
-                        </div>
-                      </TableCell>
+                      {isCommission ? (
+                        <>
+                          <TableCell colSpan={3}>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="default" className="bg-primary/15 text-primary hover:bg-primary/20">
+                                Commission billing
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                Managed in <a href="/admin/wallets" className="underline">Commission Wallets</a> — subscription overrides do not apply.
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">parked</Badge>
+                          </TableCell>
+                          <TableCell></TableCell>
+                        </>
+                      ) : (
+                        <>
+                          <TableCell>
+                            <Badge variant="outline">
+                              <Crown className="mr-1 h-3 w-3" />
+                              {assignment.custom_plan_name || plan?.name || "No plan assigned"}
+                            </Badge>
+                            {assignment.custom_plan_name && (
+                              <span className="ml-1 text-xs text-muted-foreground">(custom)</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {hasOverride ? (
+                              <div className="flex flex-wrap gap-1">
+                                {assignment.is_free_lifetime && <Badge variant="secondary" className="text-xs">Free Lifetime</Badge>}
+                                {assignment.is_one_time && <Badge variant="secondary" className="text-xs">One-time</Badge>}
+                                {assignment.custom_price != null && <Badge variant="secondary" className="text-xs">₹{assignment.custom_price}/mo</Badge>}
+                                {assignment.custom_product_limit != null && <Badge variant="secondary" className="text-xs">{assignment.custom_product_limit} products</Badge>}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Global defaults</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <BillingCell assignment={assignment} />
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={assignment.billing_status === "active" || assignment.billing_status === "lifetime" || assignment.billing_status === "one_time_paid" ? "default" : "secondary"}>
+                              {assignment.is_free_lifetime
+                                ? "lifetime"
+                                : assignment.is_one_time
+                                  ? "one-time"
+                                  : assignment.billing_status === "lifetime"
+                                    ? "active" /* legacy data fix: show monthly plans as active */
+                                    : (assignment.billing_status || assignment.status)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <StoreOverrideDialog
+                                assignment={assignment}
+                                plans={plans}
+                                onSuccess={invalidate}
+                              />
+                              {!assignment.is_unassigned && (
+                                <BillingActions assignment={assignment} onSuccess={invalidate} />
+                              )}
+                            </div>
+                          </TableCell>
+                        </>
+                      )}
                     </TableRow>
                   );
                 })}
