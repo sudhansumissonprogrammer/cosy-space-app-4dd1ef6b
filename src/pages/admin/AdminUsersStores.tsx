@@ -14,7 +14,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Store, Ban, CheckCircle, Trash2, Search, BadgeCheck, Users, ExternalLink } from "lucide-react";
+import { Store, Ban, CheckCircle, Trash2, Search, BadgeCheck, Users, ExternalLink, Wallet } from "lucide-react";
 import { format } from "date-fns";
 import { TableSkeleton } from "@/components/admin/AdminSkeletons";
 
@@ -33,6 +33,7 @@ interface UserStoreRow {
   store_created_at: string | null;
   product_count: number;
   order_count: number;
+  billing_mode?: string | null;
 }
 
 export default function AdminUsersStores() {
@@ -84,6 +85,34 @@ export default function AdminUsersStores() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users-stores"] });
       toast.success("Verification updated");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  // Map of store_id → billing_mode (since RPC may not return it). Fetched once.
+  const { data: billingModes } = useQuery({
+    queryKey: ["admin-store-billing-modes"],
+    staleTime: 2 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await supabase.from("stores").select("id, billing_mode");
+      const m = new Map<string, string>();
+      (data ?? []).forEach((r: any) => m.set(r.id, r.billing_mode ?? "subscription"));
+      return m;
+    },
+  });
+
+  const setBillingMode = useMutation({
+    mutationFn: async ({ storeId, mode }: { storeId: string; mode: "subscription" | "commission" }) => {
+      const { data, error } = await supabase.functions.invoke("admin-wallet-controls", {
+        body: { action: "set_billing_mode", store_id: storeId, mode },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-store-billing-modes"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-wallets"] });
+      toast.success("Billing mode updated");
     },
     onError: (err: any) => toast.error(err.message),
   });
