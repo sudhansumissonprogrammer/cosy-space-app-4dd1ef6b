@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { Wallet, Search, Settings2, Plus, Minus } from "lucide-react";
 import { format } from "date-fns";
+import ManageStoreDialog from "@/components/admin/ManageStoreDialog";
 
 interface Row {
   store_id: string;
