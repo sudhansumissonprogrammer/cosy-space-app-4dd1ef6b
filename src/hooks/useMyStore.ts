@@ -16,8 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 const MY_STORE_COLUMNS =
   "id, name, slug, logo_url, currency, order_mode, whatsapp_number, theme, features, is_suspended, custom_domain, billing_mode" as const;
 
-const MY_STORE_QUERY_VERSION = "v2";
-const LS_KEY_PREFIX = `sf:my-store:${MY_STORE_QUERY_VERSION}:`;
+const LS_KEY_PREFIX = "sf:my-store:v1:";
 const LS_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24h — stale data is fine; RQ refetches in bg
 
 type CachedStore = { ts: number; data: any };
@@ -50,15 +49,12 @@ function writeCache(userId: string, data: any) {
 }
 
 export function useMyStore() {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
 
-  const query = useQuery({
-    queryKey: ["my-store", MY_STORE_QUERY_VERSION, user?.id],
+  return useQuery({
+    queryKey: ["my-store", user?.id],
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
-    refetchOnMount: "always",
-    refetchOnReconnect: true,
-    retry: 2,
     initialData: user?.id ? readCache(user.id) : undefined,
     initialDataUpdatedAt: 0, // mark as stale so a background refetch always runs
     queryFn: async () => {
@@ -84,12 +80,4 @@ export function useMyStore() {
     },
     enabled: !!user,
   });
-
-  // While auth/store data is still resolving, never fall through to the
-  // "Create your store" empty state. This also clears any in-memory null result
-  // left by the previous cache bug by forcing a fresh v2 query on mount.
-  return {
-    ...query,
-    isLoading: authLoading || query.isLoading || (!!user && !query.data && query.isFetching),
-  };
 }
