@@ -32,6 +32,9 @@ Deno.serve(async (req) => {
     switch (action) {
       case "set_billing_mode": {
         const mode = String(body.mode || "");
+        if (!["subscription", "commission"].includes(mode)) {
+          return j({ error: "invalid mode" }, 400);
+        }
         const { error } = await admin.rpc("admin_set_billing_mode", { _store_id: store_id, _mode: mode });
         if (error) return j({ error: error.message }, 400);
         return j({ ok: true });
