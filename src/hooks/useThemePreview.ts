@@ -59,6 +59,7 @@ export function useThemePreview(storeId?: string) {
               buttonStyle === "pill" ? "9999px" : buttonStyle === "square" ? "0px" : "0.5rem",
             "--storefront-marquee-gradient": marqueeGradient,
             "--storefront-btn-text": isLight(primary) ? "#1a1a1a" : "#ffffff",
+            ...presetCssVars(getPresetById(c.font_preset)),
           });
 
           // Update React Query cache so product_card_style & category_style
