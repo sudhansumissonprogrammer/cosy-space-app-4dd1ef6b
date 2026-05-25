@@ -156,6 +156,9 @@ export default function AdminWallets() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        <Button variant="default" size="sm" onClick={() => setManageId(r.store_id)}>
+                          <Settings2 className="mr-1 h-3 w-3" /> Manage
+                        </Button>
                         <AdjustDialog row={r} onDone={() => qc.invalidateQueries({ queryKey: ["admin-wallets"] })} />
                         <ConfigDialog row={r} onDone={() => qc.invalidateQueries({ queryKey: ["admin-wallets"] })} />
                       </div>
@@ -168,6 +171,13 @@ export default function AdminWallets() {
           </CardContent>
         </Card>
       )}
+
+      <ManageStoreDialog
+        storeId={manageId}
+        open={!!manageId}
+        onOpenChange={(o) => { if (!o) setManageId(null); }}
+        defaultTab="wallet"
+      />
     </div>
   );
 }
