@@ -322,8 +322,10 @@ Deno.serve(async (req) => {
         const customerName = order.customer_name || "A customer";
         const body = `${customerName} ordered ${itemSummary} — ${sym}${Number(order.total).toFixed(0)}`;
 
-        // Fire and forget — don't block email send
-        fetch(`${supabaseUrl}/functions/v1/send-owner-push`, {
+        // Send owner push now. The checkout page invokes notify-order in the
+        // background, so awaiting here is safe and avoids the edge runtime
+        // ending before the push request is delivered.
+        const pushRes = await fetch(`${supabaseUrl}/functions/v1/send-owner-push`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -339,7 +341,13 @@ Deno.serve(async (req) => {
             tag: `order-${order_id}`,
             data: { order_id, total: order.total, currency },
           }),
-        }).catch((e) => console.error("send-owner-push fire-and-forget error:", e));
+        });
+        const pushText = await pushRes.text().catch(() => "");
+        if (!pushRes.ok) {
+          console.error("send-owner-push failed", pushRes.status, pushText);
+        } else {
+          console.log("send-owner-push result", pushText);
+        }
       }
     } catch (e) {
       console.error("Push notification trigger error:", (e as Error).message);
