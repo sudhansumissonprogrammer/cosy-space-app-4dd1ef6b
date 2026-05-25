@@ -472,7 +472,7 @@ export default function ProductDetail() {
   const basePrice = hasDiscount ? product.sale_price! : product.price;
   const variantPrice = basePrice; // variants no longer override price
   const orderMode = (store as any).order_mode || "whatsapp";
-  const showWhatsApp = orderMode === "whatsapp" || orderMode === "both";
+  const showWhatsApp = (orderMode === "whatsapp" || orderMode === "both") && (store as any)?.billing_mode !== "commission";
   const showBuyNow = orderMode === "website" || orderMode === "both";
   const stats = getProductStats(product.id);
   const wishlisted = isWishlisted(product.id);
