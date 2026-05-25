@@ -46,8 +46,10 @@ self.addEventListener("push", (event) => {
     badge,
     image,
     tag: tag || `notif-${Date.now()}`,
+    renotify: true,
     requireInteraction,
     silent,
+    timestamp: Date.now(),
     vibrate: silent ? undefined : [200, 100, 200, 100, 200],
     data: { ...data, url, ts: Date.now() },
     actions: payload.actions || [
