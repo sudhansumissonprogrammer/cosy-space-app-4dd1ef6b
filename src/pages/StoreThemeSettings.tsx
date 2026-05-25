@@ -1068,8 +1068,58 @@ export default function StoreThemeSettings() {
     </Section>
   );
 
-  const renderTypographySection = () => (
+  const applyFontCombo = (heading: string, body: string) => {
+    setConfig((prev) => ({ ...prev, heading_font: heading, body_font: body }));
+    setDirty(true);
+    sendToIframe({ ...config, heading_font: heading, body_font: body });
+  };
+
+  const renderTypographySection = () => {
+    const activeComboId = FONT_COMBINATIONS.find(
+      (c) => c.heading === config.heading_font && c.body === config.body_font
+    )?.id;
+    return (
     <Section title="Typography" hint="Heading font is used for titles & product names. Body font is used for descriptions & UI text.">
+      {/* One-click combinations */}
+      <div className="mb-5">
+        <Label className="text-xs mb-2 block">Font Combinations</Label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {FONT_COMBINATIONS.map((combo) => {
+            const isActive = activeComboId === combo.id;
+            return (
+              <button
+                key={combo.id}
+                type="button"
+                onClick={() => applyFontCombo(combo.heading, combo.body)}
+                className={`relative text-left rounded-xl border-2 px-3.5 py-3 transition-all ${
+                  isActive
+                    ? "border-primary bg-primary/5 shadow-sm"
+                    : "border-border hover:border-primary/40 hover:bg-accent/40"
+                }`}
+              >
+                {isActive && (
+                  <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="h-3 w-3" />
+                  </div>
+                )}
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{combo.name}</span>
+                  {combo.tag && (
+                    <span className="text-[9px] font-bold uppercase tracking-wider rounded-full bg-foreground/10 px-1.5 py-0.5">{combo.tag}</span>
+                  )}
+                </div>
+                <p className="mt-1.5 text-xl leading-tight" style={{ fontFamily: combo.heading, fontWeight: 600 }}>
+                  Your Store Name
+                </p>
+                <p className="text-[13px] leading-tight" style={{ fontFamily: combo.body, fontWeight: 500 }}>
+                  Beautiful Product Title
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label className="text-xs">Heading Font</Label>
@@ -1097,7 +1147,8 @@ export default function StoreThemeSettings() {
         </div>
       </div>
     </Section>
-  );
+    );
+  };
 
   const renderLayoutSection = () => (
     <Section title="Button Style" hint="Affects all primary buttons (Add to cart, Buy now, etc).">
