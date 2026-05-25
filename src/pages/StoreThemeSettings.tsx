@@ -19,6 +19,7 @@ import ThemeCategoryStyleIcon from "@/components/dashboard/theme/ThemeCategorySt
 const FONT_OPTIONS = [
   "Alegreya SC",
   "Inter",
+  "Marcellus",
   "Montserrat Alternates",
   "Playfair Display",
   "Lora",
@@ -31,6 +32,19 @@ const FONT_OPTIONS = [
   "Merriweather",
   "DM Sans",
   "Space Grotesk",
+];
+
+/**
+ * One-click typography combinations.
+ * Heading font is used for titles + product names.
+ * Body font is used for product card text + UI copy.
+ */
+const FONT_COMBINATIONS: { id: string; name: string; heading: string; body: string; tag?: string }[] = [
+  { id: "marcellus-poppins", name: "Marcellus + Poppins", heading: "Marcellus", body: "Poppins", tag: "Elegant" },
+  { id: "alegreya-inter", name: "Alegreya SC + Inter", heading: "Alegreya SC", body: "Inter", tag: "Classic" },
+  { id: "playfair-lora", name: "Playfair + Lora", heading: "Playfair Display", body: "Lora", tag: "Editorial" },
+  { id: "poppins-inter", name: "Poppins + Inter", heading: "Poppins", body: "Inter", tag: "Modern" },
+  { id: "space-dm", name: "Space Grotesk + DM Sans", heading: "Space Grotesk", body: "DM Sans", tag: "Tech" },
 ];
 
 const BUTTON_STYLES = [
