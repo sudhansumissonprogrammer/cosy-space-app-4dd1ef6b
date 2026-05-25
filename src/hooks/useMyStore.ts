@@ -28,6 +28,9 @@ function readCache(userId: string): any | undefined {
     const parsed = JSON.parse(raw) as CachedStore;
     if (!parsed?.data || typeof parsed.ts !== "number") return undefined;
     if (Date.now() - parsed.ts > LS_MAX_AGE_MS) return undefined;
+    // Invalidate caches written before `billing_mode` was part of the selection,
+    // otherwise commission-mode stores hydrate without the Wallet menu visible.
+    if (!("billing_mode" in parsed.data)) return undefined;
     return parsed.data;
   } catch {
     return undefined;
