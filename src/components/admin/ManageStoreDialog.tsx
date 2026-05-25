@@ -44,6 +44,13 @@ export default function ManageStoreDialog({ storeId, open, onOpenChange, default
 
   useEffect(() => { if (open) setTab(defaultTab); }, [open, defaultTab]);
 
+  // If dialog opened on Wallet tab but store is in subscription mode, swap to Billing.
+  useEffect(() => {
+    if (open && tab === "wallet" && data && (data as any)?.store?.billing_mode !== "commission") {
+      setTab("billing");
+    }
+  }, [open, tab, data]);
+
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["manage-store", storeId],
     enabled: !!storeId && open,
