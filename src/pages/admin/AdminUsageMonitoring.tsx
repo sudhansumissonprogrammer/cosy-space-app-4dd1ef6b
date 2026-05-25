@@ -100,6 +100,8 @@ export default function AdminUsageMonitoring() {
     return {
       totalStores: stores.length,
       totalViewsToday: stores.reduce((s, st) => s + st.views_today, 0),
+      totalVisitorsToday: stores.reduce((s, st) => s + (st.visitors_today || 0), 0),
+      totalSessionsToday: stores.reduce((s, st) => s + (st.sessions_today || 0), 0),
       totalOrdersToday: stores.reduce((s, st) => s + st.orders_today, 0),
       totalProducts: stores.reduce((s, st) => s + st.product_count, 0),
       totalImages: stores.reduce((s, st) => s + st.image_count, 0),
