@@ -35,8 +35,7 @@ Deno.serve(async (req) => {
         if (!["subscription", "commission"].includes(mode)) {
           return j({ error: "invalid mode" }, 400);
         }
-        // Run via userClient so auth.uid() is populated for the RPC's internal admin check
-        const { error } = await userClient.rpc("admin_set_billing_mode", { _store_id: store_id, _mode: mode });
+        const { error } = await admin.rpc("admin_set_billing_mode", { _store_id: store_id, _mode: mode });
         if (error) return j({ error: error.message }, 400);
         return j({ ok: true });
       }
