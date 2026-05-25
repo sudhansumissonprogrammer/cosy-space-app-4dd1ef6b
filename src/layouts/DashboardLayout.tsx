@@ -239,7 +239,16 @@ export default function DashboardLayout() {
   const ownStoreId = !isAdminView ? ownStore?.id : undefined;
   const { data: billingState } = useBillingState(ownStoreId);
   const isProfileRoute = location.pathname.startsWith("/dashboard/settings");
-  const isCommissionMode = (ownStore as any)?.billing_mode === "commission";
+  const { data: walletSummary } = useQuery({
+    queryKey: ["store-wallet", storeId],
+    enabled: !!storeId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_store_wallet_summary", { _store_id: storeId! });
+      if (error) throw error;
+      return data as any;
+    },
+  });
+  const isCommissionMode = (store as any)?.billing_mode === "commission" || (walletSummary as any)?.billing_mode === "commission";
   const billingBlocked =
     !isAdminView &&
     !!ownStoreId &&
