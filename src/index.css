@@ -979,6 +979,7 @@
 .storefront-font h6 {
   font-weight: var(--storefront-heading-weight, inherit);
   letter-spacing: var(--storefront-heading-tracking, normal);
+}
 /* Body / paragraph text — applies preset body weight site-wide */
 .storefront-font,
 .storefront-font p,
