@@ -169,7 +169,10 @@ export default function AdminUsageMonitoring() {
             <thead>
               <tr className="border-b bg-muted/30">
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Store</th>
+                <SortHeader label="Visitors Today" sortKey="visitors_today" current={sortKey} asc={sortAsc} onClick={handleSort} />
+                <SortHeader label="Sessions Today" sortKey="sessions_today" current={sortKey} asc={sortAsc} onClick={handleSort} />
                 <SortHeader label="Views Today" sortKey="views_today" current={sortKey} asc={sortAsc} onClick={handleSort} />
+                <SortHeader label="Visitors 7d" sortKey="visitors_7d" current={sortKey} asc={sortAsc} onClick={handleSort} />
                 <SortHeader label="Views 7d" sortKey="views_7d" current={sortKey} asc={sortAsc} onClick={handleSort} />
                 <SortHeader label="Avg/Day" sortKey="total_page_views" current={sortKey} asc={sortAsc} onClick={handleSort} />
                 <SortHeader label="Orders Today" sortKey="orders_today" current={sortKey} asc={sortAsc} onClick={handleSort} />
@@ -177,7 +180,6 @@ export default function AdminUsageMonitoring() {
                 <SortHeader label="Total Orders" sortKey="total_orders" current={sortKey} asc={sortAsc} onClick={handleSort} />
                 <SortHeader label="Products" sortKey="product_count" current={sortKey} asc={sortAsc} onClick={handleSort} />
                 <SortHeader label="Images" sortKey="image_count" current={sortKey} asc={sortAsc} onClick={handleSort} />
-                <SortHeader label="WA Msgs" sortKey="wa_messages_sent" current={sortKey} asc={sortAsc} onClick={handleSort} />
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Tier</th>
               </tr>
             </thead>
