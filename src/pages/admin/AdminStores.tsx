@@ -13,7 +13,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Store, Ban, CheckCircle, Trash2, Search, BadgeCheck, Settings2 } from "lucide-react";
+import { Store, Trash2, Search, BadgeCheck, Settings2 } from "lucide-react";
 import ManageStoreDialog from "@/components/admin/ManageStoreDialog";
 import { format } from "date-fns";
 import { usePagination } from "@/hooks/usePagination";
@@ -49,31 +49,6 @@ export default function AdminStores() {
       if (error) throw error;
       return data;
     },
-  });
-
-  const toggleSuspend = useMutation({
-    mutationFn: async ({ storeId, suspend }: { storeId: string; suspend: boolean }) => {
-      const { error } = await supabase.from("stores").update({ is_suspended: suspend }).eq("id", storeId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-stores"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
-      toast.success("Store updated");
-    },
-    onError: (err: any) => toast.error(err.message),
-  });
-
-  const toggleVerify = useMutation({
-    mutationFn: async ({ storeId, verified }: { storeId: string; verified: boolean }) => {
-      const { error } = await (supabase as any).from("stores").update({ is_verified: verified }).eq("id", storeId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-stores"] });
-      toast.success("Store verification updated");
-    },
-    onError: (err: any) => toast.error(err.message),
   });
 
   const deleteStore = useMutation({
@@ -115,17 +90,17 @@ export default function AdminStores() {
           <Card>
             <CardContent className="p-0">
               <Table>
-                 <TableHeader>
-                   <TableRow>
-                     <TableHead>Store</TableHead>
-                     <TableHead>Slug</TableHead>
-                     <TableHead>Owner ID</TableHead>
-                     <TableHead>Status</TableHead>
-                     <TableHead>Verified</TableHead>
-                     <TableHead>Created</TableHead>
-                     <TableHead className="w-48"></TableHead>
-                   </TableRow>
-                 </TableHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Store</TableHead>
+                    <TableHead>Slug</TableHead>
+                    <TableHead>Owner ID</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Verified</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="w-40"></TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
                   {filtered.map((store) => (
                     <TableRow key={store.id}>
@@ -144,40 +119,17 @@ export default function AdminStores() {
                       <TableCell>
                         <Badge variant={store.is_suspended ? "destructive" : "secondary"}>{store.is_suspended ? "Suspended" : "Active"}</Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{format(new Date(store.created_at), "MMM d, yyyy")}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={(store as any).is_verified ? "default" : "outline"}
-                          className="cursor-pointer"
-                          onClick={() => toggleVerify.mutate({ storeId: store.id, verified: !(store as any).is_verified })}
-                        >
+                        <Badge variant={(store as any).is_verified ? "default" : "outline"}>
                           {(store as any).is_verified ? <><BadgeCheck className="mr-1 h-3 w-3" /> Verified</> : "Unverified"}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{format(new Date(store.created_at), "MMM d, yyyy")}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
                           <Button variant="default" size="sm" onClick={() => setManageId(store.id)}>
                             <Settings2 className="mr-1 h-3 w-3" /> Manage
                           </Button>
-                          {store.is_suspended ? (
-                            <Button variant="outline" size="sm" onClick={() => toggleSuspend.mutate({ storeId: store.id, suspend: false })}>
-                              <CheckCircle className="mr-1 h-3 w-3" /> Activate
-                            </Button>
-                          ) : (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild><Button variant="outline" size="sm"><Ban className="mr-1 h-3 w-3" /> Suspend</Button></AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Suspend "{store.name}"?</AlertDialogTitle>
-                                  <AlertDialogDescription>This store will be hidden from the public.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => toggleSuspend.mutate({ storeId: store.id, suspend: true })} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Suspend</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
                           <AlertDialog>
                             <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button></AlertDialogTrigger>
                             <AlertDialogContent>

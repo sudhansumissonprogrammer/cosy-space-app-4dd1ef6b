@@ -17,11 +17,6 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Crown, Store, Settings2, Search } from "lucide-react";
 import ManageStoreDialog from "@/components/admin/ManageStoreDialog";
@@ -173,10 +168,8 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
     return storeName.includes(search.toLowerCase());
   });
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["admin-store-plan-assignments"] });
-    queryClient.invalidateQueries({ queryKey: ["admin-stores-for-plan-assignments"] });
-  };
+
+
 
   return (
     <div className="space-y-4">
@@ -287,19 +280,9 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <div className="flex gap-1">
-                              <Button size="sm" variant="default" onClick={() => setManageId(assignment.store_id)}>
-                                <Settings2 className="mr-1 h-3 w-3" /> Manage
-                              </Button>
-                              <StoreOverrideDialog
-                                assignment={assignment}
-                                plans={plans}
-                                onSuccess={invalidate}
-                              />
-                              {!assignment.is_unassigned && (
-                                <BillingActions assignment={assignment} onSuccess={invalidate} />
-                              )}
-                            </div>
+                            <Button size="sm" variant="default" onClick={() => setManageId(assignment.store_id)}>
+                              <Settings2 className="mr-1 h-3 w-3" /> Manage
+                            </Button>
                           </TableCell>
                         </>
                       )}
@@ -329,213 +312,7 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
   );
 }
 
-// ── Store Override Dialog ──
-
-function StoreOverrideDialog({ assignment, plans, onSuccess }: { assignment: any; plans: any[]; onSuccess: () => void }) {
-  const [open, setOpen] = useState(false);
-  const hasPersistedAssignment = !assignment.is_unassigned;
-  const isCustom = !!assignment.custom_plan_name;
-  const [useCustomPlan, setUseCustomPlan] = useState(isCustom);
-  const [customPlanName, setCustomPlanName] = useState(assignment.custom_plan_name || "");
-  const [planId, setPlanId] = useState(assignment.plan_id || plans.find((plan) => plan.is_active)?.id || "");
-  const [customPrice, setCustomPrice] = useState(assignment.custom_price?.toString() || "");
-  const [isFreeLifetime, setIsFreeLifetime] = useState(assignment.is_free_lifetime || false);
-  const [isOneTime, setIsOneTime] = useState(assignment.is_one_time || false);
-  const [customLimit, setCustomLimit] = useState(assignment.custom_product_limit?.toString() || "");
-  const [notes, setNotes] = useState(assignment.notes || "");
-  const [loading, setLoading] = useState(false);
-
-  const store = assignment.stores as any;
-
-  const handleSave = async () => {
-    // Validation
-    if (useCustomPlan && !customPlanName.trim()) {
-      toast.error("Custom plan name is required");
-      return;
-    }
-    if (useCustomPlan && !isFreeLifetime && !isOneTime && (!customPrice || parseFloat(customPrice) <= 0)) {
-      toast.error("Monthly price is required for a custom monthly plan");
-      return;
-    }
-    if (isOneTime && !isFreeLifetime && (!customPrice || parseFloat(customPrice) <= 0)) {
-      toast.error("One-time payment requires a price");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Derive correct billing_status + current_period_end based on plan type
-      let billingStatus: string;
-      let currentPeriodEnd: string | null = null;
-      let trialEndsAt: string | null = assignment.trial_ends_at || null;
-      let finalPrice: number | null = null;
-
-      if (isFreeLifetime) {
-        billingStatus = "lifetime";
-        currentPeriodEnd = null;
-        trialEndsAt = null;
-        finalPrice = 0;
-      } else if (isOneTime) {
-        billingStatus = "one_time_paid";
-        currentPeriodEnd = null;
-        trialEndsAt = null;
-        finalPrice = customPrice ? parseFloat(customPrice) : null;
-      } else {
-        // Recurring monthly plan — mark active and set/extend period to 30 days from now
-        billingStatus = "active";
-        const base = assignment.current_period_end && new Date(assignment.current_period_end) > new Date()
-          ? new Date(assignment.current_period_end)
-          : new Date();
-        currentPeriodEnd = new Date(base.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-        trialEndsAt = null;
-        // For custom plan: required price. For global override: optional (null = use plan default)
-        finalPrice = customPrice ? parseFloat(customPrice) : null;
-      }
-
-      const payload: any = {
-        store_id: assignment.store_id,
-        plan_id: planId,
-        custom_plan_name: useCustomPlan ? customPlanName.trim() : null,
-        custom_price: finalPrice,
-        is_free_lifetime: isFreeLifetime,
-        is_one_time: isOneTime,
-        custom_product_limit: customLimit ? parseInt(customLimit) : null,
-        notes: notes.trim() || null,
-        status: "active",
-        billing_status: billingStatus,
-        current_period_end: currentPeriodEnd,
-        trial_ends_at: trialEndsAt,
-        grace_period_ends_at: null,
-      };
-
-      const query = hasPersistedAssignment
-        ? supabase.from("store_plan_assignments" as any).update(payload).eq("id", assignment.id)
-        : supabase.from("store_plan_assignments" as any).insert(payload);
-
-      const { error } = await query;
-      if (error) throw error;
-      toast.success(hasPersistedAssignment ? `Plan updated for ${store?.name}` : `Plan assigned to ${store?.name}`);
-      onSuccess();
-      setOpen(false);
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResetOverrides = () => {
-    setUseCustomPlan(false);
-    setCustomPlanName("");
-    setCustomPrice("");
-    setIsFreeLifetime(false);
-    setIsOneTime(false);
-    setCustomLimit("");
-    setNotes("");
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm"><Settings2 className="mr-1 h-3 w-3" /> Edit</Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Store className="h-4 w-4" />
-            Edit Plan — {store?.name}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* Plan Type Toggle */}
-          <div className="flex items-center justify-between rounded-lg border p-3">
-            <Label htmlFor="custom-plan-toggle" className="text-sm font-medium">Custom Monthly Plan</Label>
-            <Switch id="custom-plan-toggle" checked={useCustomPlan} onCheckedChange={setUseCustomPlan} />
-          </div>
-
-          {!useCustomPlan ? (
-            <div className="space-y-2">
-              <Label>Global Plan</Label>
-              <Select value={planId} onValueChange={setPlanId}>
-                <SelectTrigger><SelectValue placeholder="Select plan" /></SelectTrigger>
-                <SelectContent>
-                  {plans.filter((p) => p.is_active).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name} — ₹{Number(p.price).toFixed(0)}/mo</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label>Custom Plan Name</Label>
-              <Input value={customPlanName} onChange={(e) => setCustomPlanName(e.target.value)} placeholder="e.g. Gold Monthly" />
-            </div>
-          )}
-
-          <div className="rounded-lg border p-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-foreground">
-                {useCustomPlan ? "Custom Plan Settings" : "Store Overrides"}
-              </p>
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={handleResetOverrides}>
-                Reset All
-              </Button>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label htmlFor="free-lifetime" className="text-sm">Free Lifetime</Label>
-              <Switch
-                id="free-lifetime"
-                checked={isFreeLifetime}
-                onCheckedChange={(checked) => {
-                  setIsFreeLifetime(checked);
-                  if (checked) setIsOneTime(false);
-                }}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Label htmlFor="one-time" className="text-sm">One-time Payment</Label>
-              <Switch
-                id="one-time"
-                checked={isOneTime}
-                onCheckedChange={(checked) => {
-                  setIsOneTime(checked);
-                  if (checked) setIsFreeLifetime(false);
-                }}
-              />
-            </div>
-
-            {!isFreeLifetime && (
-              <div className="space-y-1">
-                <Label className="text-sm">{useCustomPlan ? "Monthly Price (₹)" : "Custom Price (₹)"}</Label>
-                <Input type="number" min="0" step="1" value={customPrice} onChange={(e) => setCustomPrice(e.target.value)} placeholder={useCustomPlan ? "Required" : "Use plan default"} />
-              </div>
-            )}
-
-            <div className="space-y-1">
-              <Label className="text-sm">Product Limit</Label>
-              <Input type="number" min="1" value={customLimit} onChange={(e) => setCustomLimit(e.target.value)} placeholder={useCustomPlan ? "Unlimited" : "Use plan default"} />
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-sm">Notes</Label>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Internal notes..." rows={2} />
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-          <Button onClick={handleSave} disabled={loading || !planId || (useCustomPlan && !customPlanName.trim())}>
-            {loading ? "Saving..." : "Save"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+// StoreOverrideDialog removed — superseded by ManageStoreDialog → Billing tab.
 
 // ── Plan CRUD Dialogs ──
 
@@ -673,65 +450,4 @@ function BillingCell({ assignment }: { assignment: any }) {
   }
   return <span className="text-xs text-muted-foreground">{status || "—"}</span>;
 }
-
-function BillingActions({ assignment, onSuccess }: { assignment: any; onSuccess: () => void }) {
-  const [busy, setBusy] = useState(false);
-
-  const extend30 = async () => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const base = assignment.current_period_end && new Date(assignment.current_period_end) > new Date()
-        ? new Date(assignment.current_period_end)
-        : new Date();
-      const newEnd = new Date(base.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      const { error } = await supabase
-        .from("store_plan_assignments" as any)
-        .update({
-          current_period_end: newEnd,
-          billing_status: "active",
-          grace_period_ends_at: null,
-        })
-        .eq("id", assignment.id);
-      if (error) throw error;
-      // Unsuspend if billing-suspended
-      await supabase.from("stores")
-        .update({ is_suspended: false, suspension_reason: null })
-        .eq("id", assignment.store_id)
-        .eq("suspension_reason", "billing");
-      toast.success("Extended by 30 days");
-      onSuccess();
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const forceSuspend = async () => {
-    if (busy) return;
-    if (!confirm("Suspend this store now? This will block dashboard & storefront.")) return;
-    setBusy(true);
-    try {
-      await supabase.from("store_plan_assignments" as any)
-        .update({ billing_status: "suspended" })
-        .eq("id", assignment.id);
-      await supabase.from("stores")
-        .update({ is_suspended: true, suspension_reason: "billing" })
-        .eq("id", assignment.store_id);
-      toast.success("Store suspended");
-      onSuccess();
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <>
-      <Button variant="outline" size="sm" onClick={extend30} disabled={busy} title="Extend 30 days">+30d</Button>
-      <Button variant="outline" size="sm" onClick={forceSuspend} disabled={busy} title="Force suspend" className="text-destructive">⏸</Button>
-    </>
-  );
-}
+// BillingActions removed — quick +30d / force-suspend now live in ManageStoreDialog.
