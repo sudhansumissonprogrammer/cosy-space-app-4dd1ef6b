@@ -75,21 +75,23 @@ export default function StoreSettings() {
 
   const { data: store, isLoading } = useStoreData(storeId);
 
-  // Fetch owner_email via secure RPC (column revoked from direct SELECT)
-  const { data: ownerEmailFromDb } = useQuery({
-    queryKey: ["store-public-email", storeId],
+  // Fetch private owner-only settings via secure RPC (columns are revoked from direct SELECT)
+  const { data: privateSettings } = useQuery({
+    queryKey: ["store-private-settings", storeId],
     queryFn: async () => {
-      const { data } = await supabase.rpc("get_store_public_email", { _store_id: storeId! });
-      return (data as string) || "";
+      const { data, error } = await supabase.rpc("get_own_store_private_settings" as any, { _store_id: storeId! });
+      if (error) throw error;
+      return (data as any) || {};
     },
     enabled: !!storeId,
   });
 
   useEffect(() => {
-    if (ownerEmailFromDb !== undefined) {
-      setOwnerEmail(ownerEmailFromDb);
+    if (privateSettings !== undefined) {
+      setOwnerEmail(privateSettings.owner_email || "");
+      setDefaultProfitMargin(Number(privateSettings.default_profit_margin ?? 30));
     }
-  }, [ownerEmailFromDb]);
+  }, [privateSettings]);
 
   useEffect(() => {
     if (store) {
@@ -117,7 +119,6 @@ export default function StoreSettings() {
       setMetaDescription((store as any).meta_description || "");
       setOgImageUrl((store as any).og_image_url || "");
       if ((store as any).og_image_url) setOgImagePreview((store as any).og_image_url);
-      setDefaultProfitMargin((store as any).default_profit_margin ?? 30);
     }
   }, [store]);
 
@@ -195,6 +196,7 @@ export default function StoreSettings() {
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["store", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["store-private-settings", storeId] });
       queryClient.invalidateQueries({ queryKey: ["stores"] });
       queryClient.invalidateQueries({ queryKey: ["my-store"] });
       setHeroImageFiles([]);
