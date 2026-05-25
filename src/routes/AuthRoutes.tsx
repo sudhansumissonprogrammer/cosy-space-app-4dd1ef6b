@@ -26,6 +26,7 @@ const AdminMenuConfig = lazy(() => import("@/pages/admin/AdminMenuConfig"));
 const AdminPartners = lazy(() => import("@/pages/admin/AdminPartners"));
 const AdminPartnerPayouts = lazy(() => import("@/pages/admin/AdminPartnerPayouts"));
 const AdminPartnerAudit = lazy(() => import("@/pages/admin/AdminPartnerAudit"));
+const AdminWallets = lazy(() => import("@/pages/admin/AdminWallets"));
 
 // Partner program
 const PartnerLanding = lazy(() => import("@/pages/partner/PartnerLanding"));
@@ -122,6 +123,7 @@ export default function AuthRoutes() {
           <Route path="partners" element={<AdminPartners />} />
           <Route path="partners/payouts" element={<AdminPartnerPayouts />} />
           <Route path="partners/audit" element={<AdminPartnerAudit />} />
+          <Route path="wallets" element={<AdminWallets />} />
         </Route>
 
         <Route
