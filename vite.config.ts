@@ -99,6 +99,9 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         navigateFallback: null,
         navigateFallbackDenylist: [/^\/~oauth/],
+        // Pull in push notification handlers (push + notificationclick)
+        // so store owners get instant order alerts on their PWA.
+        importScripts: ["/sw-push.js"],
         // CRITICAL: do NOT precache the whole build. Previously globPatterns
         // pulled every JS/CSS/font/PNG into the SW install step (>1MB) and
         // those background downloads competed with the landing page's
