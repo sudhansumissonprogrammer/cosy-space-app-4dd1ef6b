@@ -127,10 +127,10 @@ export default function AdminUsageMonitoring() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
             { label: "Total Stores", value: summary.totalStores, icon: Database, color: "text-primary" },
+            { label: "Visitors Today", value: summary.totalVisitorsToday.toLocaleString(), icon: Users, color: "text-indigo-600" },
+            { label: "Sessions Today", value: summary.totalSessionsToday.toLocaleString(), icon: Activity, color: "text-cyan-600" },
             { label: "Views Today", value: summary.totalViewsToday.toLocaleString(), icon: Eye, color: "text-blue-600" },
             { label: "Orders Today", value: summary.totalOrdersToday, icon: ShoppingCart, color: "text-emerald-600" },
-            { label: "Total Products", value: summary.totalProducts.toLocaleString(), icon: Package, color: "text-purple-600" },
-            { label: "Total Images", value: summary.totalImages.toLocaleString(), icon: HardDrive, color: "text-amber-600" },
             { label: "Heavy Users", value: summary.heavyUsers, icon: AlertTriangle, color: "text-destructive" },
           ].map(({ label, value, icon: Icon, color }) => (
             <Card key={label} className="border shadow-none">
