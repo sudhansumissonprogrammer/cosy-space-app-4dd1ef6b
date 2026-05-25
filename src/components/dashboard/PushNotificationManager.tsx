@@ -16,6 +16,7 @@ import {
   unsubscribePush,
   isCurrentDeviceSubscribed,
   sendTestPush,
+  syncExistingPushSubscription,
   installForegroundPushListener,
 } from "@/lib/ownerPush";
 
@@ -44,8 +45,11 @@ export default function PushNotificationManager({ storeId }: Props) {
   useEffect(() => {
     setSupported(isPushSupported());
     setPermission(getPushPermission());
-    isCurrentDeviceSubscribed().then(setThisDeviceSubscribed);
-    refreshDevices();
+    isCurrentDeviceSubscribed().then(async (subscribed) => {
+      setThisDeviceSubscribed(subscribed);
+      if (subscribed) await syncExistingPushSubscription(storeId);
+      await refreshDevices();
+    });
     const cleanup = installForegroundPushListener();
 
     // Get current device endpoint to mark it in the list
@@ -117,7 +121,7 @@ export default function PushNotificationManager({ storeId }: Props) {
 
   async function handleTest() {
     setTesting(true);
-    const res = await sendTestPush();
+    const res = await sendTestPush(storeId);
     setTesting(false);
     toast({
       title: res.ok ? "Test sent ✅" : "Test failed",
