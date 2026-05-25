@@ -54,6 +54,8 @@ export function useMyStore() {
     gcTime: 10 * 60 * 1000,
     initialData: user?.id ? readCache(user.id) : undefined,
     initialDataUpdatedAt: 0, // mark as stale so a background refetch always runs
+    retry: 2,
+    retryDelay: (i) => Math.min(1000 * 2 ** i, 4000),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
@@ -63,6 +65,32 @@ export function useMyStore() {
         .limit(1)
         .maybeSingle();
       if (error) throw error;
+
+      // Self-heal: if the fetch returned null but we have a cached store
+      // for this user, assume a transient auth/RLS hiccup (stale JWT,
+      // PWA cold start, flaky network) instead of overwriting the cache
+      // with null. Returning the cached value prevents the dashboard
+      // from flashing "Create Your Store" for a real owner. We also
+      // schedule one background retry to refresh the cache once the
+      // session settles.
+      if (!data && user?.id) {
+        const cached = readCache(user.id);
+        if (cached) {
+          setTimeout(() => {
+            supabase
+              .from("stores")
+              .select(MY_STORE_COLUMNS)
+              .eq("owner_id", user.id)
+              .order("created_at", { ascending: true })
+              .limit(1)
+              .maybeSingle()
+              .then(({ data: retry }) => {
+                if (retry) writeCache(user.id, retry);
+              });
+          }, 1500);
+          return cached;
+        }
+      }
 
       // Persist for next visit's instant hydration
       if (data && user?.id) writeCache(user.id, data);
