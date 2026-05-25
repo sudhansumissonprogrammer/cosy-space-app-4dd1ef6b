@@ -40,6 +40,7 @@ async function callControl(body: any) {
 export default function AdminWallets() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [manageId, setManageId] = useState<string | null>(null);
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["admin-wallets"],
