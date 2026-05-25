@@ -990,15 +990,18 @@
 .storefront-font td {
   font-weight: var(--storefront-body-weight, inherit);
 }
-/* Product titles — opt-in class on storefront cards */
+/* Product titles — opt-in class on storefront cards.
+   No fallback: when no preset is active, element's original Tailwind
+   weight (font-bold, font-semibold, etc.) wins. Preset overrides only
+   when --storefront-product-title-weight is actually set. */
 .storefront-font .sf-product-title,
 .storefront-font [data-sf="product-title"] {
-  font-weight: var(--storefront-product-title-weight, 600);
+  font-weight: var(--storefront-product-title-weight);
 }
-/* Prices — opt-in class on storefront price labels */
+/* Prices — opt-in class on storefront price labels. Same fallback rule. */
 .storefront-font .sf-price,
 .storefront-font [data-sf="price"] {
-  font-weight: var(--storefront-price-weight, 700);
+  font-weight: var(--storefront-price-weight);
 }
 /* Primary CTAs.
    Broad selector: every <button> inside .storefront-font picks up the
