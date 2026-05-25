@@ -16,7 +16,7 @@ const SolutionFlow = lazy(() => import("@/components/landing/SolutionFlow"));
 const StoreLookShowcase = lazy(() => import("@/components/landing/StoreLookShowcase"));
 const Testimonials = lazy(() => import("@/components/landing/Testimonials"));
 const ComparisonTable = lazy(() => import("@/components/landing/ComparisonTable"));
-const Pricing = lazy(() => import("@/components/landing/Pricing"));
+
 const FAQ = lazy(() => import("@/components/landing/FAQ"));
 const FinalCTA = lazy(() => import("@/components/landing/FinalCTA"));
 const Footer = lazy(() => import("@/components/landing/Footer"));
@@ -53,7 +53,7 @@ const Index = () => {
           <LazyMount minHeight={700}><StoreLookShowcase showOverlays={false} /></LazyMount>
           <LazyMount minHeight={500}><Testimonials /></LazyMount>
           <LazyMount minHeight={600}><ComparisonTable /></LazyMount>
-          <LazyMount minHeight={700}><Pricing /></LazyMount>
+          
           <LazyMount minHeight={500}><FAQ /></LazyMount>
           <LazyMount minHeight={400}><FinalCTA /></LazyMount>
           <LazyMount minHeight={0}><LandingWhatsApp /></LazyMount>
