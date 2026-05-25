@@ -75,6 +75,34 @@ function getDeviceLabel(): string {
   return `${browser} on ${os}`;
 }
 
+async function saveSubscriptionToDatabase(
+  userId: string,
+  storeId: string | undefined,
+  sub: PushSubscription,
+): Promise<{ ok: boolean; reason?: string }> {
+  const p256dh = arrayBufferToBase64(sub.getKey("p256dh"));
+  const authKey = arrayBufferToBase64(sub.getKey("auth"));
+
+  // Remove stale rows for this browser endpoint that may have been created
+  // before owner-level notifications existed, then save a fresh owner row.
+  await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+
+  const { error } = await supabase.from("push_subscriptions").insert({
+    user_id: userId,
+    store_id: storeId || null,
+    endpoint: sub.endpoint,
+    p256dh,
+    auth: authKey,
+    device_label: getDeviceLabel(),
+    user_agent: navigator.userAgent.slice(0, 500),
+    enabled: true,
+    last_used_at: new Date().toISOString(),
+  });
+
+  if (error) return { ok: false, reason: error.message };
+  return { ok: true };
+}
+
 async function getPushRegistration(): Promise<ServiceWorkerRegistration> {
   const existing = await navigator.serviceWorker.getRegistration("/");
   if (existing?.active?.scriptURL.includes("/sw-push.js")) return existing;
@@ -168,26 +196,32 @@ export async function subscribePush(
       );
     }
 
-    const p256dh = arrayBufferToBase64(sub.getKey("p256dh"));
-    const authKey = arrayBufferToBase64(sub.getKey("auth"));
-
-    // Delete any prior row for this endpoint, then insert fresh.
-    // Avoids onConflict ambiguity between (store_id,endpoint) unique and user-only rows.
-    await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
-
-    const { error: insErr } = await supabase.from("push_subscriptions").insert({
-      user_id: user.id,
-      store_id: storeId || null,
-      endpoint: sub.endpoint,
-      p256dh,
-      auth: authKey,
-      device_label: getDeviceLabel(),
-      user_agent: navigator.userAgent.slice(0, 500),
-      enabled: true,
-    });
-    if (insErr) return { ok: false, reason: insErr.message };
+    const saved = await saveSubscriptionToDatabase(user.id, storeId, sub);
+    if (!saved.ok) return saved;
 
     return { ok: true };
+  } catch (e: any) {
+    return { ok: false, reason: e?.message || "unknown_error" };
+  }
+}
+
+export async function syncExistingPushSubscription(
+  storeId?: string,
+): Promise<{ ok: boolean; reason?: string; endpoint?: string }> {
+  if (!isPushSupported()) return { ok: false, reason: "unsupported" };
+  try {
+    const { data: auth } = await supabase.auth.getUser();
+    const user = auth?.user;
+    if (!user) return { ok: false, reason: "not_authenticated" };
+    if (Notification.permission !== "granted") return { ok: false, reason: "permission_denied" };
+
+    const reg = await withTimeout(getPushRegistration(), 10000, "service_worker_not_ready");
+    const sub = await reg.pushManager.getSubscription();
+    if (!sub) return { ok: false, reason: "no_browser_subscription" };
+
+    const saved = await saveSubscriptionToDatabase(user.id, storeId, sub);
+    if (!saved.ok) return saved;
+    return { ok: true, endpoint: sub.endpoint };
   } catch (e: any) {
     return { ok: false, reason: e?.message || "unknown_error" };
   }
@@ -231,9 +265,19 @@ export async function isCurrentDeviceSubscribed(): Promise<boolean> {
 /**
  * Send a test notification to the currently-logged-in user's devices.
  */
-export async function sendTestPush(): Promise<{ ok: boolean; message: string }> {
+export async function sendTestPush(storeId?: string): Promise<{ ok: boolean; message: string }> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth?.user) return { ok: false, message: "Not signed in" };
+
+  // If Chrome kept the browser subscription but the DB row was lost/stale,
+  // re-save it before sending. This fixes “Sent to 0 devices”.
+  const synced = await syncExistingPushSubscription(storeId);
+  if (!synced.ok && synced.reason === "no_browser_subscription") {
+    const created = await subscribePush(storeId);
+    if (!created.ok) return { ok: false, message: created.reason || "Could not enable this device" };
+  } else if (!synced.ok && synced.reason !== "permission_denied") {
+    return { ok: false, message: synced.reason || "Could not sync this device" };
+  }
 
   const { data, error } = await supabase.functions.invoke("send-owner-push", {
     body: {
@@ -245,7 +289,11 @@ export async function sendTestPush(): Promise<{ ok: boolean; message: string }> 
     },
   });
   if (error) return { ok: false, message: error.message };
-  return { ok: true, message: `Sent to ${(data as any)?.sent || 0} device(s)` };
+  const sent = (data as any)?.sent || 0;
+  return {
+    ok: sent > 0,
+    message: sent > 0 ? `Sent to ${sent} device(s)` : "No saved devices found. Tap Disable, then Enable again.",
+  };
 }
 
 /**
