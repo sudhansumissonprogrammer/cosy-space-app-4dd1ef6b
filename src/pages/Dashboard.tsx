@@ -193,6 +193,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-4">
+      {showLowBalanceDialog && (
+        <LowBalanceDialog open={true} balance={walletBalance} storeSlug={storeSlug || ""} />
+      )}
       {storeId && (
         <OnboardingWalkthrough
           storeId={storeId}
