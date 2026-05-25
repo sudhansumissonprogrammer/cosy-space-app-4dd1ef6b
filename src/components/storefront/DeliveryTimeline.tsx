@@ -53,10 +53,14 @@ export default function DeliveryTimeline() {
     if (typeof IntersectionObserver === "undefined") { setVisible(true); return; }
     const io = new IntersectionObserver((entries) => {
       for (const e of entries) if (e.isIntersecting) { setVisible(true); io.disconnect(); break; }
-    }, { threshold: 0.25 });
+    }, { threshold: 0.01, rootMargin: "0px 0px -10% 0px" });
     io.observe(el);
-    return () => io.disconnect();
+    // Safety fallback — if IO never fires (already in view on mount, certain mobile browsers),
+    // force visible after a short delay so content never stays hidden.
+    const t = setTimeout(() => setVisible(true), 800);
+    return () => { io.disconnect(); clearTimeout(t); };
   }, []);
+
 
   return (
     <div
