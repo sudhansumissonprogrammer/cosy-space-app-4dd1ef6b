@@ -165,6 +165,8 @@ export function getEdgeThemeHint(): { pc: string; bg: string; tc: string; ac: st
 }
 
 /** Build CSS variable style object from theme config + optional preview override */
+import { getPresetById, presetCssVars } from "./fontPresets";
+
 export function buildThemeStyle(
   themeConfig: Record<string, any> | null,
   previewOverride: Record<string, string> | null,
