@@ -64,8 +64,7 @@ Deno.serve(async (req) => {
       }
       case "wallet_adjust": {
         const { direction, amount, note } = body;
-        // Run via userClient so auth.uid() is populated for the RPC's internal admin check
-        const { data, error } = await userClient.rpc("wallet_adjust_store", {
+        const { data, error } = await admin.rpc("wallet_adjust_store", {
           _store_id: store_id, _direction: direction, _amount: Number(amount), _note: note ?? null,
         });
         if (error) return j({ error: error.message }, 400);
