@@ -282,19 +282,9 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <div className="flex gap-1">
-                              <Button size="sm" variant="default" onClick={() => setManageId(assignment.store_id)}>
-                                <Settings2 className="mr-1 h-3 w-3" /> Manage
-                              </Button>
-                              <StoreOverrideDialog
-                                assignment={assignment}
-                                plans={plans}
-                                onSuccess={invalidate}
-                              />
-                              {!assignment.is_unassigned && (
-                                <BillingActions assignment={assignment} onSuccess={invalidate} />
-                              )}
-                            </div>
+                            <Button size="sm" variant="default" onClick={() => setManageId(assignment.store_id)}>
+                              <Settings2 className="mr-1 h-3 w-3" /> Manage
+                            </Button>
                           </TableCell>
                         </>
                       )}
