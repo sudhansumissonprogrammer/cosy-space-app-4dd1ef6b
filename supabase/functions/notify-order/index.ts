@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
     // Get order with store info
     const { data: order, error: orderErr } = await supabase
       .from("orders")
-      .select("*, stores:store_id(name, owner_id, owner_email, logo_url, currency, location, city, state)")
+      .select("*, stores:store_id(name, slug, owner_id, owner_email, logo_url, currency, location, city, state)")
       .eq("id", order_id)
       .single();
 
@@ -337,7 +337,7 @@ Deno.serve(async (req) => {
             store_id: order.store_id,
             title: `🎉 New Order from ${storeName}`,
             body,
-            url: `/store/orders`,
+            url: storeData?.slug ? `/dashboard/stores/${storeData.slug}/orders` : "/dashboard",
             tag: `order-${order_id}`,
             data: { order_id, total: order.total, currency },
           }),
