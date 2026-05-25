@@ -1074,17 +1074,16 @@ export default function CheckoutPage() {
     // Fire all post-order tasks in parallel (non-blocking)
     // Auto-login (createGuestAccount) is awaited inside finalizeOrder via the effect below
     if (!customer) { void createGuestAccount(newOrderId); } else saveAddressToAccount();
-    // 🚫 Post-order automations temporarily disabled (re-enable when ready):
-    // - notify-order email (notifyOrderEmail)
-    // - WhatsApp order_confirmation (sendOrderWhatsApp)
-    // notifyOrderEmail(newOrderId);
+    // Trigger owner/customer order notifications after the order is truly placed.
+    // This edge function also sends the owner PWA push alert.
+    notifyOrderEmail(newOrderId);
+    // 🚫 WhatsApp order_confirmation temporarily disabled (re-enable when ready):
     // sendOrderWhatsApp(store.id, newOrderId, "order_confirmation", {
     //   customer_phone: normalizePhone(phone), customer_name: fullName.trim(),
     //   total, currency,
     //   product_names: checkoutItems.map((i) => i.name).join(", "),
     //   store_name: store.name,
     // });
-    void notifyOrderEmail; // keep refs to avoid unused warnings
     void sendOrderWhatsApp;
   };
 

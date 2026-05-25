@@ -231,7 +231,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { order_id, customer_email } = await req.json();
+    const { order_id, customer_email, push_only = false } = await req.json();
     if (!order_id) {
       return new Response(JSON.stringify({ error: "order_id required" }), {
         status: 400,
@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
     // Get order with store info
     const { data: order, error: orderErr } = await supabase
       .from("orders")
-      .select("*, stores:store_id(name, owner_id, owner_email, logo_url, currency, location, city, state)")
+      .select("*, stores:store_id(name, slug, owner_id, owner_email, logo_url, currency, location, city, state)")
       .eq("id", order_id)
       .single();
 
@@ -278,7 +278,7 @@ Deno.serve(async (req) => {
     let queueWorked = false;
 
     // Send customer confirmation with invoice
-    if (normalizedEmail) {
+    if (!push_only && normalizedEmail) {
       const customerHtml = buildInvoiceHtml(order, items, storeData, false, normalizedEmail);
       const subject = `Order Confirmed - ${storeName} #${order_id.slice(0, 8).toUpperCase()}`;
 
@@ -292,7 +292,7 @@ Deno.serve(async (req) => {
     }
 
     // Send owner notification with invoice
-    if (ownerEmail) {
+    if (!push_only && ownerEmail) {
       const ownerHtml = buildInvoiceHtml(order, items, storeData, true, normalizedEmail);
       const subject = `🛍️ New Order #${order_id.slice(0, 8).toUpperCase()} - ${storeName}`;
 
@@ -322,8 +322,10 @@ Deno.serve(async (req) => {
         const customerName = order.customer_name || "A customer";
         const body = `${customerName} ordered ${itemSummary} — ${sym}${Number(order.total).toFixed(0)}`;
 
-        // Fire and forget — don't block email send
-        fetch(`${supabaseUrl}/functions/v1/send-owner-push`, {
+        // Send owner push now. The checkout page invokes notify-order in the
+        // background, so awaiting here is safe and avoids the edge runtime
+        // ending before the push request is delivered.
+        const pushRes = await fetch(`${supabaseUrl}/functions/v1/send-owner-push`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -335,17 +337,23 @@ Deno.serve(async (req) => {
             store_id: order.store_id,
             title: `🎉 New Order from ${storeName}`,
             body,
-            url: `/store/orders`,
+            url: storeData?.slug ? `/dashboard/stores/${storeData.slug}/orders` : "/dashboard",
             tag: `order-${order_id}`,
             data: { order_id, total: order.total, currency },
           }),
-        }).catch((e) => console.error("send-owner-push fire-and-forget error:", e));
+        });
+        const pushText = await pushRes.text().catch(() => "");
+        if (!pushRes.ok) {
+          console.error("send-owner-push failed", pushRes.status, pushText);
+        } else {
+          console.log("send-owner-push result", pushText);
+        }
       }
     } catch (e) {
       console.error("Push notification trigger error:", (e as Error).message);
     }
 
-    console.log(`notify-order completed for ${order_id}, customer: ${normalizedEmail}, owner: ${ownerEmail}, queue: ${queueWorked}`);
+    console.log(`notify-order completed for ${order_id}, push_only: ${push_only}, customer: ${normalizedEmail}, owner: ${ownerEmail}, queue: ${queueWorked}`);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
