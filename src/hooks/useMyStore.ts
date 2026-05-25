@@ -51,7 +51,7 @@ function writeCache(userId: string, data: any) {
 export function useMyStore() {
   const { user } = useAuth();
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ["my-store", user?.id],
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -80,4 +80,13 @@ export function useMyStore() {
     },
     enabled: !!user,
   });
+
+  // While the auth user is still resolving, the query is disabled and React
+  // Query reports isLoading=false. Without this guard, the dashboard briefly
+  // falls through to the "Create your store" empty state on cold load when
+  // there is no localStorage cache. Treat "no user yet" as still loading.
+  return {
+    ...query,
+    isLoading: query.isLoading || !user,
+  };
 }
