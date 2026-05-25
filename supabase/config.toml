@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.meta-product-feed]
 verify_jwt = false
+
+[functions.wallet-cashfree-webhook]
+verify_jwt = false
