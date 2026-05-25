@@ -1688,6 +1688,57 @@ export type Database = {
           },
         ]
       }
+      store_commission_config: {
+        Row: {
+          commission_percentage: number
+          created_at: string
+          id: string
+          is_active: boolean
+          low_balance_threshold: number
+          min_recharge: number
+          notes: string | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          commission_percentage?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          low_balance_threshold?: number
+          min_recharge?: number
+          notes?: string | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          commission_percentage?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          low_balance_threshold?: number
+          min_recharge?: number
+          notes?: string | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_commission_config_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_commission_config_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_notifications: {
         Row: {
           body: string
@@ -1723,6 +1774,84 @@ export type Database = {
           },
           {
             foreignKeyName: "store_notifications_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_order_commissions: {
+        Row: {
+          commission_amount: number
+          created_at: string
+          id: string
+          ledger_id: string | null
+          order_id: string
+          order_total: number
+          percentage: number
+          reversal_ledger_id: string | null
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          commission_amount: number
+          created_at?: string
+          id?: string
+          ledger_id?: string | null
+          order_id: string
+          order_total: number
+          percentage: number
+          reversal_ledger_id?: string | null
+          status: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          commission_amount?: number
+          created_at?: string
+          id?: string
+          ledger_id?: string | null
+          order_id?: string
+          order_total?: number
+          percentage?: number
+          reversal_ledger_id?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_order_commissions_ledger_id_fkey"
+            columns: ["ledger_id"]
+            isOneToOne: false
+            referencedRelation: "store_wallet_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_order_commissions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_order_commissions_reversal_ledger_id_fkey"
+            columns: ["reversal_ledger_id"]
+            isOneToOne: false
+            referencedRelation: "store_wallet_ledger"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_order_commissions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_order_commissions_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores_public"
@@ -2097,6 +2226,182 @@ export type Database = {
           },
         ]
       }
+      store_wallet_ledger: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          direction: string
+          id: string
+          kind: string
+          notes: string | null
+          order_id: string | null
+          recharge_id: string | null
+          store_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          direction: string
+          id?: string
+          kind: string
+          notes?: string | null
+          order_id?: string | null
+          recharge_id?: string | null
+          store_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          direction?: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          order_id?: string | null
+          recharge_id?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_wallet_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_wallet_ledger_recharge_id_fkey"
+            columns: ["recharge_id"]
+            isOneToOne: false
+            referencedRelation: "store_wallet_recharges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_wallet_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_wallet_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_wallet_recharges: {
+        Row: {
+          amount: number
+          cashfree_order_id: string
+          cashfree_payment_id: string | null
+          created_at: string
+          currency: string
+          failure_reason: string | null
+          id: string
+          paid_at: string | null
+          payment_method: string | null
+          raw_payload: Json | null
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          cashfree_order_id: string
+          cashfree_payment_id?: string | null
+          created_at?: string
+          currency?: string
+          failure_reason?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          raw_payload?: Json | null
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          cashfree_order_id?: string
+          cashfree_payment_id?: string | null
+          created_at?: string
+          currency?: string
+          failure_reason?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          raw_payload?: Json | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_wallet_recharges_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_wallet_recharges_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          store_id: string
+          total_charged: number
+          total_recharged: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          store_id: string
+          total_charged?: number
+          total_recharged?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          store_id?: string
+          total_charged?: number
+          total_recharged?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_wallets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_wallets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       storefront_customers: {
         Row: {
           created_at: string
@@ -2148,6 +2453,7 @@ export type Database = {
           about_us_text: string | null
           banner_url: string | null
           best_selling_carousel: boolean
+          billing_mode: string
           business_hours: Json | null
           city: string | null
           created_at: string
@@ -2194,6 +2500,7 @@ export type Database = {
           about_us_text?: string | null
           banner_url?: string | null
           best_selling_carousel?: boolean
+          billing_mode?: string
           business_hours?: Json | null
           city?: string | null
           created_at?: string
@@ -2240,6 +2547,7 @@ export type Database = {
           about_us_text?: string | null
           banner_url?: string | null
           best_selling_carousel?: boolean
+          billing_mode?: string
           business_hours?: Json | null
           city?: string | null
           created_at?: string
@@ -3015,6 +3323,7 @@ export type Database = {
       }
     }
     Functions: {
+      _ensure_store_wallet: { Args: { _store_id: string }; Returns: undefined }
       _ensure_wallet: { Args: { _partner_id: string }; Returns: undefined }
       _notify_partner: {
         Args: {
@@ -3024,6 +3333,10 @@ export type Database = {
           _title: string
           _type: string
         }
+        Returns: undefined
+      }
+      admin_set_billing_mode: {
+        Args: { _mode: string; _store_id: string }
         Returns: undefined
       }
       can_create_website_order: {
@@ -3092,6 +3405,7 @@ export type Database = {
           view_count: number
         }[]
       }
+      get_store_wallet_summary: { Args: { _store_id: string }; Returns: Json }
       get_storefront_shell: {
         Args: { _slug: string; _with_pages?: boolean }
         Returns: Json
@@ -3106,6 +3420,10 @@ export type Database = {
       is_order_owner: { Args: { _order_id: string }; Returns: boolean }
       is_partner_owner: { Args: { _partner_id: string }; Returns: boolean }
       is_store_active: { Args: { _store_id: string }; Returns: boolean }
+      is_store_commission_mode: {
+        Args: { _store_id: string }
+        Returns: boolean
+      }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
       is_store_owner_by_folder: { Args: { _name: string }; Returns: boolean }
       is_storefront_customer: {
@@ -3151,10 +3469,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      wallet_adjust_store: {
+        Args: {
+          _amount: number
+          _direction: string
+          _note: string
+          _store_id: string
+        }
+        Returns: number
+      }
+      wallet_apply_recharge: {
+        Args: { _recharge_id: string }
+        Returns: boolean
+      }
       wallet_approve_commission: {
         Args: { _commission_id: string }
         Returns: boolean
       }
+      wallet_charge_order: { Args: { _order_id: string }; Returns: undefined }
       wallet_credit_commission: {
         Args: { _commission_id: string }
         Returns: undefined
@@ -3171,6 +3503,7 @@ export type Database = {
         Args: { _commission_id: string }
         Returns: boolean
       }
+      wallet_reverse_order: { Args: { _order_id: string }; Returns: undefined }
       wallet_settle_withdrawal: {
         Args: { _withdrawal_id: string }
         Returns: undefined
