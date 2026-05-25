@@ -123,14 +123,16 @@ export default function AdminWallets() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((r) => (
+                {filtered.map((r) => {
+                  const neg = r.balance < 0;
+                  return (
                   <TableRow key={r.store_id}>
                     <TableCell>
                       <p className="text-sm font-medium text-foreground">{r.store_name}</p>
                       <p className="text-xs text-muted-foreground">/{r.store_slug}</p>
                     </TableCell>
-                    <TableCell className="text-right font-medium">
-                      ₹{r.balance.toFixed(2)}
+                    <TableCell className={`text-right font-medium tabular-nums ${neg ? "text-destructive" : ""}`}>
+                      {neg ? "−" : ""}₹{Math.abs(r.balance).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right text-sm text-muted-foreground">
                       ₹{r.total_recharged.toFixed(2)}
@@ -142,7 +144,9 @@ export default function AdminWallets() {
                       {r.commission_percentage != null ? `${r.commission_percentage}%` : "—"}
                     </TableCell>
                     <TableCell className="text-center">
-                      {r.balance <= (r.low_balance_threshold ?? 100) ? (
+                      {neg ? (
+                        <Badge variant="destructive">Negative</Badge>
+                      ) : r.balance <= (r.low_balance_threshold ?? 100) ? (
                         <Badge variant="destructive">Low</Badge>
                       ) : (
                         <Badge variant="secondary">OK</Badge>
@@ -155,7 +159,8 @@ export default function AdminWallets() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

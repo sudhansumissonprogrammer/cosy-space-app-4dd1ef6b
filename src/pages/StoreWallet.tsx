@@ -77,7 +77,9 @@ export default function StoreWallet() {
   const wallet = (data as any)?.wallet ?? { balance: 0, total_recharged: 0, total_charged: 0 };
   const config = (data as any)?.config ?? { commission_percentage: 3, min_recharge: 700, low_balance_threshold: 100 };
   const ledger: any[] = (data as any)?.ledger ?? [];
-  const lowBalance = Number(wallet.balance) < Number(config.low_balance_threshold);
+  const balanceNum = Number(wallet.balance);
+  const isNegative = balanceNum < 0;
+  const lowBalance = !isNegative && balanceNum < Number(config.low_balance_threshold);
 
   const handleRecharge = async () => {
     const n = Number(amount);
@@ -124,10 +126,18 @@ export default function StoreWallet() {
               <Wallet className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-xs uppercase font-semibold text-muted-foreground tracking-wide">Balance</p>
-              <p className="text-3xl font-bold tabular-nums">₹{Number(wallet.balance).toFixed(2)}</p>
+              <p className="text-xs uppercase font-semibold text-muted-foreground tracking-wide">
+                {isNegative ? "Outstanding Dues" : "Balance"}
+              </p>
+              <p className={`text-3xl font-bold tabular-nums ${isNegative ? "text-destructive" : ""}`}>
+                {isNegative ? "−" : ""}₹{Math.abs(balanceNum).toFixed(2)}
+              </p>
             </div>
-            {lowBalance && <Badge variant="destructive" className="ml-auto">Low balance</Badge>}
+            {isNegative ? (
+              <Badge variant="destructive" className="ml-auto">Recharge required</Badge>
+            ) : lowBalance ? (
+              <Badge variant="destructive" className="ml-auto">Low balance</Badge>
+            ) : null}
           </div>
           <div className="grid grid-cols-2 gap-3 pt-2 text-xs">
             <div className="rounded-lg border p-3">
