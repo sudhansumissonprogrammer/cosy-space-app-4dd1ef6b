@@ -98,7 +98,7 @@ export default function UserSettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
-        .select("id")
+        .select("id, slug, billing_mode")
         .eq("owner_id", user!.id)
         .limit(1)
         .maybeSingle();
@@ -107,6 +107,8 @@ export default function UserSettings() {
     },
     enabled: !!user,
   });
+
+  const isCommissionMode = (userStore as any)?.billing_mode === "commission";
 
   // Get effective plan from store_plan_assignments (includes admin overrides)
   const { data: storePlanAssignment } = useQuery({
