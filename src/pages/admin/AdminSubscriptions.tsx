@@ -168,10 +168,8 @@ function StorePlansSection({ plans, queryClient }: { plans: any[]; queryClient: 
     return storeName.includes(search.toLowerCase());
   });
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["admin-store-plan-assignments"] });
-    queryClient.invalidateQueries({ queryKey: ["admin-stores-for-plan-assignments"] });
-  };
+
+
 
   return (
     <div className="space-y-4">
