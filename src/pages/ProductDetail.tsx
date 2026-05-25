@@ -1143,8 +1143,8 @@ export default function ProductDetail() {
             return null;
           })()}
 
-          {/* Persistent product-aware "Ask about this" WhatsApp pill */}
-          {!isOutOfStock && store.whatsapp_number && (store as any)?.theme !== "theme-18" && (
+          {/* Persistent product-aware "Ask about this" WhatsApp pill — hidden for commission-mode stores */}
+          {!isOutOfStock && store.whatsapp_number && (store as any)?.theme !== "theme-18" && (store as any)?.billing_mode !== "commission" && (
             <PdpAskWhatsApp
               phone={store.whatsapp_number}
               storeName={store.name}
