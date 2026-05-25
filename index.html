@@ -119,6 +119,10 @@
            and auth pages never have a pixel ID, so running this code wastes parse
            time on the critical path. */
         var p=location.pathname;var h=location.hostname;
+        /* Skip pixel on Lovable preview/editor/dev hosts so Meta doesn't
+           detect lovableproject.com / lovable.dev as event-sending domains
+           for the customer's pixel (dilutes domain authority + EMQ). */
+        if(h==='localhost'||h==='127.0.0.1'||h.endsWith('.lovableproject.com')||h.endsWith('.lovable.dev')||h.endsWith('.sandbox.lovable.dev'))return;
         var isSf=p.indexOf('/store/')===0;
         if(!isSf && h.endsWith('.shopbanao.in') && h!=='shopbanao.in' && h!=='www.shopbanao.in'){
           var sub=h.replace('.shopbanao.in','');if(sub&&sub.indexOf('.')===-1)isSf=true;
