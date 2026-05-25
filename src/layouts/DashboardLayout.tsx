@@ -523,6 +523,7 @@ export default function DashboardLayout() {
         storeSlug={storeSlug}
         pendingOrders={pendingOrders}
         isWhatsAppOnly={isWhatsAppOnly}
+        isCommissionMode={isCommissionMode}
       />
     </div>
     </DashboardStoreProvider>
