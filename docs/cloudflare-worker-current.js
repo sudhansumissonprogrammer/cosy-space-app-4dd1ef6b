@@ -3519,7 +3519,29 @@ async function serveStreamedHtml(
             pdpCategoryInline,
           );
         }
+      } else {
+        // v8.47.0: HOMEPAGE — await storefront data so we can inject a fully
+        // formed <title>/<meta>/<og:*>/canonical block into the head BEFORE
+        // streaming starts. Without this, crawlers see a head with no title
+        // (the React app sets it client-side, which non-JS crawlers ignore).
+        // The shell RPC is KV-cached for ~24h, so the awaited cost is ~0
+        // on warm requests.
+        try {
+          earlyStorefrontResult = await storefrontPromise;
+        } catch {}
+        const earlyStore = earlyStorefrontResult?.data?.store;
+        if (earlyStore) {
+          const _cats = Array.isArray(earlyStorefrontResult.data.categories)
+            ? earlyStorefrontResult.data.categories
+            : [];
+          const _canonBase = earlyStore.custom_domain
+            ? `https://${earlyStore.custom_domain}`
+            : `https://${slug}.${ROOT_DOMAIN}`;
+          const _logo = earlyStore.logo_url || "";
+          perRouteSeoHead = _buildHomepageSeoHead(earlyStore, _cats, _canonBase, _logo);
+        }
       }
+
 
       let headChunk = _stripPlatformSeoHead(html.slice(0, headEnd) + "</head>");
       headChunk = headChunk.slice(0, headChunk.indexOf("</head>"));
