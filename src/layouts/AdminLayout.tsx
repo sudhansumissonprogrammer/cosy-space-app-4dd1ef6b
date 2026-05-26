@@ -7,11 +7,12 @@ import { AdminSidebar } from "@/components/AdminSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { AdminBreadcrumbs } from "@/components/AdminBreadcrumbs";
+import { AdminCommandPalette } from "@/components/AdminCommandPalette";
 import { cn } from "@/lib/utils";
 import {
   Shield, LayoutDashboard, Users, ShoppingBag, CreditCard,
   BarChart3, MessageSquare, Settings, Menu, X, LogOut, User,
-  Wallet, Handshake, Activity, AlertTriangle,
+  Wallet, Handshake, Activity, AlertTriangle, Search,
 } from "lucide-react";
 
 function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -115,6 +116,7 @@ function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void
 
 export default function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -132,7 +134,7 @@ export default function AdminLayout() {
         <div className="min-h-screen flex w-full font-dashboard">
           <AdminSidebar />
           <div className="flex-1 flex flex-col min-w-0">
-            <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-4">
+            <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-4 gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <SidebarTrigger />
                 <span className="text-sm font-semibold text-foreground shrink-0">Admin</span>
@@ -141,6 +143,15 @@ export default function AdminLayout() {
                   <AdminBreadcrumbs />
                 </div>
               </div>
+              <button
+                onClick={() => setCmdOpen(true)}
+                className="inline-flex items-center gap-2 h-8 px-3 rounded-md border bg-background text-xs text-muted-foreground hover:bg-accent shrink-0"
+                aria-label="Search"
+              >
+                <Search className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Search…</span>
+                <kbd className="hidden md:inline ml-2 text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded">⌘K</kbd>
+              </button>
             </header>
             <main className="flex-1 overflow-auto p-6">
               <Suspense fallback={<ContentSkeleton />}>
@@ -149,6 +160,7 @@ export default function AdminLayout() {
             </main>
           </div>
         </div>
+        <AdminCommandPalette open={cmdOpen} onOpenChange={setCmdOpen} />
       </SidebarProvider>
     );
   }
@@ -232,6 +244,7 @@ export default function AdminLayout() {
       </nav>
 
       <AdminMobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <AdminCommandPalette open={cmdOpen} onOpenChange={setCmdOpen} />
     </div>
   );
 }
