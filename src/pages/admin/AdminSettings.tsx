@@ -179,6 +179,10 @@ export default function AdminSettings() {
               disabled={isLoading}
             />
           </div>
+          <Button onClick={() => saveWhatsApp.mutate()} disabled={saveWhatsApp.isPending || isLoading} size="sm">
+            <Save className="mr-2 h-4 w-4" />
+            {saveWhatsApp.isPending ? "Saving..." : "Save WhatsApp"}
+          </Button>
         </CardContent>
       </Card>
 
@@ -197,13 +201,6 @@ export default function AdminSettings() {
           <R2MigrationPanel />
         </CardContent>
       </Card>
-
-      <div className="max-w-lg">
-        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || isLoading}>
-          <Save className="mr-2 h-4 w-4" />
-          {saveMutation.isPending ? "Saving..." : "Save All Settings"}
-        </Button>
-      </div>
     </div>
   );
 }
