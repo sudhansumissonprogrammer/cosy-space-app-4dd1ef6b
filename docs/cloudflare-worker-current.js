@@ -3212,6 +3212,7 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
     html += `<title>${title}</title>`;
     html += `<meta name="description" content="${desc}">`;
     html += `<link rel="canonical" href="${escapeHtml(url)}">`;
+    html += `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">`;
     html += `<meta property="og:type" content="website">`;
     html += `<meta property="og:title" content="${title}">`;
     html += `<meta property="og:description" content="${desc}">`;
