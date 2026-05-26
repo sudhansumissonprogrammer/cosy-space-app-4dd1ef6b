@@ -200,6 +200,11 @@ export default function StoreSettings() {
           og_image_url: finalOgImageUrl.trim() || null,
           owner_email: ownerEmail.trim() || null,
           default_profit_margin: defaultProfitMargin,
+          seo_about_paragraph: seoAboutParagraph.trim() || null,
+          usp_bullets: uspBullets.map((b) => b.trim()).filter(Boolean),
+          faq_items: faqItems
+            .map((f) => ({ q: (f.q || "").trim(), a: (f.a || "").trim() }))
+            .filter((f) => f.q && f.a),
         })
         .eq("id", storeId!);
       if (error) throw error;
