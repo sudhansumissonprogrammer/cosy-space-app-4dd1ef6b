@@ -3274,6 +3274,9 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
     const canonicalBase = s.custom_domain ? `https://${s.custom_domain}` : `https://${slug}.${ROOT_DOMAIN}`;
     ogMeta += `<link rel="canonical" href="${escapeHtml(canonicalBase)}/" />\n`;
 
+    // v8.46.0: tell Google/Bing/AI engines they can use large images + long snippets
+    ogMeta += `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">`;
+
     ogMeta += `<title>${ogTitle}</title>`;
     ogMeta += `<meta name="description" content="${ogDesc}">`;
     if (cats.length) {
