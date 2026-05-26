@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,7 @@ interface Row {
 }
 
 export default function AdminWallets() {
+  useDocumentTitle("Wallets · Admin");
   const [search, setSearch] = useState("");
   const [manageId, setManageId] = useState<string | null>(null);
 

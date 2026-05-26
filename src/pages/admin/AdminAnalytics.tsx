@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { ChartSkeleton } from "@/components/admin/AdminSkeletons";
 
 export default function AdminAnalytics() {
+  useDocumentTitle("Analytics · Admin");
   const { data: analytics, isLoading } = useQuery({
     queryKey: ["admin-analytics"],
     staleTime: 5 * 60 * 1000,

@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -15,6 +16,7 @@ const fmt = (n: number) => `₹${Number(n).toLocaleString("en-IN", { maximumFrac
 type Action = "approve" | "reject" | "mark_paid";
 
 export default function AdminPartnerPayouts() {
+  useDocumentTitle("Partner Payouts · Admin");
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("pending");

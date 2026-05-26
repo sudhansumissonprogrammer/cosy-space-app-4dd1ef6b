@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +23,7 @@ import { Plus, Pencil, Trash2, Crown, Store, Settings2, Search } from "lucide-re
 import ManageStoreDialog from "@/components/admin/ManageStoreDialog";
 
 export default function AdminSubscriptions() {
+  useDocumentTitle("Subscriptions · Admin");
   const queryClient = useQueryClient();
 
   const { data: plans } = useQuery({

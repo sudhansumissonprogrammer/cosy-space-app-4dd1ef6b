@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, Megaphone, FileCheck, BarChart3 } from "lucide-react";
@@ -8,6 +9,7 @@ import { AdminStatsTab } from "@/components/admin/whatsapp/AdminStatsTab";
 
 export default function AdminWhatsApp() {
   const [activeTab, setActiveTab] = useState("chat");
+  useDocumentTitle("WhatsApp · Admin");
 
   return (
     <div className="space-y-6">

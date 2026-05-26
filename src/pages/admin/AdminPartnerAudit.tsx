@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { Loader2 } from "lucide-react";
 const PAGE = 50;
 
 export default function AdminPartnerAudit() {
+  useDocumentTitle("Partner Audit · Admin");
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [action, setAction] = useState("");

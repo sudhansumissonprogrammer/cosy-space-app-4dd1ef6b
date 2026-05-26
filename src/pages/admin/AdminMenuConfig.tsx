@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -21,6 +22,7 @@ const STATUS_CONFIG = {
 } as const;
 
 export default function AdminMenuConfig() {
+  useDocumentTitle("Menu Control · Admin");
   const queryClient = useQueryClient();
 
   const { data: items, isLoading } = useQuery({

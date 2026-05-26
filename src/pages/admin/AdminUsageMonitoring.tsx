@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +54,7 @@ function getUsageTier(viewsToday: number) {
 }
 
 export default function AdminUsageMonitoring() {
+  useDocumentTitle("Usage · Admin");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("views_today");
   const [sortAsc, setSortAsc] = useState(false);
