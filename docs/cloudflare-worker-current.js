@@ -115,7 +115,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.44.0-pv-on-cache-hit";
+const WORKER_VERSION = "8.45.0-seo-readiness";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
