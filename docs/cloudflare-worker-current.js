@@ -121,7 +121,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.46.0-ai-search-meta";
+const WORKER_VERSION = "8.47.0-homepage-seo-head";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
