@@ -86,8 +86,17 @@ export default function StorePayments() {
     enabled: !!storeId,
   });
 
+  const isCommission = (store as any)?.billing_mode === "commission";
+
   useEffect(() => {
-    if (store) setOrderMode((store.order_mode as OrderMode) || "whatsapp");
+    if (store) {
+      // Commission-based stores can only use Website Checkout — WhatsApp ordering is disabled.
+      if ((store as any).billing_mode === "commission") {
+        setOrderMode("website");
+      } else {
+        setOrderMode((store.order_mode as OrderMode) || "whatsapp");
+      }
+    }
   }, [store]);
 
   useEffect(() => {
