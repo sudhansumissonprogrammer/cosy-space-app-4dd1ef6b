@@ -1,0 +1,1 @@
+UPDATE public.stores SET order_mode = 'website' WHERE billing_mode = 'commission' AND order_mode <> 'website';

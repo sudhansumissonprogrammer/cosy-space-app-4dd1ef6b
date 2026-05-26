@@ -86,8 +86,17 @@ export default function StorePayments() {
     enabled: !!storeId,
   });
 
+  const isCommission = (store as any)?.billing_mode === "commission";
+
   useEffect(() => {
-    if (store) setOrderMode((store.order_mode as OrderMode) || "whatsapp");
+    if (store) {
+      // Commission-based stores can only use Website Checkout — WhatsApp ordering is disabled.
+      if ((store as any).billing_mode === "commission") {
+        setOrderMode("website");
+      } else {
+        setOrderMode((store.order_mode as OrderMode) || "whatsapp");
+      }
+    }
   }, [store]);
 
   useEffect(() => {
@@ -234,22 +243,29 @@ export default function StorePayments() {
           <CardDescription>Choose how customers can place orders</CardDescription>
         </CardHeader>
         <CardContent>
+          {isCommission && (
+            <div className="mb-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs text-foreground">
+              Your store is on the <strong>commission plan</strong>, so orders must go through Website Checkout (so commission can be tracked on each order). WhatsApp ordering is disabled.
+            </div>
+          )}
           <RadioGroup
             value={orderMode}
-            onValueChange={(v) => setOrderMode(v as OrderMode)}
+            onValueChange={(v) => { if (!isCommission) setOrderMode(v as OrderMode); }}
             className="grid gap-3"
           >
-            <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "whatsapp" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
-              <RadioGroupItem value="whatsapp" className="mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                  <MessageCircle className="h-4 w-4 text-green-600" /> WhatsApp Orders
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Customers order via WhatsApp message. No online payment needed.
-                </p>
-              </div>
-            </label>
+            {!isCommission && (
+              <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "whatsapp" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
+                <RadioGroupItem value="whatsapp" className="mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                    <MessageCircle className="h-4 w-4 text-green-600" /> WhatsApp Orders
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Customers order via WhatsApp message. No online payment needed.
+                  </p>
+                </div>
+              </label>
+            )}
 
             <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "website" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
               <RadioGroupItem value="website" className="mt-0.5" />
@@ -263,17 +279,19 @@ export default function StorePayments() {
               </div>
             </label>
 
-            <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "both" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
-              <RadioGroupItem value="both" className="mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                  <Layers className="h-4 w-4 text-purple-600" /> Both
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Customers can choose WhatsApp or Website checkout.
-                </p>
-              </div>
-            </label>
+            {!isCommission && (
+              <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "both" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
+                <RadioGroupItem value="both" className="mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                    <Layers className="h-4 w-4 text-purple-600" /> Both
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Customers can choose WhatsApp or Website checkout.
+                  </p>
+                </div>
+              </label>
+            )}
           </RadioGroup>
         </CardContent>
       </Card>
