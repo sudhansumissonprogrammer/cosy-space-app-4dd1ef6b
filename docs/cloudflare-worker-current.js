@@ -1,7 +1,13 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.45.0 — SUPABASE-ONLY PAGEVIEWS
+ * SHOPBANAO PRODUCTION ROUTER v8.46.0 — AI SEARCH META
  *
- * Changes from v8.43.0:
+ * Changes from v8.45.0:
+ *  v8.46.0 — Added <meta name="robots" content="...max-image-preview:large,
+ *            max-snippet:-1..."> on homepage/category/PDP heads so Google +
+ *            AI engines can show full product images & long snippets in
+ *            answer boxes. Added OG product price/availability/condition
+ *            tags + Twitter price labels on PDPs so WhatsApp/Telegram/FB
+ *            shares display "₹12,500 · In stock" under the image.
  *  v8.45.0 — Removed Cloudflare Analytics Engine writes. Supabase page_views
  *            is the single source of truth. Browser beacon is primary writer;
  *            Worker writes as safety net on cold/MISS only. The AE_PAGEVIEWS
