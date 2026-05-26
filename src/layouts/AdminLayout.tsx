@@ -6,11 +6,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
   Shield, LayoutDashboard, Users, ShoppingBag, CreditCard,
   BarChart3, MessageSquare, Settings, Menu, X, LogOut, User,
+  Wallet, Handshake, Activity, AlertTriangle,
 } from "lucide-react";
 
 function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -29,6 +29,15 @@ function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void
         { label: "Users & Stores", icon: Users, path: "/admin/users-stores" },
         { label: "Orders", icon: ShoppingBag, path: "/admin/orders" },
         { label: "Subscriptions", icon: CreditCard, path: "/admin/subscriptions" },
+        { label: "Commission Wallets", icon: Wallet, path: "/admin/wallets" },
+      ],
+    },
+    {
+      title: "Partners",
+      items: [
+        { label: "Referral Partners", icon: Handshake, path: "/admin/partners" },
+        { label: "Partner Payouts", icon: Handshake, path: "/admin/partners/payouts" },
+        { label: "Partner Audit", icon: Handshake, path: "/admin/partners/audit" },
       ],
     },
     {
@@ -36,11 +45,14 @@ function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void
       items: [
         { label: "WhatsApp", icon: MessageSquare, path: "/admin/whatsapp" },
         { label: "Analytics", icon: BarChart3, path: "/admin/analytics" },
+        { label: "Usage Monitor", icon: Activity, path: "/admin/usage" },
+        { label: "Error Logs", icon: AlertTriangle, path: "/admin/error-logs" },
       ],
     },
     {
       title: "Configuration",
       items: [
+        { label: "Menu Control", icon: Menu, path: "/admin/menu-config" },
         { label: "Settings", icon: Settings, path: "/admin/settings" },
       ],
     },
@@ -49,12 +61,12 @@ function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#1a1a1a] font-dashboard">
+    <div className="fixed inset-0 z-50 flex flex-col bg-sidebar font-dashboard">
       <div className="flex-1 overflow-auto px-4 pt-6 pb-4">
         <div className="space-y-4">
           {sections.map((section, si) => (
             <div key={si}>
-              <p className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-widest text-[#666]">
+              <p className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                 {section.title}
               </p>
               <div className="space-y-0.5">
@@ -66,7 +78,9 @@ function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void
                       onClick={() => go(item.path)}
                       className={cn(
                         "flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-[15px] transition-colors",
-                        active ? "bg-white/10 text-white font-medium" : "text-[#b0b0b0] active:bg-white/5"
+                        active
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                          : "text-sidebar-foreground/70 active:bg-sidebar-accent/50"
                       )}
                     >
                       <item.icon className="h-5 w-5 shrink-0" />
@@ -83,16 +97,16 @@ function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void
       <div className="safe-area-pb px-4 pb-4 pt-2 flex items-center gap-3 justify-center">
         <button
           onClick={() => { signOut(); onClose(); }}
-          className="flex items-center gap-2.5 rounded-full bg-[#2a2a2a] px-6 py-3"
+          className="flex items-center gap-2.5 rounded-full bg-sidebar-accent px-6 py-3"
         >
-          <LogOut className="h-5 w-5 text-white" />
-          <span className="text-sm font-medium text-white">Sign out</span>
+          <LogOut className="h-5 w-5 text-sidebar-accent-foreground" />
+          <span className="text-sm font-medium text-sidebar-accent-foreground">Sign out</span>
         </button>
         <button
           onClick={onClose}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2a2a2a]"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-sidebar-accent"
         >
-          <X className="h-5 w-5 text-white" />
+          <X className="h-5 w-5 text-sidebar-accent-foreground" />
         </button>
       </div>
     </div>
@@ -136,23 +150,25 @@ export default function AdminLayout() {
   }
 
   // Mobile layout — matches store owner mobile pattern
+  // Replaced duplicate "Settings" with "Subscriptions" (higher-frequency screen);
+  // Settings is still reachable via the top-right avatar and the More sheet.
   const bottomNav = [
     { label: "Home", icon: LayoutDashboard, path: "/admin", exact: true },
     { label: "Users", icon: Users, path: "/admin/users-stores" },
     { label: "Orders", icon: ShoppingBag, path: "/admin/orders" },
+    { label: "Subs", icon: CreditCard, path: "/admin/subscriptions" },
     { label: "More", icon: Menu, path: "__menu__" },
-    { label: "Settings", icon: Settings, path: "/admin/settings" },
   ];
 
   return (
     <div className="min-h-screen flex flex-col bg-background font-dashboard">
       {/* Mobile header */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-[#1a1a1a] px-3">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-sidebar px-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-destructive">
             <Shield className="h-4 w-4 text-destructive-foreground" />
           </div>
-          <span className="truncate text-sm font-semibold text-white">Super Admin</span>
+          <span className="truncate text-sm font-semibold text-sidebar-foreground">Super Admin</span>
         </div>
         <Button
           variant="ghost"
@@ -161,7 +177,7 @@ export default function AdminLayout() {
           onClick={() => go("/admin/settings")}
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/80">
-            <User className="h-4 w-4 text-white" />
+            <User className="h-4 w-4 text-destructive-foreground" />
           </div>
         </Button>
       </header>

@@ -25,7 +25,7 @@ export default function AdminSettings() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("platform_config")
-        .select("id, platform_name, default_currency, wa_phone_number_id, wa_business_phone")
+        .select("id, platform_name, default_currency, wa_phone_number_id, wa_access_token, wa_business_phone")
         .limit(1)
         .single();
       if (error) throw error;
