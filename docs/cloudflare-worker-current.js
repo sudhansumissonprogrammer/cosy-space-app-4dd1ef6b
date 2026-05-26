@@ -634,10 +634,16 @@ function getCanonicalHtmlCacheKey(slug, pathname) {
      KV global reads avg 2–8ms); MISS falls through to existing
      CF-cache / canonical / warm pipeline. Zero functional regression.
    ============================================================ */
-const HTML_KV_TTL_SEC = 60;
+// v8.47.0 KV-WRITE COST CUT: TTL 60s→600s, dedup 55s→540s.
+// Was causing ~70% KV-write spike since v8.27.0 — every URL re-wrote
+// every minute per isolate. Product/price changes still bust instantly
+// via _bumpProductVersion() cache-key bump, so 10-min stale is only for
+// non-versioned static edits (manually purgeable from dashboard).
+// Expected: ~85% KV write reduction with zero functional regression.
+const HTML_KV_TTL_SEC = 600;
 const HTML_KV_MAX_BYTES = 800_000; // 800 KB hard cap (KV value limit is 25 MB)
 const _htmlKvWriteRecent = new Map(); // key → expiresAt
-const HTML_KV_WRITE_DEDUP_MS = 55_000;
+const HTML_KV_WRITE_DEDUP_MS = 540_000;
 const HTML_KV_WRITE_DEDUP_MAX = 5_000;
 
 function getHtmlKvKey(slug, pathname) {
