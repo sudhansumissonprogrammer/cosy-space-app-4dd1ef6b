@@ -40,7 +40,7 @@ const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/
 const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
 const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
 
-import PdpAskWhatsApp from "@/components/storefront/PdpAskWhatsApp";
+
 import DeliveryTimeline from "@/components/storefront/DeliveryTimeline";
 
 interface Variant {
@@ -1143,17 +1143,6 @@ export default function ProductDetail() {
             return null;
           })()}
 
-          {/* Persistent product-aware "Ask about this" WhatsApp pill — hidden for commission-mode stores */}
-          {!isOutOfStock && store.whatsapp_number && (store as any)?.theme !== "theme-18" && (store as any)?.billing_mode !== "commission" && (
-            <PdpAskWhatsApp
-              phone={store.whatsapp_number}
-              storeName={store.name}
-              productName={product.name}
-              productUrl={typeof window !== "undefined" ? `${window.location.origin}${window.location.pathname}` : ""}
-              priceLabel={formatPrice(Number(variantPrice), currency)}
-              liftedAboveStickyBar={stickyBarVisible}
-            />
-          )}
         </>,
         document.body
       )}
