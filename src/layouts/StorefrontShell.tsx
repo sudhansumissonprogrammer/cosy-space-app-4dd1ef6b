@@ -321,7 +321,7 @@ export default function StorefrontShell({
           <SideCart store={store} />
         </Suspense>
       )}
-      {overlaysReady && showWhatsApp && (
+      {overlaysReady && showWhatsApp && !/\/checkout(\/|$)/.test(pathname) && (
         <Suspense fallback={null}>
           <FloatingWhatsApp store={store} />
         </Suspense>
