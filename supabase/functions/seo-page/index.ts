@@ -487,8 +487,105 @@ async function handleRobots(url: URL) {
   const storeHost = domain || customDomain || `${slug}.${ROOT_DOMAIN}`;
   const sitemapUrl = `https://${storeHost}/sitemap.xml`;
 
-  const robotsTxt = `User-agent: *
+  // v8.47.0: AI SEARCH engines (ChatGPT/Claude/Perplexity/Gemini) ALLOWED.
+  // Only dataset trainers + abusive SEO scrapers blocked.
+  const robotsTxt = `# ${storeHost} — robots.txt
+# Search + AI-answer engines: ALLOW. Dataset trainers + scrapers: BLOCK.
+
+# ── AI SEARCH engines (drive traffic — ALLOW) ──
+User-agent: OAI-SearchBot
 Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: DuckAssistBot
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+# ── AI TRAINING crawlers (no traffic value — BLOCK) ──
+User-agent: GPTBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: ImagesiftBot
+Disallow: /
+
+User-agent: Omgilibot
+Disallow: /
+
+User-agent: FacebookBot
+Disallow: /
+
+User-agent: Meta-ExternalFetcher
+Disallow: /
+
+# ── Aggressive SEO scrapers (BLOCK) ──
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: DataForSeoBot
+Disallow: /
+
+# ── Default ──
+User-agent: *
+Allow: /
+Crawl-delay: 5
 Disallow: /dashboard/
 Disallow: /admin/
 Disallow: /login
@@ -497,26 +594,10 @@ Disallow: /checkout
 Disallow: /cart
 Disallow: /account
 Disallow: /wishlist
-
-# AI training crawlers
-User-agent: GPTBot
-Disallow: /
-
-User-agent: ClaudeBot
-Disallow: /
-
-User-agent: CCBot
-Disallow: /
-
-User-agent: anthropic-ai
-Disallow: /
-
-User-agent: Bytespider
-Disallow: /
+Disallow: /auth
+Disallow: /api/
 
 Sitemap: ${sitemapUrl}
-
-# Store: ${storeHost}
 `;
 
   return new Response(robotsTxt, {
