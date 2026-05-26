@@ -636,7 +636,7 @@ Deno.serve(async (req) => {
   // Fetch store
   const { data: store, error: storeErr } = await supabase
     .from("stores")
-    .select("id, name, slug, description, logo_url, banner_url, currency, meta_title, meta_description, og_image_url, custom_domain, whatsapp_number, instagram_url, facebook_url, order_mode, theme, features, best_selling_carousel, location, city, state, business_hours, return_policy, shipping_policy, is_suspended, is_verified, created_at, updated_at, mobile_hero_url, mobile_hero_images, facebook_pixel_id")
+    .select("id, name, slug, description, logo_url, banner_url, currency, meta_title, meta_description, og_image_url, custom_domain, whatsapp_number, instagram_url, facebook_url, order_mode, theme, features, best_selling_carousel, location, city, state, business_hours, return_policy, shipping_policy, is_suspended, is_verified, created_at, updated_at, mobile_hero_url, mobile_hero_images, facebook_pixel_id, about_us_text, seo_about_paragraph, faq_items, usp_bullets")
     .eq("slug", slug)
     .single();
 
