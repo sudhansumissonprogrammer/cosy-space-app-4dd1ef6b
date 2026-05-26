@@ -72,6 +72,10 @@ export default function StoreSettings() {
   const [ogImageRemoved, setOgImageRemoved] = useState(false);
   const [ownerEmail, setOwnerEmail] = useState("");
   const [defaultProfitMargin, setDefaultProfitMargin] = useState<number>(30);
+  // AI Search Readiness fields
+  const [seoAboutParagraph, setSeoAboutParagraph] = useState("");
+  const [uspBullets, setUspBullets] = useState<string[]>(["", "", ""]);
+  const [faqItems, setFaqItems] = useState<{ q: string; a: string }[]>([]);
 
   const { data: store, isLoading } = useStoreData(storeId);
 
