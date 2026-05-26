@@ -218,20 +218,20 @@ export default function AdminLayout() {
                   if (isMenu) setMenuOpen(true);
                   else go(item.path);
                 }}
-                className="relative flex flex-col items-center gap-0.5 px-2 py-1.5 min-w-0"
+                className="relative flex flex-col items-center gap-0.5 px-1 py-1.5 min-w-0 flex-1"
               >
                 {active && (
                   <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 h-[3px] w-8 rounded-full bg-foreground" />
                 )}
                 <item.icon
                   className={cn(
-                    "h-[22px] w-[22px] transition-colors",
+                    "h-[22px] w-[22px] transition-colors shrink-0",
                     active ? "text-foreground stroke-[2.5]" : "text-muted-foreground"
                   )}
                 />
                 <span
                   className={cn(
-                    "text-[10px] leading-tight",
+                    "text-[10px] leading-tight truncate max-w-full",
                     active ? "font-semibold text-foreground" : "text-muted-foreground"
                   )}
                 >
