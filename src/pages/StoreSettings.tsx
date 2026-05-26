@@ -123,6 +123,13 @@ export default function StoreSettings() {
       setMetaDescription((store as any).meta_description || "");
       setOgImageUrl((store as any).og_image_url || "");
       if ((store as any).og_image_url) setOgImagePreview((store as any).og_image_url);
+      setSeoAboutParagraph((store as any).seo_about_paragraph || "");
+      const usp = (store as any).usp_bullets;
+      if (Array.isArray(usp) && usp.length > 0) {
+        setUspBullets([...usp, "", "", ""].slice(0, Math.max(3, usp.length)));
+      }
+      const faq = (store as any).faq_items;
+      if (Array.isArray(faq)) setFaqItems(faq.filter((f: any) => f && typeof f === "object"));
     }
   }, [store]);
 
