@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Store, ShoppingBag, Ban, Package, DollarSign, UserX, UserPlus, ShoppingCart } from "lucide-react";
+import { Users, Store, ShoppingBag, Ban, Package, DollarSign, UserX, UserPlus, ShoppingCart, ArrowRight } from "lucide-react";
 import { StatCardsSkeleton } from "@/components/admin/AdminSkeletons";
 import QueryErrorState from "@/components/QueryErrorState";
 import { format } from "date-fns";
@@ -67,9 +68,17 @@ export default function AdminOverview() {
           <div className="grid gap-4 md:grid-cols-2">
             {/* Recent Signups */}
             <Card>
-              <CardHeader className="flex flex-row items-center gap-2 pb-3">
-                <UserPlus className="h-4 w-4 text-muted-foreground" />
-                <CardTitle className="text-sm font-medium">Recent Signups</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between pb-3">
+                <div className="flex items-center gap-2">
+                  <UserPlus className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Recent Signups</CardTitle>
+                </div>
+                <Link
+                  to="/admin/users-stores"
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  View all <ArrowRight className="h-3 w-3" />
+                </Link>
               </CardHeader>
               <CardContent className="space-y-3">
                 {stats?.recent_signups?.length ? (
@@ -89,9 +98,17 @@ export default function AdminOverview() {
 
             {/* Recent Orders */}
             <Card>
-              <CardHeader className="flex flex-row items-center gap-2 pb-3">
-                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                <CardTitle className="text-sm font-medium">Recent Orders</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between pb-3">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Recent Orders</CardTitle>
+                </div>
+                <Link
+                  to="/admin/orders"
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  View all <ArrowRight className="h-3 w-3" />
+                </Link>
               </CardHeader>
               <CardContent className="space-y-3">
                 {stats?.recent_orders?.length ? (

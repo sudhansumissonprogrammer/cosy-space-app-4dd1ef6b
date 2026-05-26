@@ -6,6 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { AdminBreadcrumbs } from "@/components/AdminBreadcrumbs";
 import { cn } from "@/lib/utils";
 import {
   Shield, LayoutDashboard, Users, ShoppingBag, CreditCard,
@@ -54,6 +55,7 @@ function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void
       items: [
         { label: "Menu Control", icon: Menu, path: "/admin/menu-config" },
         { label: "Settings", icon: Settings, path: "/admin/settings" },
+        { label: "Sign out", icon: LogOut, path: "__signout__" },
       ],
     },
   ];
@@ -71,11 +73,15 @@ function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void
               </p>
               <div className="space-y-0.5">
                 {section.items.map((item) => {
-                  const active = isActive(item.path);
+                  const isSignOut = item.path === "__signout__";
+                  const active = !isSignOut && isActive(item.path);
                   return (
                     <button
                       key={item.path}
-                      onClick={() => go(item.path)}
+                      onClick={() => {
+                        if (isSignOut) { signOut(); onClose(); }
+                        else go(item.path);
+                      }}
                       className={cn(
                         "flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-[15px] transition-colors",
                         active
@@ -94,17 +100,11 @@ function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void
         </div>
       </div>
 
-      <div className="safe-area-pb px-4 pb-4 pt-2 flex items-center gap-3 justify-center">
-        <button
-          onClick={() => { signOut(); onClose(); }}
-          className="flex items-center gap-2.5 rounded-full bg-sidebar-accent px-6 py-3"
-        >
-          <LogOut className="h-5 w-5 text-sidebar-accent-foreground" />
-          <span className="text-sm font-medium text-sidebar-accent-foreground">Sign out</span>
-        </button>
+      <div className="safe-area-pb px-4 pb-4 pt-2 flex items-center justify-center">
         <button
           onClick={onClose}
           className="flex h-12 w-12 items-center justify-center rounded-full bg-sidebar-accent"
+          aria-label="Close menu"
         >
           <X className="h-5 w-5 text-sidebar-accent-foreground" />
         </button>
@@ -133,9 +133,13 @@ export default function AdminLayout() {
           <AdminSidebar />
           <div className="flex-1 flex flex-col min-w-0">
             <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-card px-4">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 min-w-0">
                 <SidebarTrigger />
-                <span className="text-sm font-semibold text-foreground">Admin Panel</span>
+                <span className="text-sm font-semibold text-foreground shrink-0">Admin</span>
+                <span className="text-muted-foreground/40 shrink-0">/</span>
+                <div className="min-w-0 truncate">
+                  <AdminBreadcrumbs />
+                </div>
               </div>
             </header>
             <main className="flex-1 overflow-auto p-6">
