@@ -3516,7 +3516,23 @@ async function serveStreamedHtml(
       const productPreloaderGrid = preloaderProductsJson ? _buildProductPreloaderGrid(preloaderProductsJson, 8) : "";
 
       let bodyChunk = html.slice(headEnd + 7);
-      bodyChunk = bodyChunk.replace('<div id="root">', `${skeleton}${productPreloaderGrid}<div id="root">`);
+
+      // v8.45.0 — homepage SEO body block (hidden, crawler-readable) for the
+      // streaming path. Skipped on PDP/category (those have their own per-route
+      // SEO head already injected via _buildPdpCategorySeoHead).
+      let homepageSeoBody = "";
+      let homepageJsonLdScripts = "";
+      if (storefrontResult?.data?.store && !pdpCategoryInline?.kind) {
+        const _s = storefrontResult.data.store;
+        const _cats = Array.isArray(storefrontResult.data.categories) ? storefrontResult.data.categories : [];
+        const _prods = Array.isArray(storefrontResult.data.products_preview)
+          ? storefrontResult.data.products_preview
+          : (Array.isArray(storefrontResult.data.products) ? storefrontResult.data.products : []);
+        const _canonBase = _s.custom_domain ? `https://${_s.custom_domain}` : `https://${slug}.${ROOT_DOMAIN}`;
+        homepageSeoBody = _buildSeoBodyBlock(_s, _cats, _prods);
+        homepageJsonLdScripts = _buildHomepageJsonLd(_s, _canonBase, _cats, _prods);
+      }
+      bodyChunk = bodyChunk.replace('<div id="root">', `${skeleton}${productPreloaderGrid}${homepageSeoBody}${homepageJsonLdScripts}<div id="root">`);
 
       // v8.36.0: place __STOREFRONT_DATA__ BEFORE the first <script type="module">
       // so React modules can read it on first render. Previously we injected it
