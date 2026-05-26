@@ -3307,8 +3307,8 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
       ogMeta += `<link rel="apple-touch-icon" href="${escapeHtml(logoUrl)}">`;
     }
 
-    jsonLd = _buildHomepageJsonLd(s, canonicalBase);
-    seoBody = _buildSeoBodyBlock(s);
+    jsonLd = _buildHomepageJsonLd(s, canonicalBase, cats, storefrontData?.products_preview);
+    seoBody = _buildSeoBodyBlock(s, cats, storefrontData?.products_preview);
   }
 
   const skeletonMuted = getSkeletonMuted(textColor);
