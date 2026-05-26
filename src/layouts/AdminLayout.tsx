@@ -7,11 +7,12 @@ import { AdminSidebar } from "@/components/AdminSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { AdminBreadcrumbs } from "@/components/AdminBreadcrumbs";
+import { AdminCommandPalette } from "@/components/AdminCommandPalette";
 import { cn } from "@/lib/utils";
 import {
   Shield, LayoutDashboard, Users, ShoppingBag, CreditCard,
   BarChart3, MessageSquare, Settings, Menu, X, LogOut, User,
-  Wallet, Handshake, Activity, AlertTriangle,
+  Wallet, Handshake, Activity, AlertTriangle, Search,
 } from "lucide-react";
 
 function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
