@@ -547,14 +547,20 @@ ${buildShellFooter(store, canonical)}
 
 function buildStaticInfoHtml(
   store: any,
-  kind: "about" | "contact" | "track-order",
+  kind: "about" | "contact" | "track-order" | "faq",
   canonical: string,
   storeBase: string,
 ): string {
+  const aboutText: string = store.seo_about_paragraph || store.about_us_text || store.description || "";
+  const usp: string[] = Array.isArray(store.usp_bullets) ? store.usp_bullets.filter(Boolean) : [];
+  const faq: Array<{ q: string; a: string }> = Array.isArray(store.faq_items)
+    ? store.faq_items.filter((f: any) => f && f.q && f.a)
+    : [];
+
   const labels: Record<string, { title: string; intro: string; ogType: string }> = {
     about: {
       title: `About ${store.name}`,
-      intro: store.description || `${store.name} is an online store serving customers across India.`,
+      intro: aboutText || `${store.name} is an online store serving customers across India.`,
       ogType: "website",
     },
     contact: {
@@ -567,6 +573,11 @@ function buildStaticInfoHtml(
       intro: `Track the live status of your order from ${store.name}.`,
       ogType: "website",
     },
+    faq: {
+      title: `FAQ — ${store.name}`,
+      intro: `Frequently asked questions about shopping at ${store.name}.`,
+      ogType: "website",
+    },
   };
   const meta = labels[kind];
   const breadcrumb = buildBreadcrumb([
@@ -574,21 +585,128 @@ function buildStaticInfoHtml(
     { name: meta.title, url: canonical },
   ]);
 
-  const lines: string[] = [`<p>${esc(meta.intro)}</p>`];
-  if (kind === "contact") {
+  const lines: string[] = [];
+
+  if (kind === "about") {
+    if (aboutText) lines.push(`<p>${esc(aboutText)}</p>`);
+    if (store.city || store.state) {
+      lines.push(`<p><strong>Based in:</strong> ${esc([store.city, store.state].filter(Boolean).join(", "))}, India.</p>`);
+    }
+    if (usp.length) {
+      lines.push(`<h2>Why choose ${esc(store.name)}</h2>`);
+      lines.push(`<ul>${usp.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>`);
+    }
+    const contactBits: string[] = [];
+    if (store.whatsapp_number) contactBits.push(`WhatsApp <a href="https://wa.me/${esc(String(store.whatsapp_number).replace(/[^0-9]/g, ""))}">${esc(store.whatsapp_number)}</a>`);
+    if (store.instagram_url) contactBits.push(`<a href="${esc(store.instagram_url)}">Instagram</a>`);
+    if (store.facebook_url) contactBits.push(`<a href="${esc(store.facebook_url)}">Facebook</a>`);
+    if (contactBits.length) {
+      lines.push(`<h2>Get in touch</h2><p>${contactBits.join(" · ")}</p>`);
+    }
+  } else if (kind === "contact") {
+    lines.push(`<p>${esc(meta.intro)}</p>`);
     if (store.whatsapp_number) lines.push(`<p><strong>WhatsApp:</strong> <a href="https://wa.me/${esc(String(store.whatsapp_number).replace(/[^0-9]/g, ""))}">${esc(store.whatsapp_number)}</a></p>`);
-    if (store.city || store.state) lines.push(`<p><strong>Location:</strong> ${esc([store.city, store.state].filter(Boolean).join(", "))}</p>`);
+    if (store.city || store.state) lines.push(`<p><strong>Location:</strong> ${esc([store.city, store.state].filter(Boolean).join(", "))}, India</p>`);
     if (store.instagram_url) lines.push(`<p><strong>Instagram:</strong> <a href="${esc(store.instagram_url)}">${esc(store.instagram_url)}</a></p>`);
     if (store.facebook_url) lines.push(`<p><strong>Facebook:</strong> <a href="${esc(store.facebook_url)}">${esc(store.facebook_url)}</a></p>`);
+    // Business hours block (read by AI engines for "is X open?" queries)
+    const bh = store.business_hours;
+    if (bh && typeof bh === "object") {
+      const dayLabels: Record<string, string> = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" };
+      const hours = Object.entries(dayLabels)
+        .map(([k, label]) => bh[k] ? `<li><strong>${label}:</strong> ${esc(String(bh[k]))}</li>` : null)
+        .filter(Boolean);
+      if (hours.length) lines.push(`<h2>Business hours</h2><ul>${hours.join("")}</ul>`);
+    }
+  } else if (kind === "faq") {
+    lines.push(`<p>${esc(meta.intro)}</p>`);
+    if (faq.length) {
+      lines.push(`<dl class="faq">`);
+      for (const item of faq) {
+        lines.push(`<dt><strong>${esc(item.q)}</strong></dt><dd>${esc(item.a)}</dd>`);
+      }
+      lines.push(`</dl>`);
+    } else {
+      lines.push(`<p>No FAQs yet. Contact us via WhatsApp${store.whatsapp_number ? ` at ${esc(store.whatsapp_number)}` : ""} for any questions.</p>`);
+    }
+  } else {
+    lines.push(`<p>${esc(meta.intro)}</p>`);
+  }
+
+  const jsonLdBlocks: any[] = [breadcrumb];
+
+  // FAQPage schema — only on /faq page (per Google guidelines)
+  if (kind === "faq" && faq.length) {
+    jsonLdBlocks.push({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faq.map((item) => ({
+        "@type": "Question",
+        name: item.q,
+        acceptedAnswer: { "@type": "Answer", text: item.a },
+      })),
+    });
+  }
+
+  // AboutPage schema for /about — strong signal for AI engines
+  if (kind === "about") {
+    jsonLdBlocks.push({
+      "@context": "https://schema.org",
+      "@type": "AboutPage",
+      name: meta.title,
+      url: canonical,
+      mainEntity: {
+        "@type": "Organization",
+        name: store.name,
+        description: aboutText || undefined,
+        url: storeBase,
+        ...(store.logo_url ? { logo: store.logo_url } : {}),
+        ...(store.whatsapp_number ? { telephone: store.whatsapp_number } : {}),
+        ...(store.city || store.state
+          ? {
+              address: {
+                "@type": "PostalAddress",
+                ...(store.city ? { addressLocality: store.city } : {}),
+                ...(store.state ? { addressRegion: store.state } : {}),
+                addressCountry: "IN",
+              },
+            }
+          : {}),
+      },
+    });
+  }
+
+  // ContactPage schema for /contact
+  if (kind === "contact") {
+    jsonLdBlocks.push({
+      "@context": "https://schema.org",
+      "@type": "ContactPage",
+      name: meta.title,
+      url: canonical,
+      mainEntity: {
+        "@type": "Organization",
+        name: store.name,
+        ...(store.whatsapp_number
+          ? {
+              contactPoint: {
+                "@type": "ContactPoint",
+                telephone: store.whatsapp_number,
+                contactType: "customer service",
+                availableLanguage: ["English", "Hindi"],
+              },
+            }
+          : {}),
+      },
+    });
   }
 
   return `<!DOCTYPE html><html lang="en">${buildShellHead({
     title: meta.title,
-    desc: meta.intro.slice(0, 160),
+    desc: (aboutText || meta.intro).slice(0, 160),
     canonical,
     storeName: store.name,
     ogImage: store.og_image_url || store.banner_url || store.logo_url || "",
-    jsonLd: [breadcrumb],
+    jsonLd: jsonLdBlocks,
     ogType: meta.ogType,
   })}<body>
 ${buildShellHeader(store)}
