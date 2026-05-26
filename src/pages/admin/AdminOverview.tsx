@@ -139,7 +139,7 @@ export default function AdminOverview() {
                         <span className="ml-2 text-xs text-muted-foreground">{o.store_name}</span>
                       </div>
                       <span className="shrink-0 text-xs text-muted-foreground">
-                        ₹{(o.product_price * o.quantity).toFixed(0)}
+                        {cur}{(o.product_price * o.quantity).toFixed(0)}
                       </span>
                     </div>
                   ))
