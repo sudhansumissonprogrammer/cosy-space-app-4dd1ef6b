@@ -1,7 +1,13 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.46.0 — AI SEARCH META
+ * SHOPBANAO PRODUCTION ROUTER v8.47.0 — HOMEPAGE SEO HEAD IN STREAM
  *
- * Changes from v8.45.0:
+ * Changes from v8.46.0:
+ *  v8.47.0 — Streaming path now awaits storefront shell (KV-cached) and
+ *            injects a real <title>/<meta>/<og:*>/canonical block into
+ *            <head> BEFORE the body flushes. Crawlers (Google, AnswerLens,
+ *            ChatGPT, Perplexity, etc.) now see a fully-formed head on
+ *            every storefront, every request — no JS execution needed.
+ *            Removed the legacy client-side document.title fallback.
  *  v8.46.0 — Added <meta name="robots" content="...max-image-preview:large,
  *            max-snippet:-1..."> on homepage/category/PDP heads so Google +
  *            AI engines can show full product images & long snippets in
@@ -121,7 +127,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.46.0-ai-search-meta";
+const WORKER_VERSION = "8.47.0-homepage-seo-head";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -3238,6 +3244,67 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
   return "";
 }
 
+/**
+ * v8.47.0 — Shared homepage SEO head builder.
+ * Returns the full `<title> + meta + canonical + og/twitter + icon` block
+ * used by BOTH injectIntoHtml (cache mirror) and serveStreamedHtml (live).
+ * This guarantees every crawler (Google, Bing, AnswerLens, AI engines)
+ * sees a fully-formed head on every storefront, every request — no JS
+ * required.
+ */
+function _buildHomepageSeoHead(s, cats, canonicalBase, logoUrl) {
+  if (!s) return "";
+  const primaryCat = cats && cats[0]?.name || "";
+  const cityBit = s.city ? ` | ${s.city}` : "";
+  const autoTitle = primaryCat
+    ? `${s.name} — ${primaryCat} Online${cityBit}`
+    : `${s.name} — Shop Online${cityBit}`;
+  const autoDesc = primaryCat
+    ? `Shop ${primaryCat.toLowerCase()} from ${s.name}. Cash on delivery, fast shipping across India.`
+    : `Shop the best products at ${s.name}. Fast delivery & easy returns across India.`;
+
+  const ogTitle = escapeHtml(s.meta_title || autoTitle);
+  const ogDesc = escapeHtml(s.meta_description || s.description || autoDesc);
+  const rawOgImage = s.og_image_url || s.banner_url || s.mobile_hero_url || s.logo_url || "";
+  const isAbs = typeof rawOgImage === "string" && /^https?:\/\//i.test(rawOgImage);
+  const ogImage = isAbs ? escapeHtml(rawOgImage) : "";
+  const isExplicitOg = isAbs && rawOgImage === s.og_image_url;
+  const twitterCard = isExplicitOg || (isAbs && rawOgImage === s.banner_url) ? "summary_large_image" : "summary";
+
+  let out = "";
+  out += `<link rel="canonical" href="${escapeHtml(canonicalBase)}/" />`;
+  out += `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">`;
+  out += `<title>${ogTitle}</title>`;
+  out += `<meta name="description" content="${ogDesc}">`;
+  if (Array.isArray(cats) && cats.length) {
+    const kw = cats.slice(0, 8).map((c) => escapeHtml(c.name || "")).filter(Boolean).join(", ");
+    const kwExtra = [s.name, s.city].filter(Boolean).map(escapeHtml).join(", ");
+    out += `<meta name="keywords" content="${[kw, kwExtra].filter(Boolean).join(", ")}">`;
+  }
+  out += `<meta property="og:type" content="website">`;
+  out += `<meta property="og:title" content="${ogTitle}">`;
+  out += `<meta property="og:description" content="${ogDesc}">`;
+  out += `<meta property="og:url" content="${escapeHtml(canonicalBase)}/">`;
+  out += `<meta property="og:site_name" content="${escapeHtml(s.name)}">`;
+  out += `<meta property="og:locale" content="en_IN">`;
+  out += `<meta name="twitter:card" content="${twitterCard}">`;
+  out += `<meta name="twitter:title" content="${ogTitle}">`;
+  out += `<meta name="twitter:description" content="${ogDesc}">`;
+  if (ogImage) {
+    out += `<meta property="og:image" content="${ogImage}">`;
+    if (isExplicitOg) {
+      out += `<meta property="og:image:width" content="1200">`;
+      out += `<meta property="og:image:height" content="630">`;
+    }
+    out += `<meta name="twitter:image" content="${ogImage}">`;
+  }
+  if (logoUrl && /^https?:\/\//i.test(logoUrl)) {
+    out += `<link rel="icon" type="image/png" href="${escapeHtml(logoUrl)}">`;
+    out += `<link rel="apple-touch-icon" href="${escapeHtml(logoUrl)}">`;
+  }
+  return out;
+}
+
 function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) {
   // v8.15.0: ensure <html lang="en"> for SEO + accessibility.
   html = html.replace(/<html(?![^>]*\blang=)/i, '<html lang="en"');
@@ -3280,60 +3347,9 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
       ? `Shop ${primaryCat.toLowerCase()} from ${s.name}. Cash on delivery, fast shipping across India.`
       : `Shop the best products at ${s.name}. Fast delivery & easy returns across India.`;
 
-    const ogTitle = escapeHtml(s.meta_title || autoTitle);
-    const ogDesc = escapeHtml(s.meta_description || s.description || autoDesc);
-    // Pick best OG image: explicit og_image_url > banner > mobile hero > logo.
-    // Only accept absolute http(s) URLs (WhatsApp/FB silently drop relative ones).
-    const rawOgImage = s.og_image_url || s.banner_url || s.mobile_hero_url || s.logo_url || "";
-    const isAbs = typeof rawOgImage === "string" && /^https?:\/\//i.test(rawOgImage);
-    const ogImage = isAbs ? escapeHtml(rawOgImage) : "";
-    // Only emit 1200×630 hint when merchant explicitly set og_image_url
-    // (assumed properly sized). Logo/banner fallbacks may be any aspect ratio —
-    // declaring fake 1200×630 makes Facebook/WhatsApp reject the image.
-    const isExplicitOg = isAbs && rawOgImage === s.og_image_url;
-    // Twitter summary_large_image needs ≥600×314. If we only have a logo
-    // (likely square/small), downgrade to "summary" card style.
-    const twitterCard = isExplicitOg || (isAbs && rawOgImage === s.banner_url) ? "summary_large_image" : "summary";
-
-    // Canonical: prefer custom domain, fall back to subdomain.
+    // v8.47.0: canonical SEO head built by shared helper.
     const canonicalBase = s.custom_domain ? `https://${s.custom_domain}` : `https://${slug}.${ROOT_DOMAIN}`;
-    ogMeta += `<link rel="canonical" href="${escapeHtml(canonicalBase)}/" />\n`;
-
-    // v8.46.0: tell Google/Bing/AI engines they can use large images + long snippets
-    ogMeta += `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">`;
-
-    ogMeta += `<title>${ogTitle}</title>`;
-    ogMeta += `<meta name="description" content="${ogDesc}">`;
-    if (cats.length) {
-      const kw = cats
-        .slice(0, 8)
-        .map((c) => escapeHtml(c.name || ""))
-        .filter(Boolean)
-        .join(", ");
-      const kwExtra = [s.name, s.city].filter(Boolean).map(escapeHtml).join(", ");
-      ogMeta += `<meta name="keywords" content="${[kw, kwExtra].filter(Boolean).join(", ")}">`;
-    }
-    ogMeta += `<meta property="og:type" content="website">`;
-    ogMeta += `<meta property="og:title" content="${ogTitle}">`;
-    ogMeta += `<meta property="og:description" content="${ogDesc}">`;
-    ogMeta += `<meta property="og:url" content="${escapeHtml(canonicalBase)}/">`;
-    ogMeta += `<meta property="og:site_name" content="${escapeHtml(s.name)}">`;
-    ogMeta += `<meta property="og:locale" content="en_IN">`;
-    ogMeta += `<meta name="twitter:card" content="${twitterCard}">`;
-    ogMeta += `<meta name="twitter:title" content="${ogTitle}">`;
-    ogMeta += `<meta name="twitter:description" content="${ogDesc}">`;
-    if (ogImage) {
-      ogMeta += `<meta property="og:image" content="${ogImage}">`;
-      if (isExplicitOg) {
-        ogMeta += `<meta property="og:image:width" content="1200">`;
-        ogMeta += `<meta property="og:image:height" content="630">`;
-      }
-      ogMeta += `<meta name="twitter:image" content="${ogImage}">`;
-    }
-    if (logoUrl && /^https?:\/\//i.test(logoUrl)) {
-      ogMeta += `<link rel="icon" type="image/png" href="${escapeHtml(logoUrl)}">`;
-      ogMeta += `<link rel="apple-touch-icon" href="${escapeHtml(logoUrl)}">`;
-    }
+    ogMeta = _buildHomepageSeoHead(s, cats, canonicalBase, logoUrl);
 
     jsonLd = _buildHomepageJsonLd(s, canonicalBase, cats, storefrontData?.products_preview);
     seoBody = _buildSeoBodyBlock(s, cats, storefrontData?.products_preview);
@@ -3509,7 +3525,29 @@ async function serveStreamedHtml(
             pdpCategoryInline,
           );
         }
+      } else {
+        // v8.47.0: HOMEPAGE — await storefront data so we can inject a fully
+        // formed <title>/<meta>/<og:*>/canonical block into the head BEFORE
+        // streaming starts. Without this, crawlers see a head with no title
+        // (the React app sets it client-side, which non-JS crawlers ignore).
+        // The shell RPC is KV-cached for ~24h, so the awaited cost is ~0
+        // on warm requests.
+        try {
+          earlyStorefrontResult = await storefrontPromise;
+        } catch {}
+        const earlyStore = earlyStorefrontResult?.data?.store;
+        if (earlyStore) {
+          const _cats = Array.isArray(earlyStorefrontResult.data.categories)
+            ? earlyStorefrontResult.data.categories
+            : [];
+          const _canonBase = earlyStore.custom_domain
+            ? `https://${earlyStore.custom_domain}`
+            : `https://${slug}.${ROOT_DOMAIN}`;
+          const _logo = earlyStore.logo_url || "";
+          perRouteSeoHead = _buildHomepageSeoHead(earlyStore, _cats, _canonBase, _logo);
+        }
       }
+
 
       let headChunk = _stripPlatformSeoHead(html.slice(0, headEnd) + "</head>");
       headChunk = headChunk.slice(0, headChunk.indexOf("</head>"));
@@ -3578,21 +3616,10 @@ async function serveStreamedHtml(
         }
       }
 
-      if (storefrontResult?.data?.store && !pdpCategoryInline?.kind) {
-        const s = storefrontResult.data.store;
-        const faviconUrl = escapeHtml(s.logo_url || "");
+      // v8.47.0: title/canonical/og:url/icon are now injected as REAL HTML
+      // by _buildHomepageSeoHead above, so the previous client-side
+      // document.title fallback is no longer needed.
 
-        const canonicalBase = s.custom_domain ? `https://${s.custom_domain}` : `https://${slug}.${ROOT_DOMAIN}`;
-
-        let metaScript = `<script>(function(){document.title=${JSON.stringify(s.meta_title || `${s.name} — Shop Online`)};`;
-        metaScript += `var cn=document.querySelector("link[rel='canonical']");if(!cn){cn=document.createElement('link');cn.rel='canonical';document.head.appendChild(cn);}cn.href=${JSON.stringify(canonicalBase + "/")};`;
-        metaScript += `var ou=document.querySelector("meta[property='og:url']");if(!ou){ou=document.createElement('meta');ou.setAttribute('property','og:url');document.head.appendChild(ou);}ou.content=${JSON.stringify(canonicalBase + "/")};`;
-        if (faviconUrl) {
-          metaScript += `var li=document.querySelector("link[rel~='icon']");if(!li){li=document.createElement('link');li.rel='icon';document.head.appendChild(li);}li.href=${JSON.stringify(faviconUrl)};`;
-        }
-        metaScript += `})()</script>`;
-        bodyChunk = bodyChunk.replace("</body>", `${metaScript}</body>`);
-      }
 
       await writeChunk(enc.encode(bodyChunk));
     } catch {
