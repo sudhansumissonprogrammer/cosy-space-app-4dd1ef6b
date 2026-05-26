@@ -1,7 +1,13 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.45.0 — SUPABASE-ONLY PAGEVIEWS
+ * SHOPBANAO PRODUCTION ROUTER v8.46.0 — AI SEARCH META
  *
- * Changes from v8.43.0:
+ * Changes from v8.45.0:
+ *  v8.46.0 — Added <meta name="robots" content="...max-image-preview:large,
+ *            max-snippet:-1..."> on homepage/category/PDP heads so Google +
+ *            AI engines can show full product images & long snippets in
+ *            answer boxes. Added OG product price/availability/condition
+ *            tags + Twitter price labels on PDPs so WhatsApp/Telegram/FB
+ *            shares display "₹12,500 · In stock" under the image.
  *  v8.45.0 — Removed Cloudflare Analytics Engine writes. Supabase page_views
  *            is the single source of truth. Browser beacon is primary writer;
  *            Worker writes as safety net on cold/MISS only. The AE_PAGEVIEWS
@@ -115,7 +121,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.45.0-seo-readiness";
+const WORKER_VERSION = "8.46.0-ai-search-meta";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -3132,6 +3138,8 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
     html += `<title>${title}</title>`;
     html += `<meta name="description" content="${desc}">`;
     html += `<link rel="canonical" href="${escapeHtml(url)}">`;
+    // v8.46.0: rich-result hints + AI engines
+    html += `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">`;
     html += `<meta property="og:type" content="product">`;
     html += `<meta property="og:title" content="${title}">`;
     html += `<meta property="og:description" content="${desc}">`;
@@ -3141,9 +3149,25 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
       html += `<meta property="og:image" content="${ogImg}">`;
       html += `<meta name="twitter:image" content="${ogImg}">`;
     }
+    // v8.46.0: product-specific OG tags — WhatsApp/Telegram/FB show price + stock
+    if (price > 0) {
+      html += `<meta property="product:price:amount" content="${price.toFixed(2)}">`;
+      html += `<meta property="product:price:currency" content="${escapeHtml(p.currency || store.currency || "INR")}">`;
+      html += `<meta property="og:price:amount" content="${price.toFixed(2)}">`;
+      html += `<meta property="og:price:currency" content="${escapeHtml(p.currency || store.currency || "INR")}">`;
+    }
+    html += `<meta property="product:availability" content="${inStock ? "in stock" : "out of stock"}">`;
+    html += `<meta property="product:condition" content="new">`;
+    if (p.sku) html += `<meta property="product:retailer_item_id" content="${escapeHtml(p.sku)}">`;
     html += `<meta name="twitter:card" content="summary_large_image">`;
     html += `<meta name="twitter:title" content="${title}">`;
     html += `<meta name="twitter:description" content="${desc}">`;
+    if (price > 0) {
+      html += `<meta name="twitter:label1" content="Price">`;
+      html += `<meta name="twitter:data1" content="${(p.currency || store.currency || "INR") === "INR" ? "₹" : ""}${price.toFixed(0)}">`;
+      html += `<meta name="twitter:label2" content="Availability">`;
+      html += `<meta name="twitter:data2" content="${inStock ? "In stock" : "Out of stock"}">`;
+    }
     html += `<script type="application/ld+json">${safe(productLd)}</script>`;
     html += `<script type="application/ld+json">${safe(breadcrumbLd)}</script>`;
     return html;
@@ -3194,6 +3218,7 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
     html += `<title>${title}</title>`;
     html += `<meta name="description" content="${desc}">`;
     html += `<link rel="canonical" href="${escapeHtml(url)}">`;
+    html += `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">`;
     html += `<meta property="og:type" content="website">`;
     html += `<meta property="og:title" content="${title}">`;
     html += `<meta property="og:description" content="${desc}">`;
@@ -3273,6 +3298,9 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
     // Canonical: prefer custom domain, fall back to subdomain.
     const canonicalBase = s.custom_domain ? `https://${s.custom_domain}` : `https://${slug}.${ROOT_DOMAIN}`;
     ogMeta += `<link rel="canonical" href="${escapeHtml(canonicalBase)}/" />\n`;
+
+    // v8.46.0: tell Google/Bing/AI engines they can use large images + long snippets
+    ogMeta += `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">`;
 
     ogMeta += `<title>${ogTitle}</title>`;
     ogMeta += `<meta name="description" content="${ogDesc}">`;
