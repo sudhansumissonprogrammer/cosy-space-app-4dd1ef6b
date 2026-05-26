@@ -1,7 +1,13 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.46.0 — AI SEARCH META
+ * SHOPBANAO PRODUCTION ROUTER v8.47.0 — HOMEPAGE SEO HEAD IN STREAM
  *
- * Changes from v8.45.0:
+ * Changes from v8.46.0:
+ *  v8.47.0 — Streaming path now awaits storefront shell (KV-cached) and
+ *            injects a real <title>/<meta>/<og:*>/canonical block into
+ *            <head> BEFORE the body flushes. Crawlers (Google, AnswerLens,
+ *            ChatGPT, Perplexity, etc.) now see a fully-formed head on
+ *            every storefront, every request — no JS execution needed.
+ *            Removed the legacy client-side document.title fallback.
  *  v8.46.0 — Added <meta name="robots" content="...max-image-preview:large,
  *            max-snippet:-1..."> on homepage/category/PDP heads so Google +
  *            AI engines can show full product images & long snippets in
