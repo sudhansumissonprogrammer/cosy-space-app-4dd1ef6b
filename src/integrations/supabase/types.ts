@@ -2465,6 +2465,7 @@ export type Database = {
           domain_verified: boolean | null
           facebook_pixel_id: string | null
           facebook_url: string | null
+          faq_items: Json
           features: Json | null
           id: string
           instagram_url: string | null
@@ -2487,12 +2488,14 @@ export type Database = {
           partial_payment_value: number | null
           referred_by_partner_id: string | null
           return_policy: string | null
+          seo_about_paragraph: string | null
           shipping_policy: string | null
           slug: string
           state: string | null
           suspension_reason: string | null
           theme: string
           updated_at: string
+          usp_bullets: string[]
           whatsapp_number: string | null
         }
         Insert: {
@@ -2512,6 +2515,7 @@ export type Database = {
           domain_verified?: boolean | null
           facebook_pixel_id?: string | null
           facebook_url?: string | null
+          faq_items?: Json
           features?: Json | null
           id?: string
           instagram_url?: string | null
@@ -2534,12 +2538,14 @@ export type Database = {
           partial_payment_value?: number | null
           referred_by_partner_id?: string | null
           return_policy?: string | null
+          seo_about_paragraph?: string | null
           shipping_policy?: string | null
           slug: string
           state?: string | null
           suspension_reason?: string | null
           theme?: string
           updated_at?: string
+          usp_bullets?: string[]
           whatsapp_number?: string | null
         }
         Update: {
@@ -2559,6 +2565,7 @@ export type Database = {
           domain_verified?: boolean | null
           facebook_pixel_id?: string | null
           facebook_url?: string | null
+          faq_items?: Json
           features?: Json | null
           id?: string
           instagram_url?: string | null
@@ -2581,12 +2588,14 @@ export type Database = {
           partial_payment_value?: number | null
           referred_by_partner_id?: string | null
           return_policy?: string | null
+          seo_about_paragraph?: string | null
           shipping_policy?: string | null
           slug?: string
           state?: string | null
           suspension_reason?: string | null
           theme?: string
           updated_at?: string
+          usp_bullets?: string[]
           whatsapp_number?: string | null
         }
         Relationships: []
@@ -3406,6 +3415,7 @@ export type Database = {
         }[]
       }
       get_store_wallet_summary: { Args: { _store_id: string }; Returns: Json }
+      get_storefront_seo: { Args: { _slug: string }; Returns: Json }
       get_storefront_shell: {
         Args: { _slug: string; _with_pages?: boolean }
         Returns: Json
