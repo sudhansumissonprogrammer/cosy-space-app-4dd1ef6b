@@ -681,7 +681,7 @@ async function kvHtmlGet(env, slug, pathname) {
       }
     }
     if (!headers.has("Content-Type")) headers.set("Content-Type", "text/html; charset=utf-8");
-    headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=86400");
+    headers.set("Cache-Control", "public, max-age=600, stale-while-revalidate=86400");
     return new Response(value, { status: meta.s || 200, headers });
   } catch {
     return null;
