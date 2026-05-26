@@ -6,6 +6,7 @@ import { Users, Store, ShoppingBag, Ban, Package, DollarSign, UserX, UserPlus, S
 import { StatCardsSkeleton } from "@/components/admin/AdminSkeletons";
 import QueryErrorState from "@/components/QueryErrorState";
 import { format } from "date-fns";
+import { useDocumentTitle, currencySymbol } from "@/hooks/useDocumentTitle";
 
 interface AdminStats {
   total_users: number;
@@ -20,9 +21,27 @@ interface AdminStats {
 }
 
 export default function AdminOverview() {
+  useDocumentTitle("Overview · Admin");
+
+  const { data: platformConfig } = useQuery({
+    queryKey: ["platform-config-currency"],
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("platform_config")
+        .select("default_currency")
+        .limit(1)
+        .single();
+      return data as { default_currency: string } | null;
+    },
+  });
+  const cur = currencySymbol(platformConfig?.default_currency);
+
   const { data: stats, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-stats"],
-    staleTime: 2 * 60 * 1000,
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_admin_stats");
       if (error) throw error;
@@ -35,7 +54,7 @@ export default function AdminOverview() {
     { title: "Total Stores", value: stats?.total_stores ?? 0, icon: Store },
     { title: "Total Products", value: stats?.total_products ?? 0, icon: Package },
     { title: "Total Orders", value: stats?.total_orders ?? 0, icon: ShoppingBag },
-    { title: "Total Revenue", value: `₹${Number(stats?.total_revenue ?? 0).toFixed(2)}`, icon: DollarSign },
+    { title: "Total Revenue", value: `${cur}${Number(stats?.total_revenue ?? 0).toFixed(2)}`, icon: DollarSign },
     { title: "Suspended Stores", value: stats?.suspended_stores ?? 0, icon: Ban },
     { title: "Blocked Users", value: stats?.blocked_users ?? 0, icon: UserX },
   ];
