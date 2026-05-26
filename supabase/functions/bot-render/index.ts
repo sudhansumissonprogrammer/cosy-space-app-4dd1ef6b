@@ -925,8 +925,8 @@ Deno.serve(async (req) => {
   }
 
   // Static info routes
-  if (effectiveKind === "about" || effectiveKind === "contact" || effectiveKind === "track-order") {
-    const html = buildStaticInfoHtml(store, effectiveKind, `${canonical}/${effectiveKind}`, canonical);
+  if (effectiveKind === "about" || effectiveKind === "contact" || effectiveKind === "track-order" || effectiveKind === "faq") {
+    const html = buildStaticInfoHtml(store, effectiveKind as any, `${canonical}/${effectiveKind}`, canonical);
     return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
   }
 
