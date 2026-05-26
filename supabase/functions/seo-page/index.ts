@@ -540,53 +540,83 @@ async function handleLlms(url: URL) {
   }
 
   const supabase = getSupabase();
-  const { data: store, error } = await supabase
-    .from("stores")
-    .select("id, slug, name, description, meta_description, custom_domain")
-    .eq("slug", slug)
-    .eq("is_suspended", false)
-    .single();
-
-  if (error || !store) {
+  // Use the dedicated SEO RPC for one-shot retrieval of store + categories +
+  // products + faq/usp/about fields. Falls back to a minimal stub if the RPC
+  // ever fails so we never serve 500 to AI crawlers.
+  const { data: seo, error } = await (supabase as any).rpc("get_storefront_seo", { _slug: slug });
+  if (error || !seo?.store) {
     return new Response("Store not found", { status: 404, headers: corsHeaders });
   }
+  const store = seo.store;
+  const categories: any[] = Array.isArray(seo.categories) ? seo.categories : [];
+  const products: any[] = Array.isArray(seo.products) ? seo.products : [];
 
   const redirect = buildPrimaryDomainRedirect(store, domain, "/llms.txt");
   if (redirect) return redirect;
 
   const storeHost = domain || store.custom_domain || `${slug}.${ROOT_DOMAIN}`;
   const baseUrl = `https://${storeHost}`;
-  const desc = store.meta_description || store.description || `${store.name} — online store powered by ShopBanao.`;
+  const about = store.seo_about_paragraph || store.meta_description || store.description
+    || `${store.name} — online store powered by ShopBanao.`;
+  const locBits = [store.city, store.state].filter(Boolean).join(", ");
 
-  const [{ data: categories }, { data: pages }] = await Promise.all([
-    supabase.from("categories").select("name, slug").eq("store_id", store.id).limit(20),
-    supabase
-      .from("store_pages")
-      .select("title, slug, page_type")
-      .eq("store_id", store.id)
-      .eq("is_active", true)
-      .limit(20),
-  ]);
+  let body = `# ${store.name}\n\n> ${about}\n\n`;
 
-  let body = `# ${store.name}\n\n> ${desc}\n\n## Storefront\n- [Home](${baseUrl}/)\n- [Shop all products](${baseUrl}/shop)\n- [Best sellers](${baseUrl}/best-sellers)\n- [Categories](${baseUrl}/categories)\n- [Contact](${baseUrl}/contact)\n`;
+  // Context paragraph for AI assistants
+  const contextLines: string[] = [];
+  contextLines.push(`${store.name} is an online store${locBits ? ` based in ${locBits}` : ""}.`);
+  if (store.whatsapp_number) contextLines.push(`Contact via WhatsApp: ${store.whatsapp_number}.`);
+  if (store.currency) contextLines.push(`Prices are in ${store.currency}.`);
+  body += contextLines.join(" ") + "\n\n";
 
-  if (categories && categories.length) {
+  // USP / Why choose us
+  const usp: string[] = Array.isArray(store.usp_bullets) ? store.usp_bullets.filter(Boolean) : [];
+  if (usp.length) {
+    body += `## Why choose ${store.name}\n`;
+    for (const u of usp.slice(0, 10)) body += `- ${u}\n`;
+    body += `\n`;
+  }
+
+  // Pages
+  body += `## Pages\n`;
+  body += `- [Home](${baseUrl}/): Browse all products\n`;
+  body += `- [Shop](${baseUrl}/shop): Full catalog\n`;
+  body += `- [Best sellers](${baseUrl}/best-sellers): Top picks\n`;
+  body += `- [Categories](${baseUrl}/categories): Browse by category\n`;
+  body += `- [About](${baseUrl}/about): Our story\n`;
+  body += `- [Contact](${baseUrl}/contact): Get in touch\n`;
+
+  // Categories
+  if (categories.length) {
     body += `\n## Categories\n`;
-    for (const c of categories) {
+    for (const c of categories.slice(0, 50)) {
       if (!c.slug) continue;
-      body += `- [${c.name}](${baseUrl}/category/${c.slug})\n`;
+      const count = c.product_count ? ` (${c.product_count} products)` : "";
+      body += `- [${c.name}](${baseUrl}/category/${c.slug})${count}\n`;
     }
   }
 
-  if (pages && pages.length) {
-    body += `\n## Pages\n`;
-    for (const p of pages) {
+  // Products
+  if (products.length) {
+    body += `\n## Products\n`;
+    for (const p of products.slice(0, 100)) {
       if (!p.slug) continue;
-      body += `- [${p.title}](${baseUrl}/page/${p.slug})\n`;
+      const price = p.sale_price || p.price;
+      const priceBit = price ? ` — ${store.currency || "INR"} ${Number(price).toFixed(2)}` : "";
+      body += `- [${p.name}](${baseUrl}/product/${p.slug})${priceBit}\n`;
     }
   }
 
-  body += `\n## Machine-readable\n- [Sitemap](${baseUrl}/sitemap.xml)\n- [Robots](${baseUrl}/robots.txt)\n`;
+  // FAQ
+  const faq: any[] = Array.isArray(store.faq_items) ? store.faq_items.filter((f: any) => f && f.q && f.a) : [];
+  if (faq.length) {
+    body += `\n## FAQ\n`;
+    for (const f of faq.slice(0, 20)) {
+      body += `\n### ${f.q}\n${f.a}\n`;
+    }
+  }
+
+  body += `\n## Optional\n- [Sitemap](${baseUrl}/sitemap.xml)\n- [Robots](${baseUrl}/robots.txt)\n`;
 
   return new Response(body, {
     headers: {
