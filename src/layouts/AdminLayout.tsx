@@ -121,8 +121,6 @@ export default function AdminLayout() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();
-  const navigate = useNavigate();
-  const location = useLocation();
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
