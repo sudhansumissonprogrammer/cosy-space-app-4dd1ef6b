@@ -124,6 +124,10 @@ export default function AdminSettings() {
               </SelectContent>
             </Select>
           </div>
+          <Button onClick={() => saveGeneral.mutate()} disabled={saveGeneral.isPending || isLoading} size="sm">
+            <Save className="mr-2 h-4 w-4" />
+            {saveGeneral.isPending ? "Saving..." : "Save General"}
+          </Button>
         </CardContent>
       </Card>
 
