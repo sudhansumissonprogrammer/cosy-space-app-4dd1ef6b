@@ -2855,19 +2855,22 @@ function _stripPlatformSeoHead(html) {
  * Emits Organization + WebSite (with SearchAction). PDP/category schemas are
  * emitted in the streaming path where per-route data is available.
  */
-function _buildHomepageJsonLd(store, canonicalBase) {
+function _buildHomepageJsonLd(store, canonicalBase, categories, products) {
   if (!store) return "";
   const sameAs = [];
   if (store.instagram_url) sameAs.push(store.instagram_url);
   if (store.facebook_url) sameAs.push(store.facebook_url);
 
+  const aboutText = store.seo_about_paragraph || store.description || "";
+
+  // 1. Organization / Store
   const org = {
     "@context": "https://schema.org",
     "@type": "Store",
     name: store.name,
     url: canonicalBase + "/",
   };
-  if (store.description) org.description = store.description;
+  if (aboutText) org.description = aboutText;
   if (store.logo_url) org.logo = store.logo_url;
   if (store.banner_url) org.image = store.banner_url;
   if (store.whatsapp_number) org.telephone = store.whatsapp_number;
@@ -2884,6 +2887,7 @@ function _buildHomepageJsonLd(store, canonicalBase) {
   org.currenciesAccepted = store.currency || "INR";
   org.paymentAccepted = "Cash, UPI, Credit Card, Debit Card";
 
+  // 2. WebSite with SearchAction
   const website = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -2896,29 +2900,162 @@ function _buildHomepageJsonLd(store, canonicalBase) {
     },
   };
 
+  // 3. LocalBusiness — emitted when we have an address
+  const schemas = [org, website];
+  if (store.location || store.city || store.state) {
+    const localBiz = {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      name: store.name,
+      url: canonicalBase + "/",
+      ...(aboutText ? { description: aboutText } : {}),
+      ...(store.logo_url ? { image: store.logo_url } : {}),
+      ...(store.whatsapp_number ? { telephone: store.whatsapp_number } : {}),
+      address: org.address,
+      priceRange: "₹₹",
+    };
+    // Map business_hours (jsonb { mon: "9-18", ... }) to openingHoursSpecification
+    const bh = store.business_hours || null;
+    if (bh && typeof bh === "object") {
+      const dayMap = {
+        mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday",
+        fri: "Friday", sat: "Saturday", sun: "Sunday",
+      };
+      const specs = [];
+      for (const [k, label] of Object.entries(dayMap)) {
+        const v = bh[k];
+        if (!v || typeof v !== "string") continue;
+        const m = v.match(/(\d{1,2})[:.]?(\d{2})?\s*[-–to]+\s*(\d{1,2})[:.]?(\d{2})?/i);
+        if (m) {
+          const fmt = (h, mm) => `${String(h).padStart(2, "0")}:${(mm || "00").padStart(2, "0")}`;
+          specs.push({
+            "@type": "OpeningHoursSpecification",
+            dayOfWeek: label,
+            opens: fmt(m[1], m[2]),
+            closes: fmt(m[3], m[4]),
+          });
+        }
+      }
+      if (specs.length) localBiz.openingHoursSpecification = specs;
+    }
+    schemas.push(localBiz);
+  }
+
+  // 4. ItemList of featured products
+  if (Array.isArray(products) && products.length) {
+    const items = products.slice(0, 20).map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${canonicalBase}/product/${encodeURIComponent(p.slug || p.id || "")}`,
+      name: p.name || "",
+      ...(p.image_url ? { image: p.image_url } : {}),
+    }));
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: `Featured products — ${store.name}`,
+      itemListElement: items,
+    });
+  }
+
+  // 5. FAQPage (only when merchant filled FAQs)
+  const faq = Array.isArray(store.faq_items) ? store.faq_items.filter((f) => f && f.q && f.a) : [];
+  if (faq.length) {
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faq.slice(0, 25).map((f) => ({
+        "@type": "Question",
+        name: String(f.q),
+        acceptedAnswer: { "@type": "Answer", text: String(f.a) },
+      })),
+    });
+  }
+
   const safe = (o) => JSON.stringify(o).replace(/<\/script/gi, "<\\/script");
-  return (
-    `<script type="application/ld+json">${safe(org)}</script>` +
-    `<script type="application/ld+json">${safe(website)}</script>`
-  );
+  return schemas.map((s) => `<script type="application/ld+json">${safe(s)}</script>`).join("");
 }
 
 /**
- * v8.14.0 — Hidden but crawlable SEO content block injected into the body
- * skeleton. Googlebot sees the store name + description + nav links even if
- * React fails to hydrate. Visually hidden via inline styles (not display:none,
- * which Google ignores).
+ * v8.45.0 — Hidden but crawlable SEO content block injected into the body
+ * skeleton. AI crawlers + Googlebot see the full storefront content even if
+ * React fails to hydrate. Visually hidden via clip-path (Google-safe — same
+ * content React renders, not cloaking).
  */
-function _buildSeoBodyBlock(store) {
+function _buildSeoBodyBlock(store, categories, products) {
   if (!store) return "";
   const name = escapeHtml(store.name || "");
-  const desc = escapeHtml(store.description || store.meta_description || "");
-  return (
-    `<div style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap" aria-hidden="false">` +
-    `<h1>${name}</h1>` +
-    (desc ? `<p>${desc}</p>` : "") +
-    `</div>`
-  );
+  const about = escapeHtml(store.seo_about_paragraph || store.description || store.meta_description || "");
+  const cats = Array.isArray(categories) ? categories : [];
+  const prods = Array.isArray(products) ? products : [];
+  const usp = Array.isArray(store.usp_bullets) ? store.usp_bullets.filter(Boolean) : [];
+  const faq = Array.isArray(store.faq_items) ? store.faq_items.filter((f) => f && f.q && f.a) : [];
+
+  const loc = [store.city, store.state].filter(Boolean).map(escapeHtml).join(", ");
+  const wa = store.whatsapp_number ? escapeHtml(String(store.whatsapp_number)) : "";
+
+  let html = `<div id="seo-content" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:normal" aria-hidden="false">`;
+  html += `<h1>${name}</h1>`;
+  if (about) html += `<p>${about}</p>`;
+  if (loc || wa) {
+    const bits = [];
+    if (loc) bits.push(`Location: ${loc}`);
+    if (wa) bits.push(`WhatsApp: ${wa}`);
+    html += `<p>${bits.join(" · ")}</p>`;
+  }
+
+  if (cats.length) {
+    html += `<h2>Shop by Category</h2><ul>`;
+    for (const c of cats.slice(0, 30)) {
+      const cn = escapeHtml(c.name || "");
+      const cs = escapeHtml(c.slug || "");
+      if (cn && cs) html += `<li><a href="/category/${cs}">${cn}</a></li>`;
+    }
+    html += `</ul>`;
+  }
+
+  if (prods.length) {
+    html += `<h2>Featured Products</h2><ul>`;
+    for (const p of prods.slice(0, 20)) {
+      const pn = escapeHtml(p.name || "");
+      const ps = escapeHtml(p.slug || p.id || "");
+      const pr = p.sale_price || p.price;
+      const priceBit = pr ? ` — ${escapeHtml(store.currency || "INR")} ${Number(pr).toFixed(2)}` : "";
+      if (pn && ps) html += `<li><a href="/product/${ps}">${pn}${priceBit}</a></li>`;
+    }
+    html += `</ul>`;
+  }
+
+  if (usp.length) {
+    html += `<h2>Why Choose Us</h2><ul>`;
+    for (const u of usp.slice(0, 8)) html += `<li>${escapeHtml(String(u))}</li>`;
+    html += `</ul>`;
+  }
+
+  if (faq.length) {
+    html += `<h2>Frequently Asked Questions</h2><dl>`;
+    for (const f of faq.slice(0, 15)) {
+      html += `<dt>${escapeHtml(String(f.q))}</dt><dd>${escapeHtml(String(f.a))}</dd>`;
+    }
+    html += `</dl>`;
+  }
+
+  if (wa || loc || store.business_hours) {
+    html += `<h2>Contact</h2><address>`;
+    if (wa) html += `WhatsApp: <a href="https://wa.me/${wa.replace(/[^0-9]/g, "")}">${wa}</a><br>`;
+    if (loc) html += `${loc}<br>`;
+    const bh = store.business_hours;
+    if (bh && typeof bh === "object") {
+      const days = ["mon","tue","wed","thu","fri","sat","sun"];
+      const labels = { mon:"Mon", tue:"Tue", wed:"Wed", thu:"Thu", fri:"Fri", sat:"Sat", sun:"Sun" };
+      const lines = days.map((d) => bh[d] ? `${labels[d]}: ${escapeHtml(String(bh[d]))}` : null).filter(Boolean);
+      if (lines.length) html += `Hours: ${lines.join(" · ")}`;
+    }
+    html += `</address>`;
+  }
+
+  html += `</div>`;
+  return html;
 }
 
 /**
