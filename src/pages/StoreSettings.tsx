@@ -538,7 +538,156 @@ export default function StoreSettings() {
           </CardContent>
         </Card>
 
+        {/* ── 6a. AI Search Readiness ── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Award className="h-5 w-5 text-primary" /> AI Search Readiness
+            </CardTitle>
+            <CardDescription>
+              Help ChatGPT, Perplexity, Gemini & Google answer questions about your store.
+              Filling all three sections boosts your AI-search score from ~70 to 90+.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* About paragraph */}
+            <div className="space-y-2">
+              <Label>About your store <span className="text-xs text-muted-foreground font-normal">(200–400 chars — used by AI engines & embedded in your site)</span></Label>
+              <Textarea
+                value={seoAboutParagraph}
+                onChange={(e) => setSeoAboutParagraph(e.target.value.slice(0, 500))}
+                placeholder="E.g. Serdiya Jewellers is a family-run gold & silver jewelry brand based in Surat, Gujarat. Since 1985 we hand-craft BIS-hallmarked rings, necklaces & bridal sets and ship across India with free insured delivery."
+                rows={4}
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground">
+                {seoAboutParagraph.length}/500 characters
+                {seoAboutParagraph.length > 0 && seoAboutParagraph.length < 150 && (
+                  <span className="ml-2 text-amber-600">⚠ Add at least 150 chars for best results</span>
+                )}
+              </p>
+            </div>
+
+            {/* USP bullets */}
+            <div className="space-y-2">
+              <Label>Why choose us <span className="text-xs text-muted-foreground font-normal">(3–5 short bullets)</span></Label>
+              {uspBullets.map((bullet, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <Input
+                    value={bullet}
+                    onChange={(e) => {
+                      const next = [...uspBullets];
+                      next[idx] = e.target.value;
+                      setUspBullets(next);
+                    }}
+                    placeholder={[
+                      "E.g. BIS-hallmarked 22K gold",
+                      "E.g. Free insured shipping across India",
+                      "E.g. 7-day easy returns & lifetime exchange",
+                      "E.g. 35+ years family-run business",
+                      "E.g. WhatsApp consultation in Hindi & English",
+                    ][idx] || "Add a benefit"}
+                    maxLength={100}
+                  />
+                  {uspBullets.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setUspBullets(uspBullets.filter((_, i) => i !== idx))}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {uspBullets.length < 5 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setUspBullets([...uspBullets, ""])}
+                >
+                  <Plus className="mr-1 h-3 w-3" /> Add bullet
+                </Button>
+              )}
+            </div>
+
+            {/* FAQ editor */}
+            <div className="space-y-2">
+              <Label>Frequently asked questions <span className="text-xs text-muted-foreground font-normal">(powers FAQPage schema — huge AI signal)</span></Label>
+              {faqItems.map((item, idx) => (
+                <div key={idx} className="space-y-2 rounded-lg border p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">Q{idx + 1}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setFaqItems(faqItems.filter((_, i) => i !== idx))}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Input
+                    value={item.q}
+                    onChange={(e) => {
+                      const next = [...faqItems];
+                      next[idx] = { ...next[idx], q: e.target.value };
+                      setFaqItems(next);
+                    }}
+                    placeholder="E.g. Do you ship internationally?"
+                    maxLength={200}
+                  />
+                  <Textarea
+                    value={item.a}
+                    onChange={(e) => {
+                      const next = [...faqItems];
+                      next[idx] = { ...next[idx], a: e.target.value };
+                      setFaqItems(next);
+                    }}
+                    placeholder="E.g. Currently we ship only across India. International orders coming soon — WhatsApp us to be notified."
+                    rows={2}
+                    maxLength={500}
+                  />
+                </div>
+              ))}
+              {faqItems.length < 10 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFaqItems([...faqItems, { q: "", a: "" }])}
+                >
+                  <Plus className="mr-1 h-3 w-3" /> Add FAQ
+                </Button>
+              )}
+              {faqItems.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Tip: Add 3–6 FAQs about shipping, returns, materials, payment methods, and customization.
+                </p>
+              )}
+            </div>
+
+            {/* Score preview */}
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+              <div className="font-medium mb-1">Readiness checklist</div>
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                <li>{seoAboutParagraph.length >= 150 ? "✅" : "⬜"} About paragraph (≥150 chars)</li>
+                <li>{uspBullets.filter((b) => b.trim()).length >= 3 ? "✅" : "⬜"} At least 3 USP bullets</li>
+                <li>{faqItems.filter((f) => f.q.trim() && f.a.trim()).length >= 3 ? "✅" : "⬜"} At least 3 FAQs</li>
+                <li>{metaTitle && metaDescription ? "✅" : "⬜"} Meta title + description set</li>
+                <li>{whatsappNumber && city ? "✅" : "⬜"} WhatsApp number + city filled</li>
+              </ul>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Changes go live on your storefront within ~2 minutes (edge cache refresh).
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* ── 6b. Search engine helpers ── */}
+
         <SearchEngineHelperCard
           slug={store?.slug || storeSlug || ""}
           storeName={name || store?.name || ""}
