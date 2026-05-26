@@ -116,8 +116,11 @@ function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void
 
 export default function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
   const { user } = useAuth();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const location = useLocation();
   const navigate = useNavigate();
   const location = useLocation();
 
