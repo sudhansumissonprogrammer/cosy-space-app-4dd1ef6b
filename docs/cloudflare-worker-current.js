@@ -3238,6 +3238,67 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
   return "";
 }
 
+/**
+ * v8.47.0 — Shared homepage SEO head builder.
+ * Returns the full `<title> + meta + canonical + og/twitter + icon` block
+ * used by BOTH injectIntoHtml (cache mirror) and serveStreamedHtml (live).
+ * This guarantees every crawler (Google, Bing, AnswerLens, AI engines)
+ * sees a fully-formed head on every storefront, every request — no JS
+ * required.
+ */
+function _buildHomepageSeoHead(s, cats, canonicalBase, logoUrl) {
+  if (!s) return "";
+  const primaryCat = cats && cats[0]?.name || "";
+  const cityBit = s.city ? ` | ${s.city}` : "";
+  const autoTitle = primaryCat
+    ? `${s.name} — ${primaryCat} Online${cityBit}`
+    : `${s.name} — Shop Online${cityBit}`;
+  const autoDesc = primaryCat
+    ? `Shop ${primaryCat.toLowerCase()} from ${s.name}. Cash on delivery, fast shipping across India.`
+    : `Shop the best products at ${s.name}. Fast delivery & easy returns across India.`;
+
+  const ogTitle = escapeHtml(s.meta_title || autoTitle);
+  const ogDesc = escapeHtml(s.meta_description || s.description || autoDesc);
+  const rawOgImage = s.og_image_url || s.banner_url || s.mobile_hero_url || s.logo_url || "";
+  const isAbs = typeof rawOgImage === "string" && /^https?:\/\//i.test(rawOgImage);
+  const ogImage = isAbs ? escapeHtml(rawOgImage) : "";
+  const isExplicitOg = isAbs && rawOgImage === s.og_image_url;
+  const twitterCard = isExplicitOg || (isAbs && rawOgImage === s.banner_url) ? "summary_large_image" : "summary";
+
+  let out = "";
+  out += `<link rel="canonical" href="${escapeHtml(canonicalBase)}/" />`;
+  out += `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">`;
+  out += `<title>${ogTitle}</title>`;
+  out += `<meta name="description" content="${ogDesc}">`;
+  if (Array.isArray(cats) && cats.length) {
+    const kw = cats.slice(0, 8).map((c) => escapeHtml(c.name || "")).filter(Boolean).join(", ");
+    const kwExtra = [s.name, s.city].filter(Boolean).map(escapeHtml).join(", ");
+    out += `<meta name="keywords" content="${[kw, kwExtra].filter(Boolean).join(", ")}">`;
+  }
+  out += `<meta property="og:type" content="website">`;
+  out += `<meta property="og:title" content="${ogTitle}">`;
+  out += `<meta property="og:description" content="${ogDesc}">`;
+  out += `<meta property="og:url" content="${escapeHtml(canonicalBase)}/">`;
+  out += `<meta property="og:site_name" content="${escapeHtml(s.name)}">`;
+  out += `<meta property="og:locale" content="en_IN">`;
+  out += `<meta name="twitter:card" content="${twitterCard}">`;
+  out += `<meta name="twitter:title" content="${ogTitle}">`;
+  out += `<meta name="twitter:description" content="${ogDesc}">`;
+  if (ogImage) {
+    out += `<meta property="og:image" content="${ogImage}">`;
+    if (isExplicitOg) {
+      out += `<meta property="og:image:width" content="1200">`;
+      out += `<meta property="og:image:height" content="630">`;
+    }
+    out += `<meta name="twitter:image" content="${ogImage}">`;
+  }
+  if (logoUrl && /^https?:\/\//i.test(logoUrl)) {
+    out += `<link rel="icon" type="image/png" href="${escapeHtml(logoUrl)}">`;
+    out += `<link rel="apple-touch-icon" href="${escapeHtml(logoUrl)}">`;
+  }
+  return out;
+}
+
 function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) {
   // v8.15.0: ensure <html lang="en"> for SEO + accessibility.
   html = html.replace(/<html(?![^>]*\blang=)/i, '<html lang="en"');
