@@ -3132,6 +3132,8 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
     html += `<title>${title}</title>`;
     html += `<meta name="description" content="${desc}">`;
     html += `<link rel="canonical" href="${escapeHtml(url)}">`;
+    // v8.46.0: rich-result hints + AI engines
+    html += `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">`;
     html += `<meta property="og:type" content="product">`;
     html += `<meta property="og:title" content="${title}">`;
     html += `<meta property="og:description" content="${desc}">`;
@@ -3141,9 +3143,25 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
       html += `<meta property="og:image" content="${ogImg}">`;
       html += `<meta name="twitter:image" content="${ogImg}">`;
     }
+    // v8.46.0: product-specific OG tags — WhatsApp/Telegram/FB show price + stock
+    if (price > 0) {
+      html += `<meta property="product:price:amount" content="${price.toFixed(2)}">`;
+      html += `<meta property="product:price:currency" content="${escapeHtml(p.currency || store.currency || "INR")}">`;
+      html += `<meta property="og:price:amount" content="${price.toFixed(2)}">`;
+      html += `<meta property="og:price:currency" content="${escapeHtml(p.currency || store.currency || "INR")}">`;
+    }
+    html += `<meta property="product:availability" content="${inStock ? "in stock" : "out of stock"}">`;
+    html += `<meta property="product:condition" content="new">`;
+    if (p.sku) html += `<meta property="product:retailer_item_id" content="${escapeHtml(p.sku)}">`;
     html += `<meta name="twitter:card" content="summary_large_image">`;
     html += `<meta name="twitter:title" content="${title}">`;
     html += `<meta name="twitter:description" content="${desc}">`;
+    if (price > 0) {
+      html += `<meta name="twitter:label1" content="Price">`;
+      html += `<meta name="twitter:data1" content="${(p.currency || store.currency || "INR") === "INR" ? "₹" : ""}${price.toFixed(0)}">`;
+      html += `<meta name="twitter:label2" content="Availability">`;
+      html += `<meta name="twitter:data2" content="${inStock ? "In stock" : "Out of stock"}">`;
+    }
     html += `<script type="application/ld+json">${safe(productLd)}</script>`;
     html += `<script type="application/ld+json">${safe(breadcrumbLd)}</script>`;
     return html;
