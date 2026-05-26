@@ -40,7 +40,7 @@ const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/
 const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
 const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
 
-import PdpAskWhatsApp from "@/components/storefront/PdpAskWhatsApp";
+
 import DeliveryTimeline from "@/components/storefront/DeliveryTimeline";
 
 interface Variant {
