@@ -84,13 +84,17 @@ export function AdminCommandPalette({ open, onOpenChange }: AdminCommandPaletteP
 
   const { data: orders } = useQuery({
     queryKey: ["admin-cmdk-orders", debounced],
-    enabled: shouldSearch && /^[a-z0-9-]+$/i.test(debounced),
+    enabled: shouldSearch,
     queryFn: async () => {
       const q = `%${debounced}%`;
+      const asNum = Number(debounced);
+      const filter = Number.isFinite(asNum) && /^\d+$/.test(debounced)
+        ? `order_number.eq.${asNum},customer_name.ilike.${q}`
+        : `customer_name.ilike.${q}`;
       const { data } = await supabase
         .from("orders")
         .select("id, order_number, customer_name, total_amount")
-        .or(`order_number.ilike.${q},customer_name.ilike.${q}`)
+        .or(filter)
         .limit(5);
       return data || [];
     },
