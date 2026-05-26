@@ -1376,6 +1376,7 @@ export type Database = {
           created_at: string
           display_order: number
           id: string
+          image_alt: string | null
           image_url: string
           product_id: string
         }
@@ -1383,6 +1384,7 @@ export type Database = {
           created_at?: string
           display_order?: number
           id?: string
+          image_alt?: string | null
           image_url: string
           product_id: string
         }
@@ -1390,6 +1392,7 @@ export type Database = {
           created_at?: string
           display_order?: number
           id?: string
+          image_alt?: string | null
           image_url?: string
           product_id?: string
         }
@@ -1511,6 +1514,7 @@ export type Database = {
           description: string | null
           display_order: number
           id: string
+          image_alt: string | null
           image_url: string | null
           is_active: boolean
           is_best_selling: boolean
@@ -1537,6 +1541,7 @@ export type Database = {
           description?: string | null
           display_order?: number
           id?: string
+          image_alt?: string | null
           image_url?: string | null
           is_active?: boolean
           is_best_selling?: boolean
@@ -1563,6 +1568,7 @@ export type Database = {
           description?: string | null
           display_order?: number
           id?: string
+          image_alt?: string | null
           image_url?: string | null
           is_active?: boolean
           is_best_selling?: boolean
