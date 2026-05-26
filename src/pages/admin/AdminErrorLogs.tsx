@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +29,7 @@ const levelColors: Record<string, string> = {
 };
 
 export default function AdminErrorLogs() {
+  useDocumentTitle("Error Logs · Admin");
   const [search, setSearch] = useState("");
 
   const { data: logs, isLoading, refetch } = useQuery({

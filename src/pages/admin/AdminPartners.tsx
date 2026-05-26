@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -28,6 +29,7 @@ interface Partner {
 const inr = (n: any) => `₹${Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
 export default function AdminPartners() {
+  useDocumentTitle("Partners · Admin");
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");

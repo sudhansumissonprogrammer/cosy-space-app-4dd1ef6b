@@ -8,10 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Settings, Save, MessageSquare, Eye, EyeOff, Cloud, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const CURRENCIES = ["INR", "USD", "EUR", "GBP", "AED", "SGD", "AUD", "CAD"];
 
 export default function AdminSettings() {
+  useDocumentTitle("Settings · Admin");
   const queryClient = useQueryClient();
   const [platformName, setPlatformName] = useState("");
   const [defaultCurrency, setDefaultCurrency] = useState("INR");
@@ -43,18 +45,36 @@ export default function AdminSettings() {
     }
   }, [config]);
 
-  const saveMutation = useMutation({
+  const saveGeneral = useMutation({
+    mutationFn: async () => {
+      if (!config?.id) throw new Error("No config found");
+      const { error } = await (supabase as any)
+        .from("platform_config")
+        .update({
+          platform_name: platformName,
+          default_currency: defaultCurrency,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", config.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["platform-config"] });
+      queryClient.invalidateQueries({ queryKey: ["platform-config-currency"] });
+      toast.success("General settings saved");
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const saveWhatsApp = useMutation({
     mutationFn: async () => {
       if (!config?.id) throw new Error("No config found");
       const updatePayload: Record<string, string | null> = {
-        platform_name: platformName,
-        default_currency: defaultCurrency,
         wa_phone_number_id: waPhoneNumberId || null,
         wa_business_phone: waBusinessPhone || null,
         updated_at: new Date().toISOString(),
       };
       if (waAccessToken.trim()) updatePayload.wa_access_token = waAccessToken.trim();
-
       const { error } = await (supabase as any)
         .from("platform_config")
         .update(updatePayload)
@@ -63,7 +83,7 @@ export default function AdminSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["platform-config"] });
-      toast.success("Settings saved");
+      toast.success("WhatsApp credentials saved");
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -104,6 +124,10 @@ export default function AdminSettings() {
               </SelectContent>
             </Select>
           </div>
+          <Button onClick={() => saveGeneral.mutate()} disabled={saveGeneral.isPending || isLoading} size="sm">
+            <Save className="mr-2 h-4 w-4" />
+            {saveGeneral.isPending ? "Saving..." : "Save General"}
+          </Button>
         </CardContent>
       </Card>
 
@@ -155,6 +179,10 @@ export default function AdminSettings() {
               disabled={isLoading}
             />
           </div>
+          <Button onClick={() => saveWhatsApp.mutate()} disabled={saveWhatsApp.isPending || isLoading} size="sm">
+            <Save className="mr-2 h-4 w-4" />
+            {saveWhatsApp.isPending ? "Saving..." : "Save WhatsApp"}
+          </Button>
         </CardContent>
       </Card>
 
@@ -173,13 +201,6 @@ export default function AdminSettings() {
           <R2MigrationPanel />
         </CardContent>
       </Card>
-
-      <div className="max-w-lg">
-        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || isLoading}>
-          <Save className="mr-2 h-4 w-4" />
-          {saveMutation.isPending ? "Saving..." : "Save All Settings"}
-        </Button>
-      </div>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,7 @@ const statusColor = (status: string) => {
 };
 
 export default function AdminOrders() {
+  useDocumentTitle("Orders · Admin");
   const isMobile = useIsMobile();
   const [mobileDetailOrder, setMobileDetailOrder] = useState<any>(null);
   const [detailType, setDetailType] = useState<"wa" | "web">("wa");
