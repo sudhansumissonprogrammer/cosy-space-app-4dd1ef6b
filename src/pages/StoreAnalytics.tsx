@@ -90,13 +90,18 @@ export default function StoreAnalytics() {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const since = subDays(new Date(), 30).toISOString();
+      // NOTE: Supabase caps queries at 1000 rows by default. Stores with high
+      // traffic blow past that within 30 days, and ascending order made today's
+      // rows the ones cut off → "Today" tab showed 0 sessions. Fix: order
+      // descending (today first) and lift the row cap explicitly.
       const { data, error } = await supabase
         .from("page_views")
         .select("created_at, path, visitor_id, session_id, is_bot")
         .in("store_id", storeIds)
         .eq("is_bot", false)
         .gte("created_at", since)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .limit(50000);
       if (error) throw error;
       return data as any[];
     },
