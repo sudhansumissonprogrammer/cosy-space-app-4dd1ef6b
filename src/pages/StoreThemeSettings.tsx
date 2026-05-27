@@ -1265,6 +1265,13 @@ export default function StoreThemeSettings() {
               ))}
             </div>
           </Section>
+
+          <Section title="Nav Icons" hint="Pick which icon represents each nav slot. Applies to header and the mobile bottom bar across all themes.">
+            <NavIconPicker
+              value={config.nav_icons || {}}
+              onChange={(next) => updateField("nav_icons" as any, next as any)}
+            />
+          </Section>
         </>
       )}
     </div>
