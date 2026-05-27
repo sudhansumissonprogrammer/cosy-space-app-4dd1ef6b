@@ -6,11 +6,12 @@
 import { useState, useEffect, Suspense, lazy, type ReactNode } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
 import { WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
+import { useNavIcons } from "@/hooks/useNavIcons";
 
 import { useSmartHeader } from "@/hooks/useSmartHeader";
 import PageTransition from "@/components/storefront/PageTransition";
