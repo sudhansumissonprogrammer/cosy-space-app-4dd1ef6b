@@ -1,5 +1,13 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.47.0 — HOMEPAGE SEO HEAD IN STREAM
+ * SHOPBANAO PRODUCTION ROUTER v8.48.0 — REMOVE DEAD /cf-img ROUTE
+ *
+ * v8.48.0 — /cf-img handler deleted (was 125 lines of unused image
+ *           proxy/resize code). Confirmed zero callers in frontend.
+ *           All images go through cdn.shopbanao.in (R2) or Supabase
+ *           render API directly. Route now returns 410 Gone as
+ *           defense-in-depth for any stale browser/CDN cache.
+ *
+ * Previous: v8.47.0 — HOMEPAGE SEO HEAD IN STREAM
  *
  * Changes from v8.46.0:
  *  v8.47.0 — Streaming path now awaits storefront shell (KV-cached) and
@@ -127,7 +135,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.47.0-homepage-seo-head";
+const WORKER_VERSION = "8.48.0-remove-cf-img";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -6007,131 +6015,17 @@ async function _handleFetch(request, env, ctx) {
     return fontResp;
   }
 
-  // ─── CLOUDFLARE IMAGE RESIZING (/cf-img) ───
-  // v7.4.1 HOTFIX: Previous version redirected to /cdn-cgi/image/ which
-  // requires Cloudflare Image Resizing (paid add-on). When not enabled,
-  // images returned 404/broken (e.g., serdiyajewellers.shop only showed
-  // 10 product images). Now we redirect to the ORIGIN URL directly
-  // (Supabase render API for Supabase storage, original for others).
-  // Browser caches the 301 for 1 year, so repeat loads still bypass Worker.
-  // Estimated savings preserved: ~12k Worker req/day.
+  // ─── /cf-img — REMOVED in v8.48.0 ───
+  // Route is dead code. All storefront images now go through
+  // cdn.shopbanao.in (R2 direct) or Supabase render API directly
+  // (see _toRenderUrl, v8.5). No frontend code references /cf-img.
+  // Returning 410 Gone so any stale browser/CDN cache fails fast
+  // and visibly instead of silently 404-ing through the SPA shell.
   if (url.pathname === "/cf-img") {
-    const targetUrl = url.searchParams.get("url");
-    if (!targetUrl) return new Response("Missing url param", { status: 400 });
-    let parsedTarget;
-    try {
-      parsedTarget = new URL(targetUrl);
-    } catch {
-      return new Response("Invalid url", { status: 400 });
-    }
-    // v7.4.2: Allow ANY https image origin (external CDNs, custom domains,
-    // user-supplied URLs). Only enforce: must be https + must look like an
-    // image path. Blocks abuse (e.g., proxying HTML pages) without limiting
-    // legitimate external product images.
-    const isHttps = parsedTarget.protocol === "https:";
-    const looksLikeImage =
-      /\.(jpe?g|png|gif|webp|avif|svg|bmp|ico|heic|heif)(\?|$)/i.test(parsedTarget.pathname) ||
-      // Many CDNs (Shopify, Cloudinary, Supabase render) serve images without
-      // a file extension — accept known image-serving paths too.
-      /\/(image|images|img|photos?|media|cdn|storage|render|upload)/i.test(parsedTarget.pathname);
-    if (!isHttps || !looksLikeImage) {
-      return new Response("Origin not allowed", { status: 403 });
-    }
-
-    const w = Math.min(Math.max(parseInt(url.searchParams.get("w") || "800", 10), 16), 2000);
-    const q = Math.min(Math.max(parseInt(url.searchParams.get("q") || "82", 10), 30), 95);
-
-    // Build a final URL that ACTUALLY serves the image without requiring
-    // the Cloudflare Image Resizing add-on:
-    //  - Supabase storage  → Supabase render API (free, always works)
-    //  - Unsplash/Shopify  → native CDN params
-    //  - Everything else   → original URL (CDN handles caching)
-    let finalUrl = targetUrl;
-    if (parsedTarget.hostname.endsWith(".supabase.co") && parsedTarget.pathname.includes("/storage/v1/object/")) {
-      try {
-        const u = new URL(targetUrl);
-        u.pathname = u.pathname.replace("/storage/v1/object/", "/storage/v1/render/image/");
-        u.searchParams.set("width", String(w));
-        u.searchParams.set("quality", String(q));
-        u.searchParams.set("resize", "contain");
-        finalUrl = u.toString();
-      } catch {
-        finalUrl = targetUrl;
-      }
-    } else if (parsedTarget.hostname.endsWith(".unsplash.com")) {
-      try {
-        const u = new URL(targetUrl);
-        u.searchParams.set("w", String(w));
-        u.searchParams.set("q", String(q));
-        u.searchParams.set("fm", "webp");
-        u.searchParams.set("auto", "format");
-        finalUrl = u.toString();
-      } catch {
-        finalUrl = targetUrl;
-      }
-    } else if (parsedTarget.hostname.endsWith(".shopify.com") || parsedTarget.hostname === "cdn.shopify.com") {
-      try {
-        const u = new URL(targetUrl);
-        u.searchParams.set("width", String(w));
-        finalUrl = u.toString();
-      } catch {
-        finalUrl = targetUrl;
-      }
-    }
-
-    // v8.5.0: Fetch image and cache at Cloudflare edge instead of 301-redirecting.
-    // Saves ~70-80% of Supabase image egress because every colo holds a copy
-    // for 1 year. First visitor in a colo = same speed as old redirect path
-    // (cold pull from Supabase). All subsequent visitors = edge HIT (faster).
-    // If fetch fails for ANY reason, fall back to the original 301 redirect
-    // so user behaviour is identical to today (zero risk).
-    try {
-      const cache = caches.default;
-      const cacheKey = new Request(url.toString(), { method: "GET" });
-      let cached = await cache.match(cacheKey);
-      if (cached) {
-        const r = new Response(cached.body, cached);
-        r.headers.set("X-Image-Routing", "edge-cache-hit-v8.5.0");
-        return r;
-      }
-      const upstream = await fetch(finalUrl, {
-        cf: { cacheEverything: true, cacheTtl: 31536000 },
-      });
-      if (!upstream.ok) {
-        // Upstream error → don't poison cache, just redirect like before
-        return new Response(null, {
-          status: 301,
-          headers: {
-            Location: finalUrl,
-            "Cache-Control": "public, max-age=300",
-            "X-Image-Routing": "edge-cache-upstream-error-v8.5.0",
-          },
-        });
-      }
-      const headers = new Headers(upstream.headers);
-      // Aggressive 1-year browser + edge cache (Option A baked in)
-      headers.set("Cache-Control", "public, max-age=31536000, immutable");
-      headers.set("X-Image-Routing", "edge-cache-miss-v8.5.0");
-      headers.delete("set-cookie");
-      const response = new Response(upstream.body, {
-        status: upstream.status,
-        statusText: upstream.statusText,
-        headers,
-      });
-      // Store in edge cache for next visitor (in this colo)
-      ctx.waitUntil(cache.put(cacheKey, response.clone()));
-      return response;
-    } catch (err) {
-      // Network failure → fall back to 301 (current behaviour)
-      return new Response(null, {
-        status: 301,
-        headers: {
-          Location: finalUrl,
-          "Cache-Control": "public, max-age=31536000, immutable",
-          "X-Image-Routing": "edge-cache-fallback-v8.5.0",
-        },
-      });
-    }
+    return new Response("Gone: /cf-img removed in worker v8.48.0", {
+      status: 410,
+      headers: { "Cache-Control": "public, max-age=86400" },
+    });
   }
 
   // ─── API ROUTES (rate-limited) ───
