@@ -156,14 +156,9 @@ export default function CheckoutAwareLayout({
   const ActionButtons = !isCheckout ? (
     <div className="flex items-center gap-1 sm:gap-2" style={{ minHeight: 40, contain: "layout", ...(iconStyle || {}) }}>
       {useSearchInHeader ? (
-        (() => {
-          const SearchIcon = getHeaderIcon("search");
-          return (
-            <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-opacity hover:opacity-70" aria-label="Search products" style={iconStyle}>
-              <SearchIcon className={iconSize} />
-            </button>
-          );
-        })()
+        <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-opacity hover:opacity-70" aria-label="Search products" style={iconStyle}>
+          <SearchIcon className={iconSize} />
+        </button>
       ) : (
         <AccountBadge slug={store.slug} storeId={store.id} />
       )}
