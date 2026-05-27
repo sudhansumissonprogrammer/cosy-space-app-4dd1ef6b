@@ -21,10 +21,13 @@ import {
 } from "lucide-react";
 
 
-function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
+function AdminMobileMenu({
+  open, onClose, onOpenSearch,
+}: { open: boolean; onClose: () => void; onOpenSearch: () => void }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut } = useAuth();
+
 
   const go = (path: string) => { navigate(path); onClose(); };
   const isActive = (path: string, exact?: boolean) =>
