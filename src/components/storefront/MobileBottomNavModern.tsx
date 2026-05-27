@@ -86,9 +86,9 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
                 >
                   <item.icon
                     className={`shrink-0 transition-all duration-[400ms] ${
-                      active ? "h-[15px] w-[15px]" : "h-[18px] w-[18px]"
+                      active ? "h-[18px] w-[18px]" : "h-[22px] w-[22px]"
                     }`}
-                    strokeWidth={active ? 2.4 : 1.6}
+                    strokeWidth={active ? 2.4 : 1.8}
                     style={{
                       color: active
                         ? "var(--storefront-btn-text, hsl(var(--primary-foreground)))"
