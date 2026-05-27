@@ -206,15 +206,43 @@ async function handleView(req: Request) {
 // ── DB cleanup handler ──────────────────────────────────────────
 
 async function handleCleanup(req: Request) {
+  // SECURITY: this endpoint deletes data from many tables. It must require a
+  // real admin JWT — not just a "Bearer " prefix (which the public anon key
+  // satisfies). We validate the token and check the user has the admin role.
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+  if (!token) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
-  const supabase = getSupabase();
+  const authClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+  );
+  const { data: claims, error: claimsErr } = await authClient.auth.getClaims(token);
+  if (claimsErr || !claims?.claims?.sub) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const admin = getSupabase();
+  const { data: isAdmin, error: roleErr } = await admin.rpc("has_role", {
+    _user_id: claims.claims.sub,
+    _role: "admin",
+  });
+  if (roleErr || !isAdmin) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const supabase = admin;
   const results: Record<string, number> = {};
 
   // 1. Delete page_views older than 90 days
