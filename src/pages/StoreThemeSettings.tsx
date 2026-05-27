@@ -312,6 +312,7 @@ interface ThemeConfig {
   mobile_nav_style: string;
   header_style: string;
   bilingual_cta?: boolean;
+  nav_icons?: Record<string, string>;
 }
 
 const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
