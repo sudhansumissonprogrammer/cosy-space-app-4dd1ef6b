@@ -11,20 +11,21 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Meta webhook verification (GET)
+  // Meta webhook verification (GET).
   // Verify token is read from secret WHATSAPP_WEBHOOK_VERIFY_TOKEN.
-  // Falls back to the legacy literal so existing Meta subscriptions keep
-  // working until the secret is configured and the token is rotated in
-  // the Meta Business dashboard.
+  // No fallback — if the secret is missing we refuse to verify so an attacker
+  // can't subscribe a rogue webhook using a publicly-known literal.
   if (req.method === "GET") {
     const url = new URL(req.url);
     const mode = url.searchParams.get("hub.mode");
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
 
-    const expected =
-      Deno.env.get("WHATSAPP_WEBHOOK_VERIFY_TOKEN") ||
-      "shopbanao_webhook_verify";
+    const expected = Deno.env.get("WHATSAPP_WEBHOOK_VERIFY_TOKEN");
+    if (!expected) {
+      console.error("WHATSAPP_WEBHOOK_VERIFY_TOKEN secret is not configured");
+      return new Response("Forbidden", { status: 403, headers: corsHeaders });
+    }
 
     if (mode === "subscribe" && token && token === expected) {
       return new Response(challenge, { status: 200, headers: corsHeaders });
