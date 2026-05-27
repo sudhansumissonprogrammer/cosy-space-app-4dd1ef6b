@@ -43,7 +43,7 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
             <SheetTrigger asChild>
               <button className="flex h-12 w-12 items-center justify-center rounded-xl transition-colors" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))10" }} aria-label="Open menu">
-                <Menu className="h-6 w-6" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} aria-hidden="true" />
+                <MenuIcon className="h-6 w-6" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} aria-hidden="true" />
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="storefront-font w-[280px] p-0">
