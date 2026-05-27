@@ -179,6 +179,24 @@ export type Database = {
           },
         ]
       }
+      cron_auth: {
+        Row: {
+          created_at: string
+          id: boolean
+          secret: string
+        }
+        Insert: {
+          created_at?: string
+          id?: boolean
+          secret: string
+        }
+        Update: {
+          created_at?: string
+          id?: boolean
+          secret?: string
+        }
+        Relationships: []
+      }
       customer_addresses: {
         Row: {
           city: string | null
@@ -3478,6 +3496,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      verify_cron_secret: { Args: { _secret: string }; Returns: boolean }
       wallet_adjust: {
         Args: {
           _amount: number

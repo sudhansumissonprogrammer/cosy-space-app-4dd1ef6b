@@ -10,26 +10,28 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  // Require cron secret. Accept either the dedicated BILLING_CRON_SECRET (for
-  // manual runs) or the project service-role key (what pg_cron sends).
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  // Auth: accept either the dedicated env secret (manual runs) or a DB-issued
+  // cron secret (what pg_cron sends, verified via SECURITY DEFINER RPC).
   const provided = req.headers.get("x-cron-secret") || "";
-  const allowed = [
-    Deno.env.get("BILLING_CRON_SECRET"),
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
-  ].filter(Boolean) as string[];
-  if (!provided || !allowed.includes(provided)) {
+  const envSecret = Deno.env.get("BILLING_CRON_SECRET") || "";
+  let ok = !!provided && provided === envSecret;
+  if (!ok && provided) {
+    const { data } = await supabase.rpc("verify_cron_secret", { _secret: provided });
+    ok = data === true;
+  }
+  if (!ok) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
-
-
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+
 
     const now = new Date().toISOString();
     const graceEnd = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();

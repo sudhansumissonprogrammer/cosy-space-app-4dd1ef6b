@@ -10,23 +10,26 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  // Require cron secret. Accept either the dedicated PARTNER_CRON_SECRET
-  // (for manual runs) or the project service-role key (what pg_cron sends).
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  // Auth: accept either the dedicated env secret (manual runs) or a DB-issued
+  // cron secret (what pg_cron sends, verified via SECURITY DEFINER RPC).
   const provided = req.headers.get("x-cron-secret") || "";
-  const allowed = [
-    Deno.env.get("PARTNER_CRON_SECRET"),
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
-  ].filter(Boolean) as string[];
-  if (!provided || !allowed.includes(provided)) {
+  const envSecret = Deno.env.get("PARTNER_CRON_SECRET") || "";
+  let ok = !!provided && provided === envSecret;
+  if (!ok && provided) {
+    const { data } = await admin.rpc("verify_cron_secret", { _secret: provided });
+    ok = data === true;
+  }
+  if (!ok) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
-  const admin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  );
 
   try {
     const { data: settings } = await admin.from("partner_settings").select("hold_days").limit(1).maybeSingle();
