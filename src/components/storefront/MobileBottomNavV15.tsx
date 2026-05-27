@@ -70,11 +70,11 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
                   <item.icon
                     className="shrink-0 transition-all duration-400"
                     style={{
-                      width: active ? 16 : 18,
-                      height: active ? 16 : 18,
+                      width: active ? 20 : 22,
+                      height: active ? 20 : 22,
                       color: active ? "var(--storefront-bg, hsl(var(--background)))" : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 70%, transparent)",
                     }}
-                    strokeWidth={active ? 2.2 : 1.6}
+                    strokeWidth={active ? 2.2 : 1.8}
                   />
                   {badge > 0 && !active && (
                     <span className="absolute -right-0.5 -top-0.5 flex items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground min-w-[15px] h-[15px] px-0.5">
