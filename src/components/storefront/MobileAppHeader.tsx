@@ -21,6 +21,10 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const getIcon = useNavIcons(store.id);
+  const MenuIcon = getIcon("menu");
+  const SearchIcon = getIcon("search");
+  const CartIcon = getIcon("cart");
   const queryClient = useQueryClient();
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const customPages = queryClient.getQueryData<any[]>(["storefront-custom-pages", store.id]) ?? [];
