@@ -10,12 +10,12 @@ import CheckoutAwareLayout from "@/components/storefront/CheckoutAwareLayout";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 
 const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNavSwitcher"));
-type NavVariant = "classic" | "modern" | "v15" | "v17";
+type NavVariant = "classic" | "modern" | "v15" | "v17" | "glass" | "notch" | "neon" | "tube" | "bubble" | "skeuo3d" | "indicator";
 
 function V18Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
   const rawNavStyle = (themeConfig as any)?.mobile_nav_style || "modern";
   // Normalize legacy/unknown values to valid options
-  const mobileNavStyle = ["classic", "modern", "v15", "v17", "glass", "notch", "neon", "tube", "bubble"].includes(rawNavStyle) ? rawNavStyle : "modern";
+  const mobileNavStyle = ["classic", "modern", "v15", "v17", "glass", "notch", "neon", "tube", "bubble", "skeuo3d", "indicator"].includes(rawNavStyle) ? rawNavStyle : "modern";
   const mobileNavEnabled = themeConfig?.mobile_nav_enabled ?? true;
   const [scrolled, setScrolled] = useState(false);
 
