@@ -6,11 +6,12 @@
 import { useState, useEffect, Suspense, lazy, type ReactNode } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
 import { WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
+import { useNavIcons } from "@/hooks/useNavIcons";
 
 import { useSmartHeader } from "@/hooks/useSmartHeader";
 import PageTransition from "@/components/storefront/PageTransition";
@@ -72,6 +73,8 @@ export default function CheckoutAwareLayout({
   const queryClient = useQueryClient();
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const headerVisible = useSmartHeader();
+  const getHeaderIcon = useNavIcons(store.id);
+  const SearchIcon = getHeaderIcon("search");
 
   useEffect(() => {
     // v8: Defer route prefetching by 1.2s (was 3s). Internally uses
@@ -154,12 +157,12 @@ export default function CheckoutAwareLayout({
     <div className="flex items-center gap-1 sm:gap-2" style={{ minHeight: 40, contain: "layout", ...(iconStyle || {}) }}>
       {useSearchInHeader ? (
         <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-opacity hover:opacity-70" aria-label="Search products" style={iconStyle}>
-          <Search className={iconSize} />
+          <SearchIcon className={iconSize} />
         </button>
       ) : (
-        <AccountBadge slug={store.slug} />
+        <AccountBadge slug={store.slug} storeId={store.id} />
       )}
-      {!hideWishlistAndShare && <WishlistBadge slug={store.slug} />}
+      {!hideWishlistAndShare && <WishlistBadge slug={store.slug} storeId={store.id} />}
       {!hideWishlistAndShare && <Suspense fallback={null}><LazyShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly /></Suspense>}
     </div>
   ) : null;
@@ -229,7 +232,7 @@ export default function CheckoutAwareLayout({
                 className="flex-1 mx-2 flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-colors" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 12%, transparent)", backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 5%, transparent)", color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}
                 aria-label="Search products"
               >
-                <Search className="h-3.5 w-3.5" />
+                <SearchIcon className="h-3.5 w-3.5" />
                 <span className="truncate">Search products...</span>
               </button>
               {ActionButtons}

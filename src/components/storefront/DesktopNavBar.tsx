@@ -1,7 +1,8 @@
 import { useState, useRef, lazy, Suspense } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Search, User, Heart, ShoppingCart, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import { useNavIcons } from "@/hooks/useNavIcons";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
@@ -43,6 +44,11 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
   const catalogTimer = useRef<ReturnType<typeof setTimeout>>();
   const headerVisible = useSmartHeader();
   const location = useLocation();
+  const getIcon = useNavIcons(store.id);
+  const SearchIcon = getIcon("search");
+  const UserIcon = getIcon("account");
+  const HeartIcon = getIcon("wishlist");
+  const CartIcon = getIcon("cart");
 
   const isActive = (path: string) => {
     const resolved = storefrontPath(store.slug, path);
@@ -182,7 +188,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
               className="flex h-9 w-9 items-center justify-center rounded-md transition-opacity hover:opacity-70"
               aria-label="Search products"
             >
-              <Search className="h-5 w-5" />
+              <SearchIcon className="h-5 w-5" />
             </button>
 
             {/* Account */}
@@ -192,7 +198,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
                 className="flex h-9 w-9 items-center justify-center rounded-md transition-opacity hover:opacity-70"
                 aria-label={user ? "My account" : "Login"}
               >
-                <User className="h-5 w-5" />
+                <UserIcon className="h-5 w-5" />
               </Link>
             )}
 
@@ -202,7 +208,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
               className="relative flex h-9 w-9 items-center justify-center rounded-md transition-opacity hover:opacity-70"
               aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ""}`}
             >
-              <Heart className="h-5 w-5" />
+              <HeartIcon className="h-5 w-5" />
               {wishlistCount > 0 && (
                 <span
                   className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
@@ -223,7 +229,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
               className="relative flex h-9 w-9 items-center justify-center rounded-md transition-all hover:opacity-70 active:scale-[0.93]"
               aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ""}`}
             >
-              <ShoppingCart className={`h-5 w-5 ${cartBounce ? "cart-bounce" : ""}`} />
+              <CartIcon className={`h-5 w-5 ${cartBounce ? "cart-bounce" : ""}`} />
               {cartCount > 0 && (
                 <span
                   className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
