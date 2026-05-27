@@ -49,13 +49,14 @@ export default function CustomHtmlRenderer({ html, className = "" }: CustomHtmlR
 
     const sanitized = DOMPurify.sanitize(trimmed, {
       WHOLE_DOCUMENT: isFullDocument,
-      ADD_TAGS: ["iframe", "style", "link"],
+      ADD_TAGS: ["style", "link"],
       ADD_ATTR: [
         "allow", "allowfullscreen", "frameborder", "scrolling",
         "target", "loading", "rel", "href", "media", "class", "style",
       ],
       ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel|data):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
-      FORBID_TAGS: [],
+      ALLOW_UNKNOWN_PROTOCOLS: false,
+      FORBID_TAGS: ["script"],
       FORBID_ATTR: ["onerror", "onload", "onclick", "onmouseover", "onfocus", "onblur"],
     });
 
@@ -94,7 +95,7 @@ export default function CustomHtmlRenderer({ html, className = "" }: CustomHtmlR
         srcDoc={srcDoc}
         className="w-full border-0 bg-transparent"
         style={{ minHeight: "400px", display: "block" }}
-        sandbox="allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts"
+        sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts"
       />
     </div>
   );

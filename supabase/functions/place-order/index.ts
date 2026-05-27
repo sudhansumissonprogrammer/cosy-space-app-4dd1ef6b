@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const {
+    let {
       store_id,
       order,
       items,
@@ -159,6 +159,103 @@ Deno.serve(async (req) => {
 
       if (customer?.id) storefrontCustomerId = customer.id;
     }
+
+    // ────────────────────────────────────────────────────────────────
+    // SECURITY: server-side price + total recomputation.
+    // Never trust client-supplied prices, totals, discounts, or status.
+    // Attackers can otherwise place a ₹10,000 order at ₹1.
+    // ────────────────────────────────────────────────────────────────
+    const productIds = [...new Set(items.map((i) => i.productId).filter(Boolean))];
+    if (productIds.length !== items.length || productIds.length === 0) {
+      return new Response(JSON.stringify({ error: "Invalid cart items" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: dbProducts, error: prodErr } = await supabase
+      .from("products")
+      .select("id, price, sale_price, is_active, store_id")
+      .in("id", productIds);
+    if (prodErr || !dbProducts || dbProducts.length !== productIds.length) {
+      return new Response(JSON.stringify({ error: "One or more products not found" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const canonicalPrice = new Map<string, number>();
+    for (const p of dbProducts) {
+      if (p.store_id !== store_id || !p.is_active) {
+        return new Response(JSON.stringify({ error: "Product unavailable" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const cp = p.sale_price != null ? Number(p.sale_price) : Number(p.price);
+      if (!(cp >= 0)) {
+        return new Response(JSON.stringify({ error: "Invalid product price" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      canonicalPrice.set(p.id, cp);
+    }
+    // Override every line-item price with the DB canonical price.
+    let serverSubtotal = 0;
+    for (const item of items) {
+      const cp = canonicalPrice.get(item.productId)!;
+      const qty = Math.max(1, Math.floor(Number(item.quantity) || 0));
+      item.price = cp;
+      item.quantity = qty;
+      serverSubtotal += cp * qty;
+    }
+
+    // Validate coupon server-side.
+    let serverDiscount = 0;
+    let validCouponId: string | null = null;
+    if (coupon_id) {
+      const { data: c } = await supabase
+        .from("coupons")
+        .select("id, store_id, discount_type, discount_value, min_order_amount, max_uses, used_count, is_active, starts_at, expires_at")
+        .eq("id", coupon_id)
+        .maybeSingle();
+      const nowD = new Date();
+      const ok = c
+        && c.store_id === store_id
+        && c.is_active
+        && (!c.starts_at || new Date(c.starts_at) <= nowD)
+        && (!c.expires_at || new Date(c.expires_at) > nowD)
+        && (c.max_uses == null || (c.used_count ?? 0) < c.max_uses)
+        && serverSubtotal >= Number(c.min_order_amount || 0);
+      if (ok && c) {
+        if (c.discount_type === "percentage") {
+          serverDiscount = serverSubtotal * (Number(c.discount_value) / 100);
+        } else {
+          serverDiscount = Number(c.discount_value);
+        }
+        serverDiscount = Math.max(0, Math.min(serverDiscount, serverSubtotal));
+        validCouponId = c.id;
+      }
+    }
+
+    // Validate shipping server-side.
+    let serverShipping = 0;
+    const { data: shipConf } = await supabase
+      .from("store_shipping_config")
+      .select("flat_rate, free_shipping_above, is_active")
+      .eq("store_id", store_id)
+      .maybeSingle();
+    if (shipConf?.is_active) {
+      const subtotalAfterDiscount = serverSubtotal - serverDiscount;
+      if (!shipConf.free_shipping_above || subtotalAfterDiscount < Number(shipConf.free_shipping_above)) {
+        serverShipping = Math.max(0, Number(shipConf.flat_rate) || 0);
+      }
+    }
+
+    const serverTotal = Math.max(0, Math.round((serverSubtotal - serverDiscount + serverShipping) * 100) / 100);
+    // Replace client-supplied total + coupon_id with server-verified values.
+    order.total = serverTotal;
+    coupon_id = validCouponId;
+
+    // Hardcode initial order status. Never trust the client.
+    const safeStatus = order.payment_method === "cod" ? "confirmed" : "pending";
+    order.status = safeStatus;
+    // ────────────────────────────────────────────────────────────────
 
     // Server-side partial payment calculation (store-level)
     const isPartial = order.payment_type === "partial";
