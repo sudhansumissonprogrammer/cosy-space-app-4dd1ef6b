@@ -59,6 +59,7 @@ export default function MobileBottomNavSwitcher({ store, variant }: Props) {
       case "bubble": return MobileBottomNavBubble;
       case "skeuo3d": return MobileBottomNav3D;
       case "indicator": return MobileBottomNavIndicator;
+      case "wave": return MobileBottomNavWave;
       default: return MobileBottomNav;
     }
   })();
