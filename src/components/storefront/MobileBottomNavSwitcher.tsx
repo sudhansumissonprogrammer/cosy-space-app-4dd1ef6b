@@ -25,6 +25,7 @@ const MobileBottomNavTube = lazy(() => import("./MobileBottomNavTube"));
 const MobileBottomNavBubble = lazy(() => import("./MobileBottomNavBubble"));
 const MobileBottomNav3D = lazy(() => import("./MobileBottomNav3D"));
 const MobileBottomNavIndicator = lazy(() => import("./MobileBottomNavIndicator"));
+const MobileBottomNavWave = lazy(() => import("./MobileBottomNavWave"));
 
 export type NavVariant =
   | "classic"
@@ -37,7 +38,8 @@ export type NavVariant =
   | "tube"
   | "bubble"
   | "skeuo3d"
-  | "indicator";
+  | "indicator"
+  | "wave";
 
 interface Props {
   store: StoreData;
@@ -57,6 +59,7 @@ export default function MobileBottomNavSwitcher({ store, variant }: Props) {
       case "bubble": return MobileBottomNavBubble;
       case "skeuo3d": return MobileBottomNav3D;
       case "indicator": return MobileBottomNavIndicator;
+      case "wave": return MobileBottomNavWave;
       default: return MobileBottomNav;
     }
   })();
