@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
+import { useLoginRateLimit } from "@/hooks/useLoginRateLimit";
 
 export default function PartnerLogin() {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ export default function PartnerLogin() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [otherAccount, setOtherAccount] = useState<string | null>(null);
+  const { isLocked, remainingSeconds, attemptsLeft, checkCanAttempt, recordFailedAttempt, resetAttempts } = useLoginRateLimit();
+
 
   useEffect(() => {
     if (authLoading || !session) return;
