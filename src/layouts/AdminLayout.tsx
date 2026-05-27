@@ -1,11 +1,16 @@
 import { useState, Suspense } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ContentSkeleton } from "@/components/ContentSkeleton";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { AdminBreadcrumbs } from "@/components/AdminBreadcrumbs";
 import { AdminCommandPalette } from "@/components/AdminCommandPalette";
 import { cn } from "@/lib/utils";
@@ -14,6 +19,7 @@ import {
   BarChart3, MessageSquare, Settings, Menu, X, LogOut, User,
   Wallet, Handshake, Activity, AlertTriangle, Search,
 } from "lucide-react";
+
 
 function AdminMobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
