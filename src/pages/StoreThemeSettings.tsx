@@ -1220,52 +1220,37 @@ export default function StoreThemeSettings() {
               {[
                 { value: "classic", label: "Classic", desc: "Standard icon + label bar" },
                 { value: "modern", label: "Modern", desc: "Floating pill with cart" },
+                { value: "glass", label: "Glassmorphic", desc: "Frosted blur + glowing halo" },
+                { value: "notch", label: "Curved Notch", desc: "Center cart FAB in cutout" },
+                { value: "neon", label: "Neon Glow", desc: "Animated gradient underline" },
+                { value: "tube", label: "Sliding Tube", desc: "Capsule glides under active" },
+                { value: "bubble", label: "Bubble Pill", desc: "Material You style pill" },
                 ...(currentTheme === "theme-18" ? [{ value: "v15", label: "Minimal", desc: "Clean minimal icons" }] : []),
                 ...(["theme-1", "theme-14", "theme-15", "theme-18"].includes(currentTheme) ? [{ value: "v17", label: "Streetwear", desc: "Bold streetwear style" }] : []),
-              ].map((s) => (
-                <button
-                  key={s.value}
-                  onClick={() => updateField("mobile_nav_style", s.value)}
-                  className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
-                    (config.mobile_nav_style || "classic") === s.value
-                      ? "border-primary bg-primary/5 shadow-sm"
-                      : "border-border hover:border-primary/30"
-                  }`}
-                >
-                  {(config.mobile_nav_style || "classic") === s.value && (
-                    <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <Check className="h-3 w-3" />
-                    </div>
-                  )}
-                  <div className="w-full h-8 rounded-lg border border-border bg-muted/30 flex items-center justify-around px-2">
-                    {s.value === "classic" ? (
-                      <>
-                        <Home className="h-3 w-3 text-muted-foreground" />
-                        <Store className="h-3 w-3 text-muted-foreground" />
-                        <LayoutGrid className="h-3 w-3 text-muted-foreground" />
-                        <Heart className="h-3 w-3 text-muted-foreground" />
-                        <User className="h-3 w-3 text-muted-foreground" />
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-0.5 rounded-full bg-primary/20 px-1.5 py-0.5">
-                          <Home className="h-2.5 w-2.5 text-primary" />
-                          <span className="text-[7px] font-bold text-primary">Home</span>
-                        </div>
-                        <Store className="h-3 w-3 text-muted-foreground" />
-                        <Heart className="h-3 w-3 text-muted-foreground" />
-                        <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                          <ShoppingCart className="h-2.5 w-2.5 text-primary-foreground" />
-                        </div>
-                      </>
+              ].map((s) => {
+                const isActive = (config.mobile_nav_style || "classic") === s.value;
+                return (
+                  <button
+                    key={s.value}
+                    onClick={() => updateField("mobile_nav_style", s.value)}
+                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                      isActive ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"
+                    }`}
+                  >
+                    {isActive && (
+                      <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                        <Check className="h-3 w-3" />
+                      </div>
                     )}
-                  </div>
-                  <span className="text-[11px] font-semibold">{s.label}</span>
-                  <span className="text-[9px] text-muted-foreground text-center leading-tight">{s.desc}</span>
-                </button>
-              ))}
+                    <NavStylePreview variant={s.value} />
+                    <span className="text-[11px] font-semibold">{s.label}</span>
+                    <span className="text-[9px] text-muted-foreground text-center leading-tight">{s.desc}</span>
+                  </button>
+                );
+              })}
             </div>
           </Section>
+
 
           <Section title="Nav Icons" hint="Pick which icon represents each nav slot. Applies to header and the mobile bottom bar across all themes.">
             <NavIconPicker
