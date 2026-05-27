@@ -1,25 +1,45 @@
 /**
  * MobileBottomNavSwitcher — Single lazy entry point that dispatches to the
- * correct nav variant. Consolidates 4 lazy chunks into 1 to reduce the
- * number of Worker subrequests on cold load (one Vite chunk includes all four).
- *
- * The four variants share <8KB combined when bundled together because they
- * share React, lucide-icons, react-router, and the cart/wishlist contexts.
+ * correct nav variant. Consolidates all variants into 1 lazy chunk to reduce
+ * Worker subrequests on cold load.
  */
 import MobileBottomNav from "./MobileBottomNav";
 import MobileBottomNavModern from "./MobileBottomNavModern";
 import MobileBottomNavV15 from "./MobileBottomNavV15";
 import MobileBottomNavV17 from "./MobileBottomNavV17";
+import MobileBottomNavGlass from "./MobileBottomNavGlass";
+import MobileBottomNavNotch from "./MobileBottomNavNotch";
+import MobileBottomNavNeon from "./MobileBottomNavNeon";
+import MobileBottomNavTube from "./MobileBottomNavTube";
+import MobileBottomNavBubble from "./MobileBottomNavBubble";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+
+export type NavVariant =
+  | "classic"
+  | "modern"
+  | "v15"
+  | "v17"
+  | "glass"
+  | "notch"
+  | "neon"
+  | "tube"
+  | "bubble";
 
 interface Props {
   store: StoreData;
-  variant: "classic" | "modern" | "v15" | "v17";
+  variant: NavVariant;
 }
 
 export default function MobileBottomNavSwitcher({ store, variant }: Props) {
-  if (variant === "v17") return <MobileBottomNavV17 store={store} />;
-  if (variant === "v15") return <MobileBottomNavV15 store={store} />;
-  if (variant === "modern") return <MobileBottomNavModern store={store} />;
-  return <MobileBottomNav store={store} />;
+  switch (variant) {
+    case "v17": return <MobileBottomNavV17 store={store} />;
+    case "v15": return <MobileBottomNavV15 store={store} />;
+    case "modern": return <MobileBottomNavModern store={store} />;
+    case "glass": return <MobileBottomNavGlass store={store} />;
+    case "notch": return <MobileBottomNavNotch store={store} />;
+    case "neon": return <MobileBottomNavNeon store={store} />;
+    case "tube": return <MobileBottomNavTube store={store} />;
+    case "bubble": return <MobileBottomNavBubble store={store} />;
+    default: return <MobileBottomNav store={store} />;
+  }
 }
