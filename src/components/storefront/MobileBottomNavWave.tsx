@@ -155,13 +155,14 @@ export default function MobileBottomNavWave({ store }: { store: StoreData }) {
           </svg>
         )}
 
-        {/* Floating active circle */}
+        {/* Floating active circle — center sits on the bar's top edge so it
+            pops above the bar and fills the dip cutout below. */}
         {width > 0 && (
           <div
             className="absolute"
             style={{
               left: 0,
-              top: BAR_HEIGHT + CIRCLE_LIFT - CIRCLE_SIZE - (DIP_DEPTH - CIRCLE_LIFT) + 4,
+              top: CIRCLE_LIFT - CIRCLE_SIZE / 2,
               transform: `translateX(${activeX - CIRCLE_SIZE / 2}px)`,
               transition,
               width: CIRCLE_SIZE,
