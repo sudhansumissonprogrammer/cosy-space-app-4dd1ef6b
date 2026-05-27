@@ -17,6 +17,85 @@ import ThemeMobilePreviewDrawer from "@/components/dashboard/theme/ThemeMobilePr
 import ThemeCategoryStyleIcon from "@/components/dashboard/theme/ThemeCategoryStyleIcon";
 import NavIconPicker from "@/components/dashboard/theme/NavIconPicker";
 
+// Mini preview for each mobile bottom nav variant in the picker
+function NavStylePreview({ variant }: { variant: string }) {
+  const dot = "h-1.5 w-1.5 rounded-full bg-muted-foreground/70";
+  const dotActive = "h-1.5 w-1.5 rounded-full bg-primary";
+  if (variant === "classic") {
+    return (
+      <div className="w-full h-8 rounded-md border border-border bg-muted/30 flex items-center justify-around px-2">
+        <span className={dotActive} /><span className={dot} /><span className={dot} /><span className={dot} /><span className={dot} />
+      </div>
+    );
+  }
+  if (variant === "modern") {
+    return (
+      <div className="w-full h-8 rounded-full border border-border bg-muted/30 flex items-center justify-around px-2">
+        <div className="flex items-center gap-0.5 rounded-full bg-primary px-1.5 py-0.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
+          <span className="text-[6px] font-bold text-primary-foreground">Home</span>
+        </div>
+        <span className={dot} /><span className={dot} /><span className={dot} />
+      </div>
+    );
+  }
+  if (variant === "glass") {
+    return (
+      <div className="w-full h-8 rounded-[14px] border border-white/20 bg-gradient-to-br from-white/30 to-white/5 backdrop-blur flex items-center justify-around px-2 shadow-inner">
+        <div className="h-4 w-4 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary))]" />
+        <span className={dot} /><span className={dot} /><span className={dot} /><span className={dot} />
+      </div>
+    );
+  }
+  if (variant === "notch") {
+    return (
+      <div className="relative w-full h-8">
+        <svg viewBox="0 0 80 16" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 w-full h-6">
+          <path d="M0,2 L32,2 C35,2 36,7 40,7 C44,7 45,2 48,2 L80,2 L80,16 L0,16 Z" className="fill-muted/40 stroke-border" strokeWidth="0.5" />
+        </svg>
+        <div className="absolute left-1/2 -translate-x-1/2 top-0 h-5 w-5 rounded-full bg-primary" />
+        <div className="absolute bottom-1 left-2 flex gap-2"><span className={dot} /><span className={dot} /></div>
+        <div className="absolute bottom-1 right-2 flex gap-2"><span className={dot} /><span className={dot} /></div>
+      </div>
+    );
+  }
+  if (variant === "neon") {
+    return (
+      <div className="w-full h-8 rounded-md border border-border bg-muted/30 flex items-center justify-around px-2 relative overflow-hidden">
+        <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[2px] bg-primary shadow-[0_0_8px_hsl(var(--primary))] rounded-full" />
+        <span className={dot} /><span className={dot} /><span className={dotActive} /><span className={dot} /><span className={dot} />
+      </div>
+    );
+  }
+  if (variant === "tube") {
+    return (
+      <div className="w-full h-8 rounded-full border border-border bg-muted/30 flex items-center px-1 relative">
+        <div className="absolute left-1 top-1 bottom-1 w-1/3 rounded-full bg-primary" />
+        <div className="relative z-10 flex w-full justify-around">
+          <div className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-primary-foreground" /><span className="text-[6px] font-bold text-primary-foreground">Home</span></div>
+          <span className={dot} /><span className={dot} /><span className={dot} />
+        </div>
+      </div>
+    );
+  }
+  if (variant === "bubble") {
+    return (
+      <div className="w-full h-8 rounded-md border border-border bg-muted/30 flex items-center justify-around px-1 gap-1">
+        <div className="flex items-center gap-0.5 rounded-full bg-primary/20 px-1.5 py-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary" /><span className="text-[6px] font-bold text-primary">Home</span>
+        </div>
+        <span className={dot} /><span className={dot} /><span className={dot} /><span className={dot} />
+      </div>
+    );
+  }
+  // v15 / v17 / fallback
+  return (
+    <div className="w-full h-8 rounded-md border border-border bg-muted/30 flex items-center justify-around px-2">
+      <span className={dotActive} /><span className={dot} /><span className={dot} /><span className={dot} />
+    </div>
+  );
+}
+
 const FONT_OPTIONS = [
   "Alegreya SC",
   "Inter",
@@ -1220,52 +1299,37 @@ export default function StoreThemeSettings() {
               {[
                 { value: "classic", label: "Classic", desc: "Standard icon + label bar" },
                 { value: "modern", label: "Modern", desc: "Floating pill with cart" },
+                { value: "glass", label: "Glassmorphic", desc: "Frosted blur + glowing halo" },
+                { value: "notch", label: "Curved Notch", desc: "Center cart FAB in cutout" },
+                { value: "neon", label: "Neon Glow", desc: "Animated gradient underline" },
+                { value: "tube", label: "Sliding Tube", desc: "Capsule glides under active" },
+                { value: "bubble", label: "Bubble Pill", desc: "Material You style pill" },
                 ...(currentTheme === "theme-18" ? [{ value: "v15", label: "Minimal", desc: "Clean minimal icons" }] : []),
                 ...(["theme-1", "theme-14", "theme-15", "theme-18"].includes(currentTheme) ? [{ value: "v17", label: "Streetwear", desc: "Bold streetwear style" }] : []),
-              ].map((s) => (
-                <button
-                  key={s.value}
-                  onClick={() => updateField("mobile_nav_style", s.value)}
-                  className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
-                    (config.mobile_nav_style || "classic") === s.value
-                      ? "border-primary bg-primary/5 shadow-sm"
-                      : "border-border hover:border-primary/30"
-                  }`}
-                >
-                  {(config.mobile_nav_style || "classic") === s.value && (
-                    <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <Check className="h-3 w-3" />
-                    </div>
-                  )}
-                  <div className="w-full h-8 rounded-lg border border-border bg-muted/30 flex items-center justify-around px-2">
-                    {s.value === "classic" ? (
-                      <>
-                        <Home className="h-3 w-3 text-muted-foreground" />
-                        <Store className="h-3 w-3 text-muted-foreground" />
-                        <LayoutGrid className="h-3 w-3 text-muted-foreground" />
-                        <Heart className="h-3 w-3 text-muted-foreground" />
-                        <User className="h-3 w-3 text-muted-foreground" />
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-0.5 rounded-full bg-primary/20 px-1.5 py-0.5">
-                          <Home className="h-2.5 w-2.5 text-primary" />
-                          <span className="text-[7px] font-bold text-primary">Home</span>
-                        </div>
-                        <Store className="h-3 w-3 text-muted-foreground" />
-                        <Heart className="h-3 w-3 text-muted-foreground" />
-                        <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                          <ShoppingCart className="h-2.5 w-2.5 text-primary-foreground" />
-                        </div>
-                      </>
+              ].map((s) => {
+                const isActive = (config.mobile_nav_style || "classic") === s.value;
+                return (
+                  <button
+                    key={s.value}
+                    onClick={() => updateField("mobile_nav_style", s.value)}
+                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                      isActive ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"
+                    }`}
+                  >
+                    {isActive && (
+                      <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                        <Check className="h-3 w-3" />
+                      </div>
                     )}
-                  </div>
-                  <span className="text-[11px] font-semibold">{s.label}</span>
-                  <span className="text-[9px] text-muted-foreground text-center leading-tight">{s.desc}</span>
-                </button>
-              ))}
+                    <NavStylePreview variant={s.value} />
+                    <span className="text-[11px] font-semibold">{s.label}</span>
+                    <span className="text-[9px] text-muted-foreground text-center leading-tight">{s.desc}</span>
+                  </button>
+                );
+              })}
             </div>
           </Section>
+
 
           <Section title="Nav Icons" hint="Pick which icon represents each nav slot. Applies to header and the mobile bottom bar across all themes.">
             <NavIconPicker
