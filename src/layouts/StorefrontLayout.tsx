@@ -35,7 +35,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
             headerLogoAlignment={themeConfig?.header_logo_alignment || "left"}
             mobileNavEnabled={mobileNavEnabled}
             mobileNav={
-              mobileNavEnabled ? (
+              mobileNavEnabled && themeConfig ? (
                 <Suspense fallback={null}>
                   <LazyMobileBottomNav store={store} variant={mobileNavStyle as NavVariant} />
                 </Suspense>
