@@ -112,6 +112,24 @@ function NavStylePreview({ variant }: { variant: string }) {
       </div>
     );
   }
+  if (variant === "wave") {
+    return (
+      <div className="w-full h-9 flex items-end justify-center relative">
+        <div className="relative w-full h-7 rounded-full bg-foreground/90 flex items-center px-2">
+          <div className="flex-1 flex justify-center"><span className={dot} style={{ background: "rgba(255,255,255,0.7)" }} /></div>
+          <div className="flex-1" />
+          <div className="flex-1 flex justify-center"><span className={dot} style={{ background: "rgba(255,255,255,0.7)" }} /></div>
+          <div className="flex-1 flex justify-center"><span className={dot} style={{ background: "rgba(255,255,255,0.7)" }} /></div>
+          {/* dip cutout illusion + floating circle */}
+          <div className="absolute left-1/2 -translate-x-1/2 -top-2 flex items-center justify-center">
+            <div className="h-5 w-5 rounded-full bg-background border-2 border-foreground/90 flex items-center justify-center">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   // v15 / v17 / fallback
   return (
     <div className="w-full h-8 rounded-md border border-border bg-muted/30 flex items-center justify-around px-2">
