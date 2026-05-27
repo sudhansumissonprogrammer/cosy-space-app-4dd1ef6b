@@ -1,10 +1,17 @@
-import { Tag, ChevronLeft, ChevronRight } from "lucide-react";
+import { Tag } from "lucide-react";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { lazy, Suspense } from "react";
+
+// Heavy category variants: lazy-loaded so a store using style-1 (default)
+// never downloads Reveal/Spotlight/Magazine/TwoRow code (~12KB saved).
+const RevealGridCategories = lazy(() => import("./categories/RevealGridCategories"));
+const SpotlightCarouselCategories = lazy(() => import("./categories/SpotlightCarouselCategories"));
+const MagazineStripCategories = lazy(() => import("./categories/MagazineStripCategories"));
+const TwoRowCircleCarouselCategories = lazy(() => import("./categories/TwoRowCircleCarouselCategories"));
 
 interface Category {
   id: string;
