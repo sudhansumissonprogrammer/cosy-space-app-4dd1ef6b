@@ -323,7 +323,12 @@ export default defineConfig(({ mode }) => ({
             // round trips (~600ms saved per cold visit on 4G).
             id.includes("/src/layouts/StorefrontLayoutV16") ||
             id.includes("/src/pages/StorefrontHomeV16") ||
-            id.includes("/src/components/storefront/MobileBottomNav") ||
+            // NOTE: match the bare classic file only — NOT the variants.
+            // Variants (Modern/Glass/Notch/Neon/Tube/Bubble/3D/Indicator/V15/V17)
+            // are now lazy() inside MobileBottomNavSwitcher so each store ships
+            // only the variant it selected (~5-10KB instead of ~70KB for all 11).
+            id.includes("/src/components/storefront/MobileBottomNav.tsx") ||
+            id.includes("/src/components/storefront/MobileBottomNavSwitcher.tsx") ||
             id.includes("/src/components/storefront/HeroBannerCarousel") ||
             id.includes("/src/components/storefront/MobileHeroCarousel") ||
             // v8.6 — absorb shadcn Sheet primitive into storefront-shell.
