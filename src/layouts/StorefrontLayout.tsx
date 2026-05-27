@@ -11,7 +11,7 @@ export { useStorefront } from "@/layouts/StorefrontLayout.logic";
 
 const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNavSwitcher"));
 
-const VALID_NAV_STYLES = ["classic", "modern", "v15", "v17"] as const;
+const VALID_NAV_STYLES = ["classic", "modern", "v15", "v17", "glass", "notch", "neon", "tube", "bubble"] as const;
 type NavVariant = typeof VALID_NAV_STYLES[number];
 
 export default function StorefrontLayout({ slugOverride }: { slugOverride?: string } = {}) {
