@@ -71,12 +71,13 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
                   <item.icon
                     className="shrink-0 transition-all duration-400"
                     style={{
-                      width: active ? 20 : 22,
-                      height: active ? 20 : 22,
-                      color: active ? "var(--storefront-bg, hsl(var(--background)))" : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 70%, transparent)",
+                      width: active ? 22 : 24,
+                      height: active ? 22 : 24,
+                      color: active ? "var(--storefront-bg, hsl(var(--background)))" : "var(--storefront-text, hsl(var(--foreground)))",
                     }}
-                    strokeWidth={active ? 2.2 : 1.8}
+                    strokeWidth={active ? 2.4 : 2}
                   />
+
                   {badge > 0 && !active && (
                     <span className="absolute -right-0.5 -top-0.5 flex items-center justify-center rounded-full bg-destructive text-[8px] font-bold text-destructive-foreground min-w-[15px] h-[15px] px-0.5">
                       {badge > 9 ? "9+" : badge}
