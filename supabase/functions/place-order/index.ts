@@ -349,12 +349,12 @@ Deno.serve(async (req) => {
     // Calculate profit margin for Meta CAPI optimization
     let totalProfit: number | null = null;
     const defaultMargin = store.default_profit_margin ?? 30;
-    const productIds = items.map((i) => i.productId).filter(Boolean);
-    if (productIds.length > 0) {
+    const profitProductIds = items.map((i) => i.productId).filter(Boolean);
+    if (profitProductIds.length > 0) {
       const { data: productsData } = await supabase
         .from("products")
         .select("id, cost_price")
-        .in("id", productIds);
+        .in("id", profitProductIds);
 
       totalProfit = 0;
       for (const item of items) {
