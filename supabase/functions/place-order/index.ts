@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const {
+    let {
       store_id,
       order,
       items,
