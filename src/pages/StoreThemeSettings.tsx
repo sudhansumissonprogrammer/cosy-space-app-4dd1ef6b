@@ -782,20 +782,33 @@ export default function StoreThemeSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
-      // storefront-bulk not invalidated — iframe reload handles preview refresh.
+      // Also invalidate the storefront-side cache key so any in-app preview re-fetches.
+      queryClient.invalidateQueries({ queryKey: ["storefront-theme-config", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["storefront-bulk", store?.slug] });
       setDirty(false);
 
       // Purge edge cache so storefront visitors see new theme immediately.
-      // No prewarm here — the next shopper visit warms naturally (cold-miss
-      // ~150ms). Halves KV writes per theme-settings save.
       if (store?.slug) {
         import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
           purgeStoreCache(store.slug, (store as any).custom_domain)
         );
       }
 
+      // Push the freshly-saved config to the preview iframes (live update) AND
+      // hard-reload them so cached HTML/Worker-injected theme is replaced too.
+      sendToIframe(config);
+      setTimeout(() => {
+        try {
+          iframeRef.current?.contentWindow?.location.reload();
+          iframeDesktopRef.current?.contentWindow?.location.reload();
+        } catch {
+          setIframeKey((k) => k + 1);
+        }
+      }, 200);
+
       toast.success("Theme settings saved!");
     },
+
     onError: () => toast.error("Failed to save settings"),
   });
 
