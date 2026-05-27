@@ -15,6 +15,7 @@ import ThemeSectionNav, { ThemeSectionId, ThemeSectionMeta } from "@/components/
 import ThemeStickySaveBar from "@/components/dashboard/theme/ThemeStickySaveBar";
 import ThemeMobilePreviewDrawer from "@/components/dashboard/theme/ThemeMobilePreviewDrawer";
 import ThemeCategoryStyleIcon from "@/components/dashboard/theme/ThemeCategoryStyleIcon";
+import NavIconPicker from "@/components/dashboard/theme/NavIconPicker";
 
 const FONT_OPTIONS = [
   "Alegreya SC",
