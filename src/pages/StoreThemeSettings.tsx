@@ -561,7 +561,7 @@ export default function StoreThemeSettings() {
     } catch {}
   }, [config, sendToIframe, store?.slug]);
 
-  const updateField = (key: keyof ThemeConfig, value: string | boolean) => {
+  const updateField = (key: keyof ThemeConfig, value: string | boolean | Record<string, string>) => {
     const newConfig = { ...config, [key]: value };
     setConfig(newConfig);
     setDirty(true);
