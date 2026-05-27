@@ -51,12 +51,14 @@ Deno.serve(async (req) => {
     // Never trust client-supplied `amount` — could be tampered to ₹1.
     const { data: dbOrder, error: orderErr } = await supabase
       .from("orders")
-      .select("id, store_id, total, payment_status, payment_type, advance_paid")
+      .select("id, store_id, total, status, payment_type, advance_paid")
       .eq("id", order_id)
       .maybeSingle();
     if (orderErr || !dbOrder) return jsonRes({ error: "Order not found" }, 404);
     if (dbOrder.store_id !== store_id) return jsonRes({ error: "Order/store mismatch" }, 403);
-    if (dbOrder.payment_status === "paid") return jsonRes({ error: "Order already paid" }, 409);
+    if (dbOrder.status === "confirmed" || dbOrder.status === "partially_paid" || dbOrder.status === "paid") {
+      return jsonRes({ error: "Order already paid" }, 409);
+    }
     const chargeAmount = dbOrder.payment_type === "partial" && Number(dbOrder.advance_paid) > 0
       ? Number(dbOrder.advance_paid)
       : Number(dbOrder.total);
