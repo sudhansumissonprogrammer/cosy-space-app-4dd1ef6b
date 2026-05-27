@@ -95,7 +95,7 @@ export default function CustomHtmlRenderer({ html, className = "" }: CustomHtmlR
         srcDoc={srcDoc}
         className="w-full border-0 bg-transparent"
         style={{ minHeight: "400px", display: "block" }}
-        sandbox="allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts"
+        sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-scripts"
       />
     </div>
   );
