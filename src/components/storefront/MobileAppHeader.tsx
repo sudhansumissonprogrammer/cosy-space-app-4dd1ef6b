@@ -70,7 +70,7 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
           </button>
 
           <button onClick={openCart} className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors" aria-label="Open cart">
-            <ShoppingCart className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+            <CartIcon className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
             {cartCount > 0 && (
               <span className="absolute -right-0.5 -top-0.5 flex items-center justify-center rounded-full text-[9px] font-bold min-w-[18px] h-[18px] px-1" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, #fff)" }}>
                 {cartCount > 9 ? "9+" : cartCount}
