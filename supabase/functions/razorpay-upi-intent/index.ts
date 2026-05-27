@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     // ── SECURITY: use DB-stored order total, not client-supplied amount ──
     const { data: dbOrder, error: orderErr } = await supabase
       .from("orders")
-      .select("id, store_id, total, payment_status, payment_type, advance_paid")
+      .select("id, store_id, total, status, payment_type, advance_paid")
       .eq("id", order_id)
       .maybeSingle();
     if (orderErr || !dbOrder) {
@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (dbOrder.payment_status === "paid") {
+    if (dbOrder.status === "confirmed" || dbOrder.status === "partially_paid" || dbOrder.status === "paid") {
       return new Response(JSON.stringify({ error: "Order already paid" }), {
         status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
