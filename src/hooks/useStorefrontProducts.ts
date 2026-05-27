@@ -11,7 +11,7 @@ const PRODUCT_COLUMNS =
 
 /** Full columns including cost/sku/timestamps — used for dashboard and follow-up fetches */
 const PRODUCT_COLUMNS_FULL =
-  "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
+  "id,category,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
 
 /**
  * Fetch products via Worker /api/products (domain resolved from Host header).
