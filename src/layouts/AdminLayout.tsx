@@ -75,6 +75,13 @@ function AdminMobileMenu({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-sidebar font-dashboard">
       <div className="flex-1 overflow-auto px-4 pt-6 pb-4">
+        <button
+          onClick={() => { onClose(); onOpenSearch(); }}
+          className="mb-4 flex w-full items-center gap-3 rounded-xl border bg-background/50 px-4 py-3 text-sm text-muted-foreground active:bg-accent"
+        >
+          <Search className="h-4 w-4" />
+          <span className="flex-1 text-left">Search stores, users, orders…</span>
+        </button>
         <div className="space-y-4">
           {sections.map((section, si) => (
             <div key={si}>
@@ -109,6 +116,7 @@ function AdminMobileMenu({
           ))}
         </div>
       </div>
+
 
       <div className="safe-area-pb px-4 pb-4 pt-2 flex items-center justify-center">
         <button
