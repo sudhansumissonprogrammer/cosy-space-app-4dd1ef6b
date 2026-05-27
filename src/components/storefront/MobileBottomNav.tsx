@@ -1,9 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, ShoppingBag, LayoutGrid, ClipboardList, ShoppingCart } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
 import { navTap } from "@/lib/navHaptic";
+import { useNavIcons } from "@/hooks/useNavIcons";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 interface MobileBottomNavProps {
@@ -13,6 +13,12 @@ interface MobileBottomNavProps {
 export default function MobileBottomNav({ store }: MobileBottomNavProps) {
   const location = useLocation();
   const { cartCount, openCart, cartBounce } = useCart();
+  const getIcon = useNavIcons(store.id);
+  const HomeIcon = getIcon("home");
+  const ShopIcon = getIcon("shop");
+  const CategoriesIcon = getIcon("categories");
+  const CartIcon = getIcon("cart");
+  const OrdersIcon = getIcon("orders");
   const isCheckout = location.pathname.includes("/checkout");
   const isProductDetail = location.pathname.includes("/product/");
   const shouldHide = isCheckout || isProductDetail;
