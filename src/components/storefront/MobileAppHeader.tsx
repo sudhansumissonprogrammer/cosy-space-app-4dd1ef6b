@@ -6,6 +6,7 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ShoppingCart, Search, Menu } from "lucide-react";
+import { useNavIcons } from "@/hooks/useNavIcons";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/contexts/CartContext";
