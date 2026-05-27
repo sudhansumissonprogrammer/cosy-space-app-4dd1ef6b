@@ -7,11 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
 import { LayoutDashboard, Loader2, ArrowLeft, Mail } from "lucide-react";
+import { useLoginRateLimit } from "@/hooks/useLoginRateLimit";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const { isLocked, remainingSeconds, attemptsLeft, checkCanAttempt, recordFailedAttempt, resetAttempts } = useLoginRateLimit();
+
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
