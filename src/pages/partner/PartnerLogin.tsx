@@ -102,10 +102,14 @@ export default function PartnerLogin() {
               </Link>
             </CardContent>
             <CardFooter className="flex flex-col gap-3">
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full" disabled={loading || isLocked}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Login
+                {isLocked ? `Locked (${remainingSeconds}s)` : "Login"}
               </Button>
+              {attemptsLeft < 5 && !isLocked && (
+                <p className="text-center text-xs text-destructive">{attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining</p>
+              )}
+
               <p className="text-sm text-muted-foreground">
                 New here?{" "}
                 <Link to="/partners/signup" className="font-medium text-primary hover:underline">
