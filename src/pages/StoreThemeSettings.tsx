@@ -17,6 +17,85 @@ import ThemeMobilePreviewDrawer from "@/components/dashboard/theme/ThemeMobilePr
 import ThemeCategoryStyleIcon from "@/components/dashboard/theme/ThemeCategoryStyleIcon";
 import NavIconPicker from "@/components/dashboard/theme/NavIconPicker";
 
+// Mini preview for each mobile bottom nav variant in the picker
+function NavStylePreview({ variant }: { variant: string }) {
+  const dot = "h-1.5 w-1.5 rounded-full bg-muted-foreground/70";
+  const dotActive = "h-1.5 w-1.5 rounded-full bg-primary";
+  if (variant === "classic") {
+    return (
+      <div className="w-full h-8 rounded-md border border-border bg-muted/30 flex items-center justify-around px-2">
+        <span className={dotActive} /><span className={dot} /><span className={dot} /><span className={dot} /><span className={dot} />
+      </div>
+    );
+  }
+  if (variant === "modern") {
+    return (
+      <div className="w-full h-8 rounded-full border border-border bg-muted/30 flex items-center justify-around px-2">
+        <div className="flex items-center gap-0.5 rounded-full bg-primary px-1.5 py-0.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
+          <span className="text-[6px] font-bold text-primary-foreground">Home</span>
+        </div>
+        <span className={dot} /><span className={dot} /><span className={dot} />
+      </div>
+    );
+  }
+  if (variant === "glass") {
+    return (
+      <div className="w-full h-8 rounded-[14px] border border-white/20 bg-gradient-to-br from-white/30 to-white/5 backdrop-blur flex items-center justify-around px-2 shadow-inner">
+        <div className="h-4 w-4 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary))]" />
+        <span className={dot} /><span className={dot} /><span className={dot} /><span className={dot} />
+      </div>
+    );
+  }
+  if (variant === "notch") {
+    return (
+      <div className="relative w-full h-8">
+        <svg viewBox="0 0 80 16" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 w-full h-6">
+          <path d="M0,2 L32,2 C35,2 36,7 40,7 C44,7 45,2 48,2 L80,2 L80,16 L0,16 Z" className="fill-muted/40 stroke-border" strokeWidth="0.5" />
+        </svg>
+        <div className="absolute left-1/2 -translate-x-1/2 top-0 h-5 w-5 rounded-full bg-primary" />
+        <div className="absolute bottom-1 left-2 flex gap-2"><span className={dot} /><span className={dot} /></div>
+        <div className="absolute bottom-1 right-2 flex gap-2"><span className={dot} /><span className={dot} /></div>
+      </div>
+    );
+  }
+  if (variant === "neon") {
+    return (
+      <div className="w-full h-8 rounded-md border border-border bg-muted/30 flex items-center justify-around px-2 relative overflow-hidden">
+        <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-[2px] bg-primary shadow-[0_0_8px_hsl(var(--primary))] rounded-full" />
+        <span className={dot} /><span className={dot} /><span className={dotActive} /><span className={dot} /><span className={dot} />
+      </div>
+    );
+  }
+  if (variant === "tube") {
+    return (
+      <div className="w-full h-8 rounded-full border border-border bg-muted/30 flex items-center px-1 relative">
+        <div className="absolute left-1 top-1 bottom-1 w-1/3 rounded-full bg-primary" />
+        <div className="relative z-10 flex w-full justify-around">
+          <div className="flex items-center gap-0.5"><span className="h-1.5 w-1.5 rounded-full bg-primary-foreground" /><span className="text-[6px] font-bold text-primary-foreground">Home</span></div>
+          <span className={dot} /><span className={dot} /><span className={dot} />
+        </div>
+      </div>
+    );
+  }
+  if (variant === "bubble") {
+    return (
+      <div className="w-full h-8 rounded-md border border-border bg-muted/30 flex items-center justify-around px-1 gap-1">
+        <div className="flex items-center gap-0.5 rounded-full bg-primary/20 px-1.5 py-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary" /><span className="text-[6px] font-bold text-primary">Home</span>
+        </div>
+        <span className={dot} /><span className={dot} /><span className={dot} /><span className={dot} />
+      </div>
+    );
+  }
+  // v15 / v17 / fallback
+  return (
+    <div className="w-full h-8 rounded-md border border-border bg-muted/30 flex items-center justify-around px-2">
+      <span className={dotActive} /><span className={dot} /><span className={dot} /><span className={dot} />
+    </div>
+  );
+}
+
 const FONT_OPTIONS = [
   "Alegreya SC",
   "Inter",
