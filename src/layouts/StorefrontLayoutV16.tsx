@@ -9,7 +9,7 @@ import StorefrontShell from "@/layouts/StorefrontShell";
 
 const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBottomNavSwitcher"));
 
-const VALID_NAV_STYLES = ["classic", "modern", "v15", "v17", "glass", "notch", "neon", "tube", "bubble"] as const;
+const VALID_NAV_STYLES = ["classic", "modern", "v15", "v17", "glass", "notch", "neon", "tube", "bubble", "skeuo3d", "indicator"] as const;
 type NavVariant = typeof VALID_NAV_STYLES[number];
 
 export default function StorefrontLayoutV16({ slugOverride }: { slugOverride?: string } = {}) {

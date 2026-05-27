@@ -88,6 +88,30 @@ function NavStylePreview({ variant }: { variant: string }) {
       </div>
     );
   }
+  if (variant === "skeuo3d") {
+    return (
+      <div className="w-full h-8 rounded-md border border-border bg-gradient-to-b from-muted/10 to-muted/40 flex items-end justify-around px-1.5 pb-1 gap-1">
+        <div className="h-6 flex-1 rounded-md bg-gradient-to-b from-primary/30 to-primary/10 border border-border shadow-[0_2px_3px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,0.6)] -translate-y-[2px] flex items-center justify-center">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+        </div>
+        <div className="h-5 flex-1 rounded-md bg-muted/40 border border-border shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] flex items-center justify-center"><span className={dot} /></div>
+        <div className="h-5 flex-1 rounded-md bg-muted/40 border border-border shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] flex items-center justify-center"><span className={dot} /></div>
+        <div className="h-5 flex-1 rounded-md bg-muted/40 border border-border shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] flex items-center justify-center"><span className={dot} /></div>
+      </div>
+    );
+  }
+  if (variant === "indicator") {
+    return (
+      <div className="w-full h-8 rounded-md border border-border bg-muted/30 flex flex-col">
+        <div className="relative h-[3px] w-full">
+          <div className="absolute top-0 left-[42%] w-[16%] h-full rounded-b-full bg-primary shadow-[0_1px_4px_hsl(var(--primary))]" />
+        </div>
+        <div className="flex-1 flex items-center justify-around px-2">
+          <span className={dot} /><span className={dot} /><span className={dotActive} /><span className={dot} /><span className={dot} />
+        </div>
+      </div>
+    );
+  }
   // v15 / v17 / fallback
   return (
     <div className="w-full h-8 rounded-md border border-border bg-muted/30 flex items-center justify-around px-2">
@@ -1317,6 +1341,8 @@ export default function StoreThemeSettings() {
                 { value: "neon", label: "Neon Glow", desc: "Animated gradient underline" },
                 { value: "tube", label: "Sliding Tube", desc: "Capsule glides under active" },
                 { value: "bubble", label: "Bubble Pill", desc: "Material You style pill" },
+                { value: "skeuo3d", label: "3D Skeuomorphic", desc: "Lifted physical buttons with depth" },
+                { value: "indicator", label: "Indicator Bar", desc: "Sliding top progress bar, editorial" },
                 ...(currentTheme === "theme-18" ? [{ value: "v15", label: "Minimal", desc: "Clean minimal icons" }] : []),
                 ...(["theme-1", "theme-14", "theme-15", "theme-18"].includes(currentTheme) ? [{ value: "v17", label: "Streetwear", desc: "Bold streetwear style" }] : []),
               ].map((s) => {

@@ -12,6 +12,8 @@ import MobileBottomNavNotch from "./MobileBottomNavNotch";
 import MobileBottomNavNeon from "./MobileBottomNavNeon";
 import MobileBottomNavTube from "./MobileBottomNavTube";
 import MobileBottomNavBubble from "./MobileBottomNavBubble";
+import MobileBottomNav3D from "./MobileBottomNav3D";
+import MobileBottomNavIndicator from "./MobileBottomNavIndicator";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 export type NavVariant =
@@ -23,7 +25,9 @@ export type NavVariant =
   | "notch"
   | "neon"
   | "tube"
-  | "bubble";
+  | "bubble"
+  | "skeuo3d"
+  | "indicator";
 
 interface Props {
   store: StoreData;
@@ -40,6 +44,8 @@ export default function MobileBottomNavSwitcher({ store, variant }: Props) {
     case "neon": return <MobileBottomNavNeon store={store} />;
     case "tube": return <MobileBottomNavTube store={store} />;
     case "bubble": return <MobileBottomNavBubble store={store} />;
+    case "skeuo3d": return <MobileBottomNav3D store={store} />;
+    case "indicator": return <MobileBottomNavIndicator store={store} />;
     default: return <MobileBottomNav store={store} />;
   }
 }
