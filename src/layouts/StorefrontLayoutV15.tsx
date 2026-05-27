@@ -29,7 +29,7 @@ export default function StorefrontLayoutV15({ slugOverride }: { slugOverride?: s
             headerLogoAlignment={themeConfig?.header_logo_alignment || "center"}
             mobileNavEnabled={mobileNavEnabled}
             mobileNav={
-              mobileNavEnabled ? (
+              mobileNavEnabled && themeConfig ? (
                 <Suspense fallback={null}>
                   {mobileNavStyle === "v17" ? <LazyMobileBottomNavV17 store={store} /> :
                    mobileNavStyle === "v15" ? <LazyMobileBottomNavV15 store={store} /> :
