@@ -10,6 +10,16 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  // Require cron secret — without this anyone could trigger trial expirations
+  // and store suspensions for every store on the platform.
+  const cronSecret = Deno.env.get("BILLING_CRON_SECRET");
+  if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
