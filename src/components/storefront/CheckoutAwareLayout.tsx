@@ -73,6 +73,8 @@ export default function CheckoutAwareLayout({
   const queryClient = useQueryClient();
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const headerVisible = useSmartHeader();
+  const getHeaderIcon = useNavIcons(store.id);
+  const SearchIcon = getHeaderIcon("search");
 
   useEffect(() => {
     // v8: Defer route prefetching by 1.2s (was 3s). Internally uses
@@ -235,7 +237,7 @@ export default function CheckoutAwareLayout({
                 className="flex-1 mx-2 flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition-colors" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 12%, transparent)", backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 5%, transparent)", color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}
                 aria-label="Search products"
               >
-                <Search className="h-3.5 w-3.5" />
+                <SearchIcon className="h-3.5 w-3.5" />
                 <span className="truncate">Search products...</span>
               </button>
               {ActionButtons}
