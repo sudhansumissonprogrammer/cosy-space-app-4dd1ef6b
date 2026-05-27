@@ -1393,14 +1393,18 @@ export default function StoreThemeSettings() {
     }
     return (
       <Section title="Product Card Design" hint="How each product appears in your store grid.">
-        {/* #7 — Fixed columns: 2 mobile / 3 tablet / 5 desktop (was 5-everywhere) */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {[
-            { value: "style-1", label: "Clean Minimal" },
-            { value: "style-2", label: "Badge Overlay" },
-            { value: "style-3", label: "Bold Modern" },
-            { value: "style-4", label: "Menu List" },
-            { value: "style-5", label: "Dark Streetwear" },
+            { value: "style-1", label: "Clean Minimal", preview: "minimal" },
+            { value: "style-2", label: "Badge Overlay", preview: "minimal" },
+            { value: "style-3", label: "Bold Modern", preview: "minimal" },
+            { value: "style-4", label: "Menu List", preview: "minimal" },
+            { value: "style-5", label: "Dark Streetwear", preview: "dark" },
+            { value: "style-6", label: "Editorial Luxe", preview: "editorial" },
+            { value: "style-7", label: "Floating Glass", preview: "glass" },
+            { value: "style-8", label: "Quick Commerce", preview: "qc" },
+            { value: "style-9", label: "Story Card", preview: "story" },
+            { value: "style-10", label: "Catalog Pro", preview: "catalog" },
           ].map((s) => (
             <button
               key={s.value}
@@ -1416,12 +1420,61 @@ export default function StoreThemeSettings() {
                   <Check className="h-4 w-4 text-foreground" />
                 </div>
               )}
-              {/* Mini product card mockup */}
-              <div className="w-full rounded-lg border border-border bg-background p-1.5">
-                <div className="aspect-square rounded bg-muted mb-1.5" />
-                <div className="h-1.5 w-3/4 rounded bg-foreground/40 mb-1" />
-                <div className="h-1.5 w-1/2 rounded bg-foreground/20" />
-              </div>
+              {/* Mini product card mockup — varies by preview type */}
+              {s.preview === "dark" ? (
+                <div className="w-full rounded-lg bg-neutral-900 p-1.5">
+                  <div className="aspect-square rounded bg-neutral-700 mb-1.5" />
+                  <div className="h-1.5 w-3/4 rounded bg-neutral-500 mb-1" />
+                  <div className="h-1.5 w-1/2 rounded bg-neutral-600" />
+                </div>
+              ) : s.preview === "editorial" ? (
+                <div className="w-full p-1.5">
+                  <div className="aspect-[3/4] bg-muted mb-1.5" />
+                  <div className="h-1.5 w-3/4 rounded bg-foreground/50 mb-1 italic" />
+                  <div className="h-1 w-1/3 rounded bg-foreground/30" />
+                </div>
+              ) : s.preview === "glass" ? (
+                <div className="w-full rounded-lg p-1.5" style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.15), hsl(var(--accent)/0.1))" }}>
+                  <div className="aspect-square rounded-md bg-background/40 backdrop-blur mb-1.5 relative">
+                    <div className="absolute bottom-0.5 inset-x-0.5 h-3 rounded bg-background/70" />
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-primary/60" />
+                </div>
+              ) : s.preview === "qc" ? (
+                <div className="w-full rounded-lg border border-border bg-background p-1.5">
+                  <div className="aspect-square rounded bg-muted mb-1.5 relative">
+                    <div className="absolute top-0.5 left-0.5 h-1.5 w-5 rounded bg-success/80" />
+                    <div className="absolute top-3 left-0 h-1.5 w-4 rounded-r bg-destructive" />
+                  </div>
+                  <div className="flex items-center justify-between gap-1">
+                    <div className="h-2 w-6 rounded bg-foreground/70" />
+                    <div className="h-3 w-6 rounded border-2 border-primary" />
+                  </div>
+                </div>
+              ) : s.preview === "story" ? (
+                <div className="w-full p-1.5">
+                  <div className="aspect-[4/5] rounded-xl bg-muted mb-1.5" />
+                  <div className="h-1.5 w-3/4 rounded bg-foreground/50 mb-1" />
+                  <div className="h-3 w-full rounded-full bg-primary/80" />
+                </div>
+              ) : s.preview === "catalog" ? (
+                <div className="w-full rounded-md border border-border bg-background p-1.5">
+                  <div className="aspect-square rounded bg-muted mb-1.5 relative">
+                    <div className="absolute top-0.5 left-0.5 flex flex-col gap-0.5">
+                      <div className="h-1.5 w-4 rounded bg-foreground/90" />
+                      <div className="h-1.5 w-4 rounded bg-destructive" />
+                    </div>
+                  </div>
+                  <div className="h-1.5 w-3/4 rounded bg-foreground/50 mb-0.5" />
+                  <div className="h-1 w-1/2 rounded bg-success" />
+                </div>
+              ) : (
+                <div className="w-full rounded-lg border border-border bg-background p-1.5">
+                  <div className="aspect-square rounded bg-muted mb-1.5" />
+                  <div className="h-1.5 w-3/4 rounded bg-foreground/40 mb-1" />
+                  <div className="h-1.5 w-1/2 rounded bg-foreground/20" />
+                </div>
+              )}
               <span className="text-[11px] font-semibold text-center">{s.label}</span>
             </button>
           ))}

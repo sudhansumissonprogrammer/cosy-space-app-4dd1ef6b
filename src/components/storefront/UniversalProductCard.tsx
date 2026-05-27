@@ -5,6 +5,11 @@ import ProductCardStyle2 from "./ProductCardStyle2";
 import ProductCardStyle3 from "./ProductCardStyle3";
 import ProductCardStyle4 from "./ProductCardStyle4";
 import ProductCardStyle5 from "./ProductCardStyle5";
+import ProductCardStyle6 from "./ProductCardStyle6";
+import ProductCardStyle7 from "./ProductCardStyle7";
+import ProductCardStyle8 from "./ProductCardStyle8";
+import ProductCardStyle9 from "./ProductCardStyle9";
+import ProductCardStyle10 from "./ProductCardStyle10";
 import V19ProductCard from "./v19/V19ProductCard";
 import V20ProductCard from "./v20/V20ProductCard";
 
@@ -49,6 +54,16 @@ export default function UniversalProductCard({ product, slug, store, priority = 
         return <ProductCardStyle4 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
       case "style-5":
         return <ProductCardStyle5 product={product} slug={slug} store={store} priority={priority} />;
+      case "style-6":
+        return <ProductCardStyle6 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
+      case "style-7":
+        return <ProductCardStyle7 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
+      case "style-8":
+        return <ProductCardStyle8 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
+      case "style-9":
+        return <ProductCardStyle9 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
+      case "style-10":
+        return <ProductCardStyle10 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
       default:
         return <ProductCardStyle1 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
     }
