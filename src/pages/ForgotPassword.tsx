@@ -90,10 +90,14 @@ export default function ForgotPassword() {
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col gap-3">
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full" disabled={loading || isLocked}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Send Reset Link
+                  {isLocked ? `Locked (${remainingSeconds}s)` : "Send Reset Link"}
                 </Button>
+                {attemptsLeft < 5 && !isLocked && (
+                  <p className="text-center text-xs text-destructive">{attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining</p>
+                )}
+
                 <Link to="/login" className="text-sm text-muted-foreground hover:text-primary">
                   <ArrowLeft className="mr-1 inline h-3 w-3" />
                   Back to Sign in
