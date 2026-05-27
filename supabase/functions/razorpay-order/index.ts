@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     // only ₹1. We always charge what's stored in the orders table.
     const { data: dbOrder, error: orderErr } = await supabase
       .from("orders")
-      .select("id, store_id, total, status, payment_status, payment_type, advance_paid")
+      .select("id, store_id, total, status, payment_type, advance_paid")
       .eq("id", order_id)
       .maybeSingle();
 
@@ -74,7 +74,8 @@ Deno.serve(async (req) => {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (dbOrder.payment_status === "paid") {
+    // Block re-charging an already-paid order (status indicates payment state)
+    if (dbOrder.status === "confirmed" || dbOrder.status === "partially_paid" || dbOrder.status === "paid") {
       return new Response(JSON.stringify({ error: "Order already paid" }), {
         status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
