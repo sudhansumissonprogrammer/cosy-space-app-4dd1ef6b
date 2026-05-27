@@ -49,13 +49,14 @@ export default function CustomHtmlRenderer({ html, className = "" }: CustomHtmlR
 
     const sanitized = DOMPurify.sanitize(trimmed, {
       WHOLE_DOCUMENT: isFullDocument,
-      ADD_TAGS: ["iframe", "style", "link"],
+      ADD_TAGS: ["style", "link"],
       ADD_ATTR: [
         "allow", "allowfullscreen", "frameborder", "scrolling",
         "target", "loading", "rel", "href", "media", "class", "style",
       ],
       ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel|data):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
-      FORBID_TAGS: [],
+      ALLOW_UNKNOWN_PROTOCOLS: false,
+      FORBID_TAGS: ["script"],
       FORBID_ATTR: ["onerror", "onload", "onclick", "onmouseover", "onfocus", "onblur"],
     });
 
