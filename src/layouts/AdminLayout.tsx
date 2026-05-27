@@ -134,7 +134,7 @@ function AdminMobileMenu({
 export default function AdminLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
-  useAuth(); // keep session subscription active
+  const { user, signOut } = useAuth();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();
@@ -160,20 +160,52 @@ export default function AdminLayout() {
                   <AdminBreadcrumbs />
                 </div>
               </div>
-              <button
-                onClick={() => setCmdOpen(true)}
-                className="inline-flex items-center gap-2 h-8 px-3 rounded-md border bg-background text-xs text-muted-foreground hover:bg-accent shrink-0"
-                aria-label="Search"
-              >
-                <Search className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Search…</span>
-                <kbd className="hidden md:inline ml-2 text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded">⌘K</kbd>
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setCmdOpen(true)}
+                  className="inline-flex items-center gap-2 h-8 px-3 rounded-md border bg-background text-xs text-muted-foreground hover:bg-accent"
+                  aria-label="Search"
+                >
+                  <Search className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Search…</span>
+                  <kbd className="hidden md:inline ml-2 text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded">⌘K</kbd>
+                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" aria-label="Account">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-destructive/90">
+                        <User className="h-3.5 w-3.5 text-destructive-foreground" />
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col">
+                        <span className="text-xs text-muted-foreground">Signed in as</span>
+                        <span className="truncate text-sm font-medium">{user?.email ?? "admin"}</span>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate("/admin/settings")}>
+                      <Settings className="mr-2 h-4 w-4" /> Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/admin/menu-config")}>
+                      <Menu className="mr-2 h-4 w-4" /> Menu Control
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" /> Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </header>
             <main className="flex-1 overflow-auto p-6">
-              <Suspense fallback={<ContentSkeleton />}>
-                <Outlet />
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<ContentSkeleton />}>
+                  <Outlet />
+                </Suspense>
+              </ErrorBoundary>
             </main>
           </div>
         </div>
@@ -181,6 +213,7 @@ export default function AdminLayout() {
       </SidebarProvider>
     );
   }
+
 
   // Mobile layout — matches store owner mobile pattern
   // Replaced duplicate "Settings" with "Subscriptions" (higher-frequency screen);
