@@ -238,10 +238,10 @@ export default function UniversalCategories({ categories, storeSlug, isLoading, 
             {categoryStyle === "style-3" && <SquareGridModern categories={categories!} storeSlug={storeSlug} />}
             {categoryStyle === "style-4" && <SquareGrid categories={categories!} storeSlug={storeSlug} />}
             {categoryStyle === "style-5" && <PillCarousel categories={categories!} storeSlug={storeSlug} />}
-            {categoryStyle === "style-6" && <RevealGrid categories={categories!} storeSlug={storeSlug} />}
-            {categoryStyle === "style-8" && <SpotlightCarousel categories={categories!} storeSlug={storeSlug} />}
-            {categoryStyle === "style-10" && <MagazineStrip categories={categories!} storeSlug={storeSlug} />}
-            {categoryStyle === "style-11" && <TwoRowCircleCarousel categories={categories!} storeSlug={storeSlug} />}
+            {categoryStyle === "style-6" && <Suspense fallback={null}><RevealGridCategories categories={categories!} storeSlug={storeSlug} /></Suspense>}
+            {categoryStyle === "style-8" && <Suspense fallback={null}><SpotlightCarouselCategories categories={categories!} storeSlug={storeSlug} /></Suspense>}
+            {categoryStyle === "style-10" && <Suspense fallback={null}><MagazineStripCategories categories={categories!} storeSlug={storeSlug} /></Suspense>}
+            {categoryStyle === "style-11" && <Suspense fallback={null}><TwoRowCircleCarouselCategories categories={categories!} storeSlug={storeSlug} /></Suspense>}
           </>
         )}
       </div>
