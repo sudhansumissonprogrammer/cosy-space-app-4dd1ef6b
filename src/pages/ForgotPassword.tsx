@@ -22,6 +22,10 @@ export default function ForgotPassword() {
       toast.error("Please enter your email");
       return;
     }
+    if (!checkCanAttempt()) {
+      toast.error(`Too many requests. Please wait ${remainingSeconds}s.`);
+      return;
+    }
     setLoading(true);
     const publishedAppOrigin = "https://cosy-space-app.lovable.app";
     const hostname = window.location.hostname;
@@ -35,11 +39,14 @@ export default function ForgotPassword() {
     });
     setLoading(false);
     if (error) {
+      recordFailedAttempt();
       toast.error(error.message);
     } else {
+      resetAttempts();
       setSent(true);
     }
   };
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
