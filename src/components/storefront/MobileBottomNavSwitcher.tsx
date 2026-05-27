@@ -38,7 +38,8 @@ export type NavVariant =
   | "tube"
   | "bubble"
   | "skeuo3d"
-  | "indicator";
+  | "indicator"
+  | "wave";
 
 interface Props {
   store: StoreData;
