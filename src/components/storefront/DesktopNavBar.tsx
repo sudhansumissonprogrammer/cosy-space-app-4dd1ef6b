@@ -1,7 +1,8 @@
 import { useState, useRef, lazy, Suspense } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Search, User, Heart, ShoppingCart, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import { useNavIcons } from "@/hooks/useNavIcons";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
