@@ -10,10 +10,14 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  // REQUIRE shared secret. Previously this was optional ("if configured"),
-  // meaning if the env var was unset anyone could trigger commission approvals.
-  const cronSecret = Deno.env.get("PARTNER_CRON_SECRET");
-  if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {
+  // Require cron secret. Accept either the dedicated PARTNER_CRON_SECRET
+  // (for manual runs) or the project service-role key (what pg_cron sends).
+  const provided = req.headers.get("x-cron-secret") || "";
+  const allowed = [
+    Deno.env.get("PARTNER_CRON_SECRET"),
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+  ].filter(Boolean) as string[];
+  if (!provided || !allowed.includes(provided)) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

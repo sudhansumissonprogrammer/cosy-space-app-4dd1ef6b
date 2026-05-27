@@ -26,6 +26,36 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // ── SECURITY: use DB-stored order total, not client-supplied amount ──
+    const { data: dbOrder, error: orderErr } = await supabase
+      .from("orders")
+      .select("id, store_id, total, payment_status, payment_type, advance_paid")
+      .eq("id", order_id)
+      .maybeSingle();
+    if (orderErr || !dbOrder) {
+      return new Response(JSON.stringify({ error: "Order not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (dbOrder.store_id !== store_id) {
+      return new Response(JSON.stringify({ error: "Order/store mismatch" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (dbOrder.payment_status === "paid") {
+      return new Response(JSON.stringify({ error: "Order already paid" }), {
+        status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const chargeAmount = dbOrder.payment_type === "partial" && Number(dbOrder.advance_paid) > 0
+      ? Number(dbOrder.advance_paid)
+      : Number(dbOrder.total);
+    if (!Number.isFinite(chargeAmount) || chargeAmount <= 0) {
+      return new Response(JSON.stringify({ error: "Invalid order total" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Fetch store payment config
     const { data: config, error: configErr } = await supabase
       .from("store_payment_config")
@@ -50,8 +80,8 @@ Deno.serve(async (req) => {
 
     const authHeader = "Basic " + btoa(`${config.razorpay_key_id}:${config.razorpay_key_secret}`);
 
-    // Step 1: Create Razorpay order
-    const amountInPaise = Math.round(amount * 100);
+    // Step 1: Create Razorpay order — uses DB-authoritative amount
+    const amountInPaise = Math.round(chargeAmount * 100);
     const orderRes = await fetch("https://api.razorpay.com/v1/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: authHeader },

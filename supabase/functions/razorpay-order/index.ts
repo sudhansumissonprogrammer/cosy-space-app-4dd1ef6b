@@ -54,6 +54,43 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // ── SECURITY: load the order from DB and use the canonical total ──
+    // Client-supplied `amount` is NEVER trusted — an attacker could place a
+    // legitimate ₹10,000 order then call this endpoint with amount=1 to pay
+    // only ₹1. We always charge what's stored in the orders table.
+    const { data: dbOrder, error: orderErr } = await supabase
+      .from("orders")
+      .select("id, store_id, total, status, payment_status, payment_type, advance_paid")
+      .eq("id", order_id)
+      .maybeSingle();
+
+    if (orderErr || !dbOrder) {
+      return new Response(JSON.stringify({ error: "Order not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (dbOrder.store_id !== store_id) {
+      return new Response(JSON.stringify({ error: "Order/store mismatch" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (dbOrder.payment_status === "paid") {
+      return new Response(JSON.stringify({ error: "Order already paid" }), {
+        status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // For partial-payment orders we charge only the advance; otherwise the full total.
+    const chargeAmount = dbOrder.payment_type === "partial" && Number(dbOrder.advance_paid) > 0
+      ? Number(dbOrder.advance_paid)
+      : Number(dbOrder.total);
+
+    if (!Number.isFinite(chargeAmount) || chargeAmount <= 0) {
+      return new Response(JSON.stringify({ error: "Invalid order total" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Fetch store payment config
     const { data: config, error: configErr } = await supabase
       .from("store_payment_config")
@@ -76,8 +113,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create Razorpay order
-    const amountInPaise = Math.round(amount * 100);
+    // Create Razorpay order with DB-authoritative amount
+    const amountInPaise = Math.round(chargeAmount * 100);
     const rzpRes = await fetch("https://api.razorpay.com/v1/orders", {
       method: "POST",
       headers: {

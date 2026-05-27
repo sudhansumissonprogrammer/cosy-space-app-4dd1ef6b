@@ -47,6 +47,23 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // ── SECURITY: load the order from DB and use the canonical total ──
+    // Never trust client-supplied `amount` — could be tampered to ₹1.
+    const { data: dbOrder, error: orderErr } = await supabase
+      .from("orders")
+      .select("id, store_id, total, payment_status, payment_type, advance_paid")
+      .eq("id", order_id)
+      .maybeSingle();
+    if (orderErr || !dbOrder) return jsonRes({ error: "Order not found" }, 404);
+    if (dbOrder.store_id !== store_id) return jsonRes({ error: "Order/store mismatch" }, 403);
+    if (dbOrder.payment_status === "paid") return jsonRes({ error: "Order already paid" }, 409);
+    const chargeAmount = dbOrder.payment_type === "partial" && Number(dbOrder.advance_paid) > 0
+      ? Number(dbOrder.advance_paid)
+      : Number(dbOrder.total);
+    if (!Number.isFinite(chargeAmount) || chargeAmount <= 0) {
+      return jsonRes({ error: "Invalid order total" }, 400);
+    }
+
     // Read merchant's own Cashfree credentials
     const { data: config, error: configErr } = await supabase
       .from("store_payment_config")
@@ -74,7 +91,7 @@ Deno.serve(async (req) => {
 
     const cfPayload = {
       order_id: cfOrderId,
-      order_amount: Number(numAmount.toFixed(2)),
+      order_amount: Number(chargeAmount.toFixed(2)),
       order_currency: currency.toUpperCase(),
       customer_details: {
         customer_id: order_id,
@@ -113,7 +130,7 @@ Deno.serve(async (req) => {
       cf_order_id: cfOrderId,
       payment_session_id: cfData.payment_session_id,
       env,
-      amount: numAmount,
+      amount: chargeAmount,
       currency: currency.toUpperCase(),
     });
   } catch (err) {
