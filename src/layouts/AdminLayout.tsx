@@ -296,7 +296,7 @@ export default function AdminLayout() {
         </div>
       </nav>
 
-      <AdminMobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <AdminMobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} onOpenSearch={() => setCmdOpen(true)} />
       <AdminCommandPalette open={cmdOpen} onOpenChange={setCmdOpen} />
     </div>
   );
