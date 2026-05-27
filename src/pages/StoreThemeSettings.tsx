@@ -1341,6 +1341,8 @@ export default function StoreThemeSettings() {
                 { value: "neon", label: "Neon Glow", desc: "Animated gradient underline" },
                 { value: "tube", label: "Sliding Tube", desc: "Capsule glides under active" },
                 { value: "bubble", label: "Bubble Pill", desc: "Material You style pill" },
+                { value: "skeuo3d", label: "3D Skeuomorphic", desc: "Lifted physical buttons with depth" },
+                { value: "indicator", label: "Indicator Bar", desc: "Sliding top progress bar, editorial" },
                 ...(currentTheme === "theme-18" ? [{ value: "v15", label: "Minimal", desc: "Clean minimal icons" }] : []),
                 ...(["theme-1", "theme-14", "theme-15", "theme-18"].includes(currentTheme) ? [{ value: "v17", label: "Streetwear", desc: "Bold streetwear style" }] : []),
               ].map((s) => {
