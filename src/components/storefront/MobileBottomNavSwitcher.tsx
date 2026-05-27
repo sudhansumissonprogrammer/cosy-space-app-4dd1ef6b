@@ -1,20 +1,30 @@
 /**
- * MobileBottomNavSwitcher — Single lazy entry point that dispatches to the
- * correct nav variant. Consolidates all variants into 1 lazy chunk to reduce
- * Worker subrequests on cold load.
+ * MobileBottomNavSwitcher — Lazy dispatcher for the 11 nav variants.
+ *
+ * Before: all 11 variants statically imported → one big chunk (~70KB) where
+ *         10 variants were dead code for any given store.
+ * After:  each variant lazy() → only the selected one is fetched
+ *         (~5-10KB). Same number of network requests as before since the
+ *         switcher itself is already lazy-loaded from each layout.
+ *
+ * The Suspense fallback is null — nav is below-the-fold and renders without
+ * layout shift since each variant reserves the same 64px-tall safe area
+ * via the parent layout's padding.
  */
-import MobileBottomNav from "./MobileBottomNav";
-import MobileBottomNavModern from "./MobileBottomNavModern";
-import MobileBottomNavV15 from "./MobileBottomNavV15";
-import MobileBottomNavV17 from "./MobileBottomNavV17";
-import MobileBottomNavGlass from "./MobileBottomNavGlass";
-import MobileBottomNavNotch from "./MobileBottomNavNotch";
-import MobileBottomNavNeon from "./MobileBottomNavNeon";
-import MobileBottomNavTube from "./MobileBottomNavTube";
-import MobileBottomNavBubble from "./MobileBottomNavBubble";
-import MobileBottomNav3D from "./MobileBottomNav3D";
-import MobileBottomNavIndicator from "./MobileBottomNavIndicator";
+import { lazy, Suspense } from "react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+
+const MobileBottomNav = lazy(() => import("./MobileBottomNav"));
+const MobileBottomNavModern = lazy(() => import("./MobileBottomNavModern"));
+const MobileBottomNavV15 = lazy(() => import("./MobileBottomNavV15"));
+const MobileBottomNavV17 = lazy(() => import("./MobileBottomNavV17"));
+const MobileBottomNavGlass = lazy(() => import("./MobileBottomNavGlass"));
+const MobileBottomNavNotch = lazy(() => import("./MobileBottomNavNotch"));
+const MobileBottomNavNeon = lazy(() => import("./MobileBottomNavNeon"));
+const MobileBottomNavTube = lazy(() => import("./MobileBottomNavTube"));
+const MobileBottomNavBubble = lazy(() => import("./MobileBottomNavBubble"));
+const MobileBottomNav3D = lazy(() => import("./MobileBottomNav3D"));
+const MobileBottomNavIndicator = lazy(() => import("./MobileBottomNavIndicator"));
 
 export type NavVariant =
   | "classic"
@@ -35,17 +45,25 @@ interface Props {
 }
 
 export default function MobileBottomNavSwitcher({ store, variant }: Props) {
-  switch (variant) {
-    case "v17": return <MobileBottomNavV17 store={store} />;
-    case "v15": return <MobileBottomNavV15 store={store} />;
-    case "modern": return <MobileBottomNavModern store={store} />;
-    case "glass": return <MobileBottomNavGlass store={store} />;
-    case "notch": return <MobileBottomNavNotch store={store} />;
-    case "neon": return <MobileBottomNavNeon store={store} />;
-    case "tube": return <MobileBottomNavTube store={store} />;
-    case "bubble": return <MobileBottomNavBubble store={store} />;
-    case "skeuo3d": return <MobileBottomNav3D store={store} />;
-    case "indicator": return <MobileBottomNavIndicator store={store} />;
-    default: return <MobileBottomNav store={store} />;
-  }
+  const Component = (() => {
+    switch (variant) {
+      case "v17": return MobileBottomNavV17;
+      case "v15": return MobileBottomNavV15;
+      case "modern": return MobileBottomNavModern;
+      case "glass": return MobileBottomNavGlass;
+      case "notch": return MobileBottomNavNotch;
+      case "neon": return MobileBottomNavNeon;
+      case "tube": return MobileBottomNavTube;
+      case "bubble": return MobileBottomNavBubble;
+      case "skeuo3d": return MobileBottomNav3D;
+      case "indicator": return MobileBottomNavIndicator;
+      default: return MobileBottomNav;
+    }
+  })();
+
+  return (
+    <Suspense fallback={null}>
+      <Component store={store} />
+    </Suspense>
+  );
 }

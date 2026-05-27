@@ -1,17 +1,23 @@
 import { useState, useCallback, lazy, Suspense } from "react";
-import type { Tables } from "@/integrations/supabase/types";
 import ProductCardStyle1 from "./ProductCardStyle1";
-import ProductCardStyle2 from "./ProductCardStyle2";
-import ProductCardStyle3 from "./ProductCardStyle3";
-import ProductCardStyle4 from "./ProductCardStyle4";
-import ProductCardStyle5 from "./ProductCardStyle5";
-import ProductCardStyle6 from "./ProductCardStyle6";
-import ProductCardStyle7 from "./ProductCardStyle7";
-import ProductCardStyle8 from "./ProductCardStyle8";
-import ProductCardStyle9 from "./ProductCardStyle9";
-import ProductCardStyle10 from "./ProductCardStyle10";
-import V19ProductCard from "./v19/V19ProductCard";
-import V20ProductCard from "./v20/V20ProductCard";
+import ProductCardSkeleton from "./ProductCardSkeleton";
+
+// ── Variant cards: lazy ─────────────────────────────────────────────
+// Each non-default card style becomes its own chunk. A store using
+// "style-1" (the default) NEVER downloads style-2..10, V19, V20.
+// React.lazy() de-dupes the network request across a grid, so 20+ cards
+// in one grid still fire only 1 chunk fetch.
+const ProductCardStyle2 = lazy(() => import("./ProductCardStyle2"));
+const ProductCardStyle3 = lazy(() => import("./ProductCardStyle3"));
+const ProductCardStyle4 = lazy(() => import("./ProductCardStyle4"));
+const ProductCardStyle5 = lazy(() => import("./ProductCardStyle5"));
+const ProductCardStyle6 = lazy(() => import("./ProductCardStyle6"));
+const ProductCardStyle7 = lazy(() => import("./ProductCardStyle7"));
+const ProductCardStyle8 = lazy(() => import("./ProductCardStyle8"));
+const ProductCardStyle9 = lazy(() => import("./ProductCardStyle9"));
+const ProductCardStyle10 = lazy(() => import("./ProductCardStyle10"));
+const V19ProductCard = lazy(() => import("./v19/V19ProductCard"));
+const V20ProductCard = lazy(() => import("./v20/V20ProductCard"));
 
 // Lazy: variant picker only needed when shopper actually clicks add-to-cart on a variant product
 const VariantPickerDialog = lazy(() => import("./VariantPickerDialog"));
@@ -38,7 +44,7 @@ export default function UniversalProductCard({ product, slug, store, priority = 
 
   const card = (() => {
     const variantGate = hasVariants ? onVariantRequired : undefined;
-    // Theme 19 (Quick Commerce) — force Blinkit-style card across the entire storefront
+    // Themes 19 / 20 (Quick Commerce / Multi-purpose) force a fixed card
     if (store?.theme === "theme-19") {
       return <V19ProductCard product={product} slug={slug} store={store} priority={priority} />;
     }
@@ -65,9 +71,23 @@ export default function UniversalProductCard({ product, slug, store, priority = 
       case "style-10":
         return <ProductCardStyle10 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
       default:
+        // style-1 is the only statically-imported variant → no suspense needed
         return <ProductCardStyle1 product={product} slug={slug} store={store} priority={priority} onVariantRequired={variantGate} />;
     }
   })();
+
+  // Wrap non-default styles with Suspense → skeleton flashes for a fraction
+  // of a second on first card render while the chunk arrives, then sticks.
+  const needsSuspense =
+    store?.theme === "theme-19" ||
+    store?.theme === "theme-20" ||
+    (cardStyle && cardStyle !== "style-1");
+
+  const wrapped = needsSuspense ? (
+    <Suspense fallback={<ProductCardSkeleton />}>{card}</Suspense>
+  ) : (
+    card
+  );
 
   return (
     <div
@@ -76,7 +96,7 @@ export default function UniversalProductCard({ product, slug, store, priority = 
       onMouseEnter={prefetchProductDetail}
       onTouchStart={prefetchProductDetail}
     >
-      {card}
+      {wrapped}
       {hasVariants && variantOpen && (
         <Suspense fallback={null}>
           <VariantPickerDialog
