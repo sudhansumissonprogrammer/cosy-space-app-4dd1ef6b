@@ -87,6 +87,7 @@ function NavStylePreview({ variant }: { variant: string }) {
         <span className={dot} /><span className={dot} /><span className={dot} /><span className={dot} />
       </div>
     );
+  }
   if (variant === "skeuo3d") {
     return (
       <div className="w-full h-8 rounded-md border border-border bg-gradient-to-b from-muted/10 to-muted/40 flex items-end justify-around px-1.5 pb-1 gap-1">
