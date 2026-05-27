@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
       cf_order_id: cfOrderId,
       payment_session_id: cfData.payment_session_id,
       env,
-      amount: numAmount,
+      amount: chargeAmount,
       currency: currency.toUpperCase(),
     });
   } catch (err) {
