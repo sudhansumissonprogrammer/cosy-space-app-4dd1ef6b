@@ -42,13 +42,21 @@ export default function PartnerLogin() {
       toast.error("Sign out first to log into a partner account");
       return;
     }
+    if (!checkCanAttempt()) {
+      toast.error(`Too many login attempts. Please wait ${remainingSeconds}s.`);
+      return;
+    }
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
-      if (error) throw error;
+      if (error) {
+        recordFailedAttempt();
+        throw error;
+      }
+      resetAttempts();
       navigate("/partners/dashboard");
     } catch (err: any) {
       toast.error(err?.message || "Login failed");
@@ -56,6 +64,7 @@ export default function PartnerLogin() {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-primary/5 via-background to-background px-4 py-10 font-dashboard">
