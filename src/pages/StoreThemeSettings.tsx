@@ -509,6 +509,7 @@ export default function StoreThemeSettings() {
         mobile_nav_style: (themeConfig as any).mobile_nav_style || "classic",
         header_style: themeConfig.header_style || "normal",
         bilingual_cta: (themeConfig as any).bilingual_cta ?? false,
+        nav_icons: (themeConfig as any).nav_icons || {},
       });
     } else {
       setConfig(defaults);
