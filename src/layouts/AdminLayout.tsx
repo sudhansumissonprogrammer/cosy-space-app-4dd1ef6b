@@ -249,10 +249,13 @@ export default function AdminLayout() {
       </header>
 
       <main className="flex-1 overflow-auto px-3 py-4 pb-24">
-        <Suspense fallback={<ContentSkeleton />}>
-          <Outlet />
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={<ContentSkeleton />}>
+            <Outlet />
+          </Suspense>
+        </ErrorBoundary>
       </main>
+
 
       {/* Bottom nav */}
       <nav className="fixed bottom-0 inset-x-0 z-30 bg-card border-t safe-area-pb">
