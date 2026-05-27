@@ -7,16 +7,23 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
 import { LayoutDashboard, Loader2, ArrowLeft, Mail } from "lucide-react";
+import { useLoginRateLimit } from "@/hooks/useLoginRateLimit";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const { isLocked, remainingSeconds, attemptsLeft, checkCanAttempt, recordFailedAttempt, resetAttempts } = useLoginRateLimit();
+
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
       toast.error("Please enter your email");
+      return;
+    }
+    if (!checkCanAttempt()) {
+      toast.error(`Too many requests. Please wait ${remainingSeconds}s.`);
       return;
     }
     setLoading(true);
@@ -32,11 +39,14 @@ export default function ForgotPassword() {
     });
     setLoading(false);
     if (error) {
+      recordFailedAttempt();
       toast.error(error.message);
     } else {
+      resetAttempts();
       setSent(true);
     }
   };
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -80,10 +90,14 @@ export default function ForgotPassword() {
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col gap-3">
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full" disabled={loading || isLocked}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Send Reset Link
+                  {isLocked ? `Locked (${remainingSeconds}s)` : "Send Reset Link"}
                 </Button>
+                {attemptsLeft < 5 && !isLocked && (
+                  <p className="text-center text-xs text-destructive">{attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining</p>
+                )}
+
                 <Link to="/login" className="text-sm text-muted-foreground hover:text-primary">
                   <ArrowLeft className="mr-1 inline h-3 w-3" />
                   Back to Sign in
