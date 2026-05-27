@@ -86,21 +86,22 @@ export default function MobileBottomNavNotch({ store }: { store: StoreData }) {
           data-cart-target=""
           onClick={(e) => { e.preventDefault(); navTap(); openCart(); }}
           aria-label="Cart"
-          className={`absolute left-1/2 -translate-x-1/2 -top-1 z-10 flex h-14 w-14 items-center justify-center rounded-full active:scale-95 transition-transform ${
-            cartBounce ? "cart-bounce" : ""
-          }`}
+          className="absolute left-1/2 -top-1 z-10 flex h-14 w-14 items-center justify-center rounded-full active:scale-95 transition-transform"
           style={{
+            transform: "translateX(-50%)",
             background:
               "linear-gradient(135deg, var(--storefront-primary, hsl(var(--primary))), color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 70%, black))",
             boxShadow:
               "0 8px 22px color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 45%, transparent), 0 2px 4px rgba(0,0,0,0.15)",
           }}
         >
-          <CartIcon
-            className="h-6 w-6"
-            strokeWidth={2.2}
-            style={{ color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
-          />
+          <span className={`flex items-center justify-center ${cartBounce ? "cart-bounce" : ""}`}>
+            <CartIcon
+              className="h-6 w-6"
+              strokeWidth={2.2}
+              style={{ color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
+            />
+          </span>
           {cartCount > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground min-w-[18px] h-[18px] px-1 border-2 border-[var(--storefront-bg,hsl(var(--card)))]">
               {cartCount > 9 ? "9+" : cartCount}
