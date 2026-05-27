@@ -33,7 +33,7 @@ function V18Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
     };
   }, []);
 
-  const mobileNavComponent = mobileNavEnabled ? (
+  const mobileNavComponent = mobileNavEnabled && themeConfig ? (
     <Suspense fallback={null}>
       <LazyMobileBottomNav store={store} variant={mobileNavStyle as NavVariant} />
     </Suspense>
