@@ -4,25 +4,26 @@
  * Includes cart button as elevated circle.
  */
 import { Link, useLocation } from "react-router-dom";
-import { Home, Store, LayoutGrid, ShoppingCart, ClipboardList } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { navTap } from "@/lib/navHaptic";
+import { useNavIcons } from "@/hooks/useNavIcons";
 import type { StoreData } from "@/layouts/StorefrontLayout";
-
-const navItems = [
-  { key: "home", label: "Home", icon: Home, path: "" },
-  { key: "shop", label: "Shop", icon: Store, path: "shop" },
-  { key: "categories", label: "Categories", icon: LayoutGrid, path: "categories" },
-  { key: "cart", label: "Cart", icon: ShoppingCart, path: "cart" },
-  { key: "orders", label: "Orders", icon: ClipboardList, path: "account" },
-];
 
 export default function MobileBottomNavModern({ store }: { store: StoreData }) {
   const location = useLocation();
   const { cartCount, openCart } = useCart();
   const { user } = useStorefrontAuth();
+  const getIcon = useNavIcons(store.id);
+
+  const navItems = [
+    { key: "home", label: "Home", icon: getIcon("home"), path: "" },
+    { key: "shop", label: "Shop", icon: getIcon("shop"), path: "shop" },
+    { key: "categories", label: "Categories", icon: getIcon("categories"), path: "categories" },
+    { key: "cart", label: "Cart", icon: getIcon("cart"), path: "cart" },
+    { key: "orders", label: "Orders", icon: getIcon("orders"), path: "account" },
+  ];
   const isCheckout = location.pathname.includes("/checkout");
   const isProductDetail = location.pathname.includes("/product/");
 

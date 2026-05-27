@@ -15,6 +15,7 @@ import ThemeSectionNav, { ThemeSectionId, ThemeSectionMeta } from "@/components/
 import ThemeStickySaveBar from "@/components/dashboard/theme/ThemeStickySaveBar";
 import ThemeMobilePreviewDrawer from "@/components/dashboard/theme/ThemeMobilePreviewDrawer";
 import ThemeCategoryStyleIcon from "@/components/dashboard/theme/ThemeCategoryStyleIcon";
+import NavIconPicker from "@/components/dashboard/theme/NavIconPicker";
 
 const FONT_OPTIONS = [
   "Alegreya SC",
@@ -312,6 +313,7 @@ interface ThemeConfig {
   mobile_nav_style: string;
   header_style: string;
   bilingual_cta?: boolean;
+  nav_icons?: Record<string, string>;
 }
 
 const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
@@ -508,6 +510,7 @@ export default function StoreThemeSettings() {
         mobile_nav_style: (themeConfig as any).mobile_nav_style || "classic",
         header_style: themeConfig.header_style || "normal",
         bilingual_cta: (themeConfig as any).bilingual_cta ?? false,
+        nav_icons: (themeConfig as any).nav_icons || {},
       });
     } else {
       setConfig(defaults);
@@ -559,7 +562,7 @@ export default function StoreThemeSettings() {
     } catch {}
   }, [config, sendToIframe, store?.slug]);
 
-  const updateField = (key: keyof ThemeConfig, value: string | boolean) => {
+  const updateField = (key: keyof ThemeConfig, value: string | boolean | Record<string, string>) => {
     const newConfig = { ...config, [key]: value };
     setConfig(newConfig);
     setDirty(true);
@@ -1262,6 +1265,13 @@ export default function StoreThemeSettings() {
                 </button>
               ))}
             </div>
+          </Section>
+
+          <Section title="Nav Icons" hint="Pick which icon represents each nav slot. Applies to header and the mobile bottom bar across all themes.">
+            <NavIconPicker
+              value={config.nav_icons || {}}
+              onChange={(next) => updateField("nav_icons" as any, next as any)}
+            />
           </Section>
         </>
       )}

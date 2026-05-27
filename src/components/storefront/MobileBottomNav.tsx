@@ -1,9 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, ShoppingBag, LayoutGrid, ClipboardList, ShoppingCart } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCart } from "@/contexts/CartContext";
 import { navTap } from "@/lib/navHaptic";
+import { useNavIcons } from "@/hooks/useNavIcons";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 interface MobileBottomNavProps {
@@ -13,6 +13,12 @@ interface MobileBottomNavProps {
 export default function MobileBottomNav({ store }: MobileBottomNavProps) {
   const location = useLocation();
   const { cartCount, openCart, cartBounce } = useCart();
+  const getIcon = useNavIcons(store.id);
+  const HomeIcon = getIcon("home");
+  const ShopIcon = getIcon("shop");
+  const CategoriesIcon = getIcon("categories");
+  const CartIcon = getIcon("cart");
+  const OrdersIcon = getIcon("orders");
   const isCheckout = location.pathname.includes("/checkout");
   const isProductDetail = location.pathname.includes("/product/");
   const shouldHide = isCheckout || isProductDetail;
@@ -32,18 +38,18 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
   const isHome = currentPath === storefrontPath(store.slug) || currentPath === storefrontPath(store.slug) + "/";
 
   const navItems = [
-    { key: "home", label: "Home", icon: Home, to: storefrontPath(store.slug), active: isHome },
-    { key: "shop", label: "Shop", icon: ShoppingBag, to: storefrontPath(store.slug, "shop"), active: isActive("shop") },
-    { key: "categories", label: "Categories", icon: LayoutGrid, to: storefrontPath(store.slug, "categories"), active: isActive("categories") || isActive("category") },
+    { key: "home", label: "Home", icon: HomeIcon, to: storefrontPath(store.slug), active: isHome },
+    { key: "shop", label: "Shop", icon: ShopIcon, to: storefrontPath(store.slug, "shop"), active: isActive("shop") },
+    { key: "categories", label: "Categories", icon: CategoriesIcon, to: storefrontPath(store.slug, "categories"), active: isActive("categories") || isActive("category") },
     {
       key: "cart",
       label: "Cart",
-      icon: ShoppingCart,
+      icon: CartIcon,
       to: storefrontPath(store.slug, "cart"),
       active: isActive("cart"),
       onClick: (e: React.MouseEvent) => { e.preventDefault(); openCart(); },
     },
-    { key: "orders", label: "Orders", icon: ClipboardList, to: storefrontPath(store.slug, "account"), active: isActive("account") || isActive("login") || isActive("orders") },
+    { key: "orders", label: "Orders", icon: OrdersIcon, to: storefrontPath(store.slug, "account"), active: isActive("account") || isActive("login") || isActive("orders") },
   ];
 
   const activeKey = navItems.find((i) => i.active)?.key ?? null;
