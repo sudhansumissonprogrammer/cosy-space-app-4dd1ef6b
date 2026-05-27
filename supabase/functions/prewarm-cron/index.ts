@@ -48,6 +48,15 @@ async function callPrewarm(slug: string, domain: string | null) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Require cron secret — this function hits every store; an attacker could
+  // use it to amplify load and rack up CF/Supabase egress.
+  const cronSecret = Deno.env.get("PREWARM_CRON_SECRET");
+  if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const startedAt = Date.now();
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
