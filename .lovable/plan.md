@@ -1,133 +1,111 @@
-# Security Hardening Plan — Storivo / ShopBanao
 
-Goal: close every known loophole and add automated guardrails so a hacker can't tamper with orders, read other tenants' data, hijack auth, or abuse edge functions. Scope = full repo (~28K LOC frontend + 59 edge functions + DB).
+# Remaining Security Hardening — Phased Plan
 
-I already ran the security scanner. It surfaced **9 concrete findings** (3 errors, 6 warnings). The plan fixes those first, then does a deep manual sweep grouped by attack surface.
-
----
-
-## Phase 1 — Critical fixes (block real exploits) 🔴
-
-These are already-confirmed holes. Ship these first.
-
-1. **`place-order` price/status tampering (CRITICAL)**
-   - Server re-fetches `products.price` / `product_variants.price` for every line item; ignores client `price` and `total`.
-   - Recompute total server-side (items + validated coupon + validated shipping + tax).
-   - Hardcode initial `status` (`pending` for online, `confirmed` for COD). Never trust client.
-   - Apply same fix to `razorpay-order`, `store-cashfree-create-order`, `cashfree-create-order`, `wallet-cashfree-create-order` — payment-gateway amount must be derived from DB, not browser.
-
-2. **`ingest?type=cleanup` deletes data with no auth**
-   - Replace `Bearer ` prefix check with real `supabase.auth.getClaims(token)` + `has_role(uid,'admin')`.
-   - Or move cleanup to a `verify_jwt`-enforced cron-only function using service-role internally and reject all public HTTP.
-
-3. **WhatsApp webhook verify token hardcoded**
-   - Remove `'shopbanao_webhook_verify'` fallback in `whatsapp-webhook/index.ts`; return 403 if env missing.
-   - Rotate token in Meta dashboard, store new value as secret, update store-owner UI to read it from a protected RPC instead of hardcoding.
-
-4. **`CustomHtmlRenderer` iframe sandbox escape**
-   - Drop `allow-same-origin` from sandbox attribute (postMessage works cross-origin).
-   - Tighten DOMPurify: remove `iframe` from `ADD_TAGS`, keep an allowlist (`style`, `link`), set `ALLOW_UNKNOWN_PROTOCOLS: false`.
-
-5. **`products.cost_price` leaks profit margin to anonymous shoppers**
-   - `REVOKE SELECT (cost_price) ON public.products FROM anon, authenticated;`
-   - Storefronts already use `get_storefront_data` RPC — confirm it doesn't expose cost_price.
-
-6. **`whatsapp_config.access_token` readable by owner via direct SELECT**
-   - Add `REVOKE SELECT (access_token, app_secret, webhook_verify_token) ON public.whatsapp_config FROM authenticated;`
-   - Owner UI must read masked status via security-definer RPC, not direct table.
-
-7. **Cross-tenant config leaks** (`store_shipping_config`, `store_tax_config`, `store_theme_config`)
-   - Replace `USING(true)` SELECT policies with `USING (EXISTS (SELECT 1 FROM stores s WHERE s.id = store_id AND s.is_active))` OR remove anon SELECT entirely and route through existing storefront RPCs.
-
-8. **`SECURITY DEFINER` view flagged by Supabase linter**
-   - Identify the view, rewrite as `SECURITY INVOKER` or convert to a function with explicit search_path.
+Deep scan complete. Below is everything left, ranked by risk and grouped into 5 phases. Each phase ends with a re-scan so we catch regressions before the next phase.
 
 ---
 
-## Phase 2 — Edge function deep audit (59 functions) 🟠
+## Current open findings
 
-Pattern-sweep every function for these classes:
-
-- **JWT validation**: every function that mutates data must call `auth.getClaims()` and check ownership/role. Functions to re-check first: `delete-store`, `assign-store-plan`, `admin-*`, `partner-*`, `notify-order`, `verify-domain`, `generate-*`.
-- **Webhook signature verification**: confirm HMAC check + timestamp window on `cashfree-webhook`, `wallet-cashfree-webhook`, `whatsapp-webhook`, `razorpay-*`. Add replay protection via `webhook_events` dedupe (already partially done — extend to all).
-- **IDOR**: every function that takes `store_id` / `order_id` / `partner_id` from body must verify caller owns that resource (via RLS-respecting client OR explicit ownership check).
-- **Service-role misuse**: search `SUPABASE_SERVICE_ROLE_KEY` usage; ensure it's never reachable on a path without auth + authz.
-- **Input validation**: add Zod schemas to every function (currently inconsistent). Reject unknown fields.
-- **CORS**: confirm `Access-Control-Allow-Origin` is not `*` for endpoints that read cookies/auth headers from browser (most are fine, but audit `auth-proxy`, `phone-login`, `create-guest-account`).
-- **Rate limiting**: add per-IP + per-user limits on `phone-login`, `create-guest-account`, `place-order`, `track-referral-click`, `reverse-geocode`, `generate-*` (AI cost abuse).
-- **AI prompt injection / cost abuse**: `generate-description`, `generate-page-html`, `generate-store-content` — gate behind plan tier + monthly quota, validate prompt size, strip user-controlled system prompts.
-
----
-
-## Phase 3 — Database / RLS sweep 🟠
-
-- Run `supabase--linter` and fix every error/warning.
-- For each public-schema table, verify:
-  - RLS is enabled
-  - No `USING (true)` on tables holding tenant data
-  - GRANTs match policy intent (no `anon` grant on auth-only tables)
-  - Sensitive columns (tokens, emails, phone, cost_price, internal notes) have column-level REVOKE
-- Check all `SECURITY DEFINER` functions for: `SET search_path = public`, no dynamic SQL, validated args.
-- Verify `user_roles` is the ONLY role source — grep for any `profiles.role` / `is_admin` columns and remove.
-- Check storage bucket policies (R2 + Supabase storage) — public read OK only for product/media buckets, never for invoices/exports.
+| # | Finding | Severity | Storefront risk if fixed wrong |
+|---|---|---|---|
+| 1 | `products.cost_price` readable by any logged-in user (margin leak across tenants) | ERROR | Low — only "Authenticated view active products" policy is wrong; anon + owner policies stay |
+| 2 | `store_shipping_config` `USING (true)` for authenticated | WARN | **High** — every cart/checkout page directly reads this table |
+| 3 | `store_tax_config` `USING (true)` for authenticated | WARN | **High** — CheckoutPage reads it |
+| 4 | `store_theme_config` `USING (true)` for authenticated | WARN | Low — anon policy already exists, theme hook still works |
+| 5 | `stores_public` view = SECURITY DEFINER | ERROR | Medium — used in `App.tsx` storefront resolver |
+| 6 | `store_payment_config_public` view = SECURITY DEFINER | ERROR | Medium — used by payment flow |
+| 7 | ~30 SECURITY DEFINER functions executable by anon | WARN | Mixed — some MUST stay anon (e.g. `get_storefront_shell`), others are admin-only (`get_admin_stats`, `wallet_*`, `admin_*`) |
+| 8 | `partner_notifications` realtime topic auth missing | WARN | None — partner UI only |
+| 9 | `pg_net` extension in public schema | WARN | None — info |
+| 10 | `partner_referral_clicks` / `customer_leads` INSERT with check=true | WARN | Both are intentional lead capture; mitigate with rate-limit only |
 
 ---
 
-## Phase 4 — Frontend (dashboard + storefront + admin) 🟡
+## Phase 1 — Margin leak (cost_price) [zero storefront risk]
 
-- **XSS sinks**: grep `dangerouslySetInnerHTML`, `innerHTML`, `eval`, `new Function`. Currently only `CustomHtmlRenderer` (fixed Phase 1). Re-verify after sweep.
-- **Auth bypass in routes**: confirm `AdminRoute`, `ProtectedRoute`, `PartnerRoute`, storefront-account guard all check session AND role server-side (RPC), not just localStorage.
-- **Client-side admin checks**: grep for any `localStorage.getItem('isAdmin')` style logic — remove.
-- **Secret leaks in client bundle**: confirm only `VITE_SUPABASE_URL` + publishable key are in `import.meta.env`. Grep `VITE_` for accidental private keys.
-- **Open redirects**: audit `?redirect=`, `?next=` query handling in `Login`, `AuthCallback`, storefront login — allowlist same-origin only.
-- **CSRF on state-changing forms**: Supabase JWT in Authorization header is CSRF-safe; confirm no cookie-based mutation endpoints.
-- **PostMessage listeners**: `CustomHtmlRenderer` listens to `message` — verify origin check.
-- **File upload validation**: `r2-upload`, `MediaLibrary`, product image upload — enforce MIME allowlist + size cap server-side, not just client.
-- **PWA `sw-push.js`**: verify it doesn't cache authenticated responses or leak tokens.
+The only policy that exposes `cost_price` cross-tenant is `"Authenticated can view active products"`. Storefronts read products via the anon policy + RPCs. Owner read works via `is_store_owner`.
+
+**Migration:**
+- `DROP POLICY "Authenticated can view active products" ON public.products;`
+- Frontend: stop selecting `cost_price` in `useStorefrontProducts.ts` + `useInfiniteProducts.ts` (defense-in-depth — no owner data should travel to a shopper's browser anyway).
+
+**Risk:** None. The anon policy still serves all storefront shoppers; owners still see everything.
 
 ---
 
-## Phase 5 — Auth & session hardening 🟡
+## Phase 2 — Cross-tenant config read (shipping/tax/theme) [needs careful re-policy]
 
-- Enable Supabase **leaked-password (HIBP)** check via `configure_auth`.
-- Confirm email confirmation is ON for signup (per project rules).
-- Reduce JWT lifetime + rotate refresh tokens (already default — verify).
-- Rate limit login: `useLoginRateLimit` exists for admin login — extend to user `Login`, `StorefrontLogin`, `PartnerLogin`, `ForgotPassword`.
-- Password reset flow: ensure `/reset-password` requires `type=recovery` hash and clears session after update.
-- Google OAuth: confirm redirect URLs allowlist is tight (no wildcards).
+Today `store_shipping_config` has **no anon SELECT policy**, only "Authenticated true". That means anonymous shoppers' cart queries silently return empty rows. The right fix is **not** to delete the broad policy — that would break logged-in storefront customers. The right fix is:
 
----
+**Migration:**
+- Drop `"Authenticated can view shipping config"` / `"Authenticated can view tax config"` / `"Authenticated can view theme config"` (the `true` ones).
+- Replace each with a **scoped public SELECT** policy:
+  ```sql
+  CREATE POLICY "Public can view <x> for active stores"
+  ON public.store_<x>_config FOR SELECT TO anon, authenticated
+  USING (EXISTS (SELECT 1 FROM stores s WHERE s.id = store_id AND s.is_suspended = false));
+  ```
+- This is **safer than the current state** (anon shoppers will actually be able to read shipping rates now) and removes the cross-tenant warning (rows still scoped to non-suspended stores; shipping/tax/theme are display data the shopper must see anyway).
+- Drop redundant `"Owners view own ..."` policies (covered by ALL).
 
-## Phase 6 — Infrastructure & ongoing guardrails 🟢
-
-- **Cloudflare Worker** (`docs/cloudflare-worker-current.js`): audit for header injection, SSRF in `/cf-img?url=` (must allowlist hosts — only R2/cdn), cache poisoning via Vary headers.
-- **CSP header**: add a strict Content-Security-Policy via the Worker (script-src 'self' + known CDNs, frame-ancestors 'self', object-src 'none').
-- **Security headers**: `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`.
-- **Dependency scan**: run `code--dependency_scan` + fix high/critical CVEs.
-- **Secret rotation**: rotate every secret listed in `fetch_secrets` after fixes ship (WhatsApp, Razorpay, Cashfree, Meta CAPI, service role).
-- **Logging**: ensure no secret/token/PII is logged in edge functions or `error_logs`.
-- **CI guardrail**: add a lightweight grep-based pre-commit check that fails on `service_role_key`, hardcoded JWTs, `USING (true)` in migrations, `dangerouslySetInnerHTML`.
+**Risk:** Improves storefront, doesn't regress. We verify in preview by loading a storefront cart logged-out + logged-in.
 
 ---
 
-## Deliverables per phase
+## Phase 3 — SECURITY DEFINER views [App.tsx + payment flow touchpoints]
 
-Each phase produces:
-1. List of files/migrations changed
-2. A short "what an attacker could have done before vs now" note
-3. A re-run of `security--run_security_scan` + Supabase linter showing 0 errors
+Two views: `stores_public`, `store_payment_config_public`. PG 15+ lets us recreate them with `security_invoker=true` so they enforce the caller's RLS instead of postgres'.
 
-## Technical notes
+**Migration:**
+- `ALTER VIEW public.stores_public SET (security_invoker = true);`
+- `ALTER VIEW public.store_payment_config_public SET (security_invoker = true);`
+- Verify the underlying tables have the right SELECT policies for anon (the views resolve to `stores` + `store_payment_config`, both of which need anon SELECT for active/non-suspended stores).
+- If a view depends on RLS that doesn't permit anon, the storefront resolver in `App.tsx` falls back to `"stores"` already.
 
-- All DB changes go through `supabase--migration` (DROP-first for any function arg changes, per project rule).
-- RLS changes will include matching `GRANT` / `REVOKE` in the same migration.
-- Edge function changes deploy automatically.
-- Worker changes require manual deploy by user (per project rule) — I'll list exact diff.
-
-## Order of execution
-
-Phase 1 (1 batch, ~6 edge functions + 1 migration + 1 component) → Phase 2 (grouped by 10 functions per batch) → Phase 3 (1 migration) → Phase 4 (frontend sweep) → Phase 5 (auth) → Phase 6 (worker + CI). After each phase: re-scan + report.
+**Risk:** Medium. We re-deploy and check the homepage + a storefront subdomain load without errors. Rollback = re-set `security_invoker=false`.
 
 ---
 
-Approve and I'll start with Phase 1. If you want to reorder (e.g. do auth hardening first), tell me.
+## Phase 4 — SECURITY DEFINER function permissions [admin/internal only]
+
+~30 SECURITY DEFINER functions are anon-executable. Classify and revoke:
+
+| Function | Audience | Action |
+|---|---|---|
+| `get_storefront_shell`, `get_store_public`, `get_storefront_seo`, `get_product_page`, `get_category_page`, `get_store_payment_config`, `get_platform_config_public`, `get_store_public_email` | anon storefront | **KEEP** anon EXECUTE |
+| `has_role`, `is_store_owner`, `is_partner_owner`, `is_storefront_customer`, `is_user_blocked`, `is_store_active`, `is_order_owner`, `is_store_owner_by_folder` | RLS helpers | **KEEP** anon EXECUTE (used inside policies) |
+| `can_create_website_order`, `can_create_website_order_item` | RLS helpers | KEEP anon |
+| `get_admin_*`, `get_dashboard_stats`, `get_store_wallet_summary`, `get_store_billing_state`, `get_store_usage_stats`, `get_store_views`, `get_store_as_admin`, `get_co_purchased_products`, `check_product_limit` | dashboard-only | REVOKE EXECUTE FROM anon |
+| `enqueue_email`, `delete_email`, `cleanup_*`, trigger fns (`handle_*`, `guard_*`, `auto_assign_*`, `create_partner_commission_on_paid`) | internal only | REVOKE EXECUTE FROM anon, authenticated |
+
+**Migration:** one big `REVOKE EXECUTE … FROM anon` block grouped by audience.
+
+**Risk:** Medium. We must enumerate exactly which functions the storefront calls. I'll grep `supabase.rpc(` across the codebase before generating the migration and only revoke from functions never called by anon paths.
+
+---
+
+## Phase 5 — Realtime channel auth + rate-limits + extension housekeeping
+
+- Add RLS policy on `realtime.messages` so partner-notification subscriptions are scoped to the partner UUID (channel topic must equal `partner:<auth.uid()-mapped-partner-id>`).
+- Edge function `track-referral-click`: add per-IP rate limit (max 30/min per partner_code) — abuse mitigation, not a hard fix.
+- `pg_net` extension move out of public schema — **defer** to a maintenance window; this requires patching every call site and isn't a real exploit, only a lint warning.
+- Worker security headers + `/cf-img?url=` host allowlist — I prep the diff for `docs/cloudflare-worker-current.js`, you deploy when convenient.
+
+---
+
+## Execution order & safety
+
+```text
+Phase 1  → migration + 2 frontend selects   → re-scan → verify storefront loads
+Phase 2  → migration only                    → re-scan → load cart logged-out + in
+Phase 3  → migration only                    → re-scan → load storefront + payment
+Phase 4  → migration only                    → re-scan → load dashboard + storefront
+Phase 5  → migration + edge fn + worker diff → re-scan → final report
+```
+
+Each phase is a single migration + at most one frontend file. If any phase shows a regression, rollback is one-line.
+
+## Approval
+
+Say **"go phase 1"** and I'll start. I'll pause after each phase for you to verify ads + storefront before moving on.
