@@ -38,18 +38,18 @@ export default function MobileBottomNav({ store }: MobileBottomNavProps) {
   const isHome = currentPath === storefrontPath(store.slug) || currentPath === storefrontPath(store.slug) + "/";
 
   const navItems = [
-    { key: "home", label: "Home", icon: Home, to: storefrontPath(store.slug), active: isHome },
-    { key: "shop", label: "Shop", icon: ShoppingBag, to: storefrontPath(store.slug, "shop"), active: isActive("shop") },
-    { key: "categories", label: "Categories", icon: LayoutGrid, to: storefrontPath(store.slug, "categories"), active: isActive("categories") || isActive("category") },
+    { key: "home", label: "Home", icon: HomeIcon, to: storefrontPath(store.slug), active: isHome },
+    { key: "shop", label: "Shop", icon: ShopIcon, to: storefrontPath(store.slug, "shop"), active: isActive("shop") },
+    { key: "categories", label: "Categories", icon: CategoriesIcon, to: storefrontPath(store.slug, "categories"), active: isActive("categories") || isActive("category") },
     {
       key: "cart",
       label: "Cart",
-      icon: ShoppingCart,
+      icon: CartIcon,
       to: storefrontPath(store.slug, "cart"),
       active: isActive("cart"),
       onClick: (e: React.MouseEvent) => { e.preventDefault(); openCart(); },
     },
-    { key: "orders", label: "Orders", icon: ClipboardList, to: storefrontPath(store.slug, "account"), active: isActive("account") || isActive("login") || isActive("orders") },
+    { key: "orders", label: "Orders", icon: OrdersIcon, to: storefrontPath(store.slug, "account"), active: isActive("account") || isActive("login") || isActive("orders") },
   ];
 
   const activeKey = navItems.find((i) => i.active)?.key ?? null;
