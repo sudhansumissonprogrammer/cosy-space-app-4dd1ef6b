@@ -566,7 +566,7 @@ function escapeHtml(str = "") {
 }
 
 function getProductSlug(pathname) {
-  const m = pathname.match(/^\/product\/([^/?#]+)/i);
+  const m = pathname.match(/^\/products?\/([^/?#]+)/i);
   return m ? decodeURIComponent(m[1]) : null;
 }
 
@@ -576,7 +576,7 @@ function getProductSlug(pathname) {
    Returns { kind: "home" } for the store root.                       */
 function getBotRoute(pathname) {
   if (!pathname || pathname === "/" || pathname === "") return { kind: "home" };
-  let m = pathname.match(/^\/product\/([^/?#]+)\/?$/i);
+  let m = pathname.match(/^\/products?\/([^/?#]+)\/?$/i);
   if (m) return { kind: "product", slug: decodeURIComponent(m[1]) };
   m = pathname.match(/^\/category\/([^/?#]+)\/?$/i);
   if (m) return { kind: "category", slug: decodeURIComponent(m[1]) };
