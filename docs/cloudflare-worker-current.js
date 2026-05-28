@@ -1635,6 +1635,37 @@ function kvPutDedup(env, key, value, opts) {
   return env.STORE_KV.put(key, value, opts).catch(() => {});
 }
 
+/* v8.31.0 KV DELETE DEDUP — suppresses duplicate KV.delete() bursts for the
+   same key within a 30s window. Defends against double-firing purges
+   (e.g. legacy clients still calling /api/purge-shell + /api/purge-store on
+   both subdomain and custom domain). Even if 4 redundant purges land in the
+   same isolate, only the first actually hits KV.
+   IMPORTANT: clearing _kvWriteRecent on real purges still happens in the
+   handlers — this only blocks the *duplicate* delete RPCs, not the legit one. */
+const _kvDeleteRecent = new Map(); // key → expiresAt
+const KV_DELETE_DEDUP_TTL = 30_000;
+const KV_DELETE_DEDUP_MAX = 5_000;
+function _shouldDeleteKv(key) {
+  const now = Date.now();
+  const exp = _kvDeleteRecent.get(key);
+  if (exp && now < exp) return false;
+  if (_kvDeleteRecent.size > KV_DELETE_DEDUP_MAX) {
+    let n = 500;
+    for (const k of _kvDeleteRecent.keys()) {
+      _kvDeleteRecent.delete(k);
+      if (--n <= 0) break;
+    }
+  }
+  _kvDeleteRecent.set(key, now + KV_DELETE_DEDUP_TTL);
+  return true;
+}
+function kvDeleteDedup(env, key) {
+  if (!env?.STORE_KV) return Promise.resolve();
+  if (!_shouldDeleteKv(key)) return Promise.resolve();
+  return env.STORE_KV.delete(key).catch(() => {});
+}
+
+
 // v8.18.0 Fix D: in-memory warm-lock marker. If this isolate already
 // established a warm-lock for `slug` within WARM_LOCK_MEM_TTL_MS, skip
 // the KV.get + KV.put round trip entirely. Safe because warm-html below
@@ -4779,10 +4810,10 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
       purgeOps.push(cache.delete(new Request(`https://www.${d}${path}`)).catch(() => {}));
     }
     purgeOps.push(cache.delete(new Request(`https://cache/store-id:${d}`)).catch(() => {}));
-    if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`store-id:${d}`).catch(() => {}));
+    if (env?.STORE_KV) purgeOps.push(kvDeleteDedup(env, `store-id:${d}`));
     if (d !== ROOT_DOMAIN && !d.endsWith(`.${ROOT_DOMAIN}`)) {
       purgeOps.push(cache.delete(new Request(`https://cache/domain-${d}`)).catch(() => {}));
-      if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`domain:${d}`).catch(() => {}));
+      if (env?.STORE_KV) purgeOps.push(kvDeleteDedup(env, `domain:${d}`));
     }
   }
 
@@ -4801,16 +4832,16 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/slug-domain-${purgeSlug}`)).catch(() => {}));
     if (env?.STORE_KV) {
-      purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
-      purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
-      purgeOps.push(env.STORE_KV.delete(`store-info:${purgeSlug}`).catch(() => {}));
-      purgeOps.push(env.STORE_KV.delete(`warm-lock:${purgeSlug}`).catch(() => {}));
+      purgeOps.push(kvDeleteDedup(env, `storefront:${purgeSlug}`));
+      purgeOps.push(kvDeleteDedup(env, `theme-lite:${purgeSlug}`));
+      purgeOps.push(kvDeleteDedup(env, `store-info:${purgeSlug}`));
+      purgeOps.push(kvDeleteDedup(env, `warm-lock:${purgeSlug}`));
       // v8.27.0: purge all html:<slug>:* KV entries (best-effort list+delete).
       purgeOps.push(
         (async () => {
           try {
             const list = await env.STORE_KV.list({ prefix: `html:${purgeSlug}` });
-            await Promise.all((list?.keys || []).map((k) => env.STORE_KV.delete(k.name).catch(() => {})));
+            await Promise.all((list?.keys || []).map((k) => kvDeleteDedup(env, k.name)));
             // also clear per-isolate write-dedup so next visitor re-writes KV
             for (const k of Array.from(_htmlKvWriteRecent.keys())) {
               if (k.startsWith(`html:${purgeSlug}`)) _htmlKvWriteRecent.delete(k);
@@ -5073,8 +5104,8 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
   _kvWriteRecent.delete(SPA_SHELL_KV_KEY);
   _kvWriteRecent.delete(PREBUILT_HEAD_KV_KEY);
   if (env?.STORE_KV) {
-    purgeOps.push(env.STORE_KV.delete(SPA_SHELL_KV_KEY).catch(() => {}));
-    purgeOps.push(env.STORE_KV.delete(PREBUILT_HEAD_KV_KEY).catch(() => {}));
+    purgeOps.push(kvDeleteDedup(env, SPA_SHELL_KV_KEY));
+    purgeOps.push(kvDeleteDedup(env, PREBUILT_HEAD_KV_KEY));
   }
 
   if (purgeSlug) {
@@ -5095,16 +5126,16 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
 
     if (env?.STORE_KV) {
-      purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
-      purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
-      purgeOps.push(env.STORE_KV.delete(`store-info:${purgeSlug}`).catch(() => {}));
-      purgeOps.push(env.STORE_KV.delete(`warm-lock:${purgeSlug}`).catch(() => {})); // v8.18.0
+      purgeOps.push(kvDeleteDedup(env, `storefront:${purgeSlug}`));
+      purgeOps.push(kvDeleteDedup(env, `theme-lite:${purgeSlug}`));
+      purgeOps.push(kvDeleteDedup(env, `store-info:${purgeSlug}`));
+      purgeOps.push(kvDeleteDedup(env, `warm-lock:${purgeSlug}`)); // v8.18.0
       // v8.27.0: purge html:<slug>:* entries
       purgeOps.push(
         (async () => {
           try {
             const list = await env.STORE_KV.list({ prefix: `html:${purgeSlug}` });
-            await Promise.all((list?.keys || []).map((k) => env.STORE_KV.delete(k.name).catch(() => {})));
+            await Promise.all((list?.keys || []).map((k) => kvDeleteDedup(env, k.name)));
             for (const k of Array.from(_htmlKvWriteRecent.keys())) {
               if (k.startsWith(`html:${purgeSlug}`)) _htmlKvWriteRecent.delete(k);
             }
@@ -5206,7 +5237,7 @@ async function handlePrewarm(request, url, ctx, env) {
     _memStorefrontCache.delete(slug);
     _memThemeCache.delete(slug);
     domainStoreIdCache.delete(subDomain);
-    if (env?.STORE_KV) await env.STORE_KV.delete(`store-info:${slug}`).catch(() => {});
+    if (env?.STORE_KV) await kvDeleteDedup(env, `store-info:${slug}`);
 
     const dataResult = await prefetchStorefrontData(slug, ctx, env);
     storeId = dataResult.data?.store?.id;

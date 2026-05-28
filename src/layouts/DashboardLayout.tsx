@@ -297,7 +297,7 @@ export default function DashboardLayout() {
     try {
       const { purgeStoreCache } = await import("@/lib/purgeStoreCache");
       const { prewarmStore } = await import("@/lib/prewarmStore");
-      const ok = await purgeStoreCache(store.slug, (store as any).custom_domain);
+      const ok = await purgeStoreCache(store.slug, (store as any).custom_domain, { shell: true });
       await prewarmStore(store.slug, (store as any).custom_domain);
       if (ok) {
         toast.success("Cache purged! Your store will show the latest changes.");
