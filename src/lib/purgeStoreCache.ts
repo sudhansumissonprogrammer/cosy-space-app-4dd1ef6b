@@ -25,59 +25,27 @@ const inflightPurges = new Map<string, Promise<boolean>>();
 const recentPurges = new Map<string, { ts: number; result: boolean }>();
 const trailingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-async function _doPurge(
-  slug: string,
-  customDomain?: string | null,
-  purgeShell: boolean = false,
-): Promise<boolean> {
+async function _doPurge(slug: string, customDomain?: string | null): Promise<boolean> {
   const domains: string[] = [`https://${slug}.shopbanao.in`];
   if (customDomain) {
     domains.push(`https://${customDomain}`);
   }
 
-  // KV is global → hitting purge-store on every hostname re-deletes the same
-  // slug-keyed KV entries (storefront / theme-lite / store-info / warm-lock /
-  // html:slug:*). That was the bulk of our daily KV delete ops.
-  //
-  // New strategy:
-  //  - purge-store on subdomain ONLY → wipes all slug-keyed KV once (global).
-  //  - per-hostname Cache API mirrors (early cache, html mirror paths,
-  //    store-id, domain mapping) are cleared via a lightweight `cacheOnly`
-  //    purge-store call on the custom domain. Worker treats unknown params
-  //    fine; if `cacheOnly` isn't honored yet it still works (just dup
-  //    deletes), so this is forward-safe.
-  //  - purge-shell is OPT-IN. Shell KV (spa-shell / prebuilt-head) is a
-  //    global build artifact unchanged by product/category/coupon saves, so
-  //    we no longer purge it on every dashboard save. Theme / store-settings
-  //    callers opt in via `purgeShell = true`.
+  const requests = domains.map(async (base) => {
+    const [shellRes, storeRes] = await Promise.allSettled([
+      fetch(`${base}/api/purge-shell?slug=${encodeURIComponent(slug)}`, { method: "POST" }).catch(() => null),
+      fetch(`${base}/api/purge-store?slug=${encodeURIComponent(slug)}`, { method: "POST" }).catch(() => null),
+    ]);
 
-  const primary = `https://${slug}.shopbanao.in`;
-  const ops: Promise<Response | null>[] = [
-    fetch(`${primary}/api/purge-store?slug=${encodeURIComponent(slug)}`, {
-      method: "POST",
-    }).catch(() => null),
-  ];
+    const shellOk = shellRes.status === "fulfilled" && !!shellRes.value?.ok;
+    const storeOk = storeRes.status === "fulfilled" && !!storeRes.value?.ok;
 
-  if (customDomain) {
-    ops.push(
-      fetch(
-        `https://${customDomain}/api/purge-store?slug=${encodeURIComponent(slug)}&cacheOnly=1`,
-        { method: "POST" },
-      ).catch(() => null),
-    );
-  }
-
-  if (purgeShell) {
-    ops.push(
-      fetch(`${primary}/api/purge-shell?slug=${encodeURIComponent(slug)}`, {
-        method: "POST",
-      }).catch(() => null),
-    );
-  }
+    return shellOk || storeOk;
+  });
 
   try {
-    const results = await Promise.allSettled(ops);
-    return results.some((r) => r.status === "fulfilled" && !!r.value?.ok);
+    const results = await Promise.allSettled(requests);
+    return results.some((r) => r.status === "fulfilled" && r.value);
   } catch {
     return false;
   }
@@ -85,21 +53,23 @@ async function _doPurge(
 
 export async function purgeStoreCache(
   slug: string,
-  customDomain?: string | null,
-  purgeShell: boolean = false,
+  customDomain?: string | null
 ): Promise<boolean> {
-  const key = `${slug}:${customDomain ?? ""}:${purgeShell ? "1" : "0"}`;
+  const key = `${slug}:${customDomain ?? ""}`;
   const now = Date.now();
 
   const recent = recentPurges.get(key);
   const withinCooldown = recent && now - recent.ts < PURGE_COOLDOWN_MS;
 
+  // Inside cooldown: schedule a trailing-edge purge so the LAST change in a
+  // burst still propagates (e.g. merchant toggles 5 categories in 10s →
+  // 1 final purge instead of 5).
   if (withinCooldown) {
     if (trailingTimers.has(key)) return recent!.result;
     const timer = setTimeout(() => {
       trailingTimers.delete(key);
-      recentPurges.delete(key);
-      void purgeStoreCache(slug, customDomain, purgeShell);
+      recentPurges.delete(key); // reset cooldown so trailing purge runs
+      void purgeStoreCache(slug, customDomain);
     }, TRAILING_DELAY_MS);
     trailingTimers.set(key, timer);
     return recent!.result;
@@ -108,7 +78,7 @@ export async function purgeStoreCache(
   const inflight = inflightPurges.get(key);
   if (inflight) return inflight;
 
-  const task = _doPurge(slug, customDomain, purgeShell);
+  const task = _doPurge(slug, customDomain);
   inflightPurges.set(key, task);
 
   try {
@@ -119,4 +89,3 @@ export async function purgeStoreCache(
     inflightPurges.delete(key);
   }
 }
-

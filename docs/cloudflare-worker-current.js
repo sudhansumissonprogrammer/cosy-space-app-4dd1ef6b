@@ -4786,13 +4786,7 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     }
   }
 
-  // v8.31.0: when client passes `cacheOnly=1` (duplicate purge hitting the
-  // custom-domain hostname), skip slug-keyed KV deletes — KV is global and
-  // the primary subdomain purge already wiped them. This cuts ~50% of daily
-  // KV delete ops for stores with custom domains.
-  const cacheOnly = url.searchParams.get("cacheOnly") === "1";
-
-  if (purgeSlug && !cacheOnly) {
+  if (purgeSlug) {
     // v8.1.0: clear write-dedup for slug-keyed entries
     _kvWriteRecent.delete(`storefront:${purgeSlug}`);
     _kvWriteRecent.delete(`theme-lite:${purgeSlug}`);
@@ -4826,7 +4820,6 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
       );
     }
   }
-
 
   await Promise.all(purgeOps);
 
