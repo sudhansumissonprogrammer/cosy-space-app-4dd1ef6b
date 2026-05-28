@@ -7,6 +7,8 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useProductListJsonLd } from "@/hooks/useJsonLd";
+import { useCanonical } from "@/hooks/useCanonical";
+import { getStoreBaseUrl } from "@/lib/storeUrl";
 import { useInfiniteProducts, PAGE_SIZE } from "@/hooks/useInfiniteProducts";
 import ShopFilterBar, { applySort, type SortKey } from "@/components/storefront/ShopFilterBar";
 import CategoryQuickJump from "@/components/storefront/CategoryQuickJump";
@@ -72,6 +74,7 @@ export default function StorefrontShop() {
     listName: "Shop All",
     customDomain: (store as any)?.custom_domain,
   });
+  useCanonical(`${getStoreBaseUrl(slug || store.slug, (store as any)?.custom_domain)}/shop`);
 
   const sentinelElRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
