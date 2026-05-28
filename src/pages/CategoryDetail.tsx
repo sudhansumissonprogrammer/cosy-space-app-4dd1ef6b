@@ -30,6 +30,8 @@ export default function CategoryDetail() {
   const storeTheme = (store as any)?.theme || "starter";
   const cardStyle = themeConfig?.product_card_style || (storeTheme === "theme-13" ? "style-4" : "style-1");
   const isMenuStyle = cardStyle === "style-4";
+  useCanonical(categorySlug ? `${getStoreBaseUrl(slug || store.slug, (store as any)?.custom_domain)}/category/${categorySlug}` : null);
+
 
   const [sort, setSort] = useState<SortKey>("default");
 
