@@ -427,6 +427,16 @@ export default function DashboardLayout() {
     <DashboardStoreProvider value={dashboardStoreValue}>
     <DynamicPwaManifest storeName="ShopBanao" logoUrl="/images/shopbanao-logo.png" themeColor="#4361ee" startUrl="/dashboard" />
     <SmartInstallPrompt appName="ShopBanao" primaryColor="#4361ee" textColor="#ffffff" delay={10000} logoUrl="/images/shopbanao-logo.png" />
+    {(walletHardBlocked || (walletLowWarning && !lowBalanceDismissed)) && storeSlug && (
+      <LowBalanceDialog
+        open={true}
+        balance={walletBalance}
+        storeSlug={storeSlug}
+        threshold={lowBalanceThreshold}
+        dismissible={!walletHardBlocked}
+        onClose={() => setLowBalanceDismissed(true)}
+      />
+    )}
     <div
       className="min-h-screen flex flex-col bg-background font-dashboard [&_*]:font-dashboard"
       
