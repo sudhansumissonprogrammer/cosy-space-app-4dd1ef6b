@@ -98,7 +98,7 @@ export default function StorePages() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store-pages", storeId] });
       toast.success("Page status updated");
-      purgeStore();
+      purgeStore({ shell: true });
     },
     onError: () => toast.error("Failed to update status"),
   });
@@ -111,7 +111,7 @@ export default function StorePages() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store-pages", storeId] });
       toast.success("Page deleted");
-      purgeStore();
+      purgeStore({ shell: true });
     },
     onError: () => toast.error("Failed to delete page"),
   });
