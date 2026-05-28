@@ -403,6 +403,8 @@ const storefrontChildRoutes = (theme: string) => {
       <Route path="privacy-policy" element={<StorefrontPrivacyPolicy />} />
       <Route path="category/:categorySlug" element={<Suspense fallback={<CategoryDetailSkeleton />}><CategoryDetail /></Suspense>} />
       <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-20" ? <V20ProductDetail /> : theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
+      {/* Legacy /products/* alias — render the same page; canonical tag
+          inside ProductDetail forces Google to consolidate on /product/*. */}
       <Route path="products/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-20" ? <V20ProductDetail /> : theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
       <Route path="cart" element={theme === "theme-20" ? <V20CartPage /> : theme === "theme-19" ? <V19CartPage /> : <CartPage />} />
       <Route path="wishlist" element={<WishlistPage />} />
@@ -413,9 +415,10 @@ const storefrontChildRoutes = (theme: string) => {
       <Route path="install" element={<InstallApp />} />
       <Route path="track-order" element={<OrderTrackingPage />} />
       <Route path="page/:pageSlug" element={<StorefrontCustomPage />} />
-    </>
-  );
-};
+      {/* Catch-all: unknown storefront paths render NotFound (which sets
+          <meta name=robots content="noindex,nofollow">) — prevents Googlebot
+          from soft-indexing random URLs as 200/homepage. */}
+      <Route path="*" element={<NotFound />} />
 
 /**
  * Get the theme instantly from injected data or localStorage cache.
