@@ -232,12 +232,12 @@ export default function StoreSettings() {
       // Auto-purge edge cache for BOTH old and new slugs
       if (oldSlug) {
         import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
-          purgeStoreCache(oldSlug, (store as any).custom_domain)
+          purgeStoreCache(oldSlug, (store as any).custom_domain, { shell: true })
         );
       }
       if (newSlug) {
         import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
-          purgeStoreCache(newSlug, (store as any).custom_domain)
+          purgeStoreCache(newSlug, (store as any).custom_domain, { shell: true })
         );
         import("@/lib/prewarmStore").then(({ prewarmStore }) =>
           prewarmStore(newSlug, (store as any).custom_domain)
