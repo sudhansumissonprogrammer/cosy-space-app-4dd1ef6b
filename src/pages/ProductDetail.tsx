@@ -20,6 +20,8 @@ import {
 import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useProductJsonLd } from "@/hooks/useJsonLd";
+import { useCanonical } from "@/hooks/useCanonical";
+import { getStoreBaseUrl } from "@/lib/storeUrl";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
@@ -416,6 +418,9 @@ export default function ProductDetail() {
       },
     });
   }, [product?.id]);
+
+  // Singular /product/ canonical — consolidates the legacy /products/ alias.
+  useCanonical(product ? `${getStoreBaseUrl(store.slug, (store as any)?.custom_domain)}/product/${product.slug || product.id}` : null);
 
   useProductJsonLd({
     product: product ? {
