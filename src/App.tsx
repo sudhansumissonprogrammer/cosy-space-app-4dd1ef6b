@@ -419,6 +419,10 @@ const storefrontChildRoutes = (theme: string) => {
           <meta name=robots content="noindex,nofollow">) — prevents Googlebot
           from soft-indexing random URLs as 200/homepage. */}
       <Route path="*" element={<NotFound />} />
+    </>
+  );
+};
+
 
 /**
  * Get the theme instantly from injected data or localStorage cache.
