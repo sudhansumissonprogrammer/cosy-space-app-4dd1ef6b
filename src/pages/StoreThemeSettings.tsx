@@ -783,7 +783,7 @@ export default function StoreThemeSettings() {
       // Purge edge cache so storefront visitors see new theme immediately
       if (store?.slug) {
         import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
-          purgeStoreCache(store.slug, (store as any).custom_domain)
+          purgeStoreCache(store.slug, (store as any).custom_domain, { shell: true })
         );
         import("@/lib/prewarmStore").then(({ prewarmStore }) =>
           prewarmStore(store.slug, (store as any).custom_domain)
@@ -832,7 +832,7 @@ export default function StoreThemeSettings() {
       // Purge edge cache so storefront visitors see new theme immediately.
       if (store?.slug) {
         import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
-          purgeStoreCache(store.slug, (store as any).custom_domain)
+          purgeStoreCache(store.slug, (store as any).custom_domain, { shell: true })
         );
       }
 
@@ -925,7 +925,7 @@ export default function StoreThemeSettings() {
 
       if (store?.slug) {
         import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
-          purgeStoreCache(store.slug, (store as any).custom_domain)
+          purgeStoreCache(store.slug, (store as any).custom_domain, { shell: true })
         );
       }
 
