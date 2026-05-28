@@ -4129,11 +4129,11 @@ async function _resolveStoreSlugForDomain(domain, env) {
   return null;
 }
 
-/* v8.9.0 — Detect /product/<slug> and /category/<slug> for HTML inlining.
+/* v8.9.0 — Detect /product/<slug>, legacy /products/<slug>, and /category/<slug> for HTML inlining.
    Returns { kind: 'product'|'category', slug } or null. */
 function _parsePdpCategoryPath(pathname) {
   if (!pathname) return null;
-  let m = pathname.match(/^\/product\/([a-zA-Z0-9_-]+)\/?$/);
+  let m = pathname.match(/^\/products?\/([a-zA-Z0-9_-]+)\/?$/);
   if (m) return { kind: "product", slug: m[1] };
   m = pathname.match(/^\/category\/([a-zA-Z0-9_-]+)\/?$/);
   if (m) return { kind: "category", slug: m[1] };
