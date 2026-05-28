@@ -1662,7 +1662,7 @@ function _shouldDeleteKv(key) {
 function kvDeleteDedup(env, key) {
   if (!env?.STORE_KV) return Promise.resolve();
   if (!_shouldDeleteKv(key)) return Promise.resolve();
-  return kvDeleteDedup(env, key);
+  return env.STORE_KV.delete(key).catch(() => {});
 }
 
 
