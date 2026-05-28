@@ -258,6 +258,30 @@ export default function DashboardLayout() {
     billingState?.requires_payment === true;
   const showPaywall = billingBlocked && !isProfileRoute;
 
+  // Commission-wallet enforcement
+  const walletBalance = Number((walletSummary as any)?.wallet?.balance ?? 0);
+  const lowBalanceThreshold = Number((walletSummary as any)?.config?.low_balance_threshold ?? 100);
+  const HARD_BLOCK_BALANCE = -150;
+  const walletPath = storeSlug ? `/dashboard/stores/${storeSlug}/wallet` : "";
+  const isOnWalletPage = !!walletPath && location.pathname === walletPath;
+  const walletHardBlocked =
+    !isAdminView && isCommissionMode && !!walletSummary && walletBalance < HARD_BLOCK_BALANCE;
+  const walletLowWarning =
+    !isAdminView &&
+    isCommissionMode &&
+    !!walletSummary &&
+    !walletHardBlocked &&
+    walletBalance < lowBalanceThreshold;
+  const [lowBalanceDismissed, setLowBalanceDismissed] = useState(false);
+
+  // Hard-lock: redirect to wallet page if balance is critically low
+  useEffect(() => {
+    if (walletHardBlocked && walletPath && !isOnWalletPage) {
+      navigate(walletPath, { replace: true });
+    }
+  }, [walletHardBlocked, walletPath, isOnWalletPage, navigate]);
+
+
   // Pending orders count — shared with PendingActions via React Query
   const { data: pendingCount } = useQuery({
     queryKey: ["pending-actions", storeId],
