@@ -398,6 +398,7 @@ function buildCategoryHtml(
     `Shop ${category.name} at ${store.name}. ${products.length} products available.`;
   const ogImage = products[0]?.image_url || store.og_image_url || store.banner_url || store.logo_url || "";
 
+  const currency = store.currency || "INR";
   const itemList = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -407,7 +408,22 @@ function buildCategoryHtml(
       "@type": "ListItem",
       position: i + 1,
       url: `${storeBase}/product/${p.slug || p.id}`,
-      name: p.name,
+      item: {
+        "@type": "Product",
+        name: p.name,
+        url: `${storeBase}/product/${p.slug || p.id}`,
+        image: p.image_url || undefined,
+        sku: p.sku || p.id,
+        offers: {
+          "@type": "Offer",
+          price: p.sale_price || p.price,
+          priceCurrency: p.currency || currency,
+          availability: (p.stock_quantity ?? 1) > 0
+            ? "https://schema.org/InStock"
+            : "https://schema.org/OutOfStock",
+          url: `${storeBase}/product/${p.slug || p.id}`,
+        },
+      },
     })),
   });
 
