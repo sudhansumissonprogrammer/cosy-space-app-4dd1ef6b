@@ -58,6 +58,8 @@ function buildProductHtml(
     name: product.name,
     description: product.description || "",
     image: allImages,
+    sku: product.sku || product.id,
+    url: canonical,
     offers: {
       "@type": "Offer",
       price: product.sale_price || product.price,
@@ -65,6 +67,8 @@ function buildProductHtml(
       availability: product.stock_quantity > 0
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
+      url: canonical,
+      itemCondition: "https://schema.org/NewCondition",
     },
     brand: { "@type": "Brand", name: store.name },
   });
@@ -82,11 +86,16 @@ function buildProductHtml(
 <meta property="og:url" content="${esc(canonical)}">
 <meta property="og:type" content="product">
 <meta property="og:site_name" content="${storeName}">
-${heroImage ? `<meta property="og:image" content="${esc(heroImage)}">` : ""}
+${heroImage ? `<meta property="og:image" content="${esc(heroImage)}">
+<meta property="og:image:alt" content="${esc(product.name)}">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="1200">` : ""}
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${title}">
 <meta name="twitter:description" content="${desc}">
-${heroImage ? `<meta name="twitter:image" content="${esc(heroImage)}">` : ""}
+${heroImage ? `<meta name="twitter:image" content="${esc(heroImage)}">
+<meta name="twitter:image:alt" content="${esc(product.name)}">` : ""}
 <script type="application/ld+json">${jsonLd}</script>
 <style>
 body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:0;color:#1a1a1a;background:#fff}

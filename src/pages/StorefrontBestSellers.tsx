@@ -8,6 +8,8 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useRef } from "react";
+import { useCanonical } from "@/hooks/useCanonical";
+import { getStoreBaseUrl } from "@/lib/storeUrl";
 
 const PAGE_SIZE = 20;
 // Lightweight card columns — drop heavy joins (product_images, product_variants)
@@ -40,6 +42,7 @@ export default function StorefrontBestSellers() {
   const { slug } = useParams<{ slug: string }>();
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
+  useCanonical(`${getStoreBaseUrl(slug || store.slug, (store as any)?.custom_domain)}/best-sellers`);
 
   // Themes that use Best Sellers as the full catalog
   const showAll = ["theme-10", "theme-12"].includes(store.theme);

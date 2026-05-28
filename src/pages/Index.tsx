@@ -24,17 +24,19 @@ const LandingWhatsApp = lazy(() => import("@/components/landing/LandingWhatsApp"
 const ExitIntentPopup = lazy(() => import("@/components/landing/ExitIntentPopup"));
 
 const Index = () => {
-  // Mount JSON-LD only after the browser is idle — crawlers wait for full
-  // load anyway, so it shouldn't sit on the critical path.
+  // Mount JSON-LD quickly. AI crawlers (Perplexity, ChatGPT-User) often only
+  // execute JS for 2–3 seconds — a long idle deadline meant the marketing
+  // homepage's structured data was missed. Keep it off the critical path
+  // (microtask) but make sure it lands inside any reasonable crawler budget.
   const [seoReady, setSeoReady] = useState(false);
   useEffect(() => {
     let cancelled = false;
     const run = () => { if (!cancelled) setSeoReady(true); };
     if ("requestIdleCallback" in window) {
-      const id = (window as any).requestIdleCallback(run, { timeout: 4000 });
+      const id = (window as any).requestIdleCallback(run, { timeout: 800 });
       return () => { cancelled = true; (window as any).cancelIdleCallback?.(id); };
     }
-    const t = setTimeout(run, 2500);
+    const t = setTimeout(run, 200);
     return () => { cancelled = true; clearTimeout(t); };
   }, []);
 

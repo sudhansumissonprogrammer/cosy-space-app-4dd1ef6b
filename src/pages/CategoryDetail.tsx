@@ -10,6 +10,8 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useProductListJsonLd } from "@/hooks/useJsonLd";
+import { useCanonical } from "@/hooks/useCanonical";
+import { getStoreBaseUrl } from "@/lib/storeUrl";
 import { useInfiniteProducts, PAGE_SIZE } from "@/hooks/useInfiniteProducts";
 import ShopFilterBar, { applySort, type SortKey } from "@/components/storefront/ShopFilterBar";
 import CategoryHeroBanner from "@/components/storefront/CategoryHeroBanner";
@@ -28,6 +30,8 @@ export default function CategoryDetail() {
   const storeTheme = (store as any)?.theme || "starter";
   const cardStyle = themeConfig?.product_card_style || (storeTheme === "theme-13" ? "style-4" : "style-1");
   const isMenuStyle = cardStyle === "style-4";
+  useCanonical(categorySlug ? `${getStoreBaseUrl(slug || store.slug, (store as any)?.custom_domain)}/category/${categorySlug}` : null);
+
 
   const [sort, setSort] = useState<SortKey>("default");
 

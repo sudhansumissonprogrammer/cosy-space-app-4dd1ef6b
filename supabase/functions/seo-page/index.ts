@@ -554,8 +554,11 @@ Disallow: /
 User-agent: Omgilibot
 Disallow: /
 
+# FacebookBot intentionally ALLOWED — it's Meta's link-preview crawler
+# used when stores are shared in Facebook posts/Messenger. Blocking it
+# breaks Open Graph previews on every share.
 User-agent: FacebookBot
-Disallow: /
+Allow: /
 
 User-agent: Meta-ExternalFetcher
 Disallow: /
