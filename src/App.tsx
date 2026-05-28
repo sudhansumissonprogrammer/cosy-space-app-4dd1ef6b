@@ -264,7 +264,7 @@ const _path = window.location.pathname;
         "theme-2": () => import("./pages/StorefrontHomeV2"),
       };
       (homeImports[theme] || (() => import("./pages/StorefrontHome")))().catch(() => {});
-    } else if (/\/product\//.test(path)) {
+    } else if (/\/products?\//.test(path)) {
       import("./pages/ProductDetail").catch(() => {});
     } else if (/\/category\//.test(path)) {
       import("./pages/CategoryDetail").catch(() => {});
@@ -403,6 +403,7 @@ const storefrontChildRoutes = (theme: string) => {
       <Route path="privacy-policy" element={<StorefrontPrivacyPolicy />} />
       <Route path="category/:categorySlug" element={<Suspense fallback={<CategoryDetailSkeleton />}><CategoryDetail /></Suspense>} />
       <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-20" ? <V20ProductDetail /> : theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
+      <Route path="products/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-20" ? <V20ProductDetail /> : theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
       <Route path="cart" element={theme === "theme-20" ? <V20CartPage /> : theme === "theme-19" ? <V19CartPage /> : <CartPage />} />
       <Route path="wishlist" element={<WishlistPage />} />
       <Route path="checkout" element={<CheckoutPage />} />
@@ -532,8 +533,8 @@ async function prefetchTargetPageData(
   const { supabase } = await import("@/integrations/supabase/client");
   const isUUID = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 
-  // Product page: /product/:slug
-  const productMatch = path.match(/\/product\/([^/]+)/);
+  // Product page: /product/:slug plus legacy /products/:slug from old Google indexes
+  const productMatch = path.match(/\/products?\/([^/]+)/);
   if (productMatch) {
     const productSlug = decodeURIComponent(productMatch[1]);
     if (!queryClient.getQueryData(["storefront-product", storeId, productSlug])) {
@@ -653,7 +654,7 @@ function prefetchHomeChunk(theme: string) {
 /** Eagerly prefetch the chunk for the page the user is landing on */
 function prefetchTargetPageChunk(path: string) {
   // Product page
-  if (/\/product\//.test(path)) {
+  if (/\/products?\//.test(path)) {
     import("./pages/ProductDetail").catch(() => {});
     return;
   }
