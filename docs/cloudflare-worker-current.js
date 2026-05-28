@@ -1635,6 +1635,37 @@ function kvPutDedup(env, key, value, opts) {
   return env.STORE_KV.put(key, value, opts).catch(() => {});
 }
 
+/* v8.31.0 KV DELETE DEDUP — suppresses duplicate KV.delete() bursts for the
+   same key within a 30s window. Defends against double-firing purges
+   (e.g. legacy clients still calling /api/purge-shell + /api/purge-store on
+   both subdomain and custom domain). Even if 4 redundant purges land in the
+   same isolate, only the first actually hits KV.
+   IMPORTANT: clearing _kvWriteRecent on real purges still happens in the
+   handlers — this only blocks the *duplicate* delete RPCs, not the legit one. */
+const _kvDeleteRecent = new Map(); // key → expiresAt
+const KV_DELETE_DEDUP_TTL = 30_000;
+const KV_DELETE_DEDUP_MAX = 5_000;
+function _shouldDeleteKv(key) {
+  const now = Date.now();
+  const exp = _kvDeleteRecent.get(key);
+  if (exp && now < exp) return false;
+  if (_kvDeleteRecent.size > KV_DELETE_DEDUP_MAX) {
+    let n = 500;
+    for (const k of _kvDeleteRecent.keys()) {
+      _kvDeleteRecent.delete(k);
+      if (--n <= 0) break;
+    }
+  }
+  _kvDeleteRecent.set(key, now + KV_DELETE_DEDUP_TTL);
+  return true;
+}
+function kvDeleteDedup(env, key) {
+  if (!env?.STORE_KV) return Promise.resolve();
+  if (!_shouldDeleteKv(key)) return Promise.resolve();
+  return env.STORE_KV.delete(key).catch(() => {});
+}
+
+
 // v8.18.0 Fix D: in-memory warm-lock marker. If this isolate already
 // established a warm-lock for `slug` within WARM_LOCK_MEM_TTL_MS, skip
 // the KV.get + KV.put round trip entirely. Safe because warm-html below
