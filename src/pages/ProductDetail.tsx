@@ -135,8 +135,8 @@ export default function ProductDetail() {
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
   const canonicalProductSlug = useMemo(() => productSlug?.trim() || "", [productSlug]);
-  const legacyProductSlug = useMemo(
-    () => (canonicalProductSlug && PRODUCT_SUFFIX_RE.test(canonicalProductSlug) ? canonicalProductSlug.replace(PRODUCT_SUFFIX_RE, "") : ""),
+  const productSlugPrefix = useMemo(
+    () => (canonicalProductSlug ? canonicalProductSlug.replace(PRODUCT_SUFFIX_RE, "") : ""),
     [canonicalProductSlug],
   );
 
@@ -196,7 +196,7 @@ export default function ProductDetail() {
   const getCachedProduct = () => {
     const cached = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
     if (!cached) return undefined;
-    return cached.find((p: any) => p.slug === canonicalProductSlug || p.id === canonicalProductSlug || (legacyProductSlug && p.slug?.startsWith(`${legacyProductSlug}-`))) || undefined;
+    return cached.find((p: any) => p.slug === canonicalProductSlug || p.id === canonicalProductSlug || (productSlugPrefix && p.slug?.startsWith(`${productSlugPrefix}-`))) || undefined;
   };
 
   const existingData = queryClient.getQueryData(["storefront-product", store.id, canonicalProductSlug]);
@@ -205,7 +205,7 @@ export default function ProductDetail() {
   const getInlinePdp = () => {
     try {
       const inline = (window as any).__PRODUCT_INLINE__;
-      if (inline && inline.product && (inline.product.slug === canonicalProductSlug || (legacyProductSlug && inline.product.slug?.startsWith(`${legacyProductSlug}-`)))) return inline;
+      if (inline && inline.product && (inline.product.slug === canonicalProductSlug || (productSlugPrefix && inline.product.slug?.startsWith(`${productSlugPrefix}-`)))) return inline;
     } catch { /* ignore */ }
     return null;
   };
@@ -215,17 +215,17 @@ export default function ProductDetail() {
     queryFn: async () => {
       // Phase A: try Worker edge cache first (KV + CF cache)
       let edge = await fetchPdpEdge(canonicalProductSlug);
-      if (!edge && legacyProductSlug) edge = await fetchPdpEdge(legacyProductSlug);
+      if (!edge && productSlugPrefix && productSlugPrefix !== canonicalProductSlug) edge = await fetchPdpEdge(productSlugPrefix);
 
       let rpc = edge ?? (await (supabase as any).rpc("get_product_page", {
         _store_slug: store.slug,
         _product_slug: canonicalProductSlug,
       })).data;
 
-      if (!rpc?.product && legacyProductSlug) {
+      if (!rpc?.product && productSlugPrefix && productSlugPrefix !== canonicalProductSlug) {
         rpc = (await (supabase as any).rpc("get_product_page", {
           _store_slug: store.slug,
-          _product_slug: legacyProductSlug,
+          _product_slug: productSlugPrefix,
         })).data;
       }
 
@@ -247,12 +247,12 @@ export default function ProductDetail() {
         .eq("is_active", true)
         .maybeSingle();
 
-      if (!data && !error && legacyProductSlug) {
+      if (!data && !error && productSlugPrefix) {
         const legacyResult = await supabase
           .from("products")
           .select(PRODUCT_PDP_FIELDS)
           .eq("store_id", store.id)
-          .ilike("slug", `${legacyProductSlug}-%`)
+          .ilike("slug", `${productSlugPrefix}-%`)
           .eq("is_active", true)
           .order("updated_at", { ascending: false })
           .limit(1)
