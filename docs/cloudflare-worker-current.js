@@ -1662,7 +1662,7 @@ function _shouldDeleteKv(key) {
 function kvDeleteDedup(env, key) {
   if (!env?.STORE_KV) return Promise.resolve();
   if (!_shouldDeleteKv(key)) return Promise.resolve();
-  return env.STORE_KV.delete(key).catch(() => {});
+  return kvDeleteDedup(env, key);
 }
 
 
@@ -4810,10 +4810,10 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
       purgeOps.push(cache.delete(new Request(`https://www.${d}${path}`)).catch(() => {}));
     }
     purgeOps.push(cache.delete(new Request(`https://cache/store-id:${d}`)).catch(() => {}));
-    if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`store-id:${d}`).catch(() => {}));
+    if (env?.STORE_KV) purgeOps.push(kvDeleteDedup(env, `store-id:${d}`));
     if (d !== ROOT_DOMAIN && !d.endsWith(`.${ROOT_DOMAIN}`)) {
       purgeOps.push(cache.delete(new Request(`https://cache/domain-${d}`)).catch(() => {}));
-      if (env?.STORE_KV) purgeOps.push(env.STORE_KV.delete(`domain:${d}`).catch(() => {}));
+      if (env?.STORE_KV) purgeOps.push(kvDeleteDedup(env, `domain:${d}`));
     }
   }
 
@@ -4832,16 +4832,16 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/slug-domain-${purgeSlug}`)).catch(() => {}));
     if (env?.STORE_KV) {
-      purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
-      purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
-      purgeOps.push(env.STORE_KV.delete(`store-info:${purgeSlug}`).catch(() => {}));
-      purgeOps.push(env.STORE_KV.delete(`warm-lock:${purgeSlug}`).catch(() => {}));
+      purgeOps.push(kvDeleteDedup(env, `storefront:${purgeSlug}`));
+      purgeOps.push(kvDeleteDedup(env, `theme-lite:${purgeSlug}`));
+      purgeOps.push(kvDeleteDedup(env, `store-info:${purgeSlug}`));
+      purgeOps.push(kvDeleteDedup(env, `warm-lock:${purgeSlug}`));
       // v8.27.0: purge all html:<slug>:* KV entries (best-effort list+delete).
       purgeOps.push(
         (async () => {
           try {
             const list = await env.STORE_KV.list({ prefix: `html:${purgeSlug}` });
-            await Promise.all((list?.keys || []).map((k) => env.STORE_KV.delete(k.name).catch(() => {})));
+            await Promise.all((list?.keys || []).map((k) => kvDeleteDedup(env, k.name)));
             // also clear per-isolate write-dedup so next visitor re-writes KV
             for (const k of Array.from(_htmlKvWriteRecent.keys())) {
               if (k.startsWith(`html:${purgeSlug}`)) _htmlKvWriteRecent.delete(k);
@@ -5104,8 +5104,8 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
   _kvWriteRecent.delete(SPA_SHELL_KV_KEY);
   _kvWriteRecent.delete(PREBUILT_HEAD_KV_KEY);
   if (env?.STORE_KV) {
-    purgeOps.push(env.STORE_KV.delete(SPA_SHELL_KV_KEY).catch(() => {}));
-    purgeOps.push(env.STORE_KV.delete(PREBUILT_HEAD_KV_KEY).catch(() => {}));
+    purgeOps.push(kvDeleteDedup(env, SPA_SHELL_KV_KEY));
+    purgeOps.push(kvDeleteDedup(env, PREBUILT_HEAD_KV_KEY));
   }
 
   if (purgeSlug) {
@@ -5126,16 +5126,16 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
 
     if (env?.STORE_KV) {
-      purgeOps.push(env.STORE_KV.delete(`storefront:${purgeSlug}`).catch(() => {}));
-      purgeOps.push(env.STORE_KV.delete(`theme-lite:${purgeSlug}`).catch(() => {}));
-      purgeOps.push(env.STORE_KV.delete(`store-info:${purgeSlug}`).catch(() => {}));
-      purgeOps.push(env.STORE_KV.delete(`warm-lock:${purgeSlug}`).catch(() => {})); // v8.18.0
+      purgeOps.push(kvDeleteDedup(env, `storefront:${purgeSlug}`));
+      purgeOps.push(kvDeleteDedup(env, `theme-lite:${purgeSlug}`));
+      purgeOps.push(kvDeleteDedup(env, `store-info:${purgeSlug}`));
+      purgeOps.push(kvDeleteDedup(env, `warm-lock:${purgeSlug}`)); // v8.18.0
       // v8.27.0: purge html:<slug>:* entries
       purgeOps.push(
         (async () => {
           try {
             const list = await env.STORE_KV.list({ prefix: `html:${purgeSlug}` });
-            await Promise.all((list?.keys || []).map((k) => env.STORE_KV.delete(k.name).catch(() => {})));
+            await Promise.all((list?.keys || []).map((k) => kvDeleteDedup(env, k.name)));
             for (const k of Array.from(_htmlKvWriteRecent.keys())) {
               if (k.startsWith(`html:${purgeSlug}`)) _htmlKvWriteRecent.delete(k);
             }
@@ -5237,7 +5237,7 @@ async function handlePrewarm(request, url, ctx, env) {
     _memStorefrontCache.delete(slug);
     _memThemeCache.delete(slug);
     domainStoreIdCache.delete(subDomain);
-    if (env?.STORE_KV) await env.STORE_KV.delete(`store-info:${slug}`).catch(() => {});
+    if (env?.STORE_KV) await kvDeleteDedup(env, `store-info:${slug}`);
 
     const dataResult = await prefetchStorefrontData(slug, ctx, env);
     storeId = dataResult.data?.store?.id;
