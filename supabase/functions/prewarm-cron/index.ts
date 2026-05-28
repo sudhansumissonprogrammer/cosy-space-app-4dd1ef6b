@@ -68,11 +68,13 @@ Deno.serve(async (req) => {
   const startedAt = Date.now();
 
 
-  // v8.4.0 cost-cut: only warm stores that received real traffic in last 24h
-  // OR have a custom_domain (paying/branded — keep snappy regardless).
-  // Inactive stores skip warming; their first visitor pays a ~300ms cold hit
-  // (acceptable since the store has no traffic to begin with).
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  // v8.5.0 cost-cut: tightened activity window 24h -> 6h. Combined with the
+  // pg_cron schedule moving from */15 -> */30, this cuts Worker AMS
+  // invocations roughly 4x (cron half as often, fewer stores per run).
+  // Custom-domain stores still always warm. Quiet stores pay a one-time
+  // ~300ms cold hit on the next visitor — acceptable given they had no
+  // traffic in the prior 6h.
+  const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
   const { data: activeRows, error: activeErr } = await supabase
     .from("page_views")
     .select("store_id")
