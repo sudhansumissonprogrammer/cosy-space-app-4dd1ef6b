@@ -158,7 +158,7 @@ export default function Dashboard() {
   const totalRevenue = ordersData?.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) || 0;
   const isCommissionMode = (store as any)?.billing_mode === "commission" || (walletSummary as any)?.billing_mode === "commission";
   const walletBalance = Number((walletSummary as any)?.wallet?.balance ?? 0);
-  const showLowBalanceDialog = isCommissionMode && !!walletSummary && walletBalance < 100;
+  
 
   if (storeLoading) return <DashboardSkeleton />;
 
