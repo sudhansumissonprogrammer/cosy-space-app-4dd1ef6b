@@ -10,6 +10,8 @@ import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useProductListJsonLd } from "@/hooks/useJsonLd";
+import { useCanonical } from "@/hooks/useCanonical";
+import { getStoreBaseUrl } from "@/lib/storeUrl";
 import { useInfiniteProducts, PAGE_SIZE } from "@/hooks/useInfiniteProducts";
 import ShopFilterBar, { applySort, type SortKey } from "@/components/storefront/ShopFilterBar";
 import CategoryHeroBanner from "@/components/storefront/CategoryHeroBanner";
