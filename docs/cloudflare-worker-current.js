@@ -566,7 +566,7 @@ function escapeHtml(str = "") {
 }
 
 function getProductSlug(pathname) {
-  const m = pathname.match(/^\/product\/([^/?#]+)/i);
+  const m = pathname.match(/^\/products?\/([^/?#]+)/i);
   return m ? decodeURIComponent(m[1]) : null;
 }
 
@@ -576,7 +576,7 @@ function getProductSlug(pathname) {
    Returns { kind: "home" } for the store root.                       */
 function getBotRoute(pathname) {
   if (!pathname || pathname === "/" || pathname === "") return { kind: "home" };
-  let m = pathname.match(/^\/product\/([^/?#]+)\/?$/i);
+  let m = pathname.match(/^\/products?\/([^/?#]+)\/?$/i);
   if (m) return { kind: "product", slug: decodeURIComponent(m[1]) };
   m = pathname.match(/^\/category\/([^/?#]+)\/?$/i);
   if (m) return { kind: "category", slug: decodeURIComponent(m[1]) };
@@ -4129,11 +4129,11 @@ async function _resolveStoreSlugForDomain(domain, env) {
   return null;
 }
 
-/* v8.9.0 — Detect /product/<slug> and /category/<slug> for HTML inlining.
+/* v8.9.0 — Detect /product/<slug>, legacy /products/<slug>, and /category/<slug> for HTML inlining.
    Returns { kind: 'product'|'category', slug } or null. */
 function _parsePdpCategoryPath(pathname) {
   if (!pathname) return null;
-  let m = pathname.match(/^\/product\/([a-zA-Z0-9_-]+)\/?$/);
+  let m = pathname.match(/^\/products?\/([a-zA-Z0-9_-]+)\/?$/);
   if (m) return { kind: "product", slug: m[1] };
   m = pathname.match(/^\/category\/([a-zA-Z0-9_-]+)\/?$/);
   if (m) return { kind: "category", slug: m[1] };
