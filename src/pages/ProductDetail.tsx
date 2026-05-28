@@ -252,7 +252,7 @@ export default function ProductDetail() {
           .from("products")
           .select(PRODUCT_PDP_FIELDS)
           .eq("store_id", store.id)
-          .or(`slug.eq.${canonicalProductSlug},slug.ilike.${legacyProductSlug}-%`)
+          .ilike("slug", `${legacyProductSlug}-%`)
           .eq("is_active", true)
           .order("updated_at", { ascending: false })
           .limit(1)
