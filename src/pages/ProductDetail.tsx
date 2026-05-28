@@ -196,16 +196,16 @@ export default function ProductDetail() {
   const getCachedProduct = () => {
     const cached = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
     if (!cached) return undefined;
-    return cached.find((p: any) => p.slug === productSlug || p.id === productSlug) || undefined;
+    return cached.find((p: any) => p.slug === canonicalProductSlug || p.id === canonicalProductSlug || (legacyProductSlug && p.slug?.startsWith(`${legacyProductSlug}-`))) || undefined;
   };
 
-  const existingData = queryClient.getQueryData(["storefront-product", store.id, productSlug]);
+  const existingData = queryClient.getQueryData(["storefront-product", store.id, canonicalProductSlug]);
 
   // ── Worker-inlined PDP payload (Phase A): { product, images, variants, shipping_config } ──
   const getInlinePdp = () => {
     try {
       const inline = (window as any).__PRODUCT_INLINE__;
-      if (inline && inline.product && inline.product.slug === productSlug) return inline;
+      if (inline && inline.product && (inline.product.slug === canonicalProductSlug || (legacyProductSlug && inline.product.slug?.startsWith(`${legacyProductSlug}-`)))) return inline;
     } catch { /* ignore */ }
     return null;
   };
