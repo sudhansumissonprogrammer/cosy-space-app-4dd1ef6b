@@ -35,6 +35,8 @@ import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 
+const PRODUCT_SUFFIX_RE = /-[a-z0-9]{4}$/i;
+
 const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
@@ -132,6 +134,11 @@ export default function ProductDetail() {
   const store = useOutletContext<StoreData>();
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
+  const canonicalProductSlug = useMemo(() => productSlug?.trim() || "", [productSlug]);
+  const legacyProductSlug = useMemo(
+    () => (canonicalProductSlug && PRODUCT_SUFFIX_RE.test(canonicalProductSlug) ? canonicalProductSlug.replace(PRODUCT_SUFFIX_RE, "") : ""),
+    [canonicalProductSlug],
+  );
 
   const { addToCart, items, cartTotal, closeCart, openCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
@@ -204,14 +211,23 @@ export default function ProductDetail() {
   };
 
   const { data: product, isLoading } = useQuery({
-    queryKey: ["storefront-product", store.id, productSlug],
+    queryKey: ["storefront-product", store.id, canonicalProductSlug],
     queryFn: async () => {
       // Phase A: try Worker edge cache first (KV + CF cache)
-      const edge = await fetchPdpEdge(productSlug!);
-      const rpc = edge ?? (await (supabase as any).rpc("get_product_page", {
+      let edge = await fetchPdpEdge(canonicalProductSlug);
+      if (!edge && legacyProductSlug) edge = await fetchPdpEdge(legacyProductSlug);
+
+      let rpc = edge ?? (await (supabase as any).rpc("get_product_page", {
         _store_slug: store.slug,
-        _product_slug: productSlug!,
+        _product_slug: canonicalProductSlug,
       })).data;
+
+      if (!rpc?.product && legacyProductSlug) {
+        rpc = (await (supabase as any).rpc("get_product_page", {
+          _store_slug: store.slug,
+          _product_slug: legacyProductSlug,
+        })).data;
+      }
 
       if (rpc?.product) {
         // Hydrate sibling queries so they don't refetch
@@ -227,12 +243,26 @@ export default function ProductDetail() {
         .from("products")
         .select(PRODUCT_PDP_FIELDS)
         .eq("store_id", store.id)
-        .eq("slug", productSlug!)
+            .eq("slug", canonicalProductSlug)
         .eq("is_active", true)
         .maybeSingle();
 
+      if (!data && !error && legacyProductSlug) {
+        const legacyResult = await supabase
+          .from("products")
+          .select(PRODUCT_PDP_FIELDS)
+          .eq("store_id", store.id)
+          .or(`slug.eq.${canonicalProductSlug},slug.ilike.${legacyProductSlug}-%`)
+          .eq("is_active", true)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        data = legacyResult.data;
+        error = legacyResult.error;
+      }
+
       if (!data && !error) {
-        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productSlug!)) {
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canonicalProductSlug)) {
           if (error) throw error;
           return data;
         }
@@ -240,7 +270,7 @@ export default function ProductDetail() {
           .from("products")
           .select(PRODUCT_PDP_FIELDS)
           .eq("store_id", store.id)
-          .eq("id", productSlug!)
+          .eq("id", canonicalProductSlug)
           .eq("is_active", true)
           .maybeSingle();
         data = result.data;
@@ -262,7 +292,7 @@ export default function ProductDetail() {
       }
       return getCachedProduct();
     },
-    enabled: !!store.id && !!productSlug,
+    enabled: !!store.id && !!canonicalProductSlug,
     staleTime: 2 * 60 * 1000,
   });
 
