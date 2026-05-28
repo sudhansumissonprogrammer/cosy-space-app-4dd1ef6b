@@ -892,7 +892,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
             {items.map((item: any, idx: number) => (
               <div key={item.id || idx} className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <OrderItemImage imageUrl={item.products?.image_url} productName={item.product_name} />
+                  <OrderItemImage imageUrl={item.image_url || item.products?.image_url} productName={item.product_name} />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{item.product_name}</p>
                     <p className="text-xs text-muted-foreground">Qty: {item.quantity} × {order.currency} {Number(item.unit_price).toFixed(0)}</p>
