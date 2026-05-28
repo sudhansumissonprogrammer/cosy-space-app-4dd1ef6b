@@ -345,7 +345,7 @@ function buildShellHead(opts: {
   canonical: string;
   storeName: string;
   ogImage?: string;
-  jsonLd: string[];
+  jsonLd: (string | Record<string, any>)[];
   ogType?: string;
 }): string {
   const { title, desc, canonical, storeName, ogImage, jsonLd, ogType = "website" } = opts;
