@@ -52,13 +52,16 @@ function buildProductHtml(
     ...(images || []).map((i: any) => i.image_url).filter(Boolean),
   ].filter((v, i, a) => a.indexOf(v) === i); // dedupe
 
-  const jsonLd = JSON.stringify({
+  const storeBaseForCrumb = canonical.split("/product/")[0];
+  const categoryName = product.category || "Products";
+  const productJsonLd = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
     description: product.description || "",
     image: allImages,
     sku: product.sku || product.id,
+    mpn: product.sku || product.id,
     url: canonical,
     offers: {
       "@type": "Offer",
@@ -69,9 +72,21 @@ function buildProductHtml(
         : "https://schema.org/OutOfStock",
       url: canonical,
       itemCondition: "https://schema.org/NewCondition",
+      priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      seller: { "@type": "Organization", name: store.name },
     },
     brand: { "@type": "Brand", name: store.name },
   });
+  const breadcrumbJsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: store.name, item: storeBaseForCrumb },
+      { "@type": "ListItem", position: 2, name: categoryName, item: `${storeBaseForCrumb}/shop` },
+      { "@type": "ListItem", position: 3, name: product.name, item: canonical },
+    ],
+  });
+  const jsonLd = `${productJsonLd}</script>\n<script type="application/ld+json">${breadcrumbJsonLd}`;
 
   return `<!DOCTYPE html>
 <html lang="en">
