@@ -107,7 +107,7 @@ export default function StoreOrders() {
       let query = supabase
         .from("orders")
         .select(
-          "id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, payment_type, advance_paid, balance_due, order_items(id, product_name, quantity, unit_price, total, product_id, products(image_url))",
+          "id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, payment_type, advance_paid, balance_due, order_items(id, product_name, quantity, unit_price, total, product_id, image_url, products(image_url))",
           { count: "exact" }
         )
         .eq("store_id", storeId!)
@@ -892,7 +892,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
             {items.map((item: any, idx: number) => (
               <div key={item.id || idx} className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <OrderItemImage imageUrl={item.products?.image_url} productName={item.product_name} />
+                  <OrderItemImage imageUrl={item.image_url || item.products?.image_url} productName={item.product_name} />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{item.product_name}</p>
                     <p className="text-xs text-muted-foreground">Qty: {item.quantity} × {order.currency} {Number(item.unit_price).toFixed(0)}</p>
