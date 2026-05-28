@@ -281,6 +281,13 @@ export default function DashboardLayout() {
     }
   }, [walletHardBlocked, walletPath, isOnWalletPage, navigate]);
 
+  // Reset dismissed flag when balance recovers above threshold
+  useEffect(() => {
+    if (!walletLowWarning && !walletHardBlocked && lowBalanceDismissed) {
+      setLowBalanceDismissed(false);
+    }
+  }, [walletLowWarning, walletHardBlocked, lowBalanceDismissed]);
+
 
   // Pending orders count — shared with PendingActions via React Query
   const { data: pendingCount } = useQuery({
