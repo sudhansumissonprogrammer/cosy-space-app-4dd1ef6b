@@ -366,7 +366,7 @@ ${ogImage ? `<meta property="og:image" content="${esc(ogImage)}">` : ""}
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(desc)}">
 ${ogImage ? `<meta name="twitter:image" content="${esc(ogImage)}">` : ""}
-${jsonLd.map((j) => `<script type="application/ld+json">${j}</script>`).join("\n")}
+${jsonLd.map((j) => `<script type="application/ld+json">${typeof j === "string" ? j : JSON.stringify(j)}</script>`).join("\n")}
 <style>${SHARED_STYLE}</style>
 </head>`;
 }
