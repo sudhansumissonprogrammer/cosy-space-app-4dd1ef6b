@@ -75,6 +75,7 @@ const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const V19ProductDetail = lazy(() => import("./pages/V19ProductDetail"));
 const V20ProductDetail = lazy(() => import("./pages/V20ProductDetail"));
 import { getPdpPreload } from "@/lib/pdpPreload";
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const ProductDetailSkeleton = () => {
   const p = typeof window !== "undefined" ? getPdpPreload() : null;
