@@ -15,6 +15,7 @@ import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import BillingBanner from "@/components/billing/BillingBanner";
 import BillingPaywall from "@/components/BillingPaywall";
+import LowBalanceDialog from "@/components/billing/LowBalanceDialog";
 import { useBillingState } from "@/hooks/useBillingState";
 import {
   LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
@@ -257,6 +258,37 @@ export default function DashboardLayout() {
     billingState?.requires_payment === true;
   const showPaywall = billingBlocked && !isProfileRoute;
 
+  // Commission-wallet enforcement
+  const walletBalance = Number((walletSummary as any)?.wallet?.balance ?? 0);
+  const lowBalanceThreshold = Number((walletSummary as any)?.config?.low_balance_threshold ?? 100);
+  const HARD_BLOCK_BALANCE = -150;
+  const walletPath = storeSlug ? `/dashboard/stores/${storeSlug}/wallet` : "";
+  const isOnWalletPage = !!walletPath && location.pathname === walletPath;
+  const walletHardBlocked =
+    !isAdminView && isCommissionMode && !!walletSummary && walletBalance < HARD_BLOCK_BALANCE;
+  const walletLowWarning =
+    !isAdminView &&
+    isCommissionMode &&
+    !!walletSummary &&
+    !walletHardBlocked &&
+    walletBalance < lowBalanceThreshold;
+  const [lowBalanceDismissed, setLowBalanceDismissed] = useState(false);
+
+  // Hard-lock: redirect to wallet page if balance is critically low
+  useEffect(() => {
+    if (walletHardBlocked && walletPath && !isOnWalletPage) {
+      navigate(walletPath, { replace: true });
+    }
+  }, [walletHardBlocked, walletPath, isOnWalletPage, navigate]);
+
+  // Reset dismissed flag when balance recovers above threshold
+  useEffect(() => {
+    if (!walletLowWarning && !walletHardBlocked && lowBalanceDismissed) {
+      setLowBalanceDismissed(false);
+    }
+  }, [walletLowWarning, walletHardBlocked, lowBalanceDismissed]);
+
+
   // Pending orders count — shared with PendingActions via React Query
   const { data: pendingCount } = useQuery({
     queryKey: ["pending-actions", storeId],
@@ -402,6 +434,16 @@ export default function DashboardLayout() {
     <DashboardStoreProvider value={dashboardStoreValue}>
     <DynamicPwaManifest storeName="ShopBanao" logoUrl="/images/shopbanao-logo.png" themeColor="#4361ee" startUrl="/dashboard" />
     <SmartInstallPrompt appName="ShopBanao" primaryColor="#4361ee" textColor="#ffffff" delay={10000} logoUrl="/images/shopbanao-logo.png" />
+    {(walletHardBlocked || (walletLowWarning && !lowBalanceDismissed)) && storeSlug && (
+      <LowBalanceDialog
+        open={true}
+        balance={walletBalance}
+        storeSlug={storeSlug}
+        threshold={lowBalanceThreshold}
+        dismissible={!walletHardBlocked}
+        onClose={() => setLowBalanceDismissed(true)}
+      />
+    )}
     <div
       className="min-h-screen flex flex-col bg-background font-dashboard [&_*]:font-dashboard"
       
