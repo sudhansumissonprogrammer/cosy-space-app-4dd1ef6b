@@ -52,6 +52,41 @@ export function useStorefront(slugOverride?: string) {
   const useInjectedInitialData = !!(injected?.store && slug && !seeded.current);
   if (useInjectedInitialData && !initialInjectedRef.current) initialInjectedRef.current = true;
 
+  // Synchronous cache seeder — runs INSIDE queryFn (before resolving) and
+  // ALSO at render-time for injected/initialData, so when children first
+  // render they already see categories/theme_config/etc in React Query cache.
+  // Without this, child components that read via getQueryData (non-reactive)
+  // show a skeleton on first paint and only pop in on the next unrelated
+  // re-render — that's the "categories load late then slide up" jank.
+  const seedChildCaches = (payload: any) => {
+    if (!payload?.store) return;
+    const { store: s, categories, theme_config } = payload;
+    if (Array.isArray(categories)) {
+      queryClient.setQueryData(["storefront-categories", s.id], categories);
+    }
+    if (theme_config) {
+      queryClient.setQueryData(["storefront-theme-config", s.id], theme_config);
+    }
+    const shipping_config = payload?.shipping_config;
+    if (shipping_config) {
+      queryClient.setQueryData(["storefront-shipping-config", s.id], shipping_config);
+    }
+    if (payload?.total_products != null) {
+      queryClient.setQueryData(["storefront-total-products", s.id], payload.total_products);
+    }
+    const customPages = payload?.custom_pages;
+    if (Array.isArray(customPages)) {
+      queryClient.setQueryData(["storefront-custom-pages", s.id], customPages);
+    }
+  };
+
+  // If we have injected data, seed child caches RIGHT NOW (before any child
+  // component renders), not in a useEffect. Effects run after first paint,
+  // so children would otherwise see undefined cache on first render.
+  if (useInjectedInitialData) {
+    seedChildCaches(injected);
+  }
+
   const { data, isLoading } = useQuery({
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
@@ -61,6 +96,7 @@ export function useStorefront(slugOverride?: string) {
       if (syncData?.store && !initialInjectedRef.current) {
         delete (window as any).__STOREFRONT_DATA__;
         delete (window as any).__STOREFRONT_PREFETCH__;
+        seedChildCaches(syncData);
         return syncData as any;
       }
       if (syncData?.store && initialInjectedRef.current) {
@@ -81,6 +117,7 @@ export function useStorefront(slugOverride?: string) {
 
           if ((result as any)?.store) {
             delete (window as any).__STOREFRONT_PREFETCH__;
+            seedChildCaches(result);
             return result as any;
           }
         } catch {
@@ -89,7 +126,9 @@ export function useStorefront(slugOverride?: string) {
       }
 
       // 3. Fresh RPC call — use shell (lightweight, no products)
-      return rpcGetStorefrontShell(slug!);
+      const fresh = await rpcGetStorefrontShell(slug!);
+      seedChildCaches(fresh);
+      return fresh;
     },
     enabled: !!slug,
     staleTime: 2 * 60 * 1000,
