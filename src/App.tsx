@@ -434,7 +434,7 @@ function getInstantTheme(slug: string | undefined): string {
 
   // 1. Check Cloudflare Worker injected data (instant, no API call)
   const injected = (window as any).__STOREFRONT_DATA__;
-  if (injected?.store?.theme) {
+  if (injected?.store?.slug === slug && injected?.store?.theme) {
     return injected.store.theme;
   }
 
@@ -503,7 +503,7 @@ function usePrefetchStorefrontData(slug: string | undefined) {
   useEffect(() => {
     if (!slug || prefetched.current) return;
     // Don't prefetch if index.html prefetch already provided data or is in flight
-    if ((window as any).__STOREFRONT_DATA__?.store) return;
+    if ((window as any).__STOREFRONT_DATA__?.store?.slug === slug) return;
     if ((window as any).__STOREFRONT_PREFETCH__) return;
     // Don't prefetch if already in cache
     if (queryClient.getQueryData(["storefront-bulk", slug])) return;
@@ -710,7 +710,8 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
     const cachedBulk = effectiveSlug
       ? (queryClient.getQueryData(["storefront-bulk", effectiveSlug]) as any)
       : undefined;
-    startRoutePrefetch((window as any).__STOREFRONT_DATA__?.store?.id || cachedBulk?.store?.id);
+    const injectedStore = (window as any).__STOREFRONT_DATA__?.store;
+    startRoutePrefetch((injectedStore?.slug === effectiveSlug ? injectedStore?.id : null) || cachedBulk?.store?.id);
   }, [effectiveSlug, queryClient, startRoutePrefetch]);
 
   // v8.21.0 — Defer all route-chunk prefetch until after FCP/idle.
