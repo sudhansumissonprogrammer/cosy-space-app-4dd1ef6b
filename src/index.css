@@ -371,8 +371,7 @@
   }
 }
 .stagger-card {
-  animation: stagger-fade-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: calc(var(--i, 0) * 60ms);
+  /* Stagger slide-up removed — product cards now appear instantly like categories */
 }
 
 /* ── Premium UX: Cart bounce ── */
