@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 
 /**
  * Returns `visible` — true when header should show, false when hidden.
@@ -9,6 +10,25 @@ export function useSmartHeader() {
   const [visible, setVisible] = useState(true);
   const lastY = useRef(0);
   const ticking = useRef(false);
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    lastY.current = window.scrollY;
+    setVisible(true);
+  }, [pathname]);
+
+  useEffect(() => {
+    const restore = () => {
+      lastY.current = window.scrollY;
+      if (window.scrollY < 120) setVisible(true);
+    };
+    window.addEventListener("pageshow", restore);
+    document.addEventListener("visibilitychange", restore);
+    return () => {
+      window.removeEventListener("pageshow", restore);
+      document.removeEventListener("visibilitychange", restore);
+    };
+  }, []);
 
   useEffect(() => {
     const onScroll = () => {
