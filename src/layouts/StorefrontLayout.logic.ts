@@ -47,7 +47,8 @@ export function useStorefront(slugOverride?: string) {
   const initialInjectedRef = useRef(false);
 
   // Try to grab pre-fetched data (from Worker or index.html script)
-  const injected = (window as any).__STOREFRONT_DATA__;
+  const rawInjected = (window as any).__STOREFRONT_DATA__;
+  const injected = rawInjected?.store?.slug === slug ? rawInjected : undefined;
   const useInjectedInitialData = !!(injected?.store && slug && !seeded.current);
   if (useInjectedInitialData && !initialInjectedRef.current) initialInjectedRef.current = true;
 
@@ -55,7 +56,8 @@ export function useStorefront(slugOverride?: string) {
     queryKey: ["storefront-bulk", slug],
     queryFn: async () => {
       // 1. Check synchronous injected data first (Worker already set it)
-      const syncData = (window as any).__STOREFRONT_DATA__;
+      const rawSyncData = (window as any).__STOREFRONT_DATA__;
+      const syncData = rawSyncData?.store?.slug === slug ? rawSyncData : undefined;
       if (syncData?.store && !initialInjectedRef.current) {
         delete (window as any).__STOREFRONT_DATA__;
         delete (window as any).__STOREFRONT_PREFETCH__;
