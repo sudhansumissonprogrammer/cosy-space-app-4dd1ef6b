@@ -215,9 +215,13 @@ export default function ProductDetail() {
   const { data: product, isLoading } = useQuery({
     queryKey: ["storefront-product", store.id, canonicalProductSlug],
     queryFn: async () => {
-      // Phase A: try Worker edge cache first (KV + CF cache)
-      let edge = await fetchPdpEdge(canonicalProductSlug);
-      if (!edge && productSlugPrefix && productSlugPrefix !== canonicalProductSlug) edge = await fetchPdpEdge(productSlugPrefix);
+      // Phase A: try Worker edge cache first (KV + CF cache).
+      // v8.47 cost-cut: only ONE edge call. The legacy prefix-fallback used
+      // to fire a 2nd /api/pdp on miss, which doubled worker requests for
+      // suffix-mismatched URLs. The RPC fallback below already retries with
+      // the prefix, so we no longer need the 2nd edge round-trip.
+      const edge = await fetchPdpEdge(canonicalProductSlug);
+
 
       let rpc = edge ?? (await (supabase as any).rpc("get_product_page", {
         _store_slug: store.slug,
