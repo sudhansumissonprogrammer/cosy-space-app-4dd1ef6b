@@ -27,18 +27,27 @@ interface FetchOpts {
 
 async function fetchPage({ storeId, category, page, sort }: FetchOpts): Promise<any[]> {
   if (isProductionHost()) {
-    // ── v8.0.0 cost-cut: page 0 with no filters → use worker-injected inline products ──
-    // The Cloudflare Worker injects window.__PRODUCTS_INLINE__ (first 50, no filter)
-    // into the SSR shell. Reusing it eliminates one /api/products Worker request per
-    // first storefront visit (~25-35% Worker request reduction).
+    // ── v8.47 cost-cut: reuse shell-injected products_preview ──
+    // Worker injects window.__STOREFRONT_DATA__.products_preview (first 20
+    // products, no filter) into SSR shell for the home page. Reusing it
+    // here eliminates an /api/products Worker request on the cold Shop
+    // page load (page=0, no filter, no sort). Same idea as the existing
+    // __PRODUCTS_INLINE__ branch — that one is 50 products; this one is
+    // 20 from the storefront-data shell payload. Whichever exists wins.
     if (page === 0 && !category && !sort) {
       try {
+        const sf = (window as any).__STOREFRONT_DATA__;
+        const preview = sf && Array.isArray(sf.products_preview) ? sf.products_preview : null;
+        if (preview && preview.length > 0) {
+          return preview as any[];
+        }
         const inline = (window as any).__PRODUCTS_INLINE__;
         if (Array.isArray(inline) && inline.length > 0) {
           return inline as any[];
         }
       } catch { /* ignore */ }
     }
+
 
     // ── Production: use Worker /api/products (cached, KV-backed) ──
     const params = new URLSearchParams();

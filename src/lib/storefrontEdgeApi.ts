@@ -6,7 +6,15 @@
  * direct Supabase RPC via the supabase client passed in.
  */
 
+/**
+ * IMPORTANT: Must match Cloudflare Worker `_buildCategoryCacheKey` /
+ * `_fetchCategoryFromDb` limit (currently 50, suffix ":l50" on cache keys).
+ * Changing one without the other silently invalidates every category cache.
+ */
+export const CATEGORY_PAGE_LIMIT = 50;
+
 export function isProductionHost(): boolean {
+
   if (typeof window === "undefined") return false;
   const h = window.location.hostname;
   const isLocal = h === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(h);
@@ -27,7 +35,7 @@ export async function fetchPdpEdge(productSlug: string): Promise<any | null> {
   }
 }
 
-export async function fetchCategoryEdge(categorySlug: string, limit = 50): Promise<any | null> {
+export async function fetchCategoryEdge(categorySlug: string, limit = CATEGORY_PAGE_LIMIT): Promise<any | null> {
   if (!isProductionHost()) return null;
   try {
     const url = `${window.location.origin}/api/category?slug=${encodeURIComponent(categorySlug)}&limit=${limit}`;

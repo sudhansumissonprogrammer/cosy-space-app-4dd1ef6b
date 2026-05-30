@@ -4446,14 +4446,19 @@ async function _prewarmPdpAndCategory(store, storefrontData, env, ctx) {
   const products = Array.isArray(storefrontData?.products) ? storefrontData.products : [];
   const categories = Array.isArray(storefrontData?.categories) ? storefrontData.categories : [];
 
+  // v8.47 cost-cut: trim cron prewarm fanout. Previously 8 PDPs × 12 cats × 2
+  // domains = up to 40 subreqs per warmed store. Real visitors warm whichever
+  // PDP/category they hit (with 24h TTL) — cron just needs to seed the most
+  // likely first hits. Cut to 3 PDPs + 5 categories.
   const topProducts = products
-    .slice(0, 8)
+    .slice(0, 3)
     .map((p) => p?.slug)
     .filter(Boolean);
   const topCategories = categories
-    .slice(0, 12)
+    .slice(0, 5)
     .map((c) => c?.slug)
     .filter(Boolean);
+
 
   const version = await _getProductVersion(domain, env);
   const customVersion = customDomain ? await _getProductVersion(customDomain, env) : null;
@@ -5848,15 +5853,31 @@ async function _handleFetch(request, env, ctx) {
   }
 
   // ─── STATIC ASSETS ───
+  // v8.47 cost-cut: previously `no-cache, must-revalidate, max-age=0` so every
+  // service-worker update-check + every PWA install hit origin (3–6k req/day).
+  // These files are immutable in practice — when sw-push.js or the dynamic
+  // manifest changes, the deploy invalidates them via the build hash. Cache
+  // at the edge for 10 min + 24h stale-while-revalidate so background SW
+  // update-checks stay HIT and the Worker stops being invoked.
   if (url.pathname === "/sw-push.js" || url.pathname === "/sw.js" || url.pathname === "/manifest.webmanifest") {
+    // Try synthesized edge cache first (≈1ms hit, zero subrequests)
+    try {
+      const hit = await cache.match(request);
+      if (hit) {
+        const fresh = new Response(hit.body, hit);
+        fresh.headers.set("X-Static-Asset-Cache", "HIT-PWA");
+        return fresh;
+      }
+    } catch {}
     const freshStatic = await proxyToOrigin(request);
     const freshRes = new Response(freshStatic.body, freshStatic);
-    freshRes.headers.set("Cache-Control", "no-cache, must-revalidate, max-age=0");
+    freshRes.headers.set("Cache-Control", "public, max-age=600, stale-while-revalidate=86400");
     freshRes.headers.delete("Set-Cookie");
     freshRes.headers.delete("set-cookie");
-    freshRes.headers.set("X-Static-Asset-Cache", "BYPASS-PWA");
-    return freshRes;
+    freshRes.headers.set("X-Static-Asset-Cache", "MISS-PWA");
+    return cacheableResponse(ctx, request, freshRes, 600);
   }
+
 
   const isStaticAsset =
     url.pathname.startsWith("/assets/") ||
@@ -6685,6 +6706,27 @@ async function _handleScheduled(event, env, ctx) {
     const flushPromise = flushPageViewBuffer();
     if (flushPromise) ctx.waitUntil(flushPromise);
   } catch {}
+
+  // v8.47 cost-cut: check the 55-min full-sync gate BEFORE pinging Supabase.
+  // Previously we always fired get_platform_config_public on every cron tick
+  // (every 30 min) even when the heavy sync was throttled, wasting 2-4k
+  // subrequests/day. Now: on throttled ticks we skip the DB ping entirely.
+  // The DB still gets touched by real visitors + every 60min full-sync run,
+  // which is more than enough to keep the connection pool warm.
+  let _shouldRunFullSync = true;
+  if (env?.STORE_KV) {
+    try {
+      const lastSync = await env.STORE_KV.get("cron-last-full-sync");
+      if (lastSync && Date.now() - parseInt(lastSync, 10) < 55 * 60 * 1000) {
+        _shouldRunFullSync = false;
+      }
+    } catch {}
+  }
+  if (!_shouldRunFullSync) {
+    console.log("[keepalive] sync skipped (throttled, <55min since last) — no DB ping fired");
+    return;
+  }
+
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
@@ -6700,23 +6742,8 @@ async function _handleScheduled(event, env, ctx) {
     });
     clearTimeout(timeout);
     const dbPingMs = Date.now() - keepaliveStart;
+    console.log(`[keepalive] DB ping: ${dbPingMs}ms, status: ${res.status} (running full sync)`);
 
-    // v8.0.0 cost-cut: Throttle the heavy store-sync path to once per 60 min,
-    // even if cron fires every 30 min. DB keepalive (above) still runs every tick.
-    let _shouldRunFullSync = true;
-    if (env?.STORE_KV) {
-      try {
-        const lastSync = await env.STORE_KV.get("cron-last-full-sync");
-        if (lastSync && Date.now() - parseInt(lastSync, 10) < 55 * 60 * 1000) {
-          _shouldRunFullSync = false;
-          console.log("[keepalive] skipping full sync — ran <55min ago");
-        }
-      } catch {}
-    }
-    if (!_shouldRunFullSync) {
-      console.log(`[keepalive] DB ping: ${dbPingMs}ms, status: ${res.status} (sync skipped)`);
-      return;
-    }
 
     // FIX #15: Fetch shell once, outside the per-store loop
     let cronShellResult = null;
@@ -6850,8 +6877,13 @@ async function _handleScheduled(event, env, ctx) {
               activeSlugs = new Set(cachedSlugs);
             } else {
               const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+              // v8.47 cost-cut: cap the scan at 10k rows. Without this PostgREST
+              // can scan the entire page_views table (unbounded, growing daily)
+              // every 6h when KV expires. 10k distinct rows is enough to cover
+              // every active store on the platform many times over.
               const activeRes = await fetch(
-                `${SUPABASE_URL}/rest/v1/page_views?select=store_id&created_at=gte.${sevenDaysAgo}`,
+                `${SUPABASE_URL}/rest/v1/page_views?select=store_id&created_at=gte.${sevenDaysAgo}&limit=10000`,
+
                 {
                   headers: {
                     apikey: SUPABASE_ANON_KEY,
