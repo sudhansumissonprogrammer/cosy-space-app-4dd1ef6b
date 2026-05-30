@@ -6701,6 +6701,27 @@ async function _handleScheduled(event, env, ctx) {
     const flushPromise = flushPageViewBuffer();
     if (flushPromise) ctx.waitUntil(flushPromise);
   } catch {}
+
+  // v8.47 cost-cut: check the 55-min full-sync gate BEFORE pinging Supabase.
+  // Previously we always fired get_platform_config_public on every cron tick
+  // (every 30 min) even when the heavy sync was throttled, wasting 2-4k
+  // subrequests/day. Now: on throttled ticks we skip the DB ping entirely.
+  // The DB still gets touched by real visitors + every 60min full-sync run,
+  // which is more than enough to keep the connection pool warm.
+  let _shouldRunFullSync = true;
+  if (env?.STORE_KV) {
+    try {
+      const lastSync = await env.STORE_KV.get("cron-last-full-sync");
+      if (lastSync && Date.now() - parseInt(lastSync, 10) < 55 * 60 * 1000) {
+        _shouldRunFullSync = false;
+      }
+    } catch {}
+  }
+  if (!_shouldRunFullSync) {
+    console.log("[keepalive] sync skipped (throttled, <55min since last) — no DB ping fired");
+    return;
+  }
+
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
@@ -6716,23 +6737,8 @@ async function _handleScheduled(event, env, ctx) {
     });
     clearTimeout(timeout);
     const dbPingMs = Date.now() - keepaliveStart;
+    console.log(`[keepalive] DB ping: ${dbPingMs}ms, status: ${res.status} (running full sync)`);
 
-    // v8.0.0 cost-cut: Throttle the heavy store-sync path to once per 60 min,
-    // even if cron fires every 30 min. DB keepalive (above) still runs every tick.
-    let _shouldRunFullSync = true;
-    if (env?.STORE_KV) {
-      try {
-        const lastSync = await env.STORE_KV.get("cron-last-full-sync");
-        if (lastSync && Date.now() - parseInt(lastSync, 10) < 55 * 60 * 1000) {
-          _shouldRunFullSync = false;
-          console.log("[keepalive] skipping full sync — ran <55min ago");
-        }
-      } catch {}
-    }
-    if (!_shouldRunFullSync) {
-      console.log(`[keepalive] DB ping: ${dbPingMs}ms, status: ${res.status} (sync skipped)`);
-      return;
-    }
 
     // FIX #15: Fetch shell once, outside the per-store loop
     let cronShellResult = null;
