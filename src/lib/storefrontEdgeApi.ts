@@ -35,7 +35,7 @@ export async function fetchPdpEdge(productSlug: string): Promise<any | null> {
   }
 }
 
-export async function fetchCategoryEdge(categorySlug: string, limit = 50): Promise<any | null> {
+export async function fetchCategoryEdge(categorySlug: string, limit = CATEGORY_PAGE_LIMIT): Promise<any | null> {
   if (!isProductionHost()) return null;
   try {
     const url = `${window.location.origin}/api/category?slug=${encodeURIComponent(categorySlug)}&limit=${limit}`;
