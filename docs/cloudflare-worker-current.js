@@ -5848,15 +5848,31 @@ async function _handleFetch(request, env, ctx) {
   }
 
   // ─── STATIC ASSETS ───
+  // v8.47 cost-cut: previously `no-cache, must-revalidate, max-age=0` so every
+  // service-worker update-check + every PWA install hit origin (3–6k req/day).
+  // These files are immutable in practice — when sw-push.js or the dynamic
+  // manifest changes, the deploy invalidates them via the build hash. Cache
+  // at the edge for 10 min + 24h stale-while-revalidate so background SW
+  // update-checks stay HIT and the Worker stops being invoked.
   if (url.pathname === "/sw-push.js" || url.pathname === "/sw.js" || url.pathname === "/manifest.webmanifest") {
+    // Try synthesized edge cache first (≈1ms hit, zero subrequests)
+    try {
+      const hit = await cache.match(request);
+      if (hit) {
+        const fresh = new Response(hit.body, hit);
+        fresh.headers.set("X-Static-Asset-Cache", "HIT-PWA");
+        return fresh;
+      }
+    } catch {}
     const freshStatic = await proxyToOrigin(request);
     const freshRes = new Response(freshStatic.body, freshStatic);
-    freshRes.headers.set("Cache-Control", "no-cache, must-revalidate, max-age=0");
+    freshRes.headers.set("Cache-Control", "public, max-age=600, stale-while-revalidate=86400");
     freshRes.headers.delete("Set-Cookie");
     freshRes.headers.delete("set-cookie");
-    freshRes.headers.set("X-Static-Asset-Cache", "BYPASS-PWA");
-    return freshRes;
+    freshRes.headers.set("X-Static-Asset-Cache", "MISS-PWA");
+    return cacheableResponse(ctx, request, freshRes, 600);
   }
+
 
   const isStaticAsset =
     url.pathname.startsWith("/assets/") ||
