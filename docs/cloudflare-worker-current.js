@@ -6872,8 +6872,13 @@ async function _handleScheduled(event, env, ctx) {
               activeSlugs = new Set(cachedSlugs);
             } else {
               const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+              // v8.47 cost-cut: cap the scan at 10k rows. Without this PostgREST
+              // can scan the entire page_views table (unbounded, growing daily)
+              // every 6h when KV expires. 10k distinct rows is enough to cover
+              // every active store on the platform many times over.
               const activeRes = await fetch(
-                `${SUPABASE_URL}/rest/v1/page_views?select=store_id&created_at=gte.${sevenDaysAgo}`,
+                `${SUPABASE_URL}/rest/v1/page_views?select=store_id&created_at=gte.${sevenDaysAgo}&limit=10000`,
+
                 {
                   headers: {
                     apikey: SUPABASE_ANON_KEY,
