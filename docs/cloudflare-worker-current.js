@@ -4446,14 +4446,19 @@ async function _prewarmPdpAndCategory(store, storefrontData, env, ctx) {
   const products = Array.isArray(storefrontData?.products) ? storefrontData.products : [];
   const categories = Array.isArray(storefrontData?.categories) ? storefrontData.categories : [];
 
+  // v8.47 cost-cut: trim cron prewarm fanout. Previously 8 PDPs × 12 cats × 2
+  // domains = up to 40 subreqs per warmed store. Real visitors warm whichever
+  // PDP/category they hit (with 24h TTL) — cron just needs to seed the most
+  // likely first hits. Cut to 3 PDPs + 5 categories.
   const topProducts = products
-    .slice(0, 8)
+    .slice(0, 3)
     .map((p) => p?.slug)
     .filter(Boolean);
   const topCategories = categories
-    .slice(0, 12)
+    .slice(0, 5)
     .map((c) => c?.slug)
     .filter(Boolean);
+
 
   const version = await _getProductVersion(domain, env);
   const customVersion = customDomain ? await _getProductVersion(customDomain, env) : null;
