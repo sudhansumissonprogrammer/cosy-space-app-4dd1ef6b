@@ -54,7 +54,14 @@ export function useStorefrontThemeConfig(storeId?: string) {
     staleTime: hasInjectedTheme ? Infinity : 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     initialData: initialThemeConfig,
-    initialDataUpdatedAt: initialThemeConfig ? Date.now() : undefined,
+    // Trust injected/cache as fresh (worker purges on save). Mark localStorage
+    // fallback as stale so we render it instantly but still revalidate from DB.
+    initialDataUpdatedAt:
+      injectedThemeConfig || cachedThemeConfig
+        ? Date.now()
+        : lsThemeConfig
+          ? 0
+          : undefined,
     placeholderData: () => cachedThemeConfig,
   });
 
