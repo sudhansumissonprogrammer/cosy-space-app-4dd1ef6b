@@ -162,6 +162,15 @@ export function useStorefront(slugOverride?: string) {
     }
     if (theme_config && store) {
       queryClient.setQueryData(["storefront-theme-config", store.id], theme_config);
+      // Persist theme_config to localStorage so the NEXT visit can render
+      // merchant-selected mobile_nav_style, product_card_style, category_style,
+      // colors, marquee, etc. on the very first paint — even when worker
+      // injection is missing (lovable preview, worker miss, etc).
+      // Without this, components briefly render with hard-coded defaults
+      // ("style-1", "classic", etc.) before the fetched theme_config arrives.
+      try {
+        localStorage.setItem(`sf_tc_${store.id}`, JSON.stringify(theme_config));
+      } catch {}
     }
     // Seed shipping config so TrustStrip / SideCart / CartPage get instant cache hit
     const shipping_config = (data as any)?.shipping_config;
