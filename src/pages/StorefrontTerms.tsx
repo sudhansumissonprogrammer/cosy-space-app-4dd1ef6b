@@ -7,9 +7,12 @@ import { storefrontPath } from "@/lib/subdomain";
 export default function StorefrontTerms() {
   const store = useOutletContext<StoreData>();
   const name = store.name;
+  const ownerEmail = ((store as any).owner_email as string | undefined)?.trim();
   const contact = store.whatsapp_number
     ? `WhatsApp us at ${store.whatsapp_number}`
-    : "contact us through our Contact page";
+    : ownerEmail
+      ? `email us at ${ownerEmail}`
+      : "contact us through our Contact page";
   const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
 
   return (
@@ -93,11 +96,24 @@ export default function StorefrontTerms() {
         <p>
           If you have any questions about these Terms &amp; Conditions, please {contact}.
         </p>
-        {address && (
-          <p>
-            <strong>Address:</strong> {address}
-          </p>
-        )}
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Store:</strong> {name}</li>
+          {ownerEmail && (
+            <li>
+              <strong>Email:</strong>{" "}
+              <a href={`mailto:${ownerEmail}`} className="underline text-foreground hover:text-primary">{ownerEmail}</a>
+            </li>
+          )}
+          {store.whatsapp_number && (
+            <li>
+              <strong>Phone / WhatsApp:</strong>{" "}
+              <a href={`tel:${store.whatsapp_number.replace(/[^0-9+]/g, "")}`} className="underline text-foreground hover:text-primary">{store.whatsapp_number}</a>
+            </li>
+          )}
+          {address && (
+            <li><strong>Address:</strong> {address}</li>
+          )}
+        </ul>
       </div>
     </div>
   );
