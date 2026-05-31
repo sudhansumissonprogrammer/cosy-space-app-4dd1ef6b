@@ -219,6 +219,15 @@ const _path = window.location.pathname;
     const injected = (window as any).__STOREFRONT_DATA__;
     if (injected?.store?.theme) {
       theme = injected.store.theme;
+      // Theme waterfall fix: persist injected theme to localStorage
+      // SYNCHRONOUSLY so the NEXT visit's getInstantTheme reads the
+      // current theme (not a months-old cached value). Previously this
+      // write happened inside a useEffect after React mounted, so any
+      // visit where __STOREFRONT_DATA__ was missing fell back to an
+      // ancient localStorage value and flashed the wrong layout first.
+      if (slug) {
+        try { localStorage.setItem(`storefront_theme_${slug}`, theme); } catch {}
+      }
     } else if (slug) {
       try {
         const cached = localStorage.getItem(`storefront_theme_${slug}`);

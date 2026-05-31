@@ -94,12 +94,19 @@ export function useStorefront(slugOverride?: string) {
     enabled: !!slug,
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
-    // Seed initialData with a stale timestamp so React Query schedules an
-    // immediate background refetch. This guarantees that if the merchant
-    // changed the theme/colors, a refresh on the storefront picks up the
-    // new values within ~1 RTT (instead of waiting 2 minutes for staleTime).
+    // v8.x — Theme waterfall fix: treat worker-injected payload as FRESH.
+    // Previous behavior used `initialDataUpdatedAt: 0`, which forced an
+    // immediate background refetch on every visit. When the merchant had
+    // changed theme/nav recently, visitors saw 3 paints:
+    //   1) localStorage cached (very old) theme,
+    //   2) worker-injected (mid-stale) theme,
+    //   3) DB-fresh theme.
+    // The worker cache is already purged on theme/nav save via
+    // purgeStoreCache({ shell: true }), so injected data IS fresh enough.
+    // Within-session admin previews still update via direct setQueryData /
+    // invalidateQueries, so live preview is unaffected.
     ...(useInjectedInitialData
-      ? { initialData: injected, initialDataUpdatedAt: 0 }
+      ? { initialData: injected, initialDataUpdatedAt: Date.now() }
       : {}),
   });
 
