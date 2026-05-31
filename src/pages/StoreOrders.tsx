@@ -40,10 +40,11 @@ import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/dashboard/PullToRefreshIndicator";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 
-const STATUS_OPTIONS = ["confirmed", "shipped", "delivered", "cancelled", "partially_paid"] as const;
+const STATUS_OPTIONS = ["pending", "confirmed", "partially_paid", "shipped", "delivered", "cancelled"] as const;
 
 const statusColor = (status: string) => {
   switch (status) {
+    case "pending": return "bg-muted text-muted-foreground";
     case "confirmed": return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
     case "shipped": return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
     case "delivered": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
@@ -102,7 +103,9 @@ export default function StoreOrders() {
 
   const { data: allOrders, isLoading } = useQuery({
     queryKey: ["website-orders-all", storeId, statusFilter, pagination.from, pagination.to],
-    staleTime: 2 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       let query = supabase
         .from("orders")
