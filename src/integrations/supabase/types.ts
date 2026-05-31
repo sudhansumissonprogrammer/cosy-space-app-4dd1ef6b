@@ -3545,6 +3545,10 @@ export type Database = {
         Returns: boolean
       }
       wallet_reverse_order: { Args: { _order_id: string }; Returns: undefined }
+      wallet_reverse_order_commission: {
+        Args: { _order_id: string; _reason?: string }
+        Returns: boolean
+      }
       wallet_settle_withdrawal: {
         Args: { _withdrawal_id: string }
         Returns: undefined
