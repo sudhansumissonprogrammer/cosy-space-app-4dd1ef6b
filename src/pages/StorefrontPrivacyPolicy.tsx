@@ -7,9 +7,12 @@ import { storefrontPath } from "@/lib/subdomain";
 export default function StorefrontPrivacyPolicy() {
   const store = useOutletContext<StoreData>();
   const name = store.name;
+  const ownerEmail = ((store as any).owner_email as string | undefined)?.trim();
   const contact = store.whatsapp_number
     ? `WhatsApp us at ${store.whatsapp_number}`
-    : "contact us through our Contact page";
+    : ownerEmail
+      ? `email us at ${ownerEmail}`
+      : "contact us through our Contact page";
   const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
 
   return (
