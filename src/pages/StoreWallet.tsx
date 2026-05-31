@@ -31,9 +31,7 @@ export default function StoreWallet() {
     );
   }
 
-  const ledger: any[] = ((data as any)?.ledger ?? []).filter(
-    (l: any) => l.direction === "credit"
-  );
+  const ledger: any[] = (data as any)?.ledger ?? [];
 
   return (
     <div className="space-y-4">
