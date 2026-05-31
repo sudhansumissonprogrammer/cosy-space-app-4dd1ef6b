@@ -1017,7 +1017,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
         </div>
 
         <div className="px-4 pt-2 pb-3 space-y-2">
-          {order.payment_type === "partial" && order.status !== "delivered" && Number(order.balance_due) > 0 && (
+          {order.payment_type === "partial" && order.status === "partially_paid" && Number(order.balance_due) > 0 && (
             <Button
               variant="outline"
               className="w-full h-10 text-sm font-medium border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-400 dark:hover:bg-purple-950/30"
