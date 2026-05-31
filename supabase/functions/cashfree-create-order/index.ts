@@ -41,12 +41,17 @@ Deno.serve(async (req) => {
     // Verify caller owns the store
     const { data: store } = await supabase
       .from("stores")
-      .select("id, owner_id, name, owner_email, whatsapp_number")
+      .select("id, owner_id, name, owner_email, whatsapp_number, billing_mode")
       .eq("id", storeId)
       .single();
 
     if (!store || store.owner_id !== user.id) {
       return jsonRes({ error: "Forbidden" }, 403);
+    }
+
+    // Commission-mode stores pay via wallet — never via subscription checkout.
+    if ((store as any).billing_mode === "commission") {
+      return jsonRes({ error: "Store is on commission billing — subscription payment not applicable" }, 400);
     }
 
     // Get billing state
