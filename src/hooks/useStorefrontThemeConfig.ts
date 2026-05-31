@@ -17,7 +17,17 @@ export function useStorefrontThemeConfig(storeId?: string) {
     (window as any).__STOREFRONT_DATA__?.store?.id === storeId
       ? (window as any).__STOREFRONT_DATA__?.theme_config
       : undefined;
-  const initialThemeConfig = cachedThemeConfig ?? injectedThemeConfig;
+  // localStorage fallback — keeps merchant's last-saved selections (nav style,
+  // card style, colors, etc.) rendered on first paint when worker injection
+  // isn't available. Prevents the "default flash → selected" waterfall.
+  let lsThemeConfig: any = undefined;
+  if (typeof window !== "undefined" && storeId && !cachedThemeConfig && !injectedThemeConfig) {
+    try {
+      const raw = localStorage.getItem(`sf_tc_${storeId}`);
+      if (raw) lsThemeConfig = JSON.parse(raw);
+    } catch {}
+  }
+  const initialThemeConfig = cachedThemeConfig ?? injectedThemeConfig ?? lsThemeConfig;
 
   // Phase 1: If Worker injected theme_config, skip the Supabase chunk load entirely.
   // Saves ~45KB of JS + ~400ms of network time on cold load. Live preview still works
@@ -44,7 +54,14 @@ export function useStorefrontThemeConfig(storeId?: string) {
     staleTime: hasInjectedTheme ? Infinity : 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     initialData: initialThemeConfig,
-    initialDataUpdatedAt: initialThemeConfig ? Date.now() : undefined,
+    // Trust injected/cache as fresh (worker purges on save). Mark localStorage
+    // fallback as stale so we render it instantly but still revalidate from DB.
+    initialDataUpdatedAt:
+      injectedThemeConfig || cachedThemeConfig
+        ? Date.now()
+        : lsThemeConfig
+          ? 0
+          : undefined,
     placeholderData: () => cachedThemeConfig,
   });
 
