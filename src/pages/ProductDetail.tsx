@@ -1604,9 +1604,9 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
           )}
         </div>
 
-        {/* Thumbnail strip — desktop only */}
+        {/* Thumbnail strip — mobile + desktop */}
         {len > 1 && (
-          <div className="hidden sm:flex gap-2 overflow-x-auto scrollbar-hide px-0.5 py-1">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide px-3 sm:px-0.5 py-2 sm:py-1">
             {images.map((img, i) => (
               <button
                 key={i}
