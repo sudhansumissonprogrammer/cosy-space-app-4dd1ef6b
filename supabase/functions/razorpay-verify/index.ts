@@ -86,6 +86,8 @@ Deno.serve(async (req) => {
         status: isPartial ? "partially_paid" : "confirmed",
         payment_method: "razorpay",
         notes: `Razorpay Payment ID: ${razorpay_payment_id}`,
+        payment_verified: true,
+        payment_verified_at: new Date().toISOString(),
       })
       .eq("id", order_id);
 

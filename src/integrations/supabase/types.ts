@@ -670,6 +670,8 @@ export type Database = {
           order_number: number
           payment_method: string
           payment_type: string
+          payment_verified: boolean
+          payment_verified_at: string | null
           pincode: string | null
           razorpay_order_id: string | null
           session_id: string | null
@@ -706,6 +708,8 @@ export type Database = {
           order_number?: number
           payment_method?: string
           payment_type?: string
+          payment_verified?: boolean
+          payment_verified_at?: string | null
           pincode?: string | null
           razorpay_order_id?: string | null
           session_id?: string | null
@@ -742,6 +746,8 @@ export type Database = {
           order_number?: number
           payment_method?: string
           payment_type?: string
+          payment_verified?: boolean
+          payment_verified_at?: string | null
           pincode?: string | null
           razorpay_order_id?: string | null
           session_id?: string | null
