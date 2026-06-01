@@ -82,6 +82,8 @@ Deno.serve(async (req) => {
           status: isPartial ? "partially_paid" : "confirmed",
           payment_method: "cashfree",
           notes: `Cashfree Order ID: ${cf_order_id}`,
+          payment_verified: true,
+          payment_verified_at: new Date().toISOString(),
         })
         .eq("id", order_id);
       if (updateErr) {
