@@ -120,6 +120,8 @@ Deno.serve(async (req) => {
               status: newStatus,
               payment_method: "razorpay",
               notes: `Razorpay Payment ID: ${captured.id} (reconciled)`,
+              payment_verified: true,
+              payment_verified_at: new Date().toISOString(),
             })
             .eq("id", o.id)
             .eq("status", "pending")
