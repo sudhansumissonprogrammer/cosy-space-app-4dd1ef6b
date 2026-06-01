@@ -1,0 +1,1 @@
+UPDATE public.stores SET name = 'Imitation World' WHERE id = 'c3c5dff2-173a-4f4d-90e4-8b1c88c305d9';
