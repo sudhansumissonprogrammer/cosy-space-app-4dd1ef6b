@@ -140,6 +140,8 @@ Deno.serve(async (req) => {
             status: isPartial ? "partially_paid" : "confirmed",
             payment_method: "cashfree",
             notes: `Cashfree Order ID: ${cfOrderId}`,
+            payment_verified: true,
+            payment_verified_at: new Date().toISOString(),
           })
           .eq("id", localOrderId);
         // Payment confirmed — fire Meta CAPI Purchase (idempotent, fire-and-forget).
