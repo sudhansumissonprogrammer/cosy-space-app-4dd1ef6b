@@ -40,28 +40,31 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Idempotency
+    // Log event — but DO NOT bail on duplicate. wallet_apply_recharge is
+    // idempotent (guards on status='pending'), and bailing on a duplicate
+    // event_id would permanently strand a recharge if the first delivery
+    // crashed after this insert but before applying the credit.
     const eventId =
       String(event?.event_id ?? event?.data?.event_id ?? "") ||
       `${eventType}:${cfOrderId}:${event?.data?.payment?.cf_payment_id ?? ""}`;
-    const { error: dupErr } = await supabase
+    await supabase
       .from("webhook_events")
       .insert({ provider: "cashfree", event_id: eventId, payload: event });
-    if (dupErr && String(dupErr.message).toLowerCase().includes("duplicate")) {
-      return new Response("OK (dup)", { status: 200 });
-    }
 
-    const { data: rec } = await supabase
+    const { data: rec, error: recErr } = await supabase
       .from("store_wallet_recharges")
       .select("*")
       .eq("cashfree_order_id", cfOrderId)
       .single();
-    if (!rec) return new Response("OK (unknown)", { status: 200 });
+    if (recErr || !rec) {
+      console.error("wallet webhook: recharge lookup failed", { cfOrderId, recErr });
+      return new Response("OK (unknown)", { status: 200 });
+    }
 
     if (eventType === "PAYMENT_SUCCESS_WEBHOOK") {
       const payInfo = event?.data?.payment || {};
       if (rec.status !== "paid") {
-        await supabase
+        const { error: upErr } = await supabase
           .from("store_wallet_recharges")
           .update({
             cashfree_payment_id: payInfo.cf_payment_id ? String(payInfo.cf_payment_id) : null,
@@ -70,7 +73,14 @@ Deno.serve(async (req) => {
           })
           .eq("id", rec.id)
           .is("cashfree_payment_id", null);
-        await supabase.rpc("wallet_apply_recharge", { _recharge_id: rec.id });
+        if (upErr) console.error("wallet webhook: pre-apply update failed", upErr);
+
+        const { error: rpcErr } = await supabase.rpc("wallet_apply_recharge", { _recharge_id: rec.id });
+        if (rpcErr) {
+          // Return 500 so Cashfree retries
+          console.error("wallet webhook: wallet_apply_recharge failed", rpcErr);
+          return new Response("apply failed", { status: 500 });
+        }
       }
     } else if (eventType === "PAYMENT_FAILED_WEBHOOK" || eventType === "PAYMENT_USER_DROPPED_WEBHOOK") {
       await supabase
