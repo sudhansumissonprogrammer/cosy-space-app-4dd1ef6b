@@ -10,6 +10,8 @@ const recentPrewarms = new Map<string, number>();
 const trailingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 interface PrewarmOptions {
+  /** Bypass dashboard cooldown for setup flows that must be visible immediately. */
+  force?: boolean;
   /**
    * If true, this prewarm is for a "trivial" save (booleans, display_order,
    * SKU, internal flags). It will be SKIPPED if a recent prewarm already ran.
@@ -46,7 +48,7 @@ export async function prewarmStore(
   const now = Date.now();
 
   const recentTs = recentPrewarms.get(key);
-  const withinCooldown = recentTs && now - recentTs < PREWARM_COOLDOWN_MS;
+  const withinCooldown = !options.force && recentTs && now - recentTs < PREWARM_COOLDOWN_MS;
 
   // Trivial saves never warm if a recent warm already happened.
   if (options.trivial && withinCooldown) return;
@@ -59,7 +61,7 @@ export async function prewarmStore(
       trailingTimers.delete(key);
       // Reset cooldown so the trailing warm runs.
       recentPrewarms.delete(key);
-      void prewarmStore(slug, domain);
+      void prewarmStore(slug, domain, options);
     }, TRAILING_DELAY_MS);
     trailingTimers.set(key, timer);
     return;
