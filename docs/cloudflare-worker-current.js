@@ -4792,10 +4792,15 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
       .replace(/^www\./, "")
       .toLowerCase()
       .trim();
+  const explicitDomain = (url.searchParams.get("domain") || "")
+    .replace(/^www\./, "")
+    .toLowerCase()
+    .trim();
 
   const domainsToPurge = new Set([normalizedHost]);
   if (purgeSlug) domainsToPurge.add(`${purgeSlug}.${ROOT_DOMAIN}`);
   if (customDomain) domainsToPurge.add(customDomain);
+  if (explicitDomain) domainsToPurge.add(explicitDomain);
 
   // Clear in-memory caches
   if (purgeSlug) {
