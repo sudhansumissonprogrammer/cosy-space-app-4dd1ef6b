@@ -5128,8 +5128,8 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
   _kvWriteRecent.delete(SPA_SHELL_KV_KEY);
   _kvWriteRecent.delete(PREBUILT_HEAD_KV_KEY);
   if (env?.STORE_KV) {
-    purgeOps.push(kvDeleteDedup(env, SPA_SHELL_KV_KEY));
-    purgeOps.push(kvDeleteDedup(env, PREBUILT_HEAD_KV_KEY));
+    purgeOps.push(kvDeleteForce(env, SPA_SHELL_KV_KEY));
+    purgeOps.push(kvDeleteForce(env, PREBUILT_HEAD_KV_KEY));
   }
 
   if (purgeSlug) {
@@ -5138,6 +5138,12 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     _kvWriteRecent.delete(`store-info:${purgeSlug}`);
     _kvWriteRecent.delete(`warm-lock:${purgeSlug}`); // v8.18.0
     _memWarmLock.delete(purgeSlug); // v8.18.0
+    revalCooldowns.delete(`warm-html:${purgeSlug}`);
+    revalCooldowns.delete(`html:${hostname}`);
+    if (explicitDomain) {
+      revalCooldowns.delete(`html:${explicitDomain}`);
+      revalCooldowns.delete(`html:www.${explicitDomain}`);
+    }
     purgeOps.push(cache.delete(getEarlyCacheKey(`${purgeSlug}.${ROOT_DOMAIN}`)).catch(() => {}));
     purgeOps.push(cache.delete(getEarlyCacheKey(hostname)).catch(() => {}));
     if (explicitDomain) {
@@ -5158,16 +5164,16 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
 
     if (env?.STORE_KV) {
-      purgeOps.push(kvDeleteDedup(env, `storefront:${purgeSlug}`));
+      purgeOps.push(kvDeleteForce(env, `storefront:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `theme-lite:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `store-info:${purgeSlug}`));
-      purgeOps.push(kvDeleteDedup(env, `warm-lock:${purgeSlug}`)); // v8.18.0
+      purgeOps.push(kvDeleteForce(env, `warm-lock:${purgeSlug}`)); // v8.18.0
       // v8.27.0: purge html:<slug>:* entries
       purgeOps.push(
         (async () => {
           try {
             const list = await env.STORE_KV.list({ prefix: `html:${purgeSlug}` });
-            await Promise.all((list?.keys || []).map((k) => kvDeleteDedup(env, k.name)));
+            await Promise.all((list?.keys || []).map((k) => kvDeleteForce(env, k.name)));
             for (const k of Array.from(_htmlKvWriteRecent.keys())) {
               if (k.startsWith(`html:${purgeSlug}`)) _htmlKvWriteRecent.delete(k);
             }
