@@ -22,7 +22,7 @@ export default function SideCart({ store }: SideCartProps) {
   const { items, updateQuantity, removeFromCart, clearCart, cartTotal, cartCount, isCartOpen, closeCart } = useCart();
   const currency = store.currency || "USD";
   const orderMode = (store as any).order_mode || "whatsapp";
-  const isSubscriptionStore = (store as any)?.billing_mode !== "commission";
+  const isSubscriptionStore = (store as any)?.billing_mode === "subscription";
   // Subscription stores: always show WA button if number exists. Commission stores: never.
   const showWhatsApp = isSubscriptionStore && !!(store as any)?.whatsapp_number;
   const isTheme16 = (store as any).theme === "theme-16" || (store as any).theme === "theme-21";
