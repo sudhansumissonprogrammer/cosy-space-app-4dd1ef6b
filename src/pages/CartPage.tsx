@@ -19,7 +19,7 @@ export default function CartPage() {
   const { items, updateQuantity, removeFromCart, clearCart, cartTotal, cartCount } = useCart();
   const currency = store.currency || "USD";
   const orderMode = (store as any).order_mode || "whatsapp";
-  const isSubscriptionStore = (store as any)?.billing_mode !== "commission";
+  const isSubscriptionStore = (store as any)?.billing_mode === "subscription";
   // Subscription stores: always show WA button if number exists. Commission stores: never.
   const showWhatsApp = isSubscriptionStore && !!(store as any)?.whatsapp_number;
   const showCheckout = orderMode === "website" || orderMode === "both";
