@@ -5388,17 +5388,38 @@ async function handlePrewarm(request, url, ctx, env) {
         },
       });
 
-      const subEarlyKey = getEarlyCacheKey(`${slug}.${ROOT_DOMAIN}`);
-      await cache.put(subEarlyKey, htmlResponse.clone()).catch(() => {});
-
+      const htmlHosts = new Set([`${slug}.${ROOT_DOMAIN}`]);
       if (domain) {
         const cleanDomain = domain
           .replace(/^www\./, "")
           .toLowerCase()
           .trim();
-        const domEarlyKey = getEarlyCacheKey(cleanDomain);
-        await cache.put(domEarlyKey, htmlResponse.clone()).catch(() => {});
+        if (cleanDomain) {
+          htmlHosts.add(cleanDomain);
+          htmlHosts.add(`www.${cleanDomain}`);
+        }
       }
+
+      const htmlWrites = [];
+      for (const h of htmlHosts) {
+        htmlWrites.push(cache.put(getEarlyCacheKey(h), htmlResponse.clone()).catch(() => {}));
+        htmlWrites.push(cache.put(getCfCacheKey(h, "/"), htmlResponse.clone()).catch(() => {}));
+      }
+      const canonical = getCanonicalHtmlCacheKey(slug, "/");
+      if (canonical) htmlWrites.push(cache.put(canonical, htmlResponse.clone()).catch(() => {}));
+      if (env?.STORE_KV) {
+        const htmlKvKey = getHtmlKvKey(slug, "/");
+        if (htmlKvKey) {
+          _htmlKvWriteRecent.delete(htmlKvKey);
+          htmlWrites.push(
+            env.STORE_KV.put(htmlKvKey, injected.html, {
+              expirationTtl: HTML_KV_TTL_SEC,
+              metadata: { s: 200, h: { "Content-Type": "text/html; charset=utf-8" } },
+            }).catch(() => {}),
+          );
+        }
+      }
+      await Promise.all(htmlWrites);
 
       results.fullHtml = "warmed";
     } else {
