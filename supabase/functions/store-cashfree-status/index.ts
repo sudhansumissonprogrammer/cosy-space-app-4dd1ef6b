@@ -4,6 +4,7 @@
 // - post-cancel recovery flow
 // Returns the live Cashfree order status AND will confirm the order if PAID.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,6 +40,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (orderInfo?.status === "confirmed" || orderInfo?.status === "partially_paid") {
+      await firePurchaseCapi(supabase, order_id, { source: "cashfree-status" });
       return jsonRes({ status: "PAID", local: orderInfo.status });
     }
 
@@ -82,6 +84,7 @@ Deno.serve(async (req) => {
           payment_verified_at: new Date().toISOString(),
         })
         .eq("id", order_id);
+      await firePurchaseCapi(supabase, order_id, { source: "cashfree-status" });
     }
 
     return jsonRes({ status });
