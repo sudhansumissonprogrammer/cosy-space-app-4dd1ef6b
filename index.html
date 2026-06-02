@@ -131,26 +131,35 @@
         if(!isSf)return; // landing/auth — skip pixel shim entirely
 
         (function initFbqEarly(){
-          var w=window;if(w.fbq)return;
-          var q=function(){q.callMethod?q.callMethod.apply(q,arguments):q.queue.push(arguments)};
-          if(!w._fbq)w._fbq=q;q.push=q;q.loaded=true;q.version='2.0';q.queue=[];w.fbq=q;
-          var pid=w.__STOREFRONT_DATA__&&w.__STOREFRONT_DATA__.store&&w.__STOREFRONT_DATA__.store.facebook_pixel_id;
-          if(pid){
-            w.__SF_PIXEL_INITED__=pid;
-            w.fbq('init',pid);
-            w.fbq('track','PageView');
-            var loadSdk=function(){
-              if(document.getElementById('fb-pixel-script'))return;
-              var s=document.createElement('script');s.id='fb-pixel-script';s.async=true;
-              s.src='https://connect.facebook.net/en_US/fbevents.js';document.head.appendChild(s);
-            };
-            var loaded=false;var wrap=function(){if(loaded)return;loaded=true;loadSdk();};
-            if('requestIdleCallback' in w){w.requestIdleCallback(wrap,{timeout:4000});}else{setTimeout(wrap,2000);}
-            // Also load on first interaction so fast clickers (Add to Cart, Checkout) don't wait for idle
-            ['pointerdown','touchstart','keydown'].forEach(function(ev){
-              w.addEventListener(ev,wrap,{once:true,passive:true,capture:true});
-            });
+          var w=window;
+          if(!w.fbq){
+            var q=function(){q.callMethod?q.callMethod.apply(q,arguments):q.queue.push(arguments)};
+            if(!w._fbq)w._fbq=q;q.push=q;q.loaded=true;q.version='2.0';q.queue=[];w.fbq=q;
           }
+          var loaded=false;
+          var loadSdk=function(){
+            if(loaded||document.getElementById('fb-pixel-script'))return;
+            loaded=true;
+            var s=document.createElement('script');s.id='fb-pixel-script';s.async=true;
+            s.src='https://connect.facebook.net/en_US/fbevents.js';document.head.appendChild(s);
+          };
+          var tries=0;
+          var tryInit=function(){
+            var pid=w.__STOREFRONT_DATA__&&w.__STOREFRONT_DATA__.store&&w.__STOREFRONT_DATA__.store.facebook_pixel_id;
+            if(pid&&w.__SF_PIXEL_INITED__!==pid){
+              w.__SF_PIXEL_INITED__=pid;
+              w.fbq('init',pid);
+              w.fbq('track','PageView');
+              var wrap=function(){loadSdk();};
+              if('requestIdleCallback' in w){w.requestIdleCallback(wrap,{timeout:4000});}else{setTimeout(wrap,2000);}
+              ['pointerdown','touchstart','keydown'].forEach(function(ev){
+                w.addEventListener(ev,wrap,{once:true,passive:true,capture:true});
+              });
+              return;
+            }
+            if(++tries<80)setTimeout(tryInit,100);
+          };
+          tryInit();
         })();
 
         /* If Worker already injected fonts (data-sf-font), skip — single source of truth.
