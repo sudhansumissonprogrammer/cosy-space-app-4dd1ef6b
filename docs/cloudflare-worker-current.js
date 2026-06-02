@@ -135,7 +135,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.48.0-remove-cf-img";
+const WORKER_VERSION = "8.49.0-tracking-cache-purge";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -1662,6 +1662,12 @@ function _shouldDeleteKv(key) {
 function kvDeleteDedup(env, key) {
   if (!env?.STORE_KV) return Promise.resolve();
   if (!_shouldDeleteKv(key)) return Promise.resolve();
+  return env.STORE_KV.delete(key).catch(() => {});
+}
+
+function kvDeleteForce(env, key) {
+  if (!env?.STORE_KV) return Promise.resolve();
+  _kvDeleteRecent.delete(key);
   return env.STORE_KV.delete(key).catch(() => {});
 }
 
