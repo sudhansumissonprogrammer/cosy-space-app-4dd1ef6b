@@ -5138,12 +5138,18 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     _memWarmLock.delete(purgeSlug); // v8.18.0
     purgeOps.push(cache.delete(getEarlyCacheKey(`${purgeSlug}.${ROOT_DOMAIN}`)).catch(() => {}));
     purgeOps.push(cache.delete(getEarlyCacheKey(hostname)).catch(() => {}));
-    if (explicitDomain) purgeOps.push(cache.delete(getEarlyCacheKey(explicitDomain)).catch(() => {}));
+    if (explicitDomain) {
+      purgeOps.push(cache.delete(getEarlyCacheKey(explicitDomain)).catch(() => {}));
+      purgeOps.push(cache.delete(getEarlyCacheKey(`www.${explicitDomain}`)).catch(() => {}));
+    }
     // v8.6.2: purge CF Cache API mirrors for all SPA paths that can inline stale store/payment data.
     for (const path of STOREFRONT_HTML_MIRROR_PATHS) {
       purgeOps.push(cache.delete(new Request(`https://${purgeSlug}.${ROOT_DOMAIN}${path}`)).catch(() => {}));
       purgeOps.push(cache.delete(new Request(`https://${hostname}${path}`)).catch(() => {}));
-      if (explicitDomain) purgeOps.push(cache.delete(new Request(`https://${explicitDomain}${path}`)).catch(() => {}));
+      if (explicitDomain) {
+        purgeOps.push(cache.delete(new Request(`https://${explicitDomain}${path}`)).catch(() => {}));
+        purgeOps.push(cache.delete(new Request(`https://www.${explicitDomain}${path}`)).catch(() => {}));
+      }
     }
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
