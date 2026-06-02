@@ -1,6 +1,7 @@
 // Verifies a per-store Cashfree payment by querying Cashfree with the merchant's OWN creds.
 // Updates orders.status to "confirmed" or "partially_paid" only if Cashfree reports PAID.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,6 +42,7 @@ Deno.serve(async (req) => {
 
     // If already confirmed, short-circuit (idempotent)
     if (orderInfo?.status === "confirmed" || orderInfo?.status === "partially_paid") {
+      await firePurchaseCapi(supabase, order_id, { source: "cashfree-verify" });
       return jsonRes({ success: true, status: "PAID", already_confirmed: true });
     }
 
@@ -90,6 +92,7 @@ Deno.serve(async (req) => {
         console.error("Order update error", updateErr);
         return jsonRes({ error: "Failed to update order" }, 500);
       }
+      await firePurchaseCapi(supabase, order_id, { source: "cashfree-verify" });
       return jsonRes({ success: true, status: "PAID" });
     }
 
