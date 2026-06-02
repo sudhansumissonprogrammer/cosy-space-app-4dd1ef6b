@@ -5243,12 +5243,17 @@ async function handlePrewarm(request, url, ctx, env) {
 
     // Purge negative caches before re-fetching
     const infoCacheKey = new Request(`https://cache/store-info:${slug}`);
+    const storefrontDataCacheKey = new Request(`https://cache/storefront-data/${slug}`);
     await cache.delete(infoCacheKey).catch(() => {});
+    await cache.delete(storefrontDataCacheKey).catch(() => {});
     _storeInfoCache.delete(slug);
     _memStorefrontCache.delete(slug);
     _memThemeCache.delete(slug);
     domainStoreIdCache.delete(subDomain);
-    if (env?.STORE_KV) await kvDeleteDedup(env, `store-info:${slug}`);
+    if (env?.STORE_KV) {
+      await kvDeleteDedup(env, `store-info:${slug}`);
+      await kvDeleteForce(env, `storefront:${slug}`);
+    }
 
     const dataResult = await prefetchStorefrontData(slug, ctx, env);
     storeId = dataResult.data?.store?.id;
