@@ -5098,6 +5098,10 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
   if (!purgeSlug && hostname !== ROOT_DOMAIN && !hostname.endsWith(`.${ROOT_DOMAIN}`)) {
     purgeSlug = (await resolveDomain(hostname, env)) || "";
   }
+  const explicitDomain = (url.searchParams.get("domain") || "")
+    .replace(/^www\./, "")
+    .toLowerCase()
+    .trim();
 
   // Reset in-memory caches
   _memShell = null;
@@ -5109,6 +5113,7 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     _storeInfoCache.delete(purgeSlug);
     domainStoreIdCache.delete(hostname);
     domainStoreIdCache.delete(`${purgeSlug}.${ROOT_DOMAIN}`);
+    if (explicitDomain) domainStoreIdCache.delete(explicitDomain);
   }
 
   const purgeOps = [
@@ -5132,10 +5137,12 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     _memWarmLock.delete(purgeSlug); // v8.18.0
     purgeOps.push(cache.delete(getEarlyCacheKey(`${purgeSlug}.${ROOT_DOMAIN}`)).catch(() => {}));
     purgeOps.push(cache.delete(getEarlyCacheKey(hostname)).catch(() => {}));
+    if (explicitDomain) purgeOps.push(cache.delete(getEarlyCacheKey(explicitDomain)).catch(() => {}));
     // v8.6.2: purge CF Cache API mirrors for all SPA paths that can inline stale store/payment data.
     for (const path of STOREFRONT_HTML_MIRROR_PATHS) {
       purgeOps.push(cache.delete(new Request(`https://${purgeSlug}.${ROOT_DOMAIN}${path}`)).catch(() => {}));
       purgeOps.push(cache.delete(new Request(`https://${hostname}${path}`)).catch(() => {}));
+      if (explicitDomain) purgeOps.push(cache.delete(new Request(`https://${explicitDomain}${path}`)).catch(() => {}));
     }
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
