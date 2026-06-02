@@ -135,7 +135,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.48.0-remove-cf-img";
+const WORKER_VERSION = "8.49.0-tracking-cache-purge";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -1662,6 +1662,12 @@ function _shouldDeleteKv(key) {
 function kvDeleteDedup(env, key) {
   if (!env?.STORE_KV) return Promise.resolve();
   if (!_shouldDeleteKv(key)) return Promise.resolve();
+  return env.STORE_KV.delete(key).catch(() => {});
+}
+
+function kvDeleteForce(env, key) {
+  if (!env?.STORE_KV) return Promise.resolve();
+  _kvDeleteRecent.delete(key);
   return env.STORE_KV.delete(key).catch(() => {});
 }
 
@@ -4837,7 +4843,7 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/slug-domain-${purgeSlug}`)).catch(() => {}));
     if (env?.STORE_KV) {
-      purgeOps.push(kvDeleteDedup(env, `storefront:${purgeSlug}`));
+      purgeOps.push(kvDeleteForce(env, `storefront:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `theme-lite:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `store-info:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `warm-lock:${purgeSlug}`));
@@ -4846,7 +4852,7 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
         (async () => {
           try {
             const list = await env.STORE_KV.list({ prefix: `html:${purgeSlug}` });
-            await Promise.all((list?.keys || []).map((k) => kvDeleteDedup(env, k.name)));
+            await Promise.all((list?.keys || []).map((k) => kvDeleteForce(env, k.name)));
             // also clear per-isolate write-dedup so next visitor re-writes KV
             for (const k of Array.from(_htmlKvWriteRecent.keys())) {
               if (k.startsWith(`html:${purgeSlug}`)) _htmlKvWriteRecent.delete(k);
@@ -5237,12 +5243,17 @@ async function handlePrewarm(request, url, ctx, env) {
 
     // Purge negative caches before re-fetching
     const infoCacheKey = new Request(`https://cache/store-info:${slug}`);
+    const storefrontDataCacheKey = new Request(`https://cache/storefront-data/${slug}`);
     await cache.delete(infoCacheKey).catch(() => {});
+    await cache.delete(storefrontDataCacheKey).catch(() => {});
     _storeInfoCache.delete(slug);
     _memStorefrontCache.delete(slug);
     _memThemeCache.delete(slug);
     domainStoreIdCache.delete(subDomain);
-    if (env?.STORE_KV) await kvDeleteDedup(env, `store-info:${slug}`);
+    if (env?.STORE_KV) {
+      await kvDeleteDedup(env, `store-info:${slug}`);
+      await kvDeleteForce(env, `storefront:${slug}`);
+    }
 
     const dataResult = await prefetchStorefrontData(slug, ctx, env);
     storeId = dataResult.data?.store?.id;

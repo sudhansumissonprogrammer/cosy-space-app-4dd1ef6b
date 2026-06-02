@@ -5,6 +5,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStoreData } from "@/hooks/useStoreData";
 import { supabase } from "@/integrations/supabase/client";
+import { purgeStoreCache } from "@/lib/purgeStoreCache";
+import { prewarmStore } from "@/lib/prewarmStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -95,10 +97,18 @@ export default function StoreTracking() {
         .eq("id", storeId!);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["store", storeId] });
-      queryClient.invalidateQueries({ queryKey: ["store-meta-token", storeId] });
-      toast.success("Tracking settings saved!");
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["store", storeId] }),
+        queryClient.invalidateQueries({ queryKey: ["store-meta-token", storeId] }),
+      ]);
+
+      if (store?.slug) {
+        const purged = await purgeStoreCache(store.slug, (store as any).custom_domain);
+        if (purged) void prewarmStore(store.slug, (store as any).custom_domain);
+      }
+
+      toast.success("Tracking settings saved and storefront cache refreshed!");
     },
     onError: (err: any) => toast.error(err.message || "Failed to update"),
   });
