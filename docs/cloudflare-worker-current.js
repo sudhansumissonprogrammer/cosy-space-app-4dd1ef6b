@@ -1,5 +1,5 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.48.0 — REMOVE DEAD /cf-img ROUTE
+ * SHOPBANAO PRODUCTION ROUTER v8.50.0 — INSTANT TRACKING CACHE REFRESH
  *
  * v8.48.0 — /cf-img handler deleted (was 125 lines of unused image
  *           proxy/resize code). Confirmed zero callers in frontend.
@@ -135,7 +135,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.49.0-tracking-cache-purge";
+const WORKER_VERSION = "8.50.0-instant-tracking-refresh";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -4792,10 +4792,16 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
       .replace(/^www\./, "")
       .toLowerCase()
       .trim();
+  const explicitDomain = (url.searchParams.get("domain") || "")
+    .replace(/^www\./, "")
+    .toLowerCase()
+    .trim();
 
   const domainsToPurge = new Set([normalizedHost]);
   if (purgeSlug) domainsToPurge.add(`${purgeSlug}.${ROOT_DOMAIN}`);
   if (customDomain) domainsToPurge.add(customDomain);
+  if (explicitDomain) domainsToPurge.add(explicitDomain);
+  if (explicitDomain) domainsToPurge.add(`www.${explicitDomain}`);
 
   // Clear in-memory caches
   if (purgeSlug) {
@@ -4838,6 +4844,8 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     // on the slower streaming path for up to 5 min after a dashboard save).
     _kvWriteRecent.delete(`warm-lock:${purgeSlug}`);
     _memWarmLock.delete(purgeSlug);
+    revalCooldowns.delete(`warm-html:${purgeSlug}`);
+    for (const d of domainsToPurge) revalCooldowns.delete(`html:${d}`);
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
@@ -4846,7 +4854,7 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
       purgeOps.push(kvDeleteForce(env, `storefront:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `theme-lite:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `store-info:${purgeSlug}`));
-      purgeOps.push(kvDeleteDedup(env, `warm-lock:${purgeSlug}`));
+      purgeOps.push(kvDeleteForce(env, `warm-lock:${purgeSlug}`));
       // v8.27.0: purge all html:<slug>:* KV entries (best-effort list+delete).
       purgeOps.push(
         (async () => {
@@ -5093,6 +5101,10 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
   if (!purgeSlug && hostname !== ROOT_DOMAIN && !hostname.endsWith(`.${ROOT_DOMAIN}`)) {
     purgeSlug = (await resolveDomain(hostname, env)) || "";
   }
+  const explicitDomain = (url.searchParams.get("domain") || "")
+    .replace(/^www\./, "")
+    .toLowerCase()
+    .trim();
 
   // Reset in-memory caches
   _memShell = null;
@@ -5104,6 +5116,7 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     _storeInfoCache.delete(purgeSlug);
     domainStoreIdCache.delete(hostname);
     domainStoreIdCache.delete(`${purgeSlug}.${ROOT_DOMAIN}`);
+    if (explicitDomain) domainStoreIdCache.delete(explicitDomain);
   }
 
   const purgeOps = [
@@ -5115,8 +5128,8 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
   _kvWriteRecent.delete(SPA_SHELL_KV_KEY);
   _kvWriteRecent.delete(PREBUILT_HEAD_KV_KEY);
   if (env?.STORE_KV) {
-    purgeOps.push(kvDeleteDedup(env, SPA_SHELL_KV_KEY));
-    purgeOps.push(kvDeleteDedup(env, PREBUILT_HEAD_KV_KEY));
+    purgeOps.push(kvDeleteForce(env, SPA_SHELL_KV_KEY));
+    purgeOps.push(kvDeleteForce(env, PREBUILT_HEAD_KV_KEY));
   }
 
   if (purgeSlug) {
@@ -5125,28 +5138,42 @@ async function handlePurgeShell(request, url, ctx, env, hostname) {
     _kvWriteRecent.delete(`store-info:${purgeSlug}`);
     _kvWriteRecent.delete(`warm-lock:${purgeSlug}`); // v8.18.0
     _memWarmLock.delete(purgeSlug); // v8.18.0
+    revalCooldowns.delete(`warm-html:${purgeSlug}`);
+    revalCooldowns.delete(`html:${hostname}`);
+    if (explicitDomain) {
+      revalCooldowns.delete(`html:${explicitDomain}`);
+      revalCooldowns.delete(`html:www.${explicitDomain}`);
+    }
     purgeOps.push(cache.delete(getEarlyCacheKey(`${purgeSlug}.${ROOT_DOMAIN}`)).catch(() => {}));
     purgeOps.push(cache.delete(getEarlyCacheKey(hostname)).catch(() => {}));
+    if (explicitDomain) {
+      purgeOps.push(cache.delete(getEarlyCacheKey(explicitDomain)).catch(() => {}));
+      purgeOps.push(cache.delete(getEarlyCacheKey(`www.${explicitDomain}`)).catch(() => {}));
+    }
     // v8.6.2: purge CF Cache API mirrors for all SPA paths that can inline stale store/payment data.
     for (const path of STOREFRONT_HTML_MIRROR_PATHS) {
       purgeOps.push(cache.delete(new Request(`https://${purgeSlug}.${ROOT_DOMAIN}${path}`)).catch(() => {}));
       purgeOps.push(cache.delete(new Request(`https://${hostname}${path}`)).catch(() => {}));
+      if (explicitDomain) {
+        purgeOps.push(cache.delete(new Request(`https://${explicitDomain}${path}`)).catch(() => {}));
+        purgeOps.push(cache.delete(new Request(`https://www.${explicitDomain}${path}`)).catch(() => {}));
+      }
     }
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
 
     if (env?.STORE_KV) {
-      purgeOps.push(kvDeleteDedup(env, `storefront:${purgeSlug}`));
+      purgeOps.push(kvDeleteForce(env, `storefront:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `theme-lite:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `store-info:${purgeSlug}`));
-      purgeOps.push(kvDeleteDedup(env, `warm-lock:${purgeSlug}`)); // v8.18.0
+      purgeOps.push(kvDeleteForce(env, `warm-lock:${purgeSlug}`)); // v8.18.0
       // v8.27.0: purge html:<slug>:* entries
       purgeOps.push(
         (async () => {
           try {
             const list = await env.STORE_KV.list({ prefix: `html:${purgeSlug}` });
-            await Promise.all((list?.keys || []).map((k) => kvDeleteDedup(env, k.name)));
+            await Promise.all((list?.keys || []).map((k) => kvDeleteForce(env, k.name)));
             for (const k of Array.from(_htmlKvWriteRecent.keys())) {
               if (k.startsWith(`html:${purgeSlug}`)) _htmlKvWriteRecent.delete(k);
             }
@@ -5369,17 +5396,38 @@ async function handlePrewarm(request, url, ctx, env) {
         },
       });
 
-      const subEarlyKey = getEarlyCacheKey(`${slug}.${ROOT_DOMAIN}`);
-      await cache.put(subEarlyKey, htmlResponse.clone()).catch(() => {});
-
+      const htmlHosts = new Set([`${slug}.${ROOT_DOMAIN}`]);
       if (domain) {
         const cleanDomain = domain
           .replace(/^www\./, "")
           .toLowerCase()
           .trim();
-        const domEarlyKey = getEarlyCacheKey(cleanDomain);
-        await cache.put(domEarlyKey, htmlResponse.clone()).catch(() => {});
+        if (cleanDomain) {
+          htmlHosts.add(cleanDomain);
+          htmlHosts.add(`www.${cleanDomain}`);
+        }
       }
+
+      const htmlWrites = [];
+      for (const h of htmlHosts) {
+        htmlWrites.push(cache.put(getEarlyCacheKey(h), htmlResponse.clone()).catch(() => {}));
+        htmlWrites.push(cache.put(getCfCacheKey(h, "/"), htmlResponse.clone()).catch(() => {}));
+      }
+      const canonical = getCanonicalHtmlCacheKey(slug, "/");
+      if (canonical) htmlWrites.push(cache.put(canonical, htmlResponse.clone()).catch(() => {}));
+      if (env?.STORE_KV) {
+        const htmlKvKey = getHtmlKvKey(slug, "/");
+        if (htmlKvKey) {
+          _htmlKvWriteRecent.delete(htmlKvKey);
+          htmlWrites.push(
+            env.STORE_KV.put(htmlKvKey, injected.html, {
+              expirationTtl: HTML_KV_TTL_SEC,
+              metadata: { s: 200, h: { "Content-Type": "text/html; charset=utf-8" } },
+            }).catch(() => {}),
+          );
+        }
+      }
+      await Promise.all(htmlWrites);
 
       results.fullHtml = "warmed";
     } else {

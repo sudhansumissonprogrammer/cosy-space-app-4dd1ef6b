@@ -108,11 +108,13 @@ export default function StoreTracking() {
         // prebuilt HTML shell (__STOREFRONT_DATA__.store.facebook_pixel_id).
         // Without it the cached HTML keeps the OLD pixel id and Meta Pixel
         // Helper still shows "No Pixels found" after a save.
-        const purged = await purgeStoreCache(store.slug, (store as any).custom_domain, { shell: true });
-        if (purged) void prewarmStore(store.slug, (store as any).custom_domain);
+        const purged = await purgeStoreCache(store.slug, (store as any).custom_domain, { shell: true, force: true });
+        if (purged) {
+          await prewarmStore(store.slug, (store as any).custom_domain, { force: true });
+        }
       }
 
-      toast.success("Tracking settings saved and storefront cache refreshed!");
+      toast.success("Tracking settings saved and pixel is live on your storefront!");
     },
     onError: (err: any) => toast.error(err.message || "Failed to update"),
   });

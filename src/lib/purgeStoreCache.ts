@@ -2,11 +2,9 @@
  * Purge edge caches for a store.
  *
  * v2 (KV-cost optimization, 2026-05):
- *  - Only hit the SUBDOMAIN endpoint. Cloudflare Workers KV is GLOBAL, so a
- *    single `STORE_KV.delete()` clears the key for both subdomain and custom
- *    domain. The worker's `handlePurgeStore`/`handlePurgeShell` already iterate
- *    every domain variant (subdomain + custom domain) for Cache API mirror
- *    deletes, so a single call covers both hostnames' per-colo edge caches.
+ *  - Hit both the subdomain and custom-domain endpoints when a custom domain
+ *    exists. Workers KV is global, but Cloudflare Cache API is per-colo, so
+ *    the custom-domain colo must receive its own purge for instant tracking.
  *  - `/api/purge-shell` is now opt-in via `{ shell: true }`. Product / category
  *    / coupon / page-content / shipping / tax / payments saves do NOT affect
  *    the SPA shell or prebuilt head, so purging them on every save was pure
@@ -29,29 +27,32 @@ interface PurgeOptions {
   /** Also purge the SPA shell + prebuilt-head KV. Pass true only for changes
    *  that affect the shell (theme, menu, slug). Default: false. */
   shell?: boolean;
+  /** Bypass the local dashboard cooldown for setup flows that must be live immediately. */
+  force?: boolean;
 }
 
 const inflightPurges = new Map<string, Promise<boolean>>();
 const recentPurges = new Map<string, { ts: number; result: boolean }>();
 const trailingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-async function _doPurge(slug: string, opts: PurgeOptions): Promise<boolean> {
-  // Single hostname is enough — KV is global, and the worker handler
-  // purges per-hostname Cache API mirrors for every domain variant internally.
-  const base = `https://${slug}.shopbanao.in`;
+async function _doPurge(slug: string, customDomain: string | null | undefined, opts: PurgeOptions): Promise<boolean> {
+  const cleanDomain = customDomain?.replace(/^www\./, "").toLowerCase().trim();
+  const bases = [`https://${slug}.shopbanao.in`, ...(cleanDomain ? [`https://${cleanDomain}`] : [])];
+  const params = new URLSearchParams({ slug });
+  if (cleanDomain) params.set("domain", cleanDomain);
 
-  const calls: Promise<Response | null>[] = [
-    fetch(`${base}/api/purge-store?slug=${encodeURIComponent(slug)}`, { method: "POST" }).catch(() => null),
-  ];
+  const calls: Promise<Response | null>[] = bases.map((base) =>
+    fetch(`${base}/api/purge-store?${params.toString()}`, { method: "POST", cache: "no-store" }).catch(() => null),
+  );
   if (opts.shell) {
-    calls.push(
-      fetch(`${base}/api/purge-shell?slug=${encodeURIComponent(slug)}`, { method: "POST" }).catch(() => null),
-    );
+    calls.push(...bases.map((base) =>
+      fetch(`${base}/api/purge-shell?${params.toString()}`, { method: "POST", cache: "no-store" }).catch(() => null),
+    ));
   }
 
   try {
     const results = await Promise.allSettled(calls);
-    return results.some((r) => r.status === "fulfilled" && !!r.value?.ok);
+    return results.every((r) => r.status === "fulfilled" && !!r.value?.ok);
   } catch {
     return false;
   }
@@ -69,7 +70,7 @@ export async function purgeStoreCache(
   const now = Date.now();
 
   const recent = recentPurges.get(key);
-  const withinCooldown = recent && now - recent.ts < PURGE_COOLDOWN_MS;
+  const withinCooldown = !opts.force && recent && now - recent.ts < PURGE_COOLDOWN_MS;
 
   if (withinCooldown) {
     if (trailingTimers.has(key)) return recent!.result;
@@ -85,7 +86,7 @@ export async function purgeStoreCache(
   const inflight = inflightPurges.get(key);
   if (inflight) return inflight;
 
-  const task = _doPurge(slug, opts);
+  const task = _doPurge(slug, customDomain, opts);
   inflightPurges.set(key, task);
 
   try {
