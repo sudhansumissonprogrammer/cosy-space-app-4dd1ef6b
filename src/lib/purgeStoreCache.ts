@@ -29,29 +29,33 @@ interface PurgeOptions {
   /** Also purge the SPA shell + prebuilt-head KV. Pass true only for changes
    *  that affect the shell (theme, menu, slug). Default: false. */
   shell?: boolean;
+  /** Bypass the local dashboard cooldown for setup flows that must be live immediately. */
+  force?: boolean;
 }
 
 const inflightPurges = new Map<string, Promise<boolean>>();
 const recentPurges = new Map<string, { ts: number; result: boolean }>();
 const trailingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-async function _doPurge(slug: string, opts: PurgeOptions): Promise<boolean> {
+async function _doPurge(slug: string, customDomain: string | null | undefined, opts: PurgeOptions): Promise<boolean> {
   // Single hostname is enough — KV is global, and the worker handler
   // purges per-hostname Cache API mirrors for every domain variant internally.
   const base = `https://${slug}.shopbanao.in`;
+  const params = new URLSearchParams({ slug });
+  if (customDomain) params.set("domain", customDomain);
 
   const calls: Promise<Response | null>[] = [
-    fetch(`${base}/api/purge-store?slug=${encodeURIComponent(slug)}`, { method: "POST" }).catch(() => null),
+    fetch(`${base}/api/purge-store?${params.toString()}`, { method: "POST", cache: "no-store" }).catch(() => null),
   ];
   if (opts.shell) {
     calls.push(
-      fetch(`${base}/api/purge-shell?slug=${encodeURIComponent(slug)}`, { method: "POST" }).catch(() => null),
+      fetch(`${base}/api/purge-shell?${params.toString()}`, { method: "POST", cache: "no-store" }).catch(() => null),
     );
   }
 
   try {
     const results = await Promise.allSettled(calls);
-    return results.some((r) => r.status === "fulfilled" && !!r.value?.ok);
+    return results.every((r) => r.status === "fulfilled" && !!r.value?.ok);
   } catch {
     return false;
   }
@@ -69,7 +73,7 @@ export async function purgeStoreCache(
   const now = Date.now();
 
   const recent = recentPurges.get(key);
-  const withinCooldown = recent && now - recent.ts < PURGE_COOLDOWN_MS;
+  const withinCooldown = !opts.force && recent && now - recent.ts < PURGE_COOLDOWN_MS;
 
   if (withinCooldown) {
     if (trailingTimers.has(key)) return recent!.result;
@@ -85,7 +89,7 @@ export async function purgeStoreCache(
   const inflight = inflightPurges.get(key);
   if (inflight) return inflight;
 
-  const task = _doPurge(slug, opts);
+  const task = _doPurge(slug, customDomain, opts);
   inflightPurges.set(key, task);
 
   try {
