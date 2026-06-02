@@ -49,10 +49,14 @@ Deno.serve(async (req) => {
       sha256Hex(`sb-verify-${pixelId}`),
     ]);
 
+    // Use the standard "PageView" event — Meta recognizes it natively, so it
+    // never triggers the "confirm custom event" review flow that custom names
+    // (e.g. "TestEvent") do. test_event_code routes it to the Test Events tab
+    // so it doesn't pollute real analytics.
     const testEvent = {
       data: [
         {
-          event_name: "TestEvent",
+          event_name: "PageView",
           event_time: Math.floor(Date.now() / 1000),
           event_id: `sb-verify-${crypto.randomUUID()}`,
           action_source: "website",
@@ -71,10 +75,6 @@ Deno.serve(async (req) => {
               req.headers.get("user-agent") ||
               "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 ShopBanao-Verify/1.0",
             fbp: `fb.1.${Date.now()}.${Math.floor(Math.random() * 1e10)}`,
-          },
-          custom_data: {
-            currency: "INR",
-            value: 1,
           },
         },
       ],
