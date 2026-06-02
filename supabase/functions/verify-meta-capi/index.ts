@@ -1,11 +1,23 @@
 // Verify a Meta CAPI access token + pixel by sending a TEST event.
 // Returns { ok, events_received?, fbtrace_id?, error? } so the Setup Wizard
 // can show real-time validation.
+//
+// Sends realistic hashed dummy customer data so Meta's quality check passes
+// instead of flagging the event as "too broad" — the token validity is what
+// we're actually testing here.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 interface Body {
   pixel_id?: string;
   access_token?: string;
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const data = new TextEncoder().encode(value);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 Deno.serve(async (req) => {
@@ -23,6 +35,20 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: "Access token looks too short." }, 400);
     }
 
+    // Realistic hashed dummy data — passes Meta's "rich enough to match" check.
+    // Values are clearly synthetic so they won't accidentally match a real user.
+    const [em, ph, fn, ln, ct, st, zp, country, externalId] = await Promise.all([
+      sha256Hex("shopbanao.verify@example.com"),
+      sha256Hex("919999999999"),
+      sha256Hex("test"),
+      sha256Hex("user"),
+      sha256Hex("mumbai"),
+      sha256Hex("maharashtra"),
+      sha256Hex("400001"),
+      sha256Hex("in"),
+      sha256Hex(`sb-verify-${pixelId}`),
+    ]);
+
     const testEvent = {
       data: [
         {
@@ -32,7 +58,23 @@ Deno.serve(async (req) => {
           action_source: "website",
           event_source_url: "https://shopbanao.in/verify",
           user_data: {
-            client_user_agent: req.headers.get("user-agent") || "ShopBanao-Verify/1.0",
+            em: [em],
+            ph: [ph],
+            fn: [fn],
+            ln: [ln],
+            ct: [ct],
+            st: [st],
+            zp: [zp],
+            country: [country],
+            external_id: [externalId],
+            client_user_agent:
+              req.headers.get("user-agent") ||
+              "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 ShopBanao-Verify/1.0",
+            fbp: `fb.1.${Date.now()}.${Math.floor(Math.random() * 1e10)}`,
+          },
+          custom_data: {
+            currency: "INR",
+            value: 1,
           },
         },
       ],
