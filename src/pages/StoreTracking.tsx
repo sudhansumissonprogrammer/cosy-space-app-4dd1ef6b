@@ -104,7 +104,11 @@ export default function StoreTracking() {
       ]);
 
       if (store?.slug) {
-        const purged = await purgeStoreCache(store.slug, (store as any).custom_domain);
+        // shell:true is REQUIRED — tracking pixel IDs are baked into the
+        // prebuilt HTML shell (__STOREFRONT_DATA__.store.facebook_pixel_id).
+        // Without it the cached HTML keeps the OLD pixel id and Meta Pixel
+        // Helper still shows "No Pixels found" after a save.
+        const purged = await purgeStoreCache(store.slug, (store as any).custom_domain, { shell: true });
         if (purged) void prewarmStore(store.slug, (store as any).custom_domain);
       }
 
