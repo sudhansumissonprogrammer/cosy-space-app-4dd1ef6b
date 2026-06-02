@@ -130,7 +130,8 @@ Deno.serve(async (req) => {
         if (orderRow.status === "confirmed" || orderRow.status === "partially_paid") {
           // Already marked paid, but still try CAPI in case the previous attempt failed —
           // helper is idempotent (DB stamp on orders.meta_purchase_fired_at).
-          void firePurchaseCapi(supabase, localOrderId, { source: "cashfree" });
+          const capiResult = await firePurchaseCapi(supabase, localOrderId, { source: "cashfree" });
+          console.log("Cashfree CAPI retry result", { localOrderId, capiResult });
           return new Response("OK (already paid)", { status: 200 });
         }
         const isPartial = orderRow.payment_type === "partial";
@@ -144,8 +145,10 @@ Deno.serve(async (req) => {
             payment_verified_at: new Date().toISOString(),
           })
           .eq("id", localOrderId);
-        // Payment confirmed — fire Meta CAPI Purchase (idempotent, fire-and-forget).
-        void firePurchaseCapi(supabase, localOrderId, { source: "cashfree" });
+        // Payment confirmed — fire Meta CAPI Purchase before returning to Cashfree.
+        // Edge runtimes can cancel fire-and-forget work once the response returns.
+        const capiResult = await firePurchaseCapi(supabase, localOrderId, { source: "cashfree" });
+        console.log("Cashfree CAPI result", { localOrderId, capiResult });
       } else if (eventType === "PAYMENT_FAILED_WEBHOOK" || eventType === "PAYMENT_USER_DROPPED_WEBHOOK") {
         // Don't overwrite a confirmed order — only mark fresh failures
         if (orderRow.status === "pending") {
