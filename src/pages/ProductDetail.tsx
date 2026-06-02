@@ -36,6 +36,7 @@ import { fireMetaCAPI } from "@/lib/metaCapi";
 import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
+import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 
 const PRODUCT_SUFFIX_RE = /-[a-z0-9]{4}$/i;
 
@@ -891,6 +892,18 @@ export default function ProductDetail() {
 
           {/* Delivery timeline (Order → Shipping → Delivery) */}
           {!isOutOfStock && <DeliveryTimeline />}
+
+          {/* Partial payment trust card — only renders if store has partial payment on */}
+          {!isOutOfStock && (
+            <div className="-mx-4 mt-4">
+              <PartialPaymentTrustCard
+                price={Number(product.price)}
+                salePrice={product.sale_price ? Number(product.sale_price) : null}
+                store={store as any}
+                currencySymbol={currency === "USD" ? "$" : "₹"}
+              />
+            </div>
+          )}
 
           {/* Checkout Trust Block — hidden in V18 */}
           {!isV18 && !isOutOfStock && (

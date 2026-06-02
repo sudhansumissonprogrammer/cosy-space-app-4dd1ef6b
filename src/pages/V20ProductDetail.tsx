@@ -22,6 +22,7 @@ import { ZoomHint } from "@/components/storefront/ZoomableGallery";
 import {
   DeliveryEtaPill, CouponTeaser, TopReviewsStrip, BundleCard, StockUrgencyStrip, StickyAddInfo,
 } from "@/components/storefront/PdpEnhancements";
+import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 
 const ZoomableGallery = lazy(() => import("@/components/storefront/ZoomableGallery"));
 
@@ -372,6 +373,11 @@ export default function V20ProductDetail() {
       <StockUrgencyStrip stock={product.stock_quantity} />
       <DeliveryEtaPill />
       <CouponTeaser storeId={store?.id || ""} orderTotal={effectivePrice} />
+      <PartialPaymentTrustCard
+        price={Number(product.price)}
+        salePrice={product.sale_price ? Number(product.sale_price) : null}
+        store={store as any}
+      />
 
       <div className="px-4 py-4 border-t border-gray-100">
         <h3 className="text-[14px] font-extrabold text-gray-900 mb-3">Why shop from {store?.name}?</h3>
