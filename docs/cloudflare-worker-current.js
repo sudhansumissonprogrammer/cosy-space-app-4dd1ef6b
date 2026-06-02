@@ -4843,7 +4843,7 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/slug-domain-${purgeSlug}`)).catch(() => {}));
     if (env?.STORE_KV) {
-      purgeOps.push(kvDeleteDedup(env, `storefront:${purgeSlug}`));
+      purgeOps.push(kvDeleteForce(env, `storefront:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `theme-lite:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `store-info:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `warm-lock:${purgeSlug}`));
@@ -4852,7 +4852,7 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
         (async () => {
           try {
             const list = await env.STORE_KV.list({ prefix: `html:${purgeSlug}` });
-            await Promise.all((list?.keys || []).map((k) => kvDeleteDedup(env, k.name)));
+            await Promise.all((list?.keys || []).map((k) => kvDeleteForce(env, k.name)));
             // also clear per-isolate write-dedup so next visitor re-writes KV
             for (const k of Array.from(_htmlKvWriteRecent.keys())) {
               if (k.startsWith(`html:${purgeSlug}`)) _htmlKvWriteRecent.delete(k);
