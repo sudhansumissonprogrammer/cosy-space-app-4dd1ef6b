@@ -2,11 +2,9 @@
  * Purge edge caches for a store.
  *
  * v2 (KV-cost optimization, 2026-05):
- *  - Only hit the SUBDOMAIN endpoint. Cloudflare Workers KV is GLOBAL, so a
- *    single `STORE_KV.delete()` clears the key for both subdomain and custom
- *    domain. The worker's `handlePurgeStore`/`handlePurgeShell` already iterate
- *    every domain variant (subdomain + custom domain) for Cache API mirror
- *    deletes, so a single call covers both hostnames' per-colo edge caches.
+ *  - Hit both the subdomain and custom-domain endpoints when a custom domain
+ *    exists. Workers KV is global, but Cloudflare Cache API is per-colo, so
+ *    the custom-domain colo must receive its own purge for instant tracking.
  *  - `/api/purge-shell` is now opt-in via `{ shell: true }`. Product / category
  *    / coupon / page-content / shipping / tax / payments saves do NOT affect
  *    the SPA shell or prebuilt head, so purging them on every save was pure
@@ -38,19 +36,18 @@ const recentPurges = new Map<string, { ts: number; result: boolean }>();
 const trailingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 async function _doPurge(slug: string, customDomain: string | null | undefined, opts: PurgeOptions): Promise<boolean> {
-  // Single hostname is enough — KV is global, and the worker handler
-  // purges per-hostname Cache API mirrors for every domain variant internally.
-  const base = `https://${slug}.shopbanao.in`;
+  const cleanDomain = customDomain?.replace(/^www\./, "").toLowerCase().trim();
+  const bases = [`https://${slug}.shopbanao.in`, ...(cleanDomain ? [`https://${cleanDomain}`] : [])];
   const params = new URLSearchParams({ slug });
-  if (customDomain) params.set("domain", customDomain);
+  if (cleanDomain) params.set("domain", cleanDomain);
 
-  const calls: Promise<Response | null>[] = [
+  const calls: Promise<Response | null>[] = bases.map((base) =>
     fetch(`${base}/api/purge-store?${params.toString()}`, { method: "POST", cache: "no-store" }).catch(() => null),
-  ];
+  );
   if (opts.shell) {
-    calls.push(
+    calls.push(...bases.map((base) =>
       fetch(`${base}/api/purge-shell?${params.toString()}`, { method: "POST", cache: "no-store" }).catch(() => null),
-    );
+    ));
   }
 
   try {
