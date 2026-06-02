@@ -4801,6 +4801,7 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
   if (purgeSlug) domainsToPurge.add(`${purgeSlug}.${ROOT_DOMAIN}`);
   if (customDomain) domainsToPurge.add(customDomain);
   if (explicitDomain) domainsToPurge.add(explicitDomain);
+    if (explicitDomain) domainsToPurge.add(`www.${explicitDomain}`);
 
   // Clear in-memory caches
   if (purgeSlug) {
