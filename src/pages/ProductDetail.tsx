@@ -900,7 +900,7 @@ export default function ProductDetail() {
                 price={Number(product.price)}
                 salePrice={product.sale_price ? Number(product.sale_price) : null}
                 store={store as any}
-                currencySymbol={currency === "USD" ? "$" : "₹"}
+                currencySymbol={currency === "USD" ? "$" : currency === "INR" ? "₹" : "₹"}
               />
             </div>
           )}
