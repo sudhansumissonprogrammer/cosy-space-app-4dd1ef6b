@@ -1,5 +1,5 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.48.0 — REMOVE DEAD /cf-img ROUTE
+ * SHOPBANAO PRODUCTION ROUTER v8.50.0 — INSTANT TRACKING CACHE REFRESH
  *
  * v8.48.0 — /cf-img handler deleted (was 125 lines of unused image
  *           proxy/resize code). Confirmed zero callers in frontend.
@@ -135,7 +135,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.49.0-tracking-cache-purge";
+const WORKER_VERSION = "8.50.0-instant-tracking-refresh";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
