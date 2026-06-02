@@ -4844,6 +4844,8 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
     // on the slower streaming path for up to 5 min after a dashboard save).
     _kvWriteRecent.delete(`warm-lock:${purgeSlug}`);
     _memWarmLock.delete(purgeSlug);
+    revalCooldowns.delete(`warm-html:${purgeSlug}`);
+    for (const d of domainsToPurge) revalCooldowns.delete(`html:${d}`);
     purgeOps.push(cache.delete(new Request(`https://cache/storefront-data/${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/theme-lite:${purgeSlug}`)).catch(() => {}));
     purgeOps.push(cache.delete(new Request(`https://cache/store-info:${purgeSlug}`)).catch(() => {}));
@@ -4852,7 +4854,7 @@ async function handlePurgeStore(request, url, ctx, env, hostname) {
       purgeOps.push(kvDeleteForce(env, `storefront:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `theme-lite:${purgeSlug}`));
       purgeOps.push(kvDeleteDedup(env, `store-info:${purgeSlug}`));
-      purgeOps.push(kvDeleteDedup(env, `warm-lock:${purgeSlug}`));
+      purgeOps.push(kvDeleteForce(env, `warm-lock:${purgeSlug}`));
       // v8.27.0: purge all html:<slug>:* KV entries (best-effort list+delete).
       purgeOps.push(
         (async () => {
