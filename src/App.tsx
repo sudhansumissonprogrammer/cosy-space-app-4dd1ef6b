@@ -151,6 +151,7 @@ const V22CheckoutPage = lazy(() => import("./pages/V22CheckoutPage"));
 const CartPage = lazy(() => import("./pages/CartPage"));
 const V19CartPage = lazy(() => import("./pages/V19CartPage"));
 const V20CartPage = lazy(() => import("./pages/V20CartPage"));
+const V22CartPage = lazy(() => import("./pages/V22CartPage"));
 const InstallApp = lazy(() => import("./pages/InstallApp"));
 
 // Auth + Admin + Dashboard — fully lazy, never loaded on storefront
