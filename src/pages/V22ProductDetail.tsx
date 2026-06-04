@@ -147,7 +147,7 @@ export default function V22ProductDetail() {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const queryClient = useQueryClient();
   const mainThemeConfig = useStorefrontThemeConfig(store?.id);
-  const bilingualCta = ((store as any)?.theme === "theme-16" || (store as any)?.theme === "theme-21" || (store as any)?.theme === "theme-22" || (store as any)?.theme === "theme-22" || (store as any)?.theme === "theme-22") && !!(mainThemeConfig as any)?.bilingual_cta;
+  const bilingualCta = ((store as any)?.theme === "theme-16" || (store as any)?.theme === "theme-21" || (store as any)?.theme === "theme-22") && !!(mainThemeConfig as any)?.bilingual_cta;
 
   // Fetch store shipping config for free shipping threshold
   const { data: shippingConfig } = useQuery({
@@ -562,7 +562,7 @@ export default function V22ProductDetail() {
     }
 
     // Theme 16 / 21: show phone modal instead of direct checkout
-    if ((store as any).theme === "theme-16" || (store as any).theme === "theme-21" || (store as any)?.theme === "theme-22" || (store as any)?.theme === "theme-22" || (store as any).theme === "theme-22") {
+    if ((store as any).theme === "theme-16" || (store as any).theme === "theme-21" || (store as any).theme === "theme-22") {
       // Add to cart first so checkout has the item
       addToCart({
         productId: product.id,
@@ -1192,7 +1192,7 @@ export default function V22ProductDetail() {
       )}
 
       {/* Theme 16 / 21 Buy Now Phone Modal */}
-      {((store as any).theme === "theme-16" || (store as any).theme === "theme-21" || (store as any)?.theme === "theme-22" || (store as any)?.theme === "theme-22" || (store as any).theme === "theme-22") && (
+      {((store as any).theme === "theme-16" || (store as any).theme === "theme-21" || (store as any).theme === "theme-22") && (
         <Suspense fallback={null}>
           <BuyNowPhoneModal
             open={buyNowModalOpen}
