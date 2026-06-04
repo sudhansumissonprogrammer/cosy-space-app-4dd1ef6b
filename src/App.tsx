@@ -76,6 +76,7 @@ const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const V19ProductDetail = lazy(() => import("./pages/V19ProductDetail"));
 const V20ProductDetail = lazy(() => import("./pages/V20ProductDetail"));
+const V22ProductDetail = lazy(() => import("./pages/V22ProductDetail"));
 import { getPdpPreload } from "@/lib/pdpPreload";
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -145,6 +146,8 @@ const StorefrontLogin = lazy(() => import("./pages/StorefrontLogin"));
 const StorefrontSignup = lazy(() => import("./pages/StorefrontSignup"));
 const StorefrontAccount = lazy(() => import("./pages/StorefrontAccount"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
+const V22CheckoutPage = lazy(() => import("./pages/V22CheckoutPage"));
+
 const CartPage = lazy(() => import("./pages/CartPage"));
 const V19CartPage = lazy(() => import("./pages/V19CartPage"));
 const V20CartPage = lazy(() => import("./pages/V20CartPage"));
