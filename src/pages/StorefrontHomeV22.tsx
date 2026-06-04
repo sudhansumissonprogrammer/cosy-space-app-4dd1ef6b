@@ -1,5 +1,5 @@
 /**
- * Theme 21 Home — Best Sellers (12 per batch, infinite scroll) then
+ * Theme 22 Home — Best Sellers (12 per batch, infinite scroll) then
  * per-category sections loaded lazily via IntersectionObserver, each
  * with its own 12-product infinite scroll.  Nothing beyond the first
  * 12 best sellers loads on cold start.
@@ -10,7 +10,7 @@ import { useQueryClient, useQuery, useInfiniteQuery } from "@tanstack/react-quer
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 // supabase is dynamic-imported inside queryFns to keep the 171KB chunk OFF
-// the storefront-shell static graph (V21 is bundled into storefront-shell).
+// the storefront-shell static graph (V22 is bundled into storefront-shell).
 import { Search, SlidersHorizontal, ArrowRight, Loader2 } from "lucide-react";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import { VariantCountProvider } from "@/hooks/useVariantCounts";
@@ -201,7 +201,7 @@ function CategorySection({
 }
 
 /* ─── Main Home Page ─── */
-export default function StorefrontHomeV21() {
+export default function StorefrontHomeV22() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
   const queryClient = useQueryClient();

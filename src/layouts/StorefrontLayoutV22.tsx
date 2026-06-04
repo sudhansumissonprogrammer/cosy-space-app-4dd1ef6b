@@ -1,5 +1,5 @@
 /**
- * Theme 21 — Exact duplicate of Theme 1 (Classic).
+ * Theme 22 — Exact duplicate of Theme 1 (Classic).
  * Only difference: Buy Now triggers a phone-collection modal before checkout.
  */
 import { Suspense, lazy } from "react";
@@ -12,7 +12,7 @@ const LazyMobileBottomNav = lazy(() => import("@/components/storefront/MobileBot
 const VALID_NAV_STYLES = ["classic", "modern", "v15", "v17", "glass", "notch", "neon", "tube", "bubble", "skeuo3d", "indicator", "wave"] as const;
 type NavVariant = typeof VALID_NAV_STYLES[number];
 
-export default function StorefrontLayoutV21({ slugOverride }: { slugOverride?: string } = {}) {
+export default function StorefrontLayoutV22({ slugOverride }: { slugOverride?: string } = {}) {
   return (
     <StorefrontShell
       slugOverride={slugOverride}
