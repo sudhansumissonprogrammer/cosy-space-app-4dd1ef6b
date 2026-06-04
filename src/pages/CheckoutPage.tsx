@@ -431,7 +431,7 @@ export default function CheckoutPage() {
 
   const currency = store.currency || "USD";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : `${currency} `;
-  const isHindi = store.theme === "theme-16" || store.theme === "theme-21";
+  const isHindi = store.theme === "theme-16" || store.theme === "theme-21" || store.theme === "theme-22";
   // Default: English only. Hindi is added only via tCritical() for payment / COD / key errors
   // where bilingual labels genuinely help shoppers who aren't comfortable in English.
   const t = (en: string, _hi: string) => en;
