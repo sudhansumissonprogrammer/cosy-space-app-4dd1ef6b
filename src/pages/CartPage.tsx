@@ -23,7 +23,7 @@ export default function CartPage() {
   // Subscription stores: always show WA button if number exists. Commission stores: never.
   const showWhatsApp = isSubscriptionStore && !!(store as any)?.whatsapp_number;
   const showCheckout = orderMode === "website" || orderMode === "both";
-  const isTheme16 = (store as any).theme === "theme-16" || (store as any).theme === "theme-21" || (store as any).theme === "theme-22";
+  const isTheme16 = (store as any).theme === "theme-16" || (store as any).theme === "theme-21";
   const [showPhoneModal, setShowPhoneModal] = useState(false);
 
   const { data: shippingConfig } = useQuery({

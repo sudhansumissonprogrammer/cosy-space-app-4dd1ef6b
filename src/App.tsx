@@ -76,6 +76,7 @@ const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const V19ProductDetail = lazy(() => import("./pages/V19ProductDetail"));
 const V20ProductDetail = lazy(() => import("./pages/V20ProductDetail"));
+const V22ProductDetail = lazy(() => import("./pages/V22ProductDetail"));
 import { getPdpPreload } from "@/lib/pdpPreload";
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -145,9 +146,12 @@ const StorefrontLogin = lazy(() => import("./pages/StorefrontLogin"));
 const StorefrontSignup = lazy(() => import("./pages/StorefrontSignup"));
 const StorefrontAccount = lazy(() => import("./pages/StorefrontAccount"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
+const V22CheckoutPage = lazy(() => import("./pages/V22CheckoutPage"));
+
 const CartPage = lazy(() => import("./pages/CartPage"));
 const V19CartPage = lazy(() => import("./pages/V19CartPage"));
 const V20CartPage = lazy(() => import("./pages/V20CartPage"));
+const V22CartPage = lazy(() => import("./pages/V22CartPage"));
 const InstallApp = lazy(() => import("./pages/InstallApp"));
 
 // Auth + Admin + Dashboard — fully lazy, never loaded on storefront
@@ -416,13 +420,13 @@ const storefrontChildRoutes = (theme: string) => {
       <Route path="terms" element={<StorefrontTerms />} />
       <Route path="privacy-policy" element={<StorefrontPrivacyPolicy />} />
       <Route path="category/:categorySlug" element={<Suspense fallback={<CategoryDetailSkeleton />}><CategoryDetail /></Suspense>} />
-      <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-20" ? <V20ProductDetail /> : theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
+      <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-22" ? <V22ProductDetail /> : theme === "theme-20" ? <V20ProductDetail /> : theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
       {/* Legacy /products/* alias — render the same page; canonical tag
           inside ProductDetail forces Google to consolidate on /product/*. */}
-      <Route path="products/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-20" ? <V20ProductDetail /> : theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
-      <Route path="cart" element={theme === "theme-20" ? <V20CartPage /> : theme === "theme-19" ? <V19CartPage /> : <CartPage />} />
+      <Route path="products/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-22" ? <V22ProductDetail /> : theme === "theme-20" ? <V20ProductDetail /> : theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
+      <Route path="cart" element={theme === "theme-22" ? <V22CartPage /> : theme === "theme-20" ? <V20CartPage /> : theme === "theme-19" ? <V19CartPage /> : <CartPage />} />
       <Route path="wishlist" element={<WishlistPage />} />
-      <Route path="checkout" element={<CheckoutPage />} />
+      <Route path="checkout" element={theme === "theme-22" ? <V22CheckoutPage /> : <CheckoutPage />} />
       <Route path="login" element={<StorefrontLogin />} />
       <Route path="signup" element={<StorefrontSignup />} />
       <Route path="account" element={<StorefrontAccount />} />
