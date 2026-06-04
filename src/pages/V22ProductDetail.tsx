@@ -133,7 +133,7 @@ function getFakeReviews(productId: string) {
   }];
 }
 
-export default function ProductDetail() {
+export default function V22ProductDetail() {
   const store = useOutletContext<StoreData>();
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();

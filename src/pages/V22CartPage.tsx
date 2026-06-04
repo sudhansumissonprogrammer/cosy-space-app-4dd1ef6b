@@ -13,7 +13,7 @@ import { storefrontPath } from "@/lib/subdomain";
 
 const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
 
-export default function CartPage() {
+export default function V22CartPage() {
   const store = useOutletContext<StoreData>();
   const navigate = useNavigate();
   const { items, updateQuantity, removeFromCart, clearCart, cartTotal, cartCount } = useCart();
