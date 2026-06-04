@@ -31,7 +31,7 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
   const [justAdded, setJustAdded] = useState(false);
   const [hoverLoaded, setHoverLoaded] = useState(false);
   const themeConfig = useStorefrontThemeConfig(store.id);
-  const bilingualCta = ((store as any).theme === "theme-16" || (store as any).theme === "theme-21") && !!themeConfig?.bilingual_cta;
+  const bilingualCta = ((store as any).theme === "theme-16" || (store as any).theme === "theme-21" || (store as any).theme === "theme-22") && !!themeConfig?.bilingual_cta;
 
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
   const imageStageBackground = "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 3%, var(--storefront-bg, hsl(var(--background))))";
