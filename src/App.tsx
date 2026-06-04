@@ -420,13 +420,13 @@ const storefrontChildRoutes = (theme: string) => {
       <Route path="terms" element={<StorefrontTerms />} />
       <Route path="privacy-policy" element={<StorefrontPrivacyPolicy />} />
       <Route path="category/:categorySlug" element={<Suspense fallback={<CategoryDetailSkeleton />}><CategoryDetail /></Suspense>} />
-      <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-20" ? <V20ProductDetail /> : theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
+      <Route path="product/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-22" ? <V22ProductDetail /> : theme === "theme-20" ? <V20ProductDetail /> : theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
       {/* Legacy /products/* alias — render the same page; canonical tag
           inside ProductDetail forces Google to consolidate on /product/*. */}
-      <Route path="products/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-20" ? <V20ProductDetail /> : theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
-      <Route path="cart" element={theme === "theme-20" ? <V20CartPage /> : theme === "theme-19" ? <V19CartPage /> : <CartPage />} />
+      <Route path="products/:productSlug" element={<Suspense fallback={<ProductDetailSkeleton />}>{theme === "theme-22" ? <V22ProductDetail /> : theme === "theme-20" ? <V20ProductDetail /> : theme === "theme-19" ? <V19ProductDetail /> : <ProductDetail />}</Suspense>} />
+      <Route path="cart" element={theme === "theme-22" ? <V22CartPage /> : theme === "theme-20" ? <V20CartPage /> : theme === "theme-19" ? <V19CartPage /> : <CartPage />} />
       <Route path="wishlist" element={<WishlistPage />} />
-      <Route path="checkout" element={<CheckoutPage />} />
+      <Route path="checkout" element={theme === "theme-22" ? <V22CheckoutPage /> : <CheckoutPage />} />
       <Route path="login" element={<StorefrontLogin />} />
       <Route path="signup" element={<StorefrontSignup />} />
       <Route path="account" element={<StorefrontAccount />} />
