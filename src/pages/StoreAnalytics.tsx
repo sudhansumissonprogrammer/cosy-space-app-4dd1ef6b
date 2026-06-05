@@ -79,7 +79,10 @@ export default function StoreAnalytics() {
 
   const { data: allOrders, isLoading } = useQuery({
     queryKey: ["analytics-orders", storeIds, ordersGte],
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60_000,
+    refetchInterval: 2 * 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
     queryFn: async () => {
       let q = supabase
         .from("orders")
@@ -99,7 +102,10 @@ export default function StoreAnalytics() {
   // query at the last 30 days so the dashboard never pulls millions of rows.
   const { data: pageViews } = useQuery({
     queryKey: ["analytics-views", storeIds],
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60_000,
+    refetchInterval: 2 * 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
     queryFn: async () => {
       const since = subDays(new Date(), 30).toISOString();
       // NOTE: Supabase caps queries at 1000 rows by default. Stores with high
@@ -124,6 +130,8 @@ export default function StoreAnalytics() {
   const { data: viewsDaily } = useQuery({
     queryKey: ["analytics-views-daily", storeIds],
     staleTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("page_views_daily")
@@ -135,6 +143,7 @@ export default function StoreAnalytics() {
     },
     enabled: storeIds.length > 0,
   });
+
 
 
 
