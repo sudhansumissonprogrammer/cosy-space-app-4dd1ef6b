@@ -247,6 +247,36 @@ export type Database = {
           },
         ]
       }
+      customer_cohorts_monthly: {
+        Row: {
+          cohort_month: string
+          customers: number
+          period_offset: number
+          returning_customers: number
+          revenue: number
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          cohort_month: string
+          customers?: number
+          period_offset: number
+          returning_customers?: number
+          revenue?: number
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          cohort_month?: string
+          customers?: number
+          period_offset?: number
+          returning_customers?: number
+          revenue?: number
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_leads: {
         Row: {
           created_at: string
@@ -795,30 +825,63 @@ export type Database = {
       }
       page_views: {
         Row: {
+          browser: string | null
+          country: string | null
           created_at: string
+          device: string | null
           id: string
           is_bot: boolean
+          landing_path: string | null
+          os: string | null
           path: string | null
+          referrer: string | null
           session_id: string | null
           store_id: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
           visitor_id: string | null
         }
         Insert: {
+          browser?: string | null
+          country?: string | null
           created_at?: string
+          device?: string | null
           id?: string
           is_bot?: boolean
+          landing_path?: string | null
+          os?: string | null
           path?: string | null
+          referrer?: string | null
           session_id?: string | null
           store_id: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
           visitor_id?: string | null
         }
         Update: {
+          browser?: string | null
+          country?: string | null
           created_at?: string
+          device?: string | null
           id?: string
           is_bot?: boolean
+          landing_path?: string | null
+          os?: string | null
           path?: string | null
+          referrer?: string | null
           session_id?: string | null
           store_id?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
           visitor_id?: string | null
         }
         Relationships: [
@@ -841,29 +904,35 @@ export type Database = {
       page_views_daily: {
         Row: {
           bot_views: number
+          bounce_sessions: number
           created_at: string
           date: string
           pageviews: number
           sessions: number
           store_id: string
+          total_session_duration_seconds: number
           visitors: number
         }
         Insert: {
           bot_views?: number
+          bounce_sessions?: number
           created_at?: string
           date: string
           pageviews?: number
           sessions?: number
           store_id: string
+          total_session_duration_seconds?: number
           visitors?: number
         }
         Update: {
           bot_views?: number
+          bounce_sessions?: number
           created_at?: string
           date?: string
           pageviews?: number
           sessions?: number
           store_id?: string
+          total_session_duration_seconds?: number
           visitors?: number
         }
         Relationships: []
@@ -2483,6 +2552,78 @@ export type Database = {
           },
         ]
       }
+      storefront_events: {
+        Row: {
+          created_at: string
+          currency: string | null
+          event_name: string
+          id: string
+          metadata: Json | null
+          path: string | null
+          product_id: string | null
+          session_id: string | null
+          store_id: string
+          value: number | null
+          visitor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          event_name: string
+          id?: string
+          metadata?: Json | null
+          path?: string | null
+          product_id?: string | null
+          session_id?: string | null
+          store_id: string
+          value?: number | null
+          visitor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          event_name?: string
+          id?: string
+          metadata?: Json | null
+          path?: string | null
+          product_id?: string | null
+          session_id?: string | null
+          store_id?: string
+          value?: number | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      storefront_events_daily: {
+        Row: {
+          count: number
+          created_at: string
+          date: string
+          event_name: string
+          store_id: string
+          unique_sessions: number
+          value_sum: number
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          date: string
+          event_name: string
+          store_id: string
+          unique_sessions?: number
+          value_sum?: number
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          date?: string
+          event_name?: string
+          store_id?: string
+          unique_sessions?: number
+          value_sum?: number
+        }
+        Relationships: []
+      }
       stores: {
         Row: {
           about_us_image_url: string | null
@@ -2530,6 +2671,7 @@ export type Database = {
           state: string | null
           suspension_reason: string | null
           theme: string
+          timezone: string | null
           updated_at: string
           usp_bullets: string[]
           whatsapp_number: string | null
@@ -2580,6 +2722,7 @@ export type Database = {
           state?: string | null
           suspension_reason?: string | null
           theme?: string
+          timezone?: string | null
           updated_at?: string
           usp_bullets?: string[]
           whatsapp_number?: string | null
@@ -2630,6 +2773,7 @@ export type Database = {
           state?: string | null
           suspension_reason?: string | null
           theme?: string
+          timezone?: string | null
           updated_at?: string
           usp_bullets?: string[]
           whatsapp_number?: string | null
@@ -3505,12 +3649,20 @@ export type Database = {
           read_ct: number
         }[]
       }
+      rollup_customer_cohorts_monthly: {
+        Args: { _months_back?: number }
+        Returns: number
+      }
       rollup_page_views_daily: {
         Args: { target_date?: string }
         Returns: number
       }
       rollup_page_views_daily_range: {
         Args: { from_date: string; to_date: string }
+        Returns: number
+      }
+      rollup_storefront_events_daily: {
+        Args: { target_date?: string }
         Returns: number
       }
       verify_cron_secret: { Args: { _secret: string }; Returns: boolean }
