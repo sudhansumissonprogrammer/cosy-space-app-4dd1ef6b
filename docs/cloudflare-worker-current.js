@@ -135,7 +135,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.50.0-instant-tracking-refresh";
+const WORKER_VERSION = "8.51.0-ttfb-unblock";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
