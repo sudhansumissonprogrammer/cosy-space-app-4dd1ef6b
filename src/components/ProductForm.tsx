@@ -56,6 +56,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const [isActive, setIsActive] = useState(true);
 
   const [isBestSelling, setIsBestSelling] = useState(false);
+  const [isCategoryPinned, setIsCategoryPinned] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
