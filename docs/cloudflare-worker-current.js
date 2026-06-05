@@ -1,5 +1,13 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.50.0 — INSTANT TRACKING CACHE REFRESH
+ * SHOPBANAO PRODUCTION ROUTER v8.51.0 — TTFB UNBLOCK (cold-load regression fix)
+ *
+ * v8.51.0 — Race storefront shell against 200ms deadline in head-flush path.
+ *           v8.47.0 introduced an UNCONDITIONAL `await storefrontPromise`
+ *           before writing the first byte of HTML. On cold KV (after every
+ *           worker deploy, across all CF colos) this added 1-3s to TTFB and
+ *           pushed mobile cold loads from 3-4s to 10-14s. Per-route SEO head
+ *           is now skipped if shell isn't ready in 200ms; the very next warm
+ *           request injects it normally. Humans get HTML immediately again.
  *
  * v8.48.0 — /cf-img handler deleted (was 125 lines of unused image
  *           proxy/resize code). Confirmed zero callers in frontend.
@@ -135,7 +143,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.50.0-instant-tracking-refresh";
+const WORKER_VERSION = "8.51.0-ttfb-unblock";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -3558,7 +3566,11 @@ async function serveStreamedHtml(
       let earlyStorefrontResult = null;
       if (pdpCategoryInline?.kind && pdpCategoryInline?.json) {
         try {
-          earlyStorefrontResult = await storefrontPromise;
+          // v8.51.0 — race against 200ms deadline (same reason as homepage below).
+          earlyStorefrontResult = await Promise.race([
+            storefrontPromise,
+            new Promise((resolve) => setTimeout(() => resolve(null), 200)),
+          ]);
         } catch {}
         const earlyStore = earlyStorefrontResult?.data?.store;
         if (earlyStore) {
@@ -3571,14 +3583,17 @@ async function serveStreamedHtml(
           );
         }
       } else {
-        // v8.47.0: HOMEPAGE — await storefront data so we can inject a fully
-        // formed <title>/<meta>/<og:*>/canonical block into the head BEFORE
-        // streaming starts. Without this, crawlers see a head with no title
-        // (the React app sets it client-side, which non-JS crawlers ignore).
-        // The shell RPC is KV-cached for ~24h, so the awaited cost is ~0
-        // on warm requests.
+        // v8.51.0 — RACE the storefront shell against a tight 200ms deadline.
+        // v8.47.0 awaited it unconditionally, which on cold KV (after every
+        // worker deploy across colos) added 1-3s to TTFB and pushed mobile
+        // cold loads from 3-4s to 10-14s. Per-route SEO head is a nice-to-have
+        // for crawlers; missing it for one cold request is fine — the next
+        // warm request will have it. Humans never saw the head anyway.
         try {
-          earlyStorefrontResult = await storefrontPromise;
+          earlyStorefrontResult = await Promise.race([
+            storefrontPromise,
+            new Promise((resolve) => setTimeout(() => resolve(null), 200)),
+          ]);
         } catch {}
         const earlyStore = earlyStorefrontResult?.data?.store;
         if (earlyStore) {
