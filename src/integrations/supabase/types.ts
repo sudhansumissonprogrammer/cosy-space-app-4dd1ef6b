@@ -3505,6 +3505,14 @@ export type Database = {
           read_ct: number
         }[]
       }
+      rollup_page_views_daily: {
+        Args: { target_date?: string }
+        Returns: number
+      }
+      rollup_page_views_daily_range: {
+        Args: { from_date: string; to_date: string }
+        Returns: number
+      }
       verify_cron_secret: { Args: { _secret: string }; Returns: boolean }
       wallet_adjust: {
         Args: {
