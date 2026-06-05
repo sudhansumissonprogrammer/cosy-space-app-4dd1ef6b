@@ -557,6 +557,18 @@
         var isLandingPath=(p==='/'||p==='/theme'||p==='/guides'||p.indexOf('/guides/')===0);
         if(!isSf && isLandingHost && isLandingPath){
           if(inline){inline.style.display='none';}
+          /* Hydrate the landing-skel's lazy images NOW (we're on landing).
+             They use data-src so the preload scanner ignores them on storefronts.
+             Promoting to src here kicks off the download in parallel with React. */
+          if(landing){
+            try{
+              var imgs=landing.querySelectorAll('img[data-src]');
+              for(var ii=0;ii<imgs.length;ii++){
+                var ds=imgs[ii].getAttribute('data-src');
+                if(ds){imgs[ii].setAttribute('src',ds);imgs[ii].removeAttribute('data-src');}
+              }
+            }catch(e){}
+          }
           /* v9.1: Show landing skeleton after 2s (was 3s). If React mounts
              before then, skeleton never shows — no flicker. If React is slow,
              user sees the pixel-perfect hero shell 1s sooner. */
