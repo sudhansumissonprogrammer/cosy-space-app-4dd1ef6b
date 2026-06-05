@@ -1,147 +1,92 @@
-# Analytics Overhaul — Safe, Phased Rollout
+## Goal
 
-Goal: make analytics IST-accurate, richer (referrer/UTM/geo/device), funnel-aware, cohort-aware, real-time, and surface Cloudflare AE data — without breaking the live dashboard or storefronts.
+Add a new **Star** toggle on each product in the dashboard. When ON, that product sits at the **top of its own category page** on the storefront. Independent from the existing **Best Selling** flag (which controls the homepage Best Sellers row). A product can have both, neither, or either — they don't interfere.
 
-Guiding rules:
-- Every schema change is **additive** (new columns nullable, new tables independent). No drops, no renames.
-- Every new column has a default so existing inserts keep working.
-- Dashboard reads gracefully degrade when new columns are empty (so old rollups still show).
-- Each phase ships independently and can be reverted by feature-flag/env.
+Newly added products do **not** displace existing starred ones, because the pin is an explicit flag, not a date.
 
----
+## Behavior summary
 
-## Phase 1 — Foundations (schema + ingestion plumbing)
+| Flag | Where it affects | Behavior |
+|---|---|---|
+| `is_best_selling` (existing) | Homepage "Best Sellers" rail | Unchanged |
+| `is_category_pinned` (new) | `/category/<slug>` page only | Pinned products show first, in order they were starred (most-recent star on top) |
+| Both ON | Homepage + category top | Both behaviors apply, no overlap |
 
-### 1.1 Timezone-aware rollup (IST)
-- Add `stores.timezone TEXT DEFAULT 'Asia/Kolkata'` (nullable, safe).
-- Replace `rollup_page_views_daily()` so the day bucket is computed in each store's timezone: `(created_at AT TIME ZONE store.timezone)::date`.
-- Keep the old function signature (DROP-FIRST rule from memory) — same name, same args, smarter body.
-- Backfill: re-run rollup for last 90 days using new TZ-aware logic. Rollup is idempotent (UPSERT), so safe to re-run.
-- Dashboard: compute `todayStart` / `rangeStart` using `store.timezone` instead of browser local.
+Sort order on category page becomes:
+1. `is_category_pinned = true` first, newest-pinned first (via `category_pinned_at DESC`)
+2. then existing order: `display_order ASC, created_at DESC, id ASC`
 
-### 1.2 Enrich `page_views` with new dimensions
-Add nullable columns (no default needed beyond NULL):
-- `referrer TEXT`
-- `utm_source TEXT`, `utm_medium TEXT`, `utm_campaign TEXT`, `utm_term TEXT`, `utm_content TEXT`
-- `country TEXT` (2-letter from `cf-ipcountry`)
-- `device TEXT` (mobile/tablet/desktop), `browser TEXT`, `os TEXT`
-- `landing_path TEXT` (first path of session)
+Shop-All page, search, and Best Sellers rail are **not** changed.
 
-Update beacon (`usePageviewBeacon`) to capture: `document.referrer`, URL UTM params, UA-derived device/browser/os.
-Old rows stay NULL — dashboard handles that.
+## Technical plan
 
-### 1.3 Funnel events table
-New table `storefront_events`:
+### 1. Database migration
+
+Add two columns to `products`:
+
+```sql
+ALTER TABLE public.products
+  ADD COLUMN is_category_pinned boolean NOT NULL DEFAULT false,
+  ADD COLUMN category_pinned_at timestamptz;
+
+CREATE INDEX idx_products_category_pinned
+  ON public.products (store_id, category, category_pinned_at DESC)
+  WHERE is_category_pinned = true;
 ```
-id, store_id, session_id, visitor_id, event_name,
-product_id NULL, value NUMERIC NULL, currency TEXT NULL,
-path TEXT, created_at, metadata JSONB
+
+Update `get_category_page` RPC (DROP-first per overload rule) so the inner `SELECT` orders by:
 ```
-Events: `view_product`, `add_to_cart`, `begin_checkout`, `purchase`.
-- RLS: store owner + admin read; public anon insert (rate-limited by edge).
-- Indexes: `(store_id, created_at desc)`, `(store_id, event_name, created_at)`.
-- Daily rollup mirror `storefront_events_daily` (store_id, date, event_name, count, value_sum) — populated by the same nightly cron.
+ORDER BY is_category_pinned DESC, category_pinned_at DESC NULLS LAST, display_order ASC, created_at DESC
+```
+and selects the two new columns.
 
-### 1.4 Fire events from existing code (no UI change)
-- `ProductDetail` mount → `view_product`
-- `CartContext.addItem` → `add_to_cart`
-- `CheckoutPage` mount → `begin_checkout`
-- Order success → `purchase` (with order total)
+### 2. Backend / data layer
 
-All fire-and-forget, wrapped in try/catch — never block UX.
+- `src/hooks/useInfiniteProducts.ts` — extend `PRODUCT_COLUMNS` with `is_category_pinned,category_pinned_at`; in the preview/localhost Supabase branch, add the same ORDER BY chain **only when `category` filter is set** (Shop-All stays as-is).
+- `src/hooks/useBestSellingProducts.ts` — no change.
 
----
+### 3. Cloudflare Worker (`docs/cloudflare-worker-current.js`)
 
-## Phase 2 — Rollups + maintenance
+- Add `is_category_pinned,category_pinned_at` to `PRODUCT_COLUMNS` (line 2128).
+- In `_fetchProductsFromDb` default sort (line 4655), when `filters.category` is present, prepend pinned ordering:
+  ```
+  is_category_pinned.desc,category_pinned_at.desc.nullslast,display_order.asc,is_best_selling.desc,created_at.desc,id.asc
+  ```
+  When no category filter, keep current sort untouched.
+- Bump worker version comment; user redeploys manually (per memory).
 
-### 2.1 Extended rollup columns
-Add to `page_views_daily`:
-- `bounce_sessions INT DEFAULT 0`
-- `total_session_duration_seconds BIGINT DEFAULT 0`
-- `pageviews_per_session NUMERIC` (computed in dashboard from existing fields)
+### 4. Dashboard UI — Products list (`src/pages/ProductsList.tsx`)
 
-Update `rollup_page_views_daily()` to compute:
-- bounce_sessions = sessions with exactly 1 pageview that day
-- session duration = max(created_at) - min(created_at) per session, summed
+- Add a star icon button per row (lucide `Star` / `StarOff`) next to the existing best-selling toggle.
+- Click → `UPDATE products SET is_category_pinned = !current, category_pinned_at = (CASE WHEN newValue THEN now() ELSE null END) WHERE id = ?`.
+- Optimistic toast: "Pinned to top of {category}" / "Unpinned".
+- Disabled with tooltip when the product has no category set ("Assign a category first").
 
-### 2.2 Cohort table
-New table `customer_cohorts_monthly` (store_id, cohort_month DATE, period_offset INT, customers INT, returning_customers INT, revenue NUMERIC). Populated by nightly cron from `customers` + `orders`. Read-only for dashboard.
+### 5. Dashboard UI — Edit Product page (`src/pages/EditProduct.tsx`) and Create
 
-### 2.3 Cron upgrades
-Update existing `rollup-page-views-daily` cron to also:
-- Roll up `storefront_events_daily`
-- Recompute `customer_cohorts_monthly` for last 13 months
-Still 00:15 UTC, idempotent.
+- Add a labelled switch in the same card as the "Best Selling" toggle: **"Pin to top of category"** with helper text *"Shows this product first on its category page. Independent of Best Selling."*
+- Saves alongside other fields; sets `category_pinned_at = now()` when toggled on, `null` when off.
 
----
+### 6. Cache invalidation
 
-## Phase 3 — Dashboard improvements (StoreAnalytics.tsx)
+When the star flag is toggled, call the existing `purgeStoreCache` (same path already used by best-selling toggle in ProductsList) so the Worker `/api/products?category=…` and `get_category_page` KV entries refresh.
 
-### 3.1 Performance fix
-- Cap `analytics-orders` query with `.gte("created_at", rangeStart)` and re-query on range change. Use range-scoped queryKey.
-- Same for `analytics-views` (already 30d capped — keep, but key by range).
+### 7. Out of scope (explicit)
 
-### 3.2 New metric cards
-Row 2: Bounce Rate · Pages/Session · Avg Session Duration · Returning Visitor %
+- No multi-category join table — each product still has one `category`.
+- No changes to homepage Best Sellers logic.
+- No changes to Shop-All / search ordering.
+- No new admin "Pinned manager" page — toggle lives on existing product surfaces.
 
-### 3.3 New charts (collapsible sections)
-- **Traffic Sources** — pie of `utm_source` + "Direct" + "Organic" + "Referral" (derived from referrer host)
-- **Geography** — bar of top 10 countries
-- **Devices** — donut mobile/desktop/tablet
-- **Funnel** — view → cart → checkout → purchase, with drop-off %
-- **Cohort retention** — heatmap (rows = signup month, cols = months since)
+### Files touched
 
-### 3.4 Live visitors widget
-- Card at top showing "🟢 N visitors right now (last 5 min)".
-- Polls `page_views` filtered by last 5 minutes every 15s. Light query, indexed.
+```text
+supabase/migrations/<new>.sql        new column + index + updated RPC
+docs/cloudflare-worker-current.js    PRODUCT_COLUMNS + sort branch (manual deploy)
+src/hooks/useInfiniteProducts.ts     columns + category-only sort
+src/pages/ProductsList.tsx           star toggle button per row
+src/pages/EditProduct.tsx            star switch in form
+src/pages/CreateProduct.tsx          star switch in form (defaults off)
+```
 
-### 3.5 Cloudflare AE surface
-- New edge function `analytics-ae-query` that reads from CF Analytics Engine using the AE SQL API.
-- Returns: edge cache HIT rate, requests by country (CF-side, more accurate than beacon), bot vs human ratio.
-- Dashboard adds an "Edge analytics" card section. Falls back to a small "AE not configured" notice if the secret is missing.
-
----
-
-## Phase 4 — Admin analytics (small, optional)
-
-- Add to `get_admin_analytics`: active vs inactive stores, top 10 stores by revenue, plan distribution, MRR.
-- AdminAnalytics page gets 4 extra cards. No new tables.
-
----
-
-## Safety & rollback
-
-- All migrations are additive — rolling back = stop writing to new columns; dashboard still works using existing data.
-- Funnel events fire fire-and-forget; if the table is missing the storefront still works.
-- Live visitor widget guarded by error boundary; if query fails, widget hides itself.
-- AE widget is opt-in via `CF_AE_API_TOKEN` secret — absent = hidden.
-
----
-
-## Technical details
-
-**Migrations (one per phase, in order):**
-1. `add_timezone_and_pv_dimensions` — `stores.timezone`, page_views new columns, rewrite rollup function (DROP-FIRST), backfill 90d.
-2. `create_storefront_events` — table + RLS + grants + indexes.
-3. `extend_page_views_daily` — bounce/duration columns, rewrite rollup, backfill.
-4. `create_customer_cohorts_monthly` + rollup function.
-5. `update_cron_rollup` — extend nightly cron body (insert via supabase--insert, not migration, since it contains keys).
-
-**Edge functions:**
-- New: `analytics-ae-query` (reads Cloudflare AE).
-- Existing `ingest` untouched (already a no-op for AE pageviews).
-
-**Frontend files touched:**
-- `src/hooks/usePageviewBeacon.ts` — capture referrer/UTM/device
-- `src/lib/storefrontEvents.ts` (new) — fireEvent helper
-- `src/pages/ProductDetail.tsx`, `src/contexts/CartContext.tsx`, `src/pages/CheckoutPage.tsx`, order-success spots — fire 4 events
-- `src/pages/StoreAnalytics.tsx` — new cards, charts, live widget, AE section
-- `src/pages/admin/AdminAnalytics.tsx` — admin extras
-- `supabase/functions/analytics-ae-query/index.ts` — new
-
-**Worker:** no changes required. AE data already collected.
-
-**Secrets needed (will request when we hit Phase 3.5):**
-- `CF_ACCOUNT_ID`, `CF_AE_API_TOKEN` for AE SQL API.
-
-**Ship order:** Phase 1 → verify dashboard unchanged → Phase 2 → verify rollups → Phase 3 → Phase 4. Each phase is its own implement loop.
+After the migration runs, Supabase types regenerate and the React code can reference the new columns.

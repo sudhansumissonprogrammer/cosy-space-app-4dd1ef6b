@@ -1604,6 +1604,7 @@ export type Database = {
       products: {
         Row: {
           category: string | null
+          category_pinned_at: string | null
           cost_price: number | null
           created_at: string
           currency: string
@@ -1614,6 +1615,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           is_best_selling: boolean
+          is_category_pinned: boolean
           meta_description: string | null
           meta_title: string | null
           name: string
@@ -1631,6 +1633,7 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          category_pinned_at?: string | null
           cost_price?: number | null
           created_at?: string
           currency?: string
@@ -1641,6 +1644,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_best_selling?: boolean
+          is_category_pinned?: boolean
           meta_description?: string | null
           meta_title?: string | null
           name: string
@@ -1658,6 +1662,7 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          category_pinned_at?: string | null
           cost_price?: number | null
           created_at?: string
           currency?: string
@@ -1668,6 +1673,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_best_selling?: boolean
+          is_category_pinned?: boolean
           meta_description?: string | null
           meta_title?: string | null
           name?: string
