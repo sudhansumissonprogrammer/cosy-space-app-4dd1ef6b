@@ -337,27 +337,27 @@ export default function StoreAnalytics() {
   }, [filtered.current]);
 
   const viewsByDay = useMemo(() => {
-    // Recent (last 30d): unique sessions per day from raw page_views.
-    const map: Record<string, Set<string>> = {};
-    filteredViews.current.forEach((v: any) => {
-      const day = v.created_at.slice(0, 10);
-      if (!map[day]) map[day] = new Set();
-      map[day].add(sessionKey(v));
-    });
-    const recent = Object.entries(map).map(([date, set]) => ({ date, views: set.size }));
+    // Today: unique sessions from raw page_views (not yet rolled up).
+    const todayMap: Record<string, Set<string>> = {};
+    filteredViews.current
+      .filter((v: any) => parseISO(v.created_at).getTime() >= todayStart.getTime())
+      .forEach((v: any) => {
+        const day = v.created_at.slice(0, 10);
+        if (!todayMap[day]) todayMap[day] = new Set();
+        todayMap[day].add(sessionKey(v));
+      });
+    const todayBuckets = Object.entries(todayMap).map(([date, set]) => ({ date, views: set.size }));
 
-    // Older (>30d): use page_views_daily rollup so 90d/all charts stay complete.
-    const older = useRollup && viewsDaily
-      ? viewsDaily
-          .filter((r: any) => {
-            const t = parseISO(r.date).getTime();
-            return t >= rangeStart.getTime() && t < rollupCutoff.getTime();
-          })
-          .map((r: any) => ({ date: r.date, views: Number(r.sessions) || 0 }))
-      : [];
+    // Past days (< today): use rollup so charts stay accurate forever.
+    const past = (viewsDaily || [])
+      .filter((r: any) => {
+        const t = parseISO(r.date).getTime();
+        return t >= rangeStart.getTime() && t < todayStart.getTime() && t <= rangeEnd.getTime();
+      })
+      .map((r: any) => ({ date: r.date, views: Number(r.sessions) || 0 }));
 
-    return [...older, ...recent].sort((a, b) => a.date.localeCompare(b.date));
-  }, [filteredViews.current, viewsDaily, useRollup, rangeStart]);
+    return [...past, ...todayBuckets].sort((a, b) => a.date.localeCompare(b.date));
+  }, [filteredViews.current, viewsDaily, rangeStart, rangeEnd]);
 
 
   const topPages = useMemo(() => {
