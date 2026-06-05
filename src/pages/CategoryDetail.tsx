@@ -57,10 +57,16 @@ export default function CategoryDetail() {
 
       if (rpc?.category) {
         if (Array.isArray(rpc.products)) {
+          const qKey = ["cat-detail-v3", store.id, rpc.category.name, "default", PAGE_SIZE];
           queryClient.setQueryData(
-            ["cat-detail-v3", store.id, rpc.category.name, "default", PAGE_SIZE],
+            qKey,
             { pages: [{ products: rpc.products, page: 0 }], pageParams: [0] }
           );
+          // Pinned-product fix: inline payload may be edge-cached HTML and
+          // miss recent pin/unpin changes. Force background refetch so the
+          // version-bumped /api/products response (with correct pin order)
+          // replaces the seed.
+          queryClient.invalidateQueries({ queryKey: qKey });
         }
         return rpc.category as { id: string; name: string; slug: string; image_url: string | null };
       }
@@ -78,15 +84,21 @@ export default function CategoryDetail() {
       const inline = getInlineCategory();
       if (inline?.category) {
         if (Array.isArray(inline.products)) {
+          const qKey = ["cat-detail-v3", store.id, inline.category.name, "default", PAGE_SIZE];
           queryClient.setQueryData(
-            ["cat-detail-v3", store.id, inline.category.name, "default", PAGE_SIZE],
+            qKey,
             { pages: [{ products: inline.products, page: 0 }], pageParams: [0] }
           );
+          // Same pinned-product fix as above — inline HTML payload can be
+          // stale; invalidate to trigger a background refresh from the
+          // version-aware /api/products endpoint.
+          queryClient.invalidateQueries({ queryKey: qKey });
         }
         return inline.category;
       }
       return undefined;
     },
+
     enabled: !!store.id && !!store.slug && !!categorySlug,
   });
 
