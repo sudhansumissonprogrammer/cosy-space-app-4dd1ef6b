@@ -257,6 +257,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       setCategory(existingProduct.category || "");
       setIsActive(existingProduct.is_active);
       setIsBestSelling((existingProduct as any).is_best_selling ?? false);
+      setIsCategoryPinned((existingProduct as any).is_category_pinned ?? false);
       if (existingProduct.image_url) setImagePreview(existingProduct.image_url);
     }
   }, [existingProduct]);
