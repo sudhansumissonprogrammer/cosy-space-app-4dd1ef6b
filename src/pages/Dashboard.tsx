@@ -25,6 +25,7 @@ import ShareStoreDialog from "@/components/ShareStoreDialog";
 import WalletAccountCard from "@/components/billing/WalletAccountCard";
 import LowBalanceDialog from "@/components/billing/LowBalanceDialog";
 import { useCountUp } from "@/hooks/useCountUp";
+import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 
 function ShimmerBlock({ className }: { className?: string }) {
   return (
@@ -66,6 +67,9 @@ export default function Dashboard() {
   const { store, storeId, storeSlug, isLoading: storeLoading } = useDashboardStore();
   const storeError = false;
   const refetchStore = () => {};
+
+  // Realtime: instantly refresh revenue, orders list, today counters, stock changes
+  useRealtimeStore(storeId, "dashboard");
 
   const customDomain = store?.custom_domain;
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
