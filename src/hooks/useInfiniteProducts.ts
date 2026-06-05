@@ -88,6 +88,13 @@ async function fetchPage({ storeId, category, page, sort }: FetchOpts): Promise<
 
   if (category) q = q.eq("category", category);
 
+  if (category) {
+    // Pinned products bubble to top of their category page (newest pin first).
+    q = q
+      .order("is_category_pinned", { ascending: false })
+      .order("category_pinned_at", { ascending: false, nullsFirst: false });
+  }
+
   q = q
     .order("display_order", { ascending: true })
     .order("created_at", { ascending: false })
