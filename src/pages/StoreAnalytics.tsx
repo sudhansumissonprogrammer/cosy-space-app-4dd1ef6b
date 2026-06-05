@@ -245,10 +245,9 @@ export default function StoreAnalytics() {
     queryKey: [
       "analytics-traffic-exact",
       storeId,
-      rangeStart.toISOString(),
-      rangeEnd.toISOString(),
-      priorStart.toISOString(),
-      priorEnd.toISOString(),
+      dateRange,
+      customFrom?.toISOString() || null,
+      customTo?.toISOString() || null,
     ],
     staleTime: 30_000,
     refetchInterval: 60_000,
@@ -256,12 +255,47 @@ export default function StoreAnalytics() {
     refetchOnMount: "always",
     enabled: !!storeId,
     queryFn: async () => {
+      const current = new Date();
+      let liveRangeStart: Date;
+      let liveRangeEnd: Date;
+      let livePriorStart: Date;
+      let livePriorEnd: Date;
+
+      if (dateRange === "today") {
+        liveRangeStart = startOfDay(current);
+        liveRangeEnd = current;
+        livePriorStart = startOfDay(subDays(current, 1));
+        livePriorEnd = endOfDay(subDays(current, 1));
+      } else if (dateRange === "yesterday") {
+        liveRangeStart = startOfDay(subDays(current, 1));
+        liveRangeEnd = endOfDay(subDays(current, 1));
+        livePriorStart = startOfDay(subDays(current, 2));
+        livePriorEnd = endOfDay(subDays(current, 2));
+      } else if (dateRange === "custom" && customFrom && customTo) {
+        liveRangeStart = startOfDay(customFrom);
+        liveRangeEnd = endOfDay(customTo);
+        const span = differenceInDays(customTo, customFrom) || 1;
+        livePriorStart = startOfDay(subDays(customFrom, span));
+        livePriorEnd = startOfDay(customFrom);
+      } else if (dateRange === "all") {
+        liveRangeStart = new Date(0);
+        liveRangeEnd = current;
+        livePriorStart = new Date(0);
+        livePriorEnd = new Date(0);
+      } else {
+        const days = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
+        liveRangeStart = startOfDay(subDays(current, days - 1));
+        liveRangeEnd = current;
+        livePriorStart = startOfDay(subDays(current, days * 2 - 1));
+        livePriorEnd = startOfDay(subDays(current, days - 1));
+      }
+
       const { data, error } = await (supabase as unknown as RpcClient).rpc<TrafficTotalsPayload>("get_analytics_traffic", {
         _store_id: storeId,
-        _range_start: rangeStart.toISOString(),
-        _range_end: rangeEnd.toISOString(),
-        _prior_start: priorStart.toISOString(),
-        _prior_end: priorEnd.toISOString(),
+        _range_start: liveRangeStart.toISOString(),
+        _range_end: liveRangeEnd.toISOString(),
+        _prior_start: livePriorStart.toISOString(),
+        _prior_end: livePriorEnd.toISOString(),
       });
       if (error) throw error;
       return {
