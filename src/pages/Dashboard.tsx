@@ -241,6 +241,11 @@ export default function Dashboard() {
         <HeroRevenue storeId={storeId} currencySymbol={currencySymbol} />
       )}
 
+      {/* Live visitors — unique sessions active in last 5 min, realtime */}
+      {storeId && !isWhatsAppOnly && (
+        <LiveVisitors storeId={storeId} />
+      )}
+
       {/* Today Insights — sessions, conversion, unique visitors + CTA to detailed analytics */}
       {storeId && !isWhatsAppOnly && (
         <TodayInsights storeId={storeId} storeSlug={store?.slug || ""} currencySymbol={currencySymbol} />
