@@ -21,6 +21,20 @@ import { format, subDays, startOfDay, endOfDay, parseISO, differenceInDays } fro
 
 type DateRange = "today" | "yesterday" | "7d" | "30d" | "90d" | "custom" | "all";
 
+interface TrafficTotalsPayload {
+  sessions?: number | string;
+  visitors?: number | string;
+  prior_sessions?: number | string;
+  prior_visitors?: number | string;
+}
+
+type RpcClient = {
+  rpc: <T>(fn: string, args: Record<string, unknown>) => Promise<{
+    data: T | null;
+    error: Error | null;
+  }>;
+};
+
 function MetricCard({
   title, value, change, icon: Icon, prefix = "", suffix = "",
 }: {
@@ -63,7 +77,8 @@ export default function StoreAnalytics() {
   const [customTo, setCustomTo] = useState<Date | undefined>(new Date());
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  const storeIds = store?.id ? [store.id] : [];
+  const storeId = store?.id as string | undefined;
+  const storeIds = storeId ? [storeId] : [];
   const currency = store?.currency || "USD";
   const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
@@ -226,6 +241,72 @@ export default function StoreAnalytics() {
     return { current, prior };
   }, [pageViews, dateRange, customFrom, customTo]);
 
+  const { data: trafficTotals } = useQuery({
+    queryKey: [
+      "analytics-traffic-exact",
+      storeId,
+      dateRange,
+      customFrom?.toISOString() || null,
+      customTo?.toISOString() || null,
+    ],
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    enabled: !!storeId,
+    queryFn: async () => {
+      const current = new Date();
+      let liveRangeStart: Date;
+      let liveRangeEnd: Date;
+      let livePriorStart: Date;
+      let livePriorEnd: Date;
+
+      if (dateRange === "today") {
+        liveRangeStart = startOfDay(current);
+        liveRangeEnd = current;
+        livePriorStart = startOfDay(subDays(current, 1));
+        livePriorEnd = endOfDay(subDays(current, 1));
+      } else if (dateRange === "yesterday") {
+        liveRangeStart = startOfDay(subDays(current, 1));
+        liveRangeEnd = endOfDay(subDays(current, 1));
+        livePriorStart = startOfDay(subDays(current, 2));
+        livePriorEnd = endOfDay(subDays(current, 2));
+      } else if (dateRange === "custom" && customFrom && customTo) {
+        liveRangeStart = startOfDay(customFrom);
+        liveRangeEnd = endOfDay(customTo);
+        const span = differenceInDays(customTo, customFrom) || 1;
+        livePriorStart = startOfDay(subDays(customFrom, span));
+        livePriorEnd = startOfDay(customFrom);
+      } else if (dateRange === "all") {
+        liveRangeStart = new Date(0);
+        liveRangeEnd = current;
+        livePriorStart = new Date(0);
+        livePriorEnd = new Date(0);
+      } else {
+        const days = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
+        liveRangeStart = startOfDay(subDays(current, days - 1));
+        liveRangeEnd = current;
+        livePriorStart = startOfDay(subDays(current, days * 2 - 1));
+        livePriorEnd = startOfDay(subDays(current, days - 1));
+      }
+
+      const { data, error } = await (supabase as unknown as RpcClient).rpc<TrafficTotalsPayload>("get_analytics_traffic", {
+        _store_id: storeId,
+        _range_start: liveRangeStart.toISOString(),
+        _range_end: liveRangeEnd.toISOString(),
+        _prior_start: livePriorStart.toISOString(),
+        _prior_end: livePriorEnd.toISOString(),
+      });
+      if (error) throw error;
+      return {
+        sessions: Number(data?.sessions ?? 0),
+        visitors: Number(data?.visitors ?? 0),
+        prior_sessions: Number(data?.prior_sessions ?? 0),
+        prior_visitors: Number(data?.prior_visitors ?? 0),
+      };
+    },
+  });
+
   // Metrics — only count confirmed revenue (exclude pending & cancelled)
   const REVENUE_STATUSES = new Set(["confirmed", "shipped", "delivered", "partially_paid"]);
   const isRevenue = (o: any) => REVENUE_STATUSES.has(o.status);
@@ -287,22 +368,22 @@ export default function StoreAnalytics() {
   };
 
   const totalSessions = useMemo(
-    () => computeMetric(filteredViews.current, "sessions", sessionKey, rangeStart, rangeEnd),
-    [filteredViews.current, viewsDaily, rangeStart, rangeEnd]
+    () => trafficTotals?.sessions ?? computeMetric(filteredViews.current, "sessions", sessionKey, rangeStart, rangeEnd),
+    [trafficTotals?.sessions, filteredViews.current, viewsDaily, rangeStart, rangeEnd]
   );
   const priorSessions = useMemo(
-    () => computeMetric(filteredViews.prior, "sessions", sessionKey, priorStart, priorEnd),
-    [filteredViews.prior, viewsDaily, priorStart, priorEnd]
+    () => trafficTotals?.prior_sessions ?? computeMetric(filteredViews.prior, "sessions", sessionKey, priorStart, priorEnd),
+    [trafficTotals?.prior_sessions, filteredViews.prior, viewsDaily, priorStart, priorEnd]
   );
   const sessionsChange = priorSessions > 0 ? ((totalSessions - priorSessions) / priorSessions) * 100 : undefined;
 
   const totalVisitors = useMemo(
-    () => computeMetric(filteredViews.current, "visitors", visitorKey, rangeStart, rangeEnd),
-    [filteredViews.current, viewsDaily, rangeStart, rangeEnd]
+    () => trafficTotals?.visitors ?? computeMetric(filteredViews.current, "visitors", visitorKey, rangeStart, rangeEnd),
+    [trafficTotals?.visitors, filteredViews.current, viewsDaily, rangeStart, rangeEnd]
   );
   const priorVisitors = useMemo(
-    () => computeMetric(filteredViews.prior, "visitors", visitorKey, priorStart, priorEnd),
-    [filteredViews.prior, viewsDaily, priorStart, priorEnd]
+    () => trafficTotals?.prior_visitors ?? computeMetric(filteredViews.prior, "visitors", visitorKey, priorStart, priorEnd),
+    [trafficTotals?.prior_visitors, filteredViews.prior, viewsDaily, priorStart, priorEnd]
   );
   const visitorsChange = priorVisitors > 0 ? ((totalVisitors - priorVisitors) / priorVisitors) * 100 : undefined;
 

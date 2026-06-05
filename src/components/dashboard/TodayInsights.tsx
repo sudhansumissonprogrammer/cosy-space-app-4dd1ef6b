@@ -11,7 +11,19 @@ interface Props {
   currencySymbol: string;
 }
 
-const REVENUE_STATUSES = ["confirmed", "shipped", "delivered", "partially_paid"];
+interface TodayAnalyticsPayload {
+  orders?: number | string;
+  revenue?: number | string;
+  sessions?: number | string;
+  visitors?: number | string;
+}
+
+type RpcClient = {
+  rpc: <T>(fn: string, args: Record<string, unknown>) => Promise<{
+    data: T | null;
+    error: Error | null;
+  }>;
+};
 
 export default function TodayInsights({ storeId, storeSlug, currencySymbol }: Props) {
   const { navigate } = useNavigateTransition();
@@ -33,41 +45,21 @@ export default function TodayInsights({ storeId, storeSlug, currencySymbol }: Pr
     staleTime: 30_000,
     enabled: !!storeId,
     queryFn: async () => {
-      // Compute the boundary inside queryFn so each refetch uses a fresh "now".
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      const todayStartIso = start.toISOString();
+      // Exact backend aggregate: avoids browser row caps, stale cached rows,
+      // and timezone drift for high-traffic stores.
+      const { data, error } = await (supabase as unknown as RpcClient).rpc<TodayAnalyticsPayload>("get_today_analytics", {
+        _store_id: storeId,
+      });
+      if (error) throw error;
 
-      const [ordersRes, viewsRes] = await Promise.all([
-        supabase
-          .from("orders")
-          .select("total")
-          .eq("store_id", storeId)
-          .gte("created_at", todayStartIso)
-          .in("status", REVENUE_STATUSES),
-        supabase
-          .from("page_views")
-          .select("session_id, visitor_id")
-          .eq("store_id", storeId)
-          .eq("is_bot", false)
-          .gte("created_at", todayStartIso)
-          .limit(50000),
-      ]);
-
-      const orders = ordersRes.data || [];
-      const views = viewsRes.data || [];
-      const revenue = orders.reduce((s, o) => s + Number(o.total || 0), 0);
-
-      const sessions = new Set(
-        views.map((v: any) => v.session_id || v.visitor_id || "anon")
-      ).size;
-      const visitors = new Set(
-        views.map((v: any) => v.visitor_id || v.session_id || "anon")
-      ).size;
-      const conversion = sessions > 0 ? (orders.length / sessions) * 100 : 0;
+      const orders = Number(data?.orders ?? 0);
+      const sessions = Number(data?.sessions ?? 0);
+      const visitors = Number(data?.visitors ?? 0);
+      const revenue = Number(data?.revenue ?? 0);
+      const conversion = sessions > 0 ? (orders / sessions) * 100 : 0;
 
       return {
-        orders: orders.length,
+        orders,
         revenue,
         sessions,
         visitors,

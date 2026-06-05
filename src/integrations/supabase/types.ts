@@ -3562,6 +3562,16 @@ export type Database = {
       get_admin_analytics: { Args: never; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
       get_admin_users_stores: { Args: never; Returns: Json }
+      get_analytics_traffic: {
+        Args: {
+          _prior_end: string
+          _prior_start: string
+          _range_end: string
+          _range_start: string
+          _store_id: string
+        }
+        Returns: Json
+      }
       get_category_page: {
         Args: { _category_slug: string; _limit?: number; _store_slug: string }
         Returns: Json
@@ -3610,6 +3620,7 @@ export type Database = {
         Args: { _slug: string; _with_pages?: boolean }
         Returns: Json
       }
+      get_today_analytics: { Args: { _store_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
