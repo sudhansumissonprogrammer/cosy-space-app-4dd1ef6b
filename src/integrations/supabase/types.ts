@@ -2628,6 +2628,7 @@ export type Database = {
         Row: {
           about_us_image_url: string | null
           about_us_text: string | null
+          analytics_retention_days: number
           banner_url: string | null
           best_selling_carousel: boolean
           billing_mode: string
@@ -2679,6 +2680,7 @@ export type Database = {
         Insert: {
           about_us_image_url?: string | null
           about_us_text?: string | null
+          analytics_retention_days?: number
           banner_url?: string | null
           best_selling_carousel?: boolean
           billing_mode?: string
@@ -2730,6 +2732,7 @@ export type Database = {
         Update: {
           about_us_image_url?: string | null
           about_us_text?: string | null
+          analytics_retention_days?: number
           banner_url?: string | null
           best_selling_carousel?: boolean
           billing_mode?: string
@@ -3538,6 +3541,7 @@ export type Database = {
       }
       check_product_limit: { Args: { _user_id: string }; Returns: Json }
       cleanup_app_logs: { Args: never; Returns: Json }
+      cleanup_old_analytics: { Args: never; Returns: Json }
       cleanup_orphan_media_library: { Args: never; Returns: Json }
       cleanup_referral_telemetry: { Args: never; Returns: Json }
       delete_email: {
