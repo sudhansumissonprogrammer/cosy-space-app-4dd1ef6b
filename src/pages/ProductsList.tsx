@@ -832,6 +832,33 @@ export default function ProductsList() { // v2
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title={
+                                !product.category
+                                  ? "Assign a category first"
+                                  : (product as any).is_category_pinned
+                                    ? "Pinned — click to unpin from category"
+                                    : "Pin to top of category"
+                              }
+                              disabled={!product.category || pinMutation.isPending}
+                              onClick={() =>
+                                pinMutation.mutate({
+                                  id: product.id,
+                                  value: !(product as any).is_category_pinned,
+                                })
+                              }
+                            >
+                              <Pin
+                                className={cn(
+                                  "h-4 w-4",
+                                  (product as any).is_category_pinned
+                                    ? "fill-primary text-primary"
+                                    : "text-muted-foreground"
+                                )}
+                              />
+                            </Button>
                             <Button variant="ghost" size="icon" asChild>
                               <Link to={`/dashboard/stores/${storeSlug}/products/${product.id}/edit`}><Pencil className="h-4 w-4" /></Link>
                             </Button>
