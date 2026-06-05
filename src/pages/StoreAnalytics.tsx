@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import AnalyticsAdvancedSections from "@/components/dashboard/AnalyticsAdvancedSections";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -66,16 +67,27 @@ export default function StoreAnalytics() {
   const currency = store?.currency || "USD";
   const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
-  // Orders
+  // Orders — capped to range start (perf fix). 'all' fetches everything.
+  const ordersGte = useMemo(() => {
+    if (dateRange === "all") return null;
+    if (dateRange === "today") return startOfDay(new Date()).toISOString();
+    if (dateRange === "yesterday") return startOfDay(subDays(new Date(), 2)).toISOString();
+    if (dateRange === "custom" && customFrom) return startOfDay(customFrom).toISOString();
+    const d = dateRange === "7d" ? 14 : dateRange === "30d" ? 60 : 180;
+    return startOfDay(subDays(new Date(), d)).toISOString();
+  }, [dateRange, customFrom]);
+
   const { data: allOrders, isLoading } = useQuery({
-    queryKey: ["analytics-orders", storeIds],
+    queryKey: ["analytics-orders", storeIds, ordersGte],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("orders")
         .select("created_at, total, status, payment_method, customer_name, order_items(product_name, quantity, total)")
         .in("store_id", storeIds)
         .order("created_at", { ascending: true });
+      if (ordersGte) q = q.gte("created_at", ordersGte);
+      const { data, error } = await q;
       if (error) throw error;
       return data as any[];
     },
@@ -664,6 +676,17 @@ export default function StoreAnalytics() {
           )}
         </CardContent>
       </Card>
+
+      {/* Advanced sections — live, funnel, sources, geo, device, cohort */}
+      {store?.id && (
+        <AnalyticsAdvancedSections
+          storeId={store.id}
+          rangeStart={rangeStart}
+          rangeEnd={rangeEnd}
+          totalSessions={totalSessions}
+          sym={sym}
+        />
+      )}
     </div>
   );
 }

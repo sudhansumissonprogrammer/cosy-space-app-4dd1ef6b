@@ -25,6 +25,7 @@ import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import { estimateDelivery, type DeliveryEstimate } from "@/lib/deliveryEstimate";
 import { loadCashfree } from "@/lib/loadCashfree";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
+import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 
@@ -93,6 +94,11 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false);
   const [placingStep, setPlacingStep] = useState<0 | 1 | 2 | 3>(0); // 0 idle, 1 creating, 2 confirming, 3 sending whatsapp
   const [orderPlaced, setOrderPlaced] = useState(false);
+  // Funnel: begin_checkout once per mount (dedup handled inside helper)
+  useEffect(() => {
+    if (!store?.id) return;
+    fireStorefrontEvent({ storeId: store.id, eventName: "begin_checkout" });
+  }, [store?.id]);
   const [showUpsell, setShowUpsell] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
@@ -1068,6 +1074,16 @@ export default function CheckoutPage() {
         purchaseEventIdRef.current,
       );
     }
+    // Funnel: purchase event for analytics dashboard
+    try {
+      fireStorefrontEvent({
+        storeId: store.id,
+        eventName: "purchase",
+        value: total,
+        currency,
+        metadata: { order_id: newOrderId, items: checkoutItems.length },
+      });
+    } catch {}
     // Suppress unused-import warning — fireMetaCAPI is still used elsewhere on this page
     // (InitiateCheckout, AddToCart). Keep import.
     void fireMetaCAPI;

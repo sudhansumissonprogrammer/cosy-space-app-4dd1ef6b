@@ -33,6 +33,7 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import type { Tables } from "@/integrations/supabase/types";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
+import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
@@ -421,6 +422,13 @@ export default function ProductDetail() {
         value: Number(eventData.value),
         currency: eventData.currency,
       },
+    });
+    fireStorefrontEvent({
+      storeId: store.id,
+      eventName: "view_product",
+      productId: product.id,
+      value: Number(eventData.value),
+      currency: eventData.currency,
     });
   }, [product?.id]);
 
