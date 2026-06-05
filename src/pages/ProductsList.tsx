@@ -735,6 +735,29 @@ export default function ProductsList() { // v2
                       </button>
                     </div>
                   </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (longPressTriggered.current) return;
+                      if (!product.category) {
+                        toast.error("Assign a category first");
+                        return;
+                      }
+                      pinMutation.mutate({ id: product.id, value: !(product as any).is_category_pinned });
+                    }}
+                    title={(product as any).is_category_pinned ? "Pinned to top of category" : "Pin to top of category"}
+                    className="shrink-0 p-1.5 -mr-1 rounded-md active:bg-muted"
+                  >
+                    <Pin
+                      className={cn(
+                        "h-4 w-4 transition-colors",
+                        (product as any).is_category_pinned
+                          ? "fill-primary text-primary"
+                          : "text-muted-foreground"
+                      )}
+                    />
+                  </button>
                   <Badge
                     variant={product.is_active ? "default" : "secondary"}
                     className={cn(
