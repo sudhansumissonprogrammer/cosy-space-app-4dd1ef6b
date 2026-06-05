@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 const PAGE_SIZE = 20;
 
 const PRODUCT_COLUMNS =
-  "id,category,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
+  "id,category,created_at,currency,description,image_url,is_active,is_best_selling,is_category_pinned,category_pinned_at,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
 
 function isProductionHost(): boolean {
   const h = window.location.hostname;
@@ -87,6 +87,13 @@ async function fetchPage({ storeId, category, page, sort }: FetchOpts): Promise<
     .eq("is_active", true);
 
   if (category) q = q.eq("category", category);
+
+  if (category) {
+    // Pinned products bubble to top of their category page (newest pin first).
+    q = q
+      .order("is_category_pinned", { ascending: false })
+      .order("category_pinned_at", { ascending: false, nullsFirst: false });
+  }
 
   q = q
     .order("display_order", { ascending: true })

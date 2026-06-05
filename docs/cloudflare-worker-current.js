@@ -2125,7 +2125,7 @@ const PRODUCTS_KV_TTL = 86400; // v8.1.0 cost-cut: 2h → 24h (purge bumps versi
 // on this constant being identical on client + worker.
 const PRODUCTS_PAGE_SIZE = 20;
 const PRODUCT_COLUMNS =
-  "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
+  "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,is_category_pinned,category_pinned_at,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
 
 async function _getInlineProductsOrNull(hostname, slug, env, ctx) {
   try {
@@ -4651,8 +4651,17 @@ async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
         params.set("order", "created_at.desc,id.asc");
         break;
       default:
-        // display_order first (manual merchant sorting), then best-selling, then newest
-        params.set("order", "display_order.asc,is_best_selling.desc,created_at.desc,id.asc");
+        // display_order first (manual merchant sorting), then best-selling, then newest.
+        // When a category filter is set, "pinned to top of category" products win first —
+        // newest pin first, then existing ordering. Pin flag is per-product, single-category.
+        if (filters.category) {
+          params.set(
+            "order",
+            "is_category_pinned.desc,category_pinned_at.desc.nullslast,display_order.asc,is_best_selling.desc,created_at.desc,id.asc"
+          );
+        } else {
+          params.set("order", "display_order.asc,is_best_selling.desc,created_at.desc,id.asc");
+        }
     }
 
     const page = parseInt(filters.page, 10);

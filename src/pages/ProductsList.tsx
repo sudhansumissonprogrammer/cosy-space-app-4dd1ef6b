@@ -29,7 +29,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import {
   Plus, Pencil, Trash2, Package, AlertCircle, Upload, Download,
-  Search, SlidersHorizontal, ArrowUpDown, X, Check, Star,
+  Search, SlidersHorizontal, ArrowUpDown, X, Check, Star, Pin,
 } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
@@ -144,7 +144,7 @@ export default function ProductsList() { // v2
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, slug, image_url, price, sale_price, stock_quantity, is_active, is_best_selling, category, sku, currency, created_at")
+        .select("id, name, slug, image_url, price, sale_price, stock_quantity, is_active, is_best_selling, is_category_pinned, category_pinned_at, category, sku, currency, created_at")
         .eq("store_id", storeId!)
         .order("created_at", { ascending: false })
         .limit(1000);
@@ -271,6 +271,29 @@ export default function ProductsList() { // v2
       purgeStore();
     },
     onError: (err: any) => toast.error(err.message || "Failed to update best seller status"),
+  });
+
+  // Single-row "Pin to top of category" toggle. Pinned products surface at the
+  // top of their category page on the storefront (independent of Best Selling,
+  // which only affects the homepage rail).
+  const pinMutation = useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
+      const { error } = await supabase
+        .from("products")
+        .update({
+          is_category_pinned: value,
+          category_pinned_at: value ? new Date().toISOString() : null,
+        } as any)
+        .eq("id", id);
+      if (error) throw error;
+      return { id, value };
+    },
+    onSuccess: ({ value }) => {
+      queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
+      toast.success(value ? "Pinned to top of category" : "Unpinned from category");
+      purgeStore();
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to update pin"),
   });
 
   const activeFilterCount =
@@ -712,6 +735,29 @@ export default function ProductsList() { // v2
                       </button>
                     </div>
                   </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (longPressTriggered.current) return;
+                      if (!product.category) {
+                        toast.error("Assign a category first");
+                        return;
+                      }
+                      pinMutation.mutate({ id: product.id, value: !(product as any).is_category_pinned });
+                    }}
+                    title={(product as any).is_category_pinned ? "Pinned to top of category" : "Pin to top of category"}
+                    className="shrink-0 p-1.5 -mr-1 rounded-md active:bg-muted"
+                  >
+                    <Pin
+                      className={cn(
+                        "h-4 w-4 transition-colors",
+                        (product as any).is_category_pinned
+                          ? "fill-primary text-primary"
+                          : "text-muted-foreground"
+                      )}
+                    />
+                  </button>
                   <Badge
                     variant={product.is_active ? "default" : "secondary"}
                     className={cn(
@@ -786,6 +832,33 @@ export default function ProductsList() { // v2
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title={
+                                !product.category
+                                  ? "Assign a category first"
+                                  : (product as any).is_category_pinned
+                                    ? "Pinned — click to unpin from category"
+                                    : "Pin to top of category"
+                              }
+                              disabled={!product.category || pinMutation.isPending}
+                              onClick={() =>
+                                pinMutation.mutate({
+                                  id: product.id,
+                                  value: !(product as any).is_category_pinned,
+                                })
+                              }
+                            >
+                              <Pin
+                                className={cn(
+                                  "h-4 w-4",
+                                  (product as any).is_category_pinned
+                                    ? "fill-primary text-primary"
+                                    : "text-muted-foreground"
+                                )}
+                              />
+                            </Button>
                             <Button variant="ghost" size="icon" asChild>
                               <Link to={`/dashboard/stores/${storeSlug}/products/${product.id}/edit`}><Pencil className="h-4 w-4" /></Link>
                             </Button>

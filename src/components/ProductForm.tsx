@@ -56,6 +56,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const [isActive, setIsActive] = useState(true);
 
   const [isBestSelling, setIsBestSelling] = useState(false);
+  const [isCategoryPinned, setIsCategoryPinned] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -256,6 +257,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       setCategory(existingProduct.category || "");
       setIsActive(existingProduct.is_active);
       setIsBestSelling((existingProduct as any).is_best_selling ?? false);
+      setIsCategoryPinned((existingProduct as any).is_category_pinned ?? false);
       if (existingProduct.image_url) setImagePreview(existingProduct.image_url);
     }
   }, [existingProduct]);
@@ -367,6 +369,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         category: category || null,
         is_active: isActive,
         is_best_selling: isBestSelling,
+        is_category_pinned: isCategoryPinned,
+        category_pinned_at: isCategoryPinned
+          ? ((existingProduct as any)?.category_pinned_at ?? new Date().toISOString())
+          : null,
         image_url: imageUrl,
       } as any;
 
@@ -920,6 +926,18 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
               <div className="flex items-center gap-3">
                 <Switch id="is-best-selling" checked={isBestSelling} onCheckedChange={setIsBestSelling} />
                 <Label htmlFor="is-best-selling">Best Selling</Label>
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="is-category-pinned"
+                  checked={isCategoryPinned}
+                  onCheckedChange={setIsCategoryPinned}
+                  disabled={!category}
+                />
+                <Label htmlFor="is-category-pinned" className={!category ? "opacity-60" : ""}>
+                  Pin to top of category
+                  {!category && <span className="ml-1 text-xs text-muted-foreground">(set a category first)</span>}
+                </Label>
               </div>
             </div>
 
