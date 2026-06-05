@@ -21,6 +21,20 @@ import { format, subDays, startOfDay, endOfDay, parseISO, differenceInDays } fro
 
 type DateRange = "today" | "yesterday" | "7d" | "30d" | "90d" | "custom" | "all";
 
+interface TrafficTotalsPayload {
+  sessions?: number | string;
+  visitors?: number | string;
+  prior_sessions?: number | string;
+  prior_visitors?: number | string;
+}
+
+type RpcClient = {
+  rpc: <T>(fn: string, args: Record<string, unknown>) => Promise<{
+    data: T | null;
+    error: Error | null;
+  }>;
+};
+
 function MetricCard({
   title, value, change, icon: Icon, prefix = "", suffix = "",
 }: {
@@ -242,7 +256,7 @@ export default function StoreAnalytics() {
     refetchOnMount: "always",
     enabled: !!storeId,
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("get_analytics_traffic", {
+      const { data, error } = await (supabase as unknown as RpcClient).rpc<TrafficTotalsPayload>("get_analytics_traffic", {
         _store_id: storeId,
         _range_start: rangeStart.toISOString(),
         _range_end: rangeEnd.toISOString(),

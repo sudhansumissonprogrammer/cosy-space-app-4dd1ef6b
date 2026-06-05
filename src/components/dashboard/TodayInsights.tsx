@@ -11,6 +11,20 @@ interface Props {
   currencySymbol: string;
 }
 
+interface TodayAnalyticsPayload {
+  orders?: number | string;
+  revenue?: number | string;
+  sessions?: number | string;
+  visitors?: number | string;
+}
+
+type RpcClient = {
+  rpc: <T>(fn: string, args: Record<string, unknown>) => Promise<{
+    data: T | null;
+    error: Error | null;
+  }>;
+};
+
 export default function TodayInsights({ storeId, storeSlug, currencySymbol }: Props) {
   const { navigate } = useNavigateTransition();
 
@@ -33,7 +47,7 @@ export default function TodayInsights({ storeId, storeSlug, currencySymbol }: Pr
     queryFn: async () => {
       // Exact backend aggregate: avoids browser row caps, stale cached rows,
       // and timezone drift for high-traffic stores.
-      const { data, error } = await (supabase as any).rpc("get_today_analytics", {
+      const { data, error } = await (supabase as unknown as RpcClient).rpc<TodayAnalyticsPayload>("get_today_analytics", {
         _store_id: storeId,
       });
       if (error) throw error;
