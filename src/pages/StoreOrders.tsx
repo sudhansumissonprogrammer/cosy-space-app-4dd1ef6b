@@ -39,6 +39,7 @@ import FAB from "@/components/dashboard/FAB";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/dashboard/PullToRefreshIndicator";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
+import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 
 const STATUS_OPTIONS = ["pending", "confirmed", "partially_paid", "shipped", "delivered", "cancelled"] as const;
 
@@ -61,6 +62,7 @@ export default function StoreOrders() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+  useRealtimeStore(storeId, "orders");
   const [trackingOrder, setTrackingOrder] = useState<any>(null);
   const [trackingNumber, setTrackingNumber] = useState("");
   const [trackingUrl, setTrackingUrl] = useState("");

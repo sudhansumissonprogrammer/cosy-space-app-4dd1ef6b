@@ -43,6 +43,7 @@ import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/dashboard/PullToRefreshIndicator";
 import { cleanImageUrl } from "@/lib/imageOptimize";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
+import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 
 type SortOption = "title-asc" | "title-desc" | "date-new" | "date-old";
 type StatusFilter = "all" | "active" | "draft";
@@ -63,6 +64,7 @@ export default function ProductsList() { // v2
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+  useRealtimeStore(storeId, "products");
 
   // Search, filter & sort state
   const [search, setSearch] = useState("");
