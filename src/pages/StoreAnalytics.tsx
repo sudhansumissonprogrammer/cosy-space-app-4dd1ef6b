@@ -223,8 +223,12 @@ export default function StoreAnalytics() {
   const sessionKey = (v: any) => v.session_id || v.visitor_id || "anon";
   const visitorKey = (v: any) => v.visitor_id || v.session_id || "anon";
 
-  const useRollup = rangeDays > 30 || dateRange === "all";
-  const rollupCutoff = startOfDay(subDays(now, 30)); // raw window starts here
+  // Rollup is the source of truth for any day strictly before TODAY.
+  // Raw page_views is used only for today (the bucket that hasn't been
+  // rolled up by the nightly cron yet). This makes 7d/30d/90d/yesterday
+  // accurate forever — even after raw rows are purged at 90 days — because
+  // page_views_daily is preserved permanently.
+  const todayStart = startOfDay(now);
 
   const sumRollup = (field: "sessions" | "visitors" | "pageviews", start: Date, end: Date) => {
     if (!viewsDaily) return 0;
@@ -236,37 +240,49 @@ export default function StoreAnalytics() {
       .reduce((s: number, r: any) => s + (Number(r[field]) || 0), 0);
   };
 
-  const rawUnique = (rows: any[], key: (v: any) => string) => new Set(rows.map(key)).size;
+  const rawUnique = (rows: any[], key: (v: any) => string, fromTs: number) =>
+    new Set(
+      rows
+        .filter((v: any) => parseISO(v.created_at).getTime() >= fromTs)
+        .map(key)
+    ).size;
 
-  const totalSessions = useMemo(() => {
-    const raw = rawUnique(filteredViews.current, sessionKey);
-    const rollup = useRollup ? sumRollup("sessions", rangeStart, rollupCutoff) : 0;
-    return raw + rollup;
-  }, [filteredViews.current, useRollup, viewsDaily, rangeStart]);
+  const computeMetric = (
+    rows: any[],
+    rollupField: "sessions" | "visitors",
+    keyFn: (v: any) => string,
+    start: Date,
+    end: Date,
+  ) => {
+    // Rollup covers [start, min(end, todayStart))
+    const rollupEnd = end.getTime() < todayStart.getTime() ? end : todayStart;
+    const rollupVal = start.getTime() < rollupEnd.getTime()
+      ? sumRollup(rollupField, start, rollupEnd)
+      : 0;
+    // Raw covers today only — if range includes today.
+    const includesToday = end.getTime() >= todayStart.getTime();
+    const rawVal = includesToday ? rawUnique(rows, keyFn, todayStart.getTime()) : 0;
+    return rollupVal + rawVal;
+  };
 
-  const priorSessions = useMemo(() => {
-    const raw = rawUnique(filteredViews.prior, sessionKey);
-    // If prior period extends past the raw 30-day window, top up from rollup.
-    const needsRollup = priorStart.getTime() < rollupCutoff.getTime();
-    const rollupEnd = priorEnd.getTime() < rollupCutoff.getTime() ? priorEnd : rollupCutoff;
-    const rollup = needsRollup ? sumRollup("sessions", priorStart, rollupEnd) : 0;
-    return raw + rollup;
-  }, [filteredViews.prior, viewsDaily, priorStart, priorEnd]);
+  const totalSessions = useMemo(
+    () => computeMetric(filteredViews.current, "sessions", sessionKey, rangeStart, rangeEnd),
+    [filteredViews.current, viewsDaily, rangeStart, rangeEnd]
+  );
+  const priorSessions = useMemo(
+    () => computeMetric(filteredViews.prior, "sessions", sessionKey, priorStart, priorEnd),
+    [filteredViews.prior, viewsDaily, priorStart, priorEnd]
+  );
   const sessionsChange = priorSessions > 0 ? ((totalSessions - priorSessions) / priorSessions) * 100 : undefined;
 
-  const totalVisitors = useMemo(() => {
-    const raw = rawUnique(filteredViews.current, visitorKey);
-    const rollup = useRollup ? sumRollup("visitors", rangeStart, rollupCutoff) : 0;
-    return raw + rollup;
-  }, [filteredViews.current, useRollup, viewsDaily, rangeStart]);
-
-  const priorVisitors = useMemo(() => {
-    const raw = rawUnique(filteredViews.prior, visitorKey);
-    const needsRollup = priorStart.getTime() < rollupCutoff.getTime();
-    const rollupEnd = priorEnd.getTime() < rollupCutoff.getTime() ? priorEnd : rollupCutoff;
-    const rollup = needsRollup ? sumRollup("visitors", priorStart, rollupEnd) : 0;
-    return raw + rollup;
-  }, [filteredViews.prior, viewsDaily, priorStart, priorEnd]);
+  const totalVisitors = useMemo(
+    () => computeMetric(filteredViews.current, "visitors", visitorKey, rangeStart, rangeEnd),
+    [filteredViews.current, viewsDaily, rangeStart, rangeEnd]
+  );
+  const priorVisitors = useMemo(
+    () => computeMetric(filteredViews.prior, "visitors", visitorKey, priorStart, priorEnd),
+    [filteredViews.prior, viewsDaily, priorStart, priorEnd]
+  );
   const visitorsChange = priorVisitors > 0 ? ((totalVisitors - priorVisitors) / priorVisitors) * 100 : undefined;
 
   const conversionRate = totalSessions > 0 ? (totalOrders / totalSessions) * 100 : 0;
