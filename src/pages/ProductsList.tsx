@@ -273,6 +273,29 @@ export default function ProductsList() { // v2
     onError: (err: any) => toast.error(err.message || "Failed to update best seller status"),
   });
 
+  // Single-row "Pin to top of category" toggle. Pinned products surface at the
+  // top of their category page on the storefront (independent of Best Selling,
+  // which only affects the homepage rail).
+  const pinMutation = useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
+      const { error } = await supabase
+        .from("products")
+        .update({
+          is_category_pinned: value,
+          category_pinned_at: value ? new Date().toISOString() : null,
+        } as any)
+        .eq("id", id);
+      if (error) throw error;
+      return { id, value };
+    },
+    onSuccess: ({ value }) => {
+      queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
+      toast.success(value ? "Pinned to top of category" : "Unpinned from category");
+      purgeStore();
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to update pin"),
+  });
+
   const activeFilterCount =
     (stockFilter !== "all" ? 1 : 0) +
     (categoryFilter.length > 0 ? 1 : 0);
