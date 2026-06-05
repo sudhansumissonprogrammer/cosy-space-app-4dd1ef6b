@@ -162,6 +162,15 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
       try { window.dispatchEvent(new CustomEvent("cart:add", { detail: { productId: item.productId } })); } catch {}
     }
     fireAddToCartAnalytics(item, currency, storeId);
+    if (storeId) {
+      import("@/lib/storefrontEvents").then(m => m.fireStorefrontEvent({
+        storeId,
+        eventName: "add_to_cart",
+        productId: item.productId,
+        value: item.price,
+        currency,
+      })).catch(() => {});
+    }
   }, [slug, storeId, currency]);
 
   const removeFromCart = useCallback((productId: string, variantId?: string) => {
