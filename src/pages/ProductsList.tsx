@@ -291,7 +291,7 @@ export default function ProductsList() { // v2
     onSuccess: ({ value }) => {
       queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       toast.success(value ? "Pinned to top of category" : "Unpinned from category");
-      purgeStore();
+      purgeStore({ force: true });
     },
     onError: (err: any) => toast.error(err.message || "Failed to update pin"),
   });

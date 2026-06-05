@@ -20,6 +20,8 @@ import { useStoreData } from "@/hooks/useStoreData";
 
 interface PurgeOptions {
   shell?: boolean;
+  /** Bypass the 90s cooldown — use for changes shoppers must see instantly (pin/unpin). */
+  force?: boolean;
 }
 
 export function useStorePurge(storeId: string | null | undefined) {
