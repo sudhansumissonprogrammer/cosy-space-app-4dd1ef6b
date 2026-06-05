@@ -16,17 +16,28 @@ const REVENUE_STATUSES = ["confirmed", "shipped", "delivered", "partially_paid"]
 export default function TodayInsights({ storeId, storeSlug, currencySymbol }: Props) {
   const { navigate } = useNavigateTransition();
 
-  const todayStartIso = (() => {
+  // Use a stable day-key (YYYY-MM-DD in browser-local time) so the queryKey
+  // rolls over automatically at midnight even if the tab stays open.
+  const todayKey = (() => {
     const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString();
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
   })();
 
   const { data } = useQuery({
-    queryKey: ["today-insights", storeId, todayStartIso],
-    staleTime: 2 * 60 * 1000,
+    queryKey: ["today-insights", storeId, todayKey],
+    // Refetch every 60s while the tab is open so "Today" actually advances
+    // through the day instead of freezing on the first snapshot.
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    staleTime: 30_000,
     enabled: !!storeId,
     queryFn: async () => {
+      // Compute the boundary inside queryFn so each refetch uses a fresh "now".
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const todayStartIso = start.toISOString();
+
       const [ordersRes, viewsRes] = await Promise.all([
         supabase
           .from("orders")
@@ -39,7 +50,8 @@ export default function TodayInsights({ storeId, storeSlug, currencySymbol }: Pr
           .select("session_id, visitor_id")
           .eq("store_id", storeId)
           .eq("is_bot", false)
-          .gte("created_at", todayStartIso),
+          .gte("created_at", todayStartIso)
+          .limit(50000),
       ]);
 
       const orders = ordersRes.data || [];
@@ -63,6 +75,7 @@ export default function TodayInsights({ storeId, storeSlug, currencySymbol }: Pr
       };
     },
   });
+
 
   const tiles = [
     { label: "Orders", value: data?.orders ?? 0, icon: ShoppingBag, color: "text-emerald-600" },
