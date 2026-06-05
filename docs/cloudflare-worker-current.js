@@ -4651,8 +4651,17 @@ async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
         params.set("order", "created_at.desc,id.asc");
         break;
       default:
-        // display_order first (manual merchant sorting), then best-selling, then newest
-        params.set("order", "display_order.asc,is_best_selling.desc,created_at.desc,id.asc");
+        // display_order first (manual merchant sorting), then best-selling, then newest.
+        // When a category filter is set, "pinned to top of category" products win first —
+        // newest pin first, then existing ordering. Pin flag is per-product, single-category.
+        if (filters.category) {
+          params.set(
+            "order",
+            "is_category_pinned.desc,category_pinned_at.desc.nullslast,display_order.asc,is_best_selling.desc,created_at.desc,id.asc"
+          );
+        } else {
+          params.set("order", "display_order.asc,is_best_selling.desc,created_at.desc,id.asc");
+        }
     }
 
     const page = parseInt(filters.page, 10);
