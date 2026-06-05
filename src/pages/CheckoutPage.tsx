@@ -25,6 +25,7 @@ import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import { estimateDelivery, type DeliveryEstimate } from "@/lib/deliveryEstimate";
 import { loadCashfree } from "@/lib/loadCashfree";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
+import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 
@@ -1068,6 +1069,16 @@ export default function CheckoutPage() {
         purchaseEventIdRef.current,
       );
     }
+    // Funnel: purchase event for analytics dashboard
+    try {
+      fireStorefrontEvent({
+        storeId: store.id,
+        eventName: "purchase",
+        value: total,
+        currency,
+        metadata: { order_id: newOrderId, items: checkoutItems.length },
+      });
+    } catch {}
     // Suppress unused-import warning — fireMetaCAPI is still used elsewhere on this page
     // (InitiateCheckout, AddToCart). Keep import.
     void fireMetaCAPI;
