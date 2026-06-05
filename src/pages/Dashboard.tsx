@@ -15,6 +15,7 @@ import { useNavigateTransition } from "@/hooks/useNavigateTransition";
 import QuickActions from "@/components/dashboard/QuickActions";
 import HeroRevenue from "@/components/dashboard/HeroRevenue";
 import TodayInsights from "@/components/dashboard/TodayInsights";
+import LiveVisitors from "@/components/dashboard/LiveVisitors";
 import PendingActions from "@/components/dashboard/PendingActions";
 import RecentOrders from "@/components/dashboard/RecentOrders";
 import TopProducts from "@/components/dashboard/TopProducts";
@@ -238,6 +239,11 @@ export default function Dashboard() {
       {/* 🔥 Hero Revenue — THE biggest number at the top */}
       {storeId && !isWhatsAppOnly && (
         <HeroRevenue storeId={storeId} currencySymbol={currencySymbol} />
+      )}
+
+      {/* Live visitors — unique sessions active in last 5 min, realtime */}
+      {storeId && !isWhatsAppOnly && (
+        <LiveVisitors storeId={storeId} />
       )}
 
       {/* Today Insights — sessions, conversion, unique visitors + CTA to detailed analytics */}
