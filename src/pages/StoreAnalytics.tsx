@@ -63,7 +63,8 @@ export default function StoreAnalytics() {
   const [customTo, setCustomTo] = useState<Date | undefined>(new Date());
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  const storeIds = store?.id ? [store.id] : [];
+  const storeId = store?.id as string | undefined;
+  const storeIds = storeId ? [storeId] : [];
   const currency = store?.currency || "USD";
   const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
@@ -226,6 +227,38 @@ export default function StoreAnalytics() {
     return { current, prior };
   }, [pageViews, dateRange, customFrom, customTo]);
 
+  const { data: trafficTotals } = useQuery({
+    queryKey: [
+      "analytics-traffic-exact",
+      storeId,
+      rangeStart.toISOString(),
+      rangeEnd.toISOString(),
+      priorStart.toISOString(),
+      priorEnd.toISOString(),
+    ],
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    enabled: !!storeId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("get_analytics_traffic", {
+        _store_id: storeId,
+        _range_start: rangeStart.toISOString(),
+        _range_end: rangeEnd.toISOString(),
+        _prior_start: priorStart.toISOString(),
+        _prior_end: priorEnd.toISOString(),
+      });
+      if (error) throw error;
+      return {
+        sessions: Number(data?.sessions ?? 0),
+        visitors: Number(data?.visitors ?? 0),
+        prior_sessions: Number(data?.prior_sessions ?? 0),
+        prior_visitors: Number(data?.prior_visitors ?? 0),
+      };
+    },
+  });
+
   // Metrics — only count confirmed revenue (exclude pending & cancelled)
   const REVENUE_STATUSES = new Set(["confirmed", "shipped", "delivered", "partially_paid"]);
   const isRevenue = (o: any) => REVENUE_STATUSES.has(o.status);
@@ -287,22 +320,22 @@ export default function StoreAnalytics() {
   };
 
   const totalSessions = useMemo(
-    () => computeMetric(filteredViews.current, "sessions", sessionKey, rangeStart, rangeEnd),
-    [filteredViews.current, viewsDaily, rangeStart, rangeEnd]
+    () => trafficTotals?.sessions ?? computeMetric(filteredViews.current, "sessions", sessionKey, rangeStart, rangeEnd),
+    [trafficTotals?.sessions, filteredViews.current, viewsDaily, rangeStart, rangeEnd]
   );
   const priorSessions = useMemo(
-    () => computeMetric(filteredViews.prior, "sessions", sessionKey, priorStart, priorEnd),
-    [filteredViews.prior, viewsDaily, priorStart, priorEnd]
+    () => trafficTotals?.prior_sessions ?? computeMetric(filteredViews.prior, "sessions", sessionKey, priorStart, priorEnd),
+    [trafficTotals?.prior_sessions, filteredViews.prior, viewsDaily, priorStart, priorEnd]
   );
   const sessionsChange = priorSessions > 0 ? ((totalSessions - priorSessions) / priorSessions) * 100 : undefined;
 
   const totalVisitors = useMemo(
-    () => computeMetric(filteredViews.current, "visitors", visitorKey, rangeStart, rangeEnd),
-    [filteredViews.current, viewsDaily, rangeStart, rangeEnd]
+    () => trafficTotals?.visitors ?? computeMetric(filteredViews.current, "visitors", visitorKey, rangeStart, rangeEnd),
+    [trafficTotals?.visitors, filteredViews.current, viewsDaily, rangeStart, rangeEnd]
   );
   const priorVisitors = useMemo(
-    () => computeMetric(filteredViews.prior, "visitors", visitorKey, priorStart, priorEnd),
-    [filteredViews.prior, viewsDaily, priorStart, priorEnd]
+    () => trafficTotals?.prior_visitors ?? computeMetric(filteredViews.prior, "visitors", visitorKey, priorStart, priorEnd),
+    [trafficTotals?.prior_visitors, filteredViews.prior, viewsDaily, priorStart, priorEnd]
   );
   const visitorsChange = priorVisitors > 0 ? ((totalVisitors - priorVisitors) / priorVisitors) * 100 : undefined;
 
