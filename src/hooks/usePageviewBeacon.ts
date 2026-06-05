@@ -4,12 +4,18 @@
 // All new dimensions are nullable, so existing pipelines keep working.
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import {
   getOrCreateSessionId,
   getVisitorId,
   isLikelyBot,
 } from "@/lib/visitorSession";
+
+// Supabase REST endpoint constants — same project the auto-gen client uses.
+// We hit REST directly via fetch+keepalive so the pageview never opens a CORS
+// preflight or steals a TCP slot from product image downloads on cold paint.
+const SUPA_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
+const SUPA_ANON =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
 
 const LANDING_KEY = "__sf_landing__";
 const UTM_KEY = "__sf_utm__";
@@ -118,22 +124,44 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
       ? document.referrer.slice(0, 500)
       : null;
 
-    try {
-      supabase
-        .from("page_views")
-        .insert({
-          store_id: storeId,
-          path: pathname.slice(0, 500),
-          visitor_id: vid || null,
-          session_id: sid,
-          is_bot: bot,
-          referrer,
-          device,
-          browser,
-          os,
-          ...attrib,
-        } as any)
-        .then(() => {}, () => {});
-    } catch {}
+    // Fire pageview AFTER first paint via fetch+keepalive (sendBeacon can't
+    // set the apikey/Authorization headers PostgREST needs). keepalive=true
+    // has the same fire-and-forget semantics as sendBeacon and survives
+    // unload. requestIdleCallback ensures it never races the LCP fetch.
+    const payload = JSON.stringify({
+      store_id: storeId,
+      path: pathname.slice(0, 500),
+      visitor_id: vid || null,
+      session_id: sid,
+      is_bot: bot,
+      referrer,
+      device,
+      browser,
+      os,
+      ...attrib,
+    });
+
+    const send = () => {
+      try {
+        fetch(`${SUPA_URL}/rest/v1/page_views`, {
+          method: "POST",
+          keepalive: true,
+          mode: "cors",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SUPA_ANON,
+            Authorization: `Bearer ${SUPA_ANON}`,
+            Prefer: "return=minimal",
+          },
+          body: payload,
+        }).catch(() => {});
+      } catch {}
+    };
+
+    if (typeof (window as any).requestIdleCallback === "function") {
+      (window as any).requestIdleCallback(send, { timeout: 2500 });
+    } else {
+      setTimeout(send, 1500);
+    }
   }, [storeId, pathname]);
 }
