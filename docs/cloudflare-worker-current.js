@@ -3571,14 +3571,17 @@ async function serveStreamedHtml(
           );
         }
       } else {
-        // v8.47.0: HOMEPAGE — await storefront data so we can inject a fully
-        // formed <title>/<meta>/<og:*>/canonical block into the head BEFORE
-        // streaming starts. Without this, crawlers see a head with no title
-        // (the React app sets it client-side, which non-JS crawlers ignore).
-        // The shell RPC is KV-cached for ~24h, so the awaited cost is ~0
-        // on warm requests.
+        // v8.51.0 — RACE the storefront shell against a tight 200ms deadline.
+        // v8.47.0 awaited it unconditionally, which on cold KV (after every
+        // worker deploy across colos) added 1-3s to TTFB and pushed mobile
+        // cold loads from 3-4s to 10-14s. Per-route SEO head is a nice-to-have
+        // for crawlers; missing it for one cold request is fine — the next
+        // warm request will have it. Humans never saw the head anyway.
         try {
-          earlyStorefrontResult = await storefrontPromise;
+          earlyStorefrontResult = await Promise.race([
+            storefrontPromise,
+            new Promise((resolve) => setTimeout(() => resolve(null), 200)),
+          ]);
         } catch {}
         const earlyStore = earlyStorefrontResult?.data?.store;
         if (earlyStore) {
