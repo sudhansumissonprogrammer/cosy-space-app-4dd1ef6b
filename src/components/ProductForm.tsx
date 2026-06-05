@@ -369,6 +369,10 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         category: category || null,
         is_active: isActive,
         is_best_selling: isBestSelling,
+        is_category_pinned: isCategoryPinned,
+        category_pinned_at: isCategoryPinned
+          ? ((existingProduct as any)?.category_pinned_at ?? new Date().toISOString())
+          : null,
         image_url: imageUrl,
       } as any;
 
