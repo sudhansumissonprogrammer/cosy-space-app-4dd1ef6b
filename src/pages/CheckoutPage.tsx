@@ -94,6 +94,11 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false);
   const [placingStep, setPlacingStep] = useState<0 | 1 | 2 | 3>(0); // 0 idle, 1 creating, 2 confirming, 3 sending whatsapp
   const [orderPlaced, setOrderPlaced] = useState(false);
+  // Funnel: begin_checkout once per mount (dedup handled inside helper)
+  useEffect(() => {
+    if (!store?.id) return;
+    fireStorefrontEvent({ storeId: store.id, eventName: "begin_checkout" });
+  }, [store?.id]);
   const [showUpsell, setShowUpsell] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
