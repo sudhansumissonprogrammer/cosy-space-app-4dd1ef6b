@@ -296,10 +296,19 @@ function SubscriptionPanel({ storeId, assignment, plans, payments, onSaved }: an
         notes: notes.trim() || null,
         status: "active",
       };
-      const q = hasAssignment
-        ? supabase.from("store_plan_assignments" as any).update(payload).eq("id", assignment.id)
-        : supabase.from("store_plan_assignments" as any).insert(payload);
-      const { error } = await q;
+      // Upsert on store_id (unique) so re-saving an existing assignment
+      // doesn't trip the unique-constraint when the cached `assignment` is stale.
+      let error: any = null;
+      if (hasAssignment) {
+        ({ error } = await supabase
+          .from("store_plan_assignments" as any)
+          .update(payload)
+          .eq("id", assignment.id));
+      } else {
+        ({ error } = await supabase
+          .from("store_plan_assignments" as any)
+          .upsert(payload, { onConflict: "store_id" }));
+      }
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Subscription updated"); onSaved(); },
