@@ -927,6 +927,18 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                 <Switch id="is-best-selling" checked={isBestSelling} onCheckedChange={setIsBestSelling} />
                 <Label htmlFor="is-best-selling">Best Selling</Label>
               </div>
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="is-category-pinned"
+                  checked={isCategoryPinned}
+                  onCheckedChange={setIsCategoryPinned}
+                  disabled={!category}
+                />
+                <Label htmlFor="is-category-pinned" className={!category ? "opacity-60" : ""}>
+                  Pin to top of category
+                  {!category && <span className="ml-1 text-xs text-muted-foreground">(set a category first)</span>}
+                </Label>
+              </div>
             </div>
 
 
