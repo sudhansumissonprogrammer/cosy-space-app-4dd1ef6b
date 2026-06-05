@@ -1,5 +1,13 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.50.0 — INSTANT TRACKING CACHE REFRESH
+ * SHOPBANAO PRODUCTION ROUTER v8.51.0 — TTFB UNBLOCK (cold-load regression fix)
+ *
+ * v8.51.0 — Race storefront shell against 200ms deadline in head-flush path.
+ *           v8.47.0 introduced an UNCONDITIONAL `await storefrontPromise`
+ *           before writing the first byte of HTML. On cold KV (after every
+ *           worker deploy, across all CF colos) this added 1-3s to TTFB and
+ *           pushed mobile cold loads from 3-4s to 10-14s. Per-route SEO head
+ *           is now skipped if shell isn't ready in 200ms; the very next warm
+ *           request injects it normally. Humans get HTML immediately again.
  *
  * v8.48.0 — /cf-img handler deleted (was 125 lines of unused image
  *           proxy/resize code). Confirmed zero callers in frontend.
