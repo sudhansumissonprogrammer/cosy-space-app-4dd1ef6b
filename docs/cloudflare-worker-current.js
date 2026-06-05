@@ -3558,7 +3558,11 @@ async function serveStreamedHtml(
       let earlyStorefrontResult = null;
       if (pdpCategoryInline?.kind && pdpCategoryInline?.json) {
         try {
-          earlyStorefrontResult = await storefrontPromise;
+          // v8.51.0 — race against 200ms deadline (same reason as homepage below).
+          earlyStorefrontResult = await Promise.race([
+            storefrontPromise,
+            new Promise((resolve) => setTimeout(() => resolve(null), 200)),
+          ]);
         } catch {}
         const earlyStore = earlyStorefrontResult?.data?.store;
         if (earlyStore) {
