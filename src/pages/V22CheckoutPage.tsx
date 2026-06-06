@@ -1978,8 +1978,11 @@ export default function V22CheckoutPage() {
             rel="noopener noreferrer"
             className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
           >
-            {t("Powered by", "द्वारा संचालित")}{" "}
-            <span className="font-semibold text-foreground">ShopBanao.in</span>{" "}
+            <span className="inline-flex items-center gap-1">
+              {t("Powered by", "द्वारा संचालित")}
+              <img src="/shopbanao-logo.webp" alt="ShopBanao" className="h-3.5 w-auto inline-block align-middle" loading="lazy" width="14" height="14" />
+              <span className="font-semibold text-foreground">ShopBanao.in</span>
+            </span>{" "}
             <span className="opacity-70">{t("· India's Trusted Store Platform", "· भारत का भरोसेमंद स्टोर प्लेटफ़ॉर्म")}</span>
           </a>
           <p className="text-[10px] text-muted-foreground/80 max-w-xs leading-snug">
