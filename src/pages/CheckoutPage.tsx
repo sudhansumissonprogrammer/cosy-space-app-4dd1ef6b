@@ -100,6 +100,16 @@ export default function CheckoutPage() {
     if (!store?.id) return;
     fireStorefrontEvent({ storeId: store.id, eventName: "begin_checkout" });
   }, [store?.id]);
+  // Auto-redirect to storefront home when cart becomes empty in cart mode
+  // (e.g. customer removed the last item from the order summary).
+  // Skipped during order placement / success to avoid yanking the user away.
+  useEffect(() => {
+    if (isSingleMode) return;
+    if (orderPlaced || placing) return;
+    if (cartItems.length === 0) {
+      navigate(storefrontPath(store.slug), { replace: true });
+    }
+  }, [isSingleMode, cartItems.length, orderPlaced, placing, store.slug, navigate]);
   const [showUpsell, setShowUpsell] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
