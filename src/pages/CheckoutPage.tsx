@@ -455,6 +455,7 @@ export default function CheckoutPage() {
       }]
     : cartItems.map((i) => ({
         productId: i.productId,
+        variantId: i.variantId,
         name: i.variantName ? `${i.name} (${i.variantName})` : i.name,
         price: i.price,
         originalPrice: i.price,
