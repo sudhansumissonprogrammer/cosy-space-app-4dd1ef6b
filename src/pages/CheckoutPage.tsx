@@ -104,12 +104,12 @@ export default function CheckoutPage() {
   // (e.g. customer removed the last item from the order summary).
   // Skipped during order placement / success to avoid yanking the user away.
   useEffect(() => {
-    if (isSingleMode) return;
+    if (productId) return; // buy-now single mode
     if (orderPlaced || placing) return;
     if (cartItems.length === 0) {
       navigate(storefrontPath(store.slug), { replace: true });
     }
-  }, [isSingleMode, cartItems.length, orderPlaced, placing, store.slug, navigate]);
+  }, [productId, cartItems.length, orderPlaced, placing, store.slug, navigate]);
   const [showUpsell, setShowUpsell] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
