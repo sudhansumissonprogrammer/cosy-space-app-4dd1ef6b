@@ -447,6 +447,7 @@ export default function CheckoutPage() {
   const checkoutItems = isSingleMode && product
     ? [{
         productId: product.id,
+        variantId: variant?.id as string | undefined,
         name: variant ? `${product.name} (${variant.name})` : product.name,
         price: variant?.price ?? (product.sale_price && product.sale_price < product.price ? product.sale_price : product.price),
         originalPrice: product.price,
