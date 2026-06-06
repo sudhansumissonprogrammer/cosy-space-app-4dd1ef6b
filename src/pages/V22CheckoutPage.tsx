@@ -448,6 +448,7 @@ export default function V22CheckoutPage() {
   const checkoutItems = isSingleMode && product
     ? [{
         productId: product.id,
+        variantId: variant?.id as string | undefined,
         name: variant ? `${product.name} (${variant.name})` : product.name,
         price: variant?.price ?? (product.sale_price && product.sale_price < product.price ? product.sale_price : product.price),
         originalPrice: product.price,
@@ -456,6 +457,7 @@ export default function V22CheckoutPage() {
       }]
     : cartItems.map((i) => ({
         productId: i.productId,
+        variantId: i.variantId,
         name: i.variantName ? `${i.name} (${i.variantName})` : i.name,
         price: i.price,
         originalPrice: i.price,
