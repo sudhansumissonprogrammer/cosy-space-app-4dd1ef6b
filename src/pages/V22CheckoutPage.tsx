@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, ArrowLeft, ArrowRight, Package, MapPin, CreditCard, Banknote, Plus, Check, ChevronDown, Tag, X, Pencil, LocateFixed, ShieldCheck, Truck, RotateCcw, Star } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowLeft, ArrowRight, Package, MapPin, CreditCard, Banknote, Plus, Check, ChevronDown, Tag, X, Pencil, LocateFixed, ShieldCheck, Truck, RotateCcw, Star, Trash2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
@@ -85,7 +85,7 @@ export default function V22CheckoutPage() {
   const [searchParams] = useSearchParams();
   const productId = searchParams.get("product");
   const variantId = searchParams.get("variant");
-  const { items: cartItems, clearCart } = useCart();
+  const { items: cartItems, clearCart, removeFromCart } = useCart();
   const { customer, ensureCustomer } = useStorefrontAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -94,6 +94,13 @@ export default function V22CheckoutPage() {
   const [placing, setPlacing] = useState(false);
   const [placingStep, setPlacingStep] = useState<0 | 1 | 2 | 3>(0); // 0 idle, 1 creating, 2 confirming, 3 sending whatsapp
   const [orderPlaced, setOrderPlaced] = useState(false);
+  useEffect(() => {
+    if (productId) return;
+    if (orderPlaced || placing) return;
+    if (cartItems.length === 0) {
+      navigate(storefrontPath(store.slug), { replace: true });
+    }
+  }, [productId, cartItems.length, orderPlaced, placing, store.slug, navigate]);
   const [showUpsell, setShowUpsell] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
@@ -441,6 +448,7 @@ export default function V22CheckoutPage() {
   const checkoutItems = isSingleMode && product
     ? [{
         productId: product.id,
+        variantId: variant?.id as string | undefined,
         name: variant ? `${product.name} (${variant.name})` : product.name,
         price: variant?.price ?? (product.sale_price && product.sale_price < product.price ? product.sale_price : product.price),
         originalPrice: product.price,
@@ -449,6 +457,7 @@ export default function V22CheckoutPage() {
       }]
     : cartItems.map((i) => ({
         productId: i.productId,
+        variantId: i.variantId,
         name: i.variantName ? `${i.name} (${i.variantName})` : i.name,
         price: i.price,
         originalPrice: i.price,
@@ -1591,7 +1600,20 @@ export default function V22CheckoutPage() {
                   <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
                   <p className="text-xs text-muted-foreground">{t("Qty", "मात्रा")}: {item.quantity}</p>
                 </div>
-                <p className="text-sm font-semibold text-foreground whitespace-nowrap">{formatPrice((item.price * item.quantity), currency)}</p>
+                <div className="flex flex-col items-end gap-1.5 whitespace-nowrap">
+                  <p className="text-sm font-semibold text-foreground">{formatPrice((item.price * item.quantity), currency)}</p>
+                  {!isSingleMode && !placing && !orderPlaced && (
+                    <button
+                      type="button"
+                      onClick={() => removeFromCart(item.productId, item.variantId)}
+                      aria-label={t("Remove item", "हटाएं")}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {t("Remove", "हटाएं")}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
