@@ -414,7 +414,9 @@ const storefrontChildRoutes = (theme: string) => {
       <Route path="best-sellers" element={<StorefrontBestSellers />} />
       <Route path="categories" element={<StorefrontCategoriesPage />} />
       <Route path="contact" element={<StorefrontContact />} />
+      <Route path="contact-us" element={<StorefrontContact />} />
       <Route path="about" element={<StorefrontAboutUs />} />
+      <Route path="about-us" element={<StorefrontAboutUs />} />
       <Route path="return-policy" element={<StorefrontReturnPolicy />} />
       <Route path="shipping-policy" element={<StorefrontShippingPolicy />} />
       <Route path="terms" element={<StorefrontTerms />} />
