@@ -54,10 +54,10 @@ export default function BillingBanner() {
   }
 
   return (
-    <div className={`flex items-center gap-2 px-4 py-2 text-sm ${isUrgent ? "bg-destructive/10 text-destructive border-b border-destructive/30" : "bg-amber-500/10 text-amber-700 dark:text-amber-500 border-b border-amber-500/30"}`}>
+    <div className={`flex items-start gap-2 px-4 py-2 text-sm sm:items-center ${isUrgent ? "bg-destructive/10 text-destructive border-b border-destructive/30" : "bg-amber-500/10 text-amber-700 dark:text-amber-500 border-b border-amber-500/30"}`}>
       {isUrgent ? <AlertTriangle className="h-4 w-4 flex-shrink-0" /> : <Clock className="h-4 w-4 flex-shrink-0" />}
-      <span className="flex-1">{message}</span>
-      <Link to="/dashboard/settings/account" className="font-medium underline underline-offset-2">
+      <span className="min-w-0 flex-1 leading-snug">{message}</span>
+      <Link to="/dashboard/settings/account" className="shrink-0 whitespace-nowrap font-medium underline underline-offset-2">
         Pay Now
       </Link>
       {!isUrgent && (
