@@ -320,7 +320,7 @@ function SubscriptionPanel({ storeId, assignment, plans, payments, onSaved }: an
             </div>
             <div>
               <Label>Status</Label>
-              <Select value={billingStatus} onValueChange={setBillingStatus} disabled={isFreeLifetime || isOneTime}>
+              <Select value={isFreeLifetime ? "lifetime" : isOneTime ? "one_time_paid" : billingStatus} onValueChange={setBillingStatus} disabled={isFreeLifetime || isOneTime}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {["trialing","active","past_due","suspended","cancelled","lifetime","one_time_paid"].map((s) => (
