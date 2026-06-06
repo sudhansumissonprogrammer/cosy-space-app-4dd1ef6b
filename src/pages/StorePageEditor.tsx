@@ -84,6 +84,7 @@ export default function StorePageEditor() {
 
   const pageType = (page as any)?.page_type;
   const showFeatures = pageType === "about_us" || pageType === "about" || pageType === "contact";
+  const isCustomHtmlAllowed = isNew || pageType === "custom";
 
   useEffect(() => {
     if (page) {
@@ -164,7 +165,7 @@ export default function StorePageEditor() {
         slug: slug.trim() || generateSlug(title),
         is_active: isActive,
         image_url: imageUrl,
-        custom_html: useCustomHtml && customHtml.trim() ? customHtml.trim() : null,
+        custom_html: isCustomHtmlAllowed && useCustomHtml && customHtml.trim() ? customHtml.trim() : null,
       };
 
       if (isNew) {
@@ -223,7 +224,7 @@ export default function StorePageEditor() {
   }
 
   const isSystemPage = pageType && pageType !== "custom";
-  const isHtmlEligible = !pageType || pageType === "custom" || pageType === "about_us" || pageType === "about" || pageType === "contact";
+  const isHtmlEligible = isCustomHtmlAllowed;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
