@@ -46,6 +46,13 @@ export default function StorefrontContact() {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
 
+  const shellContactPage = (() => {
+    const pages = (window as any).__STOREFRONT_DATA__?.standard_pages;
+    return Array.isArray(pages)
+      ? pages.find((page: any) => page?.page_type === "contact")
+      : undefined;
+  })();
+
   // Fetch custom_html for contact page
   const { data: contactPage } = useQuery({
     queryKey: ["storefront-contact-page-html", store.id],
@@ -61,6 +68,7 @@ export default function StorefrontContact() {
     },
     enabled: !!store.id,
     staleTime: 5 * 60 * 1000,
+    initialData: shellContactPage ? { custom_html: shellContactPage.custom_html } : undefined,
   });
 
   const customHtml = (contactPage as any)?.custom_html as string | null;

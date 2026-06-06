@@ -200,6 +200,13 @@ export default function StorefrontAboutUs() {
   const aboutUsText = (store as any).about_us_text as string | null;
   const aboutUsImage = (store as any).about_us_image_url as string | null;
 
+  const shellAboutPage = (() => {
+    const pages = (window as any).__STOREFRONT_DATA__?.standard_pages;
+    return Array.isArray(pages)
+      ? pages.find((page: any) => ["about", "about_us"].includes(page?.page_type))
+      : undefined;
+  })();
+
   const { data: aboutPage } = useQuery({
     queryKey: ["storefront-about-page-html", store.id],
     queryFn: async () => {
@@ -215,6 +222,7 @@ export default function StorefrontAboutUs() {
     },
     enabled: !!store.id,
     staleTime: 5 * 60 * 1000,
+    initialData: shellAboutPage ? { custom_html: shellAboutPage.custom_html } : undefined,
   });
 
   const customHtml = (aboutPage as any)?.custom_html as string | null;
