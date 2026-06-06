@@ -94,6 +94,13 @@ export default function V22CheckoutPage() {
   const [placing, setPlacing] = useState(false);
   const [placingStep, setPlacingStep] = useState<0 | 1 | 2 | 3>(0); // 0 idle, 1 creating, 2 confirming, 3 sending whatsapp
   const [orderPlaced, setOrderPlaced] = useState(false);
+  useEffect(() => {
+    if (productId) return;
+    if (orderPlaced || placing) return;
+    if (cartItems.length === 0) {
+      navigate(storefrontPath(store.slug), { replace: true });
+    }
+  }, [productId, cartItems.length, orderPlaced, placing, store.slug, navigate]);
   const [showUpsell, setShowUpsell] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
