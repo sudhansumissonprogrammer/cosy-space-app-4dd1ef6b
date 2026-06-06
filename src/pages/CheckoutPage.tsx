@@ -1619,7 +1619,20 @@ export default function CheckoutPage() {
                   <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
                   <p className="text-xs text-muted-foreground">{t("Qty", "मात्रा")}: {item.quantity}</p>
                 </div>
-                <p className="text-sm font-semibold text-foreground whitespace-nowrap">{formatPrice((item.price * item.quantity), currency)}</p>
+                <div className="flex flex-col items-end gap-1.5 whitespace-nowrap">
+                  <p className="text-sm font-semibold text-foreground">{formatPrice((item.price * item.quantity), currency)}</p>
+                  {!isSingleMode && !placing && !orderPlaced && (
+                    <button
+                      type="button"
+                      onClick={() => removeFromCart(item.productId, item.variantId)}
+                      aria-label={t("Remove item", "हटाएं")}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {t("Remove", "हटाएं")}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
