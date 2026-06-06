@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
           admin.from("store_commission_config").select("*").eq("store_id", store_id).maybeSingle(),
           admin.from("store_wallet_ledger").select("*").eq("store_id", store_id).order("created_at", { ascending: false }).limit(100),
           admin.from("store_wallet_recharges").select("*").eq("store_id", store_id).order("created_at", { ascending: false }).limit(50),
-          admin.from("stores").select("id, name, slug, billing_mode").eq("id", store_id).maybeSingle(),
+          admin.from("stores").select("id, name, slug, billing_mode, is_suspended, suspension_reason, is_verified, created_at").eq("id", store_id).maybeSingle(),
         ]);
         return j({
           store: s.data, wallet: w.data, config: c.data,
