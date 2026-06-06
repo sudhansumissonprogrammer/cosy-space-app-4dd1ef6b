@@ -252,7 +252,6 @@ function OverviewTab({ store, owner, mode, wallet, config, assignment }: any) {
 /* ── Subscription Panel ──────────────────────────────────── */
 
 function SubscriptionPanel({ storeId, assignment, plans, payments, onSaved }: any) {
-  const hasAssignment = !!assignment?.id;
   const [planId, setPlanId] = useState(assignment?.plan_id || plans[0]?.id || "");
   const [customPlanName, setCustomPlanName] = useState(assignment?.custom_plan_name || "");
   const [customPrice, setCustomPrice] = useState(assignment?.custom_price?.toString() || "");
