@@ -1981,7 +1981,7 @@ export default function V22CheckoutPage() {
           >
             <span className="inline-flex items-center gap-1">
               {t("Powered by", "द्वारा संचालित")}
-              <img src={shopbanaoLogo} alt="ShopBanao" className="h-3 w-3 inline-block align-middle object-contain" loading="lazy" width="12" height="12" />
+              <img src={shopbanaoLogo} alt="ShopBanao" className="h-4 w-4 inline-block align-middle object-contain" loading="lazy" width="16" height="16" />
               <span className="font-semibold text-foreground">ShopBanao.in</span>
             </span>
             <span className="opacity-70">{t("· India's Trusted Store Platform", "· भारत का भरोसेमंद स्टोर प्लेटफ़ॉर्म")}</span>
