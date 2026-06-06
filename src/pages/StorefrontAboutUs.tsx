@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Instagram, Facebook, MessageCircle } from "lucide-react";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
-import CustomHtmlRenderer from "@/components/storefront/CustomHtmlRenderer";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 
@@ -199,37 +198,6 @@ export default function StorefrontAboutUs() {
   const store = useOutletContext<StoreData>();
   const aboutUsText = (store as any).about_us_text as string | null;
   const aboutUsImage = (store as any).about_us_image_url as string | null;
-
-  const shellAboutPage = (() => {
-    const pages = (window as any).__STOREFRONT_DATA__?.standard_pages;
-    return Array.isArray(pages)
-      ? pages.find((page: any) => ["about", "about_us"].includes(page?.page_type))
-      : undefined;
-  })();
-
-  const { data: aboutPage } = useQuery({
-    queryKey: ["storefront-about-page-html", store.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("store_pages")
-        .select("custom_html")
-        .eq("store_id", store.id)
-        .in("page_type", ["about_us", "about"])
-        .eq("is_active", true)
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!store.id,
-    staleTime: 5 * 60 * 1000,
-    initialData: shellAboutPage ? { custom_html: shellAboutPage.custom_html } : undefined,
-  });
-
-  const customHtml = (aboutPage as any)?.custom_html as string | null;
-
-  if (customHtml?.trim()) {
-    return <CustomHtmlRenderer html={customHtml} className="" />;
-  }
 
   return (
     <div className="min-h-[70vh]">
