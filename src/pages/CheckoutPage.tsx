@@ -1995,8 +1995,8 @@ export default function CheckoutPage() {
             rel="noopener noreferrer"
             className="text-[11px] text-muted-foreground hover:text-foreground transition-colors inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5"
           >
-            <span className="inline-flex items-center gap-1">
-              {t("Powered by", "द्वारा संचालित")}
+            <span className="inline-flex items-center gap-0.5">
+              <span className="mr-1">{t("Powered by", "द्वारा संचालित")}</span>
               <img src={shopbanaoLogo} alt="ShopBanao" className="h-5 w-5 inline-block align-middle object-contain" loading="lazy" width="20" height="20" />
               <span className="font-semibold text-foreground">ShopBanao.in</span>
             </span>
