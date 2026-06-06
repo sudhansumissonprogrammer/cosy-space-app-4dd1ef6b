@@ -1977,13 +1977,13 @@ export default function V22CheckoutPage() {
             href="https://shopbanao.in"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            className="text-[11px] text-muted-foreground hover:text-foreground transition-colors inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5"
           >
             <span className="inline-flex items-center gap-1">
               {t("Powered by", "द्वारा संचालित")}
-              <img src="/shopbanao-logo.webp" alt="ShopBanao" className="h-3.5 w-auto inline-block align-middle" loading="lazy" width="14" height="14" />
+              <img src={shopbanaoLogo} alt="ShopBanao" className="h-3 w-3 inline-block align-middle object-contain" loading="lazy" width="12" height="12" />
               <span className="font-semibold text-foreground">ShopBanao.in</span>
-            </span>{" "}
+            </span>
             <span className="opacity-70">{t("· India's Trusted Store Platform", "· भारत का भरोसेमंद स्टोर प्लेटफ़ॉर्म")}</span>
           </a>
           <p className="text-[10px] text-muted-foreground/80 max-w-xs leading-snug">
