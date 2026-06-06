@@ -252,7 +252,6 @@ function OverviewTab({ store, owner, mode, wallet, config, assignment }: any) {
 /* ── Subscription Panel ──────────────────────────────────── */
 
 function SubscriptionPanel({ storeId, assignment, plans, payments, onSaved }: any) {
-  const hasAssignment = !!assignment?.id;
   const [planId, setPlanId] = useState(assignment?.plan_id || plans[0]?.id || "");
   const [customPlanName, setCustomPlanName] = useState(assignment?.custom_plan_name || "");
   const [customPrice, setCustomPrice] = useState(assignment?.custom_price?.toString() || "");
@@ -277,39 +276,27 @@ function SubscriptionPanel({ storeId, assignment, plans, payments, onSaved }: an
     setPeriodEnd(toLocal(assignment?.current_period_end));
     setGraceEnd(toLocal(assignment?.grace_period_ends_at));
     setNotes(assignment?.notes || "");
-  }, [assignment?.id]);
+  }, [assignment, plans]);
 
   const save = useMutation({
     mutationFn: async () => {
+      const effectiveStatus = isFreeLifetime ? "lifetime" : isOneTime ? "one_time_paid" : billingStatus;
       const payload: any = {
+        action: "update_subscription",
         store_id: storeId,
         plan_id: planId,
         custom_plan_name: customPlanName.trim() || null,
-        custom_price: customPrice === "" ? null : Number(customPrice),
+        custom_price: isFreeLifetime ? null : customPrice === "" ? null : Number(customPrice),
         custom_product_limit: customLimit === "" ? null : parseInt(customLimit),
         is_free_lifetime: isFreeLifetime,
         is_one_time: isOneTime,
-        billing_status: isFreeLifetime ? "lifetime" : isOneTime ? "one_time_paid" : billingStatus,
-        trial_ends_at: trialEnds ? new Date(trialEnds).toISOString() : null,
-        current_period_end: periodEnd ? new Date(periodEnd).toISOString() : null,
-        grace_period_ends_at: graceEnd ? new Date(graceEnd).toISOString() : null,
+        billing_status: effectiveStatus,
+        trial_ends_at: isFreeLifetime || isOneTime ? null : trialEnds ? new Date(trialEnds).toISOString() : null,
+        current_period_end: isFreeLifetime || isOneTime ? null : periodEnd ? new Date(periodEnd).toISOString() : null,
+        grace_period_ends_at: isFreeLifetime || isOneTime || !["past_due", "suspended"].includes(effectiveStatus) ? null : graceEnd ? new Date(graceEnd).toISOString() : null,
         notes: notes.trim() || null,
-        status: "active",
       };
-      // Upsert on store_id (unique) so re-saving an existing assignment
-      // doesn't trip the unique-constraint when the cached `assignment` is stale.
-      let error: any = null;
-      if (hasAssignment) {
-        ({ error } = await supabase
-          .from("store_plan_assignments" as any)
-          .update(payload)
-          .eq("id", assignment.id));
-      } else {
-        ({ error } = await supabase
-          .from("store_plan_assignments" as any)
-          .upsert(payload, { onConflict: "store_id" }));
-      }
-      if (error) throw error;
+      await callControl(payload);
     },
     onSuccess: () => { toast.success("Subscription updated"); onSaved(); },
     onError: (e: any) => toast.error(e.message),
@@ -333,7 +320,7 @@ function SubscriptionPanel({ storeId, assignment, plans, payments, onSaved }: an
             </div>
             <div>
               <Label>Status</Label>
-              <Select value={billingStatus} onValueChange={setBillingStatus} disabled={isFreeLifetime || isOneTime}>
+              <Select value={isFreeLifetime ? "lifetime" : isOneTime ? "one_time_paid" : billingStatus} onValueChange={setBillingStatus} disabled={isFreeLifetime || isOneTime}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {["trialing","active","past_due","suspended","cancelled","lifetime","one_time_paid"].map((s) => (

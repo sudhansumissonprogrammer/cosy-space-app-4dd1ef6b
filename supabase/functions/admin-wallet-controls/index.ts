@@ -30,6 +30,65 @@ Deno.serve(async (req) => {
     if (!action || !store_id) return j({ error: "action and store_id required" }, 400);
 
     switch (action) {
+      case "update_subscription": {
+        const planId = String(body.plan_id || "");
+        if (!planId) return j({ error: "plan_id required" }, 400);
+
+        const { data: plan, error: planErr } = await admin
+          .from("plans")
+          .select("id, is_active")
+          .eq("id", planId)
+          .maybeSingle();
+        if (planErr) return j({ error: planErr.message }, 400);
+        if (!plan || plan.is_active === false) return j({ error: "Selected plan is not active" }, 400);
+
+        const isFreeLifetime = body.is_free_lifetime === true;
+        const isOneTime = !isFreeLifetime && body.is_one_time === true;
+        const validStatuses = ["trialing", "active", "past_due", "suspended", "cancelled", "lifetime", "one_time_paid"];
+        let billingStatus = String(body.billing_status || "active");
+        if (isFreeLifetime) billingStatus = "lifetime";
+        else if (isOneTime) billingStatus = "one_time_paid";
+        else if (!validStatuses.includes(billingStatus) || billingStatus === "lifetime" || billingStatus === "one_time_paid") billingStatus = "active";
+
+        const toNumberOrNull = (value: unknown) => {
+          if (value === null || value === undefined || value === "") return null;
+          const n = Number(value);
+          return Number.isFinite(n) ? n : NaN;
+        };
+        const customPrice = toNumberOrNull(body.custom_price);
+        if (Number.isNaN(customPrice) || (customPrice !== null && customPrice < 0)) return j({ error: "invalid custom price" }, 400);
+        const customLimitRaw = toNumberOrNull(body.custom_product_limit);
+        if (Number.isNaN(customLimitRaw) || (customLimitRaw !== null && customLimitRaw < 1)) return j({ error: "invalid product limit" }, 400);
+
+        const normalizeDate = (value: unknown) => {
+          if (!value) return null;
+          const d = new Date(String(value));
+          return Number.isNaN(d.getTime()) ? null : d.toISOString();
+        };
+
+        const patch = {
+          store_id,
+          plan_id: planId,
+          custom_plan_name: String(body.custom_plan_name || "").trim() || null,
+          custom_price: isFreeLifetime ? null : customPrice,
+          custom_product_limit: customLimitRaw === null ? null : Math.floor(customLimitRaw),
+          is_free_lifetime: isFreeLifetime,
+          is_one_time: isOneTime,
+          billing_status: billingStatus,
+          trial_ends_at: isFreeLifetime || isOneTime ? null : normalizeDate(body.trial_ends_at),
+          current_period_end: isFreeLifetime || isOneTime ? null : normalizeDate(body.current_period_end),
+          grace_period_ends_at: isFreeLifetime || isOneTime || !["past_due", "suspended"].includes(billingStatus) ? null : normalizeDate(body.grace_period_ends_at),
+          next_billing_amount: isFreeLifetime || isOneTime ? null : customPrice,
+          notes: String(body.notes || "").trim() || null,
+          status: "active",
+        };
+
+        const { error } = await admin
+          .from("store_plan_assignments")
+          .upsert(patch, { onConflict: "store_id" });
+        if (error) return j({ error: error.message }, 400);
+        return j({ ok: true, billing_status: billingStatus });
+      }
       case "set_billing_mode": {
         const mode = String(body.mode || "");
         if (!["subscription", "commission"].includes(mode)) {
@@ -76,7 +135,7 @@ Deno.serve(async (req) => {
           admin.from("store_commission_config").select("*").eq("store_id", store_id).maybeSingle(),
           admin.from("store_wallet_ledger").select("*").eq("store_id", store_id).order("created_at", { ascending: false }).limit(100),
           admin.from("store_wallet_recharges").select("*").eq("store_id", store_id).order("created_at", { ascending: false }).limit(50),
-          admin.from("stores").select("id, name, slug, billing_mode").eq("id", store_id).maybeSingle(),
+          admin.from("stores").select("id, name, slug, billing_mode, is_suspended, suspension_reason, is_verified, created_at").eq("id", store_id).maybeSingle(),
         ]);
         return j({
           store: s.data, wallet: w.data, config: c.data,
