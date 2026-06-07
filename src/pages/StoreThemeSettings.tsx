@@ -1696,6 +1696,80 @@ export default function StoreThemeSettings() {
             </AccordionContent>
           </AccordionItem>
         )}
+
+        {store?.slug === "imitationworld" && (
+          <AccordionItem value="trust-badges" className="rounded-xl border border-border bg-card px-4">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex flex-col items-start text-left">
+                <span className="text-sm font-semibold">Trust Badges (above product title)</span>
+                <span className="text-xs text-muted-foreground font-normal">Small scrollable pills like "🌙 Daily Wear · 🏢 Office · 🎉 Party" shown above the product title on PDP</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-1 pb-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">Show trust badges carousel on product page</p>
+                <Switch
+                  checked={!!config.show_trust_badges}
+                  onCheckedChange={(checked) => updateField("show_trust_badges" as any, checked)}
+                />
+              </div>
+
+              {config.show_trust_badges && (
+                <div className="space-y-2">
+                  {(config.trust_badges || []).map((b, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={b.emoji}
+                        onChange={(e) => {
+                          const next = [...(config.trust_badges || [])];
+                          next[i] = { ...next[i], emoji: e.target.value };
+                          updateField("trust_badges" as any, next as any);
+                        }}
+                        placeholder="🌙"
+                        className="w-14 rounded-md border border-input bg-background px-2 py-1.5 text-center text-base"
+                        maxLength={4}
+                      />
+                      <input
+                        type="text"
+                        value={b.label}
+                        onChange={(e) => {
+                          const next = [...(config.trust_badges || [])];
+                          next[i] = { ...next[i], label: e.target.value };
+                          updateField("trust_badges" as any, next as any);
+                        }}
+                        placeholder="Daily Wear"
+                        className="flex-1 rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                        maxLength={20}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = (config.trust_badges || []).filter((_, idx) => idx !== i);
+                          updateField("trust_badges" as any, next as any);
+                        }}
+                        className="rounded-md border border-input bg-background px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted"
+                        aria-label="Remove badge"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = [...(config.trust_badges || []), { emoji: "✨", label: "New Badge" }];
+                      updateField("trust_badges" as any, next as any);
+                    }}
+                    className="w-full rounded-md border border-dashed border-input bg-background px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted"
+                  >
+                    + Add Badge
+                  </button>
+                </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        )}
       </Accordion>
     </div>
   );
