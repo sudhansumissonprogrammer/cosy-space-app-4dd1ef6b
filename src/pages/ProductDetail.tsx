@@ -644,6 +644,7 @@ export default function ProductDetail() {
           productName={product.name}
           hasDiscount={hasDiscount}
           discountPct={discountPct}
+          showWarrantyBadge={!!(mainThemeConfig as any)?.show_warranty_badge}
           onShare={async () => {
             const storeHost = (store as any).custom_domain
               ? `https://${(store as any).custom_domain}`
