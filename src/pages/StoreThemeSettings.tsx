@@ -1669,7 +1669,7 @@ export default function StoreThemeSettings() {
             <AccordionTrigger className="hover:no-underline">
               <div className="flex flex-col items-start text-left">
                 <span className="text-sm font-semibold">Warranty Badge on Product Images</span>
-                <span className="text-xs text-muted-foreground font-normal">Shows "18 CT Gold Polished · 5 Year Colour Warranty" gold pill on every product image</span>
+                <span className="text-xs text-muted-foreground font-normal">Shows "Gold Polished · 5 Year Colour Warranty" gold pill on every product image</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pt-1 pb-4">
