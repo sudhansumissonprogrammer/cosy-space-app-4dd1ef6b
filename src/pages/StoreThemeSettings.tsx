@@ -645,6 +645,7 @@ export default function StoreThemeSettings() {
         mobile_nav_style: (themeConfig as any).mobile_nav_style || "classic",
         header_style: themeConfig.header_style || "normal",
         bilingual_cta: (themeConfig as any).bilingual_cta ?? false,
+        show_warranty_badge: (themeConfig as any).show_warranty_badge ?? false,
         nav_icons: (themeConfig as any).nav_icons || {},
       });
     } else {
