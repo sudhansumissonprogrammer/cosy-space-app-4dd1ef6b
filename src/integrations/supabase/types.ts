@@ -2266,9 +2266,11 @@ export type Database = {
           nav_icons: Json
           primary_color: string
           product_card_style: string
+          show_trust_badges: boolean
           show_warranty_badge: boolean
           store_id: string
           text_color: string
+          trust_badges: Json
           updated_at: string
         }
         Insert: {
@@ -2292,9 +2294,11 @@ export type Database = {
           nav_icons?: Json
           primary_color?: string
           product_card_style?: string
+          show_trust_badges?: boolean
           show_warranty_badge?: boolean
           store_id: string
           text_color?: string
+          trust_badges?: Json
           updated_at?: string
         }
         Update: {
@@ -2318,9 +2322,11 @@ export type Database = {
           nav_icons?: Json
           primary_color?: string
           product_card_style?: string
+          show_trust_badges?: boolean
           show_warranty_badge?: boolean
           store_id?: string
           text_color?: string
+          trust_badges?: Json
           updated_at?: string
         }
         Relationships: [
