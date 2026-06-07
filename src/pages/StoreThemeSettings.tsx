@@ -440,6 +440,7 @@ interface ThemeConfig {
   mobile_nav_style: string;
   header_style: string;
   bilingual_cta?: boolean;
+  show_warranty_badge?: boolean;
   nav_icons?: Record<string, string>;
 }
 
@@ -644,6 +645,7 @@ export default function StoreThemeSettings() {
         mobile_nav_style: (themeConfig as any).mobile_nav_style || "classic",
         header_style: themeConfig.header_style || "normal",
         bilingual_cta: (themeConfig as any).bilingual_cta ?? false,
+        show_warranty_badge: (themeConfig as any).show_warranty_badge ?? false,
         nav_icons: (themeConfig as any).nav_icons || {},
       });
     } else {
@@ -1656,6 +1658,28 @@ export default function StoreThemeSettings() {
                 <Switch
                   checked={!!config.bilingual_cta}
                   onCheckedChange={(checked) => updateField("bilingual_cta" as any, checked)}
+                />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {store?.slug === "imitationworld" && (
+          <AccordionItem value="warranty" className="rounded-xl border border-border bg-card px-4">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex flex-col items-start text-left">
+                <span className="text-sm font-semibold">Warranty Badge on Product Images</span>
+                <span className="text-xs text-muted-foreground font-normal">Shows "18 CT Gold Polished · 5 Year Colour Warranty" gold pill on every product image</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-1 pb-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  Adds a small gold badge to all product cards and the product detail image.
+                </p>
+                <Switch
+                  checked={!!config.show_warranty_badge}
+                  onCheckedChange={(checked) => updateField("show_warranty_badge" as any, checked)}
                 />
               </div>
             </AccordionContent>

@@ -38,6 +38,7 @@ import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
+import WarrantyBadge from "@/components/storefront/WarrantyBadge";
 
 const PRODUCT_SUFFIX_RE = /-[a-z0-9]{4}$/i;
 
@@ -644,6 +645,7 @@ export default function ProductDetail() {
           productName={product.name}
           hasDiscount={hasDiscount}
           discountPct={discountPct}
+          showWarrantyBadge={!!(mainThemeConfig as any)?.show_warranty_badge}
           onShare={async () => {
             const storeHost = (store as any).custom_domain
               ? `https://${(store as any).custom_domain}`
@@ -1442,7 +1444,7 @@ function ShareButtons({ productName, storeSlug, productSlugOrId }: { productName
 }
 
 /* ── Image Gallery with Zoom Icon + Dots Inside Image ── */
-function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }: { images: string[]; productName: string; hasDiscount: number | boolean | null; discountPct: number; onShare?: () => void }) {
+function ImageGallery({ images, productName, hasDiscount, discountPct, onShare, showWarrantyBadge }: { images: string[]; productName: string; hasDiscount: number | boolean | null; discountPct: number; onShare?: () => void; showWarrantyBadge?: boolean }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
@@ -1533,6 +1535,13 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
             >
               <Share2 className="h-4 w-4" />
             </button>
+          )}
+
+          {/* Warranty badge (theme-toggle) */}
+          {showWarrantyBadge && (
+            <div className="absolute right-3 top-14 z-10">
+              <WarrantyBadge size="md" />
+            </div>
           )}
 
           {/* Embla viewport */}
