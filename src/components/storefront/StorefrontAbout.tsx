@@ -51,6 +51,16 @@ export default function StorefrontAbout({ store, productCount }: StorefrontAbout
               Contact us on WhatsApp
             </a>
           )}
+          {(store as any).secondary_phone && (
+            <a
+              href={`tel:${((store as any).secondary_phone as string).replace(/[^0-9+]/g, "")}`}
+              className="flex items-center gap-2 text-sm hover:underline"
+              style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}
+            >
+              <MessageCircle className="h-4 w-4" />
+              Call {(store as any).secondary_phone}
+            </a>
+          )}
           {store.instagram_url && (
             <a href={store.instagram_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm hover:opacity-70 transition-opacity" style={{ color: "var(--storefront-text, hsl(var(--foreground)))80" }}>
               <Instagram className="h-4 w-4" /> Instagram
