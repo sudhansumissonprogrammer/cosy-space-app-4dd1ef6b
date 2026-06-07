@@ -440,6 +440,7 @@ interface ThemeConfig {
   mobile_nav_style: string;
   header_style: string;
   bilingual_cta?: boolean;
+  show_warranty_badge?: boolean;
   nav_icons?: Record<string, string>;
 }
 
