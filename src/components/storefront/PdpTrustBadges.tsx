@@ -1,11 +1,10 @@
 /**
  * PdpTrustBadges — Horizontal scrollable pill carousel shown above the
- * product title on PDP. Each pill = emoji + label. Designed to build trust
- * and showcase use-cases (Daily Wear, Office, Festive, Wedding, etc).
+ * product title on PDP. Each pill = emoji + label.
  *
- * Visual reference: dark brown filled pills + cream outlined pills.
- * The first two pills get the "filled" treatment for visual rhythm,
- * the rest use the outline treatment — matches uploaded reference.
+ * Layout-safe: stays fully inside the info column, never bleeds past
+ * parent padding, never affects sibling grid columns (no negative
+ * margins, width is constrained, overflow is scoped to this row).
  */
 export interface TrustBadgeItem {
   emoji: string;
@@ -19,17 +18,17 @@ interface Props {
 export default function PdpTrustBadges({ badges }: Props) {
   if (!badges || badges.length === 0) return null;
   return (
-    <div className="-mx-4 sm:mx-0 mb-3">
+    <div className="w-full max-w-full min-w-0 mb-3">
       <div
-        className="flex gap-2 overflow-x-auto px-4 sm:px-0 pb-1 no-scrollbar snap-x"
-        style={{ scrollbarWidth: "none" }}
+        className="flex gap-2 overflow-x-auto pb-1 no-scrollbar snap-x"
+        style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
       >
         {badges.map((b, i) => {
-          const filled = i % 4 < 2; // alternate pairs filled/outlined for rhythm
+          const filled = i % 4 < 2;
           return (
             <span
               key={`${b.label}-${i}`}
-              className="shrink-0 snap-start inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold leading-none whitespace-nowrap transition-transform active:scale-95"
+              className="shrink-0 snap-start inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold leading-none whitespace-nowrap"
               style={
                 filled
                   ? {
@@ -46,7 +45,7 @@ export default function PdpTrustBadges({ badges }: Props) {
                     }
               }
             >
-              <span className="text-[15px] leading-none" aria-hidden="true">
+              <span className="text-[14px] leading-none" aria-hidden="true">
                 {b.emoji}
               </span>
               <span style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}>
