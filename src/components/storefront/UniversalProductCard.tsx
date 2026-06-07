@@ -23,6 +23,8 @@ const V20ProductCard = lazy(() => import("./v20/V20ProductCard"));
 const VariantPickerDialog = lazy(() => import("./VariantPickerDialog"));
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { useVariantCount } from "@/hooks/useVariantCounts";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import WarrantyBadge from "./WarrantyBadge";
 
 interface Props {
   product: any;
