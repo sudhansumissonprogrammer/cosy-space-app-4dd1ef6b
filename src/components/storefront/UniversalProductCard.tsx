@@ -91,14 +91,22 @@ export default function UniversalProductCard({ product, slug, store, priority = 
     card
   );
 
+  const themeConfig = useStorefrontThemeConfig(store?.id);
+  const showWarranty = !!(themeConfig as any)?.show_warranty_badge;
+
   return (
     <div
-      className="stagger-card"
+      className="stagger-card relative"
       style={{ "--i": index } as React.CSSProperties}
       onMouseEnter={prefetchProductDetail}
       onTouchStart={prefetchProductDetail}
     >
       {wrapped}
+      {showWarranty && (
+        <div className="absolute top-1.5 right-1.5 z-10">
+          <WarrantyBadge size="sm" />
+        </div>
+      )}
       {hasVariants && variantOpen && (
         <Suspense fallback={null}>
           <VariantPickerDialog
