@@ -1536,6 +1536,13 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare, 
             </button>
           )}
 
+          {/* Warranty badge (theme-toggle) */}
+          {showWarrantyBadge && (
+            <div className="absolute right-3 top-14 z-10">
+              <WarrantyBadge size="md" />
+            </div>
+          )}
+
           {/* Embla viewport */}
           <div
             ref={emblaRef}
