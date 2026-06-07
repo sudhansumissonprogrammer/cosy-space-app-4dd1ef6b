@@ -661,7 +661,7 @@ export default function ProductDetail() {
         />
 
         {/* Product Info */}
-        <div className="flex flex-col gap-0 px-4 sm:px-0 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:scrollbar-hide">
+        <div className="flex flex-col gap-0 px-4 sm:px-0 min-w-0 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:scrollbar-hide">
 
           {/* Trust badges carousel — above title (per-store, theme toggle) */}
           {(mainThemeConfig as any)?.show_trust_badges && Array.isArray((mainThemeConfig as any)?.trust_badges) && (mainThemeConfig as any).trust_badges.length > 0 && (
