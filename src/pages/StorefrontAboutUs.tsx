@@ -137,6 +137,12 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
             {whatsapp && (
               <p>📞 <strong style={{ color: textColor }}>Phone:</strong>{" "}
                 <a href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}>{whatsapp}</a>
+                {(store as any).secondary_phone && (
+                  <>
+                    {" / "}
+                    <a href={`tel:${((store as any).secondary_phone as string).replace(/[^0-9+]/g, "")}`} className="hover:underline" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}>{(store as any).secondary_phone}</a>
+                  </>
+                )}
               </p>
             )}
             {address && (

@@ -255,6 +255,23 @@ export default function StorefrontContact() {
               </a>
             )}
 
+            {/* Secondary Phone Card */}
+            {(store as any).secondary_phone && (
+              <a
+                href={`tel:${((store as any).secondary_phone as string).replace(/[^0-9+]/g, "")}`}
+                className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-all hover:border-primary/30 hover:shadow-md"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                  <Phone className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">Alternate Phone</p>
+                  <p className="text-sm text-muted-foreground">{(store as any).secondary_phone}</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
+              </a>
+            )}
+
             {/* Business Hours Card */}
             {hasHours && (
               <div className="rounded-2xl border border-border bg-card p-5">
