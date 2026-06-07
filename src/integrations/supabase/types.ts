@@ -2266,6 +2266,7 @@ export type Database = {
           nav_icons: Json
           primary_color: string
           product_card_style: string
+          show_warranty_badge: boolean
           store_id: string
           text_color: string
           updated_at: string
@@ -2291,6 +2292,7 @@ export type Database = {
           nav_icons?: Json
           primary_color?: string
           product_card_style?: string
+          show_warranty_badge?: boolean
           store_id: string
           text_color?: string
           updated_at?: string
@@ -2316,6 +2318,7 @@ export type Database = {
           nav_icons?: Json
           primary_color?: string
           product_card_style?: string
+          show_warranty_badge?: boolean
           store_id?: string
           text_color?: string
           updated_at?: string
