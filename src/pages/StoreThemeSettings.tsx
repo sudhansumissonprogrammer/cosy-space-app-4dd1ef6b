@@ -648,6 +648,15 @@ export default function StoreThemeSettings() {
         header_style: themeConfig.header_style || "normal",
         bilingual_cta: (themeConfig as any).bilingual_cta ?? false,
         show_warranty_badge: (themeConfig as any).show_warranty_badge ?? false,
+        show_trust_badges: (themeConfig as any).show_trust_badges ?? false,
+        trust_badges: (themeConfig as any).trust_badges ?? [
+          { emoji: "🌙", label: "Daily Wear" },
+          { emoji: "🏢", label: "Office" },
+          { emoji: "🎓", label: "College" },
+          { emoji: "🎉", label: "Party" },
+          { emoji: "🪔", label: "Festive" },
+          { emoji: "👰", label: "Wedding" },
+        ],
         nav_icons: (themeConfig as any).nav_icons || {},
       });
     } else {
