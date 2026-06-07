@@ -1443,7 +1443,7 @@ function ShareButtons({ productName, storeSlug, productSlugOrId }: { productName
 }
 
 /* ── Image Gallery with Zoom Icon + Dots Inside Image ── */
-function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }: { images: string[]; productName: string; hasDiscount: number | boolean | null; discountPct: number; onShare?: () => void }) {
+function ImageGallery({ images, productName, hasDiscount, discountPct, onShare, showWarrantyBadge }: { images: string[]; productName: string; hasDiscount: number | boolean | null; discountPct: number; onShare?: () => void; showWarrantyBadge?: boolean }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
