@@ -243,6 +243,16 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   <span>{store.whatsapp_number}</span>
                 </a>
               )}
+              {(store as any).secondary_phone && (
+                <a
+                  href={`tel:${((store as any).secondary_phone as string).replace(/[^0-9+]/g, "")}`}
+                  className="flex items-start gap-2 text-sm opacity-75 hover:opacity-100 transition-opacity"
+                  style={{ color: "inherit" }}
+                >
+                  <MessageCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>{(store as any).secondary_phone}</span>
+                </a>
+              )}
             </div>
           </div>
         </div>
