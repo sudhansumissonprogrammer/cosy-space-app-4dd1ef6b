@@ -441,6 +441,8 @@ interface ThemeConfig {
   header_style: string;
   bilingual_cta?: boolean;
   show_warranty_badge?: boolean;
+  show_trust_badges?: boolean;
+  trust_badges?: { emoji: string; label: string }[];
   nav_icons?: Record<string, string>;
 }
 
