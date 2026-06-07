@@ -2672,6 +2672,7 @@ export type Database = {
           partial_payment_value: number | null
           referred_by_partner_id: string | null
           return_policy: string | null
+          secondary_phone: string | null
           seo_about_paragraph: string | null
           shipping_policy: string | null
           slug: string
@@ -2724,6 +2725,7 @@ export type Database = {
           partial_payment_value?: number | null
           referred_by_partner_id?: string | null
           return_policy?: string | null
+          secondary_phone?: string | null
           seo_about_paragraph?: string | null
           shipping_policy?: string | null
           slug: string
@@ -2776,6 +2778,7 @@ export type Database = {
           partial_payment_value?: number | null
           referred_by_partner_id?: string | null
           return_policy?: string | null
+          secondary_phone?: string | null
           seo_about_paragraph?: string | null
           shipping_policy?: string | null
           slug?: string
