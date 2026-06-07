@@ -38,6 +38,7 @@ import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
+import WarrantyBadge from "@/components/storefront/WarrantyBadge";
 
 const PRODUCT_SUFFIX_RE = /-[a-z0-9]{4}$/i;
 
