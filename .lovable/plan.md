@@ -1,92 +1,57 @@
-## Goal
+# Imitation World — "Gold" → "Gold Plated" cleanup + Owner credit
 
-Add a new **Star** toggle on each product in the dashboard. When ON, that product sits at the **top of its own category page** on the storefront. Independent from the existing **Best Selling** flag (which controls the homepage Best Sellers row). A product can have both, neither, or either — they don't interfere.
+Scope: Only the store **Imitation World** (custom domain `imitationworld.in`, owner `demosahio@gmail.com`, store id `c3c5dff2-173a-4f4d-90e4-8b1c88c305d9`). No other store is touched.
 
-Newly added products do **not** displace existing starred ones, because the pin is an explicit flag, not a date.
+## 1. Product titles & descriptions
 
-## Behavior summary
+I'll run a single update on `products` (filtered by `store_id`) that does the replacements in this order, case-insensitive but preserving the original capitalization of "Gold":
 
-| Flag | Where it affects | Behavior |
+1. `Gold Forming` → `Gold Plated` (covers titles like *Premium gold forming chain*, *Gold forming indo premium chain*, *Premium gold forming Rolyal chain*, *Premium gold forming chain. 2 design mix*).
+2. Standalone `Gold` → `Gold Plated` **only when the next word is not already `Plated`** — so existing "Gold plated" titles stay unchanged and we don't end up with "Gold Plated Plated".
+
+### Edge cases — proposed handling
+
+These three titles contain "gold" but the literal swap doesn't read well. My plan, unless you say otherwise in the next reply:
+
+| Current name | After change | Why |
 |---|---|---|
-| `is_best_selling` (existing) | Homepage "Best Sellers" rail | Unchanged |
-| `is_category_pinned` (new) | `/category/<slug>` page only | Pinned products show first, in order they were starred (most-recent star on top) |
-| Both ON | Homepage + category top | Both behaviors apply, no overlap |
+| `Rose Gold Charm Ring` | **left as-is** | "Rose Gold" is a color name, not a metal claim — changing it to "Rose Gold Plated Charm Ring" would actually be fine, but most stores keep "Rose Gold" as the color. |
+| `Royal Chain men's Gold polish` | **left as-is** | This is a *polish product for gold jewellery*, not a gold item itself. |
+| `Royal Chain mens Gold polish 5 year guarentee` | **left as-is** | Same reason. |
 
-Sort order on category page becomes:
-1. `is_category_pinned = true` first, newest-pinned first (via `category_pinned_at DESC`)
-2. then existing order: `display_order ASC, created_at DESC, id ASC`
+If you want me to also rewrite these three to "Gold Plated", reply "yes change polish + rose gold too" and I'll widen the rule. Otherwise I'll skip them.
 
-Shop-All page, search, and Best Sellers rail are **not** changed.
+Descriptions: same two rules applied to the `description` column (7 rows currently contain "gold" without "plated").
 
-## Technical plan
+## 2. About Us & Contact Us pages
 
-### 1. Database migration
+Both pages exist in `store_pages` for this store:
 
-Add two columns to `products`:
+- About Us (`page_type='about'`, slug `about-us`)
+- Contact Us (`page_type='contact'`, slug `contact`)
 
-```sql
-ALTER TABLE public.products
-  ADD COLUMN is_category_pinned boolean NOT NULL DEFAULT false,
-  ADD COLUMN category_pinned_at timestamptz;
+I will append a clearly-formatted owner line to each page's `content` (idempotent — only added if not already present):
 
-CREATE INDEX idx_products_category_pinned
-  ON public.products (store_id, category, category_pinned_at DESC)
-  WHERE is_category_pinned = true;
+```
+Owner: Sudhansu Sahoo
 ```
 
-Update `get_category_page` RPC (DROP-first per overload rule) so the inner `SELECT` orders by:
-```
-ORDER BY is_category_pinned DESC, category_pinned_at DESC NULLS LAST, display_order ASC, created_at DESC
-```
-and selects the two new columns.
+About Us → added at the end as a new paragraph.
+Contact Us → added under the existing "Contact us :-" block so it shows next to email / phone / address.
 
-### 2. Backend / data layer
+No code/UI changes — both pages render `content` from the DB, so the storefront will pick it up immediately after the data update.
 
-- `src/hooks/useInfiniteProducts.ts` — extend `PRODUCT_COLUMNS` with `is_category_pinned,category_pinned_at`; in the preview/localhost Supabase branch, add the same ORDER BY chain **only when `category` filter is set** (Shop-All stays as-is).
-- `src/hooks/useBestSellingProducts.ts` — no change.
+## 3. What I will NOT touch
 
-### 3. Cloudflare Worker (`docs/cloudflare-worker-current.js`)
+- Other stores (only `store_id = c3c5dff2-…c305d9`).
+- Categories, product images, prices, stock.
+- The Imitation World theme, layout, or any code files.
+- Already-correct titles like "Gold plated indo chain".
 
-- Add `is_category_pinned,category_pinned_at` to `PRODUCT_COLUMNS` (line 2128).
-- In `_fetchProductsFromDb` default sort (line 4655), when `filters.category` is present, prepend pinned ordering:
-  ```
-  is_category_pinned.desc,category_pinned_at.desc.nullslast,display_order.asc,is_best_selling.desc,created_at.desc,id.asc
-  ```
-  When no category filter, keep current sort untouched.
-- Bump worker version comment; user redeploys manually (per memory).
+## Technical notes
 
-### 4. Dashboard UI — Products list (`src/pages/ProductsList.tsx`)
+- Single `UPDATE` on `products` using `regexp_replace(name, '(?i)gold forming', 'Gold Plated', 'g')` then `regexp_replace(name, '(?i)gold(?!\s*plated)', 'Gold Plated', 'g')`, same for `description`. Scoped by `store_id`.
+- Two `UPDATE`s on `store_pages` (about + contact) guarded by `content NOT ILIKE '%Sudhansu Sahoo%'` so re-running is safe.
+- All changes go through the data-insert tool (no schema migration needed).
 
-- Add a star icon button per row (lucide `Star` / `StarOff`) next to the existing best-selling toggle.
-- Click → `UPDATE products SET is_category_pinned = !current, category_pinned_at = (CASE WHEN newValue THEN now() ELSE null END) WHERE id = ?`.
-- Optimistic toast: "Pinned to top of {category}" / "Unpinned".
-- Disabled with tooltip when the product has no category set ("Assign a category first").
-
-### 5. Dashboard UI — Edit Product page (`src/pages/EditProduct.tsx`) and Create
-
-- Add a labelled switch in the same card as the "Best Selling" toggle: **"Pin to top of category"** with helper text *"Shows this product first on its category page. Independent of Best Selling."*
-- Saves alongside other fields; sets `category_pinned_at = now()` when toggled on, `null` when off.
-
-### 6. Cache invalidation
-
-When the star flag is toggled, call the existing `purgeStoreCache` (same path already used by best-selling toggle in ProductsList) so the Worker `/api/products?category=…` and `get_category_page` KV entries refresh.
-
-### 7. Out of scope (explicit)
-
-- No multi-category join table — each product still has one `category`.
-- No changes to homepage Best Sellers logic.
-- No changes to Shop-All / search ordering.
-- No new admin "Pinned manager" page — toggle lives on existing product surfaces.
-
-### Files touched
-
-```text
-supabase/migrations/<new>.sql        new column + index + updated RPC
-docs/cloudflare-worker-current.js    PRODUCT_COLUMNS + sort branch (manual deploy)
-src/hooks/useInfiniteProducts.ts     columns + category-only sort
-src/pages/ProductsList.tsx           star toggle button per row
-src/pages/EditProduct.tsx            star switch in form
-src/pages/CreateProduct.tsx          star switch in form (defaults off)
-```
-
-After the migration runs, Supabase types regenerate and the React code can reference the new columns.
+Reply **"go"** to apply, or tell me to widen/narrow the rules (especially the Rose Gold / Gold polish edge cases) first.
