@@ -54,8 +54,8 @@ export async function computePayuRequestHash(p: PayuRequestHashParams): Promise<
     p.udf3 || "",
     p.udf4 || "",
     p.udf5 || "",
-    // 6 empty fields between udf5 and salt as per PayU v2 spec
-    "", "", "", "", "", "",
+    // 5 empty fields (udf6..udf10 placeholders) between udf5 and salt per PayU spec
+    "", "", "", "", "",
     p.salt,
   ].join("|");
   return sha512Hex(seq);
