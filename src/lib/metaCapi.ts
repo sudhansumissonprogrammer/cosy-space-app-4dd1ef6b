@@ -88,12 +88,17 @@ const inflightProbe = new Map<string, Promise<boolean>>();
 // coverage (degrades EMQ + iOS attribution). It only fires when the store has
 // CAPI configured (__SF_META_CAPI_ENABLED__ === true) — unconfigured stores
 // still short-circuit before any edge call.
+// PageView + Lead are mirrored to CAPI so Meta's "browser ⇄ server event
+// coverage" diagnostic stops flagging us. Both fire with shared event_ids so
+// the server event deduplicates against the pixel one — no double-counting.
 const CAPI_EVENTS = new Set([
+  "PageView",
   "ViewContent",
   "AddToCart",
   "InitiateCheckout",
   "AddPaymentInfo",
   "Purchase",
+  "Lead",
 ]);
 
 
