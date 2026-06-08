@@ -43,7 +43,6 @@ import PdpTrustBadges from "@/components/storefront/PdpTrustBadges";
 
 const PRODUCT_SUFFIX_RE = /-[a-z0-9]{4}$/i;
 
-const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
 const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
@@ -174,7 +173,6 @@ export default function ProductDetail() {
   const [justAdded, setJustAdded] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>("description");
-  const [buyNowModalOpen, setBuyNowModalOpen] = useState(false);
   const [variantPromptOpen, setVariantPromptOpen] = useState(false);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
   const inlineCtaRef = useRef<HTMLDivElement>(null);
@@ -1195,21 +1193,6 @@ export default function ProductDetail() {
 
         </>,
         document.body
-      )}
-
-      {/* Theme 16 / 21 Buy Now Phone Modal */}
-      {((store as any).theme === "theme-16" || (store as any).theme === "theme-21") && (
-        <Suspense fallback={null}>
-          <BuyNowPhoneModal
-            open={buyNowModalOpen}
-            onOpenChange={setBuyNowModalOpen}
-            storeSlug={store.slug}
-            storeId={store.id}
-            productId={product?.id}
-            productName={product?.name}
-            source="quick_buy_pdp"
-          />
-        </Suspense>
       )}
 
       {/* Variant required prompt */}
