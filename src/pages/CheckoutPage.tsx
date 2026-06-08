@@ -772,6 +772,84 @@ export default function CheckoutPage() {
     };
   }, [pendingOrder, paymentFailed, store.id]);
 
+  // PayU return handler — runs on mount + on focus to recover state after
+  // redirect-back, browser refresh, or UPI app return.
+  // MUST be declared before any early returns to keep hook order stable (React #310).
+  useEffect(() => {
+    if (!store?.id) return;
+    const params = new URLSearchParams(window.location.search);
+    const payuStatus = params.get("payu_status");
+    const txnid = params.get("txnid");
+    const returnedOrderId = params.get("payu_order");
+    if (!payuStatus || !txnid) return;
+
+    let cached: any = null;
+    try { cached = JSON.parse(sessionStorage.getItem(`payu_pending_${store.id}`) || "null"); } catch {}
+    const orderId = returnedOrderId || cached?.order_id;
+    if (!orderId) {
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.delete("payu_status");
+        u.searchParams.delete("txnid");
+        u.searchParams.delete("payu_order");
+        window.history.replaceState({}, "", u.toString());
+      } catch {}
+      return;
+    }
+
+    setConfirmingPayment(true);
+    setPlacing(true);
+    setPlacingStep(2);
+
+    const poll = async () => {
+      const attempts = payuStatus === "success" ? 10 : 4;
+      for (let i = 0; i < attempts; i++) {
+        try {
+          const r = await callEdgeFunction("payu-status", {
+            store_id: store.id, order_id: orderId, txnid,
+          });
+          if (r?.status === "PAID") {
+            setConfirmingPayment(false);
+            setPlacingStep(3);
+            setPlacing(false);
+            setPaymentFailed(false);
+            setPendingOrder(null);
+            try { sessionStorage.removeItem(`payu_pending_${store.id}`); } catch {}
+            finalizeOrder(orderId, cached?.order_number || null, cached?.order_profit ?? null);
+            return;
+          }
+          if (r?.status === "FAILED") break;
+        } catch (e) {
+          console.warn(`[PayU] return poll ${i + 1} failed`, e);
+        }
+        await new Promise((res) => setTimeout(res, 2000));
+      }
+      setConfirmingPayment(false);
+      setPlacing(false);
+      setPlacingStep(0);
+      setPendingOrder({
+        id: orderId,
+        number: cached?.order_number || null,
+        profit: cached?.order_profit ?? null,
+      });
+      setPaymentFailed(true);
+      toast.error(payuStatus === "success"
+        ? "Payment not confirmed yet. You can retry below."
+        : "Payment failed. You can retry below.");
+    };
+
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.delete("payu_status");
+      u.searchParams.delete("txnid");
+      u.searchParams.delete("payu_order");
+      window.history.replaceState({}, "", u.toString());
+    } catch {}
+
+    void poll();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id]);
+
   if (isLoading && isSingleMode) return <CheckoutSkeleton />;
 
   if (isSingleMode && !product) {
