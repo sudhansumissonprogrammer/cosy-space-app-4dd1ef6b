@@ -25,7 +25,9 @@ export default function SideCart({ store }: SideCartProps) {
   const isSubscriptionStore = (store as any)?.billing_mode === "subscription";
   // Subscription stores: always show WA button if number exists. Commission stores: never.
   const showWhatsApp = isSubscriptionStore && !!(store as any)?.whatsapp_number;
-  const isTheme16 = (store as any).theme === "theme-16" || (store as any).theme === "theme-21" || (store as any).theme === "theme-22";
+  // TEMP DISABLED: phone-lead modal + map autofill — go straight to /checkout.
+  // To re-enable, restore: (store as any).theme === "theme-16" || "theme-21" || "theme-22"
+  const isTheme16 = false;
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const showCheckout = orderMode === "website" || orderMode === "both";
 

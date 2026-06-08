@@ -571,22 +571,12 @@ export default function ProductDetail() {
       return;
     }
 
-    // Theme 16 / 21: show phone modal instead of direct checkout
-    if ((store as any).theme === "theme-16" || (store as any).theme === "theme-21") {
-      // Add to cart first so checkout has the item
-      addToCart({
-        productId: product.id,
-        variantId: selectedVariant?.id,
-        name: product.name,
-        variantName: selectedVariant?.name,
-        price: variantPrice,
-        image: product.image_url || undefined,
-        quantity,
-      });
-      closeCart();
-      setBuyNowModalOpen(true);
-      return;
-    }
+    // TEMP DISABLED: Theme 16/21 phone-lead modal + map autofill flow.
+    // Reverting to direct add-to-cart → checkout for instant Quick Buy.
+    // To re-enable, restore the theme-16 / theme-21 branch below.
+    // if ((store as any).theme === "theme-16" || (store as any).theme === "theme-21") {
+    //   addToCart({ ... }); closeCart(); setBuyNowModalOpen(true); return;
+    // }
 
     addToCart({
       productId: product.id,
