@@ -43,12 +43,12 @@ Deno.serve(async (req) => {
 
     if (orderInfo?.status === "confirmed" || orderInfo?.status === "partially_paid") {
       void firePurchaseCapi(supabase, order_id, { source: "payu-status" });
-      return jsonRes({ status: "paid", local: orderInfo.status });
+      return jsonRes({ status: "PAID", local: orderInfo.status });
     }
 
     if (!txnid) {
       return jsonRes({
-        status: orderInfo?.status === "cancelled" ? "failed" : "pending",
+        status: orderInfo?.status === "cancelled" ? "FAILED" : "PENDING",
       });
     }
 
@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (!config?.payu_merchant_key || !config?.payu_merchant_salt) {
-      return jsonRes({ status: "pending" });
+      return jsonRes({ status: "PENDING" });
     }
 
     const env = (config.payu_env === "sandbox" ? "sandbox" : "production") as PayuEnv;
@@ -70,10 +70,10 @@ Deno.serve(async (req) => {
       txnid,
     });
 
-    if (!det) return jsonRes({ status: "pending" });
+    if (!det) return jsonRes({ status: "PENDING" });
     const verdict = mapPayuStatus(det.status);
 
-    if (verdict === "paid") {
+    if (verdict === "PAID") {
       const isPartial = orderInfo?.payment_type === "partial";
       await supabase
         .from("orders")
@@ -91,6 +91,6 @@ Deno.serve(async (req) => {
     return jsonRes({ status: verdict });
   } catch (err) {
     console.error("payu-status error", err);
-    return jsonRes({ status: "pending" });
+    return jsonRes({ status: "PENDING" });
   }
 });
