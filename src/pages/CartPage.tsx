@@ -1,6 +1,5 @@
 import { Link, useOutletContext, useNavigate } from "react-router-dom";
 import { formatPrice } from "@/lib/productUtils";
-import { Suspense, lazy, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,8 +9,6 @@ import { useCart } from "@/contexts/CartContext";
 import { ArrowLeft, Minus, Plus, ShoppingCart, Trash2, MessageCircle, Package, ShoppingBag, Truck, Check } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
-
-const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
 
 export default function CartPage() {
   const store = useOutletContext<StoreData>();
@@ -23,8 +20,6 @@ export default function CartPage() {
   // Subscription stores: always show WA button if number exists. Commission stores: never.
   const showWhatsApp = isSubscriptionStore && !!(store as any)?.whatsapp_number;
   const showCheckout = orderMode === "website" || orderMode === "both";
-  const isTheme16 = (store as any).theme === "theme-16" || (store as any).theme === "theme-21";
-  const [showPhoneModal, setShowPhoneModal] = useState(false);
 
   const { data: shippingConfig } = useQuery({
     queryKey: ["storefront-shipping-config", store.id],
@@ -172,16 +167,7 @@ export default function CartPage() {
               </div>
 
               <div className="space-y-2">
-                {showCheckout && isTheme16 ? (
-                  <button
-                    className="flex h-10 sm:h-12 w-full items-center justify-center gap-2 text-xs sm:text-sm font-bold btn-gold"
-                    style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
-                    onClick={() => setShowPhoneModal(true)}
-                  >
-                    <ShoppingBag className="h-4 w-4" />
-                    Proceed to Checkout
-                  </button>
-                ) : showCheckout ? (
+                {showCheckout ? (
                   <button
                     className="flex h-10 sm:h-12 w-full items-center justify-center gap-2 text-xs sm:text-sm font-bold btn-gold"
                     style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
@@ -207,23 +193,6 @@ export default function CartPage() {
         </div>
       </div>
     </div>
-    {isTheme16 && (
-      <Suspense fallback={null}>
-        <BuyNowPhoneModal
-          open={showPhoneModal}
-          onOpenChange={setShowPhoneModal}
-          storeSlug={store.slug}
-          storeId={store.id}
-          productId={items[items.length - 1]?.productId}
-          productName={
-            items.length > 1
-              ? `${items[items.length - 1]?.name} +${items.length - 1} more`
-              : items[items.length - 1]?.name
-          }
-          source="quick_buy_cart"
-        />
-      </Suspense>
-    )}
     </>
   );
 }
