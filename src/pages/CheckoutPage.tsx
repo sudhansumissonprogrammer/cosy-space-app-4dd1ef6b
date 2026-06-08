@@ -358,6 +358,8 @@ export default function CheckoutPage() {
         razorpay_key_id: string | null;
         cashfree_app_id: string | null;
         cashfree_env: string | null;
+        payu_merchant_key: string | null;
+        payu_env: string | null;
       } | null;
     },
   });
