@@ -650,10 +650,14 @@ export default function CheckoutPage() {
       category = "cod";
       value = total;
     } else if (isPartialOrder) {
-      category = activeGateway === "cashfree" ? "partial_cod_cashfree" : "partial_cod_razorpay";
+      category = activeGateway === "cashfree" ? "partial_cod_cashfree"
+        : activeGateway === "payu" ? "partial_cod_payu"
+        : "partial_cod_razorpay";
       value = partialAdvanceTotal;
     } else if (paymentMethod === "razorpay") {
-      category = activeGateway === "cashfree" ? "cashfree" : "razorpay";
+      category = activeGateway === "cashfree" ? "cashfree"
+        : activeGateway === "payu" ? "payu"
+        : "razorpay";
       value = total;
     } else {
       return;
