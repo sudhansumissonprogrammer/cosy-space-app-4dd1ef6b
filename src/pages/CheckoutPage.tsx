@@ -25,7 +25,7 @@ import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import { estimateDelivery, type DeliveryEstimate } from "@/lib/deliveryEstimate";
 import { loadCashfree } from "@/lib/loadCashfree";
-import { loadPayuBolt } from "@/lib/loadPayuBolt";
+// PayU now uses Hosted Checkout (server-signed form POST) — no client SDK needed.
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 
@@ -449,9 +449,8 @@ export default function CheckoutPage() {
       prewarmEdgeFunction("store-cashfree-status");
     }
     if (hasPayu) {
-      loadPayuBolt(((paymentConfig?.payu_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
+      // Hosted Checkout — no SDK to preload; just pre-warm the edge functions.
       prewarmEdgeFunction("payu-create-txn");
-      prewarmEdgeFunction("payu-verify-payment");
       prewarmEdgeFunction("payu-status");
     }
     prewarmEdgeFunction("place-order");
@@ -1365,141 +1364,187 @@ export default function CheckoutPage() {
     }
   };
 
-  // Open PayU Bolt overlay for an existing order (merchant-hosted, customer stays on storefront)
+  // Open PayU Hosted Checkout for an existing order.
+  // Strategy: server-signed form POST → PayU's secure page → return to ?payu_status=...
+  // This works for EVERY PayU merchant (no Bolt whitelisting needed) and survives
+  // browser refresh, UPI app return, and tab close because we persist the pending
+  // order to sessionStorage and recover on mount.
   const openPayuForOrder = async (order: { id: string; number: string | null; profit: number | null }) => {
-    const env = (paymentConfig?.payu_env as any) === "sandbox" ? "sandbox" : "production";
-    const [bolt, payuData] = await Promise.all([
-      loadPayuBolt(env),
-      callEdgeFunction("payu-create-txn", {
+    const returnUrl = (() => {
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.delete("payu_status");
+        u.searchParams.delete("txnid");
+        u.searchParams.delete("payu_order");
+        return u.toString();
+      } catch {
+        return window.location.href;
+      }
+    })();
+
+    let payuData: any;
+    try {
+      payuData = await callEdgeFunction("payu-create-txn", {
         store_id: store.id,
         order_id: order.id,
         customer_name: fullName,
         customer_phone: phone,
         customer_email: email || undefined,
-      }),
-    ]);
+        return_url: returnUrl,
+      });
+    } catch (err: any) {
+      console.error("[PayU] create-txn failed", err);
+      setPlacingStep(0);
+      setPendingOrder(order);
+      setPaymentFailed(true);
+      setPlacing(false);
+      toast.error(err?.message || "Could not start payment. Please try again.");
+      window.dispatchEvent(new CustomEvent("payment-ended"));
+      return;
+    }
 
-    // Verify with retry — UPI takes 3–15s to settle after user approves in the UPI app.
-    const verifyAndFinalize = async (opts?: { attempts?: number; intervalMs?: number; showConfirming?: boolean }) => {
-      const attempts = opts?.attempts ?? 8;
-      const intervalMs = opts?.intervalMs ?? 2000;
-      if (opts?.showConfirming) setConfirmingPayment(true);
+    if (!payuData?.action || !payuData?.hash || !payuData?.key) {
+      console.error("[PayU] invalid create-txn response", payuData);
+      setPlacingStep(0);
+      setPendingOrder(order);
+      setPaymentFailed(true);
+      setPlacing(false);
+      toast.error("Payment gateway error. Please retry.");
+      window.dispatchEvent(new CustomEvent("payment-ended"));
+      return;
+    }
+
+    // Persist all context needed to finalize the order when the browser returns,
+    // including across a hard refresh on the return page.
+    try {
+      sessionStorage.setItem(`payu_pending_${store.id}`, JSON.stringify({
+        order_id: order.id,
+        order_number: order.number,
+        order_profit: order.profit,
+        txnid: payuData.txnid,
+        is_partial: isPartialOrder,
+        charge_amount: chargeAmount,
+        total,
+        ts: Date.now(),
+      }));
+    } catch {}
+
+    fireInitiateCheckoutOnce();
+    // Disable beforeunload lock — we are about to leave the page.
+    window.dispatchEvent(new CustomEvent("payment-in-progress"));
+
+    // Build hidden form and submit (redirect to PayU's secure hosted page)
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = payuData.action;
+    form.style.display = "none";
+    const fields: Record<string, string> = {
+      key: payuData.key,
+      txnid: payuData.txnid,
+      amount: payuData.amount,
+      productinfo: payuData.productinfo,
+      firstname: payuData.firstname,
+      email: payuData.email,
+      phone: payuData.phone,
+      udf1: payuData.udf1 || "",
+      udf2: payuData.udf2 || "",
+      udf3: payuData.udf3 || "",
+      udf4: payuData.udf4 || "",
+      udf5: payuData.udf5 || "",
+      surl: payuData.surl,
+      furl: payuData.furl,
+      hash: payuData.hash,
+      service_provider: "payu_paisa",
+    };
+    for (const [k, v] of Object.entries(fields)) {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = k;
+      input.value = String(v);
+      form.appendChild(input);
+    }
+    document.body.appendChild(form);
+    form.submit();
+  };
+
+  // PayU return handler — runs on mount + on focus to recover state after
+  // redirect-back, browser refresh, or UPI app return.
+  useEffect(() => {
+    if (!store?.id) return;
+    const params = new URLSearchParams(window.location.search);
+    const payuStatus = params.get("payu_status");
+    const txnid = params.get("txnid");
+    const returnedOrderId = params.get("payu_order");
+    if (!payuStatus || !txnid) return;
+
+    let cached: any = null;
+    try { cached = JSON.parse(sessionStorage.getItem(`payu_pending_${store.id}`) || "null"); } catch {}
+    const orderId = returnedOrderId || cached?.order_id;
+    if (!orderId) {
+      // Nothing to recover — just clean URL silently
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.delete("payu_status");
+        u.searchParams.delete("txnid");
+        u.searchParams.delete("payu_order");
+        window.history.replaceState({}, "", u.toString());
+      } catch {}
+      return;
+    }
+
+    setConfirmingPayment(true);
+    setPlacing(true);
+    setPlacingStep(2);
+
+    const poll = async () => {
+      const attempts = payuStatus === "success" ? 10 : 4;
       for (let i = 0; i < attempts; i++) {
         try {
-          const verdict = await callEdgeFunction("payu-verify-payment", {
-            store_id: store.id, order_id: order.id, txnid: payuData.txnid,
+          const r = await callEdgeFunction("payu-status", {
+            store_id: store.id, order_id: orderId, txnid,
           });
-          if (verdict?.status === "PAID") {
+          if (r?.status === "PAID") {
             setConfirmingPayment(false);
             setPlacingStep(3);
             setPlacing(false);
             setPaymentFailed(false);
             setPendingOrder(null);
-            finalizeOrder(order.id, order.number, order.profit);
-            return true;
+            try { sessionStorage.removeItem(`payu_pending_${store.id}`); } catch {}
+            finalizeOrder(orderId, cached?.order_number || null, cached?.order_profit ?? null);
+            return;
           }
-          if (verdict?.status === "FAILED" || verdict?.status === "CANCELLED") {
-            setConfirmingPayment(false);
-            return false;
-          }
+          if (r?.status === "FAILED") break;
         } catch (e) {
-          console.warn(`PayU verify attempt ${i + 1} failed:`, e);
+          console.warn(`[PayU] return poll ${i + 1} failed`, e);
         }
-        if (i < attempts - 1) await new Promise((r) => setTimeout(r, intervalMs));
+        await new Promise((res) => setTimeout(res, 2000));
       }
       setConfirmingPayment(false);
-      return false;
+      setPlacing(false);
+      setPlacingStep(0);
+      setPendingOrder({
+        id: orderId,
+        number: cached?.order_number || null,
+        profit: cached?.order_profit ?? null,
+      });
+      setPaymentFailed(true);
+      toast.error(payuStatus === "success"
+        ? "Payment not confirmed yet. You can retry below."
+        : "Payment failed. You can retry below.");
     };
 
-    return new Promise<void>((resolve) => {
-      const launchPayload = {
-        key: payuData.key,
-        txnid: payuData.txnid,
-        amount: payuData.amount,
-        productinfo: payuData.productinfo,
-        firstname: payuData.firstname,
-        email: payuData.email,
-        phone: payuData.phone,
-        udf1: payuData.udf1,
-        udf2: payuData.udf2,
-        udf3: payuData.udf3 || "",
-        udf4: payuData.udf4 || "",
-        udf5: payuData.udf5 || "",
-        surl: payuData.surl,
-        furl: payuData.furl,
-        hash: payuData.hash,
-      };
+    // Clean URL immediately so a refresh doesn't re-trigger
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.delete("payu_status");
+      u.searchParams.delete("txnid");
+      u.searchParams.delete("payu_order");
+      window.history.replaceState({}, "", u.toString());
+    } catch {}
 
-      // Disable beforeunload lock — PayU triggers UPI deep links from top window.
-      window.dispatchEvent(new CustomEvent("payment-in-progress"));
-      fireInitiateCheckoutOnce();
-
-      try {
-        bolt.launch(launchPayload, {
-          responseHandler: async (BOLT: any) => {
-            const status = String(BOLT?.response?.txnStatus || "").toUpperCase();
-            console.log("[PayU] responseHandler", status, BOLT?.response);
-            try {
-              if (status === "SUCCESS") {
-                const ok = await verifyAndFinalize({ attempts: 8, intervalMs: 2000, showConfirming: true });
-                if (!ok) {
-                  setPlacingStep(0);
-                  setPendingOrder(order);
-                  setPaymentFailed(true);
-                  setPlacing(false);
-                  toast.error("Payment not confirmed. You can retry below.");
-                }
-              } else if (status === "CANCEL" || status === "USER_CANCELLED") {
-                // User closed overlay — silently verify in case payment went through, else show retry
-                const ok = await verifyAndFinalize({ attempts: 4, intervalMs: 2000, showConfirming: true });
-                if (!ok) {
-                  setPlacingStep(0);
-                  setPendingOrder(order);
-                  setPaymentFailed(true);
-                  setPlacing(false);
-                }
-              } else {
-                // FAILURE or other
-                const ok = await verifyAndFinalize({ attempts: 4, intervalMs: 2000, showConfirming: true });
-                if (!ok) {
-                  setPlacingStep(0);
-                  setPendingOrder(order);
-                  setPaymentFailed(true);
-                  setPlacing(false);
-                  toast.error("Payment failed. You can retry below.");
-                }
-              }
-            } finally {
-              window.dispatchEvent(new CustomEvent("payment-ended"));
-              resolve();
-            }
-          },
-          catchException: async (BOLT: any) => {
-            console.warn("[PayU] catchException", BOLT);
-            const ok = await verifyAndFinalize({ attempts: 4, intervalMs: 2000, showConfirming: true });
-            if (!ok) {
-              setPlacingStep(0);
-              setPendingOrder(order);
-              setPaymentFailed(true);
-              setPlacing(false);
-              toast.error(BOLT?.message || "Payment failed. You can retry below.");
-            }
-            window.dispatchEvent(new CustomEvent("payment-ended"));
-            resolve();
-          },
-        });
-      } catch (err: any) {
-        console.error("[PayU] launch threw", err);
-        setPlacingStep(0);
-        setPendingOrder(order);
-        setPaymentFailed(true);
-        setPlacing(false);
-        toast.error(err?.message || "Failed to open payment gateway");
-        window.dispatchEvent(new CustomEvent("payment-ended"));
-        resolve();
-      }
-    });
-  };
+    void poll();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id]);
 
   // Retry payment for a pending order
   const handleRetryPayment = async () => {
@@ -1564,7 +1609,6 @@ export default function CheckoutPage() {
         loadCashfree(((paymentConfig?.cashfree_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
       } else if (activeGateway === "payu") {
         prewarmEdgeFunction("payu-create-txn");
-        loadPayuBolt(((paymentConfig?.payu_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
       } else {
         prewarmEdgeFunction("razorpay-order");
         loadRazorpayScript();

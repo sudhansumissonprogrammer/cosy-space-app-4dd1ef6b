@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { store_id, order_id, customer_name, customer_phone, customer_email } = await req.json();
+    const { store_id, order_id, customer_name, customer_phone, customer_email, return_url } = await req.json();
     if (!store_id || !order_id) return jsonRes({ error: "Missing required fields" }, 400);
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -105,9 +105,22 @@ Deno.serve(async (req) => {
     // Webhook callback (server-side) — even if browser never returns, PayU calls this.
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const notifyUrl = `${supabaseUrl}/functions/v1/payu-webhook`;
-    const origin = req.headers.get("origin") || "";
-    const surl = `${origin}/?payu_status=success&txnid=${txnid}`;
-    const furl = `${origin}/?payu_status=failure&txnid=${txnid}`;
+    // Prefer the explicit return_url passed by the storefront (includes /checkout path),
+    // fall back to the request origin so refunds/UPI returns still land on a working page.
+    let returnBase = "";
+    try {
+      const u = new URL(return_url || req.headers.get("origin") || "");
+      // Strip any prior payu_* params to avoid recursion
+      u.searchParams.delete("payu_status");
+      u.searchParams.delete("txnid");
+      u.searchParams.delete("payu_order");
+      returnBase = u.toString();
+    } catch {
+      returnBase = req.headers.get("origin") || "";
+    }
+    const sep = returnBase.includes("?") ? "&" : "?";
+    const surl = `${returnBase}${sep}payu_status=success&txnid=${txnid}&payu_order=${order_id}`;
+    const furl = `${returnBase}${sep}payu_status=failure&txnid=${txnid}&payu_order=${order_id}`;
 
     return jsonRes({
       env,
