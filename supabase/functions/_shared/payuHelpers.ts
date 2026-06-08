@@ -139,11 +139,11 @@ export async function verifyPayuTxn(opts: {
 //   failure / userCancelled → failed
 //   pending / inprogress → pending
 //   bounced / dropped → failed
-export type PayuVerdict = "paid" | "pending" | "failed";
+export type PayuVerdict = "PAID" | "PENDING" | "FAILED";
 
 export function mapPayuStatus(status: unknown): PayuVerdict {
   const s = String(status || "").toLowerCase();
-  if (s === "success" || s === "captured") return "paid";
-  if (s === "pending" || s === "in progress" || s === "inprogress" || s === "initiated") return "pending";
-  return "failed";
+  if (s === "success" || s === "captured") return "PAID";
+  if (s === "pending" || s === "in progress" || s === "inprogress" || s === "initiated") return "PENDING";
+  return "FAILED";
 }
