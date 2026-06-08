@@ -448,8 +448,14 @@ export default function CheckoutPage() {
       prewarmEdgeFunction("store-cashfree-verify");
       prewarmEdgeFunction("store-cashfree-status");
     }
+    if (hasPayu) {
+      loadPayuBolt(((paymentConfig?.payu_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
+      prewarmEdgeFunction("payu-create-txn");
+      prewarmEdgeFunction("payu-verify-payment");
+      prewarmEdgeFunction("payu-status");
+    }
     prewarmEdgeFunction("place-order");
-  }, [hasRazorpay, hasCashfree, paymentConfig?.cashfree_env]);
+  }, [hasRazorpay, hasCashfree, hasPayu, paymentConfig?.cashfree_env, paymentConfig?.payu_env]);
 
   const currency = store.currency || "USD";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : `${currency} `;
