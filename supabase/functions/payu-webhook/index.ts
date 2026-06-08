@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
       .single();
     if (!orderRow) return new Response("OK (unknown order)", { status: 200 });
 
-    if (verdict === "paid") {
+    if (verdict === "PAID") {
       if (orderRow.status === "confirmed" || orderRow.status === "partially_paid") {
         // Already marked — still try CAPI in case the previous attempt failed (idempotent).
         await firePurchaseCapi(supabase, localOrderId, { source: "payu-webhook" });
@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
         })
         .eq("id", localOrderId);
       await firePurchaseCapi(supabase, localOrderId, { source: "payu-webhook" });
-    } else if (verdict === "failed") {
+    } else if (verdict === "FAILED") {
       // Only mark fresh pending orders as cancelled — never overwrite a confirmed order.
       if (orderRow.status === "pending") {
         await supabase
