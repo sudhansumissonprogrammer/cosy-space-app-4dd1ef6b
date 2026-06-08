@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     // Idempotent short-circuit
     if (orderInfo?.status === "confirmed" || orderInfo?.status === "partially_paid") {
       void firePurchaseCapi(supabase, order_id, { source: "payu-verify" });
-      return jsonRes({ success: true, status: "paid", already_confirmed: true });
+      return jsonRes({ success: true, status: "PAID", already_confirmed: true });
     }
 
     const { data: config, error: configErr } = await supabase
