@@ -79,16 +79,23 @@ interface CAPIEventParams {
 const inflightProbe = new Map<string, Promise<boolean>>();
 
 // Server-side CAPI is only meaningful for high-intent / conversion events.
-// PageView, ViewContent, Search, ViewCart etc. already fire via the browser
-// pixel and CAPI dedupe adds ~zero attribution lift for them. Restricting CAPI
-// to the funnel events below cuts edge invocations by ~90% on a busy storefront
-// while keeping every signal Meta's optimization actually needs.
+// PageView, Search, ViewCart etc. already fire via the browser pixel and CAPI
+// dedupe adds ~zero attribution lift for them. Restricting CAPI to the funnel
+// events below cuts edge invocations by ~90% on a busy storefront while
+// keeping every signal Meta's optimization actually needs.
+//
+// ViewContent is included because Meta Events Manager flags it as missing CAPI
+// coverage (degrades EMQ + iOS attribution). It only fires when the store has
+// CAPI configured (__SF_META_CAPI_ENABLED__ === true) — unconfigured stores
+// still short-circuit before any edge call.
 const CAPI_EVENTS = new Set([
+  "ViewContent",
   "AddToCart",
   "InitiateCheckout",
   "AddPaymentInfo",
   "Purchase",
 ]);
+
 
 export function fireMetaCAPI(params: CAPIEventParams) {
   // Guard: never fire from Lovable preview/editor/dev domains.
