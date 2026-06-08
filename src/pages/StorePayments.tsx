@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 type OrderMode = "whatsapp" | "website" | "both";
-type OnlineGateway = "none" | "razorpay" | "cashfree";
+type OnlineGateway = "none" | "razorpay" | "cashfree" | "payu";
 
 export default function StorePayments() {
   const { storeId } = useStoreSlugParam();
@@ -43,6 +43,12 @@ export default function StorePayments() {
   const [cashfreeSecretKey, setCashfreeSecretKey] = useState("");
   const [cashfreeEnv, setCashfreeEnv] = useState<"production" | "sandbox">("production");
   const [cashfreeOpen, setCashfreeOpen] = useState(false);
+
+  // PayU creds
+  const [payuMerchantKey, setPayuMerchantKey] = useState("");
+  const [payuMerchantSalt, setPayuMerchantSalt] = useState("");
+  const [payuEnv, setPayuEnv] = useState<"production" | "sandbox">("production");
+  const [payuOpen, setPayuOpen] = useState(false);
 
   // Partial payment defaults
   const [partialEnabled, setPartialEnabled] = useState(false);
@@ -69,10 +75,11 @@ export default function StorePayments() {
     queryFn: async () => {
       // Use SECURITY DEFINER RPC so the SELECT works for store owners
       // even if RLS edge cases (admin view, multi-store) get in the way.
-      const [configRes, rzpSecretRes, cfSecretRes] = await Promise.all([
+      const [configRes, rzpSecretRes, cfSecretRes, payuSecretRes] = await Promise.all([
         supabase.rpc("get_store_payment_config" as any, { _store_id: storeId! }),
         supabase.rpc("get_own_payment_secret", { _store_id: storeId! }),
         supabase.rpc("get_own_cashfree_secret" as any, { _store_id: storeId! }),
+        supabase.rpc("get_own_payu_secret" as any, { _store_id: storeId! }),
       ]);
       if (configRes.error) throw configRes.error;
       const cfg = configRes.data as any;
@@ -81,6 +88,7 @@ export default function StorePayments() {
         ...cfg,
         razorpay_key_secret: (rzpSecretRes.data as string) || null,
         cashfree_secret_key: (cfSecretRes.data as string) || null,
+        payu_merchant_salt: (payuSecretRes.data as string) || null,
       };
     },
     enabled: !!storeId,
@@ -110,6 +118,9 @@ export default function StorePayments() {
       } else if (methods.includes("cashfree")) {
         setOnlineGateway("cashfree");
         setCashfreeOpen(true);
+      } else if (methods.includes("payu")) {
+        setOnlineGateway("payu");
+        setPayuOpen(true);
       } else {
         setOnlineGateway("none");
       }
@@ -119,6 +130,9 @@ export default function StorePayments() {
       setCashfreeAppId(paymentConfig.cashfree_app_id || "");
       setCashfreeSecretKey(paymentConfig.cashfree_secret_key || "");
       setCashfreeEnv((paymentConfig.cashfree_env as any) || "production");
+      setPayuMerchantKey(paymentConfig.payu_merchant_key || "");
+      setPayuMerchantSalt(paymentConfig.payu_merchant_salt || "");
+      setPayuEnv((paymentConfig.payu_env as any) || "production");
     }
   }, [paymentConfig]);
 
@@ -128,13 +142,9 @@ export default function StorePayments() {
   // Mutually exclusive switch handler
   const switchGateway = (next: OnlineGateway) => {
     setOnlineGateway(next);
-    if (next === "razorpay") {
-      setRazorpayOpen(true);
-      setCashfreeOpen(false);
-    } else if (next === "cashfree") {
-      setCashfreeOpen(true);
-      setRazorpayOpen(false);
-    }
+    setRazorpayOpen(next === "razorpay");
+    setCashfreeOpen(next === "cashfree");
+    setPayuOpen(next === "payu");
   };
 
   const saveMutation = useMutation({
@@ -167,6 +177,7 @@ export default function StorePayments() {
         if (codEnabled) methods.push("cod");
         if (onlineGateway === "razorpay") methods.push("razorpay");
         if (onlineGateway === "cashfree") methods.push("cashfree");
+        if (onlineGateway === "payu") methods.push("payu");
         if (methods.length === 0) {
           throw new Error("At least one payment method must be enabled");
         }
@@ -178,8 +189,12 @@ export default function StorePayments() {
           if (!cashfreeAppId.trim()) throw new Error("Cashfree App ID is required");
           if (!cashfreeSecretKey.trim()) throw new Error("Cashfree Secret Key is required");
         }
+        if (onlineGateway === "payu") {
+          if (!payuMerchantKey.trim()) throw new Error("PayU Merchant Key is required");
+          if (!payuMerchantSalt.trim()) throw new Error("PayU Merchant Salt is required");
+        }
 
-        // Persist BOTH sets of credentials so the merchant can flip between gateways
+        // Persist all sets of credentials so the merchant can flip between gateways
         // without re-typing — but only the active gateway is in `payment_methods`.
         const payload: Record<string, any> = {
           store_id: storeId!,
@@ -189,6 +204,9 @@ export default function StorePayments() {
           cashfree_app_id: cashfreeAppId.trim() || null,
           cashfree_secret_key: cashfreeSecretKey.trim() || null,
           cashfree_env: cashfreeEnv,
+          payu_merchant_key: payuMerchantKey.trim() || null,
+          payu_merchant_salt: payuMerchantSalt.trim() || null,
+          payu_env: payuEnv,
         };
 
         if (paymentConfig) {
