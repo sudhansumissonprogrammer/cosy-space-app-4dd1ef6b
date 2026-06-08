@@ -1442,11 +1442,12 @@ export default function CheckoutPage() {
     }
   };
 
-  // Open PayU Hosted Checkout for an existing order.
-  // Strategy: server-signed form POST → PayU's secure page → return to ?payu_status=...
-  // This works for EVERY PayU merchant (no Bolt whitelisting needed) and survives
-  // browser refresh, UPI app return, and tab close because we persist the pending
-  // order to sessionStorage and recover on mount.
+  // Open PayU checkout for an existing order.
+  // Strategy:
+  //   1) Try PayU **Bolt** SDK → overlay on our own domain (like Razorpay/Cashfree).
+  //      Requires PayU to whitelist the domain in merchant dashboard.
+  //   2) Fall back to server-signed form POST → secure.payu.in hosted page
+  //      (works for every merchant, even without whitelisting).
   const openPayuForOrder = async (order: { id: string; number: string | null; profit: number | null }) => {
     const returnUrl = (() => {
       try {
@@ -1508,10 +1509,75 @@ export default function CheckoutPage() {
     } catch {}
 
     fireInitiateCheckoutOnce();
-    // Disable beforeunload lock — we are about to leave the page.
-    window.dispatchEvent(new CustomEvent("payment-in-progress"));
 
-    // Build hidden form and submit (redirect to PayU's secure hosted page)
+    // ---- Try Bolt overlay first (stays on our domain) -----------------
+    const mode: "sandbox" | "production" = payuData.env === "sandbox" ? "sandbox" : "production";
+    try {
+      const { loadPayuBolt } = await import("@/lib/loadPayuBolt");
+      const bolt = await loadPayuBolt(mode);
+      const boltParams: any = {
+        key: payuData.key,
+        txnid: payuData.txnid,
+        amount: payuData.amount,
+        productinfo: payuData.productinfo,
+        firstname: payuData.firstname,
+        email: payuData.email,
+        phone: payuData.phone,
+        udf1: payuData.udf1 || "",
+        udf2: payuData.udf2 || "",
+        udf3: payuData.udf3 || "",
+        udf4: payuData.udf4 || "",
+        udf5: payuData.udf5 || "",
+        surl: payuData.surl,
+        furl: payuData.furl,
+        hash: payuData.hash,
+      };
+      const handler = {
+        responseHandler: (BOLT: any) => {
+          const status = String(BOLT?.response?.txnStatus || "").toUpperCase();
+          if (status === "SUCCESS") {
+            // Webhook will confirm; trigger our return-flow poll using sessionStorage.
+            const u = new URL(window.location.href);
+            u.searchParams.set("payu_status", "success");
+            u.searchParams.set("txnid", payuData.txnid);
+            u.searchParams.set("payu_order", order.id);
+            window.location.assign(u.toString());
+          } else if (status === "CANCEL" || status === "USER_CANCELLED") {
+            setPlacingStep(0);
+            setPendingOrder(order);
+            setPaymentFailed(true);
+            setPlacing(false);
+            window.dispatchEvent(new CustomEvent("payment-ended"));
+          } else {
+            // FAILED / anything else
+            const u = new URL(window.location.href);
+            u.searchParams.set("payu_status", "failure");
+            u.searchParams.set("txnid", payuData.txnid);
+            u.searchParams.set("payu_order", order.id);
+            window.location.assign(u.toString());
+          }
+        },
+        catchException: (BOLT: any) => {
+          console.error("[PayU Bolt] exception", BOLT);
+          toast.error(BOLT?.message || "Payment could not be started.");
+          setPlacingStep(0);
+          setPendingOrder(order);
+          setPaymentFailed(true);
+          setPlacing(false);
+          window.dispatchEvent(new CustomEvent("payment-ended"));
+        },
+      };
+      if (typeof bolt?.launch === "function") {
+        bolt.launch(boltParams, handler);
+        return;
+      }
+      throw new Error("Bolt SDK loaded but launch() missing");
+    } catch (boltErr) {
+      console.warn("[PayU] Bolt unavailable, falling back to hosted redirect", boltErr);
+    }
+
+    // ---- Fallback: hosted page redirect (secure.payu.in) ----------------
+    window.dispatchEvent(new CustomEvent("payment-in-progress"));
     const form = document.createElement("form");
     form.method = "POST";
     form.action = payuData.action;
