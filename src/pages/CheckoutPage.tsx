@@ -418,9 +418,11 @@ export default function CheckoutPage() {
   const hasCod = availableMethods.includes("cod");
   const hasRazorpay = availableMethods.includes("razorpay");
   const hasCashfree = availableMethods.includes("cashfree");
-  const hasOnline = hasRazorpay || hasCashfree;
+  const hasPayu = availableMethods.includes("payu");
+  const hasOnline = hasRazorpay || hasCashfree || hasPayu;
   // Which gateway opens when "online" is selected (mutual exclusion enforced in dashboard)
-  const activeGateway: "razorpay" | "cashfree" | null = hasRazorpay ? "razorpay" : hasCashfree ? "cashfree" : null;
+  const activeGateway: "razorpay" | "cashfree" | "payu" | null =
+    hasRazorpay ? "razorpay" : hasCashfree ? "cashfree" : hasPayu ? "payu" : null;
 
   useEffect(() => {
     // When partial payment is enabled, always default to online (COD is hidden)
