@@ -1558,6 +1558,9 @@ export default function CheckoutPage() {
       if (activeGateway === "cashfree") {
         prewarmEdgeFunction("store-cashfree-create-order");
         loadCashfree(((paymentConfig?.cashfree_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
+      } else if (activeGateway === "payu") {
+        prewarmEdgeFunction("payu-create-txn");
+        loadPayuBolt(((paymentConfig?.payu_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
       } else {
         prewarmEdgeFunction("razorpay-order");
         loadRazorpayScript();
@@ -1570,6 +1573,8 @@ export default function CheckoutPage() {
         setPlacingStep(2);
         if (activeGateway === "cashfree") {
           await openCashfreeForOrder(newOrder);
+        } else if (activeGateway === "payu") {
+          await openPayuForOrder(newOrder);
         } else {
           await openRazorpayForOrder(newOrder);
         }
