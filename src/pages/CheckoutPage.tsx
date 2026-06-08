@@ -1510,6 +1510,10 @@ export default function CheckoutPage() {
 
     fireInitiateCheckoutOnce();
 
+    // Disable checkout leave guard before loading/opening PayU.
+    // PayU can open an iframe, popup, redirect, or UPI deep link depending on merchant config.
+    window.dispatchEvent(new CustomEvent("payment-in-progress"));
+
     // ---- Try Bolt overlay first (stays on our domain) -----------------
     const mode: "sandbox" | "production" = payuData.env === "sandbox" ? "sandbox" : "production";
     try {
@@ -1577,7 +1581,6 @@ export default function CheckoutPage() {
     }
 
     // ---- Fallback: hosted page redirect (secure.payu.in) ----------------
-    window.dispatchEvent(new CustomEvent("payment-in-progress"));
     const form = document.createElement("form");
     form.method = "POST";
     form.action = payuData.action;
@@ -1597,6 +1600,7 @@ export default function CheckoutPage() {
       udf5: payuData.udf5 || "",
       surl: payuData.surl,
       furl: payuData.furl,
+      curl: payuData.furl,
       hash: payuData.hash,
       service_provider: "payu_paisa",
     };
