@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { formatPrice } from "@/lib/productUtils";
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -26,7 +25,6 @@ export default function SideCart({ store }: SideCartProps) {
   // TEMP DISABLED: phone-lead modal + map autofill — go straight to /checkout.
   // To re-enable, restore: (store as any).theme === "theme-16" || "theme-21" || "theme-22"
   const isTheme16 = false;
-  const [showPhoneModal] = useState(false);
   const showCheckout = orderMode === "website" || orderMode === "both";
 
   const { data: shippingConfig } = useQuery({
