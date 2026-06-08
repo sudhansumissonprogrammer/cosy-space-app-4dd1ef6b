@@ -134,7 +134,7 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     return () => {
       document.getElementById("fb-pixel-script")?.remove();
     };
-  }, [pixelId]);
+  }, [pixelId, storeId]);
 
   const trackEvent = useCallback(
     (eventName: string, params?: Record<string, any>, eventId?: string) => {
