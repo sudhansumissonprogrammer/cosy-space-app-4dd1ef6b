@@ -3,7 +3,7 @@
  * Renders: marquee (optional), desktop nav, mobile header with logo alignment variants,
  * mobile bottom nav, footer, search overlay, and checkout exit dialog.
  */
-import { useState, useEffect, Suspense, lazy, type ReactNode } from "react";
+import { useState, useEffect, Suspense, lazy, useRef, type ReactNode } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
@@ -69,6 +69,7 @@ export default function CheckoutAwareLayout({
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [paymentInProgress, setPaymentInProgress] = useState(false);
+  const paymentInProgressRef = useRef(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const queryClient = useQueryClient();
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
@@ -88,8 +89,8 @@ export default function CheckoutAwareLayout({
 
   useEffect(() => {
     const handler = () => setOrderPlaced(true);
-    const startHandler = () => setPaymentInProgress(true);
-    const endHandler = () => setPaymentInProgress(false);
+    const startHandler = () => { paymentInProgressRef.current = true; setPaymentInProgress(true); };
+    const endHandler = () => { paymentInProgressRef.current = false; setPaymentInProgress(false); };
     window.addEventListener("order-placed", handler);
     window.addEventListener("payment-in-progress", startHandler);
     window.addEventListener("payment-ended", endHandler);
@@ -100,7 +101,7 @@ export default function CheckoutAwareLayout({
     };
   }, []);
 
-  useEffect(() => { if (!isCheckout) { setOrderPlaced(false); setPaymentInProgress(false); } }, [isCheckout]);
+  useEffect(() => { if (!isCheckout) { setOrderPlaced(false); paymentInProgressRef.current = false; setPaymentInProgress(false); } }, [isCheckout]);
 
   // ShipRocket-style checkout lock: prevent refresh, back button, and tab close
   useEffect(() => {
@@ -108,6 +109,7 @@ export default function CheckoutAwareLayout({
 
     // 1. Warn on refresh / tab close
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (paymentInProgressRef.current) return;
       e.preventDefault();
       e.returnValue = "You have an active checkout. Are you sure you want to leave?";
       return e.returnValue;
@@ -118,6 +120,7 @@ export default function CheckoutAwareLayout({
     window.history.pushState({ checkoutLock: true }, "");
 
     const handlePopState = (e: PopStateEvent) => {
+      if (paymentInProgressRef.current) return;
       // Re-push state to keep user on page and show exit dialog
       window.history.pushState({ checkoutLock: true }, "");
       setShowExitDialog(true);
