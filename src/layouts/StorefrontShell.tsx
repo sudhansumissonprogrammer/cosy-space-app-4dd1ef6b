@@ -112,7 +112,7 @@ export default function StorefrontShell({
   const viewTracked = useRef(false);
 
   // Analytics hooks — safe to call even when store is null
-  useFacebookPixel((store as any)?.facebook_pixel_id);
+  useFacebookPixel((store as any)?.facebook_pixel_id, store?.id);
 
   useMetaTags({
     title: (store as any)?.meta_title || (store ? `${store.name} — ${notFoundLabel}` : undefined),

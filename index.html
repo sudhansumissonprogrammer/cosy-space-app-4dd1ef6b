@@ -168,7 +168,12 @@
             if(pid&&w.__SF_PIXEL_INITED__!==pid){
               w.__SF_PIXEL_INITED__=pid;
               w.fbq('init',pid);
-              w.fbq('track','PageView');
+              /* Generate event_id so the same PageView fired server-side via
+                 CAPI (see useFacebookPixel.ts) deduplicates against this one.
+                 Without a shared eventID Meta counts them as two PageViews. */
+              var pvid=(Date.now().toString(36))+'-'+Math.random().toString(36).slice(2,10);
+              w.__SF_PV_EVENT_ID__=pvid;
+              w.fbq('track','PageView',{},{eventID:pvid});
               var wrap=function(){loadSdk();};
               if('requestIdleCallback' in w){w.requestIdleCallback(wrap,{timeout:4000});}else{setTimeout(wrap,2000);}
               ['pointerdown','touchstart','keydown'].forEach(function(ev){

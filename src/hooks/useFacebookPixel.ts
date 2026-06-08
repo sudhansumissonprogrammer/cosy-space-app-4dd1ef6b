@@ -54,7 +54,7 @@ function isNonProductionHost(): boolean {
   );
 }
 
-export function useFacebookPixel(pixelId: string | null | undefined) {
+export function useFacebookPixel(pixelId: string | null | undefined, storeId?: string | null) {
   useEffect(() => {
     if (!pixelId) return;
     if (isNonProductionHost()) return;
@@ -96,6 +96,8 @@ export function useFacebookPixel(pixelId: string | null | undefined) {
 
     // Init + PageView fire immediately via shim (queued until script loads)
     // — but skip if inline script already did it (avoids double PageView).
+    let pageViewEventId: string | undefined =
+      (window as any).__SF_PV_EVENT_ID__ || undefined;
     if (!alreadyInited) {
       // Always-on Advanced Matching: pass anon visitor ID as external_id
       // so EMQ stays high even for logged-out browsers.
@@ -105,14 +107,34 @@ export function useFacebookPixel(pixelId: string | null | undefined) {
       } else {
         window.fbq("init", pixelId);
       }
-      window.fbq("track", "PageView");
+      // Generate shared event_id so the CAPI mirror below dedupes.
+      if (!pageViewEventId) {
+        pageViewEventId = generateEventId();
+        (window as any).__SF_PV_EVENT_ID__ = pageViewEventId;
+      }
+      window.fbq("track", "PageView", {}, { eventID: pageViewEventId });
       (window as any).__SF_PIXEL_INITED__ = pixelId;
+    }
+
+    // Mirror PageView to Conversions API with the SAME event_id so Meta's
+    // "browser ⇄ server" diagnostic stops flagging missing coverage. Dedup
+    // is guaranteed because the inline pixel and the CAPI call share eid.
+    // Fire-and-forget; metaCapi internally gates on __SF_META_CAPI_ENABLED__
+    // and short-circuits for stores without an access token.
+    if (storeId && pageViewEventId) {
+      import("@/lib/metaCapi").then((m) => {
+        m.fireMetaCAPI({
+          storeId,
+          eventName: "PageView",
+          eventId: pageViewEventId,
+        });
+      }).catch(() => {});
     }
 
     return () => {
       document.getElementById("fb-pixel-script")?.remove();
     };
-  }, [pixelId]);
+  }, [pixelId, storeId]);
 
   const trackEvent = useCallback(
     (eventName: string, params?: Record<string, any>, eventId?: string) => {
