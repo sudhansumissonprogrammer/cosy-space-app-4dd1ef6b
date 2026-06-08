@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 type OrderMode = "whatsapp" | "website" | "both";
-type OnlineGateway = "none" | "razorpay" | "cashfree";
+type OnlineGateway = "none" | "razorpay" | "cashfree" | "payu";
 
 export default function StorePayments() {
   const { storeId } = useStoreSlugParam();
@@ -43,6 +43,12 @@ export default function StorePayments() {
   const [cashfreeSecretKey, setCashfreeSecretKey] = useState("");
   const [cashfreeEnv, setCashfreeEnv] = useState<"production" | "sandbox">("production");
   const [cashfreeOpen, setCashfreeOpen] = useState(false);
+
+  // PayU creds
+  const [payuMerchantKey, setPayuMerchantKey] = useState("");
+  const [payuMerchantSalt, setPayuMerchantSalt] = useState("");
+  const [payuEnv, setPayuEnv] = useState<"production" | "sandbox">("production");
+  const [payuOpen, setPayuOpen] = useState(false);
 
   // Partial payment defaults
   const [partialEnabled, setPartialEnabled] = useState(false);
@@ -69,10 +75,11 @@ export default function StorePayments() {
     queryFn: async () => {
       // Use SECURITY DEFINER RPC so the SELECT works for store owners
       // even if RLS edge cases (admin view, multi-store) get in the way.
-      const [configRes, rzpSecretRes, cfSecretRes] = await Promise.all([
+      const [configRes, rzpSecretRes, cfSecretRes, payuSecretRes] = await Promise.all([
         supabase.rpc("get_store_payment_config" as any, { _store_id: storeId! }),
         supabase.rpc("get_own_payment_secret", { _store_id: storeId! }),
         supabase.rpc("get_own_cashfree_secret" as any, { _store_id: storeId! }),
+        supabase.rpc("get_own_payu_secret" as any, { _store_id: storeId! }),
       ]);
       if (configRes.error) throw configRes.error;
       const cfg = configRes.data as any;
@@ -81,6 +88,7 @@ export default function StorePayments() {
         ...cfg,
         razorpay_key_secret: (rzpSecretRes.data as string) || null,
         cashfree_secret_key: (cfSecretRes.data as string) || null,
+        payu_merchant_salt: (payuSecretRes.data as string) || null,
       };
     },
     enabled: !!storeId,
@@ -110,6 +118,9 @@ export default function StorePayments() {
       } else if (methods.includes("cashfree")) {
         setOnlineGateway("cashfree");
         setCashfreeOpen(true);
+      } else if (methods.includes("payu")) {
+        setOnlineGateway("payu");
+        setPayuOpen(true);
       } else {
         setOnlineGateway("none");
       }
@@ -119,6 +130,9 @@ export default function StorePayments() {
       setCashfreeAppId(paymentConfig.cashfree_app_id || "");
       setCashfreeSecretKey(paymentConfig.cashfree_secret_key || "");
       setCashfreeEnv((paymentConfig.cashfree_env as any) || "production");
+      setPayuMerchantKey(paymentConfig.payu_merchant_key || "");
+      setPayuMerchantSalt(paymentConfig.payu_merchant_salt || "");
+      setPayuEnv((paymentConfig.payu_env as any) || "production");
     }
   }, [paymentConfig]);
 
@@ -128,13 +142,9 @@ export default function StorePayments() {
   // Mutually exclusive switch handler
   const switchGateway = (next: OnlineGateway) => {
     setOnlineGateway(next);
-    if (next === "razorpay") {
-      setRazorpayOpen(true);
-      setCashfreeOpen(false);
-    } else if (next === "cashfree") {
-      setCashfreeOpen(true);
-      setRazorpayOpen(false);
-    }
+    setRazorpayOpen(next === "razorpay");
+    setCashfreeOpen(next === "cashfree");
+    setPayuOpen(next === "payu");
   };
 
   const saveMutation = useMutation({
@@ -167,6 +177,7 @@ export default function StorePayments() {
         if (codEnabled) methods.push("cod");
         if (onlineGateway === "razorpay") methods.push("razorpay");
         if (onlineGateway === "cashfree") methods.push("cashfree");
+        if (onlineGateway === "payu") methods.push("payu");
         if (methods.length === 0) {
           throw new Error("At least one payment method must be enabled");
         }
@@ -178,8 +189,12 @@ export default function StorePayments() {
           if (!cashfreeAppId.trim()) throw new Error("Cashfree App ID is required");
           if (!cashfreeSecretKey.trim()) throw new Error("Cashfree Secret Key is required");
         }
+        if (onlineGateway === "payu") {
+          if (!payuMerchantKey.trim()) throw new Error("PayU Merchant Key is required");
+          if (!payuMerchantSalt.trim()) throw new Error("PayU Merchant Salt is required");
+        }
 
-        // Persist BOTH sets of credentials so the merchant can flip between gateways
+        // Persist all sets of credentials so the merchant can flip between gateways
         // without re-typing — but only the active gateway is in `payment_methods`.
         const payload: Record<string, any> = {
           store_id: storeId!,
@@ -189,6 +204,9 @@ export default function StorePayments() {
           cashfree_app_id: cashfreeAppId.trim() || null,
           cashfree_secret_key: cashfreeSecretKey.trim() || null,
           cashfree_env: cashfreeEnv,
+          payu_merchant_key: payuMerchantKey.trim() || null,
+          payu_merchant_salt: payuMerchantSalt.trim() || null,
+          payu_env: payuEnv,
         };
 
         if (paymentConfig) {
@@ -335,7 +353,7 @@ export default function StorePayments() {
               <RadioGroup
                 value={onlineGateway}
                 onValueChange={(v) => switchGateway(v as OnlineGateway)}
-                className="grid gap-2 sm:grid-cols-3"
+                className="grid gap-2 sm:grid-cols-2"
               >
                 <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-all ${onlineGateway === "none" ? "border-primary bg-primary/5" : "border-input"}`}>
                   <RadioGroupItem value="none" />
@@ -350,6 +368,11 @@ export default function StorePayments() {
                   <RadioGroupItem value="cashfree" />
                   <Zap className="h-4 w-4 text-violet-600" />
                   <span className="text-sm font-medium">Cashfree</span>
+                </label>
+                <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-all ${onlineGateway === "payu" ? "border-primary bg-primary/5" : "border-input"}`}>
+                  <RadioGroupItem value="payu" />
+                  <CreditCard className="h-4 w-4 text-emerald-600" />
+                  <span className="text-sm font-medium">PayU</span>
                 </label>
               </RadioGroup>
             </div>
@@ -551,6 +574,120 @@ export default function StorePayments() {
                 </div>
               </Collapsible>
             )}
+
+            {/* PayU creds */}
+            {onlineGateway === "payu" && (
+              <Collapsible open={payuOpen} onOpenChange={setPayuOpen}>
+                <div className="rounded-xl border">
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950">
+                        <CreditCard className="h-5 w-5 text-emerald-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">PayU</p>
+                        <p className="text-xs text-muted-foreground">
+                          UPI, Cards, Net Banking, Wallets, EMI • Merchant Hosted (Bolt)
+                        </p>
+                      </div>
+                    </div>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <ChevronDown className={`h-4 w-4 transition-transform ${payuOpen ? "rotate-180" : ""}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
+
+                  <CollapsibleContent>
+                    <div className="border-t px-4 pb-4 pt-3 space-y-4">
+                      <div className="rounded-lg bg-accent/50 p-3 text-xs text-muted-foreground space-y-1">
+                        <p className="font-medium text-foreground flex items-center gap-1.5">
+                          <ShieldCheck className="h-3.5 w-3.5" /> Get your PayU API Keys
+                        </p>
+                        <ol className="list-decimal list-inside space-y-0.5 pl-1">
+                          <li>
+                            Go to{" "}
+                            <a
+                              href="https://onboarding.payu.in/app/account/gateway-credentials"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary underline inline-flex items-center gap-0.5"
+                            >
+                              PayU Dashboard <ExternalLink className="h-2.5 w-2.5" />
+                            </a>
+                          </li>
+                          <li>Navigate to Settings → My Account → Merchant Key &amp; Salt</li>
+                          <li>Copy your Merchant Key and Salt (use Production for live, Test for sandbox)</li>
+                          <li>
+                            Set webhook URL in PayU dashboard to:{" "}
+                            <code className="text-[10px] bg-muted px-1 py-0.5 rounded">
+                              https://{import.meta.env.VITE_SUPABASE_PROJECT_ID}.functions.supabase.co/payu-webhook
+                            </code>
+                          </li>
+                        </ol>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label>Environment *</Label>
+                        <RadioGroup
+                          value={payuEnv}
+                          onValueChange={(v) => setPayuEnv(v as "production" | "sandbox")}
+                          className="flex gap-4"
+                        >
+                          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2 transition-all ${payuEnv === "production" ? "border-primary bg-primary/5" : "border-input"}`}>
+                            <RadioGroupItem value="production" />
+                            <span className="text-sm font-medium">Production (Live)</span>
+                          </label>
+                          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2 transition-all ${payuEnv === "sandbox" ? "border-primary bg-primary/5" : "border-input"}`}>
+                            <RadioGroupItem value="sandbox" />
+                            <span className="text-sm font-medium">Sandbox (Test)</span>
+                          </label>
+                        </RadioGroup>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="payu-key">PayU Merchant Key *</Label>
+                        <Input
+                          id="payu-key"
+                          name="payu-merchant-key"
+                          placeholder="e.g. gtKFFx"
+                          value={payuMerchantKey}
+                          onChange={(e) => setPayuMerchantKey(e.target.value)}
+                          maxLength={50}
+                          autoComplete="off"
+                          autoCorrect="off"
+                          autoCapitalize="off"
+                          spellCheck={false}
+                          data-lpignore="true"
+                          data-form-type="other"
+                          data-1p-ignore="true"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="payu-salt">PayU Merchant Salt *</Label>
+                        <Input
+                          id="payu-salt"
+                          name="payu-merchant-salt"
+                          type="password"
+                          placeholder="••••••••••••••••••••"
+                          value={payuMerchantSalt}
+                          onChange={(e) => setPayuMerchantSalt(e.target.value)}
+                          maxLength={200}
+                          autoComplete="new-password"
+                          autoCorrect="off"
+                          autoCapitalize="off"
+                          spellCheck={false}
+                          data-lpignore="true"
+                          data-form-type="other"
+                          data-1p-ignore="true"
+                        />
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            )}
           </CardContent>
         </Card>
       )}
@@ -569,7 +706,7 @@ export default function StorePayments() {
           <CardContent className="space-y-4">
             {!onlineEnabled && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
-                Select an online gateway (Razorpay or Cashfree) above for partial payment to take effect at checkout.
+                Select an online gateway (Razorpay, Cashfree or PayU) above for partial payment to take effect at checkout.
               </div>
             )}
             <div className="flex items-center justify-between">

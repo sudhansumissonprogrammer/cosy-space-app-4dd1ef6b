@@ -2035,6 +2035,9 @@ export type Database = {
           created_at: string
           id: string
           payment_methods: Json
+          payu_env: string
+          payu_merchant_key: string | null
+          payu_merchant_salt: string | null
           razorpay_key_id: string | null
           razorpay_key_secret: string | null
           store_id: string
@@ -2047,6 +2050,9 @@ export type Database = {
           created_at?: string
           id?: string
           payment_methods?: Json
+          payu_env?: string
+          payu_merchant_key?: string | null
+          payu_merchant_salt?: string | null
           razorpay_key_id?: string | null
           razorpay_key_secret?: string | null
           store_id: string
@@ -2059,6 +2065,9 @@ export type Database = {
           created_at?: string
           id?: string
           payment_methods?: Json
+          payu_env?: string
+          payu_merchant_key?: string | null
+          payu_merchant_salt?: string | null
           razorpay_key_id?: string | null
           razorpay_key_secret?: string | null
           store_id?: string
@@ -3596,6 +3605,7 @@ export type Database = {
       get_own_cashfree_secret: { Args: { _store_id: string }; Returns: string }
       get_own_domain_token: { Args: { _store_id: string }; Returns: string }
       get_own_payment_secret: { Args: { _store_id: string }; Returns: string }
+      get_own_payu_secret: { Args: { _store_id: string }; Returns: string }
       get_own_store_meta_token: { Args: { _store_id: string }; Returns: string }
       get_own_store_private_settings: {
         Args: { _store_id: string }

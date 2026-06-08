@@ -1,0 +1,96 @@
+// Lightweight PayU status check used by:
+//  - tab-focus / visibility-change auto-recheck
+//  - explicit "Check status" / "I've paid" retry button
+//  - sessionStorage recovery on tab reload after returning from UPI app
+//
+// Returns the normalized verdict AND confirms the order if PayU reports success.
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
+import { verifyPayuTxn, mapPayuStatus, type PayuEnv } from "../_shared/payuHelpers.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Max-Age": "86400",
+};
+
+function jsonRes(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "content-type": "application/json" },
+  });
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const { store_id, order_id, txnid } = await req.json();
+    if (!store_id || !order_id) return jsonRes({ error: "Missing fields" }, 400);
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    const { data: orderInfo } = await supabase
+      .from("orders")
+      .select("status, payment_type")
+      .eq("id", order_id)
+      .single();
+
+    if (orderInfo?.status === "confirmed" || orderInfo?.status === "partially_paid") {
+      void firePurchaseCapi(supabase, order_id, { source: "payu-status" });
+      return jsonRes({ status: "paid", local: orderInfo.status });
+    }
+
+    if (!txnid) {
+      return jsonRes({
+        status: orderInfo?.status === "cancelled" ? "failed" : "pending",
+      });
+    }
+
+    const { data: config } = await supabase
+      .from("store_payment_config")
+      .select("payu_merchant_key, payu_merchant_salt, payu_env")
+      .eq("store_id", store_id)
+      .single();
+
+    if (!config?.payu_merchant_key || !config?.payu_merchant_salt) {
+      return jsonRes({ status: "pending" });
+    }
+
+    const env = (config.payu_env === "sandbox" ? "sandbox" : "production") as PayuEnv;
+    const det = await verifyPayuTxn({
+      env,
+      key: config.payu_merchant_key,
+      salt: config.payu_merchant_salt,
+      txnid,
+    });
+
+    if (!det) return jsonRes({ status: "pending" });
+    const verdict = mapPayuStatus(det.status);
+
+    if (verdict === "paid") {
+      const isPartial = orderInfo?.payment_type === "partial";
+      await supabase
+        .from("orders")
+        .update({
+          status: isPartial ? "partially_paid" : "confirmed",
+          payment_method: "payu",
+          notes: `PayU Txn ID: ${txnid}${det.mihpayid ? ` (mihpayid: ${det.mihpayid})` : ""}`,
+          payment_verified: true,
+          payment_verified_at: new Date().toISOString(),
+        })
+        .eq("id", order_id);
+      await firePurchaseCapi(supabase, order_id, { source: "payu-status" });
+    }
+
+    return jsonRes({ status: verdict });
+  } catch (err) {
+    console.error("payu-status error", err);
+    return jsonRes({ status: "pending" });
+  }
+});
