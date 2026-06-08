@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
         city: string;
         state: string;
         pincode: string;
-        payment_method: "cod" | "razorpay";
+        payment_method: "cod" | "razorpay" | "cashfree" | "payu";
         notes?: string;
         storefront_customer_id?: string | null;
         payment_type?: "full" | "partial";
