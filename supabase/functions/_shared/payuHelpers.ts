@@ -83,7 +83,8 @@ export async function computePayuReverseHash(p: PayuReverseHashParams): Promise<
   const base = [
     p.salt,
     p.status,
-    "", "", "", "", "", "",
+    // 5 empty fields (udf6..udf10) between status and udf5 per PayU spec
+    "", "", "", "", "",
     p.udf5 || "",
     p.udf4 || "",
     p.udf3 || "",
