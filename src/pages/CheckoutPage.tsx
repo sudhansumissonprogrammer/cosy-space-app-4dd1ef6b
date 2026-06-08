@@ -25,6 +25,7 @@ import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import { estimateDelivery, type DeliveryEstimate } from "@/lib/deliveryEstimate";
 import { loadCashfree } from "@/lib/loadCashfree";
+import { loadPayuBolt } from "@/lib/loadPayuBolt";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 
@@ -357,6 +358,8 @@ export default function CheckoutPage() {
         razorpay_key_id: string | null;
         cashfree_app_id: string | null;
         cashfree_env: string | null;
+        payu_merchant_key: string | null;
+        payu_env: string | null;
       } | null;
     },
   });
@@ -415,9 +418,11 @@ export default function CheckoutPage() {
   const hasCod = availableMethods.includes("cod");
   const hasRazorpay = availableMethods.includes("razorpay");
   const hasCashfree = availableMethods.includes("cashfree");
-  const hasOnline = hasRazorpay || hasCashfree;
+  const hasPayu = availableMethods.includes("payu");
+  const hasOnline = hasRazorpay || hasCashfree || hasPayu;
   // Which gateway opens when "online" is selected (mutual exclusion enforced in dashboard)
-  const activeGateway: "razorpay" | "cashfree" | null = hasRazorpay ? "razorpay" : hasCashfree ? "cashfree" : null;
+  const activeGateway: "razorpay" | "cashfree" | "payu" | null =
+    hasRazorpay ? "razorpay" : hasCashfree ? "cashfree" : hasPayu ? "payu" : null;
 
   useEffect(() => {
     // When partial payment is enabled, always default to online (COD is hidden)
@@ -443,8 +448,14 @@ export default function CheckoutPage() {
       prewarmEdgeFunction("store-cashfree-verify");
       prewarmEdgeFunction("store-cashfree-status");
     }
+    if (hasPayu) {
+      loadPayuBolt(((paymentConfig?.payu_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
+      prewarmEdgeFunction("payu-create-txn");
+      prewarmEdgeFunction("payu-verify-payment");
+      prewarmEdgeFunction("payu-status");
+    }
     prewarmEdgeFunction("place-order");
-  }, [hasRazorpay, hasCashfree, paymentConfig?.cashfree_env]);
+  }, [hasRazorpay, hasCashfree, hasPayu, paymentConfig?.cashfree_env, paymentConfig?.payu_env]);
 
   const currency = store.currency || "USD";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : `${currency} `;
@@ -639,10 +650,14 @@ export default function CheckoutPage() {
       category = "cod";
       value = total;
     } else if (isPartialOrder) {
-      category = activeGateway === "cashfree" ? "partial_cod_cashfree" : "partial_cod_razorpay";
+      category = activeGateway === "cashfree" ? "partial_cod_cashfree"
+        : activeGateway === "payu" ? "partial_cod_payu"
+        : "partial_cod_razorpay";
       value = partialAdvanceTotal;
     } else if (paymentMethod === "razorpay") {
-      category = activeGateway === "cashfree" ? "cashfree" : "razorpay";
+      category = activeGateway === "cashfree" ? "cashfree"
+        : activeGateway === "payu" ? "payu"
+        : "razorpay";
       value = total;
     } else {
       return;
@@ -1350,6 +1365,142 @@ export default function CheckoutPage() {
     }
   };
 
+  // Open PayU Bolt overlay for an existing order (merchant-hosted, customer stays on storefront)
+  const openPayuForOrder = async (order: { id: string; number: string | null; profit: number | null }) => {
+    const env = (paymentConfig?.payu_env as any) === "sandbox" ? "sandbox" : "production";
+    const [bolt, payuData] = await Promise.all([
+      loadPayuBolt(env),
+      callEdgeFunction("payu-create-txn", {
+        store_id: store.id,
+        order_id: order.id,
+        customer_name: fullName,
+        customer_phone: phone,
+        customer_email: email || undefined,
+      }),
+    ]);
+
+    // Verify with retry — UPI takes 3–15s to settle after user approves in the UPI app.
+    const verifyAndFinalize = async (opts?: { attempts?: number; intervalMs?: number; showConfirming?: boolean }) => {
+      const attempts = opts?.attempts ?? 8;
+      const intervalMs = opts?.intervalMs ?? 2000;
+      if (opts?.showConfirming) setConfirmingPayment(true);
+      for (let i = 0; i < attempts; i++) {
+        try {
+          const verdict = await callEdgeFunction("payu-verify-payment", {
+            store_id: store.id, order_id: order.id, txnid: payuData.txnid,
+          });
+          if (verdict?.status === "PAID") {
+            setConfirmingPayment(false);
+            setPlacingStep(3);
+            setPlacing(false);
+            setPaymentFailed(false);
+            setPendingOrder(null);
+            finalizeOrder(order.id, order.number, order.profit);
+            return true;
+          }
+          if (verdict?.status === "FAILED" || verdict?.status === "CANCELLED") {
+            setConfirmingPayment(false);
+            return false;
+          }
+        } catch (e) {
+          console.warn(`PayU verify attempt ${i + 1} failed:`, e);
+        }
+        if (i < attempts - 1) await new Promise((r) => setTimeout(r, intervalMs));
+      }
+      setConfirmingPayment(false);
+      return false;
+    };
+
+    return new Promise<void>((resolve) => {
+      const launchPayload = {
+        key: payuData.key,
+        txnid: payuData.txnid,
+        amount: payuData.amount,
+        productinfo: payuData.productinfo,
+        firstname: payuData.firstname,
+        email: payuData.email,
+        phone: payuData.phone,
+        udf1: payuData.udf1,
+        udf2: payuData.udf2,
+        udf3: payuData.udf3 || "",
+        udf4: payuData.udf4 || "",
+        udf5: payuData.udf5 || "",
+        surl: payuData.surl,
+        furl: payuData.furl,
+        hash: payuData.hash,
+      };
+
+      // Disable beforeunload lock — PayU triggers UPI deep links from top window.
+      window.dispatchEvent(new CustomEvent("payment-in-progress"));
+      fireInitiateCheckoutOnce();
+
+      try {
+        bolt.launch(launchPayload, {
+          responseHandler: async (BOLT: any) => {
+            const status = String(BOLT?.response?.txnStatus || "").toUpperCase();
+            console.log("[PayU] responseHandler", status, BOLT?.response);
+            try {
+              if (status === "SUCCESS") {
+                const ok = await verifyAndFinalize({ attempts: 8, intervalMs: 2000, showConfirming: true });
+                if (!ok) {
+                  setPlacingStep(0);
+                  setPendingOrder(order);
+                  setPaymentFailed(true);
+                  setPlacing(false);
+                  toast.error("Payment not confirmed. You can retry below.");
+                }
+              } else if (status === "CANCEL" || status === "USER_CANCELLED") {
+                // User closed overlay — silently verify in case payment went through, else show retry
+                const ok = await verifyAndFinalize({ attempts: 4, intervalMs: 2000, showConfirming: true });
+                if (!ok) {
+                  setPlacingStep(0);
+                  setPendingOrder(order);
+                  setPaymentFailed(true);
+                  setPlacing(false);
+                }
+              } else {
+                // FAILURE or other
+                const ok = await verifyAndFinalize({ attempts: 4, intervalMs: 2000, showConfirming: true });
+                if (!ok) {
+                  setPlacingStep(0);
+                  setPendingOrder(order);
+                  setPaymentFailed(true);
+                  setPlacing(false);
+                  toast.error("Payment failed. You can retry below.");
+                }
+              }
+            } finally {
+              window.dispatchEvent(new CustomEvent("payment-ended"));
+              resolve();
+            }
+          },
+          catchException: async (BOLT: any) => {
+            console.warn("[PayU] catchException", BOLT);
+            const ok = await verifyAndFinalize({ attempts: 4, intervalMs: 2000, showConfirming: true });
+            if (!ok) {
+              setPlacingStep(0);
+              setPendingOrder(order);
+              setPaymentFailed(true);
+              setPlacing(false);
+              toast.error(BOLT?.message || "Payment failed. You can retry below.");
+            }
+            window.dispatchEvent(new CustomEvent("payment-ended"));
+            resolve();
+          },
+        });
+      } catch (err: any) {
+        console.error("[PayU] launch threw", err);
+        setPlacingStep(0);
+        setPendingOrder(order);
+        setPaymentFailed(true);
+        setPlacing(false);
+        toast.error(err?.message || "Failed to open payment gateway");
+        window.dispatchEvent(new CustomEvent("payment-ended"));
+        resolve();
+      }
+    });
+  };
+
   // Retry payment for a pending order
   const handleRetryPayment = async () => {
     if (!pendingOrder) return;
@@ -1359,6 +1510,8 @@ export default function CheckoutPage() {
     try {
       if (activeGateway === "cashfree") {
         await openCashfreeForOrder(pendingOrder);
+      } else if (activeGateway === "payu") {
+        await openPayuForOrder(pendingOrder);
       } else {
         await openRazorpayForOrder(pendingOrder);
       }
@@ -1409,6 +1562,9 @@ export default function CheckoutPage() {
       if (activeGateway === "cashfree") {
         prewarmEdgeFunction("store-cashfree-create-order");
         loadCashfree(((paymentConfig?.cashfree_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
+      } else if (activeGateway === "payu") {
+        prewarmEdgeFunction("payu-create-txn");
+        loadPayuBolt(((paymentConfig?.payu_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
       } else {
         prewarmEdgeFunction("razorpay-order");
         loadRazorpayScript();
@@ -1421,6 +1577,8 @@ export default function CheckoutPage() {
         setPlacingStep(2);
         if (activeGateway === "cashfree") {
           await openCashfreeForOrder(newOrder);
+        } else if (activeGateway === "payu") {
+          await openPayuForOrder(newOrder);
         } else {
           await openRazorpayForOrder(newOrder);
         }
