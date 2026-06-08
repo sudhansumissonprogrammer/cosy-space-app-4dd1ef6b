@@ -40,7 +40,6 @@ import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrust
 
 const PRODUCT_SUFFIX_RE = /-[a-z0-9]{4}$/i;
 
-const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
 const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
@@ -171,7 +170,6 @@ export default function V22ProductDetail() {
   const [justAdded, setJustAdded] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>("description");
-  const [buyNowModalOpen, setBuyNowModalOpen] = useState(false);
   const [variantPromptOpen, setVariantPromptOpen] = useState(false);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
   const inlineCtaRef = useRef<HTMLDivElement>(null);
@@ -558,23 +556,6 @@ export default function V22ProductDetail() {
     if (hasVariants && !selectedVariant) {
       toast.error("Please select a variant first"); setVariantPromptOpen(true);
       document.getElementById("variant-picker")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
-    }
-
-    // Theme 16 / 21: show phone modal instead of direct checkout
-    if ((store as any).theme === "theme-16" || (store as any).theme === "theme-21" || (store as any).theme === "theme-22") {
-      // Add to cart first so checkout has the item
-      addToCart({
-        productId: product.id,
-        variantId: selectedVariant?.id,
-        name: product.name,
-        variantName: selectedVariant?.name,
-        price: variantPrice,
-        image: product.image_url || undefined,
-        quantity,
-      });
-      closeCart();
-      setBuyNowModalOpen(true);
       return;
     }
 
@@ -1189,21 +1170,6 @@ export default function V22ProductDetail() {
 
         </>,
         document.body
-      )}
-
-      {/* Theme 16 / 21 Buy Now Phone Modal */}
-      {((store as any).theme === "theme-16" || (store as any).theme === "theme-21" || (store as any).theme === "theme-22") && (
-        <Suspense fallback={null}>
-          <BuyNowPhoneModal
-            open={buyNowModalOpen}
-            onOpenChange={setBuyNowModalOpen}
-            storeSlug={store.slug}
-            storeId={store.id}
-            productId={product?.id}
-            productName={product?.name}
-            source="quick_buy_pdp"
-          />
-        </Suspense>
       )}
 
       {/* Variant required prompt */}

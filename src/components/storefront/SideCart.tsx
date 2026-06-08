@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { formatPrice } from "@/lib/productUtils";
-import { Suspense, lazy, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,8 +10,6 @@ import { Minus, Plus, Trash2, ShoppingCart, ShoppingBag, MessageCircle, Package,
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import CartUpsell from "@/components/storefront/CartUpsell";
-
-const BuyNowPhoneModal = lazy(() => import("@/components/storefront/BuyNowPhoneModal"));
 
 interface SideCartProps {
   store: StoreData;
@@ -28,7 +25,6 @@ export default function SideCart({ store }: SideCartProps) {
   // TEMP DISABLED: phone-lead modal + map autofill — go straight to /checkout.
   // To re-enable, restore: (store as any).theme === "theme-16" || "theme-21" || "theme-22"
   const isTheme16 = false;
-  const [showPhoneModal, setShowPhoneModal] = useState(false);
   const showCheckout = orderMode === "website" || orderMode === "both";
 
   const { data: shippingConfig } = useQuery({
@@ -192,7 +188,7 @@ export default function SideCart({ store }: SideCartProps) {
               <div className="space-y-1.5">
                 {showCheckout && isTheme16 ? (
                   <button
-                    onClick={() => { closeCart(); setShowPhoneModal(true); }}
+                    onClick={closeCart}
                     className="flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold transition-all hover:brightness-110 active:scale-[0.98]" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
                   >
                     <ShoppingBag className="h-4 w-4" />
@@ -230,23 +226,6 @@ export default function SideCart({ store }: SideCartProps) {
         )}
       </SheetContent>
     </Sheet>
-    {isTheme16 && (
-      <Suspense fallback={null}>
-        <BuyNowPhoneModal
-          open={showPhoneModal}
-          onOpenChange={setShowPhoneModal}
-          storeSlug={store.slug}
-          storeId={store.id}
-          productId={items[items.length - 1]?.productId}
-          productName={
-            items.length > 1
-              ? `${items[items.length - 1]?.name} +${items.length - 1} more`
-              : items[items.length - 1]?.name
-          }
-          source="quick_buy_sidecart"
-        />
-      </Suspense>
-    )}
     </>
   );
 }
