@@ -66,11 +66,11 @@ Deno.serve(async (req) => {
 
     if (!det) {
       // PayU has no record yet — treat as pending so the client keeps polling.
-      return jsonRes({ success: false, status: "pending" });
+      return jsonRes({ success: false, status: "PENDING" });
     }
 
     const verdict = mapPayuStatus(det.status);
-    if (verdict === "paid") {
+    if (verdict === "PAID") {
       const isPartial = orderInfo?.payment_type === "partial";
       const { error: updateErr } = await supabase
         .from("orders")
@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
       }
       // Await to make sure CAPI fires before edge runtime kills the isolate
       await firePurchaseCapi(supabase, order_id, { source: "payu-verify" });
-      return jsonRes({ success: true, status: "paid" });
+      return jsonRes({ success: true, status: "PAID" });
     }
 
     return jsonRes({ success: false, status: verdict });
