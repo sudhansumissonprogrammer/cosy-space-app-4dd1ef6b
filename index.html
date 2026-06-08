@@ -3,6 +3,38 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- ─── Stale-shell self-heal ───
+         When a new deploy lands, the Cloudflare Worker may still serve a
+         previously cached HTML shell that references a JS bundle hash that
+         no longer exists at origin (404/503). React never mounts → blank
+         "loading" screen (the exact serdiyajewellers.shop incident).
+         This guard catches the failed <script> for the main entry chunk,
+         calls /api/purge-shell for the current host (open endpoint), then
+         hard-reloads ONCE. A sessionStorage flag prevents infinite loops if
+         the asset really is gone for an unrelated reason. -->
+    <script>
+      (function(){
+        try{
+          var FLAG='__sb_shell_healed__';
+          window.addEventListener('error', function(e){
+            var t = e && e.target;
+            if (!t || t.tagName !== 'SCRIPT') return;
+            var src = (t.src || '') + '';
+            if (!/\/assets\/(index|main)-[A-Za-z0-9_-]+\.js(\?|$)/.test(src)) return;
+            if (sessionStorage.getItem(FLAG)) return;
+            sessionStorage.setItem(FLAG, '1');
+            var host = location.hostname;
+            var done = function(){
+              location.replace(location.pathname + (location.search ? location.search + '&' : '?') + '__sh=' + Date.now() + location.hash);
+            };
+            try {
+              fetch('/api/purge-shell?domain=' + encodeURIComponent(host), { method:'POST', cache:'no-store', keepalive:true })
+                .then(done, done);
+            } catch(_) { done(); }
+          }, true);
+        }catch(_){}
+      })();
+    </script>
     <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/outfit-latin.woff2" crossorigin />
     <!-- Landing hero LCP image preload — INJECTED VIA JS only on landing host
