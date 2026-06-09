@@ -958,11 +958,15 @@ export default function CheckoutPage() {
         });
         void recheck({ aggressive: true }).then((paid) => {
           if (!paid && !cancelled) {
-            // Recovery didn't confirm — drop the stale pending marker so
-            // re-opening checkout doesn't show "confirming…" forever.
-            clearPayuPending();
+            // PayU UPI confirmation can arrive late (often 30–90s after GPay
+            // success), so keep the pending marker for later focus/reload checks.
             setConfirmingPayment(false);
-            setPendingOrder(null);
+            setPendingOrder({
+              id: initial.order_id,
+              number: initial.order_number,
+              profit: initial.order_profit,
+            });
+            setPaymentFailed(true);
           }
         });
 
