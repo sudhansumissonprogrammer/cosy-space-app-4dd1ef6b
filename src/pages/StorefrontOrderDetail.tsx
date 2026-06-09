@@ -67,7 +67,7 @@ export default function StorefrontOrderDetail() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  const [showInvoice, setShowInvoice] = useState(false);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState(CANCEL_REASONS[0]);
   const [returnOpen, setReturnOpen] = useState(false);
@@ -86,6 +86,17 @@ export default function StorefrontOrderDetail() {
       return data;
     },
     enabled: !!orderId,
+    // Instant render: hydrate from the orders-list cache if we have it,
+    // then refetch in the background to fill in slug/name fields the list omits.
+    initialData: () => {
+      const cached = qc.getQueriesData<any[]>({ queryKey: ["storefront-customer-orders"] });
+      for (const [, list] of cached) {
+        const found = Array.isArray(list) ? list.find((o: any) => o?.id === orderId) : null;
+        if (found) return found;
+      }
+      return undefined;
+    },
+    initialDataUpdatedAt: 0,
   });
 
   const cancelMutation = useMutation({
