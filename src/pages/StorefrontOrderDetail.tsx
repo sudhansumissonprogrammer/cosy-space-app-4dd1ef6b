@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState } from "react";
 import { useParams, Link, Navigate, useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabaseStorefront as supabase } from "@/integrations/supabase/storefrontClient";
@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -24,8 +24,6 @@ import {
   FileDown, MessageCircle, XCircle, RotateCcw, ShoppingBag, ExternalLink,
   Loader2, ShieldCheck, Receipt, Truck,
 } from "lucide-react";
-
-const OrderInvoice = lazy(() => import("@/components/OrderInvoice"));
 
 const CANCEL_REASONS = [
   "Changed my mind",
