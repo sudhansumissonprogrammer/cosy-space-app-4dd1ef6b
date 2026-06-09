@@ -644,6 +644,9 @@ export default function CheckoutPage() {
   // Works for COD-only stores (no gateway), Razorpay-only, Cashfree-only,
   // and partial-payment-enabled stores transparently.
   const apiFiredRef = useRef<Set<string>>(new Set());
+  // Tracks the in-flight createGuestAccount promise so "View My Orders"
+  // can await it and avoid the phone-login fallback / re-prompt.
+  const guestAccountPromiseRef = useRef<Promise<void> | null>(null);
   useEffect(() => {
     if (checkoutItems.length === 0) return;
     // Resolve the actual payment category Meta should attribute to.
