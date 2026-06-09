@@ -2002,22 +2002,7 @@ export default function CheckoutPage() {
   };
 
   if (orderPlaced) {
-    // Show post-purchase upsell first, then confirmation
-    if (showUpsell && orderId) {
-      return (
-        <Suspense fallback={null}>
-          <PostPurchaseUpsell
-            storeId={store.id}
-            storeName={store.name}
-            orderId={orderId}
-            orderNumber={orderNumber}
-            orderedProductIds={checkoutItems.map((i) => i.productId)}
-            currency={currency}
-            onSkip={() => setShowUpsell(false)}
-          />
-        </Suspense>
-      );
-    }
+
 
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center" style={{ fontFamily: "'Montserrat Alternates', sans-serif" }}>
