@@ -137,12 +137,15 @@ export default function CheckoutPage() {
   const purchaseEventIdRef = useRef<string>(generateEventId());
   const metaCookiesRef = useRef<{ fbc: string; fbp: string }>(getMetaCookies());
   const CF_PENDING_KEY = `cf_pending_${store.id}`;
+  // Use localStorage (not sessionStorage) so mobile UPI flows survive tab kills
+  // and Cashfree's server-side redirect-back into a brand-new tab.
   const persistCfPending = (cfId: string | null, order: { id: string; number: string | null; profit: number | null } | null) => {
     try {
       if (cfId && order) {
-        sessionStorage.setItem(CF_PENDING_KEY, JSON.stringify({ cf_order_id: cfId, order, ts: Date.now() }));
+        localStorage.setItem(CF_PENDING_KEY, JSON.stringify({ cf_order_id: cfId, order, ts: Date.now() }));
       } else {
-        sessionStorage.removeItem(CF_PENDING_KEY);
+        localStorage.removeItem(CF_PENDING_KEY);
+        sessionStorage.removeItem(CF_PENDING_KEY); // legacy cleanup
       }
     } catch {}
   };
