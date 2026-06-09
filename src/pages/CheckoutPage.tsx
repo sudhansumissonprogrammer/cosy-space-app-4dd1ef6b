@@ -741,19 +741,24 @@ export default function CheckoutPage() {
       return false;
     };
 
-    // 1. Recovery on mount: if sessionStorage has a pending cf order from a previous tab life
+    // 1. Recovery on mount: if localStorage has a pending cf order from a previous tab life
+    //    (sessionStorage kept as legacy fallback for in-flight tabs from before this change)
     try {
-      const raw = sessionStorage.getItem(CF_PENDING_KEY);
+      const raw = localStorage.getItem(CF_PENDING_KEY) || sessionStorage.getItem(CF_PENDING_KEY);
       if (raw && !pendingCfOrderRef.current) {
         const saved = JSON.parse(raw) as { cf_order_id: string; order: any; ts: number };
         // Only recover if recent (< 30 min) — avoids stale state
         if (saved && Date.now() - (saved.ts || 0) < 30 * 60 * 1000 && saved.cf_order_id && saved.order?.id) {
           pendingCfOrderRef.current = saved.cf_order_id;
           setPendingOrder(saved.order);
-          setPaymentFailed(true); // shows the retry/check-status UI
+          // If we landed here via Cashfree's redirect (?cf_order=...), show the
+          // "Confirming your payment" overlay — the URL-param effect below polls.
+          const hasCfParam = new URLSearchParams(window.location.search).has("cf_order");
+          if (!hasCfParam) setPaymentFailed(true); // shows the retry/check-status UI
           // Immediate recheck — the user may have already paid in UPI app
           recheckWith(saved.cf_order_id, saved.order);
         } else {
+          localStorage.removeItem(CF_PENDING_KEY);
           sessionStorage.removeItem(CF_PENDING_KEY);
         }
       }
