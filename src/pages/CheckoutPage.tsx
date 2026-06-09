@@ -1941,6 +1941,11 @@ export default function CheckoutPage() {
     if (viewingOrders) return;
     setViewingOrders(true);
     try {
+      // Wait for the auto-created guest account session to be written before
+      // checking — otherwise we race it and fall into the phone-login path.
+      if (guestAccountPromiseRef.current) {
+        try { await guestAccountPromiseRef.current; } catch {}
+      }
       // Already authenticated → just go.
       const { data: existing } = await supabaseStorefront.auth.getSession();
       if (existing?.session?.user) {
