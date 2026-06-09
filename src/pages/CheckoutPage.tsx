@@ -873,10 +873,11 @@ export default function CheckoutPage() {
         if (!raw) return null;
         const parsed = JSON.parse(raw);
         if (!parsed?.order_id || !parsed?.txnid) return null;
-        if (Date.now() - (parsed.ts || 0) > 45 * 60 * 1000) {
+        if (Date.now() - (parsed.ts || 0) > 10 * 60 * 1000) {
           sessionStorage.removeItem(PAYU_KEY);
           return null;
         }
+
         return parsed;
       } catch { return null; }
     };
