@@ -783,8 +783,13 @@ export default function CheckoutPage() {
     const returnedOrderId = params.get("payu_order");
     if (!payuStatus || !txnid) return;
 
+    const PAYU_KEY = `payu_pending_${store.id}`;
+    const clearPayuPending = () => {
+      try { sessionStorage.removeItem(PAYU_KEY); } catch {}
+      try { localStorage.removeItem(PAYU_KEY); } catch {}
+    };
     let cached: any = null;
-    try { cached = JSON.parse(sessionStorage.getItem(`payu_pending_${store.id}`) || "null"); } catch {}
+    try { cached = JSON.parse(sessionStorage.getItem(PAYU_KEY) || localStorage.getItem(PAYU_KEY) || "null"); } catch {}
     const orderId = returnedOrderId || cached?.order_id;
     if (!orderId) {
       try {
@@ -814,7 +819,7 @@ export default function CheckoutPage() {
             setPlacing(false);
             setPaymentFailed(false);
             setPendingOrder(null);
-            try { sessionStorage.removeItem(`payu_pending_${store.id}`); } catch {}
+            clearPayuPending();
             finalizeOrder(orderId, cached?.order_number || null, cached?.order_profit ?? null);
             return;
           }
@@ -860,6 +865,10 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!store?.id) return;
     const PAYU_KEY = `payu_pending_${store.id}`;
+    const clearPayuPending = () => {
+      try { sessionStorage.removeItem(PAYU_KEY); } catch {}
+      try { localStorage.removeItem(PAYU_KEY); } catch {}
+    };
 
     const readPending = (): null | {
       order_id: string;
@@ -869,12 +878,12 @@ export default function CheckoutPage() {
       ts: number;
     } => {
       try {
-        const raw = sessionStorage.getItem(PAYU_KEY);
+        const raw = sessionStorage.getItem(PAYU_KEY) || localStorage.getItem(PAYU_KEY);
         if (!raw) return null;
         const parsed = JSON.parse(raw);
         if (!parsed?.order_id || !parsed?.txnid) return null;
-        if (Date.now() - (parsed.ts || 0) > 10 * 60 * 1000) {
-          sessionStorage.removeItem(PAYU_KEY);
+        if (Date.now() - (parsed.ts || 0) > 30 * 60 * 1000) {
+          clearPayuPending();
           return null;
         }
 
@@ -906,12 +915,12 @@ export default function CheckoutPage() {
               setPlacing(false);
               setPaymentFailed(false);
               setPendingOrder(null);
-              try { sessionStorage.removeItem(PAYU_KEY); } catch {}
+              clearPayuPending();
               finalizeOrder(pending.order_id, pending.order_number, pending.order_profit);
               return true;
             }
             if (r?.status === "FAILED") {
-              try { sessionStorage.removeItem(PAYU_KEY); } catch {}
+              clearPayuPending();
               setConfirmingPayment(false);
               setPlacing(false);
               setPlacingStep(0);
@@ -949,11 +958,15 @@ export default function CheckoutPage() {
         });
         void recheck({ aggressive: true }).then((paid) => {
           if (!paid && !cancelled) {
-            // Recovery didn't confirm — drop the stale pending marker so
-            // re-opening checkout doesn't show "confirming…" forever.
-            try { sessionStorage.removeItem(PAYU_KEY); } catch {}
+            // PayU UPI confirmation can arrive late (often 30–90s after GPay
+            // success), so keep the pending marker for later focus/reload checks.
             setConfirmingPayment(false);
-            setPendingOrder(null);
+            setPendingOrder({
+              id: initial.order_id,
+              number: initial.order_number,
+              profit: initial.order_profit,
+            });
+            setPaymentFailed(true);
           }
         });
 
@@ -1623,7 +1636,7 @@ export default function CheckoutPage() {
     // Persist all context needed to finalize the order when the browser returns,
     // including across a hard refresh on the return page.
     try {
-      sessionStorage.setItem(`payu_pending_${store.id}`, JSON.stringify({
+      const pendingPayload = JSON.stringify({
         order_id: order.id,
         order_number: order.number,
         order_profit: order.profit,
@@ -1632,7 +1645,11 @@ export default function CheckoutPage() {
         charge_amount: chargeAmount,
         total,
         ts: Date.now(),
-      }));
+      });
+      sessionStorage.setItem(`payu_pending_${store.id}`, pendingPayload);
+      // Mobile browsers often reload the storefront after UPI app handoff.
+      // localStorage lets us recover the paid order even when sessionStorage is lost.
+      localStorage.setItem(`payu_pending_${store.id}`, pendingPayload);
     } catch {}
 
     fireInitiateCheckoutOnce();
@@ -1674,6 +1691,7 @@ export default function CheckoutPage() {
       surl: payuData.surl,
       furl: payuData.furl,
       curl: payuData.furl,
+      notifyurl: payuData.notify_url || "",
       hash: payuData.hash,
       service_provider: "payu_paisa",
     };

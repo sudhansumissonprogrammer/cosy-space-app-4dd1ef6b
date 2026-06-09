@@ -34,6 +34,20 @@ async function readBody(req: Request): Promise<Record<string, string>> {
   return out;
 }
 
+async function findCustomerByPhone(supabase: any, storeId: string, phone: string | null | undefined) {
+  const digits = String(phone || "").replace(/\D/g, "");
+  if (digits.length < 10) return null;
+  const { data } = await supabase
+    .from("storefront_customers")
+    .select("id, phone")
+    .eq("store_id", storeId);
+  const match = (data || []).find((row: any) => {
+    const rowDigits = String(row.phone || "").replace(/\D/g, "");
+    return rowDigits.length >= 10 && (rowDigits.endsWith(digits) || digits.endsWith(rowDigits));
+  });
+  return match?.id || null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
@@ -118,27 +132,36 @@ Deno.serve(async (req) => {
 
     const { data: orderRow } = await supabase
       .from("orders")
-      .select("status, payment_type")
+      .select("status, payment_type, customer_phone, storefront_customer_id")
       .eq("id", localOrderId)
       .single();
     if (!orderRow) return new Response("OK (unknown order)", { status: 200 });
 
     if (verdict === "PAID") {
       if (orderRow.status === "confirmed" || orderRow.status === "partially_paid") {
+        if (!orderRow.storefront_customer_id) {
+          const customerId = await findCustomerByPhone(supabase, storeId, orderRow.customer_phone);
+          if (customerId) await supabase.from("orders").update({ storefront_customer_id: customerId }).eq("id", localOrderId);
+        }
         // Already marked — still try CAPI in case the previous attempt failed (idempotent).
         await firePurchaseCapi(supabase, localOrderId, { source: "payu-webhook" });
         return new Response("OK (already paid)", { status: 200 });
       }
       const isPartial = orderRow.payment_type === "partial";
+      const customerId = !orderRow.storefront_customer_id
+        ? await findCustomerByPhone(supabase, storeId, orderRow.customer_phone)
+        : null;
+      const update: Record<string, unknown> = {
+        status: isPartial ? "partially_paid" : "confirmed",
+        payment_method: "payu",
+        notes: `PayU Txn ID: ${txnid}${mihpayid ? ` (mihpayid: ${mihpayid})` : ""}`,
+        payment_verified: true,
+        payment_verified_at: new Date().toISOString(),
+      };
+      if (customerId) update.storefront_customer_id = customerId;
       await supabase
         .from("orders")
-        .update({
-          status: isPartial ? "partially_paid" : "confirmed",
-          payment_method: "payu",
-          notes: `PayU Txn ID: ${txnid}${mihpayid ? ` (mihpayid: ${mihpayid})` : ""}`,
-          payment_verified: true,
-          payment_verified_at: new Date().toISOString(),
-        })
+        .update(update)
         .eq("id", localOrderId);
       await firePurchaseCapi(supabase, localOrderId, { source: "payu-webhook" });
     } else if (verdict === "FAILED") {
