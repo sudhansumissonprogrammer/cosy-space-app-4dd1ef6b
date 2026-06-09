@@ -39,6 +39,8 @@ export default function OrderCard({ order, storeSlug, currency }: { order: any; 
   return (
     <Link
       to={storefrontPath(storeSlug, `account/orders/${order.id}`)}
+      onMouseEnter={prefetchOrderDetail}
+      onTouchStart={prefetchOrderDetail}
       className="group block rounded-2xl border bg-card p-3 transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-[0.99]"
       style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}
     >
