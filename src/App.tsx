@@ -319,7 +319,9 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
+      // Keep cached query data for 30 min after unmount so customers who
+      // linger on PDP/checkout don't pay a re-fetch when navigating back.
+      gcTime: 30 * 60 * 1000,
       refetchOnWindowFocus: false,
       retry: 1,
     },

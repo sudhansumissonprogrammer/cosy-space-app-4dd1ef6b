@@ -66,7 +66,15 @@ export default function WishlistPage() {
                   className="h-32 w-32 flex-shrink-0 overflow-hidden rounded-xl bg-secondary/40"
                 >
                   {item.image ? (
-                    <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      loading="lazy"
+                      decoding="async"
+                      width={128}
+                      height={128}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
                       <Package className="h-8 w-8 text-muted-foreground/40" />

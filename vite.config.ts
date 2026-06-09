@@ -151,6 +151,18 @@ export default defineConfig(({ mode }) => ({
               expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
+          // Cache the Worker edge API responses (PDP + category payloads).
+          // StaleWhileRevalidate: serve from SW cache instantly, refresh in
+          // background so PWA users get near-zero latency on repeat visits.
+          {
+            urlPattern: ({ url }) => /\/api\/(pdp|category)(\?|$)/.test(url.pathname + url.search),
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "edge-api",
+              expiration: { maxEntries: 80, maxAgeSeconds: 5 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
       },
     }),

@@ -333,6 +333,17 @@ export default function CheckoutPage() {
       return data;
     },
     enabled: !!productId,
+    staleTime: 10 * 60 * 1000,
+    // Seed from PDP cache if the user came from the product page (buy-now flow).
+    // PDP fetches the full row keyed by slug — we look it up by productId match.
+    initialData: () => {
+      if (!productId) return undefined;
+      const matches = qc.getQueriesData<any>({ queryKey: ["storefront-product", store.id] });
+      for (const [, p] of matches) {
+        if (p && p.id === productId) return p;
+      }
+      return undefined;
+    },
   });
 
   const { data: variant } = useQuery({
@@ -348,6 +359,7 @@ export default function CheckoutPage() {
       return data as { id: string; name: string; price: number | null };
     },
     enabled: !!variantId,
+    staleTime: 10 * 60 * 1000,
   });
 
   // Fetch payment config for this store
@@ -365,11 +377,13 @@ export default function CheckoutPage() {
         payu_env: string | null;
       } | null;
     },
+    staleTime: 30 * 60 * 1000,
   });
 
-  // Fetch shipping config
+  // Fetch shipping config — KEY ALIGNED with CartPage + PDP so checkout
+  // reuses the cache instead of re-fetching on every entry.
   const { data: shippingConfig } = useQuery({
-    queryKey: ["store-shipping-config", store.id],
+    queryKey: ["storefront-shipping-config", store.id],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("store_shipping_config")
@@ -379,6 +393,7 @@ export default function CheckoutPage() {
       if (error) throw error;
       return data;
     },
+    staleTime: 30 * 60 * 1000,
   });
 
   // Fetch tax config
@@ -393,6 +408,7 @@ export default function CheckoutPage() {
       if (error) throw error;
       return data;
     },
+    staleTime: 30 * 60 * 1000,
   });
 
   // Check if store has any active coupons
@@ -408,7 +424,7 @@ export default function CheckoutPage() {
       if (error) throw error;
       return (count ?? 0) > 0;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 
   // Store-level partial payment config
