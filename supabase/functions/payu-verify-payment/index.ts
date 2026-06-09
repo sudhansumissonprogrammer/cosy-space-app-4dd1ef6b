@@ -20,6 +20,20 @@ function jsonRes(data: unknown, status = 200) {
   });
 }
 
+async function findCustomerByPhone(supabase: any, storeId: string, phone: string | null | undefined) {
+  const digits = String(phone || "").replace(/\D/g, "");
+  if (digits.length < 10) return null;
+  const { data } = await supabase
+    .from("storefront_customers")
+    .select("id, phone")
+    .eq("store_id", storeId);
+  const match = (data || []).find((row: any) => {
+    const rowDigits = String(row.phone || "").replace(/\D/g, "");
+    return rowDigits.length >= 10 && (rowDigits.endsWith(digits) || digits.endsWith(rowDigits));
+  });
+  return match?.id || null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -36,12 +50,16 @@ Deno.serve(async (req) => {
 
     const { data: orderInfo } = await supabase
       .from("orders")
-      .select("payment_type, status")
+      .select("payment_type, status, customer_phone, storefront_customer_id")
       .eq("id", order_id)
       .single();
 
     // Idempotent short-circuit
     if (orderInfo?.status === "confirmed" || orderInfo?.status === "partially_paid") {
+      if (!orderInfo.storefront_customer_id) {
+        const customerId = await findCustomerByPhone(supabase, store_id, orderInfo.customer_phone);
+        if (customerId) await supabase.from("orders").update({ storefront_customer_id: customerId }).eq("id", order_id);
+      }
       void firePurchaseCapi(supabase, order_id, { source: "payu-verify" });
       return jsonRes({ success: true, status: "PAID", already_confirmed: true });
     }
@@ -72,15 +90,20 @@ Deno.serve(async (req) => {
     const verdict = mapPayuStatus(det.status);
     if (verdict === "PAID") {
       const isPartial = orderInfo?.payment_type === "partial";
+      const customerId = !orderInfo?.storefront_customer_id
+        ? await findCustomerByPhone(supabase, store_id, orderInfo?.customer_phone)
+        : null;
+      const update: Record<string, unknown> = {
+        status: isPartial ? "partially_paid" : "confirmed",
+        payment_method: "payu",
+        notes: `PayU Txn ID: ${txnid}${det.mihpayid ? ` (mihpayid: ${det.mihpayid})` : ""}`,
+        payment_verified: true,
+        payment_verified_at: new Date().toISOString(),
+      };
+      if (customerId) update.storefront_customer_id = customerId;
       const { error: updateErr } = await supabase
         .from("orders")
-        .update({
-          status: isPartial ? "partially_paid" : "confirmed",
-          payment_method: "payu",
-          notes: `PayU Txn ID: ${txnid}${det.mihpayid ? ` (mihpayid: ${det.mihpayid})` : ""}`,
-          payment_verified: true,
-          payment_verified_at: new Date().toISOString(),
-        })
+        .update(update)
         .eq("id", order_id);
       if (updateErr) {
         console.error("Order update error", updateErr);
