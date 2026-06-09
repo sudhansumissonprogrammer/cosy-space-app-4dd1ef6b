@@ -163,3 +163,23 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
     </div>
   );
 }
+
+// Memoize at the leaf too — the parent UniversalProductCard memo guards most
+// re-renders, but cart/wishlist context updates that DO bubble through still
+// re-render this card. Custom equality on the same stable fields collapses
+// the re-render into a no-op.
+const ProductCardStyle1 = memo(ProductCardStyle1Impl, (prev, next) => {
+  return (
+    prev.product?.id === next.product?.id &&
+    prev.product?.price === next.product?.price &&
+    prev.product?.sale_price === next.product?.sale_price &&
+    prev.product?.stock_quantity === next.product?.stock_quantity &&
+    prev.slug === next.slug &&
+    prev.store?.id === next.store?.id &&
+    prev.priority === next.priority &&
+    prev.onVariantRequired === next.onVariantRequired
+  );
+});
+
+export default ProductCardStyle1;
+
