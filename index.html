@@ -128,14 +128,20 @@
           var h=location.hostname;
           var isLanding=(h==='shopbanao.in'||h==='www.shopbanao.in'||h==='localhost'||h==='127.0.0.1'||h.endsWith('.lovable.app')||h.endsWith('.lovableproject.com')||h.endsWith('.lovable.dev'));
           if(!isLanding)return;
+          /* font-display:optional for ALL secondary fonts — never block paint.
+             Phase A perf fix: was 'swap' for Alegreya SC + Poppins 600/700/800,
+             which still allowed a brief FOIT + late swap (CLS spike + visible
+             flicker on cold mobile). 'optional' means: if not cached in ~100ms,
+             skip entirely this load and use system fallback. Font swaps in
+             silently on next visit (already cached). Zero risk. */
           var css=
-            "@font-face{font-family:'Alegreya SC';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/alegreya-sc-400.woff2') format('woff2')}"+
-            "@font-face{font-family:'Alegreya SC';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/alegreya-sc-700.woff2') format('woff2')}"+
+            "@font-face{font-family:'Alegreya SC';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/alegreya-sc-400.woff2') format('woff2')}"+
+            "@font-face{font-family:'Alegreya SC';font-style:normal;font-weight:700;font-display:optional;src:url('/fonts/alegreya-sc-700.woff2') format('woff2')}"+
             "@font-face{font-family:'Poppins';font-style:normal;font-weight:400;font-display:optional;src:url('/fonts/poppins-400.woff2') format('woff2')}"+
             "@font-face{font-family:'Poppins';font-style:normal;font-weight:500;font-display:optional;src:url('/fonts/poppins-500.woff2') format('woff2')}"+
-            "@font-face{font-family:'Poppins';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/poppins-600.woff2') format('woff2')}"+
-            "@font-face{font-family:'Poppins';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/poppins-700.woff2') format('woff2')}"+
-            "@font-face{font-family:'Poppins';font-style:normal;font-weight:800;font-display:swap;src:url('/fonts/poppins-800.woff2') format('woff2')}";
+            "@font-face{font-family:'Poppins';font-style:normal;font-weight:600;font-display:optional;src:url('/fonts/poppins-600.woff2') format('woff2')}"+
+            "@font-face{font-family:'Poppins';font-style:normal;font-weight:700;font-display:optional;src:url('/fonts/poppins-700.woff2') format('woff2')}"+
+            "@font-face{font-family:'Poppins';font-style:normal;font-weight:800;font-display:optional;src:url('/fonts/poppins-800.woff2') format('woff2')}";
           var s=document.createElement('style');s.setAttribute('data-landing-fonts','1');s.appendChild(document.createTextNode(css));document.head.appendChild(s);
           // Preload landing hero LCP image (desktop only — mobile shows different hero)
           if(window.matchMedia&&window.matchMedia('(min-width: 1024px)').matches){
