@@ -873,10 +873,11 @@ export default function CheckoutPage() {
         if (!raw) return null;
         const parsed = JSON.parse(raw);
         if (!parsed?.order_id || !parsed?.txnid) return null;
-        if (Date.now() - (parsed.ts || 0) > 45 * 60 * 1000) {
+        if (Date.now() - (parsed.ts || 0) > 10 * 60 * 1000) {
           sessionStorage.removeItem(PAYU_KEY);
           return null;
         }
+
         return parsed;
       } catch { return null; }
     };
@@ -948,10 +949,14 @@ export default function CheckoutPage() {
         });
         void recheck({ aggressive: true }).then((paid) => {
           if (!paid && !cancelled) {
+            // Recovery didn't confirm — drop the stale pending marker so
+            // re-opening checkout doesn't show "confirming…" forever.
+            try { sessionStorage.removeItem(PAYU_KEY); } catch {}
             setConfirmingPayment(false);
-            setPaymentFailed(true);
+            setPendingOrder(null);
           }
         });
+
       }
     }
 
