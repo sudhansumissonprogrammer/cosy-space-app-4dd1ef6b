@@ -14,14 +14,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Package, MapPin, Heart, LogOut, Plus, Trash2, Star, Loader2, User, MessageCircle, Phone, XCircle, HelpCircle } from "lucide-react";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Package, MapPin, Heart, LogOut, Plus, Trash2, Star, Loader2, User, MessageCircle, Phone, HelpCircle } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { normalizePhone } from "@/lib/phoneUtils";
