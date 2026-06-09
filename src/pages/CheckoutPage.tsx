@@ -1648,16 +1648,15 @@ export default function CheckoutPage() {
     // and supports UPI / Cards / NetBanking / Wallets out of the box.
 
 
-    // ---- Fallback: hosted page redirect (secure.payu.in) ----------------
-    // Open in a NEW TAB so our checkout tab stays alive and keeps polling
-    // payu-status in the background. This is what makes the experience match
-    // Razorpay/Cashfree: the moment payment settles (webhook → our DB), the
-    // user switching back to our tab sees the success animation immediately —
-    // even if PayU's own page never redirected.
+    // ---- Hosted page redirect (secure.payu.in) — SAME TAB --------------
+    // Same-tab redirect mirrors the Cashfree flow exactly: PayU posts back to
+    // our SURL/FURL on completion, the mount-time recovery effect reads the
+    // `payu_status` / `payu_pending_*` keys and auto-finalizes the order with
+    // the success animation. No new tab, no popup blockers, no "switch back".
     const form = document.createElement("form");
     form.method = "POST";
     form.action = payuData.action;
-    form.target = "payu_checkout_window";
+    form.target = "_self";
     form.style.display = "none";
     const fields: Record<string, string> = {
       key: payuData.key,
@@ -1685,19 +1684,9 @@ export default function CheckoutPage() {
       input.value = String(v);
       form.appendChild(input);
     }
-    // Pre-open the named window from the user-gesture so popup blockers allow
-    // it. If the popup is blocked, fall back to same-tab navigation.
-    const popup = window.open("about:blank", "payu_checkout_window");
     document.body.appendChild(form);
-    if (popup && !popup.closed) {
-      form.submit();
-      // Show confirming UI on our tab so the user knows we're waiting.
-      setConfirmingPayment(true);
-    } else {
-      // Popup blocked — fall back to same-tab redirect (legacy behavior).
-      form.target = "_self";
-      form.submit();
-    }
+    form.submit();
+
   };
 
 
