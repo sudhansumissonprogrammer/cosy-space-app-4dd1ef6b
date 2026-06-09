@@ -35,6 +35,15 @@
         }catch(_){}
       })();
     </script>
+    <!-- Preconnect to backend + CDN origins so the first Supabase REST call
+         and first storefront image skip the cold DNS+TCP+TLS handshake
+         (~150–300 ms saved on cold visits, mobile especially). Safe on all
+         hosts: landing also calls Supabase for auth, and cdn.shopbanao.in is
+         a no-op preconnect when no images are served from it. -->
+    <link rel="preconnect" href="https://dqepeywgftbpxeeqfuwt.supabase.co" crossorigin />
+    <link rel="dns-prefetch" href="https://dqepeywgftbpxeeqfuwt.supabase.co" />
+    <link rel="preconnect" href="https://cdn.shopbanao.in" crossorigin />
+    <link rel="dns-prefetch" href="https://cdn.shopbanao.in" />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/outfit-latin.woff2" crossorigin />
     <!-- Landing hero LCP image preload — INJECTED VIA JS only on landing host
