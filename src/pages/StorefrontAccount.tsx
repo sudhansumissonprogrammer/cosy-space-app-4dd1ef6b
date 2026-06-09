@@ -25,6 +25,7 @@ import {
 import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { normalizePhone } from "@/lib/phoneUtils";
+import OrderCard from "@/components/storefront/OrderCard";
 
 function OrdersTab({ customerId, store }: { customerId: string; store: StoreData }) {
   const qc = useQueryClient();
