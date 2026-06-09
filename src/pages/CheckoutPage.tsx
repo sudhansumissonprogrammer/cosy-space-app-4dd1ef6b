@@ -949,10 +949,14 @@ export default function CheckoutPage() {
         });
         void recheck({ aggressive: true }).then((paid) => {
           if (!paid && !cancelled) {
+            // Recovery didn't confirm — drop the stale pending marker so
+            // re-opening checkout doesn't show "confirming…" forever.
+            try { sessionStorage.removeItem(PAYU_KEY); } catch {}
             setConfirmingPayment(false);
-            setPaymentFailed(true);
+            setPendingOrder(null);
           }
         });
+
       }
     }
 
