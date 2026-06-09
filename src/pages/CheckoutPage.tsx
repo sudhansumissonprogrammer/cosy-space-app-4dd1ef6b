@@ -943,35 +943,21 @@ export default function CheckoutPage() {
       return false;
     };
 
-    // 1. Mount recovery — if a PayU attempt is in flight, show "confirming…"
-    //    UI and aggressively poll. If still PENDING after the burst, surface
-    //    retry. Skip when URL already has payu_status (dedicated handler above).
+    // 1. Mount recovery — poll SILENTLY in the background. We do NOT show the
+    //    "Confirming your payment" overlay here, because a stale pending marker
+    //    from a previous attempt would otherwise hijack a fresh checkout and
+    //    make the Place Order button look stuck. If the silent poll finds the
+    //    order is actually PAID, we then flip into the success flow.
+    //    The URL-param handler above (payu_status in query string) is the only
+    //    path that shows the confirming overlay proactively.
     const initial = readPending();
     if (initial) {
       const hasReturnParam = new URLSearchParams(window.location.search).get("payu_status");
       if (!hasReturnParam) {
-        setConfirmingPayment(true);
-        setPendingOrder({
-          id: initial.order_id,
-          number: initial.order_number,
-          profit: initial.order_profit,
-        });
-        void recheck({ aggressive: true }).then((paid) => {
-          if (!paid && !cancelled) {
-            // PayU UPI confirmation can arrive late (often 30–90s after GPay
-            // success), so keep the pending marker for later focus/reload checks.
-            setConfirmingPayment(false);
-            setPendingOrder({
-              id: initial.order_id,
-              number: initial.order_number,
-              profit: initial.order_profit,
-            });
-            setPaymentFailed(true);
-          }
-        });
-
+        void recheck({ aggressive: false });
       }
     }
+
 
     // 2. Focus / visibility recheck — fires the instant the user comes back
     //    from GPay/PhonePe or the PayU hosted tab.
