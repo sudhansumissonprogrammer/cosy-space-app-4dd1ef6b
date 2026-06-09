@@ -1392,7 +1392,7 @@ export default function CheckoutPage() {
     void fireMetaCAPI;
     // Fire all post-order tasks in parallel (non-blocking)
     // Auto-login (createGuestAccount) is awaited inside finalizeOrder via the effect below
-    if (!customer) { void createGuestAccount(newOrderId); } else saveAddressToAccount();
+    if (!customer) { guestAccountPromiseRef.current = createGuestAccount(newOrderId); void guestAccountPromiseRef.current; } else saveAddressToAccount();
     // Trigger owner/customer order notifications after the order is truly placed.
     // This edge function also sends the owner PWA push alert.
     notifyOrderEmail(newOrderId);
