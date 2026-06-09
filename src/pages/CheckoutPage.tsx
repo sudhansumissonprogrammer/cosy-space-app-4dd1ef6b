@@ -1636,18 +1636,94 @@ export default function CheckoutPage() {
     // PayU can open an iframe, popup, redirect, or UPI deep link depending on merchant config.
     window.dispatchEvent(new CustomEvent("payment-in-progress"));
 
-    // NOTE: PayU Bolt (merchant-hosted overlay) is intentionally skipped.
-    // Your MID is not enabled for Bolt/MHC, so calling bolt.launch() either
-    // shows an empty overlay or fires catchException — both manifested as a
-    // "crash" to the user. The hosted-page redirect below works on every MID
-    // and supports UPI / Cards / NetBanking / Wallets out of the box.
+    const verifyAndFinalize = async (opts?: { attempts?: number; intervalMs?: number; showConfirming?: boolean }) => {
+      const attempts = opts?.attempts ?? 8;
+      const intervalMs = opts?.intervalMs ?? 2000;
+      if (opts?.showConfirming) setConfirmingPayment(true);
+      for (let i = 0; i < attempts; i++) {
+        try {
+          const verdict = await callEdgeFunction("payu-verify-payment", {
+            store_id: store.id,
+            order_id: order.id,
+            txnid: payuData.txnid,
+          });
+          if (verdict?.status === "PAID" || verdict?.success === true) {
+            setConfirmingPayment(false);
+            setPlacingStep(3);
+            setPlacing(false);
+            setPaymentFailed(false);
+            setPendingOrder(null);
+            try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch {}
+            finalizeOrder(order.id, order.number, order.profit);
+            return true;
+          }
+          if (verdict?.status === "FAILED") {
+            setConfirmingPayment(false);
+            return false;
+          }
+        } catch (e) {
+          console.warn(`PayU verify attempt ${i + 1} failed:`, e);
+        }
+        if (i < attempts - 1) await new Promise((r) => setTimeout(r, intervalMs));
+      }
+      setConfirmingPayment(false);
+      return false;
+    };
 
+    try {
+      const bolt = await loadPayuBolt((payuData.env === "sandbox" ? "sandbox" : "production"));
+      const boltParams = {
+        key: payuData.key,
+        txnid: payuData.txnid,
+        hash: payuData.hash,
+        amount: payuData.amount,
+        firstname: payuData.firstname,
+        email: payuData.email,
+        phone: payuData.phone,
+        productinfo: payuData.productinfo,
+        udf1: payuData.udf1 || "",
+        udf2: payuData.udf2 || "",
+        udf3: payuData.udf3 || "",
+        udf4: payuData.udf4 || "",
+        udf5: payuData.udf5 || "",
+        surl: payuData.surl,
+        furl: payuData.furl,
+        curl: payuData.furl,
+        notifyurl: payuData.notify_url || "",
+      };
+      await new Promise<void>((resolve) => {
+        let settled = false;
+        const finish = async (ok: boolean) => {
+          if (settled) return;
+          settled = true;
+          const confirmed = await verifyAndFinalize({ attempts: ok ? 10 : 6, intervalMs: 2000, showConfirming: true });
+          if (!confirmed) {
+            setPlacingStep(0);
+            setPendingOrder(order);
+            setPaymentFailed(true);
+            setPlacing(false);
+            if (!ok) toast.error("Payment was not completed. You can retry below.");
+            else toast.error("Payment not confirmed yet. You can retry below.");
+          }
+          resolve();
+        };
+        bolt.launch(boltParams, {
+          responseHandler: (response: any) => {
+            const status = String(response?.response?.status || response?.status || "").toLowerCase();
+            void finish(status === "success" || status === "captured");
+          },
+          catchException: (response: any) => {
+            console.warn("[PayU] Bolt exception", response);
+            void finish(false);
+          },
+        });
+      });
+      return;
+    } catch (err) {
+      console.warn("[PayU] Bolt did not open, falling back to hosted checkout", err);
+    }
 
-    // ---- Hosted page redirect (secure.payu.in) — SAME TAB --------------
-    // Same-tab redirect mirrors the Cashfree flow exactly: PayU posts back to
-    // our SURL/FURL on completion, the mount-time recovery effect reads the
-    // `payu_status` / `payu_pending_*` keys and auto-finalizes the order with
-    // the success animation. No new tab, no popup blockers, no "switch back".
+    // Hosted checkout is only a safety fallback if Bolt fails to load/open.
     const form = document.createElement("form");
     form.method = "POST";
     form.action = payuData.action;
