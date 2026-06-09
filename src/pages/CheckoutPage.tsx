@@ -1713,6 +1713,7 @@ export default function CheckoutPage() {
           },
         });
       });
+      window.dispatchEvent(new CustomEvent("payment-ended"));
       return;
     } catch (err) {
       console.error("[PayU] Bolt failed to open", err);
