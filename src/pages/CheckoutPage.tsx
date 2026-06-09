@@ -25,7 +25,7 @@ import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import { estimateDelivery, type DeliveryEstimate } from "@/lib/deliveryEstimate";
 import { loadCashfree } from "@/lib/loadCashfree";
-// PayU now uses Hosted Checkout (server-signed form POST) — no client SDK needed.
+import { loadPayuBolt } from "@/lib/loadPayuBolt";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 
@@ -449,8 +449,9 @@ export default function CheckoutPage() {
       prewarmEdgeFunction("store-cashfree-status");
     }
     if (hasPayu) {
-      // Hosted Checkout — no SDK to preload; just pre-warm the edge functions.
+      loadPayuBolt(((paymentConfig?.payu_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
       prewarmEdgeFunction("payu-create-txn");
+      prewarmEdgeFunction("payu-verify-payment");
       prewarmEdgeFunction("payu-status");
     }
     prewarmEdgeFunction("place-order");
@@ -1559,12 +1560,7 @@ export default function CheckoutPage() {
     }
   };
 
-  // Open PayU checkout for an existing order.
-  // Strategy:
-  //   1) Try PayU **Bolt** SDK → overlay on our own domain (like Razorpay/Cashfree).
-  //      Requires PayU to whitelist the domain in merchant dashboard.
-  //   2) Fall back to server-signed form POST → secure.payu.in hosted page
-  //      (works for every merchant, even without whitelisting).
+  // Open PayU Bolt checkout on the storefront page, like Cashfree/Razorpay.
   const openPayuForOrder = async (order: { id: string; number: string | null; profit: number | null }) => {
     const returnUrl = (() => {
       try {
@@ -1635,52 +1631,121 @@ export default function CheckoutPage() {
     // PayU can open an iframe, popup, redirect, or UPI deep link depending on merchant config.
     window.dispatchEvent(new CustomEvent("payment-in-progress"));
 
-    // NOTE: PayU Bolt (merchant-hosted overlay) is intentionally skipped.
-    // Your MID is not enabled for Bolt/MHC, so calling bolt.launch() either
-    // shows an empty overlay or fires catchException — both manifested as a
-    // "crash" to the user. The hosted-page redirect below works on every MID
-    // and supports UPI / Cards / NetBanking / Wallets out of the box.
-
-
-    // ---- Hosted page redirect (secure.payu.in) — SAME TAB --------------
-    // Same-tab redirect mirrors the Cashfree flow exactly: PayU posts back to
-    // our SURL/FURL on completion, the mount-time recovery effect reads the
-    // `payu_status` / `payu_pending_*` keys and auto-finalizes the order with
-    // the success animation. No new tab, no popup blockers, no "switch back".
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = payuData.action;
-    form.target = "_self";
-    form.style.display = "none";
-    const fields: Record<string, string> = {
-      key: payuData.key,
-      txnid: payuData.txnid,
-      amount: payuData.amount,
-      productinfo: payuData.productinfo,
-      firstname: payuData.firstname,
-      email: payuData.email,
-      phone: payuData.phone,
-      udf1: payuData.udf1 || "",
-      udf2: payuData.udf2 || "",
-      udf3: payuData.udf3 || "",
-      udf4: payuData.udf4 || "",
-      udf5: payuData.udf5 || "",
-      surl: payuData.surl,
-      furl: payuData.furl,
-      curl: payuData.furl,
-      notifyurl: payuData.notify_url || "",
-      hash: payuData.hash,
-      service_provider: "payu_paisa",
+    const verifyAndFinalize = async (opts?: { attempts?: number; intervalMs?: number; showConfirming?: boolean }) => {
+      const attempts = opts?.attempts ?? 8;
+      const intervalMs = opts?.intervalMs ?? 2000;
+      if (opts?.showConfirming) setConfirmingPayment(true);
+      for (let i = 0; i < attempts; i++) {
+        try {
+          const verdict = await callEdgeFunction("payu-verify-payment", {
+            store_id: store.id,
+            order_id: order.id,
+            txnid: payuData.txnid,
+          });
+          if (verdict?.status === "PAID" || verdict?.success === true) {
+            setConfirmingPayment(false);
+            setPlacingStep(3);
+            setPlacing(false);
+            setPaymentFailed(false);
+            setPendingOrder(null);
+            try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch {}
+            finalizeOrder(order.id, order.number, order.profit);
+            return true;
+          }
+          if (verdict?.status === "FAILED") {
+            setConfirmingPayment(false);
+            return false;
+          }
+        } catch (e) {
+          console.warn(`PayU verify attempt ${i + 1} failed:`, e);
+        }
+        if (i < attempts - 1) await new Promise((r) => setTimeout(r, intervalMs));
+      }
+      setConfirmingPayment(false);
+      return false;
     };
-    for (const [k, v] of Object.entries(fields)) {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = k;
-      input.value = String(v);
-      form.appendChild(input);
+
+    try {
+      const bolt = await loadPayuBolt((payuData.env === "sandbox" ? "sandbox" : "production"));
+      const boltParams = {
+        key: payuData.key,
+        txnid: payuData.txnid,
+        hash: payuData.hash,
+        amount: payuData.amount,
+        firstname: payuData.firstname,
+        email: payuData.email,
+        phone: payuData.phone,
+        productinfo: payuData.productinfo,
+        udf1: payuData.udf1 || "",
+        udf2: payuData.udf2 || "",
+        udf3: payuData.udf3 || "",
+        udf4: payuData.udf4 || "",
+        udf5: payuData.udf5 || "",
+        surl: payuData.surl,
+        furl: payuData.furl,
+        curl: payuData.furl,
+        notifyurl: payuData.notify_url || "",
+      };
+      await new Promise<void>((resolve) => {
+        let settled = false;
+        let timeoutId: number | null = null;
+        const done = () => {
+          if (timeoutId != null) window.clearTimeout(timeoutId);
+          resolve();
+        };
+        const finish = async (ok: boolean) => {
+          if (settled) return;
+          settled = true;
+          const confirmed = await verifyAndFinalize({ attempts: ok ? 10 : 6, intervalMs: 2000, showConfirming: true });
+          if (!confirmed) {
+            setPlacingStep(0);
+            setPendingOrder(order);
+            setPaymentFailed(true);
+            setPlacing(false);
+            if (!ok) toast.error("Payment was not completed. You can retry below.");
+            else toast.error("Payment not confirmed yet. You can retry below.");
+          }
+          done();
+        };
+        timeoutId = window.setTimeout(async () => {
+          if (settled) return;
+          const confirmed = await verifyAndFinalize({ attempts: 3, intervalMs: 2500, showConfirming: false });
+          if (confirmed) {
+            settled = true;
+            done();
+            return;
+          }
+          settled = true;
+          setConfirmingPayment(false);
+          setPlacingStep(0);
+          setPendingOrder(order);
+          setPaymentFailed(true);
+          setPlacing(false);
+          toast.error("Payment not confirmed yet. If you paid, it will update automatically.");
+          done();
+        }, 90000);
+        bolt.launch(boltParams, {
+          responseHandler: (response: any) => {
+            const status = String(response?.response?.status || response?.status || "").toLowerCase();
+            void finish(status === "success" || status === "captured");
+          },
+          catchException: (response: any) => {
+            console.warn("[PayU] Bolt exception", response);
+            void finish(false);
+          },
+        });
+      });
+      window.dispatchEvent(new CustomEvent("payment-ended"));
+      return;
+    } catch (err) {
+      console.error("[PayU] Bolt failed to open", err);
+      window.dispatchEvent(new CustomEvent("payment-ended"));
+      setPlacingStep(0);
+      setPendingOrder(order);
+      setPaymentFailed(true);
+      setPlacing(false);
+      toast.error("PayU checkout could not open on this page. Please retry.");
     }
-    document.body.appendChild(form);
-    form.submit();
 
   };
 
