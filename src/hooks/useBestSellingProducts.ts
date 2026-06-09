@@ -16,8 +16,15 @@ function getInlinedBestSellers(storeId: string): any[] | null {
     const sd: any = (window as any).__STOREFRONT_DATA__;
     if (!sd?.products_preview || !Array.isArray(sd.products_preview)) return null;
     if (sd?.store?.id && sd.store.id !== storeId) return null;
+    // Prefer products explicitly flagged is_best_selling.
     const bests = sd.products_preview.filter((p: any) => p?.is_best_selling === true);
-    return bests;
+    if (bests.length > 0) return bests;
+    // Fallback (v8.51): merchant hasn't tagged any best-sellers → use the
+    // preview as-is. The DB orders products_preview by
+    // is_best_selling DESC, created_at DESC so we get newest products,
+    // which is a sensible implicit "popular" surface. Kills the 878ms
+    // REST round-trip on cold home loads for stores without tagged BS.
+    return sd.products_preview.slice(0, BEST_SELLER_PAGE_SIZE);
   } catch {
     return null;
   }
