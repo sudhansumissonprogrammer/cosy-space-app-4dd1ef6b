@@ -62,11 +62,9 @@ export default function CategoryDetail() {
             qKey,
             { pages: [{ products: rpc.products, page: 0 }], pageParams: [0] }
           );
-          // Pinned-product fix: inline payload may be edge-cached HTML and
-          // miss recent pin/unpin changes. Force background refetch so the
-          // version-bumped /api/products response (with correct pin order)
-          // replaces the seed.
-          queryClient.invalidateQueries({ queryKey: qKey });
+          // Note: this path is a FRESH Supabase RPC response — no need to
+          // invalidate. (The stale-pin invalidation only matters for the
+          // inline HTML payload, see initialData below.)
         }
         return rpc.category as { id: string; name: string; slug: string; image_url: string | null };
       }
