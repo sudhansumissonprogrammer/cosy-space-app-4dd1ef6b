@@ -1,6 +1,7 @@
-import { useState, useCallback, lazy, Suspense } from "react";
+import { useState, useCallback, lazy, Suspense, memo } from "react";
 import ProductCardStyle1 from "./ProductCardStyle1";
 import ProductCardSkeleton from "./ProductCardSkeleton";
+
 
 // ── Variant cards: lazy ─────────────────────────────────────────────
 // Each non-default card style becomes its own chunk. A store using
@@ -35,7 +36,7 @@ interface Props {
   index?: number;
 }
 
-export default function UniversalProductCard({ product, slug, store, priority = false, cardStyle = "style-1", index = 0 }: Props) {
+function UniversalProductCardImpl({ product, slug, store, priority = false, cardStyle = "style-1", index = 0 }: Props) {
   const [variantOpen, setVariantOpen] = useState(false);
   const variantCount = useVariantCount(product.id);
   const hasVariants = variantCount > 0;
@@ -111,3 +112,25 @@ export default function UniversalProductCard({ product, slug, store, priority = 
     </div>
   );
 }
+
+// Memoize: product cards re-render on every cart/wishlist context tick which
+// triggers thousands of style recalcs on grids of 20+ cards. Custom equality
+// short-circuits when the product itself + store theme + position are stable —
+// the card's own context hooks still re-subscribe correctly inside.
+const UniversalProductCard = memo(UniversalProductCardImpl, (prev, next) => {
+  return (
+    prev.product?.id === next.product?.id &&
+    prev.product?.price === next.product?.price &&
+    prev.product?.sale_price === next.product?.sale_price &&
+    prev.product?.stock_quantity === next.product?.stock_quantity &&
+    prev.slug === next.slug &&
+    prev.store?.id === next.store?.id &&
+    prev.store?.theme === next.store?.theme &&
+    prev.priority === next.priority &&
+    prev.cardStyle === next.cardStyle &&
+    prev.index === next.index
+  );
+});
+
+export default UniversalProductCard;
+

@@ -121,16 +121,17 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
     const { device, browser, os } = parseDevice(ua);
     const attrib = getSessionAttribution();
     const referrer = typeof document !== "undefined" && document.referrer
-      ? document.referrer.slice(0, 500)
+      ? document.referrer.slice(0, 200) // trimmed from 500 — full URL not needed
       : null;
 
+    // Trim payload: cap path, drop nulls so JSON is smaller on the wire.
     // Fire pageview AFTER first paint via fetch+keepalive (sendBeacon can't
     // set the apikey/Authorization headers PostgREST needs). keepalive=true
     // has the same fire-and-forget semantics as sendBeacon and survives
     // unload. requestIdleCallback ensures it never races the LCP fetch.
-    const payload = JSON.stringify({
+    const raw: Record<string, unknown> = {
       store_id: storeId,
-      path: pathname.slice(0, 500),
+      path: pathname.slice(0, 200), // trimmed from 500
       visitor_id: vid || null,
       session_id: sid,
       is_bot: bot,
@@ -139,7 +140,11 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
       browser,
       os,
       ...attrib,
-    });
+    };
+    // Strip null/undefined keys so payload stays minimal.
+    const payload = JSON.stringify(
+      Object.fromEntries(Object.entries(raw).filter(([, v]) => v != null && v !== ""))
+    );
 
     const send = () => {
       try {
@@ -158,10 +163,12 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
       } catch {}
     };
 
+    // Longer idle timeout — beacon is non-critical, never race paint.
     if (typeof (window as any).requestIdleCallback === "function") {
-      (window as any).requestIdleCallback(send, { timeout: 2500 });
+      (window as any).requestIdleCallback(send, { timeout: 4000 });
     } else {
-      setTimeout(send, 1500);
+      setTimeout(send, 2500);
     }
   }, [storeId, pathname]);
 }
+

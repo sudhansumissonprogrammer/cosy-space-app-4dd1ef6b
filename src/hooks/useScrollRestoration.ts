@@ -56,15 +56,23 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
     if ("scrollRestoration" in window.history) {
       try { window.history.scrollRestoration = "manual"; } catch {}
     }
-    // Persist final scroll position on tab hide/unload too.
-    const onHide = () => saveScroll();
-    window.addEventListener("pagehide", onHide);
-    window.addEventListener("beforeunload", onHide);
+    // Persist final scroll position on tab hide.
+    //
+    // bfcache: we deliberately use `visibilitychange` (hidden) instead of
+    // `pagehide` / `beforeunload`. The latter two disqualify the page from
+    // back-forward cache in Chrome/Safari, turning back-button navigation
+    // into a full reload (1–3s on mobile) instead of an instant restore.
+    // `visibilitychange → hidden` fires at the same logical moment but is
+    // bfcache-friendly.
+    const onHide = () => {
+      if (document.visibilityState === "hidden") saveScroll();
+    };
+    document.addEventListener("visibilitychange", onHide);
     return () => {
-      window.removeEventListener("pagehide", onHide);
-      window.removeEventListener("beforeunload", onHide);
+      document.removeEventListener("visibilitychange", onHide);
     };
   }, []);
+
 
   // Save scroll position of the OUTGOING page right before we navigate away.
   useEffect(() => {
