@@ -933,6 +933,7 @@ export default function CheckoutPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store?.id]);
 
+  // PayU recovery — runs on mount + on focus/visibility even when the PayU
   // hosted page never redirects back (common with UPI Collect / UPI Intent
   // where the customer pays in GPay/PhonePe and just switches back to our tab).
   // Mirrors the Cashfree recovery pattern above so the experience is identical:
