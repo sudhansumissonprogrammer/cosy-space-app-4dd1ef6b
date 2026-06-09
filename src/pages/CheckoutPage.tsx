@@ -1636,71 +1636,12 @@ export default function CheckoutPage() {
     // PayU can open an iframe, popup, redirect, or UPI deep link depending on merchant config.
     window.dispatchEvent(new CustomEvent("payment-in-progress"));
 
-    // ---- Try Bolt overlay first (stays on our domain) -----------------
-    const mode: "sandbox" | "production" = payuData.env === "sandbox" ? "sandbox" : "production";
-    try {
-      const { loadPayuBolt } = await import("@/lib/loadPayuBolt");
-      const bolt = await loadPayuBolt(mode);
-      const boltParams: any = {
-        key: payuData.key,
-        txnid: payuData.txnid,
-        amount: payuData.amount,
-        productinfo: payuData.productinfo,
-        firstname: payuData.firstname,
-        email: payuData.email,
-        phone: payuData.phone,
-        udf1: payuData.udf1 || "",
-        udf2: payuData.udf2 || "",
-        udf3: payuData.udf3 || "",
-        udf4: payuData.udf4 || "",
-        udf5: payuData.udf5 || "",
-        surl: payuData.surl,
-        furl: payuData.furl,
-        hash: payuData.hash,
-      };
-      const handler = {
-        responseHandler: (BOLT: any) => {
-          const status = String(BOLT?.response?.txnStatus || "").toUpperCase();
-          if (status === "SUCCESS") {
-            // Webhook will confirm; trigger our return-flow poll using sessionStorage.
-            const u = new URL(window.location.href);
-            u.searchParams.set("payu_status", "success");
-            u.searchParams.set("txnid", payuData.txnid);
-            u.searchParams.set("payu_order", order.id);
-            window.location.assign(u.toString());
-          } else if (status === "CANCEL" || status === "USER_CANCELLED") {
-            setPlacingStep(0);
-            setPendingOrder(order);
-            setPaymentFailed(true);
-            setPlacing(false);
-            window.dispatchEvent(new CustomEvent("payment-ended"));
-          } else {
-            // FAILED / anything else
-            const u = new URL(window.location.href);
-            u.searchParams.set("payu_status", "failure");
-            u.searchParams.set("txnid", payuData.txnid);
-            u.searchParams.set("payu_order", order.id);
-            window.location.assign(u.toString());
-          }
-        },
-        catchException: (BOLT: any) => {
-          console.error("[PayU Bolt] exception", BOLT);
-          toast.error(BOLT?.message || "Payment could not be started.");
-          setPlacingStep(0);
-          setPendingOrder(order);
-          setPaymentFailed(true);
-          setPlacing(false);
-          window.dispatchEvent(new CustomEvent("payment-ended"));
-        },
-      };
-      if (typeof bolt?.launch === "function") {
-        bolt.launch(boltParams, handler);
-        return;
-      }
-      throw new Error("Bolt SDK loaded but launch() missing");
-    } catch (boltErr) {
-      console.warn("[PayU] Bolt unavailable, falling back to hosted redirect", boltErr);
-    }
+    // NOTE: PayU Bolt (merchant-hosted overlay) is intentionally skipped.
+    // Your MID is not enabled for Bolt/MHC, so calling bolt.launch() either
+    // shows an empty overlay or fires catchException — both manifested as a
+    // "crash" to the user. The hosted-page redirect below works on every MID
+    // and supports UPI / Cards / NetBanking / Wallets out of the box.
+
 
     // ---- Fallback: hosted page redirect (secure.payu.in) ----------------
     // Open in a NEW TAB so our checkout tab stays alive and keeps polling
