@@ -1715,9 +1715,6 @@ export default function CheckoutPage() {
       });
       return;
     } catch (err) {
-      window.dispatchEvent(new CustomEvent("payment-ended"));
-      return;
-    } catch (err) {
       console.error("[PayU] Bolt failed to open", err);
       window.dispatchEvent(new CustomEvent("payment-ended"));
       setPlacingStep(0);
