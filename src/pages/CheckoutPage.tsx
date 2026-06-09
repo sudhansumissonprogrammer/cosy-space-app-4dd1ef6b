@@ -864,7 +864,75 @@ export default function CheckoutPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store?.id]);
 
-  // PayU recovery — runs on mount + on focus/visibility even when the PayU
+  // Cashfree return handler — runs once on mount when Cashfree's hosted page
+  // server-side redirects back to /checkout?cf_order=...&order=... (mobile UPI
+  // flow where the SDK can't keep the modal alive across tab kills).
+  useEffect(() => {
+    if (!store?.id) return;
+    const params = new URLSearchParams(window.location.search);
+    const cfOrderParam = params.get("cf_order");
+    const returnedOrderId = params.get("order");
+    if (!cfOrderParam) return;
+
+    // Recover order from localStorage (set by persistCfPending before redirect)
+    let cached: any = null;
+    try { cached = JSON.parse(localStorage.getItem(CF_PENDING_KEY) || "null"); } catch {}
+    const orderId = returnedOrderId || cached?.order?.id;
+    const cleanUrl = () => {
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.delete("cf_order");
+        u.searchParams.delete("order");
+        window.history.replaceState({}, "", u.toString());
+      } catch {}
+    };
+    if (!orderId) { cleanUrl(); return; }
+
+    setConfirmingPayment(true);
+    setPlacing(true);
+    setPlacingStep(2);
+
+    const poll = async () => {
+      const attempts = 10;
+      for (let i = 0; i < attempts; i++) {
+        try {
+          const r = await callEdgeFunction("store-cashfree-status", {
+            store_id: store.id, order_id: orderId, cf_order_id: cfOrderParam,
+          });
+          if (r?.status === "PAID") {
+            setConfirmingPayment(false);
+            setPlacingStep(3);
+            setPlacing(false);
+            setPaymentFailed(false);
+            setPendingOrder(null);
+            pendingCfOrderRef.current = null;
+            persistCfPending(null, null);
+            finalizeOrder(orderId, cached?.order?.number || null, cached?.order?.profit ?? null);
+            return;
+          }
+          if (r?.status === "FAILED" || r?.status === "CANCELLED" || r?.status === "TERMINATED") break;
+        } catch (e) {
+          console.warn(`[Cashfree] return poll ${i + 1} failed`, e);
+        }
+        await new Promise((res) => setTimeout(res, 2000));
+      }
+      setConfirmingPayment(false);
+      setPlacing(false);
+      setPlacingStep(0);
+      setPendingOrder({
+        id: orderId,
+        number: cached?.order?.number || null,
+        profit: cached?.order?.profit ?? null,
+      });
+      setPaymentFailed(true);
+      toast.error("Payment not confirmed yet. You can retry below.");
+    };
+
+    cleanUrl();
+    void poll();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id]);
+
   // hosted page never redirects back (common with UPI Collect / UPI Intent
   // where the customer pays in GPay/PhonePe and just switches back to our tab).
   // Mirrors the Cashfree recovery pattern above so the experience is identical:
