@@ -14,20 +14,15 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Package, MapPin, Heart, LogOut, Plus, Trash2, Star, Loader2, User, MessageCircle, Phone, XCircle, HelpCircle } from "lucide-react";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Package, MapPin, Heart, LogOut, Plus, Trash2, Star, Loader2, User, MessageCircle, Phone, HelpCircle } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { normalizePhone } from "@/lib/phoneUtils";
+import OrderCard from "@/components/storefront/OrderCard";
 
 function OrdersTab({ customerId, store }: { customerId: string; store: StoreData }) {
-  const qc = useQueryClient();
   const { data: orders, isLoading } = useQuery({
     queryKey: ["storefront-customer-orders", customerId],
     queryFn: async () => {
@@ -41,20 +36,6 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
     },
   });
 
-  const cancelMutation = useMutation({
-    mutationFn: async (orderId: string) => {
-      const { error } = await supabase
-        .from("orders")
-        .update({ status: "cancelled" })
-        .eq("id", orderId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["storefront-customer-orders", customerId] });
-      toast.success("Order cancelled");
-    },
-    onError: (e: any) => toast.error(e?.message || "Unable to cancel order"),
-  });
 
   const ownerPhone = store.whatsapp_number ? normalizePhone(store.whatsapp_number) : "";
   const waLink = ownerPhone ? `https://wa.me/${ownerPhone.replace(/\D/g, "")}` : "";
@@ -106,145 +87,12 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
     );
   }
 
-  const statusColor: Record<string, string> = {
-    pending: "bg-yellow-100 text-yellow-800",
-    confirmed: "bg-blue-100 text-blue-800",
-    shipped: "bg-purple-100 text-purple-800",
-    delivered: "bg-green-100 text-green-800",
-    cancelled: "bg-red-100 text-red-800",
-    partially_paid: "bg-purple-100 text-purple-800",
-  };
-
-  const STATUSES = ["confirmed", "shipped", "delivered"];
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {HelpCard}
-      {orders.map((order: any) => {
-        const currentIdx = STATUSES.indexOf(order.status);
-        const isCancelled = order.status === "cancelled";
-        const canCancel = order.status === "pending" || order.status === "confirmed";
-        return (
-          <Card key={order.id}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>
-                  {new Date(order.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                </span>
-                <Badge className={statusColor[order.status] || ""}>{order.status}</Badge>
-              </div>
-
-              {/* Status Timeline */}
-              {!isCancelled && (
-                <div className="flex items-center gap-1 my-3">
-                  {STATUSES.map((s, i) => (
-                    <div key={s} className="flex items-center flex-1">
-                      <div className={`h-2 w-2 rounded-full flex-shrink-0 ${i <= currentIdx ? "bg-primary" : "bg-muted"}`} />
-                      {i < STATUSES.length - 1 && (
-                        <div className={`h-0.5 flex-1 ${i < currentIdx ? "bg-primary" : "bg-muted"}`} />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {!isCancelled && (
-                <div className="flex justify-between mb-2">
-                  {STATUSES.map((s, i) => (
-                    <span key={s} className={`text-[10px] capitalize ${i <= currentIdx ? "text-primary font-medium" : ""}`} style={i > currentIdx ? { color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" } : undefined}>{s}</span>
-                  ))}
-                </div>
-              )}
-
-              {/* Tracking info */}
-              {order.tracking_number && (
-                <div className="mb-2 flex items-center gap-2 rounded-lg p-2 text-xs" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 5%, transparent)" }}>
-                  <Package className="h-3 w-3" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }} />
-                  <span style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>Tracking:</span>
-                  {order.tracking_url ? (
-                    <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="text-primary underline">{order.tracking_number}</a>
-                  ) : (
-                    <span className="font-mono">{order.tracking_number}</span>
-                  )}
-                </div>
-              )}
-
-              <div className="space-y-2">
-                {order.order_items?.map((item: any) => {
-                  const img = item.products?.image_url || item.image_url;
-                  return (
-                    <div key={item.id} className="flex items-center gap-3 text-sm">
-                      {img ? (
-                        <img src={img} alt={item.product_name} loading="lazy"
-                             className="h-12 w-12 rounded-md object-cover border"
-                             style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }} />
-                      ) : (
-                        <div className="h-12 w-12 rounded-md flex items-center justify-center border"
-                             style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)", backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 5%, transparent)" }}>
-                          <Package className="h-5 w-5 opacity-40" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="line-clamp-1">{item.product_name}</p>
-                        <p className="text-xs" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}>Qty: {item.quantity}</p>
-                      </div>
-                      <span className="font-medium whitespace-nowrap">{store.currency} {item.total}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <Separator className="my-2" />
-              <div className="flex justify-between font-semibold text-sm">
-                <span>Total</span>
-                <span>{store.currency} {order.total}</span>
-              </div>
-              {order.payment_type === "partial" && Number(order.advance_paid) > 0 && (
-                <div className="mt-2 rounded-lg border border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-950/30 p-2.5 space-y-1">
-                  <p className="text-xs font-semibold text-purple-700 dark:text-purple-400">💰 Partial Payment</p>
-                  <div className="flex justify-between text-xs">
-                    <span style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>Advance Paid</span>
-                    <span className="font-semibold text-emerald-600">{store.currency} {Number(order.advance_paid).toFixed(0)}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>Balance on Delivery</span>
-                    <span className="font-semibold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{store.currency} {Number(order.balance_due).toFixed(0)}</span>
-                  </div>
-                </div>
-              )}
-
-              {canCancel && (
-                <div className="mt-3 pt-3 border-t" style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="w-full text-destructive hover:text-destructive">
-                        <XCircle className="h-4 w-4 mr-1.5" /> Cancel Order
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will cancel your order. This action cannot be undone. The store owner will be notified automatically.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Keep Order</AlertDialogCancel>
-                        <AlertDialogAction
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          onClick={() => cancelMutation.mutate(order.id)}
-                          disabled={cancelMutation.isPending}
-                        >
-                          {cancelMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-                          Yes, Cancel Order
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
+      {orders.map((order: any) => (
+        <OrderCard key={order.id} order={order} storeSlug={store.slug} currency={store.currency} />
+      ))}
     </div>
   );
 }
