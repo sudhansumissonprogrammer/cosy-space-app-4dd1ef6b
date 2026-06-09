@@ -1560,12 +1560,7 @@ export default function CheckoutPage() {
     }
   };
 
-  // Open PayU checkout for an existing order.
-  // Strategy:
-  //   1) Try PayU **Bolt** SDK → overlay on our own domain (like Razorpay/Cashfree).
-  //      Requires PayU to whitelist the domain in merchant dashboard.
-  //   2) Fall back to server-signed form POST → secure.payu.in hosted page
-  //      (works for every merchant, even without whitelisting).
+  // Open PayU Bolt checkout on the storefront page, like Cashfree/Razorpay.
   const openPayuForOrder = async (order: { id: string; number: string | null; profit: number | null }) => {
     const returnUrl = (() => {
       try {
@@ -1720,44 +1715,17 @@ export default function CheckoutPage() {
       });
       return;
     } catch (err) {
-      console.warn("[PayU] Bolt did not open, falling back to hosted checkout", err);
+      window.dispatchEvent(new CustomEvent("payment-ended"));
+      return;
+    } catch (err) {
+      console.error("[PayU] Bolt failed to open", err);
+      window.dispatchEvent(new CustomEvent("payment-ended"));
+      setPlacingStep(0);
+      setPendingOrder(order);
+      setPaymentFailed(true);
+      setPlacing(false);
+      toast.error("PayU checkout could not open on this page. Please retry.");
     }
-
-    // Hosted checkout is only a safety fallback if Bolt fails to load/open.
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = payuData.action;
-    form.target = "_self";
-    form.style.display = "none";
-    const fields: Record<string, string> = {
-      key: payuData.key,
-      txnid: payuData.txnid,
-      amount: payuData.amount,
-      productinfo: payuData.productinfo,
-      firstname: payuData.firstname,
-      email: payuData.email,
-      phone: payuData.phone,
-      udf1: payuData.udf1 || "",
-      udf2: payuData.udf2 || "",
-      udf3: payuData.udf3 || "",
-      udf4: payuData.udf4 || "",
-      udf5: payuData.udf5 || "",
-      surl: payuData.surl,
-      furl: payuData.furl,
-      curl: payuData.furl,
-      notifyurl: payuData.notify_url || "",
-      hash: payuData.hash,
-      service_provider: "payu_paisa",
-    };
-    for (const [k, v] of Object.entries(fields)) {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = k;
-      input.value = String(v);
-      form.appendChild(input);
-    }
-    document.body.appendChild(form);
-    form.submit();
 
   };
 
