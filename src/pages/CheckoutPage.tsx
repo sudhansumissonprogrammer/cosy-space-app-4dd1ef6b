@@ -1632,7 +1632,7 @@ export default function CheckoutPage() {
     // Persist all context needed to finalize the order when the browser returns,
     // including across a hard refresh on the return page.
     try {
-      sessionStorage.setItem(`payu_pending_${store.id}`, JSON.stringify({
+      const pendingPayload = JSON.stringify({
         order_id: order.id,
         order_number: order.number,
         order_profit: order.profit,
@@ -1641,7 +1641,11 @@ export default function CheckoutPage() {
         charge_amount: chargeAmount,
         total,
         ts: Date.now(),
-      }));
+      });
+      sessionStorage.setItem(`payu_pending_${store.id}`, pendingPayload);
+      // Mobile browsers often reload the storefront after UPI app handoff.
+      // localStorage lets us recover the paid order even when sessionStorage is lost.
+      localStorage.setItem(`payu_pending_${store.id}`, pendingPayload);
     } catch {}
 
     fireInitiateCheckoutOnce();
@@ -1683,6 +1687,7 @@ export default function CheckoutPage() {
       surl: payuData.surl,
       furl: payuData.furl,
       curl: payuData.furl,
+      notifyurl: payuData.notify_url || "",
       hash: payuData.hash,
       service_provider: "payu_paisa",
     };
