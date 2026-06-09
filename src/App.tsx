@@ -145,6 +145,7 @@ const CategoryDetail = lazy(() => import("./pages/CategoryDetail"));
 const StorefrontLogin = lazy(() => import("./pages/StorefrontLogin"));
 const StorefrontSignup = lazy(() => import("./pages/StorefrontSignup"));
 const StorefrontAccount = lazy(() => import("./pages/StorefrontAccount"));
+const StorefrontOrderDetail = lazy(() => import("./pages/StorefrontOrderDetail"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 
 const CartPage = lazy(() => import("./pages/CartPage"));
