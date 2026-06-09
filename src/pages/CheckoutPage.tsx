@@ -137,12 +137,15 @@ export default function CheckoutPage() {
   const purchaseEventIdRef = useRef<string>(generateEventId());
   const metaCookiesRef = useRef<{ fbc: string; fbp: string }>(getMetaCookies());
   const CF_PENDING_KEY = `cf_pending_${store.id}`;
+  // Use localStorage (not sessionStorage) so mobile UPI flows survive tab kills
+  // and Cashfree's server-side redirect-back into a brand-new tab.
   const persistCfPending = (cfId: string | null, order: { id: string; number: string | null; profit: number | null } | null) => {
     try {
       if (cfId && order) {
-        sessionStorage.setItem(CF_PENDING_KEY, JSON.stringify({ cf_order_id: cfId, order, ts: Date.now() }));
+        localStorage.setItem(CF_PENDING_KEY, JSON.stringify({ cf_order_id: cfId, order, ts: Date.now() }));
       } else {
-        sessionStorage.removeItem(CF_PENDING_KEY);
+        localStorage.removeItem(CF_PENDING_KEY);
+        sessionStorage.removeItem(CF_PENDING_KEY); // legacy cleanup
       }
     } catch {}
   };
@@ -738,19 +741,24 @@ export default function CheckoutPage() {
       return false;
     };
 
-    // 1. Recovery on mount: if sessionStorage has a pending cf order from a previous tab life
+    // 1. Recovery on mount: if localStorage has a pending cf order from a previous tab life
+    //    (sessionStorage kept as legacy fallback for in-flight tabs from before this change)
     try {
-      const raw = sessionStorage.getItem(CF_PENDING_KEY);
+      const raw = localStorage.getItem(CF_PENDING_KEY) || sessionStorage.getItem(CF_PENDING_KEY);
       if (raw && !pendingCfOrderRef.current) {
         const saved = JSON.parse(raw) as { cf_order_id: string; order: any; ts: number };
         // Only recover if recent (< 30 min) — avoids stale state
         if (saved && Date.now() - (saved.ts || 0) < 30 * 60 * 1000 && saved.cf_order_id && saved.order?.id) {
           pendingCfOrderRef.current = saved.cf_order_id;
           setPendingOrder(saved.order);
-          setPaymentFailed(true); // shows the retry/check-status UI
+          // If we landed here via Cashfree's redirect (?cf_order=...), show the
+          // "Confirming your payment" overlay — the URL-param effect below polls.
+          const hasCfParam = new URLSearchParams(window.location.search).has("cf_order");
+          if (!hasCfParam) setPaymentFailed(true); // shows the retry/check-status UI
           // Immediate recheck — the user may have already paid in UPI app
           recheckWith(saved.cf_order_id, saved.order);
         } else {
+          localStorage.removeItem(CF_PENDING_KEY);
           sessionStorage.removeItem(CF_PENDING_KEY);
         }
       }
@@ -852,6 +860,75 @@ export default function CheckoutPage() {
       window.history.replaceState({}, "", u.toString());
     } catch {}
 
+    void poll();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id]);
+
+  // Cashfree return handler — runs once on mount when Cashfree's hosted page
+  // server-side redirects back to /checkout?cf_order=...&order=... (mobile UPI
+  // flow where the SDK can't keep the modal alive across tab kills).
+  useEffect(() => {
+    if (!store?.id) return;
+    const params = new URLSearchParams(window.location.search);
+    const cfOrderParam = params.get("cf_order");
+    const returnedOrderId = params.get("order");
+    if (!cfOrderParam) return;
+
+    // Recover order from localStorage (set by persistCfPending before redirect)
+    let cached: any = null;
+    try { cached = JSON.parse(localStorage.getItem(CF_PENDING_KEY) || "null"); } catch {}
+    const orderId = returnedOrderId || cached?.order?.id;
+    const cleanUrl = () => {
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.delete("cf_order");
+        u.searchParams.delete("order");
+        window.history.replaceState({}, "", u.toString());
+      } catch {}
+    };
+    if (!orderId) { cleanUrl(); return; }
+
+    setConfirmingPayment(true);
+    setPlacing(true);
+    setPlacingStep(2);
+
+    const poll = async () => {
+      const attempts = 10;
+      for (let i = 0; i < attempts; i++) {
+        try {
+          const r = await callEdgeFunction("store-cashfree-status", {
+            store_id: store.id, order_id: orderId, cf_order_id: cfOrderParam,
+          });
+          if (r?.status === "PAID") {
+            setConfirmingPayment(false);
+            setPlacingStep(3);
+            setPlacing(false);
+            setPaymentFailed(false);
+            setPendingOrder(null);
+            pendingCfOrderRef.current = null;
+            persistCfPending(null, null);
+            finalizeOrder(orderId, cached?.order?.number || null, cached?.order?.profit ?? null);
+            return;
+          }
+          if (r?.status === "FAILED" || r?.status === "CANCELLED" || r?.status === "TERMINATED") break;
+        } catch (e) {
+          console.warn(`[Cashfree] return poll ${i + 1} failed`, e);
+        }
+        await new Promise((res) => setTimeout(res, 2000));
+      }
+      setConfirmingPayment(false);
+      setPlacing(false);
+      setPlacingStep(0);
+      setPendingOrder({
+        id: orderId,
+        number: cached?.order?.number || null,
+        profit: cached?.order?.profit ?? null,
+      });
+      setPaymentFailed(true);
+      toast.error("Payment not confirmed yet. You can retry below.");
+    };
+
+    cleanUrl();
     void poll();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store?.id]);
@@ -1466,6 +1543,9 @@ export default function CheckoutPage() {
         customer_name: fullName,
         customer_phone: phone,
         customer_email: email || undefined,
+        // Land back on /checkout so the URL-param recovery effect can finalize
+        // (mobile UPI flow where Cashfree falls back to a server-side redirect).
+        return_url: `${window.location.origin}/checkout?cf_order={order_id}&order=${order.id}`,
       }),
     ]);
 
