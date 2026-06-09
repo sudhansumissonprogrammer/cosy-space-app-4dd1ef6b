@@ -850,6 +850,128 @@ export default function CheckoutPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store?.id]);
 
+  // PayU recovery — runs on mount + on focus/visibility even when the PayU
+  // hosted page never redirects back (common with UPI Collect / UPI Intent
+  // where the customer pays in GPay/PhonePe and just switches back to our tab).
+  // Mirrors the Cashfree recovery pattern above so the experience is identical:
+  // the moment the user returns to the checkout tab, we verify with our
+  // backend (webhook + payu-status) and auto-finalize → success animation,
+  // no manual refresh required.
+  useEffect(() => {
+    if (!store?.id) return;
+    const PAYU_KEY = `payu_pending_${store.id}`;
+
+    const readPending = (): null | {
+      order_id: string;
+      order_number: string | null;
+      order_profit: number | null;
+      txnid: string;
+      ts: number;
+    } => {
+      try {
+        const raw = sessionStorage.getItem(PAYU_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed?.order_id || !parsed?.txnid) return null;
+        if (Date.now() - (parsed.ts || 0) > 45 * 60 * 1000) {
+          sessionStorage.removeItem(PAYU_KEY);
+          return null;
+        }
+        return parsed;
+      } catch { return null; }
+    };
+
+    let cancelled = false;
+    let polling = false;
+
+    const recheck = async (opts: { aggressive?: boolean } = {}) => {
+      if (polling) return false;
+      const pending = readPending();
+      if (!pending) return false;
+      polling = true;
+      try {
+        const attempts = opts.aggressive ? 8 : 1;
+        for (let i = 0; i < attempts; i++) {
+          if (cancelled) return false;
+          try {
+            const r = await callEdgeFunction("payu-status", {
+              store_id: store.id,
+              order_id: pending.order_id,
+              txnid: pending.txnid,
+            });
+            if (r?.status === "PAID") {
+              setConfirmingPayment(false);
+              setPlacingStep(3);
+              setPlacing(false);
+              setPaymentFailed(false);
+              setPendingOrder(null);
+              try { sessionStorage.removeItem(PAYU_KEY); } catch {}
+              finalizeOrder(pending.order_id, pending.order_number, pending.order_profit);
+              return true;
+            }
+            if (r?.status === "FAILED") {
+              try { sessionStorage.removeItem(PAYU_KEY); } catch {}
+              setConfirmingPayment(false);
+              setPlacing(false);
+              setPlacingStep(0);
+              setPendingOrder({
+                id: pending.order_id,
+                number: pending.order_number,
+                profit: pending.order_profit,
+              });
+              setPaymentFailed(true);
+              return false;
+            }
+          } catch (e) {
+            console.warn("[PayU] recovery poll failed", e);
+          }
+          if (i < attempts - 1) await new Promise((res) => setTimeout(res, 2500));
+        }
+      } finally {
+        polling = false;
+      }
+      return false;
+    };
+
+    // 1. Mount recovery — if a PayU attempt is in flight, show "confirming…"
+    //    UI and aggressively poll. If still PENDING after the burst, surface
+    //    retry. Skip when URL already has payu_status (dedicated handler above).
+    const initial = readPending();
+    if (initial) {
+      const hasReturnParam = new URLSearchParams(window.location.search).get("payu_status");
+      if (!hasReturnParam) {
+        setConfirmingPayment(true);
+        setPendingOrder({
+          id: initial.order_id,
+          number: initial.order_number,
+          profit: initial.order_profit,
+        });
+        void recheck({ aggressive: true }).then((paid) => {
+          if (!paid && !cancelled) {
+            setConfirmingPayment(false);
+            setPaymentFailed(true);
+          }
+        });
+      }
+    }
+
+    // 2. Focus / visibility recheck — fires the instant the user comes back
+    //    from GPay/PhonePe or the PayU hosted tab.
+    const onFocus = () => { void recheck({ aggressive: true }); };
+    const onVis = () => {
+      if (document.visibilityState === "visible") void recheck({ aggressive: true });
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVis);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id]);
+
   if (isLoading && isSingleMode) return <CheckoutSkeleton />;
 
   if (isSingleMode && !product) {
@@ -1581,9 +1703,15 @@ export default function CheckoutPage() {
     }
 
     // ---- Fallback: hosted page redirect (secure.payu.in) ----------------
+    // Open in a NEW TAB so our checkout tab stays alive and keeps polling
+    // payu-status in the background. This is what makes the experience match
+    // Razorpay/Cashfree: the moment payment settles (webhook → our DB), the
+    // user switching back to our tab sees the success animation immediately —
+    // even if PayU's own page never redirected.
     const form = document.createElement("form");
     form.method = "POST";
     form.action = payuData.action;
+    form.target = "payu_checkout_window";
     form.style.display = "none";
     const fields: Record<string, string> = {
       key: payuData.key,
@@ -1611,8 +1739,19 @@ export default function CheckoutPage() {
       input.value = String(v);
       form.appendChild(input);
     }
+    // Pre-open the named window from the user-gesture so popup blockers allow
+    // it. If the popup is blocked, fall back to same-tab navigation.
+    const popup = window.open("about:blank", "payu_checkout_window");
     document.body.appendChild(form);
-    form.submit();
+    if (popup && !popup.closed) {
+      form.submit();
+      // Show confirming UI on our tab so the user knows we're waiting.
+      setConfirmingPayment(true);
+    } else {
+      // Popup blocked — fall back to same-tab redirect (legacy behavior).
+      form.target = "_self";
+      form.submit();
+    }
   };
 
 
