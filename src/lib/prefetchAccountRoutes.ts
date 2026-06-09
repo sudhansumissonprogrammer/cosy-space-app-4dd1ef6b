@@ -7,6 +7,7 @@
  */
 const accountImports = [
   () => import("@/pages/StorefrontAccount"),
+  () => import("@/pages/StorefrontOrderDetail"),
   () => import("@/pages/WishlistPage"),
   () => import("@/pages/CartPage"),
   () => import("@/pages/CheckoutPage"),
