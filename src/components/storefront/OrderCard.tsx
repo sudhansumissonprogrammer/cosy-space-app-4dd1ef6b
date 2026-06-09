@@ -2,6 +2,13 @@ import { Link } from "react-router-dom";
 import { ChevronRight, Package } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 
+let detailChunkLoaded = false;
+const prefetchOrderDetail = () => {
+  if (detailChunkLoaded) return;
+  detailChunkLoaded = true;
+  import("@/pages/StorefrontOrderDetail").catch(() => { detailChunkLoaded = false; });
+};
+
 const statusMeta: Record<string, { label: string; dot: string; text: string; bg: string }> = {
   pending:   { label: "Pending",   dot: "bg-amber-500",   text: "text-amber-700",   bg: "bg-amber-50" },
   confirmed: { label: "Confirmed", dot: "bg-blue-500",    text: "text-blue-700",    bg: "bg-blue-50" },
