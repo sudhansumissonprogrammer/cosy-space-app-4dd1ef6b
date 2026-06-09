@@ -2,6 +2,13 @@ import { Link } from "react-router-dom";
 import { ChevronRight, Package } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 
+let detailChunkLoaded = false;
+const prefetchOrderDetail = () => {
+  if (detailChunkLoaded) return;
+  detailChunkLoaded = true;
+  import("@/pages/StorefrontOrderDetail").catch(() => { detailChunkLoaded = false; });
+};
+
 const statusMeta: Record<string, { label: string; dot: string; text: string; bg: string }> = {
   pending:   { label: "Pending",   dot: "bg-amber-500",   text: "text-amber-700",   bg: "bg-amber-50" },
   confirmed: { label: "Confirmed", dot: "bg-blue-500",    text: "text-blue-700",    bg: "bg-blue-50" },
@@ -32,6 +39,8 @@ export default function OrderCard({ order, storeSlug, currency }: { order: any; 
   return (
     <Link
       to={storefrontPath(storeSlug, `account/orders/${order.id}`)}
+      onMouseEnter={prefetchOrderDetail}
+      onTouchStart={prefetchOrderDetail}
       className="group block rounded-2xl border bg-card p-3 transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-[0.99]"
       style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}
     >
