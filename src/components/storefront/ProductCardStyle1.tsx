@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { createRipple } from "@/lib/ripple";
 import { Link } from "react-router-dom";
 import { Package, ShoppingCart, Star, Heart, Check, Plus, Minus, Loader2 } from "lucide-react";
@@ -25,7 +25,7 @@ interface Props {
 const cardShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06)";
 const cardHoverShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 24px rgba(0,0,0,0.10)";
 
-export default function ProductCardStyle1({ product, slug, store, priority = false, onVariantRequired }: Props) {
+function ProductCardStyle1Impl({ product, slug, store, priority = false, onVariantRequired }: Props) {
   const { wishlisted, cartQty, effectivePrice, handleAddToCart, handleToggleWishlist, heartBursting, updateQuantity } = useProductCardActions(product);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -163,3 +163,23 @@ export default function ProductCardStyle1({ product, slug, store, priority = fal
     </div>
   );
 }
+
+// Memoize at the leaf too — the parent UniversalProductCard memo guards most
+// re-renders, but cart/wishlist context updates that DO bubble through still
+// re-render this card. Custom equality on the same stable fields collapses
+// the re-render into a no-op.
+const ProductCardStyle1 = memo(ProductCardStyle1Impl, (prev, next) => {
+  return (
+    prev.product?.id === next.product?.id &&
+    prev.product?.price === next.product?.price &&
+    prev.product?.sale_price === next.product?.sale_price &&
+    prev.product?.stock_quantity === next.product?.stock_quantity &&
+    prev.slug === next.slug &&
+    prev.store?.id === next.store?.id &&
+    prev.priority === next.priority &&
+    prev.onVariantRequired === next.onVariantRequired
+  );
+});
+
+export default ProductCardStyle1;
+
