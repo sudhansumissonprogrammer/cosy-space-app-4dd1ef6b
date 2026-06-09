@@ -301,7 +301,7 @@ export default function ProductDetail() {
       return getCachedProduct();
     },
     enabled: !!store.id && !!canonicalProductSlug,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
 
   const contentReadyRef = useRef(false);
