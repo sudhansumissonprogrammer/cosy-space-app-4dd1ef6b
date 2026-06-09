@@ -23,7 +23,6 @@ import { normalizePhone } from "@/lib/phoneUtils";
 import OrderCard from "@/components/storefront/OrderCard";
 
 function OrdersTab({ customerId, store }: { customerId: string; store: StoreData }) {
-  const qc = useQueryClient();
   const { data: orders, isLoading } = useQuery({
     queryKey: ["storefront-customer-orders", customerId],
     queryFn: async () => {
@@ -37,20 +36,6 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
     },
   });
 
-  const cancelMutation = useMutation({
-    mutationFn: async (orderId: string) => {
-      const { error } = await supabase
-        .from("orders")
-        .update({ status: "cancelled" })
-        .eq("id", orderId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["storefront-customer-orders", customerId] });
-      toast.success("Order cancelled");
-    },
-    onError: (e: any) => toast.error(e?.message || "Unable to cancel order"),
-  });
 
   const ownerPhone = store.whatsapp_number ? normalizePhone(store.whatsapp_number) : "";
   const waLink = ownerPhone ? `https://wa.me/${ownerPhone.replace(/\D/g, "")}` : "";
