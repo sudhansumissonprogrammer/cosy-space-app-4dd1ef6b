@@ -644,6 +644,9 @@ export default function CheckoutPage() {
   // Works for COD-only stores (no gateway), Razorpay-only, Cashfree-only,
   // and partial-payment-enabled stores transparently.
   const apiFiredRef = useRef<Set<string>>(new Set());
+  // Tracks the in-flight createGuestAccount promise so "View My Orders"
+  // can await it and avoid the phone-login fallback / re-prompt.
+  const guestAccountPromiseRef = useRef<Promise<void> | null>(null);
   useEffect(() => {
     if (checkoutItems.length === 0) return;
     // Resolve the actual payment category Meta should attribute to.
@@ -1389,7 +1392,7 @@ export default function CheckoutPage() {
     void fireMetaCAPI;
     // Fire all post-order tasks in parallel (non-blocking)
     // Auto-login (createGuestAccount) is awaited inside finalizeOrder via the effect below
-    if (!customer) { void createGuestAccount(newOrderId); } else saveAddressToAccount();
+    if (!customer) { guestAccountPromiseRef.current = createGuestAccount(newOrderId); void guestAccountPromiseRef.current; } else saveAddressToAccount();
     // Trigger owner/customer order notifications after the order is truly placed.
     // This edge function also sends the owner PWA push alert.
     notifyOrderEmail(newOrderId);
@@ -1938,6 +1941,11 @@ export default function CheckoutPage() {
     if (viewingOrders) return;
     setViewingOrders(true);
     try {
+      // Wait for the auto-created guest account session to be written before
+      // checking — otherwise we race it and fall into the phone-login path.
+      if (guestAccountPromiseRef.current) {
+        try { await guestAccountPromiseRef.current; } catch {}
+      }
       // Already authenticated → just go.
       const { data: existing } = await supabaseStorefront.auth.getSession();
       if (existing?.session?.user) {
