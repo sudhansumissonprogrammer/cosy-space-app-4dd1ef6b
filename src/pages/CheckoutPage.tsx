@@ -1688,6 +1688,11 @@ export default function CheckoutPage() {
       };
       await new Promise<void>((resolve) => {
         let settled = false;
+        let timeoutId: number | null = null;
+        const done = () => {
+          if (timeoutId != null) window.clearTimeout(timeoutId);
+          resolve();
+        };
         const finish = async (ok: boolean) => {
           if (settled) return;
           settled = true;
@@ -1700,8 +1705,25 @@ export default function CheckoutPage() {
             if (!ok) toast.error("Payment was not completed. You can retry below.");
             else toast.error("Payment not confirmed yet. You can retry below.");
           }
-          resolve();
+          done();
         };
+        timeoutId = window.setTimeout(async () => {
+          if (settled) return;
+          const confirmed = await verifyAndFinalize({ attempts: 3, intervalMs: 2500, showConfirming: false });
+          if (confirmed) {
+            settled = true;
+            done();
+            return;
+          }
+          settled = true;
+          setConfirmingPayment(false);
+          setPlacingStep(0);
+          setPendingOrder(order);
+          setPaymentFailed(true);
+          setPlacing(false);
+          toast.error("Payment not confirmed yet. If you paid, it will update automatically.");
+          done();
+        }, 90000);
         bolt.launch(boltParams, {
           responseHandler: (response: any) => {
             const status = String(response?.response?.status || response?.status || "").toLowerCase();
