@@ -340,8 +340,25 @@ export default function StorefrontOrderDetail() {
           {/* Actions */}
           <section className="rounded-2xl border bg-card p-3 space-y-2"
                    style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}>
-            <Button variant="outline" className="w-full justify-start" onClick={() => setShowInvoice(true)}>
-              <FileDown className="h-4 w-4 mr-2" /> Download Invoice
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              disabled={downloadingInvoice}
+              onClick={async () => {
+                setDownloadingInvoice(true);
+                try {
+                  const { downloadInvoicePdf } = await import("@/lib/sendInvoiceWhatsApp");
+                  const res = await downloadInvoicePdf({ order, store });
+                  if (!res.success) toast.error(res.error || "Could not download invoice");
+                } finally {
+                  setDownloadingInvoice(false);
+                }
+              }}
+            >
+              {downloadingInvoice
+                ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                : <FileDown className="h-4 w-4 mr-2" />}
+              {downloadingInvoice ? "Preparing…" : "Download Invoice"}
             </Button>
             {helpWa && (
               <Button asChild variant="outline" className="w-full justify-start">
