@@ -1543,6 +1543,9 @@ export default function CheckoutPage() {
         customer_name: fullName,
         customer_phone: phone,
         customer_email: email || undefined,
+        // Land back on /checkout so the URL-param recovery effect can finalize
+        // (mobile UPI flow where Cashfree falls back to a server-side redirect).
+        return_url: `${window.location.origin}/checkout?cf_order={order_id}&order=${order.id}`,
       }),
     ]);
 
