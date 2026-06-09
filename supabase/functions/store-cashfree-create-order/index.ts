@@ -102,8 +102,12 @@ Deno.serve(async (req) => {
         customer_phone: safePhone,
       },
       order_meta: {
-        // Return URL is informational only; we use SDK callback + status polling
-        return_url: `${req.headers.get("origin") || ""}/?cf_order={order_id}`,
+        // Where Cashfree's hosted page redirects after payment. Must land on
+        // /checkout so the URL-param recovery effect can finalize the order.
+        // {order_id} is a Cashfree template token — keep it literal.
+        return_url: (typeof return_url === "string" && /^https?:\/\//i.test(return_url))
+          ? return_url
+          : `${req.headers.get("origin") || ""}/checkout?cf_order={order_id}&order=${order_id}`,
       },
       order_tags: { store_order_id: order_id, store_id },
     };
