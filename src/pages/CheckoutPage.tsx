@@ -25,7 +25,7 @@ import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import { estimateDelivery, type DeliveryEstimate } from "@/lib/deliveryEstimate";
 import { loadCashfree } from "@/lib/loadCashfree";
-// PayU now uses Hosted Checkout (server-signed form POST) — no client SDK needed.
+import { loadPayuBolt } from "@/lib/loadPayuBolt";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 
@@ -449,8 +449,9 @@ export default function CheckoutPage() {
       prewarmEdgeFunction("store-cashfree-status");
     }
     if (hasPayu) {
-      // Hosted Checkout — no SDK to preload; just pre-warm the edge functions.
+      loadPayuBolt(((paymentConfig?.payu_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
       prewarmEdgeFunction("payu-create-txn");
+      prewarmEdgeFunction("payu-verify-payment");
       prewarmEdgeFunction("payu-status");
     }
     prewarmEdgeFunction("place-order");
