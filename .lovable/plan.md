@@ -1,205 +1,95 @@
+# Premium Order Detail Page (Flipkart-style)
 
-# PayU Merchant Hosted (Bolt) Integration — Production-Grade Plan
+Transform the Orders tab on the storefront account from a single dense list into a clean **clickable order card list + dedicated order detail page** — like Flipkart / Myntra / Amazon.
 
-Goal: ship PayU as a third online gateway alongside Razorpay & Cashfree with the **same reliability bar**: no double charges, no broken UPI returns, no lost payments on tab refresh, accurate Meta CAPI reporting.
+## What changes
 
----
+### 1. Orders list (inside `/account` → Orders tab)
 
-## 1. What we copy from the existing gateways
+Each order becomes a slim, tappable card showing only the essentials:
 
-| Capability | Razorpay (today) | Cashfree (today) | PayU (new) |
-|---|---|---|---|
-| Owner adds keys in Store Payments | ✅ | ✅ | ✅ same UI pattern |
-| Per-store keys in `store_payment_config` | ✅ | ✅ | ✅ add 3 columns |
-| Secret-key never sent to browser | ✅ (RPC `get_own_*_secret`) | ✅ | ✅ same RPC pattern |
-| Server creates order/hash | `razorpay-order` | `cashfree-create-order` | `payu-create-txn` |
-| Server verifies signature | `razorpay-verify` (HMAC) | `cashfree-verify-payment` (API) | `payu-verify-payment` (SHA-512 reverse hash) |
-| Webhook idempotent | `cashfree-webhook` | `cashfree-webhook` | `payu-webhook` |
-| Retry-safe verify polling | ✅ 8-step backoff | ✅ 8-step backoff | ✅ copy verbatim |
-| Tab refocus auto-recheck | ✅ | ✅ | ✅ copy verbatim |
-| UPI intent return recovery | ✅ `razorpay-payment-status` | ✅ `store-cashfree-status` | ✅ `payu-status` |
-| Meta CAPI Purchase fired on verify | ✅ `firePurchaseCapi` | ✅ `firePurchaseCapi` | ✅ same hook |
-| Prewarm SDK + edge fns on mount | ✅ | ✅ | ✅ |
-| Partial/advance payment support | ✅ | ✅ | ✅ |
-| SDK preload deduped | ✅ | ✅ `loadCashfree` | ✅ `loadPayuBolt` |
+- First product image (or stacked thumbnails if multiple items)
+- Product name (`+N more` if multiple items)
+- Status pill (Confirmed / Shipped / Delivered / Cancelled) with colored dot
+- Order total + date on the right
+- Chevron → opens the full detail page
+- One short status line ("Delivered on 5 Jun" / "Arriving by 12 Jun" / "Cancelled")
 
----
+No timelines, no item breakdown, no buttons on the card. Pure summary. Tap to open detail.
 
-## 2. Why PayU **Merchant Hosted (Bolt)**, not Hosted
+### 2. New Order Detail page → `/account/orders/:orderId`
 
-- Customer stays on `brand.shopbanao.in` — no redirect to PayU domain (same UX as Razorpay modal & Cashfree drop-in)
-- Lower drop-off, branded experience, faster return
-- PayU Bolt handles PCI/UPI/Cards/NetBanking inside a secure overlay on our site
-- Server still owns hash generation & verification → keys never exposed
+Premium, sectioned layout (sticky header, generous spacing, soft dividers):
 
----
+**a. Header**
 
-## 3. Database changes
+- Back button
+- Order ID short code + placed date
+- Status pill
 
-### Migration: add PayU columns
+**b. Tracking timeline** (horizontal stepper)
+Placed → Confirmed → Shipped → Out for Delivery → Delivered
 
-```sql
-ALTER TABLE public.store_payment_config
-  ADD COLUMN IF NOT EXISTS payu_merchant_key text,
-  ADD COLUMN IF NOT EXISTS payu_merchant_salt text,
-  ADD COLUMN IF NOT EXISTS payu_env text NOT NULL DEFAULT 'production'
-    CHECK (payu_env IN ('production','sandbox'));
-```
+- Current step highlighted with primary color + filled dot + pulse ring
+- Each step shows date/time when reached
+- Cancelled state replaces the strip with a red "Order Cancelled on …" banner
+- If `tracking_number` exists → courier line + "Track Package" external link
 
-### Secret-fetch RPC (mirrors `get_own_cashfree_secret`)
+**c. Items section**
+Each item row: large thumbnail, name, variant (size/color if any), qty, unit × qty = total. Tap thumbnail → product page. Per-item action buttons appear here based on status:
 
-```sql
-CREATE OR REPLACE FUNCTION public.get_own_payu_secret(_store_id uuid)
-RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$
-  SELECT payu_merchant_salt
-  FROM store_payment_config
-  WHERE store_id = _store_id
-    AND (is_store_owner(_store_id) OR has_role(auth.uid(),'admin'));
-$$;
-GRANT EXECUTE ON FUNCTION public.get_own_payu_secret(uuid) TO authenticated;
-```
+- **Cancel item** (status `pending`/`confirmed`) — opens reason picker (Changed mind / Found cheaper / Wrong item / Other)
+- **Return item** (status `delivered`, within 7 days) — opens reason + optional note
+- **Buy Again** (status `delivered`/`cancelled`) — re-adds to cart
 
-`payment_methods` jsonb already supports adding `"payu"` — no schema change needed there.
+**d. Delivery address card**
+Name, full address, phone. Plain readable block, no edit.
 
----
+**e. Payment details card**
 
-## 4. Edge functions (4 new)
+- Payment method (UPI / Card / COD / Cashfree / Razorpay) with icon
+- Payment status (Paid / COD / Partially Paid)
+- Price breakdown: Items subtotal, Shipping, Discount, Tax, **Total Paid**
+- Partial-payment block (advance + balance due) when applicable
 
-All use the same CORS + service-role + `firePurchaseCapi` hooks as Razorpay/Cashfree.
+**f. Action bar (sticky on mobile, inline on desktop)**
 
-### 4.1 `payu-create-txn`
-- Input: `{ store_id, order_id }`
-- Reads order + `store_payment_config`
-- Generates `txnid` = our `order.id` (idempotent — never two PayU txns per order)
-- Computes hash: `sha512(key|txnid|amount|productinfo|firstname|email|udf1...udf5|||||salt)`
-- Returns: `{ key, txnid, amount, productinfo, firstname, email, phone, surl, furl, hash, env }`
-- Stamps `orders.payment_gateway_ref = txnid`, `orders.payment_gateway = 'payu'`
-- **SURL/FURL** point at `https://<project>.functions.supabase.co/payu-return?order_id=…` so even hard-redirect fallback works
+- **Download Invoice** (reuses existing `OrderInvoice` component → PDF)
+- **Need Help?** → WhatsApp / call store
+- **Cancel Order** (full order, only if no item-level cancel happened and status allows)
 
-### 4.2 `payu-verify-payment`
-- Input: `{ order_id, store_id, txnid? }`
-- Source of truth: PayU **verify_payment API** (`/merchant/postservice?form=2`, command=`verify_payment`)
-- Validates **reverse hash**: `sha512(salt|status|||||udf5|udf4|udf3|udf2|udf1|email|firstname|productinfo|amount|txnid|key)`
-- Verdicts: `paid` / `pending` / `failed` / `cancelled`
-- On `paid`: updates `orders.status`, fires `firePurchaseCapi`, idempotent on `payment_verified_at`
-- Never trusts client-posted response alone
+### 3. Cancel & Return flow
 
-### 4.3 `payu-webhook`
-- PayU calls this on async status changes (UPI collect, bank delays)
-- Verifies reverse hash with stored salt
-- Idempotent via `webhook_events` table (`event_id = txnid + status + amount`)
-- Same `firePurchaseCapi` call → guaranteed Purchase fires even if user never returns to tab
+- **Cancel**: existing mutation, but with a reason dropdown saved to a new `cancel_reason` text column on `orders` (nullable, optional). If column add feels heavy we can store inside existing `notes`/`metadata` — I'll confirm before migrating.
+- **Return**: writes a row to a new `order_returns` table (order_id, item_id nullable, reason, note, status='requested', created_at) — OR if you want zero schema change, opens a WhatsApp deep link to the store with a prefilled return request message. **I'll ask which you prefer before implementing.**
 
-### 4.4 `payu-status` (lightweight poll)
-- Used by tab-refocus & UPI-return polling
-- Calls verify_payment API, returns `{ status, amount, payment_id }` only — no DB write
-- Fast path for the browser polling loop
+### 4. Invoice download
 
-### config.toml additions
+"Download Invoice" button opens the existing `OrderInvoice` modal which already has print/PDF — wire it up on the detail page.
 
-```toml
-[functions.payu-webhook]
-verify_jwt = false
-```
+## Files
 
----
+- **New**: `src/pages/StorefrontOrderDetail.tsx` — the detail page
+- **New**: `src/components/storefront/OrderStatusTimeline.tsx` — horizontal stepper
+- **New**: `src/components/storefront/OrderCard.tsx` — compact list card
+- **Edit**: `src/pages/StorefrontAccount.tsx` — replace inline order rendering with `OrderCard` list, each linking to detail page
+- **Edit**: `src/App.tsx` — add route `account/orders/:orderId` → `StorefrontOrderDetail`
+- **Reuse**: `src/components/OrderInvoice.tsx` for invoice modal
 
-## 5. Frontend changes
+## Design language
 
-### 5.1 `src/lib/loadPayuBolt.ts` (new — mirrors `loadCashfree.ts`)
-Single-flight loader for `https://jssdk-uat.payu.in/bolt/bolt.min.js` (sandbox) / `https://jssdk.payu.in/bolt/bolt.min.js` (prod). Caches `loadingPromise`, attaches once.
+- Matches existing storefront theme tokens (`--storefront-text`, `--storefront-bg`, primary)
+- Soft rounded cards (rounded-2xl), thin borders via color-mix, generous padding
+- Status colors: amber (pending), blue (confirmed), violet (shipped), emerald (delivered), red (cancelled)
+- Mobile-first: full-width sections, sticky bottom action bar
+- Desktop: 2-column at `lg` (left = items+tracking, right = address+payment+actions)
+- Subtle motion: timeline dot pulse, card hover lift, fade-in on detail open
+- No flashy gradients — calm, premium, Flipkart-clean
 
-### 5.2 `src/pages/StorePayments.tsx`
-Add PayU as a third option in the gateway radio group (Razorpay / Cashfree / **PayU**):
-- Merchant Key (text)
-- Merchant Salt (password, masked, server-fetched via `get_own_payu_secret`)
-- Env: Production / Sandbox toggle
-- Inline help: where to find these in PayU dashboard
-- **Only one online gateway active at a time** (existing constraint preserved)
+## Open questions before I build
 
-### 5.3 `src/pages/CheckoutPage.tsx`
-Extend `OnlineGateway` type to `"razorpay" | "cashfree" | "payu"`:
+1. **Returns**: create a real `order_returns` table, or just open WhatsApp with a prefilled "I want to return order #…" message? (Real table = trackable in dashboard; WhatsApp = zero backend work)
+2. **Cancel reason**: save to DB (needs tiny migration) or just include reason in the WhatsApp notification to owner?
+3. **Return window**: 7 days after delivery OK, or different?
 
-```ts
-const activeGateway = hasRazorpay ? "razorpay" 
-                    : hasCashfree ? "cashfree" 
-                    : hasPayu ? "payu" 
-                    : null;
-```
-
-Add PayU branch in the existing payment flow:
-1. **Prewarm**: load Bolt SDK + prewarm `payu-create-txn` / `payu-verify-payment` / `payu-status` on mount
-2. **Open**: `bolt.launch(payuParams, { responseHandler, catchException })`
-3. **Verify**: always call `payu-verify-payment` after Bolt closes (server is truth)
-4. **Tab refocus**: same `visibilitychange` + `focus` listener already used for Cashfree → calls `payu-status`
-5. **UPI return**: if `responseHandler` never fires (UPI app return), the focus listener + 5s poll loop will catch it
-6. **Refresh recovery**: `pendingOrderRef` is keyed on `order_id` in sessionStorage — survives refresh; on mount, if a pending PayU order exists, auto-resume polling
-
-### 5.4 Refresh-recovery enhancement (applies to all 3 gateways)
-Currently `pendingOrderRef` lives in React state. Promote to **sessionStorage**:
-
-```ts
-// key: `pending_payment_<order_id>`
-// value: { gateway, txn_ref, created_at }
-```
-- On `CheckoutPage` mount → if found AND not expired (<15min) → resume verify-polling loop and show "Checking your payment…" overlay
-- Cleared on terminal verdict (paid/failed/cancelled)
-- Same fix benefits Razorpay & Cashfree, not just PayU
-
-### 5.5 Meta Pixel Purchase (browser)
-Already dedup'd via `meta_purchase_fired_<orderId>` + `event_id`. PayU branch fires identically after server verdict = paid. No change needed — just call site in the new branch.
-
----
-
-## 6. Failure & edge-case matrix
-
-| Scenario | Handling |
-|---|---|
-| User closes Bolt mid-payment | `catchException` → verify → "Payment cancelled" UI |
-| UPI collect — user pays in GPay, never returns | Webhook fires `payu-webhook` → DB updated. If user does return, focus listener calls `payu-status` → shows success |
-| User refreshes tab mid-payment | sessionStorage `pending_payment_<order_id>` → on mount auto-polls `payu-status` |
-| Double-tap "Pay" button | Button disabled during `busy`; server-side `txnid = order.id` is idempotent — second `payu-create-txn` re-uses same txn |
-| Hash tampering | Reverse hash verified server-side; mismatch → rejected, order stays unpaid |
-| Network drop during verify | 8-step backoff: 0.6s → 1.2 → 1.8 → 2.5 → 3.5 → 4.5 → 6 → 6s (~20s coverage) |
-| Webhook arrives before verify | `webhook_events` dedup + `payment_verified` flag → only one CAPI fire |
-| Verify arrives before webhook | Verify wins, webhook becomes a no-op via idempotency |
-| Refund / chargeback | Out-of-scope this round (note for future: PayU refund API) |
-| Sandbox vs production | `payu_env` column → SDK URL + API host both switch |
-
----
-
-## 7. Meta CAPI / Pixel parity
-- Server: `firePurchaseCapi(supabase, order_id, { source: "payu" })` called from `payu-verify-payment` AND `payu-webhook` (function is idempotent via `meta_purchase_fired` flag)
-- Browser: existing Pixel Purchase block in CheckoutPage reused — same `event_id` so dedup works
-- Real revenue (sale price / order total) — not MRP (already correct in checkout)
-
----
-
-## 8. Build order (so nothing breaks at any step)
-
-1. DB migration (cols + RPC + GRANT)
-2. `payu-create-txn` + `payu-verify-payment` + `payu-status` + `payu-webhook` edge functions
-3. `loadPayuBolt.ts`
-4. `StorePayments.tsx` — owner can save keys
-5. `CheckoutPage.tsx` — PayU branch + sessionStorage refresh-recovery
-6. Manual smoke test (sandbox): card success, card fail, UPI collect with tab-close, UPI collect with refresh, double-click pay, webhook-only flow
-7. Update Meta CAPI memory note + edge functions inventory
-8. Ship
-
----
-
-## 9. What this does NOT change
-
-- Existing Razorpay & Cashfree flows untouched (only minor: sessionStorage recovery is additive)
-- `firePurchaseCapi`, order schema, RLS model, billing — unchanged
-- Worker, fonts, R2, themes — unchanged
-
----
-
-## 10. Required from you before I start coding
-
-Just one confirmation:
-- **Approve this plan** and I begin step 1 (DB migration). 
-- I do **not** need PayU keys yet — owner adds them per-store in Store Payments after the UI ships.
-
-Approve and I'll execute.
+Once you confirm these three, I'll implement in one shot. also use best posssible iconthere 
