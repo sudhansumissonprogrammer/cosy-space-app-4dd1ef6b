@@ -94,6 +94,22 @@ export async function sendInvoiceToWhatsApp({ order, store, ownerEmail }: SendIn
   }
 }
 
+/**
+ * Generate the invoice PDF and trigger an instant browser download.
+ * No modal, no preview — used by the storefront "Download Invoice" button.
+ */
+export async function downloadInvoicePdf({ order, store, ownerEmail }: SendInvoiceArgs): Promise<{ success: boolean; error?: string }> {
+  try {
+    const pdf = await buildInvoicePdf(order, store, ownerEmail);
+    const orderShort = order.order_number ? `${1000 + order.order_number}` : order.id.slice(0, 8).toUpperCase();
+    const fileName = `Invoice-${orderShort}.pdf`;
+    triggerDownload(pdf.output("blob"), fileName);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err?.message || "Failed to generate invoice" };
+  }
+}
+
 function triggerDownload(blob: Blob, fileName: string) {
   try {
     const url = URL.createObjectURL(blob);
