@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { store_id, amount, currency, order_id, customer_name, customer_phone, customer_email } =
+    const { store_id, amount, currency, order_id, customer_name, customer_phone, customer_email, return_url } =
       await req.json();
 
     if (!store_id || !amount || !currency || !order_id) {
