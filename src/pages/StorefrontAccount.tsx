@@ -34,6 +34,9 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
       if (error) throw error;
       return data;
     },
+    // Orders change infrequently within a session — avoid refetch on every
+    // tab switch into Orders.
+    staleTime: 10 * 60 * 1000,
   });
 
 
