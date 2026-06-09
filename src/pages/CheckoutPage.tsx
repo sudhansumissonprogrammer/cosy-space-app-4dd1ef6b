@@ -919,19 +919,9 @@ export default function CheckoutPage() {
               finalizeOrder(pending.order_id, pending.order_number, pending.order_profit);
               return true;
             }
-            if (r?.status === "FAILED") {
-              clearPayuPending();
-              setConfirmingPayment(false);
-              setPlacing(false);
-              setPlacingStep(0);
-              setPendingOrder({
-                id: pending.order_id,
-                number: pending.order_number,
-                profit: pending.order_profit,
-              });
-              setPaymentFailed(true);
-              return false;
-            }
+            // Do NOT surface FAILED automatically — PayU often reports FAILED
+            // for transient UPI states, and we don't want to hijack a fresh
+            // checkout. The URL-param handler / explicit retry will handle it.
           } catch (e) {
             console.warn("[PayU] recovery poll failed", e);
           }
@@ -942,6 +932,7 @@ export default function CheckoutPage() {
       }
       return false;
     };
+
 
     // 1. Mount recovery — poll SILENTLY in the background. We do NOT show the
     //    "Confirming your payment" overlay here, because a stale pending marker
