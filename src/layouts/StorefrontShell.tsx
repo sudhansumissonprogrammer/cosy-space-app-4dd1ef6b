@@ -159,11 +159,12 @@ export default function StorefrontShell({
     return () => { cancelled = true; };
   }, [store?.id]);
 
-  // Scroll to top on every route change — centralised fix for all mobile navbars
+  // Hydrogen-style scroll restoration:
+  //  - PUSH  → top
+  //  - POP   → restore previous scrollY (waits for content height)
+  //  - REPLACE → untouched (PDP variant tab switches keep scroll)
   const { pathname } = useLocation();
-  useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
-  }, [pathname]);
+  useScrollRestoration();
 
   // SPA route-change PageView for Meta Pixel (Shopify-style).
   // Skip the first pathname — the inline pixel in index.html (or the
