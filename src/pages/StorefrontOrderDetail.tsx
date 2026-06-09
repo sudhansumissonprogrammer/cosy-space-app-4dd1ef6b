@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState } from "react";
 import { useParams, Link, Navigate, useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabaseStorefront as supabase } from "@/integrations/supabase/storefrontClient";
@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -24,8 +24,6 @@ import {
   FileDown, MessageCircle, XCircle, RotateCcw, ShoppingBag, ExternalLink,
   Loader2, ShieldCheck, Receipt, Truck,
 } from "lucide-react";
-
-const OrderInvoice = lazy(() => import("@/components/OrderInvoice"));
 
 const CANCEL_REASONS = [
   "Changed my mind",
@@ -69,7 +67,7 @@ export default function StorefrontOrderDetail() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  const [showInvoice, setShowInvoice] = useState(false);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState(CANCEL_REASONS[0]);
   const [returnOpen, setReturnOpen] = useState(false);
@@ -88,6 +86,17 @@ export default function StorefrontOrderDetail() {
       return data;
     },
     enabled: !!orderId,
+    // Instant render: hydrate from the orders-list cache if we have it,
+    // then refetch in the background to fill in slug/name fields the list omits.
+    initialData: () => {
+      const cached = qc.getQueriesData<any[]>({ queryKey: ["storefront-customer-orders"] });
+      for (const [, list] of cached) {
+        const found = Array.isArray(list) ? list.find((o: any) => o?.id === orderId) : null;
+        if (found) return found;
+      }
+      return undefined;
+    },
+    initialDataUpdatedAt: 0,
   });
 
   const cancelMutation = useMutation({
@@ -331,8 +340,25 @@ export default function StorefrontOrderDetail() {
           {/* Actions */}
           <section className="rounded-2xl border bg-card p-3 space-y-2"
                    style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}>
-            <Button variant="outline" className="w-full justify-start" onClick={() => setShowInvoice(true)}>
-              <FileDown className="h-4 w-4 mr-2" /> Download Invoice
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              disabled={downloadingInvoice}
+              onClick={async () => {
+                setDownloadingInvoice(true);
+                try {
+                  const { downloadInvoicePdf } = await import("@/lib/sendInvoiceWhatsApp");
+                  const res = await downloadInvoicePdf({ order, store });
+                  if (!res.success) toast.error(res.error || "Could not download invoice");
+                } finally {
+                  setDownloadingInvoice(false);
+                }
+              }}
+            >
+              {downloadingInvoice
+                ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                : <FileDown className="h-4 w-4 mr-2" />}
+              {downloadingInvoice ? "Preparing…" : "Download Invoice"}
             </Button>
             {helpWa && (
               <Button asChild variant="outline" className="w-full justify-start">
@@ -421,19 +447,6 @@ export default function StorefrontOrderDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Invoice modal */}
-      <Dialog open={showInvoice} onOpenChange={setShowInvoice}>
-        <DialogContent className="max-w-md p-4 max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-sm">Invoice {orderShort}</DialogTitle>
-          </DialogHeader>
-          {showInvoice && (
-            <Suspense fallback={<div className="py-10 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto opacity-60" /></div>}>
-              <OrderInvoice order={order} store={store} onClose={() => setShowInvoice(false)} />
-            </Suspense>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
