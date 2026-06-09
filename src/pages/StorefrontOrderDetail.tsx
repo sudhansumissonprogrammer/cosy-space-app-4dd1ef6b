@@ -447,19 +447,6 @@ export default function StorefrontOrderDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Invoice modal */}
-      <Dialog open={showInvoice} onOpenChange={setShowInvoice}>
-        <DialogContent className="max-w-md p-4 max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-sm">Invoice {orderShort}</DialogTitle>
-          </DialogHeader>
-          {showInvoice && (
-            <Suspense fallback={<div className="py-10 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto opacity-60" /></div>}>
-              <OrderInvoice order={order} store={store} onClose={() => setShowInvoice(false)} />
-            </Suspense>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
