@@ -163,7 +163,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
   <div class="label-header">
     <div>
       <div class="brand-row">
-        ${store?.logo_url ? `<img src="${store.logo_url}" class="brand-logo" crossorigin="anonymous" />` : ""}
+        ${store?.logo_url ? `<img src="${store.logo_url}" class="brand-logo" crossorigin="anonymous"  alt=""/>` : ""}
       </div>
       <div class="brand-contact">${[store?.location, store?.city, store?.state].filter(Boolean).join(", ")}${ownerEmail ? ` | ${ownerEmail}` : ""}</div>
     </div>
