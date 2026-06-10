@@ -352,7 +352,17 @@ export default defineConfig(({ mode }) => ({
             // (reading 'default')" → ErrorBoundary shows white error
             // screen on category/menu pages. Bundling into shell makes
             // it deploy atomically with the rest of the storefront.
-            id.includes("/src/components/ui/sheet")
+            id.includes("/src/components/ui/sheet") ||
+            // v8.7 — HamburgerMenu + Dialog primitive were each shipping as
+            // tiny separate chunks (1-2KB) that waterfalled to 2.7-3s on cold
+            // mobile loads (each = its own HTTP round trip after parent chunk
+            // parse). HamburgerMenu is rendered on every storefront page via
+            // CheckoutAwareLayout, and Dialog is used by PDP, SideCart, and
+            // multiple storefront pages — both are guaranteed to load on first
+            // visit, so co-locating into storefront-shell saves 2 round trips
+            // with zero downside.
+            id.includes("/src/components/storefront/HamburgerMenu") ||
+            id.includes("/src/components/ui/dialog")
           ) {
             return "storefront-shell";
           }
