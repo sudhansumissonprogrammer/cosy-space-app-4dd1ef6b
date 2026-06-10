@@ -2,12 +2,21 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 /**
  * Reactively subscribe to the storefront-theme-config cache entry.
- * 
+ *
  * Primary source: cache seeded by StorefrontLayout.logic (from bulk RPC).
  * Fallback: if cache is empty (e.g. direct navigation), fetches from DB.
- * 
+ *
  * Re-renders whenever the cache is updated via setQueryData (e.g. live preview).
+ *
+ * STICKY: once a non-null theme_config has been observed for a given storeId,
+ * we remember it in a module-level Map and ALWAYS return it on subsequent
+ * renders — even if the React Query cache transiently returns undefined
+ * (e.g. during background refetch, layout chunk remount, or storeId flicker
+ * during SPA navigation). This prevents the "theme flashes to default green
+ * + serif + missing mobile nav" bug that appears mid-navigation.
  */
+const lastGoodThemeConfig = new Map<string, Record<string, any>>();
+
 export function useStorefrontThemeConfig(storeId?: string) {
   const queryClient = useQueryClient();
   const queryKey = ["storefront-theme-config", storeId] as const;
@@ -27,19 +36,16 @@ export function useStorefrontThemeConfig(storeId?: string) {
       if (raw) lsThemeConfig = JSON.parse(raw);
     } catch {}
   }
-  const initialThemeConfig = cachedThemeConfig ?? injectedThemeConfig ?? lsThemeConfig;
+  const stickyConfig = storeId ? lastGoodThemeConfig.get(storeId) : undefined;
+  const initialThemeConfig =
+    cachedThemeConfig ?? injectedThemeConfig ?? lsThemeConfig ?? stickyConfig;
 
   // Phase 1: If Worker injected theme_config, skip the Supabase chunk load entirely.
-  // Saves ~45KB of JS + ~400ms of network time on cold load. Live preview still works
-  // because useThemePreview writes directly to the cache via setQueryData.
   const hasInjectedTheme = !!injectedThemeConfig;
 
   const { data: themeConfig } = useQuery({
     queryKey,
     queryFn: async () => {
-      // Always fetch from DB — this ensures stale cache is properly refreshed.
-      // The bulk RPC seeds this cache via setQueryData, so this queryFn only
-      // runs on cache miss or when staleTime expires (background refetch).
       const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase
         .from("store_theme_config")
@@ -49,21 +55,29 @@ export function useStorefrontThemeConfig(storeId?: string) {
       if (error) throw error;
       return data;
     },
-    // Disable the query when Worker already injected the theme — no refetch needed.
     enabled: !!storeId && !hasInjectedTheme,
     staleTime: hasInjectedTheme ? Infinity : 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     initialData: initialThemeConfig,
-    // Trust injected/cache as fresh (worker purges on save). Mark localStorage
-    // fallback as stale so we render it instantly but still revalidate from DB.
     initialDataUpdatedAt:
       injectedThemeConfig || cachedThemeConfig
         ? Date.now()
-        : lsThemeConfig
+        : (lsThemeConfig || stickyConfig)
           ? 0
           : undefined,
-    placeholderData: () => cachedThemeConfig,
+    placeholderData: () => cachedThemeConfig ?? stickyConfig,
   });
 
-  return themeConfig as Record<string, any> | null;
+  // Remember the last-good value so future renders never fall back to null
+  // when the React Query cache transiently returns undefined.
+  if (storeId && themeConfig && typeof themeConfig === "object") {
+    lastGoodThemeConfig.set(storeId, themeConfig as Record<string, any>);
+    // Also mirror into localStorage so a hard reload picks it up immediately.
+    try {
+      localStorage.setItem(`sf_tc_${storeId}`, JSON.stringify(themeConfig));
+    } catch {}
+  }
+
+  const effective = (themeConfig ?? stickyConfig) as Record<string, any> | null | undefined;
+  return (effective ?? null) as Record<string, any> | null;
 }
