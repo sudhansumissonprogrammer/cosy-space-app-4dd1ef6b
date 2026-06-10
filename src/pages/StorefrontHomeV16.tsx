@@ -84,6 +84,7 @@ function BestSellersSection({ storeId, slug, store, cardStyle, isCarousel }: {
         const products = await fetchViaWorker<any[]>({
           path: "/api/products?best_selling=1",
           sessionKey: `__sf_bs_${hostname}`,
+          sessionTtlMs: 0,
           fallback: fetchFromSupabase,
           transform: (json) => (Array.isArray(json) ? json : []),
         });
