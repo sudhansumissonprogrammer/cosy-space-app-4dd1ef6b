@@ -4262,7 +4262,7 @@ async function _fetchPdpFromDb(storeSlug, productSlug, timeoutMs) {
       },
       body: JSON.stringify({ _store_slug: storeSlug, _product_slug: productSlug }),
       signal: controller.signal,
-      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 } },
+      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 }, cacheKey: `pdp:${WORKER_VERSION}:${storeSlug}:${productSlug}` },
     });
     clearTimeout(timeout);
     if (!res.ok) throw new Error(`PDP RPC error: ${res.status}`);
