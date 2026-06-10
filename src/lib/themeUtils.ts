@@ -152,6 +152,32 @@ function ensureGoogleFontsPreconnect() {
   });
 }
 
+function ensureSelfHostedFontFaces(fonts: string[]) {
+  if (typeof document === "undefined") return;
+  if (document.querySelector("style[data-sf-font-local]")) return;
+
+  const requestedFonts = fonts.map(normalizeGoogleFontName).filter((font) => SELF_HOSTED_FONT_FACES[font]);
+  if (!requestedFonts.length) return;
+
+  const css = [...new Set(requestedFonts)]
+    .flatMap((family) =>
+      SELF_HOSTED_FONT_FACES[family].map(
+        ({ weight, url, display = "optional" }) =>
+          `@font-face{font-family:'${family}';font-style:normal;font-weight:${weight};font-display:${display};src:url('${url}') format('woff2')}`
+      )
+    )
+    .join("");
+
+  if (!css) return;
+  let style = document.querySelector("style[data-sf-font-client]") as HTMLStyleElement | null;
+  if (!style) {
+    style = document.createElement("style");
+    style.setAttribute("data-sf-font-client", "1");
+    document.head.appendChild(style);
+  }
+  if (style.textContent !== css) style.textContent = css;
+}
+
 /** Convert hex color to HSL components string (e.g. "210 50% 40%") */
 export function hexToHsl(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
