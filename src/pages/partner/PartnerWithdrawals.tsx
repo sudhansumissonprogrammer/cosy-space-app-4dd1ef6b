@@ -74,6 +74,7 @@ export default function PartnerWithdrawals() {
 
   return (
     <>
+      <h1 className="sr-only">Partner withdrawals</h1>
       {/* Balance strip */}
       <Card className="overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-primary via-primary to-primary/70 p-4 text-primary-foreground shadow-lg">
         <div className="flex items-center justify-between">

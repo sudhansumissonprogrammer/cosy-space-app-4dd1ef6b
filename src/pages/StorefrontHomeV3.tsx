@@ -305,6 +305,7 @@ export default function StorefrontHomeV3() {
 
   return (
     <>
+      <h1 className="sr-only">{store?.name || "Store"}</h1>
       {/* Banner Slider */}
       <BannerSlider store={store} />
 

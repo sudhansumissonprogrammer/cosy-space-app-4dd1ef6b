@@ -510,6 +510,7 @@ export default function StorefrontHomeV13() {
 
   return (
     <div className="min-h-screen">
+      <h1 className="sr-only">{store?.name || "Store"}</h1>
       {/* Universal Categories (if images exist and not pill/text-only) */}
       {categories.length > 0 && categoryStyle !== "style-5" && (
         <div className="pt-3">
