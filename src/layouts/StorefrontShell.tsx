@@ -306,7 +306,7 @@ export default function StorefrontShell({
 
   // Build provider tree — conditionally include WishlistProvider
   const content = (
-    <div className={wrapperClassName} style={mergedStyle}>
+    <div className={wrapperClassName} style={mergedStyle} data-storefront-ready="true">
       {children(renderProps)}
 
       {/* Lazy overlays — shared across all themes */}
