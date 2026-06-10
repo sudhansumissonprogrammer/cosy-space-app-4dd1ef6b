@@ -1403,6 +1403,43 @@ async function injectDeepPreloadsIntoColdHtml(html, origin, env) {
   }
 }
 
+const _memThemeChunkPreloads = new Map();
+async function enrichHeadWithThemeChunkPreloads(head, origin, env, themeName) {
+  if (!head || !themeName) return head;
+  const appMatch = head.match(/href="(\/assets\/App-[^"]+\.js)"/);
+  if (!appMatch) return head;
+  const cacheKey = `${appMatch[1]}:${themeName}`;
+  let chunks = _memThemeChunkPreloads.get(cacheKey);
+  if (!chunks) {
+    try {
+      const res = await fetch(`${origin}${appMatch[1]}`, { cf: { cacheTtl: 3600, cacheEverything: true } });
+      if (!res.ok) return head;
+      const code = await res.text();
+      const n = String(themeName).replace(/^theme-?/, "");
+      const themeRx = n === "1"
+        ? /\/assets\/(?:StorefrontLayout|StorefrontHome)-[A-Za-z0-9_-]+\.js$/
+        : new RegExp(`/assets/(?:StorefrontLayoutV${n}|StorefrontHomeV${n})-[A-Za-z0-9_-]+\\.js$`);
+      const essentialRx = /\/assets\/(?:storefront-shell|router-query|icons|radix-slot)-[A-Za-z0-9_-]+\.js$/;
+      const found = new Set();
+      const RX = /["'`](?:\.\/|\.?\/?assets\/)?([A-Za-z0-9_\-]+-[A-Za-z0-9]{6,})\.js["'`]/g;
+      for (const m of code.matchAll(RX)) {
+        const p = "/assets/" + m[1] + ".js";
+        if (essentialRx.test(p) || themeRx.test(p)) found.add(p);
+      }
+      chunks = [...found].slice(0, 8);
+      _memThemeChunkPreloads.set(cacheKey, chunks);
+    } catch {
+      return head;
+    }
+  }
+  if (!chunks.length) return head;
+  const tags = chunks
+    .filter((p) => !head.includes(`href="${p}"`))
+    .map((p) => `<link rel="modulepreload" href="${p}" />`)
+    .join("");
+  return tags ? head.replace("</head>", `${tags}</head>`) : head;
+}
+
 /* ============================================================
    v8.23.0 — LANDING MODULEPRELOAD
    The root domain (shopbanao.in/) ships LandingApp via a tiny
