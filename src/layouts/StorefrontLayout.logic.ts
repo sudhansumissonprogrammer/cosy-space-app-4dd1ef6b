@@ -110,6 +110,7 @@ export function useStorefront(slugOverride?: string) {
       : {}),
   });
 
+
   // Seed individual cache keys so child pages get instant cache hits.
   // Only re-seed when the underlying storefront data changes — route changes
   // must not overwrite unsaved theme preview selections inside the iframe.
@@ -193,5 +194,5 @@ export function useStorefront(slugOverride?: string) {
 
   const store = (data as any)?.store as StoreData | undefined;
 
-  return { store: store ?? null, isLoading, slug };
+  return { store: store ?? null, isLoading, slug, themeConfig: (data as any)?.theme_config ?? null };
 }

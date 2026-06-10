@@ -1937,6 +1937,14 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
     hf: themeConfig.heading_font || "",
     bf: themeConfig.body_font || "",
     bs: themeConfig.button_style || "rounded",
+    mne: themeConfig.mobile_nav_enabled !== false,
+    mns: themeConfig.mobile_nav_style || "classic",
+    pcs: themeConfig.product_card_style || "style-1",
+    cs: themeConfig.category_style || "style-1",
+    hla: themeConfig.header_logo_alignment || "left",
+    hs: themeConfig.header_style || "normal",
+    me: themeConfig.marquee_enabled !== false,
+    mt: themeConfig.marquee_text || "",
   };
   const liteStr = JSON.stringify(lite);
 

@@ -17,7 +17,33 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
  */
 const lastGoodThemeConfig = new Map<string, Record<string, any>>();
 
-export function useStorefrontThemeConfig(storeId?: string) {
+function getEdgeThemeConfig(): Record<string, any> | undefined {
+  if (typeof window === "undefined") return undefined;
+  const hint = (window as any).__THEME__;
+  if (!hint || typeof hint !== "object") return undefined;
+  return {
+    primary_color: hint.pc,
+    background_color: hint.bg,
+    text_color: hint.tc,
+    accent_color: hint.ac,
+    heading_font: hint.hf,
+    body_font: hint.bf,
+    button_style: hint.bs,
+    mobile_nav_enabled: hint.mne,
+    mobile_nav_style: hint.mns,
+    product_card_style: hint.pcs,
+    category_style: hint.cs,
+    header_logo_alignment: hint.hla,
+    header_style: hint.hs,
+    marquee_enabled: hint.me,
+    marquee_text: hint.mt,
+  };
+}
+
+export function useStorefrontThemeConfig(
+  storeId?: string,
+  shellThemeConfig?: Record<string, any> | null
+) {
   const queryClient = useQueryClient();
   const queryKey = ["storefront-theme-config", storeId] as const;
   const cachedThemeConfig = queryClient.getQueryData(queryKey) as any;
@@ -26,6 +52,7 @@ export function useStorefrontThemeConfig(storeId?: string) {
     (window as any).__STOREFRONT_DATA__?.store?.id === storeId
       ? (window as any).__STOREFRONT_DATA__?.theme_config
       : undefined;
+  const edgeThemeConfig = getEdgeThemeConfig();
   // localStorage fallback — keeps merchant's last-saved selections (nav style,
   // card style, colors, etc.) rendered on first paint when worker injection
   // isn't available. Prevents the "default flash → selected" waterfall.
@@ -38,10 +65,10 @@ export function useStorefrontThemeConfig(storeId?: string) {
   }
   const stickyConfig = storeId ? lastGoodThemeConfig.get(storeId) : undefined;
   const initialThemeConfig =
-    cachedThemeConfig ?? injectedThemeConfig ?? lsThemeConfig ?? stickyConfig;
+    cachedThemeConfig ?? injectedThemeConfig ?? shellThemeConfig ?? stickyConfig ?? lsThemeConfig ?? edgeThemeConfig;
 
-  // Phase 1: If Worker injected theme_config, skip the Supabase chunk load entirely.
-  const hasInjectedTheme = !!injectedThemeConfig;
+  // If the shell already brought the full theme_config, skip the separate DB chunk.
+  const hasAuthoritativeTheme = !!(injectedThemeConfig || shellThemeConfig);
 
   const { data: themeConfig } = useQuery({
     queryKey,
@@ -55,22 +82,22 @@ export function useStorefrontThemeConfig(storeId?: string) {
       if (error) throw error;
       return data;
     },
-    enabled: !!storeId && !hasInjectedTheme,
-    staleTime: hasInjectedTheme ? Infinity : 2 * 60 * 1000,
+    enabled: !!storeId && !hasAuthoritativeTheme,
+    staleTime: hasAuthoritativeTheme ? Infinity : 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     initialData: initialThemeConfig,
     initialDataUpdatedAt:
-      injectedThemeConfig || cachedThemeConfig
+      injectedThemeConfig || shellThemeConfig || cachedThemeConfig
         ? Date.now()
-        : (lsThemeConfig || stickyConfig)
+        : (stickyConfig || lsThemeConfig || edgeThemeConfig)
           ? 0
           : undefined,
-    placeholderData: () => cachedThemeConfig ?? stickyConfig,
+    placeholderData: () => cachedThemeConfig ?? shellThemeConfig ?? stickyConfig ?? lsThemeConfig ?? edgeThemeConfig,
   });
 
   // Remember the last-good value so future renders never fall back to null
   // when the React Query cache transiently returns undefined.
-  if (storeId && themeConfig && typeof themeConfig === "object") {
+  if (storeId && themeConfig && typeof themeConfig === "object" && themeConfig !== edgeThemeConfig) {
     lastGoodThemeConfig.set(storeId, themeConfig as Record<string, any>);
     // Also mirror into localStorage so a hard reload picks it up immediately.
     try {
@@ -78,6 +105,6 @@ export function useStorefrontThemeConfig(storeId?: string) {
     } catch {}
   }
 
-  const effective = (themeConfig ?? stickyConfig) as Record<string, any> | null | undefined;
+  const effective = (themeConfig ?? shellThemeConfig ?? stickyConfig ?? lsThemeConfig ?? edgeThemeConfig) as Record<string, any> | null | undefined;
   return (effective ?? null) as Record<string, any> | null;
 }
