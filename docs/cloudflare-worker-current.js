@@ -1,5 +1,12 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.53.0 — storefront cold-load stale preload fix
+ * SHOPBANAO PRODUCTION ROUTER v8.55.0 — storefront TTFB unblock
+ *
+ * v8.55.0 — Stop holding storefront HTML open while backend/storefront data
+ *           or product KV lookups are slow. The first byte/body now ships from
+ *           shell + theme + cached products only; full store data warms in the
+ *           background and React falls back to its existing RPC path. Restores
+ *           custom-domain cold TTFB from ~1.5s to sub-400ms on misses.
+ *           Storefront HTML cache TTL raised 15s→300s with versioned keys.
  *
  * v8.53.0 — Fixed cold storefront loader staying 4-5s after deploy/cache miss:
  *           prebuilt-head/deep-chunks/html-KV are now versioned, stale HTML is
@@ -159,7 +166,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.54.0-storefront-html-cache-font-fix";
+const WORKER_VERSION = "8.55.0-storefront-ttfb-unblock";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -678,10 +685,12 @@ function getCanonicalHtmlCacheKey(slug, pathname) {
      KV global reads avg 2–8ms); MISS falls through to existing
      CF-cache / canonical / warm pipeline. Zero functional regression.
    ============================================================ */
-// v8.53.0: keep HTML KV short-lived. Raising this to 600s let deploy-era HTML
-// survive with old modulepreload hashes while the real module script used the
-// new hash; browsers wasted connection slots and React content painted late.
-const HTML_KV_TTL_SEC = 60;
+// v8.55.0: 15s/60s was too short for low-traffic custom domains; most ad/cold
+// visitors missed HTML cache and paid the Worker/backend path. 300s is short
+// enough for merchant edits/publishes, and keys are versioned by WORKER_VERSION.
+const STOREFRONT_HTML_TTL_SEC = 300;
+const STOREFRONT_HTML_SWR_SEC = 600;
+const HTML_KV_TTL_SEC = STOREFRONT_HTML_TTL_SEC;
 const HTML_KV_MAX_BYTES = 800_000; // 800 KB hard cap (KV value limit is 25 MB)
 const _htmlKvWriteRecent = new Map(); // key → expiresAt
 const HTML_KV_WRITE_DEDUP_MS = 540_000;
@@ -723,7 +732,7 @@ async function kvHtmlGet(env, slug, pathname) {
       }
     }
     if (!headers.has("Content-Type")) headers.set("Content-Type", "text/html; charset=utf-8");
-    headers.set("Cache-Control", `public, max-age=${HTML_KV_TTL_SEC}, stale-while-revalidate=600`);
+    headers.set("Cache-Control", `public, max-age=${STOREFRONT_HTML_TTL_SEC}, stale-while-revalidate=${STOREFRONT_HTML_SWR_SEC}`);
     return new Response(value, { status: meta.s || 200, headers });
   } catch {
     return null;
@@ -800,8 +809,8 @@ function isHtmlNavigationPath(pathname) {
   return !pathname.startsWith("/api/") && !pathname.startsWith("/assets/") && !pathname.includes(".");
 }
 
-function forcePublicHtmlCacheControl(headers, ttl = 60) {
-  headers.set("Cache-Control", `public, max-age=${ttl}, stale-while-revalidate=60`);
+function forcePublicHtmlCacheControl(headers, ttl = STOREFRONT_HTML_TTL_SEC) {
+  headers.set("Cache-Control", `public, max-age=${ttl}, stale-while-revalidate=${STOREFRONT_HTML_SWR_SEC}`);
 }
 
 function makePublicHtmlResponse(response, ttl = 3600) {
@@ -853,7 +862,7 @@ async function mirrorToCfCache(ctx, request, response, slug = null, env = null) 
     headers.delete("vary");
     // Force a deterministic, public Cache-Control so CF stores it. Lovable origin
     // sends `no-cache, max-age=0`; leaving that intact makes CF cache rate stay 0%.
-    forcePublicHtmlCacheControl(headers, 60);
+    forcePublicHtmlCacheControl(headers, STOREFRONT_HTML_TTL_SEC);
     headers.set("X-Edge-Mirror", "1");
     // Buffer body once so we can write to multiple cache keys.
     const buf = await cloned.arrayBuffer();
@@ -1640,10 +1649,9 @@ function setNoStoreHtmlHeaders(headers) {
   // visits, AND CF's automatic cache starts serving HIT on warm hits —
   // cutting Worker compute to ~0 for the bulk of anonymous traffic.
   // Purge button still wipes instantly via /api/purge-shell.
-  // v8.54.0: keep HTML cache very short. Long SWR was serving old
-  // modulepreload hashes after frontend publishes, so browsers downloaded
-  // stale App chunks before the real entry discovered the current ones.
-  headers.set("Cache-Control", "public, max-age=15, stale-while-revalidate=60");
+  // v8.55.0: versioned HTML keys make 5-minute HTML safe while avoiding the
+  // low-traffic cold MISS problem where custom domains paid 1–2s Worker time.
+  headers.set("Cache-Control", `public, max-age=${STOREFRONT_HTML_TTL_SEC}, stale-while-revalidate=${STOREFRONT_HTML_SWR_SEC}`);
   headers.delete("Pragma");
   headers.delete("Expires");
 }
@@ -2243,6 +2251,16 @@ async function _getInlineProductsOrNull(hostname, slug, env, ctx) {
         return kvProducts;
       }
     }
+  } catch {}
+  return null;
+}
+
+async function _getInlineProductsFastOrNull(hostname) {
+  try {
+    const mem = _memProductVersion.get(hostname);
+    if (!mem || Date.now() - mem.ts >= MEM_PV_TTL) return null;
+    const cached = await cache.match(_buildProductsCacheKey(hostname, {}, mem.version));
+    return cached ? await cached.text() : null;
   } catch {}
   return null;
 }
@@ -3700,7 +3718,12 @@ async function serveStreamedHtml(
 
       await writeChunk(enc.encode(headChunk));
 
-      const storefrontResult = earlyStorefrontResult || (await storefrontPromise);
+      const storefrontResult = earlyStorefrontResult || null;
+      // v8.55.0: never hold the HTML body open for backend data. If the 200ms
+      // SEO race above missed, React uses its existing direct RPC path while the
+      // Worker warms storefront/product caches in waitUntil. This is the fix for
+      // custom-domain cold loads reporting cfWorker≈1.5s on the document.
+      try { storefrontPromise.then(() => {}).catch(() => {}); } catch {}
 
       const skeletonMuted = getSkeletonMuted(textColor);
       const skeleton = buildSkeleton(
@@ -3843,13 +3866,13 @@ async function fetchAndInjectSlug(
 
   // v7.7.0 Fix 2: Skip _getInlineProductsOrNull if caller already fetched it.
   // FIX #4: Batch KV reads in one Promise.all
-  const [shellResult, kvBatch, cachedHeadMem, inlineProducts] = await Promise.all([
+      const [shellResult, kvBatch, cachedHeadMem, inlineProducts] = await Promise.all([
     getNavigationSpaShell(request, ctx, env),
     _batchKvRead(slug, env),
     _getCachedPrebuiltHead(env),
     prefetchedInlineProducts !== null
       ? Promise.resolve(prefetchedInlineProducts)
-      : _getInlineProductsOrNull(hostname, slug, env, ctx),
+          : _getInlineProductsFastOrNull(hostname),
   ]);
 
   // Hydrate in-memory caches from batch KV read
@@ -6481,7 +6504,7 @@ async function _handleFetch(request, env, ctx) {
           data: null,
           source: "none",
         })),
-        _getInlineProductsOrNull(hostname, slug, env, ctx),
+        _getInlineProductsFastOrNull(hostname),
       ]);
 
       // If we have the shell + data, serve fully injected HTML — same as warm path
@@ -6540,7 +6563,7 @@ async function _handleFetch(request, env, ctx) {
       _resolveStoreInfo(slug, hostname, env),
       _batchKvRead(slug, env),
       _getCachedPrebuiltHead(env),
-      _getInlineProductsOrNull(hostname, slug, env, ctx),
+      _getInlineProductsFastOrNull(hostname),
       _getInlinePdpCategoryOrNull(hostname, pdpCategoryRoute, env, ctx),
     ]);
     const pdpCategoryInline = pdpCategoryJson
@@ -6697,7 +6720,7 @@ async function _handleFetch(request, env, ctx) {
           data: null,
           source: "none",
         })),
-        _getInlineProductsOrNull(hostname, resolvedSlugCD, env, ctx),
+        _getInlineProductsFastOrNull(hostname),
       ]);
 
       if (shellResult?.html && prefetchResult?.data) {
@@ -6771,7 +6794,7 @@ async function _handleFetch(request, env, ctx) {
         handleBot(request, resolvedSlug, url, true),
         _batchKvRead(resolvedSlug, env),
         _getCachedPrebuiltHead(env),
-        _getInlineProductsOrNull(hostname, resolvedSlug, env, ctx),
+        _getInlineProductsFastOrNull(hostname),
         _getInlinePdpCategoryOrNull(hostname, pdpCategoryRouteCD, env, ctx),
       ]);
     const pdpCategoryInlineCD = pdpCategoryJsonCD
