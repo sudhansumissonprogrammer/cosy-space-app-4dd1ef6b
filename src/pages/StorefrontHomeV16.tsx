@@ -157,8 +157,14 @@ function CategorySection({
   }, []);
 
   const { data: products, isLoading } = useQuery({
-    queryKey: ["storefront-category-home", storeId, category.name],
+    queryKey: ["storefront-category-home", storeId, category.slug],
     queryFn: async () => {
+      // Production: hit Worker /api/category (KV+Cache, 24h TTL) — same
+      // endpoint and cache key the prewarm cron already warms.
+      const { fetchCategoryEdge } = await import("@/lib/storefrontEdgeApi");
+      const edge = await fetchCategoryEdge(category.slug);
+      if (edge?.products && Array.isArray(edge.products)) return edge.products;
+
       const { supabase } = await import("@/integrations/supabase/client");
       const { data: d, error } = await supabase
         .from("products")
