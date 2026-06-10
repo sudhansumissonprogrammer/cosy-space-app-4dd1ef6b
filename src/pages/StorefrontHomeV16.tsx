@@ -64,18 +64,32 @@ function BestSellersSection({ storeId, slug, store, cardStyle, isCarousel }: {
     queryKey: ["storefront-best-sellers-inf", storeId],
     queryFn: async ({ pageParam = 0 }) => {
       const offset = pageParam * BATCH_SIZE;
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { data: d, error } = await supabase
-        .from("products")
-        .select(BEST_SELLER_COLS)
-        .eq("store_id", storeId)
-        .eq("is_active", true)
-        .eq("is_best_selling", true)
-        .order("display_order", { ascending: true })
-        .order("created_at", { ascending: false })
-        .range(offset, offset + BATCH_SIZE - 1);
-      if (error) throw error;
-      return { products: d || [], page: pageParam };
+      const fetchFromSupabase = async () => {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: d, error } = await supabase
+          .from("products")
+          .select(BEST_SELLER_COLS)
+          .eq("store_id", storeId)
+          .eq("is_active", true)
+          .eq("is_best_selling", true)
+          .order("display_order", { ascending: true })
+          .order("created_at", { ascending: false })
+          .range(offset, offset + BATCH_SIZE - 1);
+        if (error) throw error;
+        return d || [];
+      };
+      if (pageParam === 0) {
+        const { fetchViaWorker } = await import("@/lib/workerFetch");
+        const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+        const products = await fetchViaWorker<any[]>({
+          path: "/api/products?best_selling=1",
+          sessionKey: `__sf_bs_${hostname}`,
+          fallback: fetchFromSupabase,
+          transform: (json) => (Array.isArray(json) ? json : []),
+        });
+        return { products, page: 0 };
+      }
+      return { products: await fetchFromSupabase(), page: pageParam };
     },
     initialPageParam: 0,
     getNextPageParam: (last) => last.products.length === BATCH_SIZE ? last.page + 1 : undefined,
