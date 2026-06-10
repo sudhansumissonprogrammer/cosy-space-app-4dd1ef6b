@@ -1,5 +1,10 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.52.1 — complete /api/products best_selling cache rollout
+ * SHOPBANAO PRODUCTION ROUTER v8.53.0 — storefront cold-load stale preload fix
+ *
+ * v8.53.0 — Fixed cold storefront loader staying 4-5s after deploy/cache miss:
+ *           prebuilt-head/deep-chunks/html-KV are now versioned, stale HTML is
+ *           rejected by worker version, and KV HTML TTL is back to 60s so old
+ *           chunk preload lists cannot survive and create JS waterfalls.
  *
  * v8.52.1 — Fixed the actual exported WORKER_VERSION string (was still
  *           v8.51.0-ttfb-unblock even though the doc header said v8.52.0).
@@ -154,7 +159,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.52.1-products-best-selling-cache";
+const WORKER_VERSION = "8.53.0-storefront-cold-load-preload-fix";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -355,7 +360,7 @@ async function finalizeResponse(request, response) {
    ============================================================ */
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
-const HTML_CACHE_SCHEMA_VERSION = "html-v3-publish-fresh-2026-05-04";
+const HTML_CACHE_SCHEMA_VERSION = "html-v4-worker-8-53-2026-06-10";
 const R2_CDN_HOST = "cdn.shopbanao.in";
 
 const SUPABASE_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
