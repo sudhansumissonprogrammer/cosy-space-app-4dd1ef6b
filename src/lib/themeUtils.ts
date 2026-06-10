@@ -19,6 +19,36 @@ const SELF_HOSTED_FONTS = new Set([
   "Mulish",
 ]);
 
+const SELF_HOSTED_FONT_FACES: Record<string, Array<{ weight: string; url: string; display?: "swap" | "optional" }>> = {
+  "Alegreya SC": [
+    { weight: "400", url: "/fonts/alegreya-sc-400.woff2", display: "swap" },
+    { weight: "700", url: "/fonts/alegreya-sc-700.woff2", display: "swap" },
+  ],
+  Poppins: [
+    { weight: "400", url: "/fonts/poppins-400.woff2" },
+    { weight: "500", url: "/fonts/poppins-500.woff2" },
+    { weight: "600", url: "/fonts/poppins-600.woff2" },
+    { weight: "700", url: "/fonts/poppins-700.woff2" },
+    { weight: "800", url: "/fonts/poppins-800.woff2" },
+  ],
+  Outfit: [
+    { weight: "100 900", url: "/fonts/outfit-latin.woff2" },
+    { weight: "100 900", url: "/fonts/outfit-latin-ext.woff2" },
+  ],
+  "Montserrat Alternates": [
+    { weight: "400", url: "/fonts/montserrat-alternates-400.woff2" },
+    { weight: "500", url: "/fonts/montserrat-alternates-500.woff2" },
+    { weight: "600", url: "/fonts/montserrat-alternates-600.woff2", display: "swap" },
+    { weight: "700", url: "/fonts/montserrat-alternates-700.woff2", display: "swap" },
+  ],
+  Mulish: [
+    { weight: "200 1000", url: "/fonts/mulish-latin.woff2" },
+  ],
+  Inter: [
+    { weight: "100 900", url: "/fonts/inter-latin.woff2", display: "swap" },
+  ],
+};
+
 function normalizeGoogleFontName(font: string): string {
   return font.trim().replace(/^['"]|['"]$/g, "").replace(/\s+/g, " ");
 }
