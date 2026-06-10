@@ -615,8 +615,23 @@ export default function ProductDetail() {
   const v18Muted = isV18 ? { color: "color-mix(in srgb, var(--storefront-text, #ffffff) 60%, transparent)" } : {};
   const v18Font: React.CSSProperties = isV18 ? { fontFamily: "var(--storefront-body-font, 'Inter'), sans-serif" } : {};
 
+  const handleBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate(storefrontPath(store.slug));
+  };
+
   return (
     <div className="mx-auto max-w-6xl lg:max-w-7xl px-0 sm:px-4 pt-0 sm:pt-8 pb-3 sm:pb-8" style={isV18 ? { backgroundColor: "var(--storefront-bg, #0a0a0a)", color: "var(--storefront-text, #ffffff)" } : {}}>
+      {/* Mobile-only floating back button — preserves scroll via POP */}
+      <button
+        type="button"
+        onClick={handleBack}
+        aria-label="Back"
+        className="sm:hidden fixed top-3 left-3 z-40 h-10 w-10 flex items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-[0_2px_8px_rgba(0,0,0,0.18)] active:scale-95 transition-transform"
+      >
+        <ArrowLeft className="h-5 w-5 text-gray-900" strokeWidth={2.4} />
+      </button>
+
       {/* Breadcrumb */}
       <nav className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground px-4 sm:px-0" aria-label="Breadcrumb" style={isV18 ? { display: "none" } : {}}>
         <Link to={storefrontPath(store.slug)} className="hover:text-foreground transition-colors">Home</Link>
