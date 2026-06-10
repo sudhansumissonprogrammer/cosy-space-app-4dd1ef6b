@@ -4656,6 +4656,7 @@ async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
     });
 
     if (filters.category) params.set("category", `eq.${filters.category}`);
+    if (filters.best_selling === "1") params.set("is_best_selling", "eq.true");
 
     const sort = filters.sort || "popular";
     switch (sort) {
