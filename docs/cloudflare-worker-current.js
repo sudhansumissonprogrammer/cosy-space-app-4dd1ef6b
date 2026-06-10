@@ -644,7 +644,7 @@ function _normalizeHtmlPath(pathname) {
 }
 
 function getCfCacheKey(hostname, pathname) {
-  return new Request(`https://${hostname.toLowerCase()}${_normalizeHtmlPath(pathname)}`, { method: "GET" });
+  return new Request(`https://${hostname.toLowerCase()}/__sf_html/${HTML_CACHE_SCHEMA_VERSION}${_normalizeHtmlPath(pathname)}`, { method: "GET" });
 }
 
 // v8.25.2: Canonical zone-owned cache key keyed by store slug.
@@ -655,7 +655,7 @@ function getCfCacheKey(hostname, pathname) {
 // custom-domain visitors share one reliable cache entry.
 function getCanonicalHtmlCacheKey(slug, pathname) {
   if (!slug) return null;
-  return new Request(`https://${slug}.${ROOT_DOMAIN}${_normalizeHtmlPath(pathname)}`, { method: "GET" });
+  return new Request(`https://${slug}.${ROOT_DOMAIN}/__sf_html/${HTML_CACHE_SCHEMA_VERSION}${_normalizeHtmlPath(pathname)}`, { method: "GET" });
 }
 
 /* ============================================================
@@ -800,10 +800,10 @@ function isHtmlNavigationPath(pathname) {
   return !pathname.startsWith("/api/") && !pathname.startsWith("/assets/") && !pathname.includes(".");
 }
 
-function forcePublicHtmlCacheControl(headers, ttl = 3600) {
+function forcePublicHtmlCacheControl(headers, ttl = 60) {
   const current = headers.get("Cache-Control") || "";
   if (!current || /no-store|no-cache|private|max-age=0|must-revalidate/i.test(current)) {
-    headers.set("Cache-Control", `public, max-age=${ttl}, stale-while-revalidate=86400`);
+    headers.set("Cache-Control", `public, max-age=${ttl}, stale-while-revalidate=60`);
   }
 }
 
