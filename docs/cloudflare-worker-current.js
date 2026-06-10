@@ -1403,6 +1403,43 @@ async function injectDeepPreloadsIntoColdHtml(html, origin, env) {
   }
 }
 
+const _memThemeChunkPreloads = new Map();
+async function enrichHeadWithThemeChunkPreloads(head, origin, env, themeName) {
+  if (!head || !themeName) return head;
+  const appMatch = head.match(/href="(\/assets\/App-[^"]+\.js)"/);
+  if (!appMatch) return head;
+  const cacheKey = `${appMatch[1]}:${themeName}`;
+  let chunks = _memThemeChunkPreloads.get(cacheKey);
+  if (!chunks) {
+    try {
+      const res = await fetch(`${origin}${appMatch[1]}`, { cf: { cacheTtl: 3600, cacheEverything: true } });
+      if (!res.ok) return head;
+      const code = await res.text();
+      const n = String(themeName).replace(/^theme-?/, "");
+      const themeRx = n === "1"
+        ? /\/assets\/(?:StorefrontLayout|StorefrontHome)-[A-Za-z0-9_-]+\.js$/
+        : new RegExp(`/assets/(?:StorefrontLayoutV${n}|StorefrontHomeV${n})-[A-Za-z0-9_-]+\\.js$`);
+      const essentialRx = /\/assets\/(?:storefront-shell|router-query|icons|radix-slot)-[A-Za-z0-9_-]+\.js$/;
+      const found = new Set();
+      const RX = /["'`](?:\.\/|\.?\/?assets\/)?([A-Za-z0-9_\-]+-[A-Za-z0-9]{6,})\.js["'`]/g;
+      for (const m of code.matchAll(RX)) {
+        const p = "/assets/" + m[1] + ".js";
+        if (essentialRx.test(p) || themeRx.test(p)) found.add(p);
+      }
+      chunks = [...found].slice(0, 8);
+      _memThemeChunkPreloads.set(cacheKey, chunks);
+    } catch {
+      return head;
+    }
+  }
+  if (!chunks.length) return head;
+  const tags = chunks
+    .filter((p) => !head.includes(`href="${p}"`))
+    .map((p) => `<link rel="modulepreload" href="${p}" />`)
+    .join("");
+  return tags ? head.replace("</head>", `${tags}</head>`) : head;
+}
+
 /* ============================================================
    v8.23.0 — LANDING MODULEPRELOAD
    The root domain (shopbanao.in/) ships LandingApp via a tiny
@@ -1921,7 +1958,9 @@ const CACHE_STOREFRONT_TTL = 3_600; // Tier-1 #1: 2h → 1h. Purge handles fresh
 async function _batchKvRead(slug, env) {
   if (!env?.STORE_KV) return { theme: null };
   try {
-    const theme = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" }).catch(() => null);
+    let theme = await env.STORE_KV.get(`theme-lite:${WORKER_VERSION}:${slug}`, { type: "json" }).catch(() => null);
+    if (!theme) theme = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" }).catch(() => null);
+    if (theme && theme.wv !== WORKER_VERSION) theme = null;
     return { theme };
   } catch {
     return { theme: null };
@@ -1932,11 +1971,13 @@ async function _batchKvRead(slug, env) {
    FIX #8 — LIGHTWEIGHT THEME CACHE (in-memory → Cache API → KV)
    ============================================================ */
 
-const THEME_LITE_KV_TTL = 86400; // v8.1.0 cost-cut: 6h → 24h
-const THEME_LITE_CACHE_TTL = 600;
+const THEME_LITE_KV_TTL = 3600; // v8.53.0: avoid stale color/layout hints after theme switches
+const THEME_LITE_CACHE_TTL = 120;
 
-function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
+function _cacheThemeForFastShell(slug, themeConfig, env, ctx, storeTheme = "") {
   const lite = {
+    wv: WORKER_VERSION,
+    th: storeTheme || themeConfig.theme || "",
     pc: themeConfig.primary_color || "#004643",
     bg: themeConfig.background_color || "#ffffff",
     tc: themeConfig.text_color || "#1a1a1a",
@@ -1959,7 +2000,7 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
   _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
   _memThemeCache.set(slug, { lite, expiresAt: Date.now() + MEM_THEME_TTL });
 
-  const themeCacheKey = new Request(`https://cache/theme-lite:${slug}`);
+  const themeCacheKey = new Request(`https://cache/theme-lite:${WORKER_VERSION}:${slug}`);
   cache
     .put(
       themeCacheKey,
@@ -1969,7 +2010,7 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
 
   // v8.1.0: skip KV write for bot traffic + dedup repeat writes within 5min window
   if (!ctx?.__skipKvWarm) {
-    kvPutDedup(env, `theme-lite:${slug}`, liteStr, { expirationTtl: THEME_LITE_KV_TTL });
+    kvPutDedup(env, `theme-lite:${WORKER_VERSION}:${slug}`, liteStr, { expirationTtl: THEME_LITE_KV_TTL });
   }
 }
 
@@ -1978,11 +2019,12 @@ async function _getThemeLite(slug, env) {
   const mem = _memThemeCache.get(slug);
   if (mem && Date.now() < mem.expiresAt) return mem.lite;
 
-  const themeCacheKey = new Request(`https://cache/theme-lite:${slug}`);
+  const themeCacheKey = new Request(`https://cache/theme-lite:${WORKER_VERSION}:${slug}`);
   try {
     const cached = await cache.match(themeCacheKey);
     if (cached) {
       const lite = await cached.json();
+      if (lite?.wv !== WORKER_VERSION) return null;
       _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
       _memThemeCache.set(slug, { lite, expiresAt: Date.now() + MEM_THEME_TTL });
       return lite;
@@ -1991,7 +2033,9 @@ async function _getThemeLite(slug, env) {
 
   if (!env?.STORE_KV) return null;
   try {
-    const kvData = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" });
+    let kvData = await env.STORE_KV.get(`theme-lite:${WORKER_VERSION}:${slug}`, { type: "json" });
+    if (!kvData) kvData = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" });
+    if (kvData && kvData.wv !== WORKER_VERSION) kvData = null;
     if (kvData) {
       _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
       _memThemeCache.set(slug, { lite: kvData, expiresAt: Date.now() + MEM_THEME_TTL });
@@ -2111,7 +2155,7 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
       _memStorefrontCache.set(slug, { data, expiresAt: Date.now() + MEM_STOREFRONT_TTL });
 
       if (data?.theme_config) {
-        _cacheThemeForFastShell(slug, data.theme_config, env, ctx);
+        _cacheThemeForFastShell(slug, data.theme_config, env, ctx, data?.store?.theme || "");
       }
 
       if (ctx) {
@@ -3819,6 +3863,7 @@ async function fetchAndInjectSlug(
 
   let prebuiltHead = cachedHeadMem || (await getPrebuiltHead(shellResult.html, env));
   prebuiltHead = await enrichHeadWithDeepPreloads(prebuiltHead, new URL(request.url).origin, env);
+  prebuiltHead = await enrichHeadWithThemeChunkPreloads(prebuiltHead, new URL(request.url).origin, env, themeLite?.th);
   // FIX #3: Always build Link header for every response
   const linkHeader = _buildLinkPreloadHeader(shellResult.html);
 
@@ -5347,7 +5392,7 @@ async function handlePrewarm(request, url, ctx, env) {
     results.storefrontData = dataResult.source;
 
     if (dataResult.data?.theme_config) {
-      _cacheThemeForFastShell(slug, dataResult.data.theme_config, env, ctx);
+      _cacheThemeForFastShell(slug, dataResult.data.theme_config, env, ctx, dataResult.data?.store?.theme || "");
       results.themeLite = "warmed";
     }
 
@@ -6542,6 +6587,7 @@ async function _handleFetch(request, env, ctx) {
 
     let prebuiltHead = cachedHead || (await getPrebuiltHead(shellResult.html, env));
     prebuiltHead = await enrichHeadWithDeepPreloads(prebuiltHead, new URL(request.url).origin, env);
+    prebuiltHead = await enrichHeadWithThemeChunkPreloads(prebuiltHead, new URL(request.url).origin, env, themeLite?.th);
     // FIX #3: Always set Link header
     const linkHeader = _buildLinkPreloadHeader(shellResult.html);
 
@@ -6745,6 +6791,7 @@ async function _handleFetch(request, env, ctx) {
 
     let prebuiltHeadCD = cachedHeadCDReal || (await getPrebuiltHead(shellResultCD.html, env));
     prebuiltHeadCD = await enrichHeadWithDeepPreloads(prebuiltHeadCD, new URL(request.url).origin, env);
+    prebuiltHeadCD = await enrichHeadWithThemeChunkPreloads(prebuiltHeadCD, new URL(request.url).origin, env, themeLiteCD?.th);
     // FIX #3
     const linkHeaderCD = _buildLinkPreloadHeader(shellResultCD.html);
 
