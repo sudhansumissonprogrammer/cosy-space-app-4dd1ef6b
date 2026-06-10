@@ -91,10 +91,10 @@ export default function PartnerOverview() {
             </p>
           </div>
           <div className="flex shrink-0 flex-col gap-2">
-            <Button size="sm" variant="secondary" onClick={shareWhatsApp} className="h-8 gap-1.5 text-xs">
+            <Button size="sm" variant="secondary" onClick={shareWhatsApp} className="h-9 gap-1.5 text-xs">
               <Share2 className="h-3.5 w-3.5" /> Share
             </Button>
-            <Button size="sm" variant="outline" onClick={() => copy(refLink, "Link copied!")} className="h-8 gap-1.5 border-white/30 bg-white/10 text-xs text-primary-foreground hover:bg-white/20 hover:text-primary-foreground">
+            <Button size="sm" variant="outline" onClick={() => copy(refLink, "Link copied!")} className="h-9 gap-1.5 border-white/30 bg-white/10 text-xs text-primary-foreground hover:bg-white/20 hover:text-primary-foreground">
               <Copy className="h-3.5 w-3.5" /> Copy
             </Button>
           </div>
@@ -127,18 +127,18 @@ export default function PartnerOverview() {
           <div className="flex-1 space-y-3">
             <div className="flex items-center gap-2 rounded-xl border bg-accent/20 p-2">
               <Input readOnly value={refLink} className="h-8 flex-1 border-0 bg-transparent font-mono text-xs shadow-none focus-visible:ring-0" />
-              <Button size="sm" variant="ghost" onClick={() => copy(refLink, "Link copied!")} className="h-8 gap-1 px-2 text-xs">
+              <Button size="sm" variant="ghost" onClick={() => copy(refLink, "Link copied!")} className="h-9 gap-1 px-2 text-xs">
                 <Copy className="h-3.5 w-3.5" /> Copy
               </Button>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" onClick={shareWhatsApp} className="h-8 gap-1.5 text-xs">
+              <Button size="sm" variant="outline" onClick={shareWhatsApp} className="h-9 gap-1.5 text-xs">
                 <Share2 className="h-3.5 w-3.5" /> WhatsApp
               </Button>
-              <Button size="sm" variant="outline" onClick={nativeShare} className="h-8 gap-1.5 text-xs">
+              <Button size="sm" variant="outline" onClick={nativeShare} className="h-9 gap-1.5 text-xs">
                 <Share2 className="h-3.5 w-3.5" /> Share
               </Button>
-              <Button size="sm" variant="outline" onClick={() => copy(partner.partner_code, "Code copied!")} className="h-8 gap-1.5 font-mono text-xs">
+              <Button size="sm" variant="outline" onClick={() => copy(partner.partner_code, "Code copied!")} className="h-9 gap-1.5 font-mono text-xs">
                 {partner.partner_code}
               </Button>
             </div>

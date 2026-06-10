@@ -28,7 +28,7 @@ export default function QuickActions({ storeId, storeSlug, storeName, isWhatsApp
           key={action.label}
           variant="outline"
           size="sm"
-          className="shrink-0 gap-1.5 text-xs h-8"
+          className="shrink-0 gap-1.5 text-xs h-9"
           onClick={action.onClick}
         >
           <action.icon className="h-3.5 w-3.5" />
@@ -40,7 +40,7 @@ export default function QuickActions({ storeId, storeSlug, storeName, isWhatsApp
           storeSlug={storeSlug}
           storeName={storeName}
           trigger={
-            <Button variant="outline" size="sm" className="shrink-0 gap-1.5 text-xs h-8">
+            <Button variant="outline" size="sm" className="shrink-0 gap-1.5 text-xs h-9">
               <Share2 className="h-3.5 w-3.5" />
               Share
             </Button>

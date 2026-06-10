@@ -468,7 +468,7 @@ export default function StoreOrders() {
                 </Select>
                 <Button
                   size="sm"
-                  className="h-8 text-xs"
+                  className="h-9 text-xs"
                   disabled={!bulkStatus || bulkUpdateStatus.isPending}
                   onClick={() => {
                     if (bulkStatus) {
@@ -483,7 +483,7 @@ export default function StoreOrders() {
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="destructive" className="h-8 text-xs gap-1">
+                    <Button size="sm" variant="destructive" className="h-9 text-xs gap-1">
                       <Trash2 className="h-3.5 w-3.5" />
                       Delete
                     </Button>
@@ -692,12 +692,12 @@ export default function StoreOrders() {
                               <TableCell className="text-sm text-muted-foreground">{format(new Date(order.created_at), "h:mm a")}</TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-1">
-                                  <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
+                                  <Button variant="ghost" size="sm" className="text-xs h-9" onClick={() => setInvoiceOrder(order)}>Invoice</Button>
                                   {order.customer_phone && (
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                      className="h-9 w-9 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                                       title="Send invoice on WhatsApp"
                                       disabled={sendingInvoiceId === order.id}
                                       onClick={() => handleSendInvoice(order)}

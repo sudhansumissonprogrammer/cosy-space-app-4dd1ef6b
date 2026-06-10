@@ -823,7 +823,7 @@ function QRCodeGeneratorCard({ slug, customDomain }: { slug: string; customDomai
               fgColor="#1a1a1a"
             />
             <p className="text-xs font-semibold">Menu (No Table)</p>
-            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => downloadQR(null)}>
+            <Button size="sm" variant="ghost" className="h-9 text-xs" onClick={() => downloadQR(null)}>
               <Download className="mr-1 h-3 w-3" /> Download
             </Button>
           </div>
@@ -839,7 +839,7 @@ function QRCodeGeneratorCard({ slug, customDomain }: { slug: string; customDomai
                 fgColor="#1a1a1a"
               />
               <p className="text-xs font-semibold">Table {t}</p>
-              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => downloadQR(t)}>
+              <Button size="sm" variant="ghost" className="h-9 text-xs" onClick={() => downloadQR(t)}>
                 <Download className="mr-1 h-3 w-3" /> Download
               </Button>
             </div>

@@ -1102,7 +1102,7 @@ export default function StoreThemeSettings() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 w-full text-xs"
+                    className="h-9 w-full text-xs"
                     onClick={() => applyThemeMutation.mutate(theme.id)}
                     disabled={applyThemeMutation.isPending}
                   >

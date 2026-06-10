@@ -125,14 +125,14 @@ export default function CartPage() {
                   {item.variantName && <p className="text-[10px] sm:text-xs text-muted-foreground">{item.variantName}</p>}
                   <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm font-bold text-foreground">{formatPrice(item.price, currency)}</p>
                   <div className="mt-auto flex items-center gap-1.5 sm:gap-2 pt-1.5 sm:pt-2">
-                    <Button variant="outline" size="icon" className="h-6 w-6 sm:h-7 sm:w-7" onClick={() => updateQuantity(item.productId, item.variantId, item.quantity - 1)}>
+                    <Button variant="outline" size="icon" className="h-6 w-6 sm:h-9 sm:w-9" onClick={() => updateQuantity(item.productId, item.variantId, item.quantity - 1)}>
                       <Minus className="h-3 w-3" />
                     </Button>
                     <span className="w-5 sm:w-6 text-center text-xs sm:text-sm font-medium">{item.quantity}</span>
-                    <Button variant="outline" size="icon" className="h-6 w-6 sm:h-7 sm:w-7" onClick={() => updateQuantity(item.productId, item.variantId, item.quantity + 1)}>
+                    <Button variant="outline" size="icon" className="h-6 w-6 sm:h-9 sm:w-9" onClick={() => updateQuantity(item.productId, item.variantId, item.quantity + 1)}>
                       <Plus className="h-3 w-3" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 sm:h-7 sm:w-7 text-destructive hover:text-destructive" onClick={() => removeFromCart(item.productId, item.variantId)}>
+                    <Button variant="ghost" size="icon" className="ml-auto h-6 w-6 sm:h-9 sm:w-9 text-destructive hover:text-destructive" onClick={() => removeFromCart(item.productId, item.variantId)}>
                       <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </Button>
                   </div>

@@ -246,7 +246,7 @@ export default function StorefrontOrderDetail() {
                       </p>
                       <p className="text-sm font-semibold mt-1">{store.currency} {Number(item.total).toFixed(0)}</p>
                       {slug && (order.status === "delivered" || order.status === "cancelled") && (
-                        <Button asChild variant="outline" size="sm" className="h-7 px-2.5 text-xs mt-2">
+                        <Button asChild variant="outline" size="sm" className="h-9 px-2.5 text-xs mt-2">
                           <Link to={storefrontPath(store.slug, `product/${slug}`)}>
                             <RotateCcw className="h-3 w-3 mr-1" /> Buy Again
                           </Link>

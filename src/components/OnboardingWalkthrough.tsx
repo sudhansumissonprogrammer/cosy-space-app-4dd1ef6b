@@ -219,7 +219,7 @@ export default function OnboardingWalkthrough({
               variant="ghost"
               size="sm"
               onClick={handlePrev}
-              className="gap-1 h-8 text-xs"
+              className="gap-1 h-9 text-xs"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
               Back
@@ -233,14 +233,14 @@ export default function OnboardingWalkthrough({
               variant="outline"
               size="sm"
               onClick={handleAction}
-              className="gap-1 h-8 text-xs"
+              className="gap-1 h-9 text-xs"
             >
               {step.action}
               <ChevronRight className="w-3.5 h-3.5" />
             </Button>
           )}
 
-          <Button size="sm" onClick={handleNext} className="gap-1 h-8 text-xs">
+          <Button size="sm" onClick={handleNext} className="gap-1 h-9 text-xs">
             {isLast ? (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5" />

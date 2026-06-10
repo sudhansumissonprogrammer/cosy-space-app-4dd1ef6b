@@ -213,7 +213,7 @@ export default function BestSellerManagement() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-9 w-9"
                   disabled={idx === 0 || reorderMutation.isPending}
                   onClick={() => moveItem(idx, idx - 1)}
                 >
@@ -222,7 +222,7 @@ export default function BestSellerManagement() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-9 w-9"
                   disabled={idx === products.length - 1 || reorderMutation.isPending}
                   onClick={() => moveItem(idx, idx + 1)}
                 >
@@ -231,7 +231,7 @@ export default function BestSellerManagement() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive"
+                  className="h-9 w-9 text-destructive hover:text-destructive"
                   onClick={() => removeMutation.mutate(product.id)}
                   disabled={removeMutation.isPending}
                 >

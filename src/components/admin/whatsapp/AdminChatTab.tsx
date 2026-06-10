@@ -137,7 +137,7 @@ export function AdminChatTab() {
         <div className={`${selectedPhone ? "hidden md:flex" : "flex"} flex-col w-full md:w-[360px] md:min-w-[320px] border-r`}>
           <div className="px-4 py-3 bg-muted flex items-center justify-between">
             <h3 className="font-semibold text-[15px]">All Chats (Admin)</h3>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowSearch(!showSearch)}>
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setShowSearch(!showSearch)}>
               <Search className="h-4 w-4" />
             </Button>
           </div>
@@ -194,7 +194,7 @@ export function AdminChatTab() {
           ) : (
             <>
               <div className="flex items-center gap-3 px-3 py-2.5 border-b bg-muted">
-                <Button variant="ghost" size="icon" className="h-8 w-8 md:hidden" onClick={() => setSelectedPhone(null)}>
+                <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden" onClick={() => setSelectedPhone(null)}>
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div className={cn("h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold text-sm", getAvatarColor(selectedPhone))}>

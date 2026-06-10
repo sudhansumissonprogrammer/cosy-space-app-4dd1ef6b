@@ -342,7 +342,7 @@ export default function DashboardLayout() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 gap-1.5 text-xs"
+                      className="h-9 gap-1.5 text-xs"
                       onClick={handlePurgeCache}
                       disabled={isPurging}
                       title="Purge edge cache — instantly refresh your live store"
@@ -355,7 +355,7 @@ export default function DashboardLayout() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-9 w-9"
                       onClick={() => window.open(`/store/${store.slug}`, "_blank")}
                     >
                       <ExternalLink className="h-4 w-4" />

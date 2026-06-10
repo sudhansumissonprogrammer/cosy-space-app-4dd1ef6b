@@ -43,7 +43,7 @@ export default function NavIconPicker({ value, onChange }: Props) {
           variant="ghost"
           size="sm"
           onClick={() => onChange({})}
-          className="h-7 gap-1.5 text-xs"
+          className="h-9 gap-1.5 text-xs"
         >
           <RotateCcw className="h-3 w-3" />
           Reset all

@@ -245,7 +245,7 @@ export default function MediaLibrary() {
                 <Button
                   size="sm"
                   variant={isCopied ? "default" : "outline"}
-                  className="h-7 text-xs w-full"
+                  className="h-9 text-xs w-full"
                   onClick={() => copyUrl(item.id, item.file_url)}
                 >
                   {isCopied ? <><Check className="mr-1 h-3 w-3" /> Copied</> : <><Copy className="mr-1 h-3 w-3" /> Copy URL</>}

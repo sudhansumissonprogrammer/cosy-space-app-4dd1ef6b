@@ -214,7 +214,7 @@ export default function StoreAbandonedCarts() {
                 key={f.days}
                 variant={activeQuick === f.days ? "default" : "outline"}
                 size="sm"
-                className="text-xs h-7"
+                className="text-xs h-9"
                 onClick={() => applyQuickFilter(f.days)}
               >
                 {f.label}
@@ -225,7 +225,7 @@ export default function StoreAbandonedCarts() {
           <div className="flex items-center gap-2 flex-wrap">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="text-xs h-7">
+                <Button variant="outline" size="sm" className="text-xs h-9">
                   <CalendarIcon className="mr-1 h-3 w-3" />
                   {dateFrom ? format(dateFrom, "dd MMM") : "From"}
                 </Button>
@@ -242,7 +242,7 @@ export default function StoreAbandonedCarts() {
             <span className="text-xs text-muted-foreground">to</span>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="text-xs h-7">
+                <Button variant="outline" size="sm" className="text-xs h-9">
                   <CalendarIcon className="mr-1 h-3 w-3" />
                   {dateTo ? format(dateTo, "dd MMM") : "To"}
                 </Button>
@@ -266,7 +266,7 @@ export default function StoreAbandonedCarts() {
             </label>
 
             {hasFilters && (
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={clearFilters}>
+              <Button variant="ghost" size="sm" className="text-xs h-9" onClick={clearFilters}>
                 <X className="mr-1 h-3 w-3" /> Clear
               </Button>
             )}

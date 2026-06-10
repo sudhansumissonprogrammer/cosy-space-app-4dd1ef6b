@@ -181,7 +181,7 @@ function AddressesTab({ customerId }: { customerId: string }) {
                 {!addr.is_default && (
                   <Button variant="ghost" size="sm" onClick={() => setDefaultMutation.mutate(addr.id)}>Set Default</Button>
                 )}
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteMutation.mutate(addr.id)}>
+                <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={() => deleteMutation.mutate(addr.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -303,7 +303,7 @@ function WishlistTab({ customerId, store }: { customerId: string; store: StoreDa
                   {store.currency} {product.sale_price || product.price}
                 </p>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={() => removeMutation.mutate(item.id)}>
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive shrink-0" onClick={() => removeMutation.mutate(item.id)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             </CardContent>
