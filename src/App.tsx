@@ -305,7 +305,7 @@ if (_path.startsWith("/dashboard") || _path.startsWith("/admin") || _path === "/
   // so when React's lazy() asks for them later, they're already loaded.
   import("./routes/AuthRoutes").catch(() => {});
   import("@/contexts/AuthContext").catch(() => {});
-  import("@/components/ui/toaster").catch(() => {});
+  // legacy toaster removed — Sonner-only
   import("@/components/ui/tooltip").catch(() => {});
   import("@/components/ui/sonner").catch(() => {});
   import("@/integrations/supabase/client").catch(() => {});
