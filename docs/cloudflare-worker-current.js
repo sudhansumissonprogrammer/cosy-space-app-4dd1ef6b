@@ -3874,14 +3874,22 @@ async function fetchAndInjectSlug(
   const storefrontPromise = prefetchStorefrontDataWithDeadline(slug, ctx, env, remaining);
 
   // v7.7.0 Fix 2: Skip _getInlineProductsOrNull if caller already fetched it.
-  // FIX #4: Batch KV reads in one Promise.all
+  // v8.56.0 — On a cold isolate the mem version map is empty, so the fast
+  // path returned null and React had to fetch products after JS parse. Race
+  // the full path (cache.match + KV) against a 120ms budget: KV reads inside
+  // a colo are typically 10–40ms and almost always win, so cold visits also
+  // get product JSON inlined into the HTML.
+  const SLOW_INLINE_PRODUCTS_BUDGET_MS = 120;
       const [shellResult, kvBatch, cachedHeadMem, inlineProducts] = await Promise.all([
     getNavigationSpaShell(request, ctx, env),
     _batchKvRead(slug, env),
     _getCachedPrebuiltHead(env),
     prefetchedInlineProducts !== null
       ? Promise.resolve(prefetchedInlineProducts)
-          : _getInlineProductsFastOrNull(hostname),
+      : Promise.race([
+          _getInlineProductsOrNull(hostname, slug, env, ctx),
+          new Promise((resolve) => setTimeout(() => resolve(null), SLOW_INLINE_PRODUCTS_BUDGET_MS)),
+        ]).then((v) => v ?? _getInlineProductsFastOrNull(hostname)),
   ]);
 
   // Hydrate in-memory caches from batch KV read
