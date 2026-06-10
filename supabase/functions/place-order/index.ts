@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
     }
     const { data: dbProducts, error: prodErr } = await supabase
       .from("products")
-      .select("id, price, sale_price, is_active, store_id")
+      .select("id, price, sale_price, is_active, store_id, image_url")
       .in("id", productIds);
     if (prodErr || !dbProducts || dbProducts.length !== productIds.length) {
       return new Response(JSON.stringify({ error: "One or more products not found" }), {
@@ -181,6 +181,7 @@ Deno.serve(async (req) => {
       });
     }
     const canonicalPrice = new Map<string, number>();
+    const canonicalImage = new Map<string, string | null>();
     for (const p of dbProducts) {
       if (p.store_id !== store_id || !p.is_active) {
         return new Response(JSON.stringify({ error: "Product unavailable" }), {
@@ -194,6 +195,7 @@ Deno.serve(async (req) => {
         });
       }
       canonicalPrice.set(p.id, cp);
+      canonicalImage.set(p.id, (p as any).image_url ?? null);
     }
     // Override every line-item price with the DB canonical price.
     let serverSubtotal = 0;
@@ -341,6 +343,7 @@ Deno.serve(async (req) => {
       quantity: Number(item.quantity),
       unit_price: Number(item.price),
       total: Number(item.price) * Number(item.quantity),
+      image_url: canonicalImage.get(item.productId) ?? (item as any).image ?? null,
     }));
 
     const { error: itemsErr } = await supabase.from("order_items").insert(orderItems);

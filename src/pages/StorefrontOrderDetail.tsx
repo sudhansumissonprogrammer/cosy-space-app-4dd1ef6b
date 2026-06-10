@@ -218,26 +218,33 @@ export default function StorefrontOrderDetail() {
               {items.map((item: any) => {
                 const img = item.products?.image_url || item.image_url;
                 const slug = item.products?.slug;
+                const borderStyle = { borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" };
+                const thumb = img ? (
+                  <img
+                    src={img}
+                    alt={item.product_name}
+                    loading="lazy"
+                    className="h-20 w-20 rounded-xl object-cover border"
+                    style={borderStyle}
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                  />
+                ) : (
+                  <div className="h-20 w-20 rounded-xl flex items-center justify-center border" style={borderStyle}>
+                    <Package className="h-6 w-6 opacity-40" />
+                  </div>
+                );
                 return (
                   <div key={item.id} className="flex gap-3 p-5">
                     {slug ? (
-                      <Link to={storefrontPath(store.slug, `product/${slug}`)} className="shrink-0">
-                        {img ? (
-                          <img src={img} alt={item.product_name} loading="lazy"
-                               className="h-20 w-20 rounded-xl object-cover border"
-                               style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }} />
-                        ) : (
-                          <div className="h-20 w-20 rounded-xl flex items-center justify-center border"
-                               style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}>
-                            <Package className="h-6 w-6 opacity-40" />
-                          </div>
-                        )}
+                      <Link
+                        to={storefrontPath(store.slug, `product/${slug}`)}
+                        className="shrink-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        aria-label={`View ${item.product_name}`}
+                      >
+                        {thumb}
                       </Link>
                     ) : (
-                      <div className="h-20 w-20 rounded-xl flex items-center justify-center border shrink-0"
-                           style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}>
-                        <Package className="h-6 w-6 opacity-40" />
-                      </div>
+                      <div className="shrink-0">{thumb}</div>
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium line-clamp-2">{item.product_name}</p>
