@@ -18,7 +18,7 @@ const DashboardProviders = lazy(() =>
   ]).then(([toasterMod, tooltipMod, authMod, sonnerMod]) => ({
     default: ({ children }: { children: React.ReactNode }) => (
       <authMod.AuthProvider>
-        <tooltipMod.TooltipProvider>
+        <tooltipMod.TooltipProvider delayDuration={300} skipDelayDuration={100}>
           <toasterMod.Toaster />
           <sonnerMod.Toaster />
           {children}
