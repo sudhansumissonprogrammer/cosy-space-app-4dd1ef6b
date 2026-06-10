@@ -58,7 +58,7 @@ export function AppSidebar() {
     const fetchCount = async () => {
       const { count } = await supabase
         .from("orders")
-        .select("*", { count: "exact", head: true })
+        .select("*", { count: "estimated", head: true })
         .eq("store_id", storeId)
         .eq("status", "pending");
       if (!cancelled) setPendingOrders(count ?? 0);

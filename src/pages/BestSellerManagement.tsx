@@ -60,12 +60,9 @@ export default function BestSellerManagement() {
 
   const reorderMutation = useMutation({
     mutationFn: async (orderedIds: string[]) => {
-      const updates = orderedIds.map((id, idx) =>
-        supabase.from("products").update({ display_order: idx + 1 }).eq("id", id)
-      );
-      const results = await Promise.all(updates);
-      const err = results.find((r) => r.error);
-      if (err?.error) throw err.error;
+      // Single RPC instead of N HTTP UPDATEs (~14k/wk on DB before this fix)
+      const { error } = await (supabase as any).rpc("reorder_products", { _ids: orderedIds });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["best-sellers-manage", storeId] });
