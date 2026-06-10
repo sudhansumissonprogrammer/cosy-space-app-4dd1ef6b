@@ -3695,6 +3695,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      reorder_products: { Args: { _ids: string[] }; Returns: undefined }
       rollup_customer_cohorts_monthly: {
         Args: { _months_back?: number }
         Returns: number
