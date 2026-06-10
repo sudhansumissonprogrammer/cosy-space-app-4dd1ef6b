@@ -44,8 +44,12 @@
     <link rel="dns-prefetch" href="https://dqepeywgftbpxeeqfuwt.supabase.co" />
     <link rel="preconnect" href="https://cdn.shopbanao.in" crossorigin />
     <link rel="dns-prefetch" href="https://cdn.shopbanao.in" />
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin.woff2" crossorigin />
-    <link rel="preload" as="font" type="font/woff2" href="/fonts/outfit-latin.woff2" crossorigin />
+    <!-- Inter + Outfit font preloads are INJECTED VIA JS only on non-storefront
+         hosts (landing, dashboard, auth). Storefronts use merchant-chosen theme
+         fonts injected by the Cloudflare Worker — preloading Inter/Outfit on a
+         storefront cold load was wasting ~170KB and 2 HTTP/2 critical-path
+         slots, measured as ~700ms extra FCP on cold 4G/5G mobile. See the
+         leak-guard <script> below for the actual injection. -->
     <!-- Landing hero LCP image preload — INJECTED VIA JS only on landing host
          (see leak-guard script below). Was a static <link rel=preload> that
          leaked onto every storefront subdomain, wasting 250-340ms on mobile. -->
@@ -143,6 +147,13 @@
             "@font-face{font-family:'Poppins';font-style:normal;font-weight:700;font-display:optional;src:url('/fonts/poppins-700.woff2') format('woff2')}"+
             "@font-face{font-family:'Poppins';font-style:normal;font-weight:800;font-display:optional;src:url('/fonts/poppins-800.woff2') format('woff2')}";
           var s=document.createElement('style');s.setAttribute('data-landing-fonts','1');s.appendChild(document.createTextNode(css));document.head.appendChild(s);
+          // Preload Inter + Outfit (landing/dashboard body fonts) — kept off
+          // storefront critical path. Storefronts use worker-injected theme fonts.
+          var preloadFont=function(href){
+            var l=document.createElement('link');l.rel='preload';l.as='font';l.type='font/woff2';l.href=href;l.crossOrigin='anonymous';document.head.appendChild(l);
+          };
+          preloadFont('/fonts/inter-latin.woff2');
+          preloadFont('/fonts/outfit-latin.woff2');
           // Preload landing hero LCP image (desktop only — mobile shows different hero)
           if(window.matchMedia&&window.matchMedia('(min-width: 1024px)').matches){
             var l=document.createElement('link');l.rel='preload';l.as='image';l.href='/landing/showcase-overlays-mobile.webp';l.setAttribute('fetchpriority','high');document.head.appendChild(l);
