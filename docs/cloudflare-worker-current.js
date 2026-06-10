@@ -2959,8 +2959,12 @@ async function proxyToOrigin(request) {
     request.method === "GET" &&
     /^\/(assets|static)\//.test(url.pathname) &&
     /\.(?:js|mjs|css|png|jpe?g|webp|avif|gif|svg|ico|woff2?|ttf|otf|map)$/i.test(url.pathname);
+  // v8.61.0: content-hashed assets are immutable forever. Bump edge TTL
+  // from 1 day → 30 days so cold POPs (low-traffic stores) survive eviction
+  // pressure much longer. Combined with Tiered Cache (dashboard toggle),
+  // the regional upper-tier POP keeps these warm across the entire region.
   const cfOpts = isStaticAsset
-    ? { cacheEverything: true, cacheTtlByStatus: { "200-299": 86400, "404": 60, "500-599": 0 } }
+    ? { cacheEverything: true, cacheTtlByStatus: { "200-299": 2592000, "404": 60, "500-599": 0 } }
     : { cacheTtl: 0, cacheEverything: false };
 
   const controller = new AbortController();
