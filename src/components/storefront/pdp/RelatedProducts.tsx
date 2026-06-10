@@ -51,10 +51,10 @@ export default function RelatedProducts({
 
   if (!related || related.length === 0) return null;
 
-  const productIds = related.map((p) => p.id);
+  const relatedProducts = related.map((p: any) => ({ id: p.id, has_variants: p.has_variants }));
 
   return (
-    <VariantCountProvider productIds={productIds}>
+    <VariantCountProvider products={relatedProducts}>
       <section className="mt-10 pt-8 border-t border-border">
         <h2 className="text-lg font-bold text-foreground mb-4">Complete the Look ✨</h2>
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">

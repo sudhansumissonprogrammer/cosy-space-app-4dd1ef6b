@@ -106,7 +106,7 @@ export default function StorefrontHomeV18() {
 
   if (!store) return null;
 
-  const allProductIds = products.map((p: any) => p.id);
+  const allProducts = products.map((p: any) => ({ id: p.id, has_variants: p.has_variants }));
   const hasBanner = !!(store as any).banner_url;
   const hasMobileHero = !!(store as any).mobile_hero_url || !!(store as any).mobile_hero_images;
 
@@ -116,7 +116,7 @@ export default function StorefrontHomeV18() {
   };
 
   return (
-    <VariantCountProvider productIds={allProductIds}>
+    <VariantCountProvider products={allProducts}>
       {/* ─── Hero Banner ─── */}
       <section className="relative v18-hero-pull">
         {hasBanner && (

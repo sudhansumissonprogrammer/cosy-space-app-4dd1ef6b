@@ -233,11 +233,10 @@ export default function StorefrontHomeV21() {
     return [...storeCategories].sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0) || a.name.localeCompare(b.name));
   }, [storeCategories]);
 
-  // Collect visible product IDs for variant count provider
-  const allProductIds = useMemo(() => initialProducts.map((p: any) => p.id), [initialProducts]);
+  const allProducts = useMemo(() => initialProducts.map((p: any) => ({ id: p.id, has_variants: p.has_variants })), [initialProducts]);
 
   return (
-    <VariantCountProvider productIds={allProductIds}>
+    <VariantCountProvider products={allProducts}>
       <>
         {/* Search bar */}
         {!hideSearchBar && (
