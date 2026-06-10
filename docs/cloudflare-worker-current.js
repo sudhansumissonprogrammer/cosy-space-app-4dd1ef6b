@@ -515,7 +515,13 @@ function shouldRevalidate(key) {
   const now = Date.now();
   const last = revalCooldowns.get(key) || 0;
   if (now - last < REVAL_COOLDOWN_MS) return false;
-  if (!revalCooldowns.has(key) && revalCooldowns.size >= REVAL_MAP_MAX) return false;
+  // v8.58.0: Evict oldest entry when full instead of silently disabling
+  // revalidation for new keys. Previously the map could fill and permanently
+  // freeze SWR for every new URL until the janitor ran.
+  if (!revalCooldowns.has(key) && revalCooldowns.size >= REVAL_MAP_MAX) {
+    const oldestKey = revalCooldowns.keys().next().value;
+    if (oldestKey !== undefined) revalCooldowns.delete(oldestKey);
+  }
   revalCooldowns.set(key, now);
   return true;
 }
