@@ -1,117 +1,80 @@
 
-# Emil Kowalski Design Engineering Pass — Tiers A through D
+# Emil Design Engineering — Tiers E, F, G, H
 
-Apply systemic motion/feel improvements to shared UI primitives so the polish ripples across every page (landing, storefront themes V1–V20, dashboard, admin).
-
----
-
-## Tier A — Foundation (3 surgical edits)
-
-**1. `src/components/ui/button.tsx`**
-- Add `active:scale-[0.97] transition-transform duration-150 ease-out` to the base `buttonVariants` class string.
-- Preserve existing `transition-colors` for color states by switching to `transition-[transform,colors,box-shadow] duration-150 ease-out`.
-- No variant API change. Every `<Button>` in the app gains tactile press feedback.
-
-**2. Origin-aware popovers (4 files)**
-Add `transform-origin: var(--radix-*-content-transform-origin)` to:
-- `src/components/ui/popover.tsx` → `--radix-popover-content-transform-origin`
-- `src/components/ui/dropdown-menu.tsx` → `--radix-dropdown-menu-content-transform-origin`
-- `src/components/ui/select.tsx` → `--radix-select-content-transform-origin`
-- `src/components/ui/tooltip.tsx` → `--radix-tooltip-content-transform-origin`
-
-Apply via inline `style={{ transformOrigin: "var(--radix-…)" }}` on the Content primitive. Menus/tooltips will scale from their trigger, not from center.
-
-**3. `src/components/ui/sheet.tsx`**
-- Replace the wrapper's `transition ease-in-out` / `ease-out` with iOS drawer curve: `transition-[transform] duration-300` + inline `style={{ transitionTimingFunction: "cubic-bezier(0.32, 0.72, 0, 1)" }}`.
-- Apply to both open and close states so SideCart + HamburgerMenu feel native.
+Execute all four remaining tiers in one pass, then re-run the skill audit and report any remaining gaps.
 
 ---
 
-## Tier B — Kill the `transition-all` anti-pattern
+## Tier E — Shared primitives + page sweep
 
-Replace `transition-all` with specific property transitions on the top hot-path components (audit confirmed ~252 hits; we hit the top 20 that render on every storefront paint).
-
-Target files (priority order):
-1. `src/components/ui/button.tsx` (already handled in Tier A)
-2. `src/components/storefront/SideCart.tsx`
-3. `src/components/storefront/HamburgerMenu.tsx`
-4. `src/components/storefront/ProductCard*.tsx` (all theme variants used)
-5. `src/components/storefront/MobileBottomNav*.tsx`
-6. `src/components/storefront/StickyAddToCart*.tsx`
-7. `src/components/storefront/BackToTop.tsx`
-8. `src/components/ui/sidebar.tsx`
-9. `src/components/ui/tabs.tsx`
-10. `src/components/ui/accordion.tsx`
-11. `src/components/ui/input-otp.tsx`
-12. `src/components/ui/navigation-menu.tsx`
-13. `src/components/ui/toggle.tsx`
-14. `src/components/ui/badge.tsx`
-15. `src/components/ui/card.tsx` (if used on hover)
-16. Landing CTAs in `src/landing/**`
-17. Dashboard nav/sidebar shells
-18. Admin top-bar
-19. Theme V2/V3 header
-20. Theme V10–V20 shared header strips
-
-Replacement rule: `transition-all` → `transition-[transform,opacity,colors,box-shadow]` (drop properties not used by the component). No layout-affecting properties (width/height/padding) ever go into the transition list.
+1. **`src/components/ui/hover-card.tsx`** — add `style={{ transformOrigin: "var(--radix-hover-card-content-transform-origin)" }}` to Content.
+2. **`src/components/ui/menubar.tsx`** — add `style={{ transformOrigin: "var(--radix-menubar-content-transform-origin)" }}` to both MenubarContent and MenubarSubContent.
+3. **`src/components/ui/context-menu.tsx`** — add `style={{ transformOrigin: "var(--radix-context-menu-content-transform-origin)" }}` to both Content and SubContent.
+4. **`src/components/ui/dialog.tsx`** — Close button: `transition-opacity` → `transition-[transform,opacity] duration-150 ease-out active:scale-95`. Keep Dialog itself centered (modals are exempt).
+5. **`src/components/ui/sheet.tsx`** — fix `data-[state=open]:duration-400` (invalid Tailwind class) → `data-[state=open]:duration-500`.
+6. **Mass page sweep** — sed `transition-all` → `transition-[transform,opacity,colors,box-shadow]` across `src/pages/**` and `src/layouts/**` (~110 hits, ~35 files).
 
 ---
 
-## Tier C — Polish details
+## Tier F — Decorative infinites + skeleton
 
-**1. Tooltip skip-delay (`src/components/ui/tooltip.tsx`)**
-- Wrap the app's `<TooltipProvider>` with `delayDuration={300} skipDelayDuration={100}` so hovering adjacent tooltips opens instantly.
-- Add `data-[state=delayed-open]` vs `data-[state=instant-open]` handling — Radix already exposes via `skipDelayDuration`; just thread the prop.
-
-**2. Tighten card hover speeds**
-- Audit `ProductCard*.tsx` and any theme card with `duration-500` on hover transforms → drop to `duration-300` with `ease-out`.
-- Affected: V1 default card, V2/V3 grid cards, V10–V20 shared card.
-
-**3. Back-to-top exit easing (`src/index.css` or component)**
-- Find the `back-to-top-exit` keyframe / class using `ease-in` and switch to `ease-out` with 160ms.
-
-**4. Gate `hover:scale` behind `(hover: hover)`**
-- `src/components/ui/sheet.tsx` close button (`hover:scale-110`)
-- Storefront nav icon row (cart, wishlist, account, search)
-- Wrap with Tailwind's `hover-hover:` variant if available, else add a media-gated utility class in `src/index.css`:
-  ```css
-  @media (hover: hover) and (pointer: fine) {
-    .hh\:hover-scale-110:hover { transform: scale(1.10); }
-  }
-  ```
-- Replace offending `hover:scale-110` with `hh:hover-scale-110` on touch-prone targets.
+1. **`src/components/ui/skeleton.tsx`** — replace `animate-pulse` with a custom shimmer keyframe (gradient sweep, 1.6s ease-in-out infinite, gated behind `prefers-reduced-motion`). Adds `.skeleton-shimmer` class + `@keyframes skeleton-shimmer` to `index.css`.
+2. **`src/index.css` audit** — cap or gate:
+   - `cart-breathe` (line 528) — keep infinite but wrap in `@media (prefers-reduced-motion: no-preference)` and add `animation-play-state: paused` when tab hidden.
+   - `cta-shimmer-sweep` (line 723) — gate behind `prefers-reduced-motion: no-preference`.
+   - `gallery-dot-pulse` (lines 793, 929) + `sale-badge-pulse` (line 834) — keep infinite (very subtle) but gate behind reduced-motion.
+   - `marquee` (line 239) — add reduced-motion guard.
+   - **Dashboard live-store dot** (`Dashboard.tsx:264`) — replace `animate-pulse` with static + subtle ring.
 
 ---
 
-## Tier D — Cleanup
+## Tier G — Touch hover gating
 
-**1. Remove legacy toast system**
-- Verify no live import of `src/components/ui/toast.tsx` / `toaster.tsx` / `use-toast.ts` outside of the Sonner stack.
-- Delete `src/components/ui/toast.tsx`, `src/components/ui/toaster.tsx`, `src/hooks/use-toast.ts` once import audit is clean.
-- Keep `src/components/ui/sonner.tsx` as the sole toast surface.
+Migrate all unguarded `hover:scale-105` / `hover:scale-110` on touch-prone storefront components to the existing `hh:hover-scale-105` / `hh:hover-scale-110` utilities (defined last turn in `index.css`).
 
-**2. Audit infinite decorative animations (battery)**
-- `arrow-nudge`, `sticky-cart-arrow-nudge`, any `animate-pulse`/`animate-bounce` rendered above the fold.
-- For each: either (a) cap to 3 iterations then stop, or (b) gate behind `@media (prefers-reduced-motion: no-preference)` + pause when tab hidden via `animation-play-state: paused` on `:where(html:not(:focus-within))` fallback.
-- Document survivors in a short comment.
+Target files (~20):
+- `ProductCardStyle1/2/3/5/7/8/9/10.tsx`, `ProductCardV17.tsx`
+- `QuickViewModal.tsx`, `FloatingWhatsApp.tsx`, `UniversalCategories.tsx`, `StorefrontFooter.tsx`
+- `pages/ProductDetail.tsx`, `V22ProductDetail.tsx`
+- `pages/StorefrontHomeV2.tsx`, `StorefrontHomeV17.tsx`, `StorefrontContact.tsx`, `StorefrontCategories.tsx`, `ThemeShowcase.tsx`
+
+Rule: only touch-prone elements (cards, CTAs, icons clicked on mobile) get the swap. Desktop-only admin UIs keep `hover:scale-*`.
+
+---
+
+## Tier H — Micro-polish
+
+1. **`src/index.css:605` ripple-wave** — `transform: scale(0)` → `transform: scale(0.15); opacity: 0.4`.
+2. **`src/components/storefront/DeliveryTimeline.tsx:81-82`** — `dt-stamp` keyframe start `scale(0.6)`; `dt-particle` start `scale(0.2)`.
+3. **`src/components/ui/input-otp.tsx:44`** — caret `duration-1000` → `duration-700`.
+4. **`src/index.css:880` `.img-blurup`** — `ease` → `cubic-bezier(0.22, 1, 0.36, 1)`.
+5. **`src/index.css:887` `.logo-shrink`** — `ease` → `cubic-bezier(0.22, 1, 0.36, 1)`.
+6. **Pulse keyframe consolidation** — leave standalone (merging risks visual regressions across themes); just confirm all 3 are gated by reduced-motion in Tier F.
+
+---
+
+## After all edits — re-run the skill audit
+
+Run the same scans (transition-all, ease-in, scale(0), unguarded hover, infinite animations, framer-motion shorthand) and produce a fresh Before/After table of anything still outstanding. Likely candidates that will remain (acknowledge upfront, don't fix this pass):
+- Page-level `transition-all` inside conditional class strings that sed can't catch
+- Marketing landing page animations (intentionally decorative)
+- Theme V19/V20 custom keyframes that may have their own design intent
 
 ---
 
 ## Technical notes
 
-- All edits are presentation-layer only. Zero changes to data fetching, RPCs, edge functions, Cloudflare worker, or storefront business logic.
-- No design-token additions needed; reuse existing easing variables in `src/index.css` where present, otherwise inline the `cubic-bezier(...)` values shown above.
-- After Tier A + B land, the bundle size should be **unchanged** (class-string edits only). Tier D removes 3 small files → tiny reduction.
-- Verification: spot-check SideCart open/close (Tier A.3), Button press anywhere (A.1), product menu dropdown on storefront (A.2), and confirm no console errors after Tier D file removals.
+- All edits are presentation-layer; zero changes to data, RPCs, edge functions, or Cloudflare worker.
+- No new dependencies. Reuses existing easing tokens in `index.css`.
+- Bundle size change: ~0 (class string edits only). Skeleton custom CSS adds ~200 bytes.
+- Verification: spot-check Dialog close press, skeleton shimmer on Dashboard load, product card hover on mobile DevTools, OTP caret blink.
 
 ---
 
 ## Execution order
 
-1. Tier A (3 primitives) — biggest perceived impact, lowest risk
-2. Tier C.1 (tooltip provider) + C.3 (back-to-top easing) — single-line wins
-3. Tier B (transition-all sweep, top 20)
-4. Tier C.2 + C.4 (card durations, hover gating)
-5. Tier D (cleanup last so import audit is final)
-
-I will report back after each tier with the list of touched files so you can sanity-check before the next tier.
+1. Tier E (primitives + sed sweep) — single batch
+2. Tier F (skeleton + index.css guards) — single batch
+3. Tier G (sed-replace hover:scale → hh:hover-scale on 20 files)
+4. Tier H (5 surgical edits)
+5. Re-run audit scans → fresh report
