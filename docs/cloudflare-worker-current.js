@@ -4288,7 +4288,7 @@ async function _fetchCategoryFromDb(storeSlug, categorySlug, limit, timeoutMs) {
       },
       body: JSON.stringify({ _store_slug: storeSlug, _category_slug: categorySlug, _limit: limit }),
       signal: controller.signal,
-      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 } },
+      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 }, cacheKey: `cat:${WORKER_VERSION}:${storeSlug}:${categorySlug}:${limit}` },
     });
     clearTimeout(timeout);
     if (!res.ok) throw new Error(`Category RPC error: ${res.status}`);
