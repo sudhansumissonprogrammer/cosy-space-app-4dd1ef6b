@@ -714,7 +714,7 @@ async function kvHtmlGet(env, slug, pathname) {
   try {
     const { value, metadata } = await env.STORE_KV.getWithMetadata(key, { type: "arrayBuffer" });
     if (!value) return null;
-    if (metadata?.wv && metadata.wv !== WORKER_VERSION) return null;
+    if (metadata?.wv !== WORKER_VERSION) return null;
     const headers = new Headers();
     const meta = metadata || {};
     if (meta.h && typeof meta.h === "object") {
@@ -1496,7 +1496,7 @@ async function getPrebuiltHead(html, env) {
   // FIX #7: In-memory first
   if (_memPrebuiltHead) return _memPrebuiltHead;
 
-  const headCacheKey = new Request("https://cache/prebuilt-head");
+  const headCacheKey = new Request(`https://cache/${PREBUILT_HEAD_KV_KEY}`);
   try {
     const cached = await cache.match(headCacheKey);
     if (cached) {
@@ -1540,7 +1540,7 @@ async function _getCachedPrebuiltHead(env) {
   // FIX #7: In-memory first — avoids all I/O on warm isolates
   if (_memPrebuiltHead) return _memPrebuiltHead;
 
-  const headCacheKey = new Request("https://cache/prebuilt-head");
+  const headCacheKey = new Request(`https://cache/${PREBUILT_HEAD_KV_KEY}`);
   try {
     const cached = await cache.match(headCacheKey);
     if (cached) {
