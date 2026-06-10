@@ -224,7 +224,7 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
 
       const tryAnchorRestore = (): boolean => {
         if (!anchor) return false;
-        const el = findAnchorElement(anchor.href);
+        const el = findAnchorElement(anchor);
         if (!el) return false;
         const rect = el.getBoundingClientRect();
         // Position the element at the same viewport offset it had when tapped
@@ -283,6 +283,7 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
       const observer = new MutationObserver(() => realign());
       observer.observe(document.body, { childList: true, subtree: true });
 
+      if (targetY != null && targetY > 0) restorePixel();
       realign(); // immediate attempt
 
       const tick = () => {
