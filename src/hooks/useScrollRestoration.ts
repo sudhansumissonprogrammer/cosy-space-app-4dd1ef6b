@@ -64,6 +64,7 @@ function readScroll(): number | null {
 interface AnchorInfo {
   href: string;
   viewportTop: number;
+  documentTop?: number;
 }
 
 function saveAnchor(info: AnchorInfo) {
@@ -85,13 +86,14 @@ function readAnchor(): AnchorInfo | null {
 }
 
 /** Match by pathname + search (ignore origin/hash) — robust across hosts. */
-function findAnchorElement(href: string): HTMLElement | null {
-  let targetPath = href;
+function findAnchorElement(anchor: AnchorInfo): HTMLElement | null {
+  let targetPath = anchor.href;
   try {
-    const u = new URL(href, window.location.origin);
+    const u = new URL(anchor.href, window.location.origin);
     targetPath = u.pathname + u.search;
   } catch {}
   // Prefer links currently visible in viewport flow (skip hidden duplicates).
+  const candidates: HTMLElement[] = [];
   const links = Array.from(document.querySelectorAll<HTMLAnchorElement>("a[href]"));
   for (const a of links) {
     let aPath = a.getAttribute("href") || "";
@@ -101,10 +103,30 @@ function findAnchorElement(href: string): HTMLElement | null {
     } catch {}
     if (aPath === targetPath) {
       const rect = a.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) return a;
+      if (rect.width > 0 && rect.height > 0) candidates.push(a);
     }
   }
-  return null;
+  if (candidates.length === 0) return null;
+  if (!Number.isFinite(anchor.documentTop)) return candidates[0];
+
+  // Product links can appear more than once on the same home page
+  // (Best Selling + category section). Picking the first href match sends the
+  // shopper back to the wrong section, so choose the duplicate closest to the
+  // exact document position that was tapped. If only an implausibly far duplicate
+  // is mounted, return null and let pixel pre-scroll reveal the real lazy section.
+  const targetTop = anchor.documentTop as number;
+  let best: HTMLElement | null = null;
+  let bestDelta = Number.POSITIVE_INFINITY;
+  for (const el of candidates) {
+    const top = window.scrollY + el.getBoundingClientRect().top;
+    const delta = Math.abs(top - targetTop);
+    if (delta < bestDelta) {
+      bestDelta = delta;
+      best = el;
+    }
+  }
+  const acceptableDelta = Math.max(window.innerHeight * 1.5, 900);
+  return bestDelta <= acceptableDelta ? best : null;
 }
 
 export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
@@ -146,7 +168,7 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
       // Flush scroll under CURRENT key first
       saveScroll();
       const rect = link.getBoundingClientRect();
-      saveAnchor({ href: link.href, viewportTop: rect.top });
+      saveAnchor({ href: link.href, viewportTop: rect.top, documentTop: window.scrollY + rect.top });
     };
     document.addEventListener("click", onClick, { capture: true });
 
@@ -202,7 +224,7 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
 
       const tryAnchorRestore = (): boolean => {
         if (!anchor) return false;
-        const el = findAnchorElement(anchor.href);
+        const el = findAnchorElement(anchor);
         if (!el) return false;
         const rect = el.getBoundingClientRect();
         // Position the element at the same viewport offset it had when tapped
@@ -261,6 +283,7 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
       const observer = new MutationObserver(() => realign());
       observer.observe(document.body, { childList: true, subtree: true });
 
+      if (targetY != null && targetY > 0) restorePixel();
       realign(); // immediate attempt
 
       const tick = () => {
