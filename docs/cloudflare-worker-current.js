@@ -1932,8 +1932,8 @@ async function _batchKvRead(slug, env) {
    FIX #8 — LIGHTWEIGHT THEME CACHE (in-memory → Cache API → KV)
    ============================================================ */
 
-const THEME_LITE_KV_TTL = 86400; // v8.1.0 cost-cut: 6h → 24h
-const THEME_LITE_CACHE_TTL = 600;
+const THEME_LITE_KV_TTL = 3600; // v8.53.0: avoid stale color/layout hints after theme switches
+const THEME_LITE_CACHE_TTL = 120;
 
 function _cacheThemeForFastShell(slug, themeConfig, env, ctx, storeTheme = "") {
   const lite = {
@@ -5348,7 +5348,7 @@ async function handlePrewarm(request, url, ctx, env) {
     results.storefrontData = dataResult.source;
 
     if (dataResult.data?.theme_config) {
-      _cacheThemeForFastShell(slug, dataResult.data.theme_config, env, ctx);
+      _cacheThemeForFastShell(slug, dataResult.data.theme_config, env, ctx, dataResult.data?.store?.theme || "");
       results.themeLite = "warmed";
     }
 
