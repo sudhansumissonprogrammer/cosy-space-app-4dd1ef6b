@@ -166,7 +166,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.57.0-rpc-cf-cache-race-500-waituntil";
+const WORKER_VERSION = "8.58.0-perf-ratelimit-kv-parallel-cf-cache";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -367,7 +367,12 @@ async function finalizeResponse(request, response) {
    ============================================================ */
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
-const HTML_CACHE_SCHEMA_VERSION = `html-v4-${WORKER_VERSION}`;
+// v8.58.0: Decoupled from WORKER_VERSION. Bump ONLY when HTML output shape
+// changes (head injection, skeleton, JSON-LD, inline data markers). Previously
+// every worker deploy invalidated 100% of HTML cache globally → 5-10x Supabase
+// spike for ~20min post-deploy. CHECKLIST before bumping: did you change
+// buildSkeleton, injectIntoHtml, _buildPrebuiltHead, JSON-LD, or __*_INLINE__?
+const HTML_CACHE_SCHEMA_VERSION = "html-v5";
 const R2_CDN_HOST = "cdn.shopbanao.in";
 
 const SUPABASE_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
@@ -510,7 +515,13 @@ function shouldRevalidate(key) {
   const now = Date.now();
   const last = revalCooldowns.get(key) || 0;
   if (now - last < REVAL_COOLDOWN_MS) return false;
-  if (!revalCooldowns.has(key) && revalCooldowns.size >= REVAL_MAP_MAX) return false;
+  // v8.58.0: Evict oldest entry when full instead of silently disabling
+  // revalidation for new keys. Previously the map could fill and permanently
+  // freeze SWR for every new URL until the janitor ran.
+  if (!revalCooldowns.has(key) && revalCooldowns.size >= REVAL_MAP_MAX) {
+    const oldestKey = revalCooldowns.keys().next().value;
+    if (oldestKey !== undefined) revalCooldowns.delete(oldestKey);
+  }
   revalCooldowns.set(key, now);
   return true;
 }
@@ -541,7 +552,14 @@ function isRateLimited(ip, isApi = false) {
   const now = Date.now();
   const entry = rateLimitMap.get(ip);
   if (!entry || now > entry.resetAt) {
-    if (!entry && rateLimitMap.size >= RATE_LIMIT_MAP_MAX) return true;
+    // v8.58.0: When the map fills under a unique-IP flood (botnet, scanner),
+    // the previous code returned `true` and 429'd every NEW legit visitor
+    // until the janitor ran. Now: evict the oldest entry (Map iteration is
+    // insertion-order so the oldest is usually already expired) and admit.
+    if (!entry && rateLimitMap.size >= RATE_LIMIT_MAP_MAX) {
+      const oldestKey = rateLimitMap.keys().next().value;
+      if (oldestKey !== undefined) rateLimitMap.delete(oldestKey);
+    }
     rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
     return false;
   }
@@ -693,7 +711,10 @@ const STOREFRONT_HTML_SWR_SEC = 600;
 const HTML_KV_TTL_SEC = STOREFRONT_HTML_TTL_SEC;
 const HTML_KV_MAX_BYTES = 800_000; // 800 KB hard cap (KV value limit is 25 MB)
 const _htmlKvWriteRecent = new Map(); // key → expiresAt
-const HTML_KV_WRITE_DEDUP_MS = 540_000;
+// v8.58.0: 540s dedup > 300s TTL meant a 4-minute mandatory MISS window
+// every cycle (key expired in KV but worker refused to re-write). Now set to
+// 80% of TTL so KV stays continuously populated for hot URLs.
+const HTML_KV_WRITE_DEDUP_MS = 240_000;
 const HTML_KV_WRITE_DEDUP_MAX = 5_000;
 
 function getHtmlKvKey(slug, pathname) {
@@ -2926,6 +2947,18 @@ async function proxyToOrigin(request) {
   const headers = new Headers(request.headers);
   headers.set("Host", ORIGIN_HOST);
 
+  // v8.58.0: cf cache hints for immutable hashed assets. Lets CF edge cache
+  // them independent of upstream headers and short-circuit the Worker on
+  // repeat hits (zero CPU, zero subrequest billing). Only safe for paths
+  // that are content-hashed; HTML and dynamic paths keep no-cache.
+  const isStaticAsset =
+    request.method === "GET" &&
+    /^\/(assets|static)\//.test(url.pathname) &&
+    /\.(?:js|mjs|css|png|jpe?g|webp|avif|gif|svg|ico|woff2?|ttf|otf|map)$/i.test(url.pathname);
+  const cfOpts = isStaticAsset
+    ? { cacheEverything: true, cacheTtlByStatus: { "200-299": 86400, "404": 60, "500-599": 0 } }
+    : { cacheTtl: 0, cacheEverything: false };
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ORIGIN_TIMEOUT_MS);
 
@@ -2934,7 +2967,7 @@ async function proxyToOrigin(request) {
       method: request.method,
       headers,
       signal: controller.signal,
-      cf: { cacheTtl: 0, cacheEverything: false },
+      cf: cfOpts,
     });
     clearTimeout(timeout);
 
@@ -5814,41 +5847,37 @@ async function _handleFetch(request, env, ctx) {
       let hitKey = null;
       let slugForKey = null;
       if (shouldCheckMirror) {
-        // v8.25.1: for anonymous HTML navs, look up the REAL-HOST key first
-        // (matches what mirrorToCfCache writes via getCfCacheKey). Falls
-        // back to raw request for synthesized responses (redirects, 410s,
-        // 404s, assets) which already use raw request as their key.
         if (isHtmlNav && !isAuthed && !isPrivatePath) {
+          // v8.58.0: Run slug-resolve in parallel with the real-host cache.match
+          // (slug was previously awaited sequentially after the first MISS, and
+          // again before the KV check — wasted 5-20ms × 2 per cold lookup).
+          // Then run canonical-slug + KV-HTML lookups in parallel on miss.
           const cfKey = getCfCacheKey(earlyUrl.hostname, earlyPath);
-          cached = await cache.match(cfKey);
-          if (cached) hitKey = "real-host";
-          // v8.25.2: canonical zone-key fallback. Custom domains live outside
-          // the Worker zone; their real-host write occasionally lands in a
-          // colo that won't serve it back. The slug-subdomain key is always
-          // inside the zone, so this is the reliable cache for ad traffic.
-          if (!cached) {
-            slugForKey = await _earlyResolveSlug(earlyUrl.hostname, env);
-            if (slugForKey) {
-              const canonical = getCanonicalHtmlCacheKey(slugForKey, earlyPath);
-              if (canonical) {
-                cached = await cache.match(canonical);
-                if (cached) hitKey = "canonical-slug";
-              }
-            }
+          const [realHostHit, resolvedSlug] = await Promise.all([
+            cache.match(cfKey).catch(() => null),
+            _earlyResolveSlug(earlyUrl.hostname, env).catch(() => null),
+          ]);
+          slugForKey = resolvedSlug;
+          if (realHostHit) {
+            cached = realHostHit;
+            hitKey = "real-host";
           }
-          // v8.27.0: KV-backed HTML cache. Global, cross-colo HIT-EARLY.
-          // caches.default is colo-local; KV replicates to all 300+ colos.
-          // First visitor in any colo (after the URL was warmed elsewhere)
-          // gets a sub-15ms response from KV instead of running the full
-          // pipeline. Safe: 60s TTL, anonymous-only, non-private only.
-          if (!cached && env?.STORE_KV) {
-            if (!slugForKey) slugForKey = await _earlyResolveSlug(earlyUrl.hostname, env);
-            if (slugForKey) {
-              const kvHit = await kvHtmlGet(env, slugForKey, earlyPath);
-              if (kvHit) {
-                cached = kvHit;
-                hitKey = "kv-html";
-              }
+          if (!cached && slugForKey) {
+            const canonical = getCanonicalHtmlCacheKey(slugForKey, earlyPath);
+            const cachePromise = canonical
+              ? cache.match(canonical).catch(() => null)
+              : Promise.resolve(null);
+            const kvPromise = env?.STORE_KV
+              ? kvHtmlGet(env, slugForKey, earlyPath).catch(() => null)
+              : Promise.resolve(null);
+            const [canonicalHit, kvHit] = await Promise.all([cachePromise, kvPromise]);
+            // Prefer caches.default (free, colo-local) over KV (billed read).
+            if (canonicalHit) {
+              cached = canonicalHit;
+              hitKey = "canonical-slug";
+            } else if (kvHit) {
+              cached = kvHit;
+              hitKey = "kv-html";
             }
           }
         }
