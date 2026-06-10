@@ -3640,6 +3640,16 @@ export type Database = {
         }[]
       }
       get_store_wallet_summary: { Args: { _store_id: string }; Returns: Json }
+      get_storefront_products_page: {
+        Args: {
+          _category?: string
+          _limit?: number
+          _page?: number
+          _slug: string
+          _sort?: string
+        }
+        Returns: Json
+      }
       get_storefront_seo: { Args: { _slug: string }; Returns: Json }
       get_storefront_shell: {
         Args: { _slug: string; _with_pages?: boolean }
