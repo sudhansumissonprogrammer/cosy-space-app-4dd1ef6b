@@ -1228,8 +1228,9 @@ export default function V22CheckoutPage() {
       setPlacing(false);
       toast.error(resp?.error?.description || "Payment failed. You can retry below.");
     });
-    // Real intent signal — fire IC the instant the Razorpay modal is about to open.
+    // Real intent signal — fire IC + APInfo the instant the Razorpay modal is about to open.
     fireInitiateCheckoutOnce();
+    fireAddPaymentInfoOnce();
     rzp.open();
   };
 
