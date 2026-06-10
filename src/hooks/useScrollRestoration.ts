@@ -213,40 +213,66 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
         return true;
       };
 
-      // Try immediately
-      if (tryAnchorRestore()) return;
-
-      // Otherwise poll up to RESTORE_TIMEOUT_MS, also reacting to DOM mutations
-      // AND the storefront's "content-ready" event (Flipkart/Meesho feel —
-      // wait until the tapped card actually mounts, even on a cold remount).
+      // ── Sustained anchor restore ─────────────────────────────────
+      // Previously tryAnchorRestore() locked in on the FIRST DOM match
+      // and stopped observing. But images above the anchor (hero, category
+      // strip, lazy product imgs) finish decoding AFTER that first match,
+      // pushing the anchor card downward — leaving the viewport ~200-600px
+      // ABOVE the tapped product.
+      //
+      // Now we keep re-aligning until the anchor's resolved scrollY has
+      // been stable for ~300ms, capped at RESTORE_TIMEOUT_MS. We also
+      // listen for image `load` events (capture phase — `load` doesn't
+      // bubble) so each above-the-fold image paint triggers a re-anchor.
       const start = performance.now();
       let done = false;
+      let lastY = -1;
+      let stableSince = 0;
+      let anchored = false;
+      const STABLE_MS = 300;
+
       const finish = () => {
         if (done) return;
         done = true;
         observer.disconnect();
         try { window.removeEventListener("storefront:content-ready", onReady); } catch {}
+        try { document.removeEventListener("load", onImgLoad, true); } catch {}
       };
-      const onReady = () => { if (tryAnchorRestore()) finish(); };
-      window.addEventListener("storefront:content-ready", onReady);
-      const observer = new MutationObserver(() => {
+      const realign = () => {
         if (done) return;
-        if (tryAnchorRestore()) finish();
-      });
+        if (!tryAnchorRestore()) return;
+        anchored = true;
+        const y = Math.round(window.scrollY);
+        const now = performance.now();
+        if (y === lastY) {
+          if (now - stableSince > STABLE_MS) finish();
+        } else {
+          lastY = y;
+          stableSince = now;
+        }
+      };
+      const onReady = () => realign();
+      const onImgLoad = (e: Event) => {
+        const t = e.target as HTMLElement | null;
+        if (t && t.tagName === "IMG") realign();
+      };
+      window.addEventListener("storefront:content-ready", onReady);
+      document.addEventListener("load", onImgLoad, true);
+      const observer = new MutationObserver(() => realign());
       observer.observe(document.body, { childList: true, subtree: true });
+
+      realign(); // immediate attempt
 
       const tick = () => {
         if (done) return;
-        if (tryAnchorRestore()) { finish(); return; }
+        realign();
         if (performance.now() - start > RESTORE_TIMEOUT_MS) {
-          // Final fallback: pixel Y (waiting for height too)
-          const max = document.documentElement.scrollHeight - window.innerHeight;
-          if (targetY != null && targetY > 0 && max < targetY && performance.now() - start < RESTORE_TIMEOUT_MS + 500) {
-            requestAnimationFrame(tick);
-            return;
+          if (!anchored) {
+            finish();
+            restorePixel();
+          } else {
+            finish();
           }
-          finish();
-          restorePixel();
           return;
         }
         requestAnimationFrame(tick);
