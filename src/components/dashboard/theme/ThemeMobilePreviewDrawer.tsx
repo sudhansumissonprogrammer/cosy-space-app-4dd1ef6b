@@ -158,7 +158,7 @@ export default function ThemeMobilePreviewDrawer({ storeSlug, iframeKey, onIfram
             <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-0.5">
               <button
                 onClick={() => setMode("mobile")}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-[transform,opacity,colors,box-shadow] ${
                   mode === "mobile" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
                 }`}
               >
@@ -167,7 +167,7 @@ export default function ThemeMobilePreviewDrawer({ storeSlug, iframeKey, onIfram
               </button>
               <button
                 onClick={() => setMode("desktop")}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-[transform,opacity,colors,box-shadow] ${
                   mode === "desktop" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
                 }`}
               >

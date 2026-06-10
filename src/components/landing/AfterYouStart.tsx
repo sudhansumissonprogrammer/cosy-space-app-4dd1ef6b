@@ -38,7 +38,7 @@ const AfterYouStart = () => {
           <p className="text-sm md:text-base font-medium text-primary-foreground/90 max-w-md mx-auto">
             Aaj agar aapke <span className="font-bold text-primary-foreground">1000 customers</span> ho gaye… To agle mahine <span className="font-bold text-primary-foreground">10–15 orders daily</span> aa sakte hain repeat customers se.
           </p>
-          <a href="/signup" className="inline-flex items-center justify-center bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-sm px-8 py-3.5 border-2 border-foreground shadow-bauhaus hover:opacity-90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200">
+          <a href="/signup" className="inline-flex items-center justify-center bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-sm px-8 py-3.5 border-2 border-foreground shadow-bauhaus hover:opacity-90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-[transform,opacity,colors,box-shadow] duration-200">
             Create Your Store in 1 Minute
           </a>
           <p className="text-xs text-primary-foreground/60 font-medium">7-day free trial • No setup cost</p>

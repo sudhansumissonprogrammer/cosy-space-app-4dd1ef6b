@@ -344,7 +344,7 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
                   </div>
                   <div className="h-6 w-full rounded bg-muted overflow-hidden">
                     <div
-                      className="h-full rounded transition-all flex items-center justify-end pr-2 text-[10px] font-medium text-primary-foreground"
+                      className="h-full rounded transition-[transform,opacity,colors,box-shadow] flex items-center justify-end pr-2 text-[10px] font-medium text-primary-foreground"
                       style={{ width: `${Math.max(step.width, 4)}%`, backgroundColor: step.color }}
                     />
                   </div>

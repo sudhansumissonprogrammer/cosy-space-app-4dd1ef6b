@@ -42,7 +42,7 @@ const DemoBooking = () => {
                 <label className="font-bold uppercase tracking-widest text-xs text-muted-foreground mb-1 block">City</label>
                 <input type="text" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full border-2 border-foreground p-3 font-medium text-foreground bg-bauhaus-canvas focus:outline-none focus:ring-2 focus:ring-bauhaus-blue" placeholder="Your city" />
               </div>
-              <button className="w-full flex items-center justify-center gap-2 bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider px-6 py-3.5 border-2 border-foreground shadow-bauhaus-md hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-200 mt-2">
+              <button className="w-full flex items-center justify-center gap-2 bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider px-6 py-3.5 border-2 border-foreground shadow-bauhaus-md hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-[transform,opacity,colors,box-shadow] duration-200 mt-2">
                 Book Free Demo <ArrowRight className="h-5 w-5" />
               </button>
             </div>

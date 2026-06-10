@@ -42,7 +42,7 @@ export default function ThemeSectionNav({ sections, active, onSelect, configured
             <button
               key={s.id}
               onClick={() => onSelect(s.id)}
-              className={`group flex items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition-all ${
+              className={`group flex items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition-[transform,opacity,colors,box-shadow] ${
                 isActive
                   ? "border-foreground/15 bg-accent shadow-sm"
                   : "border-transparent hover:bg-accent/50"
@@ -80,7 +80,7 @@ export default function ThemeSectionNav({ sections, active, onSelect, configured
               <button
                 key={s.id}
                 onClick={() => onSelect(s.id)}
-                className={`flex-shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
+                className={`flex-shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-[transform,opacity,colors,box-shadow] ${
                   isActive
                     ? "bg-foreground text-background shadow-sm"
                     : "bg-muted text-foreground hover:bg-muted/70"
