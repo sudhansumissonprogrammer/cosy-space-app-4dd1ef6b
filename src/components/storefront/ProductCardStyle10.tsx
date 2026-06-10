@@ -88,7 +88,7 @@ export default function ProductCardStyle10({ product, slug, store, priority = fa
                   width={400}
                   height={400}
                   data-no-crop="true"
-                  className={`absolute inset-0 h-full w-full object-cover transition-[transform,opacity,colors,box-shadow] duration-500 ${hasSecond && hoverLoaded ? "group-hover:opacity-0" : "group-hover:scale-105"}`}
+                  className={`absolute inset-0 h-full w-full object-cover transition-[transform,opacity,colors,box-shadow] duration-300 ${hasSecond && hoverLoaded ? "group-hover:opacity-0" : "group-hover:scale-105"}`}
                   loading={priority ? "eager" : "lazy"}
                   decoding={priority ? "sync" : "async"}
                   fetchPriority={priority ? "high" : "low"}
@@ -102,7 +102,7 @@ export default function ProductCardStyle10({ product, slug, store, priority = fa
                     width={400}
                     height={400}
                     data-no-crop="true"
-                    className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                    className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                     loading="lazy"
                     decoding="async"
                   />

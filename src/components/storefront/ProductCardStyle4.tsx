@@ -87,14 +87,14 @@ export default function ProductCardStyle4({ product, slug, store, priority = fal
               alt={product.name}
               width={200}
               height={200}
-              className={`h-full w-full object-cover transition-[transform,opacity,colors,box-shadow] duration-500 ${hasSecond && hoverLoaded ? "group-hover/img:opacity-0" : ""}`}
+              className={`h-full w-full object-cover transition-[transform,opacity,colors,box-shadow] duration-300 ${hasSecond && hoverLoaded ? "group-hover/img:opacity-0" : ""}`}
               loading={priority ? "eager" : "lazy"}
               decoding={priority ? "sync" : "async"}
               fetchPriority={priority ? "high" : "low"}
 
             />
             {hasSecond && hoverLoaded && (
-              <img src={optimizeImageUrl(images[1], 400, 72)} alt={product.name} width={400} height={400} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-[transform,opacity,colors,box-shadow] duration-500 group-hover/img:opacity-100" loading="lazy" fetchPriority="low" />
+              <img src={optimizeImageUrl(images[1], 400, 72)} alt={product.name} width={400} height={400} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-[transform,opacity,colors,box-shadow] duration-300 group-hover/img:opacity-100" loading="lazy" fetchPriority="low" />
             )}
             {hasDiscount && (
               <div className="absolute left-1 top-1 rounded-md bg-destructive px-1.5 py-0.5 text-[10px] font-bold text-destructive-foreground">
