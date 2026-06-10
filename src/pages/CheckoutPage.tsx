@@ -1631,13 +1631,21 @@ export default function CheckoutPage() {
       console.log("[Cashfree] Checkout returned", result);
       if (result?.error) {
         console.warn("[Cashfree] Checkout error", result.error);
-        const ok = await verifyAndFinalize({ attempts: 8, intervalMs: 2000, showConfirming: true });
+        // Fast-path on explicit cancel: shopper pressed Back / closed modal.
+        // Don't spin 8×2s "Confirming payment" — do ONE quick silent verify
+        // (in case payment slipped through) then immediately show retry.
+        const isCancel = result.error.code === "user_cancelled";
+        const ok = await verifyAndFinalize(
+          isCancel
+            ? { attempts: 1, intervalMs: 0, showConfirming: false }
+            : { attempts: 8, intervalMs: 2000, showConfirming: true }
+        );
         if (!ok) {
           setPlacingStep(0);
           setPendingOrder(order);
           setPaymentFailed(true);
           setPlacing(false);
-          if (result.error.code !== "user_cancelled") {
+          if (!isCancel) {
             const msg = result.error.message || result.error.code || "Payment failed. You can retry below.";
             toast.error(msg);
           }
