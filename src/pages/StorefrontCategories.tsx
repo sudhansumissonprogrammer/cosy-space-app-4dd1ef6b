@@ -49,7 +49,7 @@ export default function StorefrontCategories() {
               className="group"
             >
               <div
-                className="w-full rounded-2xl overflow-hidden border border-border bg-secondary/20 transition-all group-hover:shadow-lg group-hover:border-transparent"
+                className="w-full rounded-2xl overflow-hidden border border-border bg-secondary/20 transition-[transform,opacity,colors,box-shadow] group-hover:shadow-lg group-hover:border-transparent"
                 style={{ aspectRatio: "1/1" }}
               >
                 {cat.image_url ? (

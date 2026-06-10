@@ -78,8 +78,8 @@ export default function DeliveryTimeline() {
         @keyframes dt-fill-2  { 0%{transform:scaleX(0)} 100%{transform:scaleX(1)} }
         @keyframes dt-truck-loop { 0%{opacity:0;left:16.66%} 6%{opacity:1} 94%{opacity:1;left:83.33%} 100%{opacity:0;left:83.33%} }
         @keyframes dt-bounce  { 0%,100%{margin-top:0} 50%{margin-top:-2px} }
-        @keyframes dt-stamp   { 0%{opacity:0;transform:scale(0) rotate(-30deg)} 70%{transform:scale(1.3) rotate(0)} 100%{opacity:1;transform:scale(1) rotate(0)} }
-        @keyframes dt-particle{ 0%{opacity:0;transform:translate(-50%,-50%) scale(0)} 20%{opacity:1} 100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)} }
+        @keyframes dt-stamp   { 0%{opacity:0;transform:scale(0.6) rotate(-30deg)} 70%{transform:scale(1.3) rotate(0)} 100%{opacity:1;transform:scale(1) rotate(0)} }
+        @keyframes dt-particle{ 0%{opacity:0;transform:translate(-50%,-50%) scale(0.2)} 20%{opacity:1} 100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)} }
         @keyframes dt-breathe { 0%,100%{transform:scale(1)} 50%{transform:scale(1.045)} }
         @keyframes dt-live    { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:.5} }
         @keyframes dt-glow    { 0%,100%{box-shadow:0 0 0 0 hsl(var(--primary)/0)} 50%{box-shadow:0 0 14px 1px hsl(var(--primary)/.35)} }

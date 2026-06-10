@@ -745,7 +745,7 @@ export default function ProductDetail() {
                     key={v.id}
                     type="button"
                     onClick={() => setSelectedVariant(selectedVariant?.id === v.id ? null : v)}
-                    className={`transition-all duration-200 active:scale-95 ${
+                    className={`transition-[transform,opacity,colors,box-shadow] duration-200 active:scale-95 ${
                       isV18
                         ? `flex h-10 w-10 items-center justify-center border text-sm ${
                             selectedVariant?.id === v.id
@@ -810,7 +810,7 @@ export default function ProductDetail() {
                 /* V18 Sagacity-style: full-width stacked buttons */
                 <>
                   <button
-                    className={`flex h-12 w-full items-center justify-center text-sm font-bold uppercase tracking-widest transition-all active:scale-[0.97] ${
+                    className={`flex h-12 w-full items-center justify-center text-sm font-bold uppercase tracking-widest transition-[transform,opacity,colors,box-shadow] active:scale-[0.97] ${
                       justAdded ? "bg-emerald-600 text-white" : "bg-white text-black hover:bg-white/90"
                     }`}
                     style={v18Font}
@@ -820,7 +820,7 @@ export default function ProductDetail() {
                   </button>
                   {showBuyNow && (
                     <button
-                      className="flex h-12 w-full items-center justify-center border text-sm font-bold uppercase tracking-widest transition-all active:scale-[0.97] hover:bg-white hover:text-black"
+                      className="flex h-12 w-full items-center justify-center border text-sm font-bold uppercase tracking-widest transition-[transform,opacity,colors,box-shadow] active:scale-[0.97] hover:bg-white hover:text-black"
                       style={{ borderColor: "#ffffff", color: "#ffffff", ...v18Font }}
                       onClick={handleBuyNow}
                     >
@@ -832,7 +832,7 @@ export default function ProductDetail() {
                 /* Default style */
                 <div ref={inlineCtaRef} className="grid grid-cols-2 gap-3">
                   <button
-                    className={`btn-press relative flex h-12 items-center justify-center gap-2 rounded-xl text-xs font-bold uppercase tracking-wider overflow-hidden transition-all duration-300 ${
+                    className={`btn-press relative flex h-12 items-center justify-center gap-2 rounded-xl text-xs font-bold uppercase tracking-wider overflow-hidden transition-[transform,opacity,colors,box-shadow] duration-300 ${
                       justAdded ? "bg-emerald-600 text-white" : "btn-gold hover:brightness-110"
                     }`}
                     onClick={handleAddToCart}
@@ -852,7 +852,7 @@ export default function ProductDetail() {
 
                   {showBuyNow && (
                     <button
-                      className="btn-press flex h-12 w-full items-center justify-center gap-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
+                      className="btn-press flex h-12 w-full items-center justify-center gap-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
                       style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
                       onClick={handleBuyNow}
                     >
@@ -873,7 +873,7 @@ export default function ProductDetail() {
               {/* WhatsApp Order */}
               {showWhatsApp && store.whatsapp_number && (
                 <button
-                  className="group relative flex w-full items-center justify-center gap-3 rounded-2xl px-6 py-4 text-white font-extrabold text-base uppercase tracking-wide transition-all duration-200 hover:shadow-2xl hover:brightness-110 active:scale-[0.98]"
+                  className="group relative flex w-full items-center justify-center gap-3 rounded-2xl px-6 py-4 text-white font-extrabold text-base uppercase tracking-wide transition-[transform,opacity,colors,box-shadow] duration-200 hover:shadow-2xl hover:brightness-110 active:scale-[0.98]"
                   style={{ backgroundColor: "#25D366", boxShadow: "0 6px 24px rgba(37, 211, 102, 0.35)" }}
                   onClick={() => {
                     if (hasVariants && !selectedVariant) {
@@ -948,7 +948,7 @@ export default function ProductDetail() {
           {/* Wishlist — hidden in V18 */}
           {!isV18 && (
             <div className="mt-4">
-              <button onClick={handleWishlist} className={`flex items-center gap-2 text-sm transition-all duration-200 ${wishlisted ? "text-destructive font-semibold" : "text-muted-foreground hover:text-foreground"}`}>
+              <button onClick={handleWishlist} className={`flex items-center gap-2 text-sm transition-[transform,opacity,colors,box-shadow] duration-200 ${wishlisted ? "text-destructive font-semibold" : "text-muted-foreground hover:text-foreground"}`}>
                 <Heart className={`h-4 w-4 transition-transform duration-200 ${wishlisted ? "fill-destructive text-destructive scale-110" : ""}`} />
                 {wishlisted ? "Saved" : "Add to Wishlist"}
               </button>
@@ -1114,7 +1114,7 @@ export default function ProductDetail() {
                   </div>
                   <div className="flex flex-1 sm:flex-none gap-2">
                     <button
-                      className={`btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-all ${
+                      className={`btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] ${
                         justAdded ? "bg-emerald-600 text-white" : "btn-gold"
                       }`}
                       style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}
@@ -1133,7 +1133,7 @@ export default function ProductDetail() {
                       )}
                     </button>
                     <button
-                      className="btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-all"
+                      className="btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow]"
                       style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", fontFamily: "var(--storefront-heading-font, inherit)" }}
                       onClick={handleBuyNow}
                     >
@@ -1177,7 +1177,7 @@ export default function ProductDetail() {
                           }
                           navigate(storefrontPath(store.slug, `checkout?product=${product.id}${selectedVariant ? `&variant=${selectedVariant.id}` : ""}`));
                         }}
-                        className="flex h-12 items-center gap-2 rounded-xl px-5 text-xs font-extrabold uppercase tracking-wider transition-all active:scale-[0.97]"
+                        className="flex h-12 items-center gap-2 rounded-xl px-5 text-xs font-extrabold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] active:scale-[0.97]"
                         style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
                       >
                         <Zap className="h-4 w-4" />
@@ -1214,7 +1214,7 @@ export default function ProductDetail() {
                     setSelectedVariant(v);
                     setVariantPromptOpen(false);
                   }}
-                  className="rounded-xl border-2 border-border px-4 py-2.5 text-sm font-bold hover:border-primary hover:bg-primary/10 transition-all"
+                  className="rounded-xl border-2 border-border px-4 py-2.5 text-sm font-bold hover:border-primary hover:bg-primary/10 transition-[transform,opacity,colors,box-shadow]"
                 >
                   {v.name}
                 </button>
@@ -1509,7 +1509,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare, 
           {onShare && (
             <button
               onClick={(e) => { e.stopPropagation(); onShare(); }}
-              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-all hover:bg-black/70 active:scale-90"
+              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-90"
               aria-label="Share product"
             >
               <Share2 className="h-4 w-4" />
@@ -1568,7 +1568,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare, 
           {/* Zoom/enlarge icon */}
           <button
             onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
-            className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-all hover:bg-black/70 active:scale-90"
+            className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-90"
             aria-label="Enlarge image"
           >
             <Maximize2 className="h-4 w-4" />
@@ -1588,7 +1588,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare, 
                 <button
                   key={i}
                   onClick={(e) => { e.stopPropagation(); scrollTo(i); }}
-                  className={`rounded-full transition-all duration-300 ${
+                  className={`rounded-full transition-[transform,opacity,colors,box-shadow] duration-300 ${
                     i === activeIndex ? "w-5 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/50 hover:bg-white/70"
                   }`}
                   aria-label={`View image ${i + 1}`}
@@ -1602,13 +1602,13 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare, 
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); scrollPrev(); }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-all"
+                className="absolute left-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-[transform,opacity,colors,box-shadow]"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); scrollNext(); }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-all"
+                className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-[transform,opacity,colors,box-shadow]"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -1623,7 +1623,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare, 
               <button
                 key={i}
                 onClick={() => scrollTo(i)}
-                className={`h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
+                className={`h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-[transform,opacity,colors,box-shadow] ${
                   i === activeIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-muted-foreground/30"
                 }`}
               >
@@ -1803,7 +1803,7 @@ function FullscreenLightbox({
         </span>
         <button
           onClick={onClose}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm shadow transition-all hover:scale-110 active:scale-95"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm shadow transition-[transform,opacity,colors,box-shadow] hover:scale-110 active:scale-95"
         >
           <X className="h-5 w-5 text-white" strokeWidth={2.5} />
         </button>
@@ -1831,13 +1831,13 @@ function FullscreenLightbox({
         <>
           <button
             onClick={() => setActiveIndex((i) => (i - 1 + images.length) % images.length)}
-            className="absolute left-3 top-1/2 -translate-y-1/2 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm text-white hover:bg-white/25 transition-all"
+            className="absolute left-3 top-1/2 -translate-y-1/2 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm text-white hover:bg-white/25 transition-[transform,opacity,colors,box-shadow]"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
           <button
             onClick={() => setActiveIndex((i) => (i + 1) % images.length)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm text-white hover:bg-white/25 transition-all"
+            className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex h-10 w-10 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm text-white hover:bg-white/25 transition-[transform,opacity,colors,box-shadow]"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -1850,7 +1850,7 @@ function FullscreenLightbox({
             <button
               key={i}
               onClick={() => { setActiveIndex(i); resetZoom(); }}
-              className={`rounded-full transition-all duration-300 ${
+              className={`rounded-full transition-[transform,opacity,colors,box-shadow] duration-300 ${
                 i === activeIndex ? "w-6 h-2 bg-white" : "w-2 h-2 bg-white/40 hover:bg-white/60"
               }`}
             />

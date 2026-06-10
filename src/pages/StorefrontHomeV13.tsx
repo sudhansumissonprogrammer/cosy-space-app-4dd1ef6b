@@ -72,7 +72,7 @@ function MenuItemCard({
 
   return (
     <div
-      className="flex gap-3 rounded-2xl p-3 transition-all"
+      className="flex gap-3 rounded-2xl p-3 transition-[transform,opacity,colors,box-shadow]"
       style={{
         backgroundColor: "var(--storefront-text, #1a1a1a)06",
         border: "1px solid var(--storefront-text, #1a1a1a)08",
@@ -136,7 +136,7 @@ function MenuItemCard({
           {qty === 0 ? (
             <button
               onClick={handleAdd}
-              className="rounded-xl px-4 py-1.5 text-xs font-bold transition-all active:scale-95"
+              className="rounded-xl px-4 py-1.5 text-xs font-bold transition-[transform,opacity,colors,box-shadow] active:scale-95"
               style={{
                 backgroundColor: "color-mix(in srgb, var(--storefront-primary, #25D366) 8%, transparent)",
                 color: "var(--storefront-primary, #25D366)",
@@ -150,11 +150,11 @@ function MenuItemCard({
               className="flex items-center gap-0 rounded-xl overflow-hidden"
               style={{ backgroundColor: "var(--storefront-primary, #25D366)", color: "var(--storefront-btn-text, #ffffff)" }}
             >
-              <button onClick={handleDecrease} className="flex h-8 w-8 items-center justify-center transition-all active:scale-90">
+              <button onClick={handleDecrease} className="flex h-8 w-8 items-center justify-center transition-[transform,opacity,colors,box-shadow] active:scale-90">
                 <Minus className="h-3.5 w-3.5" />
               </button>
               <span className="flex h-8 w-6 items-center justify-center text-xs font-bold">{qty}</span>
-              <button onClick={handleIncrease} className="flex h-8 w-8 items-center justify-center transition-all active:scale-90">
+              <button onClick={handleIncrease} className="flex h-8 w-8 items-center justify-center transition-[transform,opacity,colors,box-shadow] active:scale-90">
                 <Plus className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -186,7 +186,7 @@ function CategoryTabs({
           <button
             key={cat}
             onClick={() => onSelect(cat)}
-            className="shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition-all active:scale-95"
+            className="shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition-[transform,opacity,colors,box-shadow] active:scale-95"
             style={{
               backgroundColor: isActive ? "#25D366" : "var(--storefront-text, #1a1a1a)08",
               color: isActive ? "#ffffff" : "var(--storefront-text, #1a1a1a)90",
@@ -275,7 +275,7 @@ function MenuSearchBar({
         )}
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="relative flex h-7 w-7 items-center justify-center rounded-lg transition-all"
+          className="relative flex h-7 w-7 items-center justify-center rounded-lg transition-[transform,opacity,colors,box-shadow]"
           style={{
             backgroundColor: showFilters || activeFilterCount > 0 ? "color-mix(in srgb, var(--storefront-primary, #25D366) 12%, transparent)" : "transparent",
           }}
@@ -301,7 +301,7 @@ function MenuSearchBar({
           {suggestions.map((p: any) => (
             <button
               key={p.id}
-              className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-all hover:opacity-80"
+              className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-[transform,opacity,colors,box-shadow] hover:opacity-80"
               onMouseDown={(e) => {
                 e.preventDefault();
                 onChange(p.name);
@@ -352,7 +352,7 @@ function MenuSearchBar({
                 <button
                   key={opt.value}
                   onClick={() => onSortChange(opt.value)}
-                  className="rounded-full px-3 py-1 text-[11px] font-semibold transition-all"
+                  className="rounded-full px-3 py-1 text-[11px] font-semibold transition-[transform,opacity,colors,box-shadow]"
                   style={{
                     backgroundColor: sortBy === opt.value ? "#25D366" : "var(--storefront-text, #1a1a1a)08",
                     color: sortBy === opt.value ? "#fff" : "var(--storefront-text, #1a1a1a)80",
@@ -378,7 +378,7 @@ function MenuSearchBar({
                 <button
                   key={opt.value}
                   onClick={() => onDietChange(opt.value)}
-                  className="rounded-full px-3 py-1 text-[11px] font-semibold transition-all"
+                  className="rounded-full px-3 py-1 text-[11px] font-semibold transition-[transform,opacity,colors,box-shadow]"
                   style={{
                     backgroundColor: dietFilter === opt.value ? "#25D366" : "var(--storefront-text, #1a1a1a)08",
                     color: dietFilter === opt.value ? "#fff" : "var(--storefront-text, #1a1a1a)80",

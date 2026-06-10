@@ -63,7 +63,7 @@ export default function ProductCardV17({ product, slug, store, priority = false,
           {/* Wishlist button — circle, white, shadow, right-top */}
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleWishlist(e); }}
-            className="absolute z-10 flex items-center justify-center rounded-full shadow-md transition-transform hover:scale-110 active:scale-95"
+            className="absolute z-10 flex items-center justify-center rounded-full shadow-md transition-transform hh:hover-scale-110 active:scale-95"
             style={{ width: "36px", height: "36px", right: "10px", top: "auto", bottom: "52px", backgroundColor: "var(--storefront-bg, #fff)" }}
             aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
           >
@@ -82,7 +82,7 @@ export default function ProductCardV17({ product, slug, store, priority = false,
           {/* Quick-add button — circle, white, shadow, right-bottom */}
           <button
             onClick={handleAdd}
-            className="absolute z-10 flex items-center justify-center rounded-full shadow-md transition-transform hover:scale-110 active:scale-95"
+            className="absolute z-10 flex items-center justify-center rounded-full shadow-md transition-transform hh:hover-scale-110 active:scale-95"
             style={{ width: "36px", height: "36px", right: "10px", bottom: "10px", backgroundColor: "var(--storefront-bg, #fff)" }}
             aria-label="Add to cart"
           >

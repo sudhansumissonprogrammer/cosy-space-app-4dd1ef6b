@@ -167,7 +167,7 @@ function HeroSlides({ slides, store }: { slides: { image: string; title: string;
             <button
               key={i}
               onClick={() => setCurrent(i)}
-              className="h-2 rounded-full transition-all duration-300"
+              className="h-2 rounded-full transition-[transform,opacity,colors,box-shadow] duration-300"
               style={{
                 width: i === current ? "24px" : "8px",
                 backgroundColor: i === current ? "var(--storefront-primary, #fff)" : "rgba(255,255,255,0.5)",
@@ -190,7 +190,7 @@ function CategoryPills({ categories, slug }: { categories: any[] | undefined; sl
           <Link
             key={cat.id}
             to={storefrontPath(slug, `category/${cat.slug}`)}
-            className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all hover:scale-105"
+            className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-[transform,opacity,colors,box-shadow] hover:scale-105"
             style={{
               borderColor: "var(--storefront-primary, hsl(var(--border)))",
               color: "var(--storefront-text, hsl(var(--foreground)))",

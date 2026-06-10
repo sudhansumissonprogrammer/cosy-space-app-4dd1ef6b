@@ -130,7 +130,7 @@ export default function V20CartPage() {
                   Add items worth <span style={{ color: PRIMARY }}>₹{remainingForFree.toFixed(0)}</span> more for FREE delivery
                 </div>
                 <div className="h-2 mt-2 rounded-full bg-gray-100 overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progressPct}%`, background: PRIMARY }} />
+                  <div className="h-full rounded-full transition-[transform,opacity,colors,box-shadow] duration-500" style={{ width: `${progressPct}%`, background: PRIMARY }} />
                 </div>
               </>
             )}

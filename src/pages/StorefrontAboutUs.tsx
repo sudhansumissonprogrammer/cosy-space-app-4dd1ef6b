@@ -107,7 +107,7 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
             { emoji: "🚚", title: "Reliable Delivery", desc: "Fast and safe shipping so your order reaches you on time." },
             { emoji: "💬", title: "Customer Support", desc: "Our friendly team is always ready to assist you." },
           ].map((item) => (
-            <div key={item.title} className="rounded-xl p-4 transition-all duration-200 hover:shadow-lg hover:-translate-y-1" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)" }}>
+            <div key={item.title} className="rounded-xl p-4 transition-[transform,opacity,colors,box-shadow] duration-200 hover:shadow-lg hover:-translate-y-1" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)" }}>
               <div className="text-2xl mb-2">{item.emoji}</div>
               <h3 className="text-sm font-bold mb-1" style={{ color: textColor }}>{item.title}</h3>
               <p className="text-xs leading-relaxed" style={{ color: mutedColor }}>{item.desc}</p>
@@ -164,7 +164,7 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
                 href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all hover:shadow-md"
+                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-[transform,opacity,colors,box-shadow] hover:shadow-md"
                 style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)", color: textColor }}
               >
                 <MessageCircle className="h-4 w-4 text-green-600" /> WhatsApp
@@ -175,7 +175,7 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
                 href={instagram}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all hover:shadow-md"
+                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-[transform,opacity,colors,box-shadow] hover:shadow-md"
                 style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)", color: textColor }}
               >
                 <Instagram className="h-4 w-4 text-pink-600" /> Instagram
@@ -186,7 +186,7 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
                 href={facebook}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all hover:shadow-md"
+                className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-[transform,opacity,colors,box-shadow] hover:shadow-md"
                 style={{ backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)", color: textColor }}
               >
                 <Facebook className="h-4 w-4 text-blue-600" /> Facebook

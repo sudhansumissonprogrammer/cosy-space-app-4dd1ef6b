@@ -123,7 +123,7 @@ export default function StorefrontContact() {
               return (
                 <div
                   key={idx}
-                  className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 text-center transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
+                  className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 text-center transition-[transform,opacity,colors,box-shadow] duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
                 >
                   <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                   <div className="relative">
@@ -223,7 +223,7 @@ export default function StorefrontContact() {
             {ownerEmail && (
               <a
                 href={`mailto:${ownerEmail}`}
-                className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-all hover:border-primary/30 hover:shadow-md"
+                className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-[transform,opacity,colors,box-shadow] hover:border-primary/30 hover:shadow-md"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                   <Mail className="h-5 w-5 text-primary" />
@@ -242,7 +242,7 @@ export default function StorefrontContact() {
                 href={`https://wa.me/${store.whatsapp_number.replace(/\D/g, "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-all hover:border-green-500/30 hover:shadow-md"
+                className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-[transform,opacity,colors,box-shadow] hover:border-green-500/30 hover:shadow-md"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-500/10">
                   <Phone className="h-5 w-5 text-green-600" />
@@ -259,7 +259,7 @@ export default function StorefrontContact() {
             {(store as any).secondary_phone && (
               <a
                 href={`tel:${((store as any).secondary_phone as string).replace(/[^0-9+]/g, "")}`}
-                className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-all hover:border-primary/30 hover:shadow-md"
+                className="group flex items-center gap-3 rounded-2xl border border-border bg-card p-5 transition-[transform,opacity,colors,box-shadow] hover:border-primary/30 hover:shadow-md"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                   <Phone className="h-5 w-5 text-primary" />
@@ -304,7 +304,7 @@ export default function StorefrontContact() {
                       href={store.instagram_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 transition-all hover:scale-105 hover:shadow-md"
+                      className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 transition-[transform,opacity,colors,box-shadow] hover:scale-105 hover:shadow-md"
                     >
                       <Instagram className="h-5 w-5 text-pink-600" />
                     </a>
@@ -314,7 +314,7 @@ export default function StorefrontContact() {
                       href={store.facebook_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 transition-all hover:scale-105 hover:shadow-md"
+                      className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 transition-[transform,opacity,colors,box-shadow] hover:scale-105 hover:shadow-md"
                     >
                       <Facebook className="h-5 w-5 text-blue-600" />
                     </a>

@@ -48,7 +48,7 @@ export default function QuickViewModal({ open, onClose, product, store, slug }: 
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] hover:scale-110"
+          className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] hh:hover-scale-110"
           style={{
             backgroundColor: "color-mix(in srgb, var(--storefront-bg, #fff) 80%, transparent)",
             backdropFilter: "blur(8px)",
@@ -184,7 +184,7 @@ export default function QuickViewModal({ open, onClose, product, store, slug }: 
               </button>
               <button
                 onClick={handleToggleWishlist}
-                className="flex h-12 w-12 items-center justify-center rounded-xl transition-[transform,opacity,colors,box-shadow] hover:scale-105 active:scale-95"
+                className="flex h-12 w-12 items-center justify-center rounded-xl transition-[transform,opacity,colors,box-shadow] hh:hover-scale-105 active:scale-95"
                 style={{
                   border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 15%, transparent)",
                 }}

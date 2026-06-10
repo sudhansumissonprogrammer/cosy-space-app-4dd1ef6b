@@ -1082,7 +1082,7 @@ export default function StoreThemeSettings() {
           return (
             <div
               key={theme.id}
-              className={`group relative overflow-hidden rounded-xl border-2 transition-all ${
+              className={`group relative overflow-hidden rounded-xl border-2 transition-[transform,opacity,colors,box-shadow] ${
                 isApplied
                   ? "border-foreground shadow-md"
                   : theme.available
@@ -1142,7 +1142,7 @@ export default function StoreThemeSettings() {
                 setDirty(true);
                 sendToIframe(newConfig);
               }}
-              className={`text-left overflow-hidden rounded-xl border-2 transition-all ${
+              className={`text-left overflow-hidden rounded-xl border-2 transition-[transform,opacity,colors,box-shadow] ${
                 isSelected ? "border-foreground shadow-md" : "border-border hover:border-foreground/40"
               }`}
             >
@@ -1256,7 +1256,7 @@ export default function StoreThemeSettings() {
           <button
             key={s.value}
             onClick={() => updateField("button_style", s.value)}
-            className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+            className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-[transform,opacity,colors,box-shadow] ${
               config.button_style === s.value
                 ? "border-primary bg-primary/5 shadow-sm"
                 : "border-border hover:border-primary/30"
@@ -1322,7 +1322,7 @@ export default function StoreThemeSettings() {
               <button
                 key={s.value}
                 onClick={() => updateField("header_logo_alignment", s.value)}
-                className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-[transform,opacity,colors,box-shadow] ${
                   config.header_logo_alignment === s.value
                     ? "border-primary bg-primary/5 shadow-sm"
                     : "border-border hover:border-primary/30"
@@ -1353,7 +1353,7 @@ export default function StoreThemeSettings() {
                 <button
                   key={s.value}
                   onClick={() => updateField("header_style", s.value)}
-                  className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 transition-all ${
+                  className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 transition-[transform,opacity,colors,box-shadow] ${
                     config.header_style === s.value
                       ? "border-primary bg-primary/5 shadow-sm"
                       : "border-border hover:border-primary/30"
@@ -1397,7 +1397,7 @@ export default function StoreThemeSettings() {
                   <button
                     key={s.value}
                     onClick={() => updateField("mobile_nav_style", s.value)}
-                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+                    className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-[transform,opacity,colors,box-shadow] ${
                       isActive ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"
                     }`}
                   >
@@ -1455,7 +1455,7 @@ export default function StoreThemeSettings() {
             <button
               key={s.value}
               onClick={() => updateField("product_card_style", s.value)}
-              className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+              className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-[transform,opacity,colors,box-shadow] ${
                 config.product_card_style === s.value
                   ? "border-foreground bg-muted shadow-sm"
                   : "border-border hover:border-foreground/30"
@@ -1593,7 +1593,7 @@ export default function StoreThemeSettings() {
             <button
               key={s.value}
               onClick={() => updateField("category_style", s.value)}
-              className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
+              className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-[transform,opacity,colors,box-shadow] ${
                 config.category_style === s.value
                   ? "border-foreground bg-muted shadow-sm"
                   : "border-border hover:border-foreground/30"
@@ -1802,7 +1802,7 @@ export default function StoreThemeSettings() {
         <div className="flex items-center gap-1 rounded-md border border-border bg-background p-0.5">
           <button
             onClick={() => setPreviewMode("mobile")}
-            className={`flex items-center gap-1 rounded px-2 py-1 text-[10px] font-semibold transition-all ${
+            className={`flex items-center gap-1 rounded px-2 py-1 text-[10px] font-semibold transition-[transform,opacity,colors,box-shadow] ${
               previewMode === "mobile" ? "bg-foreground text-background" : "text-muted-foreground"
             }`}
           >
@@ -1810,7 +1810,7 @@ export default function StoreThemeSettings() {
           </button>
           <button
             onClick={() => setPreviewMode("desktop")}
-            className={`flex items-center gap-1 rounded px-2 py-1 text-[10px] font-semibold transition-all ${
+            className={`flex items-center gap-1 rounded px-2 py-1 text-[10px] font-semibold transition-[transform,opacity,colors,box-shadow] ${
               previewMode === "desktop" ? "bg-foreground text-background" : "text-muted-foreground"
             }`}
           >

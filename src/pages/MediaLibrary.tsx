@@ -219,7 +219,7 @@ export default function MediaLibrary() {
             return (
               <div key={item.id} className="flex flex-col gap-1">
                 <div
-                  className={`group relative aspect-square overflow-hidden rounded-xl border-2 transition-all cursor-pointer ${
+                  className={`group relative aspect-square overflow-hidden rounded-xl border-2 transition-[transform,opacity,colors,box-shadow] cursor-pointer ${
                     isSelected ? "border-primary ring-2 ring-primary/30" : "border-transparent hover:border-border"
                   }`}
                 >

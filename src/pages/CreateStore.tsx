@@ -579,7 +579,7 @@ export default function CreateStore() {
           </p>
           <div className="mx-auto mt-4 h-1.5 w-48 overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-primary transition-all duration-1000"
+              className="h-full rounded-full bg-primary transition-[transform,opacity,colors,box-shadow] duration-1000"
               style={{
                 width: loading ? "85%" : "100%",
                 animation: "progress-grow 1.5s ease-out forwards",
@@ -690,7 +690,7 @@ export default function CreateStore() {
             <button
               type="button"
               onClick={() => { if (s.id < step) { setDirection("back"); setStep(s.id); } }}
-              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium transition-all duration-300 ${
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium transition-[transform,opacity,colors,box-shadow] duration-300 ${
                 step === s.id
                   ? "bg-primary text-primary-foreground shadow-md scale-110"
                   : step > s.id
@@ -740,7 +740,7 @@ export default function CreateStore() {
                           key={plan.id}
                           type="button"
                           onClick={() => setSelectedPlanId(plan.id)}
-                          className={`relative text-left rounded-2xl border-2 p-5 transition-all duration-200 ${
+                          className={`relative text-left rounded-2xl border-2 p-5 transition-[transform,opacity,colors,box-shadow] duration-200 ${
                             isSelected
                               ? "border-primary bg-primary/5 shadow-lg ring-2 ring-primary/20"
                               : "border-input hover:border-primary/40 hover:shadow-md"
@@ -752,7 +752,7 @@ export default function CreateStore() {
                             </span>
                           )}
 
-                          <div className={`absolute top-4 right-4 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all ${
+                          <div className={`absolute top-4 right-4 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-[transform,opacity,colors,box-shadow] ${
                             isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
                           }`}>
                             {isSelected && <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />}
@@ -854,7 +854,7 @@ export default function CreateStore() {
                     onValueChange={(v) => setOrderMode(v as "whatsapp" | "website" | "both")}
                     className="grid gap-3"
                   >
-                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all duration-200 ${orderMode === "whatsapp" ? "border-primary bg-primary/5 shadow-sm" : "border-input hover:border-primary/30"}`}>
+                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-[transform,opacity,colors,box-shadow] duration-200 ${orderMode === "whatsapp" ? "border-primary bg-primary/5 shadow-sm" : "border-input hover:border-primary/30"}`}>
                       <RadioGroupItem value="whatsapp" className="mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
@@ -863,7 +863,7 @@ export default function CreateStore() {
                         <p className="text-xs text-muted-foreground">Customers order via WhatsApp messages</p>
                       </div>
                     </label>
-                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all duration-200 ${orderMode === "website" ? "border-primary bg-primary/5 shadow-sm" : "border-input hover:border-primary/30"}`}>
+                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-[transform,opacity,colors,box-shadow] duration-200 ${orderMode === "website" ? "border-primary bg-primary/5 shadow-sm" : "border-input hover:border-primary/30"}`}>
                       <RadioGroupItem value="website" className="mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
@@ -872,7 +872,7 @@ export default function CreateStore() {
                         <p className="text-xs text-muted-foreground">Customers checkout directly on your site</p>
                       </div>
                     </label>
-                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all duration-200 ${orderMode === "both" ? "border-primary bg-primary/5 shadow-sm" : "border-input hover:border-primary/30"}`}>
+                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-[transform,opacity,colors,box-shadow] duration-200 ${orderMode === "both" ? "border-primary bg-primary/5 shadow-sm" : "border-input hover:border-primary/30"}`}>
                       <RadioGroupItem value="both" className="mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
@@ -896,7 +896,7 @@ export default function CreateStore() {
                         </button>
                       </div>
                     ) : (
-                      <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-input transition-all hover:border-primary/50 hover:bg-accent/50">
+                      <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-input transition-[transform,opacity,colors,box-shadow] hover:border-primary/50 hover:bg-accent/50">
                         <Upload className="h-5 w-5 text-muted-foreground" />
                         <span className="text-[10px] text-muted-foreground">Upload</span>
                         <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setLogoFile, setLogoPreview)} />
@@ -913,7 +913,7 @@ export default function CreateStore() {
                         </button>
                       </div>
                     ) : (
-                      <label className="flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-input transition-all hover:border-primary/50 hover:bg-accent/50">
+                      <label className="flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-input transition-[transform,opacity,colors,box-shadow] hover:border-primary/50 hover:bg-accent/50">
                         <Upload className="h-5 w-5 text-muted-foreground" />
                         <span className="text-[10px] text-muted-foreground">Upload banner</span>
                         <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e.target.files?.[0] || null, setBannerFile, setBannerPreview)} />
@@ -933,7 +933,7 @@ export default function CreateStore() {
                       </button>
                     </div>
                   ) : (
-                    <label className="flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-input transition-all hover:border-primary/50 hover:bg-accent/50">
+                    <label className="flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-input transition-[transform,opacity,colors,box-shadow] hover:border-primary/50 hover:bg-accent/50">
                       <Upload className="h-5 w-5 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">Upload mobile hero image</span>
                       <span className="text-[10px] text-muted-foreground/70">You can skip this</span>

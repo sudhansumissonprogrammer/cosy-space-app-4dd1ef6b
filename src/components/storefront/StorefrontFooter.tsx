@@ -133,7 +133,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={`https://wa.me/${encodeURIComponent(store.whatsapp_number.replace(/[^0-9+]/g, ""))}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] hover:scale-110"
+                  className="flex h-9 w-9 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] hh:hover-scale-110"
                   style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
                   aria-label="WhatsApp"
                 >
@@ -145,7 +145,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={store.instagram_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] hover:scale-110"
+                  className="flex h-9 w-9 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] hh:hover-scale-110"
                   style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
                   aria-label="Instagram"
                 >
@@ -157,7 +157,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
                   href={store.facebook_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] hover:scale-110"
+                  className="flex h-9 w-9 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] hh:hover-scale-110"
                   style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
                   aria-label="Facebook"
                 >
