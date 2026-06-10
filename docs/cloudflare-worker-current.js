@@ -166,7 +166,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.56.0-cold-inline-products-cdn-preconnect";
+const WORKER_VERSION = "8.57.0-rpc-cf-cache-race-500-waituntil";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -2136,6 +2136,15 @@ async function prefetchStorefrontData(slug, ctx, env) {
 
   const fetchPromise = _fetchShellFromSupabase(slug, ctx, env);
   inflightRequests.set(slug, fetchPromise);
+  // v8.57.0 (#8) — Anchor fetch to ctx.waitUntil so the in-flight RPC always
+  // runs to completion even when the upstream race deadline (200–600ms) loses.
+  // _fetchShellFromSupabase already writes to _memStorefrontCache + KV + Cache
+  // API on success, so the NEXT visitor gets a memory hit instead of a fresh
+  // 400-700ms Supabase round-trip. Without this anchor, CF can cancel the
+  // pending fetch the moment the response stream closes.
+  if (ctx?.waitUntil) {
+    try { ctx.waitUntil(fetchPromise.catch(() => {})); } catch {}
+  }
 
   try {
     const data = await fetchPromise;
@@ -2156,6 +2165,10 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
   const timeout = setTimeout(() => controller.abort(), STOREFRONT_PREFETCH_TIMEOUT_MS);
 
   try {
+    // v8.57.0 (#4) — Add Cloudflare tiered-cache hint. POST is not cached by
+    // default, so we MUST set both cacheEverything AND an explicit cacheKey
+    // for CF to honor it. cacheKey is versioned by WORKER_VERSION so deploys
+    // invalidate cleanly. Second visitor in any colo gets ~20ms vs 400-700ms.
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_storefront_shell`, {
       method: "POST",
       headers: {
@@ -2168,6 +2181,12 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
       },
       signal: controller.signal,
       body: JSON.stringify({ _slug: slug }),
+      cf: {
+        cacheEverything: true,
+        cacheTtl: 60,
+        cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 },
+        cacheKey: `sf-shell:${WORKER_VERSION}:${slug}`,
+      },
     });
     clearTimeout(timeout);
     if (!res.ok) return null;
@@ -3691,16 +3710,20 @@ async function serveStreamedHtml(
           );
         }
       } else {
-        // v8.51.0 — RACE the storefront shell against a tight 200ms deadline.
+        // v8.51.0 — RACE the storefront shell against a tight deadline.
         // v8.47.0 awaited it unconditionally, which on cold KV (after every
         // worker deploy across colos) added 1-3s to TTFB and pushed mobile
-        // cold loads from 3-4s to 10-14s. Per-route SEO head is a nice-to-have
-        // for crawlers; missing it for one cold request is fine — the next
-        // warm request will have it. Humans never saw the head anyway.
+        // cold loads from 3-4s to 10-14s.
+        // v8.57.0 (#3) — Raised 200→500ms. Backed by #4 (CF tiered-cache on
+        // get_storefront_shell, sub-50ms global hit) and #8 (ctx.waitUntil
+        // anchors the in-flight fetch so even a race-loss warms the next
+        // visitor's _memStorefrontCache). When the race WINS,
+        // __STOREFRONT_DATA__ ships inline and React skips its post-
+        // hydration RPC — saving 500-900ms LCP on India mobile.
         try {
           earlyStorefrontResult = await Promise.race([
             storefrontPromise,
-            new Promise((resolve) => setTimeout(() => resolve(null), 200)),
+            new Promise((resolve) => setTimeout(() => resolve(null), 500)),
           ]);
         } catch {}
         const earlyStore = earlyStorefrontResult?.data?.store;
@@ -4243,7 +4266,7 @@ async function _fetchPdpFromDb(storeSlug, productSlug, timeoutMs) {
       },
       body: JSON.stringify({ _store_slug: storeSlug, _product_slug: productSlug }),
       signal: controller.signal,
-      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 } },
+      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 }, cacheKey: `pdp:${WORKER_VERSION}:${storeSlug}:${productSlug}` },
     });
     clearTimeout(timeout);
     if (!res.ok) throw new Error(`PDP RPC error: ${res.status}`);
@@ -4269,7 +4292,7 @@ async function _fetchCategoryFromDb(storeSlug, categorySlug, limit, timeoutMs) {
       },
       body: JSON.stringify({ _store_slug: storeSlug, _category_slug: categorySlug, _limit: limit }),
       signal: controller.signal,
-      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 } },
+      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 }, cacheKey: `cat:${WORKER_VERSION}:${storeSlug}:${categorySlug}:${limit}` },
     });
     clearTimeout(timeout);
     if (!res.ok) throw new Error(`Category RPC error: ${res.status}`);
