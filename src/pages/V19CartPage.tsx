@@ -5,7 +5,7 @@
  */
 import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Plus, Minus, ShoppingCart, Tag, Info, ChevronRight, Receipt, Trash2, Package } from "lucide-react";
+import { ArrowLeft, Plus, Minus, ShoppingCart, Tag, Info, ChevronRight, Receipt, Trash2, Package, PartyPopper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
