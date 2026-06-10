@@ -5835,41 +5835,37 @@ async function _handleFetch(request, env, ctx) {
       let hitKey = null;
       let slugForKey = null;
       if (shouldCheckMirror) {
-        // v8.25.1: for anonymous HTML navs, look up the REAL-HOST key first
-        // (matches what mirrorToCfCache writes via getCfCacheKey). Falls
-        // back to raw request for synthesized responses (redirects, 410s,
-        // 404s, assets) which already use raw request as their key.
         if (isHtmlNav && !isAuthed && !isPrivatePath) {
+          // v8.58.0: Run slug-resolve in parallel with the real-host cache.match
+          // (slug was previously awaited sequentially after the first MISS, and
+          // again before the KV check — wasted 5-20ms × 2 per cold lookup).
+          // Then run canonical-slug + KV-HTML lookups in parallel on miss.
           const cfKey = getCfCacheKey(earlyUrl.hostname, earlyPath);
-          cached = await cache.match(cfKey);
-          if (cached) hitKey = "real-host";
-          // v8.25.2: canonical zone-key fallback. Custom domains live outside
-          // the Worker zone; their real-host write occasionally lands in a
-          // colo that won't serve it back. The slug-subdomain key is always
-          // inside the zone, so this is the reliable cache for ad traffic.
-          if (!cached) {
-            slugForKey = await _earlyResolveSlug(earlyUrl.hostname, env);
-            if (slugForKey) {
-              const canonical = getCanonicalHtmlCacheKey(slugForKey, earlyPath);
-              if (canonical) {
-                cached = await cache.match(canonical);
-                if (cached) hitKey = "canonical-slug";
-              }
-            }
+          const [realHostHit, resolvedSlug] = await Promise.all([
+            cache.match(cfKey).catch(() => null),
+            _earlyResolveSlug(earlyUrl.hostname, env).catch(() => null),
+          ]);
+          slugForKey = resolvedSlug;
+          if (realHostHit) {
+            cached = realHostHit;
+            hitKey = "real-host";
           }
-          // v8.27.0: KV-backed HTML cache. Global, cross-colo HIT-EARLY.
-          // caches.default is colo-local; KV replicates to all 300+ colos.
-          // First visitor in any colo (after the URL was warmed elsewhere)
-          // gets a sub-15ms response from KV instead of running the full
-          // pipeline. Safe: 60s TTL, anonymous-only, non-private only.
-          if (!cached && env?.STORE_KV) {
-            if (!slugForKey) slugForKey = await _earlyResolveSlug(earlyUrl.hostname, env);
-            if (slugForKey) {
-              const kvHit = await kvHtmlGet(env, slugForKey, earlyPath);
-              if (kvHit) {
-                cached = kvHit;
-                hitKey = "kv-html";
-              }
+          if (!cached && slugForKey) {
+            const canonical = getCanonicalHtmlCacheKey(slugForKey, earlyPath);
+            const cachePromise = canonical
+              ? cache.match(canonical).catch(() => null)
+              : Promise.resolve(null);
+            const kvPromise = env?.STORE_KV
+              ? kvHtmlGet(env, slugForKey, earlyPath).catch(() => null)
+              : Promise.resolve(null);
+            const [canonicalHit, kvHit] = await Promise.all([cachePromise, kvPromise]);
+            // Prefer caches.default (free, colo-local) over KV (billed read).
+            if (canonicalHit) {
+              cached = canonicalHit;
+              hitKey = "canonical-slug";
+            } else if (kvHit) {
+              cached = kvHit;
+              hitKey = "kv-html";
             }
           }
         }
