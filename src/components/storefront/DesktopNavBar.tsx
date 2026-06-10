@@ -191,8 +191,10 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
               <SearchIcon className="h-5 w-5" />
             </button>
 
-            {/* Account */}
-            {!authLoading && (
+            {/* Account — slot reserved during authLoading to prevent CLS */}
+            {authLoading ? (
+              <div className="h-9 w-9" aria-hidden="true" />
+            ) : (
               <Link
                 to={storefrontPath(store.slug, user ? "account" : "login")}
                 className="flex h-9 w-9 items-center justify-center rounded-md transition-opacity hover:opacity-70"
