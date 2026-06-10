@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 
 export interface CartItem {
   productId: string;
@@ -101,14 +101,21 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
     }
   }, [items, slug, hydrated]);
 
+  // Keep a live ref to items so openCart can read the latest cart without
+  // listing `items` in its dep array (every quantity change would otherwise
+  // re-create openCart → cascade-rerender every consumer across all 20 themes).
+  const itemsRef = useRef(items);
+  useEffect(() => { itemsRef.current = items; }, [items]);
+
   const openCart = useCallback(() => {
     setIsCartOpen(true);
     // Fire ViewCart only on user-initiated cart opens, throttled per cart-content
     // hash + 30 min window so repeated icon clicks don't spam Meta with duplicates
     // (Shopify behaves the same — one ViewCart per "session of looking at cart").
-    if (storeId && items.length > 0) {
+    const currentItems = itemsRef.current;
+    if (storeId && currentItems.length > 0) {
       try {
-        const hash = items.map((i) => `${i.productId}:${i.quantity}`).sort().join("|");
+        const hash = currentItems.map((i) => `${i.productId}:${i.quantity}`).sort().join("|");
         const key = `vc_${storeId}`;
         const raw = sessionStorage.getItem(key);
         const now = Date.now();
@@ -123,12 +130,12 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
         import("@/lib/metaCapi"),
       ]).then(([pixelMod, capiMod]) => {
         const eid = pixelMod.generateEventId();
-        const value = items.reduce((s, i) => s + i.price * i.quantity, 0);
+        const value = currentItems.reduce((s, i) => s + i.price * i.quantity, 0);
         const data = {
-          content_ids: items.map((i) => i.productId),
-          contents: items.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+          content_ids: currentItems.map((i) => i.productId),
+          contents: currentItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
           content_type: "product",
-          num_items: items.reduce((s, i) => s + i.quantity, 0),
+          num_items: currentItems.reduce((s, i) => s + i.quantity, 0),
           value,
           currency,
         };
@@ -138,7 +145,7 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
         void capiMod;
       }).catch(() => {});
     }
-  }, [storeId, items, currency]);
+  }, [storeId, currency]);
   const closeCart = useCallback(() => setIsCartOpen(false), []);
 
   const addToCart = useCallback((item: Omit<CartItem, "quantity"> & { quantity?: number }, options?: { silent?: boolean }) => {

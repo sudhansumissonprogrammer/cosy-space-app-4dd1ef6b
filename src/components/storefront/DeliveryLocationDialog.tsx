@@ -76,6 +76,8 @@ export default function DeliveryLocationDialog({ open, onClose, storeId, onSaved
         state: payload.state,
         pincode: payload.pincode,
       }));
+      // Notify same-tab listeners (CheckoutPage) — StorageEvent only fires cross-tab
+      try { window.dispatchEvent(new Event("checkout_address_ready")); } catch {}
       if (payload.phone) localStorage.setItem("checkout_phone", payload.phone);
       const label = `${payload.city}${payload.pincode ? " · " + payload.pincode : ""}`;
       localStorage.setItem(`delivery_location_${storeId}`, label);

@@ -108,6 +108,8 @@ function triggerGeolocation() {
       const data = await res.json();
       if (data?.success && data?.address) {
         localStorage.setItem("checkout_address", JSON.stringify(data.address));
+        // Notify same-tab listeners (StorageEvent only fires cross-tab)
+        try { window.dispatchEvent(new Event("checkout_address_ready")); } catch {}
         console.log("[BuyNow] Address saved:", data.address);
       }
     } catch (err) {

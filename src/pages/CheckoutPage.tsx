@@ -185,11 +185,20 @@ export default function CheckoutPage() {
         }
       } catch {}
     };
-    // Poll aggressively for background geocode results (same-tab writes don't trigger StorageEvent)
-    const interval = setInterval(checkForAddress, 800);
-    const timeout = setTimeout(() => clearInterval(interval), 20000); // stop after 20s
-    checkForAddress(); // immediate check
-    return () => { clearInterval(interval); clearTimeout(timeout); };
+    // Event-driven: writers dispatch "checkout_address_ready" on the window after setItem.
+    // Cross-tab fallback via StorageEvent. Single late-tail check at 1.5s covers any
+    // legacy writer that hasn't been updated yet — replaces 25 setInterval ticks.
+    checkForAddress();
+    const onReady = () => checkForAddress();
+    const onStorage = (e: StorageEvent) => { if (e.key === "checkout_address") checkForAddress(); };
+    window.addEventListener("checkout_address_ready", onReady);
+    window.addEventListener("storage", onStorage);
+    const tail = setTimeout(checkForAddress, 1500);
+    return () => {
+      window.removeEventListener("checkout_address_ready", onReady);
+      window.removeEventListener("storage", onStorage);
+      clearTimeout(tail);
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressDialog, setShowAddressDialog] = useState(false);

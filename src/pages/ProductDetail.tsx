@@ -1241,8 +1241,12 @@ export default function ProductDetail() {
   );
 }
 
-/* ── CRO #5: Countdown Timer Component ── */
-function CountdownTimer({ productId }: { productId: string }) {
+/* ── CRO #5: Countdown shared hook ──
+ * Single 1Hz interval per (productId, mounted-tree). Both display variants
+ * subscribe to the same hook so PDP runs ONE setInterval instead of two and
+ * re-renders are halved on the conversion-critical page.
+ */
+function useCountdown(productId: string) {
   const seed = useMemo(() => getCountdownSeed(productId), [productId]);
   const [timeLeft, setTimeLeft] = useState(() => {
     const now = new Date();
@@ -1271,6 +1275,11 @@ function CountdownTimer({ productId }: { productId: string }) {
     return () => clearInterval(timer);
   }, [seed]);
 
+  return timeLeft;
+}
+
+function CountdownTimer({ productId }: { productId: string }) {
+  const timeLeft = useCountdown(productId);
   return (
     <div className="mt-2.5 flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ background: "linear-gradient(135deg, rgba(245,158,11,0.08), rgba(239,68,68,0.06))", border: "1px solid rgba(245,158,11,0.2)" }}>
       <Timer className="h-3.5 w-3.5 text-amber-600 animate-pulse" />
@@ -1295,34 +1304,7 @@ function CountdownTimer({ productId }: { productId: string }) {
 
 /* ── Inline countdown for trust block ── */
 function CountdownTimerInline({ productId }: { productId: string }) {
-  const seed = useMemo(() => getCountdownSeed(productId), [productId]);
-  const [timeLeft, setTimeLeft] = useState(() => {
-    const now = new Date();
-    const endOfDay = new Date(now);
-    endOfDay.setHours(23, 59, 59, 999);
-    const remainMs = endOfDay.getTime() - now.getTime();
-    const totalSec = Math.floor(remainMs / 1000);
-    const h = Math.min(seed.hours, Math.floor(totalSec / 3600));
-    const m = Math.min(seed.minutes, Math.floor((totalSec % 3600) / 60));
-    const s = totalSec % 60;
-    return { hours: h, minutes: m, seconds: s };
-  });
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        const totalSec = prev.hours * 3600 + prev.minutes * 60 + prev.seconds - 1;
-        if (totalSec <= 0) return { hours: seed.hours, minutes: seed.minutes, seconds: 0 };
-        return {
-          hours: Math.floor(totalSec / 3600),
-          minutes: Math.floor((totalSec % 3600) / 60),
-          seconds: totalSec % 60,
-        };
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [seed]);
-
+  const timeLeft = useCountdown(productId);
   return (
     <span className="text-xs font-semibold text-foreground">
       Offer ends in{" "}
