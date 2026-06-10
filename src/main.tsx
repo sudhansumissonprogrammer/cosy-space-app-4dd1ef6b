@@ -152,32 +152,29 @@ function isSafeSwHost(): boolean {
  */
 if ("serviceWorker" in navigator) {
   if (isPublishedHost()) {
-    // ── LIVE HOSTS: Aggressive SW cleanup ──
-    // Legacy SWs on published hosts cause stale HTML. Clean up ONCE per device
-    // (localStorage, not sessionStorage) — otherwise every new tab triggers a
-    // full reload + double skeleton on first visit.
-    const CLEANUP_KEY = "sw_cleanup_v4";
-    const cleanupDone = (() => {
-      try { return localStorage.getItem(CLEANUP_KEY); } catch { return "1"; }
-    })();
-    if (!cleanupDone) {
-      try { localStorage.setItem(CLEANUP_KEY, "1"); } catch {}
-      // v8.16: NEVER reload after cleanup. In WebViews with volatile
-      // localStorage (Instagram in-app browser, some Chrome sandboxes,
-      // blocked-storage modes) the CLEANUP_KEY doesn't persist, so every
-      // page load re-ran cleanup → window.location.replace → reload loop
-      // every ~10-15s. Just unregister silently; the next user-initiated
-      // navigation will pick up fresh assets without any forced reload.
+    // ── LIVE HOSTS: Always clean stale SW/cache silently ──
+    // Previous one-shot cleanup could be skipped forever if localStorage was
+    // set before the browser fully removed an older Workbox SW. Run a cheap
+    // idle cleanup on every live visit so product/category API responses can
+    // never stay hidden behind a legacy device cache.
+    const cleanupLiveServiceWorkers = () => {
       Promise.all([
         navigator.serviceWorker.getRegistrations(),
-        caches.keys().catch(() => [] as string[]),
+        "caches" in window ? caches.keys().catch(() => [] as string[]) : Promise.resolve([] as string[]),
       ]).then(([registrations, keys]) => {
-        Promise.all(registrations
-          .filter((r) => !r.active?.scriptURL.includes("/sw-push.js"))
-          .map((r) => r.unregister()))
-          .then(() => Promise.all(keys.map((k) => caches.delete(k))))
-          .catch(() => {});
-      });
+        const staleRegistrations = registrations.filter((r) => !r.active?.scriptURL.includes("/sw-push.js"));
+        const staleCacheKeys = keys.filter((k) => /workbox|precache|html-pages|static-assets|edge-api|images|google-fonts/i.test(k));
+        if (!staleRegistrations.length && !staleCacheKeys.length) return;
+        Promise.all([
+          ...staleRegistrations.map((r) => r.unregister()),
+          ...staleCacheKeys.map((k) => caches.delete(k)),
+        ]).catch(() => {});
+      }).catch(() => {});
+    };
+    if ("requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(cleanupLiveServiceWorkers, { timeout: 2000 });
+    } else {
+      setTimeout(cleanupLiveServiceWorkers, 1000);
     }
     // Do NOT register caching SW on live hosts. Push registers /sw-push.js on demand.
   } else if (isSafeSwHost()) {
