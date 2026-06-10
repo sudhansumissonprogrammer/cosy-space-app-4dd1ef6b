@@ -367,7 +367,12 @@ async function finalizeResponse(request, response) {
    ============================================================ */
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
-const HTML_CACHE_SCHEMA_VERSION = `html-v4-${WORKER_VERSION}`;
+// v8.58.0: Decoupled from WORKER_VERSION. Bump ONLY when HTML output shape
+// changes (head injection, skeleton, JSON-LD, inline data markers). Previously
+// every worker deploy invalidated 100% of HTML cache globally → 5-10x Supabase
+// spike for ~20min post-deploy. CHECKLIST before bumping: did you change
+// buildSkeleton, injectIntoHtml, _buildPrebuiltHead, JSON-LD, or __*_INLINE__?
+const HTML_CACHE_SCHEMA_VERSION = "html-v5";
 const R2_CDN_HOST = "cdn.shopbanao.in";
 
 const SUPABASE_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
