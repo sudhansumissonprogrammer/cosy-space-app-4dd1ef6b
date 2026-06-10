@@ -1610,6 +1610,7 @@ export type Database = {
           currency: string
           description: string | null
           display_order: number
+          has_variants: boolean
           id: string
           image_alt: string | null
           image_url: string | null
@@ -1639,6 +1640,7 @@ export type Database = {
           currency?: string
           description?: string | null
           display_order?: number
+          has_variants?: boolean
           id?: string
           image_alt?: string | null
           image_url?: string | null
@@ -1668,6 +1670,7 @@ export type Database = {
           currency?: string
           description?: string | null
           display_order?: number
+          has_variants?: boolean
           id?: string
           image_alt?: string | null
           image_url?: string | null
