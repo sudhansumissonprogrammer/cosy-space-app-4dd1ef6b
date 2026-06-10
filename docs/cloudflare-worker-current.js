@@ -4621,7 +4621,7 @@ async function handleProductsApi(request, url, ctx, env) {
     );
   }
 
-  const coalesceKey = `${domain}:${filters.category}:${filters.page}:${filters.sort}`;
+  const coalesceKey = `${domain}:${filters.category}:${filters.page}:${filters.sort}:${filters.best_selling}`;
 
   if (inflightProductRequests.has(coalesceKey)) {
     try {
