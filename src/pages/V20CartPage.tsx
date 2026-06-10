@@ -3,7 +3,7 @@
  */
 import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Plus, Minus, ShoppingCart, Tag, Info, ChevronRight, Receipt, Trash2, Package } from "lucide-react";
+import { ArrowLeft, Plus, Minus, ShoppingCart, Tag, Info, ChevronRight, Receipt, Trash2, Package, PartyPopper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
@@ -123,7 +123,7 @@ export default function V20CartPage() {
         {freeAbove > 0 && shippingActive && (
           <div className="rounded-xl bg-white p-3.5 border border-gray-200">
             {qualifiesFree ? (
-              <div className="text-[12.5px] font-extrabold" style={{ color: PRIMARY }}>🎉 Yay! You unlocked FREE delivery</div>
+              <div className="flex items-center gap-1.5 text-[12.5px] font-extrabold" style={{ color: PRIMARY }}><PartyPopper className="h-3.5 w-3.5" aria-hidden="true" /> Yay! You unlocked FREE delivery</div>
             ) : (
               <>
                 <div className="text-[12.5px] font-bold text-gray-800">

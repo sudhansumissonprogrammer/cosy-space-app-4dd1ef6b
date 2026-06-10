@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, Globe, Plus, Flame, Store, MapPin, Clock, Image, FileText, Search, Award, QrCode, Download } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Globe, Plus, Flame, Store, MapPin, Clock, Image, FileText, Search, Award, QrCode, Download, AlertTriangle } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
 import { Switch } from "@/components/ui/switch";
@@ -563,7 +563,7 @@ export default function StoreSettings() {
               <p className="text-xs text-muted-foreground">
                 {seoAboutParagraph.length}/500 characters
                 {seoAboutParagraph.length > 0 && seoAboutParagraph.length < 150 && (
-                  <span className="ml-2 text-amber-600">⚠ Add at least 150 chars for best results</span>
+                  <span className="ml-2 inline-flex items-center gap-1 text-amber-600"><AlertTriangle className="h-3 w-3" aria-hidden="true" /> Add at least 150 chars for best results</span>
                 )}
               </p>
             </div>

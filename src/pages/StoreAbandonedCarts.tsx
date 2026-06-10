@@ -9,6 +9,7 @@ import { sendAbandonedCartWhatsApp } from "@/lib/whatsappAutomation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { XCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -299,8 +300,8 @@ export default function StoreAbandonedCarts() {
               <div className="mt-2 space-y-1">
                 <Progress value={progressPercent} className="h-2" />
                 <div className="flex justify-between text-[11px] text-muted-foreground">
-                  <span>✅ {bulkProgress.sent} sent</span>
-                  <span>❌ {bulkProgress.failed} failed</span>
+                  <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-600" aria-hidden="true" /> {bulkProgress.sent} sent</span>
+                  <span className="inline-flex items-center gap-1"><XCircle className="h-3 w-3 text-destructive" aria-hidden="true" /> {bulkProgress.failed} failed</span>
                   <span>{bulkProgress.sent + bulkProgress.failed}/{bulkProgress.total}</span>
                 </div>
               </div>
