@@ -166,7 +166,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.55.0-storefront-ttfb-unblock";
+const WORKER_VERSION = "8.56.0-cold-inline-products-cdn-preconnect";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -1378,6 +1378,15 @@ function injectDeepPreloads(head, deepChunks) {
 // any error so HTML response is never blocked.
 async function enrichHeadWithDeepPreloads(head, origin, env) {
   if (!head) return head;
+  // v8.56.0 — Always inject preconnect for R2 CDN (cdn.shopbanao.in) so the
+  // browser can warm TLS/TCP to the image host BEFORE the preload scanner
+  // sees the first <img>. Cheap (~140 bytes), idempotent, skipped if present.
+  if (!head.includes('href="https://cdn.shopbanao.in"') && head.includes("</head>")) {
+    const cdnHints =
+      `<link rel="preconnect" href="https://cdn.shopbanao.in" crossorigin />` +
+      `<link rel="dns-prefetch" href="https://cdn.shopbanao.in" />`;
+    head = head.replace("</head>", `${cdnHints}</head>`);
+  }
   const marker = head.match(/<!--ENTRY:([^>]+)-->/);
   if (!marker) return head;
   try {
@@ -3865,14 +3874,22 @@ async function fetchAndInjectSlug(
   const storefrontPromise = prefetchStorefrontDataWithDeadline(slug, ctx, env, remaining);
 
   // v7.7.0 Fix 2: Skip _getInlineProductsOrNull if caller already fetched it.
-  // FIX #4: Batch KV reads in one Promise.all
+  // v8.56.0 — On a cold isolate the mem version map is empty, so the fast
+  // path returned null and React had to fetch products after JS parse. Race
+  // the full path (cache.match + KV) against a 120ms budget: KV reads inside
+  // a colo are typically 10–40ms and almost always win, so cold visits also
+  // get product JSON inlined into the HTML.
+  const SLOW_INLINE_PRODUCTS_BUDGET_MS = 120;
       const [shellResult, kvBatch, cachedHeadMem, inlineProducts] = await Promise.all([
     getNavigationSpaShell(request, ctx, env),
     _batchKvRead(slug, env),
     _getCachedPrebuiltHead(env),
     prefetchedInlineProducts !== null
       ? Promise.resolve(prefetchedInlineProducts)
-          : _getInlineProductsFastOrNull(hostname),
+      : Promise.race([
+          _getInlineProductsOrNull(hostname, slug, env, ctx),
+          new Promise((resolve) => setTimeout(() => resolve(null), SLOW_INLINE_PRODUCTS_BUDGET_MS)),
+        ]).then((v) => v ?? _getInlineProductsFastOrNull(hostname)),
   ]);
 
   // Hydrate in-memory caches from batch KV read
