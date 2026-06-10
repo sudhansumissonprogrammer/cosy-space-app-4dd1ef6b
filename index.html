@@ -687,6 +687,7 @@
         function hasRealContent(){
           var root=document.getElementById('root');
           if(!root) return false;
+          if(root.querySelector('[data-storefront-ready]')) return true;
           var totalHeight=0;
           var kids=root.children;
           for(var i=0;i<kids.length;i++){ totalHeight+=kids[i].offsetHeight; }
