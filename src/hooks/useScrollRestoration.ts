@@ -217,15 +217,21 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
       if (tryAnchorRestore()) return;
 
       // Otherwise poll up to RESTORE_TIMEOUT_MS, also reacting to DOM mutations
-      // (Meesho/Flipkart feel — wait until the tapped card actually mounts).
+      // AND the storefront's "content-ready" event (Flipkart/Meesho feel —
+      // wait until the tapped card actually mounts, even on a cold remount).
       const start = performance.now();
       let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        observer.disconnect();
+        try { window.removeEventListener("storefront:content-ready", onReady); } catch {}
+      };
+      const onReady = () => { if (tryAnchorRestore()) finish(); };
+      window.addEventListener("storefront:content-ready", onReady);
       const observer = new MutationObserver(() => {
         if (done) return;
-        if (tryAnchorRestore()) {
-          done = true;
-          observer.disconnect();
-        }
+        if (tryAnchorRestore()) finish();
       });
       observer.observe(document.body, { childList: true, subtree: true });
 
