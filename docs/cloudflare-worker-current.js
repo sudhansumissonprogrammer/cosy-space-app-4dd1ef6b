@@ -4553,6 +4553,9 @@ async function handleProductsApi(request, url, ctx, env) {
     category: url.searchParams.get("category") || "",
     page: url.searchParams.get("page") || "",
     sort: url.searchParams.get("sort") || "",
+    // v8.52.0 — best_selling filter so frontend BestSellersSection can use the
+    // Worker edge cache instead of going direct to Supabase (saved ~800ms).
+    best_selling: url.searchParams.get("best_selling") === "1" ? "1" : "",
   };
 
   // Get current version for this domain (cached in-memory for 60s)
