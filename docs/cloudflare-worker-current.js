@@ -1035,7 +1035,7 @@ function buildThemeCssFromConfig(tc) {
   const btnRadius = buttonStyle === "pill" ? "9999px" : buttonStyle === "square" ? "0px" : "0.5rem";
 
   let css =
-    `<style id="edge-theme">:root{` +
+    `<style id="edge-theme">:root:root{` +
     `--storefront-primary:${primaryColor};` +
     `--storefront-primary-light:${primaryLight};` +
     `--storefront-accent:${accentColor};` +
@@ -1045,7 +1045,7 @@ function buildThemeCssFromConfig(tc) {
     `--storefront-body-font:'${bodyFont || headingFont || "Inter"}';` +
     `--storefront-button-radius:${btnRadius};` +
     `--storefront-btn-text:${btnTextColor};` +
-    `}body{background:${bgColor};color:${textColor};font-family:var(--storefront-body-font,'Inter'),system-ui,sans-serif}` +
+    `}body{background:${bgColor};color:${textColor};font-family:var(--storefront-body-font,'Inter'),system-ui,sans-serif!important}` +
     /* ─── Phase 2 Fix #4: Critical product-card CSS ───
        ~2KB of layout-critical CSS so the first product card grid paints
        immediately on React's first commit, BEFORE the ~80KB index.css
@@ -1146,7 +1146,7 @@ function buildThemeCssFromConfig(tc) {
       css += `<noscript><link rel="stylesheet" href="${googleFontsHref}" /></noscript>\n`;
     }
 
-    css += `<style>:root{--storefront-heading-font:'${fonts[0] || "Inter"}';--storefront-body-font:'${fonts[fonts.length > 1 ? 1 : 0] || "Inter"}'}</style>\n`;
+    css += `<style>:root:root{--storefront-heading-font:'${fonts[0] || "Inter"}';--storefront-body-font:'${fonts[fonts.length > 1 ? 1 : 0] || "Inter"}'}</style>\n`;
   }
 
   return { css, bgColor, textColor, primaryColor, btnTextColor, btnRadius, primaryLight };
