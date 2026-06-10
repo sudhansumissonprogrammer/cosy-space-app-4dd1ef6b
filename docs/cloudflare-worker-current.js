@@ -1,5 +1,10 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.55.0 — storefront TTFB unblock
+ * SHOPBANAO PRODUCTION ROUTER v8.61.0 — fresh product refresh
+ *
+ * v8.61.0 — Product/storefront RPC subrequests no longer use Cloudflare's
+ *           independent 60s fetch cache. The versioned Worker cache remains,
+ *           but after a purge the next refresh must hit live database data,
+ *           not a stale inner RPC response with deleted demo products.
  *
  * v8.55.0 — Stop holding storefront HTML open while backend/storefront data
  *           or product KV lookups are slow. The first byte/body now ships from
@@ -166,7 +171,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.60.0-instant-product-purge";
+const WORKER_VERSION = "8.61.0-fresh-product-refresh";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -2207,12 +2212,6 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
       },
       signal: controller.signal,
       body: JSON.stringify({ _slug: slug }),
-      cf: {
-        cacheEverything: true,
-        cacheTtl: 60,
-        cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 },
-        cacheKey: `sf-shell:${WORKER_VERSION}:${slug}`,
-      },
     });
     clearTimeout(timeout);
     if (!res.ok) return null;
@@ -4353,7 +4352,6 @@ async function _fetchPdpFromDb(storeSlug, productSlug, timeoutMs) {
       },
       body: JSON.stringify({ _store_slug: storeSlug, _product_slug: productSlug }),
       signal: controller.signal,
-      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 }, cacheKey: `pdp:${WORKER_VERSION}:${storeSlug}:${productSlug}` },
     });
     clearTimeout(timeout);
     if (!res.ok) throw new Error(`PDP RPC error: ${res.status}`);
@@ -4379,7 +4377,6 @@ async function _fetchCategoryFromDb(storeSlug, categorySlug, limit, timeoutMs) {
       },
       body: JSON.stringify({ _store_slug: storeSlug, _category_slug: categorySlug, _limit: limit }),
       signal: controller.signal,
-      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 }, cacheKey: `cat:${WORKER_VERSION}:${storeSlug}:${categorySlug}:${limit}` },
     });
     clearTimeout(timeout);
     if (!res.ok) throw new Error(`Category RPC error: ${res.status}`);
@@ -4920,12 +4917,12 @@ async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
     const page = parseInt(filters.page, 10);
     if (page > 0) params.set("offset", String(page * PRODUCTS_PAGE_SIZE));
 
-    // v8.6.0: cf.cacheEverything (60s) — fast invalidation via /api/purge-store still works,
-    // and CF dashboard now counts these as cache hits. Short TTL keeps stock/price freshness.
+    // v8.61.0: do not add a separate Cloudflare fetch cache here. The Worker
+    // already owns a versioned Cache API + KV layer; after purge, this inner
+    // 60s cache could still return deleted/demo products to the new version.
     const res = await fetch(`${SUPABASE_URL}/rest/v1/products?${params}`, {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, Accept: "application/json" },
       signal: controller.signal,
-      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 } },
     });
     clearTimeout(timeout);
     if (!res.ok) throw new Error(`DB error: ${res.status}`);

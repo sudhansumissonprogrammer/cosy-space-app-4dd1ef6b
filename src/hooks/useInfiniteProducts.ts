@@ -27,28 +27,6 @@ interface FetchOpts {
 
 async function fetchPage({ storeId, category, page, sort }: FetchOpts): Promise<any[]> {
   if (isProductionHost()) {
-    // ── v8.47 cost-cut: reuse shell-injected products_preview ──
-    // Worker injects window.__STOREFRONT_DATA__.products_preview (first 20
-    // products, no filter) into SSR shell for the home page. Reusing it
-    // here eliminates an /api/products Worker request on the cold Shop
-    // page load (page=0, no filter, no sort). Same idea as the existing
-    // __PRODUCTS_INLINE__ branch — that one is 50 products; this one is
-    // 20 from the storefront-data shell payload. Whichever exists wins.
-    if (page === 0 && !category && !sort) {
-      try {
-        const sf = (window as any).__STOREFRONT_DATA__;
-        const preview = sf && Array.isArray(sf.products_preview) ? sf.products_preview : null;
-        if (preview && preview.length > 0) {
-          return preview as any[];
-        }
-        const inline = (window as any).__PRODUCTS_INLINE__;
-        if (Array.isArray(inline) && inline.length > 0) {
-          return inline as any[];
-        }
-      } catch { /* ignore */ }
-    }
-
-
     // ── Production: use Worker /api/products (cached, KV-backed) ──
     const params = new URLSearchParams();
     if (category) params.set("category", category);
@@ -57,25 +35,12 @@ async function fetchPage({ storeId, category, page, sort }: FetchOpts): Promise<
     const qs = params.toString();
     const url = `${window.location.origin}/api/products${qs ? `?${qs}` : ""}`;
 
-    // ── sessionStorage cache: dedupe identical paged requests within a session ──
-    // Survives Shop → PDP → Shop back-navigation without re-hitting Worker.
-    // TTL = 60s (was 15min) so any add/edit/delete on the dashboard reflects
-    // on the storefront within a minute even if the user keeps the tab open.
-    const SS_KEY = `__sf_pp_${window.location.hostname}_${qs || "root"}`;
-    const SS_TTL = 60 * 1000;
-    try {
-      const cached = sessionStorage.getItem(SS_KEY);
-      if (cached) {
-        const { ts, data } = JSON.parse(cached);
-        if (Date.now() - ts < SS_TTL && Array.isArray(data)) return data;
-      }
-    } catch { /* ignore */ }
-
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    // Never reuse products embedded in cached HTML or sessionStorage here.
+    // On refresh after a dashboard add/delete, the versioned Worker endpoint
+    // is the freshness source; `no-store` prevents browser HTTP cache replay.
+    const res = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
     if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
-    const json = await res.json();
-    try { sessionStorage.setItem(SS_KEY, JSON.stringify({ ts: Date.now(), data: json })); } catch { /* quota */ }
-    return json;
+    return await res.json();
   }
 
   // ── Preview / localhost: direct Supabase ──

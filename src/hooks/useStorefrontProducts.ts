@@ -19,6 +19,22 @@ const PRODUCT_COLUMNS_FULL =
  * where the Worker is not available — using the SAME interface shape.
  */
 async function fetchProducts(storeId: string): Promise<any[]> {
+  const hostname = window.location.hostname;
+  const isLocal = hostname === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+  const isPreview = hostname.endsWith(".lovable.app") || hostname.endsWith(".lovableproject.com");
+
+  if (!isLocal && !isPreview) {
+    // Production must not trust products embedded in cached HTML: a browser
+    // refresh should hit the Worker product endpoint and use its versioned
+    // edge cache, otherwise deleted/demo items can survive in old HTML.
+    const res = await fetch(`${window.location.origin}/api/products`, {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
+    return await res.json();
+  }
+
   // 1. Check Worker-inlined products (embedded in HTML — instant, no fetch)
   const inlineProducts = (window as any).__PRODUCTS_INLINE__;
   if (inlineProducts) {
@@ -50,25 +66,6 @@ async function fetchProducts(storeId: string): Promise<any[]> {
     } catch { /* fall through */ }
   }
 
-
-  const hostname = window.location.hostname;
-  const isLocal = hostname === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
-  const isPreview = hostname.endsWith(".lovable.app") || hostname.endsWith(".lovableproject.com");
-
-  if (!isLocal && !isPreview) {
-    // NOTE: sessionStorage cache was removed (v8.59.x) because it survived
-    // hard refreshes for 15min with no invalidation signal — when a merchant
-    // added/deleted a product, the Worker edge cache was purged correctly but
-    // shoppers still saw the stale list until the SS entry expired.
-    // React Query (staleTime 30min) already covers intra-session navigation,
-    // and the Worker /api/products response is Cache-API + KV backed, so cold
-    // loads are still fast and ALWAYS reflect the latest purge/version bump.
-    const res = await fetch(`${window.location.origin}/api/products`, {
-      headers: { Accept: "application/json" },
-    });
-    if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
-    return await res.json();
-  }
 
   // ── Preview/localhost fallback: direct Supabase (lazy import) ──
   const { supabase } = await import("@/integrations/supabase/client");
