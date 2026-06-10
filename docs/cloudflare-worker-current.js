@@ -5482,7 +5482,7 @@ async function handlePrewarm(request, url, ctx, env) {
           htmlWrites.push(
             env.STORE_KV.put(htmlKvKey, injected.html, {
               expirationTtl: HTML_KV_TTL_SEC,
-              metadata: { s: 200, h: { "Content-Type": "text/html; charset=utf-8" } },
+              metadata: { s: 200, h: { "Content-Type": "text/html; charset=utf-8" }, wv: WORKER_VERSION },
             }).catch(() => {}),
           );
         }

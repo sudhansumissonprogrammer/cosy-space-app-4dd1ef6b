@@ -50,9 +50,9 @@
          (see leak-guard script below). Was a static <link rel=preload> that
          leaked onto every storefront subdomain, wasting 250-340ms on mobile. -->
 
-    <!-- Speed up React mount on landing: prefetch the entry chunk early.
-         In production Vite emits modulepreload for downstream chunks automatically. -->
-    <link rel="modulepreload" href="/src/main.tsx" />
+    <!-- Entry chunk preload is injected by Vite/Worker in production. Do not
+         hardcode /src/main.tsx here: on storefronts it becomes an extra
+         /assets/main-*.tsx request that competes with the real app chunks. -->
     <!-- Alegreya SC is a secondary accent font (wordmark + 1 inline span on landing).
          Dropped from preload + switched to font-display:optional below so it can
          NEVER block first paint. Was previously causing a ~3s blank screen on cold
