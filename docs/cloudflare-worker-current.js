@@ -2165,6 +2165,10 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
   const timeout = setTimeout(() => controller.abort(), STOREFRONT_PREFETCH_TIMEOUT_MS);
 
   try {
+    // v8.57.0 (#4) — Add Cloudflare tiered-cache hint. POST is not cached by
+    // default, so we MUST set both cacheEverything AND an explicit cacheKey
+    // for CF to honor it. cacheKey is versioned by WORKER_VERSION so deploys
+    // invalidate cleanly. Second visitor in any colo gets ~20ms vs 400-700ms.
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_storefront_shell`, {
       method: "POST",
       headers: {
@@ -2177,6 +2181,12 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
       },
       signal: controller.signal,
       body: JSON.stringify({ _slug: slug }),
+      cf: {
+        cacheEverything: true,
+        cacheTtl: 60,
+        cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 },
+        cacheKey: `sf-shell:${WORKER_VERSION}:${slug}`,
+      },
     });
     clearTimeout(timeout);
     if (!res.ok) return null;
