@@ -107,7 +107,7 @@ function SquareCarousel({ categories, storeSlug }: { categories: Category[]; sto
         {categories.map((cat) => (
           <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex-shrink-0 group">
             <div className="h-20 w-20 sm:h-[88px] sm:w-[88px] rounded-xl overflow-hidden border border-border transition-[transform,opacity,colors,box-shadow] group-hover:shadow-lg group-hover:border-transparent" style={{ aspectRatio: "1/1" }}>
-              <CategoryImage cat={cat} size={300} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              <CategoryImage cat={cat} size={300} className="h-full w-full object-cover transition-transform duration-300 hh:group-hover:scale-105" />
             </div>
             <p className="mt-1.5 text-[10px] font-semibold text-center truncate max-w-20 sm:max-w-[88px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{cat.name}</p>
           </Link>
@@ -117,7 +117,7 @@ function SquareCarousel({ categories, storeSlug }: { categories: Category[]; sto
         {categories.map((cat) => (
           <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="group">
             <div className="h-[120px] w-[120px] lg:h-[140px] lg:w-[140px] rounded-xl overflow-hidden border border-border transition-[transform,opacity,colors,box-shadow] group-hover:shadow-lg group-hover:border-transparent" style={{ aspectRatio: "1/1" }}>
-              <CategoryImage cat={cat} size={400} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              <CategoryImage cat={cat} size={400} className="h-full w-full object-cover transition-transform duration-300 hh:group-hover:scale-105" />
             </div>
             <p className="mt-2 text-xs lg:text-sm font-semibold text-center truncate max-w-[140px]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{cat.name}</p>
           </Link>
@@ -134,7 +134,7 @@ function SquareGridModern({ categories, storeSlug }: { categories: Category[]; s
       {categories.map((cat) => (
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="group relative">
           <div className="w-full rounded-xl overflow-hidden transition-[transform,opacity,colors,box-shadow] group-hover:shadow-lg" style={{ aspectRatio: "1/1" }}>
-            <CategoryImage cat={cat} size={400} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            <CategoryImage cat={cat} size={400} className="h-full w-full object-cover transition-transform duration-300 hh:group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent rounded-xl" />
             <span className="absolute bottom-2 left-0 right-0 text-[10px] sm:text-[11px] font-bold text-white text-center truncate px-1.5 drop-shadow-md">{cat.name}</span>
           </div>
@@ -151,7 +151,7 @@ function SquareGrid({ categories, storeSlug }: { categories: Category[]; storeSl
       {categories.map((cat) => (
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="group">
           <div className="w-full rounded-xl overflow-hidden border border-border transition-[transform,opacity,colors,box-shadow] group-hover:shadow-md" style={{ aspectRatio: "1/1" }}>
-            <CategoryImage cat={cat} size={400} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+            <CategoryImage cat={cat} size={400} className="h-full w-full object-cover transition-transform duration-300 hh:group-hover:scale-105" />
           </div>
           <p className="mt-1.5 text-xs font-semibold text-center truncate" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{cat.name}</p>
         </Link>
