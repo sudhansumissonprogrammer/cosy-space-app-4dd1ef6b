@@ -1,5 +1,11 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.51.0 — TTFB UNBLOCK (cold-load regression fix)
+ * SHOPBANAO PRODUCTION ROUTER v8.52.0 — /api/products best_selling filter
+ *
+ * v8.52.0 — Added `?best_selling=1` query param to /api/products. Frontend
+ *           BestSellersSection now hits the Worker edge cache (KV+Cache,
+ *           24h TTL) instead of going direct to Supabase, saving ~800ms on
+ *           cold home loads. Same KV+Cache pattern as the default products
+ *           feed; cache key/coalesce key include the new bs= flag.
  *
  * v8.51.0 — Race storefront shell against 200ms deadline in head-flush path.
  *           v8.47.0 introduced an UNCONDITIONAL `await storefrontPromise`
@@ -1737,6 +1743,7 @@ function _isDefaultProductFilter(filters) {
   if (!filters) return true;
   if (filters.category) return false;
   if (filters.sort) return false;
+  if (filters.best_selling) return false;
   if (filters.page && Number(filters.page) > 1) return false;
   return true;
 }
@@ -3993,6 +4000,7 @@ function _buildProductsCacheKey(domain, filters, version) {
   if (filters.category) parts.push(`category=${filters.category}`);
   if (filters.page) parts.push(`page=${filters.page}`);
   if (filters.sort) parts.push(`sort=${filters.sort}`);
+  if (filters.best_selling) parts.push(`bs=${filters.best_selling}`);
   return new Request(parts.join(":"));
 }
 
@@ -4001,6 +4009,7 @@ function _buildProductsKvKey(domain, filters, version) {
   if (filters.category) key += `:cat=${filters.category}`;
   if (filters.page) key += `:p=${filters.page}`;
   if (filters.sort) key += `:s=${filters.sort}`;
+  if (filters.best_selling) key += `:bs=${filters.best_selling}`;
   return key;
 }
 
@@ -4553,6 +4562,9 @@ async function handleProductsApi(request, url, ctx, env) {
     category: url.searchParams.get("category") || "",
     page: url.searchParams.get("page") || "",
     sort: url.searchParams.get("sort") || "",
+    // v8.52.0 — best_selling filter so frontend BestSellersSection can use the
+    // Worker edge cache instead of going direct to Supabase (saved ~800ms).
+    best_selling: url.searchParams.get("best_selling") === "1" ? "1" : "",
   };
 
   // Get current version for this domain (cached in-memory for 60s)
@@ -4563,7 +4575,7 @@ async function handleProductsApi(request, url, ctx, env) {
   try {
     const cached = await cache.match(cacheKey);
     if (cached) {
-      const revalKey = `products:v${version}:${domain}:${filters.category}:${filters.page}:${filters.sort}`;
+      const revalKey = `products:v${version}:${domain}:${filters.category}:${filters.page}:${filters.sort}:${filters.best_selling}`;
       if (shouldRevalidate(revalKey)) {
         ctx.waitUntil(_refreshProductsBackground(domain, filters, version, env));
       }
@@ -4616,7 +4628,7 @@ async function handleProductsApi(request, url, ctx, env) {
     );
   }
 
-  const coalesceKey = `${domain}:${filters.category}:${filters.page}:${filters.sort}`;
+  const coalesceKey = `${domain}:${filters.category}:${filters.page}:${filters.sort}:${filters.best_selling}`;
 
   if (inflightProductRequests.has(coalesceKey)) {
     try {
@@ -4653,6 +4665,7 @@ async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
     });
 
     if (filters.category) params.set("category", `eq.${filters.category}`);
+    if (filters.best_selling === "1") params.set("is_best_selling", "eq.true");
 
     const sort = filters.sort || "popular";
     switch (sort) {
