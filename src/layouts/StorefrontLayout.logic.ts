@@ -89,7 +89,7 @@ export function useStorefront(slugOverride?: string) {
       }
 
       // 3. Fresh RPC call — use shell (lightweight, no products)
-      const data = await rpcGetStorefrontShell(slug!); if (data?.store?.id && data?.theme_config) { queryClient.setQueryData(["storefront-theme-config", data.store.id], data.theme_config); } return data;
+      return rpcGetStorefrontShell(slug!);
     },
     enabled: !!slug,
     staleTime: 2 * 60 * 1000,
@@ -109,6 +109,15 @@ export function useStorefront(slugOverride?: string) {
       ? { initialData: injected, initialDataUpdatedAt: Date.now() }
       : {}),
   });
+  // v8.45.0 u2014 Flash fix: seed theme config synchronously during render
+  // so the very first frame of the new store has the correct theme.
+  useMemo(() => {
+    const d = data as any;
+    if (d?.store?.id && d?.theme_config) {
+      queryClient.setQueryData(["storefront-theme-config", d.store.id], d.theme_config);
+    }
+  }, [data?.store?.id, data?.theme_config, queryClient]);
+
 
   // Seed individual cache keys so child pages get instant cache hits.
   // Only re-seed when the underlying storefront data changes — route changes
