@@ -1,95 +1,117 @@
-# Premium Order Detail Page (Flipkart-style)
 
-Transform the Orders tab on the storefront account from a single dense list into a clean **clickable order card list + dedicated order detail page** — like Flipkart / Myntra / Amazon.
+# Emil Kowalski Design Engineering Pass — Tiers A through D
 
-## What changes
+Apply systemic motion/feel improvements to shared UI primitives so the polish ripples across every page (landing, storefront themes V1–V20, dashboard, admin).
 
-### 1. Orders list (inside `/account` → Orders tab)
+---
 
-Each order becomes a slim, tappable card showing only the essentials:
+## Tier A — Foundation (3 surgical edits)
 
-- First product image (or stacked thumbnails if multiple items)
-- Product name (`+N more` if multiple items)
-- Status pill (Confirmed / Shipped / Delivered / Cancelled) with colored dot
-- Order total + date on the right
-- Chevron → opens the full detail page
-- One short status line ("Delivered on 5 Jun" / "Arriving by 12 Jun" / "Cancelled")
+**1. `src/components/ui/button.tsx`**
+- Add `active:scale-[0.97] transition-transform duration-150 ease-out` to the base `buttonVariants` class string.
+- Preserve existing `transition-colors` for color states by switching to `transition-[transform,colors,box-shadow] duration-150 ease-out`.
+- No variant API change. Every `<Button>` in the app gains tactile press feedback.
 
-No timelines, no item breakdown, no buttons on the card. Pure summary. Tap to open detail.
+**2. Origin-aware popovers (4 files)**
+Add `transform-origin: var(--radix-*-content-transform-origin)` to:
+- `src/components/ui/popover.tsx` → `--radix-popover-content-transform-origin`
+- `src/components/ui/dropdown-menu.tsx` → `--radix-dropdown-menu-content-transform-origin`
+- `src/components/ui/select.tsx` → `--radix-select-content-transform-origin`
+- `src/components/ui/tooltip.tsx` → `--radix-tooltip-content-transform-origin`
 
-### 2. New Order Detail page → `/account/orders/:orderId`
+Apply via inline `style={{ transformOrigin: "var(--radix-…)" }}` on the Content primitive. Menus/tooltips will scale from their trigger, not from center.
 
-Premium, sectioned layout (sticky header, generous spacing, soft dividers):
+**3. `src/components/ui/sheet.tsx`**
+- Replace the wrapper's `transition ease-in-out` / `ease-out` with iOS drawer curve: `transition-[transform] duration-300` + inline `style={{ transitionTimingFunction: "cubic-bezier(0.32, 0.72, 0, 1)" }}`.
+- Apply to both open and close states so SideCart + HamburgerMenu feel native.
 
-**a. Header**
+---
 
-- Back button
-- Order ID short code + placed date
-- Status pill
+## Tier B — Kill the `transition-all` anti-pattern
 
-**b. Tracking timeline** (horizontal stepper)
-Placed → Confirmed → Shipped → Out for Delivery → Delivered
+Replace `transition-all` with specific property transitions on the top hot-path components (audit confirmed ~252 hits; we hit the top 20 that render on every storefront paint).
 
-- Current step highlighted with primary color + filled dot + pulse ring
-- Each step shows date/time when reached
-- Cancelled state replaces the strip with a red "Order Cancelled on …" banner
-- If `tracking_number` exists → courier line + "Track Package" external link
+Target files (priority order):
+1. `src/components/ui/button.tsx` (already handled in Tier A)
+2. `src/components/storefront/SideCart.tsx`
+3. `src/components/storefront/HamburgerMenu.tsx`
+4. `src/components/storefront/ProductCard*.tsx` (all theme variants used)
+5. `src/components/storefront/MobileBottomNav*.tsx`
+6. `src/components/storefront/StickyAddToCart*.tsx`
+7. `src/components/storefront/BackToTop.tsx`
+8. `src/components/ui/sidebar.tsx`
+9. `src/components/ui/tabs.tsx`
+10. `src/components/ui/accordion.tsx`
+11. `src/components/ui/input-otp.tsx`
+12. `src/components/ui/navigation-menu.tsx`
+13. `src/components/ui/toggle.tsx`
+14. `src/components/ui/badge.tsx`
+15. `src/components/ui/card.tsx` (if used on hover)
+16. Landing CTAs in `src/landing/**`
+17. Dashboard nav/sidebar shells
+18. Admin top-bar
+19. Theme V2/V3 header
+20. Theme V10–V20 shared header strips
 
-**c. Items section**
-Each item row: large thumbnail, name, variant (size/color if any), qty, unit × qty = total. Tap thumbnail → product page. Per-item action buttons appear here based on status:
+Replacement rule: `transition-all` → `transition-[transform,opacity,colors,box-shadow]` (drop properties not used by the component). No layout-affecting properties (width/height/padding) ever go into the transition list.
 
-- **Cancel item** (status `pending`/`confirmed`) — opens reason picker (Changed mind / Found cheaper / Wrong item / Other)
-- **Return item** (status `delivered`, within 7 days) — opens reason + optional note
-- **Buy Again** (status `delivered`/`cancelled`) — re-adds to cart
+---
 
-**d. Delivery address card**
-Name, full address, phone. Plain readable block, no edit.
+## Tier C — Polish details
 
-**e. Payment details card**
+**1. Tooltip skip-delay (`src/components/ui/tooltip.tsx`)**
+- Wrap the app's `<TooltipProvider>` with `delayDuration={300} skipDelayDuration={100}` so hovering adjacent tooltips opens instantly.
+- Add `data-[state=delayed-open]` vs `data-[state=instant-open]` handling — Radix already exposes via `skipDelayDuration`; just thread the prop.
 
-- Payment method (UPI / Card / COD / Cashfree / Razorpay) with icon
-- Payment status (Paid / COD / Partially Paid)
-- Price breakdown: Items subtotal, Shipping, Discount, Tax, **Total Paid**
-- Partial-payment block (advance + balance due) when applicable
+**2. Tighten card hover speeds**
+- Audit `ProductCard*.tsx` and any theme card with `duration-500` on hover transforms → drop to `duration-300` with `ease-out`.
+- Affected: V1 default card, V2/V3 grid cards, V10–V20 shared card.
 
-**f. Action bar (sticky on mobile, inline on desktop)**
+**3. Back-to-top exit easing (`src/index.css` or component)**
+- Find the `back-to-top-exit` keyframe / class using `ease-in` and switch to `ease-out` with 160ms.
 
-- **Download Invoice** (reuses existing `OrderInvoice` component → PDF)
-- **Need Help?** → WhatsApp / call store
-- **Cancel Order** (full order, only if no item-level cancel happened and status allows)
+**4. Gate `hover:scale` behind `(hover: hover)`**
+- `src/components/ui/sheet.tsx` close button (`hover:scale-110`)
+- Storefront nav icon row (cart, wishlist, account, search)
+- Wrap with Tailwind's `hover-hover:` variant if available, else add a media-gated utility class in `src/index.css`:
+  ```css
+  @media (hover: hover) and (pointer: fine) {
+    .hh\:hover-scale-110:hover { transform: scale(1.10); }
+  }
+  ```
+- Replace offending `hover:scale-110` with `hh:hover-scale-110` on touch-prone targets.
 
-### 3. Cancel & Return flow
+---
 
-- **Cancel**: existing mutation, but with a reason dropdown saved to a new `cancel_reason` text column on `orders` (nullable, optional). If column add feels heavy we can store inside existing `notes`/`metadata` — I'll confirm before migrating.
-- **Return**: writes a row to a new `order_returns` table (order_id, item_id nullable, reason, note, status='requested', created_at) — OR if you want zero schema change, opens a WhatsApp deep link to the store with a prefilled return request message. **I'll ask which you prefer before implementing.**
+## Tier D — Cleanup
 
-### 4. Invoice download
+**1. Remove legacy toast system**
+- Verify no live import of `src/components/ui/toast.tsx` / `toaster.tsx` / `use-toast.ts` outside of the Sonner stack.
+- Delete `src/components/ui/toast.tsx`, `src/components/ui/toaster.tsx`, `src/hooks/use-toast.ts` once import audit is clean.
+- Keep `src/components/ui/sonner.tsx` as the sole toast surface.
 
-"Download Invoice" button opens the existing `OrderInvoice` modal which already has print/PDF — wire it up on the detail page.
+**2. Audit infinite decorative animations (battery)**
+- `arrow-nudge`, `sticky-cart-arrow-nudge`, any `animate-pulse`/`animate-bounce` rendered above the fold.
+- For each: either (a) cap to 3 iterations then stop, or (b) gate behind `@media (prefers-reduced-motion: no-preference)` + pause when tab hidden via `animation-play-state: paused` on `:where(html:not(:focus-within))` fallback.
+- Document survivors in a short comment.
 
-## Files
+---
 
-- **New**: `src/pages/StorefrontOrderDetail.tsx` — the detail page
-- **New**: `src/components/storefront/OrderStatusTimeline.tsx` — horizontal stepper
-- **New**: `src/components/storefront/OrderCard.tsx` — compact list card
-- **Edit**: `src/pages/StorefrontAccount.tsx` — replace inline order rendering with `OrderCard` list, each linking to detail page
-- **Edit**: `src/App.tsx` — add route `account/orders/:orderId` → `StorefrontOrderDetail`
-- **Reuse**: `src/components/OrderInvoice.tsx` for invoice modal
+## Technical notes
 
-## Design language
+- All edits are presentation-layer only. Zero changes to data fetching, RPCs, edge functions, Cloudflare worker, or storefront business logic.
+- No design-token additions needed; reuse existing easing variables in `src/index.css` where present, otherwise inline the `cubic-bezier(...)` values shown above.
+- After Tier A + B land, the bundle size should be **unchanged** (class-string edits only). Tier D removes 3 small files → tiny reduction.
+- Verification: spot-check SideCart open/close (Tier A.3), Button press anywhere (A.1), product menu dropdown on storefront (A.2), and confirm no console errors after Tier D file removals.
 
-- Matches existing storefront theme tokens (`--storefront-text`, `--storefront-bg`, primary)
-- Soft rounded cards (rounded-2xl), thin borders via color-mix, generous padding
-- Status colors: amber (pending), blue (confirmed), violet (shipped), emerald (delivered), red (cancelled)
-- Mobile-first: full-width sections, sticky bottom action bar
-- Desktop: 2-column at `lg` (left = items+tracking, right = address+payment+actions)
-- Subtle motion: timeline dot pulse, card hover lift, fade-in on detail open
-- No flashy gradients — calm, premium, Flipkart-clean
+---
 
-## Open questions before I build
+## Execution order
 
-1. **Returns**: create a real `order_returns` table, or just open WhatsApp with a prefilled "I want to return order #…" message? (Real table = trackable in dashboard; WhatsApp = zero backend work)
-2. **Cancel reason**: save to DB (needs tiny migration) or just include reason in the WhatsApp notification to owner?
-3. **Return window**: 7 days after delivery OK, or different?
+1. Tier A (3 primitives) — biggest perceived impact, lowest risk
+2. Tier C.1 (tooltip provider) + C.3 (back-to-top easing) — single-line wins
+3. Tier B (transition-all sweep, top 20)
+4. Tier C.2 + C.4 (card durations, hover gating)
+5. Tier D (cleanup last so import audit is final)
 
-Once you confirm these three, I'll implement in one shot. also use best posssible iconthere 
+I will report back after each tier with the list of touched files so you can sanity-check before the next tier.
