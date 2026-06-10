@@ -33,7 +33,9 @@ export async function fetchViaWorker<T>({
 }: WorkerFetchOpts<T>): Promise<T> {
   if (!isWorkerEnvironment()) return fallback();
 
-  if (sessionKey) {
+  const useSessionCache = !!sessionKey && sessionTtlMs > 0;
+
+  if (useSessionCache) {
     try {
       const cached = sessionStorage.getItem(sessionKey);
       if (cached) {
@@ -48,11 +50,12 @@ export async function fetchViaWorker<T>({
   try {
     const res = await fetch(`${window.location.origin}${path}`, {
       headers: { Accept: "application/json" },
+      cache: "no-store",
     });
     if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
     const json = await res.json();
     const value = transform ? transform(json) : (json as T);
-    if (sessionKey) {
+    if (useSessionCache) {
       try {
         sessionStorage.setItem(sessionKey, JSON.stringify({ ts: Date.now(), data: value }));
       } catch {
