@@ -457,10 +457,20 @@ function getInstantTheme(slug: string | undefined): string {
   // 1. Check Cloudflare Worker injected data (instant, no API call)
   const injected = (window as any).__STOREFRONT_DATA__;
   if (injected?.store?.slug === slug && injected?.store?.theme) {
+    try { localStorage.setItem(`storefront_theme_${slug}`, injected.store.theme); } catch {}
     return injected.store.theme;
   }
 
-  // 2. Check localStorage cache (instant, from previous visit)
+  // 2. Check already-hydrated in-memory shell data. During SPA navigation the
+  // Worker global can be deleted after first seed, but React Query still has
+  // the authoritative store theme; don't fall back to theme-1 and remount the
+  // wrong layout.
+  try {
+    const cachedBulk = queryClient.getQueryData(["storefront-bulk", slug]) as any;
+    if (cachedBulk?.store?.theme) return cachedBulk.store.theme;
+  } catch {}
+
+  // 3. Check localStorage cache (instant, from previous visit)
   try {
     const cached = localStorage.getItem(`storefront_theme_${slug}`);
     if (cached) return cached;
@@ -736,6 +746,12 @@ function ThemeAwareStorefront({ slugOverride }: { slugOverride?: string }) {
       ? (queryClient.getQueryData(["storefront-bulk", effectiveSlug]) as any)
       : undefined;
     const injectedStore = (window as any).__STOREFRONT_DATA__?.store;
+    const resolvedTheme = (injectedStore?.slug === effectiveSlug ? injectedStore?.theme : null) || cachedBulk?.store?.theme;
+    if (resolvedTheme && resolvedTheme !== themeRef.current) {
+      setTheme(resolvedTheme);
+      themeRef.current = resolvedTheme;
+      try { localStorage.setItem(`storefront_theme_${effectiveSlug}`, resolvedTheme); } catch {}
+    }
     startRoutePrefetch((injectedStore?.slug === effectiveSlug ? injectedStore?.id : null) || cachedBulk?.store?.id);
   }, [effectiveSlug, queryClient, startRoutePrefetch]);
 
