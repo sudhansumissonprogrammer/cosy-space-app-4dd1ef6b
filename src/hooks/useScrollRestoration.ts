@@ -237,20 +237,15 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
 
       const tick = () => {
         if (done) return;
-        if (tryAnchorRestore()) {
-          done = true;
-          observer.disconnect();
-          return;
-        }
+        if (tryAnchorRestore()) { finish(); return; }
         if (performance.now() - start > RESTORE_TIMEOUT_MS) {
-          done = true;
-          observer.disconnect();
           // Final fallback: pixel Y (waiting for height too)
           const max = document.documentElement.scrollHeight - window.innerHeight;
           if (targetY != null && targetY > 0 && max < targetY && performance.now() - start < RESTORE_TIMEOUT_MS + 500) {
             requestAnimationFrame(tick);
             return;
           }
+          finish();
           restorePixel();
           return;
         }
@@ -259,6 +254,7 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
 
       // If no anchor stored, run pixel-Y path with extended polling
       if (!anchor) {
+        finish();
         const tickPixel = () => {
           if (targetY == null || targetY <= 0) {
             window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
@@ -271,7 +267,6 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
           }
           requestAnimationFrame(tickPixel);
         };
-        observer.disconnect();
         requestAnimationFrame(tickPixel);
         return;
       }
