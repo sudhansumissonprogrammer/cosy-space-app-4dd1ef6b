@@ -1041,9 +1041,11 @@ function buildThemeCssFromConfig(tc) {
     `--storefront-accent:${accentColor};` +
     `--storefront-text:${textColor};` +
     `--storefront-bg:${bgColor};` +
+    `--storefront-heading-font:'${headingFont || "Inter"}';` +
+    `--storefront-body-font:'${bodyFont || headingFont || "Inter"}';` +
     `--storefront-button-radius:${btnRadius};` +
     `--storefront-btn-text:${btnTextColor};` +
-    `}body{background:${bgColor};color:${textColor}}` +
+    `}body{background:${bgColor};color:${textColor};font-family:var(--storefront-body-font,'Inter'),system-ui,sans-serif}` +
     /* ─── Phase 2 Fix #4: Critical product-card CSS ───
        ~2KB of layout-critical CSS so the first product card grid paints
        immediately on React's first commit, BEFORE the ~80KB index.css
