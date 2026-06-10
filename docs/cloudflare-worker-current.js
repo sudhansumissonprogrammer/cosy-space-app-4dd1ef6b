@@ -801,10 +801,7 @@ function isHtmlNavigationPath(pathname) {
 }
 
 function forcePublicHtmlCacheControl(headers, ttl = 60) {
-  const current = headers.get("Cache-Control") || "";
-  if (!current || /no-store|no-cache|private|max-age=0|must-revalidate/i.test(current)) {
-    headers.set("Cache-Control", `public, max-age=${ttl}, stale-while-revalidate=60`);
-  }
+  headers.set("Cache-Control", `public, max-age=${ttl}, stale-while-revalidate=60`);
 }
 
 function makePublicHtmlResponse(response, ttl = 3600) {
@@ -856,7 +853,7 @@ async function mirrorToCfCache(ctx, request, response, slug = null, env = null) 
     headers.delete("vary");
     // Force a deterministic, public Cache-Control so CF stores it. Lovable origin
     // sends `no-cache, max-age=0`; leaving that intact makes CF cache rate stay 0%.
-    forcePublicHtmlCacheControl(headers, 3600);
+    forcePublicHtmlCacheControl(headers, 60);
     headers.set("X-Edge-Mirror", "1");
     // Buffer body once so we can write to multiple cache keys.
     const buf = await cloned.arrayBuffer();
@@ -5790,7 +5787,7 @@ async function _handleFetch(request, env, ctx) {
             }
           }
         }
-        if (!cached) {
+        if (!cached && !isHtmlNav) {
           cached = await cache.match(request);
           if (cached && !hitKey) hitKey = "raw-request";
         }
