@@ -767,6 +767,11 @@ function kvHtmlPut(ctx, env, slug, pathname, response) {
     const key = getHtmlKvKey(slug, pathname);
     if (!key) return;
     if (!_shouldWriteHtmlKv(key)) return;
+    // v8.59.0 #2 — Long-tail gate: only mirror to KV after the SAME URL is
+    // seen TWICE within SECOND_HIT_TTL_MS. Single-visit URLs (bot crawls,
+    // random query strings, one-off campaign links) never touch global KV.
+    // Cache API still serves them in the same colo, so zero shopper impact.
+    if (!_shouldWriteOnSecondHit(`html:${key}`)) return;
     const cloned = response.clone();
     ctx.waitUntil(
       (async () => {
