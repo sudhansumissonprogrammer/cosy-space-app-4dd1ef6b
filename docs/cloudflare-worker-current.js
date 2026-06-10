@@ -1240,7 +1240,11 @@ function _buildPrefetchPromiseScript(slug) {
   return `<script>window.__STORE_SLUG__="${safeSlug}";</script>`;
 }
 
-const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
+// v8.52.0 — versioned by builder revision. A stale prebuilt-head was causing
+// storefront HTML to preload old entry chunks while the real module script used
+// the new hash, creating a JS waterfall and 4-5s visible loader on cold loads.
+const PREBUILT_HEAD_VERSION = "v2";
+const PREBUILT_HEAD_KV_KEY = `prebuilt-head:${PREBUILT_HEAD_VERSION}`;
 // v6.9.1: Derived from the SPA shell, so it must expire on the same short window.
 const PREBUILT_HEAD_KV_TTL = 86400; // v8.1.0 cost-cut: 6h → 24h (purge bumps version)
 const PREBUILT_HEAD_CACHE_TTL = 300; // v7.7.0 Fix 4: 1m → 5m
@@ -1286,7 +1290,8 @@ function _buildPrebuiltHead(html) {
    ============================================================ */
 
 let _memDeepChunks = null;
-const DEEP_CHUNKS_KV_KEY = "deep-chunks:v2"; // v8.24.1 bust stale empty cache
+const DEEP_CHUNKS_VERSION = "v3"; // v8.52.0 bust stale chunk graph after deploy
+const DEEP_CHUNKS_KV_KEY = `deep-chunks:${DEEP_CHUNKS_VERSION}`;
 const DEEP_CHUNKS_TTL = 86400; // 24h
 const DEEP_CHUNK_DASH_PATTERN =
   /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages|landing-)/;
