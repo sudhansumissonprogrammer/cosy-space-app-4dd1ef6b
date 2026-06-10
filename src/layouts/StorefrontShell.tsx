@@ -13,7 +13,7 @@ import { useGA4 } from "@/hooks/useGA4";
 import { usePageviewBeacon } from "@/hooks/usePageviewBeacon";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 
-import { buildThemeStyle, getResolvedThemeFonts, loadGoogleFonts } from "@/lib/themeUtils";
+import { buildThemeStyle, loadGoogleFonts } from "@/lib/themeUtils";
 import StorefrontNotFound from "@/components/storefront/StorefrontNotFound";
 
 // Lazy-load non-critical overlays
@@ -109,7 +109,7 @@ export default function StorefrontShell({
   notFoundLabel = "Store",
   children,
 }: StorefrontShellProps) {
-  const { store, isLoading, slug } = useStorefront(slugOverride);
+  const { store, isLoading, slug, themeConfig: shellThemeConfig } = useStorefront(slugOverride);
   const viewTracked = useRef(false);
 
   // Analytics hooks — safe to call even when store is null
@@ -129,7 +129,7 @@ export default function StorefrontShell({
   // same store_id + path information and applies edge-level dedup).
 
   // Theme config (reactive — updates when cache changes via live preview)
-  const themeConfig = useStorefrontThemeConfig(store?.id);
+  const themeConfig = useStorefrontThemeConfig(store?.id, shellThemeConfig);
 
   // Load Google Fonts eagerly but don't block paint — display=swap handles FOUT gracefully.
   useEffect(() => {
