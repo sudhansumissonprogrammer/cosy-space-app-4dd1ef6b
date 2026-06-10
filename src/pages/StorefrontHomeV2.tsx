@@ -124,7 +124,7 @@ function HeroSlides({ slides, store }: { slides: { image: string; title: string;
           {slide.link ? (
             <Link
               to={slide.link}
-              className="mt-5 inline-flex items-center gap-2 px-6 py-3 text-sm font-bold uppercase tracking-wider transition-transform hover:scale-105"
+              className="mt-5 inline-flex items-center gap-2 px-6 py-3 text-sm font-bold uppercase tracking-wider transition-transform hh:hover:scale-105"
               style={{
                 backgroundColor: "var(--storefront-primary, #004643)",
                 color: "var(--storefront-btn-text, #fff)",
@@ -135,7 +135,7 @@ function HeroSlides({ slides, store }: { slides: { image: string; title: string;
             </Link>
           ) : (
             <button
-              className="mt-5 inline-flex items-center gap-2 px-6 py-3 text-sm font-bold uppercase tracking-wider transition-transform hover:scale-105"
+              className="mt-5 inline-flex items-center gap-2 px-6 py-3 text-sm font-bold uppercase tracking-wider transition-transform hh:hover:scale-105"
               style={{
                 backgroundColor: "var(--storefront-primary, #004643)",
                 color: "var(--storefront-btn-text, #fff)",
@@ -190,7 +190,7 @@ function CategoryPills({ categories, slug }: { categories: any[] | undefined; sl
           <Link
             key={cat.id}
             to={storefrontPath(slug, `category/${cat.slug}`)}
-            className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-[transform,opacity,colors,box-shadow] hover:scale-105"
+            className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-[transform,opacity,colors,box-shadow] hh:hover:scale-105"
             style={{
               borderColor: "var(--storefront-primary, hsl(var(--border)))",
               color: "var(--storefront-text, hsl(var(--foreground)))",

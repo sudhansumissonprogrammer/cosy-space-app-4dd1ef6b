@@ -97,7 +97,7 @@ function V17Categories({ categories, slug }: { categories: any[]; slug: string }
             <Link
               key={cat.id}
               to={storefrontPath(slug, `category/${cat.slug}`)}
-              className="flex flex-col items-center gap-2 flex-shrink-0 transition-transform hover:scale-105"
+              className="flex flex-col items-center gap-2 flex-shrink-0 transition-transform hh:hover:scale-105"
               style={{ minWidth: "80px" }}
             >
               <div

@@ -227,7 +227,7 @@ export default function ThemeShowcase() {
                   <img
                     src={t.img}
                     alt={`${t.name} theme preview`}
-                    className="w-full h-auto object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-auto object-cover object-top hh:group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-foreground/5 group-hover:bg-foreground/0 transition-colors" />

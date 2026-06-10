@@ -127,7 +127,7 @@ export default function StorefrontContact() {
                 >
                   <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                   <div className="relative">
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 transition-transform duration-300 group-hover:scale-110">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 transition-transform duration-300 hh:group-hover:scale-110">
                       <IconComponent className="h-7 w-7 text-primary" />
                     </div>
                     <h3 className="font-bold text-foreground">{feature.title}</h3>
@@ -304,7 +304,7 @@ export default function StorefrontContact() {
                       href={store.instagram_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 transition-[transform,opacity,colors,box-shadow] hover:scale-105 hover:shadow-md"
+                      className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 transition-[transform,opacity,colors,box-shadow] hh:hover:scale-105 hover:shadow-md"
                     >
                       <Instagram className="h-5 w-5 text-pink-600" />
                     </a>
@@ -314,7 +314,7 @@ export default function StorefrontContact() {
                       href={store.facebook_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 transition-[transform,opacity,colors,box-shadow] hover:scale-105 hover:shadow-md"
+                      className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 transition-[transform,opacity,colors,box-shadow] hh:hover:scale-105 hover:shadow-md"
                     >
                       <Facebook className="h-5 w-5 text-blue-600" />
                     </a>
