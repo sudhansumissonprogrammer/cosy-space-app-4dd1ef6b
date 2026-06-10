@@ -1431,6 +1431,7 @@ export default function V22CheckoutPage() {
       setPlacingStep(3);
       // COD path — user clicked Place Order with valid details = real intent.
       fireInitiateCheckoutOnce();
+      fireAddPaymentInfoOnce();
       finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
     } catch (err: any) {
       console.error("[checkout] handlePlaceOrder failed:", err);
