@@ -552,7 +552,14 @@ function isRateLimited(ip, isApi = false) {
   const now = Date.now();
   const entry = rateLimitMap.get(ip);
   if (!entry || now > entry.resetAt) {
-    if (!entry && rateLimitMap.size >= RATE_LIMIT_MAP_MAX) return true;
+    // v8.58.0: When the map fills under a unique-IP flood (botnet, scanner),
+    // the previous code returned `true` and 429'd every NEW legit visitor
+    // until the janitor ran. Now: evict the oldest entry (Map iteration is
+    // insertion-order so the oldest is usually already expired) and admit.
+    if (!entry && rateLimitMap.size >= RATE_LIMIT_MAP_MAX) {
+      const oldestKey = rateLimitMap.keys().next().value;
+      if (oldestKey !== undefined) rateLimitMap.delete(oldestKey);
+    }
     rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
     return false;
   }
