@@ -1,5 +1,10 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.52.1 — complete /api/products best_selling cache rollout
+ * SHOPBANAO PRODUCTION ROUTER v8.53.0 — storefront cold-load stale preload fix
+ *
+ * v8.53.0 — Fixed cold storefront loader staying 4-5s after deploy/cache miss:
+ *           prebuilt-head/deep-chunks/html-KV are now versioned, stale HTML is
+ *           rejected by worker version, and KV HTML TTL is back to 60s so old
+ *           chunk preload lists cannot survive and create JS waterfalls.
  *
  * v8.52.1 — Fixed the actual exported WORKER_VERSION string (was still
  *           v8.51.0-ttfb-unblock even though the doc header said v8.52.0).
@@ -154,7 +159,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.52.1-products-best-selling-cache";
+const WORKER_VERSION = "8.53.0-storefront-cold-load-preload-fix";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -355,7 +360,7 @@ async function finalizeResponse(request, response) {
    ============================================================ */
 const ROOT_DOMAIN = "shopbanao.in";
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
-const HTML_CACHE_SCHEMA_VERSION = "html-v3-publish-fresh-2026-05-04";
+const HTML_CACHE_SCHEMA_VERSION = `html-v4-${WORKER_VERSION}`;
 const R2_CDN_HOST = "cdn.shopbanao.in";
 
 const SUPABASE_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
@@ -673,13 +678,10 @@ function getCanonicalHtmlCacheKey(slug, pathname) {
      KV global reads avg 2–8ms); MISS falls through to existing
      CF-cache / canonical / warm pipeline. Zero functional regression.
    ============================================================ */
-// v8.47.0 KV-WRITE COST CUT: TTL 60s→600s, dedup 55s→540s.
-// Was causing ~70% KV-write spike since v8.27.0 — every URL re-wrote
-// every minute per isolate. Product/price changes still bust instantly
-// via _bumpProductVersion() cache-key bump, so 10-min stale is only for
-// non-versioned static edits (manually purgeable from dashboard).
-// Expected: ~85% KV write reduction with zero functional regression.
-const HTML_KV_TTL_SEC = 600;
+// v8.53.0: keep HTML KV short-lived. Raising this to 600s let deploy-era HTML
+// survive with old modulepreload hashes while the real module script used the
+// new hash; browsers wasted connection slots and React content painted late.
+const HTML_KV_TTL_SEC = 60;
 const HTML_KV_MAX_BYTES = 800_000; // 800 KB hard cap (KV value limit is 25 MB)
 const _htmlKvWriteRecent = new Map(); // key → expiresAt
 const HTML_KV_WRITE_DEDUP_MS = 540_000;
@@ -712,6 +714,7 @@ async function kvHtmlGet(env, slug, pathname) {
   try {
     const { value, metadata } = await env.STORE_KV.getWithMetadata(key, { type: "arrayBuffer" });
     if (!value) return null;
+    if (metadata?.wv !== WORKER_VERSION) return null;
     const headers = new Headers();
     const meta = metadata || {};
     if (meta.h && typeof meta.h === "object") {
@@ -720,7 +723,7 @@ async function kvHtmlGet(env, slug, pathname) {
       }
     }
     if (!headers.has("Content-Type")) headers.set("Content-Type", "text/html; charset=utf-8");
-    headers.set("Cache-Control", "public, max-age=600, stale-while-revalidate=86400");
+    headers.set("Cache-Control", `public, max-age=${HTML_KV_TTL_SEC}, stale-while-revalidate=600`);
     return new Response(value, { status: meta.s || 200, headers });
   } catch {
     return null;
@@ -747,7 +750,7 @@ function kvHtmlPut(ctx, env, slug, pathname, response) {
           if (link) h["Link"] = link;
           await env.STORE_KV.put(key, buf, {
             expirationTtl: HTML_KV_TTL_SEC,
-            metadata: { s: cloned.status, h },
+            metadata: { s: cloned.status, h, wv: WORKER_VERSION },
           });
         } catch {}
       })(),
@@ -1240,7 +1243,10 @@ function _buildPrefetchPromiseScript(slug) {
   return `<script>window.__STORE_SLUG__="${safeSlug}";</script>`;
 }
 
-const PREBUILT_HEAD_KV_KEY = "prebuilt-head:v1";
+// v8.52.0 — versioned by builder revision. A stale prebuilt-head was causing
+// storefront HTML to preload old entry chunks while the real module script used
+// the new hash, creating a JS waterfall and 4-5s visible loader on cold loads.
+const PREBUILT_HEAD_KV_KEY = `prebuilt-head:${WORKER_VERSION}`;
 // v6.9.1: Derived from the SPA shell, so it must expire on the same short window.
 const PREBUILT_HEAD_KV_TTL = 86400; // v8.1.0 cost-cut: 6h → 24h (purge bumps version)
 const PREBUILT_HEAD_CACHE_TTL = 300; // v7.7.0 Fix 4: 1m → 5m
@@ -1270,7 +1276,7 @@ function _buildPrebuiltHead(html) {
   }
   // v8.22.0: Stash the entry chunk path so deep-preload pass can fetch + parse
   // it after this synchronous build completes. We cannot fetch here (no async).
-  const entry = [...seen][0];
+  const entry = [...seen].find((p) => /\/assets\/(?:index|main)-[A-Za-z0-9_-]+\.(?:js|tsx)$/.test(p)) || [...seen][0];
   if (entry) head += `<!--ENTRY:${entry}-->`;
 
   _memPrebuiltHead = head;
@@ -1286,7 +1292,7 @@ function _buildPrebuiltHead(html) {
    ============================================================ */
 
 let _memDeepChunks = null;
-const DEEP_CHUNKS_KV_KEY = "deep-chunks:v2"; // v8.24.1 bust stale empty cache
+const DEEP_CHUNKS_KV_KEY = `deep-chunks:${WORKER_VERSION}`;
 const DEEP_CHUNKS_TTL = 86400; // 24h
 const DEEP_CHUNK_DASH_PATTERN =
   /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages|landing-)/;
@@ -1328,10 +1334,11 @@ async function getDeepChunkPreloads(entryPath, origin, env) {
       found.add(p);
     }
 
-    // Storefront-critical chunk names — prioritize these first
+      // Storefront-critical chunk names — prioritize these first
     const PRIORITY =
       /(?:App-|storefront-shell-|supabase-|radix|router-query-|framework-|entry-utils-|icons-|ErrorBoundary-|logError-)/;
     const arr = [...found]
+      .filter((p) => !/\/assets\/main-[A-Za-z0-9_-]+\.tsx$/.test(p))
       .sort((a, b) => {
         const pa = PRIORITY.test(a) ? 0 : 1;
         const pb = PRIORITY.test(b) ? 0 : 1;
@@ -1489,7 +1496,7 @@ async function getPrebuiltHead(html, env) {
   // FIX #7: In-memory first
   if (_memPrebuiltHead) return _memPrebuiltHead;
 
-  const headCacheKey = new Request("https://cache/prebuilt-head");
+  const headCacheKey = new Request(`https://cache/${PREBUILT_HEAD_KV_KEY}`);
   try {
     const cached = await cache.match(headCacheKey);
     if (cached) {
@@ -1533,7 +1540,7 @@ async function _getCachedPrebuiltHead(env) {
   // FIX #7: In-memory first — avoids all I/O on warm isolates
   if (_memPrebuiltHead) return _memPrebuiltHead;
 
-  const headCacheKey = new Request("https://cache/prebuilt-head");
+  const headCacheKey = new Request(`https://cache/${PREBUILT_HEAD_KV_KEY}`);
   try {
     const cached = await cache.match(headCacheKey);
     if (cached) {
@@ -5475,7 +5482,7 @@ async function handlePrewarm(request, url, ctx, env) {
           htmlWrites.push(
             env.STORE_KV.put(htmlKvKey, injected.html, {
               expirationTtl: HTML_KV_TTL_SEC,
-              metadata: { s: 200, h: { "Content-Type": "text/html; charset=utf-8" } },
+              metadata: { s: 200, h: { "Content-Type": "text/html; charset=utf-8" }, wv: WORKER_VERSION },
             }).catch(() => {}),
           );
         }
