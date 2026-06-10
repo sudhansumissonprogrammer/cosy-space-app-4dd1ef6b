@@ -2,6 +2,7 @@
 // The original Radix `useToast` API expected `{ title, description, variant }`.
 // Sonner has a flat string API plus an options object. We adapt at this seam
 // so the ~80 existing call sites keep working without touching them.
+import type * as React from "react";
 import { toast as sonnerToast } from "sonner";
 
 type LegacyVariant = "default" | "destructive" | "success" | "info" | "warning";
