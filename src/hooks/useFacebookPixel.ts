@@ -86,8 +86,12 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     // skip — avoids duplicate init + duplicate PageView.
     const alreadyInited = (window as any).__SF_PIXEL_INITED__ === pixelId;
 
-    // Don't inject twice
-    if (document.getElementById("fb-pixel-script") && alreadyInited) return;
+    // FIX: The previous guard `if (document.getElementById("fb-pixel-script") && alreadyInited)`
+    // short-circuited on cold loads because the <script> is deferred to
+    // requestIdleCallback, so getElementById() returned null when this effect
+    // ran → guard fell through → a SECOND init + PageView fired. That's the
+    // root of the ~95% inflated Events Manager counts.
+    if (alreadyInited) return;
 
     // Defer actual script loading to idle time — events are queued by shim
     const schedule =
@@ -154,9 +158,10 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
       }).catch(() => {});
     }
 
-    return () => {
-      document.getElementById("fb-pixel-script")?.remove();
-    };
+    // No cleanup: the fbevents.js <script> must persist for the full session.
+    // Previously we removed it on unmount, which caused a fresh init + PageView
+    // every time StorefrontShell re-mounted (Suspense fallback/resolve, layout
+    // switch, dev StrictMode). The __SF_PIXEL_INITED__ flag handles dedup.
   }, [pixelId, storeId]);
 
   const trackEvent = useCallback(
