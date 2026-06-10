@@ -4160,14 +4160,34 @@ async function _getProductVersion(domain, env) {
   return version;
 }
 
+// v8.59.0 #3 — Trailing-edge KV flush for pv:{domain}. Bursty merchant edits
+// (bulk product save, inventory sync) used to write KV once per save. Now the
+// in-memory version bumps instantly (same isolate sees new cache keys), and
+// KV is flushed once 30s after the LAST bump per domain. Other isolates
+// already accept up to MEM_PV_TTL of staleness, so this is no-op for them.
+const _pvFlushTimers = new Map(); // domain → timer
+const _pvPendingFlush = new Map(); // domain → next version
+const PV_FLUSH_DELAY_MS = 30_000;
+
 async function _bumpProductVersion(domain, env) {
   const current = await _getProductVersion(domain, env);
   const next = current + 1;
-  if (env?.STORE_KV) {
-    await env.STORE_KV.put(`pv:${domain}`, String(next), { expirationTtl: 86400 }).catch(() => {});
-  }
   _capMapSize(_memProductVersion, MEM_PV_MAX);
   _memProductVersion.set(domain, { version: next, ts: Date.now() });
+
+  if (env?.STORE_KV) {
+    _pvPendingFlush.set(domain, next);
+    const existing = _pvFlushTimers.get(domain);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => {
+      const v = _pvPendingFlush.get(domain);
+      _pvFlushTimers.delete(domain);
+      _pvPendingFlush.delete(domain);
+      if (v == null) return;
+      env.STORE_KV.put(`pv:${domain}`, String(v), { expirationTtl: 86400 }).catch(() => {});
+    }, PV_FLUSH_DELAY_MS);
+    _pvFlushTimers.set(domain, timer);
+  }
   return next;
 }
 
