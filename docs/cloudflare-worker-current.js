@@ -3718,7 +3718,12 @@ async function serveStreamedHtml(
 
       await writeChunk(enc.encode(headChunk));
 
-      const storefrontResult = earlyStorefrontResult || (await storefrontPromise);
+      const storefrontResult = earlyStorefrontResult || null;
+      // v8.55.0: never hold the HTML body open for backend data. If the 200ms
+      // SEO race above missed, React uses its existing direct RPC path while the
+      // Worker warms storefront/product caches in waitUntil. This is the fix for
+      // custom-domain cold loads reporting cfWorker≈1.5s on the document.
+      try { storefrontPromise.then(() => {}).catch(() => {}); } catch {}
 
       const skeletonMuted = getSkeletonMuted(textColor);
       const skeleton = buildSkeleton(
@@ -3861,13 +3866,13 @@ async function fetchAndInjectSlug(
 
   // v7.7.0 Fix 2: Skip _getInlineProductsOrNull if caller already fetched it.
   // FIX #4: Batch KV reads in one Promise.all
-  const [shellResult, kvBatch, cachedHeadMem, inlineProducts] = await Promise.all([
+      const [shellResult, kvBatch, cachedHeadMem, inlineProducts] = await Promise.all([
     getNavigationSpaShell(request, ctx, env),
     _batchKvRead(slug, env),
     _getCachedPrebuiltHead(env),
     prefetchedInlineProducts !== null
       ? Promise.resolve(prefetchedInlineProducts)
-      : _getInlineProductsOrNull(hostname, slug, env, ctx),
+          : _getInlineProductsFastOrNull(hostname),
   ]);
 
   // Hydrate in-memory caches from batch KV read
