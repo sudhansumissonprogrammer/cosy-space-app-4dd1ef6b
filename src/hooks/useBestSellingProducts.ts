@@ -38,8 +38,17 @@ export function useBestSellingProducts(storeId: string | undefined) {
   const query = useInfiniteQuery({
     queryKey: ["storefront-best-sellers", storeId],
     queryFn: async ({ pageParam = 0 }) => {
-      // Page 0: prefer inlined preview to skip the REST round-trip.
-      if (pageParam === 0 && storeId) {
+      const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+      const isLiveHost =
+        hostname &&
+        hostname !== "localhost" &&
+        !/^\d+\.\d+\.\d+\.\d+$/.test(hostname) &&
+        !hostname.endsWith(".lovable.app") &&
+        !hostname.endsWith(".lovableproject.com");
+
+      // Page 0: preview/local can use embedded HTML data; live stores must
+      // fetch the versioned Worker endpoint so refresh reflects add/delete.
+      if (pageParam === 0 && storeId && !isLiveHost) {
         const inlined = getInlinedBestSellers(storeId);
         if (inlined && inlined.length > 0) {
           return { products: inlined.slice(0, BEST_SELLER_PAGE_SIZE), page: 0 };
@@ -66,10 +75,10 @@ export function useBestSellingProducts(storeId: string | undefined) {
       // (KV+Cache, 24h TTL). Subsequent pages go direct to Supabase.
       if (pageParam === 0) {
         const { fetchViaWorker } = await import("@/lib/workerFetch");
-        const hostname = typeof window !== "undefined" ? window.location.hostname : "";
         const products = await fetchViaWorker<any[]>({
           path: "/api/products?best_selling=1",
           sessionKey: `__sf_bs_${hostname}`,
+          sessionTtlMs: 0,
           fallback: fetchFromSupabase,
           transform: (json) => (Array.isArray(json) ? json : []),
         });
