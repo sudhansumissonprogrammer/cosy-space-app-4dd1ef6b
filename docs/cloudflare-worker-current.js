@@ -5706,6 +5706,58 @@ async function handlePrewarm(request, url, ctx, env) {
       await Promise.all(htmlWrites);
 
       results.fullHtml = "warmed";
+
+      // v8.61.0: warm critical JS/CSS bundle URLs at this POP so cold first
+      // paint doesn't pay a 300–500ms origin RTT per chunk. Parses
+      // <link rel="modulepreload">, <link rel="stylesheet">, and <script src>
+      // from the injected HTML and fires fetches through proxyToOriginCached
+      // semantics (cf.cacheEverything, 30-day TTL). Capped at 12 assets to
+      // stay inside Worker subrequest budget. Best-effort, never blocks.
+      try {
+        const assetUrls = new Set();
+        const assetRe =
+          /(?:<link[^>]+rel=["'](?:modulepreload|stylesheet|preload)["'][^>]+href=["']([^"']+)["']|<script[^>]+src=["']([^"']+)["'])/gi;
+        let m;
+        while ((m = assetRe.exec(injected.html)) !== null && assetUrls.size < 12) {
+          const ref = m[1] || m[2];
+          if (!ref) continue;
+          if (!/^\/(assets|static)\//.test(ref)) continue;
+          if (!/\.(?:js|mjs|css|woff2?)$/i.test(ref)) continue;
+          assetUrls.add(ref);
+        }
+
+        const assetHosts = Array.from(htmlHosts);
+        const warmOps = [];
+        for (const host of assetHosts) {
+          for (const path of assetUrls) {
+            const assetReq = new Request(`https://${host}${path}`, {
+              method: "GET",
+              headers: { Accept: "*/*" },
+            });
+            warmOps.push(
+              fetch(`https://${ORIGIN_HOST}${path}`, {
+                method: "GET",
+                cf: { cacheEverything: true, cacheTtl: 2592000 },
+              })
+                .then((res) => {
+                  if (!res.ok) return;
+                  const stored = new Response(res.body, res);
+                  stored.headers.set("Cache-Control", "public, max-age=2592000, immutable");
+                  stored.headers.delete("Set-Cookie");
+                  stored.headers.delete("set-cookie");
+                  return cache.put(assetReq, stored);
+                })
+                .catch(() => {}),
+            );
+          }
+        }
+        if (warmOps.length) {
+          ctx?.waitUntil?.(Promise.allSettled(warmOps));
+          results.assetBundles = `warming:${warmOps.length}`;
+        }
+      } catch {
+        results.assetBundles = "skipped";
+      }
     } else {
       results.fullHtml = "skipped";
     }
