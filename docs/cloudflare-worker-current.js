@@ -1935,8 +1935,9 @@ async function _batchKvRead(slug, env) {
 const THEME_LITE_KV_TTL = 86400; // v8.1.0 cost-cut: 6h → 24h
 const THEME_LITE_CACHE_TTL = 600;
 
-function _cacheThemeForFastShell(slug, themeConfig, env, ctx) {
+function _cacheThemeForFastShell(slug, themeConfig, env, ctx, storeTheme = "") {
   const lite = {
+    th: storeTheme || themeConfig.theme || "",
     pc: themeConfig.primary_color || "#004643",
     bg: themeConfig.background_color || "#ffffff",
     tc: themeConfig.text_color || "#1a1a1a",
@@ -2111,7 +2112,7 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
       _memStorefrontCache.set(slug, { data, expiresAt: Date.now() + MEM_STOREFRONT_TTL });
 
       if (data?.theme_config) {
-        _cacheThemeForFastShell(slug, data.theme_config, env, ctx);
+        _cacheThemeForFastShell(slug, data.theme_config, env, ctx, data?.store?.theme || "");
       }
 
       if (ctx) {
