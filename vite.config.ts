@@ -362,7 +362,19 @@ export default defineConfig(({ mode }) => ({
             // visit, so co-locating into storefront-shell saves 2 round trips
             // with zero downside.
             id.includes("/src/components/storefront/HamburgerMenu") ||
-            id.includes("/src/components/ui/dialog")
+            id.includes("/src/components/ui/dialog") ||
+            // v8.8 — absorb shadcn ui/card + ui/input + useCanonical into
+            // storefront-shell. Real-device cold profile showed these as
+            // separate micro-chunks each waiting 1.0-1.7s for parent chunk
+            // parse → 3 serial round trips on cold mobile (~600-900ms FCP
+            // cost on imitationworld). ui/card used in 73 files, ui/input
+            // in 57 (every header search bar), useCanonical in every SEO
+            // page — all guaranteed first-paint. Adds ~3KB to shell, saves
+            // 3 round trips. ui/alert-dialog kept separate (only 12 files,
+            // mostly admin/checkout edge — not on home/PDP critical path).
+            id.includes("/src/components/ui/card") ||
+            id.includes("/src/components/ui/input") ||
+            id.includes("/src/hooks/useCanonical")
           ) {
             return "storefront-shell";
           }
