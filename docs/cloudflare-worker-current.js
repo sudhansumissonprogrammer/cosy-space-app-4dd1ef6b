@@ -2255,6 +2255,16 @@ async function _getInlineProductsOrNull(hostname, slug, env, ctx) {
   return null;
 }
 
+async function _getInlineProductsFastOrNull(hostname) {
+  try {
+    const mem = _memProductVersion.get(hostname);
+    if (!mem || Date.now() - mem.ts >= MEM_PV_TTL) return null;
+    const cached = await cache.match(_buildProductsCacheKey(hostname, {}, mem.version));
+    return cached ? await cached.text() : null;
+  } catch {}
+  return null;
+}
+
 /* ============================================================
    EDGE-NATIVE PAGE VIEW TRACKING (v6.6.0 — BATCHED)
 
