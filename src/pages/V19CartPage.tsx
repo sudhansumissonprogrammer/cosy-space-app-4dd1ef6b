@@ -143,8 +143,8 @@ export default function V19CartPage() {
         {freeAbove > 0 && shippingActive && (
           <div className="rounded-xl bg-white p-3.5 border border-gray-200">
             {qualifiesFree ? (
-              <div className="text-[12.5px] font-extrabold" style={{ color: GREEN }}>
-                🎉 Yay! You unlocked FREE delivery
+              <div className="flex items-center gap-1.5 text-[12.5px] font-extrabold" style={{ color: GREEN }}>
+                <PartyPopper className="h-3.5 w-3.5" aria-hidden="true" /> Yay! You unlocked FREE delivery
               </div>
             ) : (
               <>

@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, ArrowLeft, ArrowRight, Package, MapPin, CreditCard, Banknote, Plus, Check, ChevronDown, Tag, X, Pencil, LocateFixed, ShieldCheck, Truck, RotateCcw, Star, Trash2 } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowLeft, ArrowRight, Package, MapPin, CreditCard, Banknote, Plus, Check, ChevronDown, Tag, X, Pencil, LocateFixed, ShieldCheck, Truck, RotateCcw, Star, Trash2, Wallet } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
@@ -2013,12 +2013,12 @@ export default function CheckoutPage() {
         <p className="mt-2 text-muted-foreground">{t("Your order has been placed successfully. The store will contact you shortly.", "आपका ऑर्डर सफलतापूर्वक दे दिया गया है। स्टोर जल्द ही आपसे संपर्क करेगा।")}</p>
         {(orderNumber || orderId) && <p className="mt-2 text-xs text-muted-foreground">{t("Order ID", "ऑर्डर आईडी")}: <span className="font-mono font-semibold">{orderNumber || orderId?.slice(0, 8)}</span></p>}
         <div className="mt-4 rounded-lg p-3" style={{ borderColor: "color-mix(in srgb, var(--storefront-primary) 20%, transparent)", border: "1px solid", backgroundColor: "color-mix(in srgb, var(--storefront-primary) 5%, transparent)" }}>
-          <p className="text-sm text-foreground font-medium">✅ {t("Order confirmed!", "ऑर्डर कन्फर्म!")}</p>
+          <p className="flex items-center gap-1.5 text-sm text-foreground font-medium"><CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" /> {t("Order confirmed!", "ऑर्डर कन्फर्म!")}</p>
           <p className="text-xs text-muted-foreground mt-1">{t("We'll send updates to", "हम अपडेट भेजेंगे")} <strong>{phone}</strong>{email ? ` ${t("and", "और")} ${email}` : ""}.</p>
         </div>
         {orderAdvancePaid > 0 && orderBalanceDue > 0 && (
           <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-3">
-            <p className="text-sm font-semibold text-foreground">💰 {t("Partial Payment", "आंशिक भुगतान")}</p>
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground"><Wallet className="h-4 w-4" aria-hidden="true" /> {t("Partial Payment", "आंशिक भुगतान")}</p>
             <div className="mt-1.5 space-y-1">
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">{t("Advance Paid Online", "अग्रिम भुगतान")}</span>

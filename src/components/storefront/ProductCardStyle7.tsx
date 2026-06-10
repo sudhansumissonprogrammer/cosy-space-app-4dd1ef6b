@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { createRipple } from "@/lib/ripple";
 import { Link } from "react-router-dom";
-import { Package, Heart, Plus, Check, Loader2, Minus } from "lucide-react";
+import { Package, Heart, Plus, Check, Loader2, Minus, Star } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
@@ -134,7 +134,7 @@ export default function ProductCardStyle7({ product, slug, store, priority = fal
                   <span className="text-[13px] font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{currency}{Number(product.price).toFixed(0)}</span>
                 )}
               </div>
-              <span className="text-[9px] font-medium opacity-70" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>★ {getProductRating(product.id)}</span>
+              <span className="inline-flex items-center gap-0.5 text-[9px] font-medium opacity-70" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}><Star className="h-2.5 w-2.5 fill-current" aria-hidden="true" /> {getProductRating(product.id)}</span>
             </div>
           </div>
         </div>

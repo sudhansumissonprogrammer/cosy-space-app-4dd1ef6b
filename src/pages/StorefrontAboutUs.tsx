@@ -1,7 +1,7 @@
 import { useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Instagram, Facebook, MessageCircle } from "lucide-react";
+import { Instagram, Facebook, MessageCircle, Mail, Phone, MapPin } from "lucide-react";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
@@ -130,12 +130,12 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
           <h2 className="text-2xl font-bold" style={{ color: textColor }}>Contact Us</h2>
           <div className="space-y-2 text-base" style={{ color: mutedColor }}>
             {ownerEmail && (
-              <p>📧 <strong style={{ color: textColor }}>Email:</strong>{" "}
+              <p className="flex items-center gap-2"><Mail className="h-4 w-4 shrink-0" aria-hidden="true" /> <strong style={{ color: textColor }}>Email:</strong>{" "}
                 <a href={`mailto:${ownerEmail}`} className="hover:underline" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}>{ownerEmail}</a>
               </p>
             )}
             {whatsapp && (
-              <p>📞 <strong style={{ color: textColor }}>Phone:</strong>{" "}
+              <p className="flex items-center gap-2 flex-wrap"><Phone className="h-4 w-4 shrink-0" aria-hidden="true" /> <strong style={{ color: textColor }}>Phone:</strong>{" "}
                 <a href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}>{whatsapp}</a>
                 {(store as any).secondary_phone && (
                   <>
