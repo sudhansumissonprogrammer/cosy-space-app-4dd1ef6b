@@ -166,7 +166,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.58.0-perf-ratelimit-kv-parallel-cf-cache";
+const WORKER_VERSION = "8.59.0-kv-write-cuts";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
