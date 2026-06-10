@@ -4568,7 +4568,7 @@ async function handleProductsApi(request, url, ctx, env) {
   try {
     const cached = await cache.match(cacheKey);
     if (cached) {
-      const revalKey = `products:v${version}:${domain}:${filters.category}:${filters.page}:${filters.sort}`;
+      const revalKey = `products:v${version}:${domain}:${filters.category}:${filters.page}:${filters.sort}:${filters.best_selling}`;
       if (shouldRevalidate(revalKey)) {
         ctx.waitUntil(_refreshProductsBackground(domain, filters, version, env));
       }
