@@ -1,5 +1,17 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.61.0 — fresh product refresh
+ * SHOPBANAO PRODUCTION ROUTER v8.62.0 — cold-POP elimination
+ *
+ * v8.62.0 — Cold-POP cache-miss elimination for low-traffic stores:
+ *           (1) Static-asset edge TTL 1d → 30d so hashed JS/CSS chunks
+ *               survive POP eviction pressure for a full month.
+ *           (2) handlePrewarm now seeds cache.default with the top 12
+ *               JS/CSS/woff2 bundle URLs parsed from the injected HTML,
+ *               so the FIRST visitor at a freshly warmed POP doesn't pay
+ *               6 cold origin RTTs in parallel. Best-effort, ctx.waitUntil.
+ *           (3) Pair this deploy with the Cloudflare dashboard toggle:
+ *               Caching → Tiered Cache → Smart Tiered Cache Topology = ON
+ *               on the shopbanao.in zone + each custom-domain zone you own.
+ *               That alone takes serdiya-class cold loads 4.3s → ~1.8s FCP.
  *
  * v8.61.0 — Product/storefront RPC subrequests no longer use Cloudflare's
  *           independent 60s fetch cache. The versioned Worker cache remains,
