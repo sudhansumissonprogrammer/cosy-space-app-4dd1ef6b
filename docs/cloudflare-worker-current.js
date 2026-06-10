@@ -1921,7 +1921,9 @@ const CACHE_STOREFRONT_TTL = 3_600; // Tier-1 #1: 2h → 1h. Purge handles fresh
 async function _batchKvRead(slug, env) {
   if (!env?.STORE_KV) return { theme: null };
   try {
-    const theme = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" }).catch(() => null);
+    let theme = await env.STORE_KV.get(`theme-lite:${WORKER_VERSION}:${slug}`, { type: "json" }).catch(() => null);
+    if (!theme) theme = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" }).catch(() => null);
+    if (theme && theme.wv !== WORKER_VERSION) theme = null;
     return { theme };
   } catch {
     return { theme: null };
@@ -1937,6 +1939,7 @@ const THEME_LITE_CACHE_TTL = 120;
 
 function _cacheThemeForFastShell(slug, themeConfig, env, ctx, storeTheme = "") {
   const lite = {
+    wv: WORKER_VERSION,
     th: storeTheme || themeConfig.theme || "",
     pc: themeConfig.primary_color || "#004643",
     bg: themeConfig.background_color || "#ffffff",
@@ -1960,7 +1963,7 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx, storeTheme = "") {
   _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
   _memThemeCache.set(slug, { lite, expiresAt: Date.now() + MEM_THEME_TTL });
 
-  const themeCacheKey = new Request(`https://cache/theme-lite:${slug}`);
+  const themeCacheKey = new Request(`https://cache/theme-lite:${WORKER_VERSION}:${slug}`);
   cache
     .put(
       themeCacheKey,
@@ -1970,7 +1973,7 @@ function _cacheThemeForFastShell(slug, themeConfig, env, ctx, storeTheme = "") {
 
   // v8.1.0: skip KV write for bot traffic + dedup repeat writes within 5min window
   if (!ctx?.__skipKvWarm) {
-    kvPutDedup(env, `theme-lite:${slug}`, liteStr, { expirationTtl: THEME_LITE_KV_TTL });
+    kvPutDedup(env, `theme-lite:${WORKER_VERSION}:${slug}`, liteStr, { expirationTtl: THEME_LITE_KV_TTL });
   }
 }
 
@@ -1979,11 +1982,12 @@ async function _getThemeLite(slug, env) {
   const mem = _memThemeCache.get(slug);
   if (mem && Date.now() < mem.expiresAt) return mem.lite;
 
-  const themeCacheKey = new Request(`https://cache/theme-lite:${slug}`);
+  const themeCacheKey = new Request(`https://cache/theme-lite:${WORKER_VERSION}:${slug}`);
   try {
     const cached = await cache.match(themeCacheKey);
     if (cached) {
       const lite = await cached.json();
+      if (lite?.wv !== WORKER_VERSION) return null;
       _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
       _memThemeCache.set(slug, { lite, expiresAt: Date.now() + MEM_THEME_TTL });
       return lite;
@@ -1992,7 +1996,9 @@ async function _getThemeLite(slug, env) {
 
   if (!env?.STORE_KV) return null;
   try {
-    const kvData = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" });
+    let kvData = await env.STORE_KV.get(`theme-lite:${WORKER_VERSION}:${slug}`, { type: "json" });
+    if (!kvData) kvData = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" });
+    if (kvData && kvData.wv !== WORKER_VERSION) kvData = null;
     if (kvData) {
       _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
       _memThemeCache.set(slug, { lite: kvData, expiresAt: Date.now() + MEM_THEME_TTL });
