@@ -159,7 +159,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.53.0-storefront-cold-load-preload-fix";
+const WORKER_VERSION = "8.54.0-storefront-html-cache-font-fix";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -644,7 +644,7 @@ function _normalizeHtmlPath(pathname) {
 }
 
 function getCfCacheKey(hostname, pathname) {
-  return new Request(`https://${hostname.toLowerCase()}${_normalizeHtmlPath(pathname)}`, { method: "GET" });
+  return new Request(`https://${hostname.toLowerCase()}/__sf_html/${HTML_CACHE_SCHEMA_VERSION}${_normalizeHtmlPath(pathname)}`, { method: "GET" });
 }
 
 // v8.25.2: Canonical zone-owned cache key keyed by store slug.
@@ -655,7 +655,7 @@ function getCfCacheKey(hostname, pathname) {
 // custom-domain visitors share one reliable cache entry.
 function getCanonicalHtmlCacheKey(slug, pathname) {
   if (!slug) return null;
-  return new Request(`https://${slug}.${ROOT_DOMAIN}${_normalizeHtmlPath(pathname)}`, { method: "GET" });
+  return new Request(`https://${slug}.${ROOT_DOMAIN}/__sf_html/${HTML_CACHE_SCHEMA_VERSION}${_normalizeHtmlPath(pathname)}`, { method: "GET" });
 }
 
 /* ============================================================
@@ -800,11 +800,8 @@ function isHtmlNavigationPath(pathname) {
   return !pathname.startsWith("/api/") && !pathname.startsWith("/assets/") && !pathname.includes(".");
 }
 
-function forcePublicHtmlCacheControl(headers, ttl = 3600) {
-  const current = headers.get("Cache-Control") || "";
-  if (!current || /no-store|no-cache|private|max-age=0|must-revalidate/i.test(current)) {
-    headers.set("Cache-Control", `public, max-age=${ttl}, stale-while-revalidate=86400`);
-  }
+function forcePublicHtmlCacheControl(headers, ttl = 60) {
+  headers.set("Cache-Control", `public, max-age=${ttl}, stale-while-revalidate=60`);
 }
 
 function makePublicHtmlResponse(response, ttl = 3600) {
@@ -856,7 +853,7 @@ async function mirrorToCfCache(ctx, request, response, slug = null, env = null) 
     headers.delete("vary");
     // Force a deterministic, public Cache-Control so CF stores it. Lovable origin
     // sends `no-cache, max-age=0`; leaving that intact makes CF cache rate stay 0%.
-    forcePublicHtmlCacheControl(headers, 3600);
+    forcePublicHtmlCacheControl(headers, 60);
     headers.set("X-Edge-Mirror", "1");
     // Buffer body once so we can write to multiple cache keys.
     const buf = await cloned.arrayBuffer();
@@ -1044,9 +1041,11 @@ function buildThemeCssFromConfig(tc) {
     `--storefront-accent:${accentColor};` +
     `--storefront-text:${textColor};` +
     `--storefront-bg:${bgColor};` +
+    `--storefront-heading-font:'${headingFont || "Inter"}';` +
+    `--storefront-body-font:'${bodyFont || headingFont || "Inter"}';` +
     `--storefront-button-radius:${btnRadius};` +
     `--storefront-btn-text:${btnTextColor};` +
-    `}body{background:${bgColor};color:${textColor}}` +
+    `}body{background:${bgColor};color:${textColor};font-family:var(--storefront-body-font,'Inter'),system-ui,sans-serif}` +
     /* ─── Phase 2 Fix #4: Critical product-card CSS ───
        ~2KB of layout-critical CSS so the first product card grid paints
        immediately on React's first commit, BEFORE the ~80KB index.css
@@ -1641,7 +1640,10 @@ function setNoStoreHtmlHeaders(headers) {
   // visits, AND CF's automatic cache starts serving HIT on warm hits —
   // cutting Worker compute to ~0 for the bulk of anonymous traffic.
   // Purge button still wipes instantly via /api/purge-shell.
-  headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=86400");
+  // v8.54.0: keep HTML cache very short. Long SWR was serving old
+  // modulepreload hashes after frontend publishes, so browsers downloaded
+  // stale App chunks before the real entry discovered the current ones.
+  headers.set("Cache-Control", "public, max-age=15, stale-while-revalidate=60");
   headers.delete("Pragma");
   headers.delete("Expires");
 }
@@ -1937,9 +1939,14 @@ async function getFreshSpaShell(request, ctx, env) {
 }
 
 async function getNavigationSpaShell(request, ctx, env) {
-  const fresh = await getFreshSpaShell(request, ctx, env);
-  if (fresh?.html) return fresh;
-  return getSpaShell(request, ctx, env);
+  const cached = await getSpaShell(request, ctx, env);
+  if (cached?.html) {
+    // Refresh in the background so new publishes still propagate, but never
+    // put the human navigation TTFB behind the Lovable origin round-trip.
+    if (ctx?.waitUntil) ctx.waitUntil(getFreshSpaShell(request, ctx, env).catch(() => null));
+    return cached;
+  }
+  return getFreshSpaShell(request, ctx, env);
 }
 
 /* ============================================================
@@ -5782,7 +5789,7 @@ async function _handleFetch(request, env, ctx) {
             }
           }
         }
-        if (!cached) {
+        if (!cached && !isHtmlNav) {
           cached = await cache.match(request);
           if (cached && !hitKey) hitKey = "raw-request";
         }
