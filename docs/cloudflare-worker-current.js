@@ -1,5 +1,10 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.52.0 — /api/products best_selling filter
+ * SHOPBANAO PRODUCTION ROUTER v8.52.1 — complete /api/products best_selling cache rollout
+ *
+ * v8.52.1 — Fixed the actual exported WORKER_VERSION string (was still
+ *           v8.51.0-ttfb-unblock even though the doc header said v8.52.0).
+ *           Also treats page-0 `best_selling=1` as a home-page hot path so
+ *           it writes Cache API + KV immediately, not only on the second hit.
  *
  * v8.52.0 — Added `?best_selling=1` query param to /api/products. Frontend
  *           BestSellersSection now hits the Worker edge cache (KV+Cache,
@@ -149,7 +154,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.51.0-ttfb-unblock";
+const WORKER_VERSION = "8.52.1-products-best-selling-cache";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -1743,8 +1748,11 @@ function _isDefaultProductFilter(filters) {
   if (!filters) return true;
   if (filters.category) return false;
   if (filters.sort) return false;
-  if (filters.best_selling) return false;
   if (filters.page && Number(filters.page) > 1) return false;
+  // v8.52.1: page-0 best sellers are also a home-page hot path. Cache them
+  // immediately so first real visitor warms KV for everyone else.
+  if (filters.best_selling === "1") return true;
+  if (filters.best_selling) return false;
   return true;
 }
 function kvPutProducts(env, key, value, opts, filters) {
