@@ -41,7 +41,7 @@ export default function StoreCustomers() {
   const { data: countData } = useQuery({
     queryKey: ["store-customers-count", storeId],
     queryFn: async () => {
-      const { count, error } = await supabase.from("customers").select("*", { count: "exact", head: true }).eq("store_id", storeId!);
+      const { count, error } = await supabase.from("customers").select("*", { count: "estimated", head: true }).eq("store_id", storeId!);
       if (error) throw error;
       return count;
     },

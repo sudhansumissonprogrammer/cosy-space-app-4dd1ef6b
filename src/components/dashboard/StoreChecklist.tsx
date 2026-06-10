@@ -28,7 +28,7 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
     queryFn: async () => {
       const [storeRes, productsRes, paymentsRes, shippingRes, themeRes] = await Promise.all([
         supabase.from("stores").select("logo_url, banner_url, whatsapp_number, description, order_mode").eq("id", storeId).single(),
-        supabase.from("products").select("id", { count: "exact", head: true }).eq("store_id", storeId),
+        supabase.from("products").select("id", { count: "estimated", head: true }).eq("store_id", storeId),
         supabase.from("store_payment_config").select("id").eq("store_id", storeId).maybeSingle(),
         supabase.from("store_shipping_config").select("id").eq("store_id", storeId).maybeSingle(),
         supabase.from("store_theme_config").select("id").eq("store_id", storeId).maybeSingle(),

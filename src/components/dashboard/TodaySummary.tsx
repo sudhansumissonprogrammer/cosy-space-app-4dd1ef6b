@@ -27,7 +27,7 @@ export default function TodaySummary({ storeId, currencySymbol }: TodaySummaryPr
           .in("status", REVENUE_STATUSES),
         supabase
           .from("customers")
-          .select("id", { count: "exact", head: true })
+          .select("id", { count: "estimated", head: true })
           .eq("store_id", storeId)
           .gte("created_at", iso),
       ]);

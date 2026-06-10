@@ -41,7 +41,7 @@ export default function AdminOrders() {
     queryKey: ["admin-wa-orders-count"],
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
-      const { count, error } = await supabase.from("whatsapp_orders").select("*", { count: "exact", head: true });
+      const { count, error } = await supabase.from("whatsapp_orders").select("*", { count: "estimated", head: true });
       if (error) throw error;
       return count;
     },
@@ -66,7 +66,7 @@ export default function AdminOrders() {
     queryKey: ["admin-web-orders-count"],
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
-      const { count, error } = await supabase.from("orders").select("*", { count: "exact", head: true });
+      const { count, error } = await supabase.from("orders").select("*", { count: "estimated", head: true });
       if (error) throw error;
       return count;
     },

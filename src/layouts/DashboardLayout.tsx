@@ -263,8 +263,8 @@ export default function DashboardLayout() {
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
       const [pendingOrders, carts] = await Promise.all([
-        supabase.from("orders").select("id", { count: "exact", head: true }).eq("store_id", storeId!).eq("status", "pending"),
-        supabase.from("abandoned_carts").select("id", { count: "exact", head: true }).eq("store_id", storeId!).eq("recovered", false),
+        supabase.from("orders").select("id", { count: "estimated", head: true }).eq("store_id", storeId!).eq("status", "pending"),
+        supabase.from("abandoned_carts").select("id", { count: "estimated", head: true }).eq("store_id", storeId!).eq("recovered", false),
       ]);
       return {
         pendingOrders: pendingOrders.count ?? 0,
