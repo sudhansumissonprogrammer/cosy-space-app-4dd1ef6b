@@ -29,6 +29,14 @@ function getEdgeThemeConfig(): Record<string, any> | undefined {
     heading_font: hint.hf,
     body_font: hint.bf,
     button_style: hint.bs,
+    mobile_nav_enabled: hint.mne,
+    mobile_nav_style: hint.mns,
+    product_card_style: hint.pcs,
+    category_style: hint.cs,
+    header_logo_alignment: hint.hla,
+    header_style: hint.hs,
+    marquee_enabled: hint.me,
+    marquee_text: hint.mt,
   };
 }
 
