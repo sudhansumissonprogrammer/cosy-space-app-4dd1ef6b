@@ -1,5 +1,10 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.52.0 — /api/products best_selling filter
+ * SHOPBANAO PRODUCTION ROUTER v8.52.1 — complete /api/products best_selling cache rollout
+ *
+ * v8.52.1 — Fixed the actual exported WORKER_VERSION string (was still
+ *           v8.51.0-ttfb-unblock even though the doc header said v8.52.0).
+ *           Also treats page-0 `best_selling=1` as a home-page hot path so
+ *           it writes Cache API + KV immediately, not only on the second hit.
  *
  * v8.52.0 — Added `?best_selling=1` query param to /api/products. Frontend
  *           BestSellersSection now hits the Worker edge cache (KV+Cache,
@@ -149,7 +154,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.51.0-ttfb-unblock";
+const WORKER_VERSION = "8.52.1-products-best-selling-cache";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
