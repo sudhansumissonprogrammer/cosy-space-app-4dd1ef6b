@@ -56,28 +56,18 @@ async function fetchProducts(storeId: string): Promise<any[]> {
   const isPreview = hostname.endsWith(".lovable.app") || hostname.endsWith(".lovableproject.com");
 
   if (!isLocal && !isPreview) {
-    // ── sessionStorage cache: avoid re-hitting Worker on intra-session navigation ──
-    // Cache for 15min per session — survives Home → Shop → Home round trips
-    // without triggering a fresh /api/products Worker invocation.
-    const SS_KEY = `__sf_products_${hostname}`;
-    const SS_TTL = 15 * 60 * 1000;
-    try {
-      const cached = sessionStorage.getItem(SS_KEY);
-      if (cached) {
-        const { ts, data } = JSON.parse(cached);
-        if (Date.now() - ts < SS_TTL && Array.isArray(data) && data.length > 0) {
-          return data;
-        }
-      }
-    } catch { /* ignore */ }
-
+    // NOTE: sessionStorage cache was removed (v8.59.x) because it survived
+    // hard refreshes for 15min with no invalidation signal — when a merchant
+    // added/deleted a product, the Worker edge cache was purged correctly but
+    // shoppers still saw the stale list until the SS entry expired.
+    // React Query (staleTime 30min) already covers intra-session navigation,
+    // and the Worker /api/products response is Cache-API + KV backed, so cold
+    // loads are still fast and ALWAYS reflect the latest purge/version bump.
     const res = await fetch(`${window.location.origin}/api/products`, {
       headers: { Accept: "application/json" },
     });
     if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
-    const json = await res.json();
-    try { sessionStorage.setItem(SS_KEY, JSON.stringify({ ts: Date.now(), data: json })); } catch { /* quota */ }
-    return json;
+    return await res.json();
   }
 
   // ── Preview/localhost fallback: direct Supabase (lazy import) ──
