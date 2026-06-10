@@ -1746,6 +1746,7 @@ export default function CheckoutPage() {
     } catch {}
 
     fireInitiateCheckoutOnce();
+    fireAddPaymentInfoOnce();
 
     // Disable checkout leave guard before loading/opening PayU.
     // PayU can open an iframe, popup, redirect, or UPI deep link depending on merchant config.
