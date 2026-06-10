@@ -2947,6 +2947,18 @@ async function proxyToOrigin(request) {
   const headers = new Headers(request.headers);
   headers.set("Host", ORIGIN_HOST);
 
+  // v8.58.0: cf cache hints for immutable hashed assets. Lets CF edge cache
+  // them independent of upstream headers and short-circuit the Worker on
+  // repeat hits (zero CPU, zero subrequest billing). Only safe for paths
+  // that are content-hashed; HTML and dynamic paths keep no-cache.
+  const isStaticAsset =
+    request.method === "GET" &&
+    /^\/(assets|static)\//.test(url.pathname) &&
+    /\.(?:js|mjs|css|png|jpe?g|webp|avif|gif|svg|ico|woff2?|ttf|otf|map)$/i.test(url.pathname);
+  const cfOpts = isStaticAsset
+    ? { cacheEverything: true, cacheTtlByStatus: { "200-299": 86400, "404": 60, "500-599": 0 } }
+    : { cacheTtl: 0, cacheEverything: false };
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ORIGIN_TIMEOUT_MS);
 
@@ -2955,7 +2967,7 @@ async function proxyToOrigin(request) {
       method: request.method,
       headers,
       signal: controller.signal,
-      cf: { cacheTtl: 0, cacheEverything: false },
+      cf: cfOpts,
     });
     clearTimeout(timeout);
 
