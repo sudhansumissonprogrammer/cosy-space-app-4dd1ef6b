@@ -41,7 +41,7 @@ function StatusTimeline({ status }: { status: string }) {
               />
             )}
             <div
-              className={`relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${
+              className={`relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 transition-[transform,opacity,colors,box-shadow] ${
                 isCurrent
                   ? "border-primary bg-primary text-primary-foreground scale-110"
                   : isActive

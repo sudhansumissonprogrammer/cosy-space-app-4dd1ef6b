@@ -71,7 +71,7 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
 
   return (
     <nav
-      className="relative z-30 transition-all duration-300"
+      className="relative z-30 transition-[transform,opacity,colors,box-shadow] duration-300"
       style={{
         backgroundColor: "var(--storefront-bg, hsl(var(--background)))",
         color: "var(--storefront-text, hsl(var(--foreground)))",

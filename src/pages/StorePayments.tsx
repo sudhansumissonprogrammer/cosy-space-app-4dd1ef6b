@@ -272,7 +272,7 @@ export default function StorePayments() {
             className="grid gap-3"
           >
             {!isCommission && (
-              <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "whatsapp" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
+              <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-[transform,opacity,colors,box-shadow] ${orderMode === "whatsapp" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
                 <RadioGroupItem value="whatsapp" className="mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
@@ -285,7 +285,7 @@ export default function StorePayments() {
               </label>
             )}
 
-            <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "website" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
+            <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-[transform,opacity,colors,box-shadow] ${orderMode === "website" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
               <RadioGroupItem value="website" className="mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
@@ -298,7 +298,7 @@ export default function StorePayments() {
             </label>
 
             {!isCommission && (
-              <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-all ${orderMode === "both" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
+              <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-[transform,opacity,colors,box-shadow] ${orderMode === "both" ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}>
                 <RadioGroupItem value="both" className="mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
@@ -355,21 +355,21 @@ export default function StorePayments() {
                 onValueChange={(v) => switchGateway(v as OnlineGateway)}
                 className="grid gap-2 sm:grid-cols-2"
               >
-                <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-all ${onlineGateway === "none" ? "border-primary bg-primary/5" : "border-input"}`}>
+                <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-[transform,opacity,colors,box-shadow] ${onlineGateway === "none" ? "border-primary bg-primary/5" : "border-input"}`}>
                   <RadioGroupItem value="none" />
                   <span className="text-sm font-medium">None</span>
                 </label>
-                <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-all ${onlineGateway === "razorpay" ? "border-primary bg-primary/5" : "border-input"}`}>
+                <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-[transform,opacity,colors,box-shadow] ${onlineGateway === "razorpay" ? "border-primary bg-primary/5" : "border-input"}`}>
                   <RadioGroupItem value="razorpay" />
                   <CreditCard className="h-4 w-4 text-blue-600" />
                   <span className="text-sm font-medium">Razorpay</span>
                 </label>
-                <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-all ${onlineGateway === "cashfree" ? "border-primary bg-primary/5" : "border-input"}`}>
+                <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-[transform,opacity,colors,box-shadow] ${onlineGateway === "cashfree" ? "border-primary bg-primary/5" : "border-input"}`}>
                   <RadioGroupItem value="cashfree" />
                   <Zap className="h-4 w-4 text-violet-600" />
                   <span className="text-sm font-medium">Cashfree</span>
                 </label>
-                <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-all ${onlineGateway === "payu" ? "border-primary bg-primary/5" : "border-input"}`}>
+                <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-[transform,opacity,colors,box-shadow] ${onlineGateway === "payu" ? "border-primary bg-primary/5" : "border-input"}`}>
                   <RadioGroupItem value="payu" />
                   <CreditCard className="h-4 w-4 text-emerald-600" />
                   <span className="text-sm font-medium">PayU</span>
@@ -520,11 +520,11 @@ export default function StorePayments() {
                           onValueChange={(v) => setCashfreeEnv(v as "production" | "sandbox")}
                           className="flex gap-4"
                         >
-                          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2 transition-all ${cashfreeEnv === "production" ? "border-primary bg-primary/5" : "border-input"}`}>
+                          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2 transition-[transform,opacity,colors,box-shadow] ${cashfreeEnv === "production" ? "border-primary bg-primary/5" : "border-input"}`}>
                             <RadioGroupItem value="production" />
                             <span className="text-sm font-medium">Production (Live)</span>
                           </label>
-                          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2 transition-all ${cashfreeEnv === "sandbox" ? "border-primary bg-primary/5" : "border-input"}`}>
+                          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2 transition-[transform,opacity,colors,box-shadow] ${cashfreeEnv === "sandbox" ? "border-primary bg-primary/5" : "border-input"}`}>
                             <RadioGroupItem value="sandbox" />
                             <span className="text-sm font-medium">Sandbox (Test)</span>
                           </label>
@@ -634,11 +634,11 @@ export default function StorePayments() {
                           onValueChange={(v) => setPayuEnv(v as "production" | "sandbox")}
                           className="flex gap-4"
                         >
-                          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2 transition-all ${payuEnv === "production" ? "border-primary bg-primary/5" : "border-input"}`}>
+                          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2 transition-[transform,opacity,colors,box-shadow] ${payuEnv === "production" ? "border-primary bg-primary/5" : "border-input"}`}>
                             <RadioGroupItem value="production" />
                             <span className="text-sm font-medium">Production (Live)</span>
                           </label>
-                          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2 transition-all ${payuEnv === "sandbox" ? "border-primary bg-primary/5" : "border-input"}`}>
+                          <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2 transition-[transform,opacity,colors,box-shadow] ${payuEnv === "sandbox" ? "border-primary bg-primary/5" : "border-input"}`}>
                             <RadioGroupItem value="sandbox" />
                             <span className="text-sm font-medium">Sandbox (Test)</span>
                           </label>
@@ -726,12 +726,12 @@ export default function StorePayments() {
                     onValueChange={(v) => setPartialType(v as "percentage" | "fixed")}
                     className="flex gap-4"
                   >
-                    <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2.5 transition-all ${partialType === "percentage" ? "border-primary bg-primary/5" : "border-input"}`}>
+                    <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2.5 transition-[transform,opacity,colors,box-shadow] ${partialType === "percentage" ? "border-primary bg-primary/5" : "border-input"}`}>
                       <RadioGroupItem value="percentage" />
                       <Percent className="h-4 w-4" />
                       <span className="text-sm font-medium">Percentage</span>
                     </label>
-                    <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2.5 transition-all ${partialType === "fixed" ? "border-primary bg-primary/5" : "border-input"}`}>
+                    <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2.5 transition-[transform,opacity,colors,box-shadow] ${partialType === "fixed" ? "border-primary bg-primary/5" : "border-input"}`}>
                       <RadioGroupItem value="fixed" />
                       <IndianRupee className="h-4 w-4" />
                       <span className="text-sm font-medium">Fixed ₹</span>

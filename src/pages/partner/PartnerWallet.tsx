@@ -74,7 +74,7 @@ export default function PartnerWallet() {
             </div>
             <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/20">
               <div
-                className="h-full rounded-full bg-white transition-all duration-700"
+                className="h-full rounded-full bg-white transition-[transform,opacity,colors,box-shadow] duration-700"
                 style={{ width: `${approvedPct}%` }}
               />
             </div>

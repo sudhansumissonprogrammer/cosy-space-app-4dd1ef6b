@@ -123,7 +123,7 @@ export default function ThemeShowcase() {
           {THEMES.map((theme) => (
             <div
               key={theme.name}
-              className="relative rounded-2xl border border-border overflow-hidden bg-background hover:shadow-xl transition-all"
+              className="relative rounded-2xl border border-border overflow-hidden bg-background hover:shadow-xl transition-[transform,opacity,colors,box-shadow]"
             >
               <div className={`absolute top-0 left-0 z-10 ${theme.badgeColor} shadow-md`}
                    style={{

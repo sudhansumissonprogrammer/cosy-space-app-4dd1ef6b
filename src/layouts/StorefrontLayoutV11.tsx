@@ -37,10 +37,10 @@ function ShoppingAppBottomNav({ store }: { store: StoreData }) {
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.label} to={item.to} className="relative flex items-center justify-center rounded-full px-3 py-2.5 transition-all duration-500 ease-in-out active:scale-95">
-                <div className="absolute inset-0 rounded-full transition-all duration-500 ease-in-out" style={{ backgroundColor: item.isActive ? "var(--storefront-text, hsl(var(--foreground)))" : "transparent", opacity: item.isActive ? 1 : 0 }} />
+              <Link key={item.label} to={item.to} className="relative flex items-center justify-center rounded-full px-3 py-2.5 transition-[transform,opacity,colors,box-shadow] duration-500 ease-in-out active:scale-95">
+                <div className="absolute inset-0 rounded-full transition-[transform,opacity,colors,box-shadow] duration-500 ease-in-out" style={{ backgroundColor: item.isActive ? "var(--storefront-text, hsl(var(--foreground)))" : "transparent", opacity: item.isActive ? 1 : 0 }} />
                 <Icon className="relative z-10 h-[22px] w-[22px] transition-colors duration-500 ease-in-out" style={{ color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "var(--storefront-text, hsl(var(--foreground)))45" }} strokeWidth={1.8} fill={item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "none"} />
-                <span className="relative z-10 text-xs font-semibold overflow-hidden transition-all duration-500 ease-in-out" style={{ color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "transparent", maxWidth: item.isActive ? "80px" : "0px", opacity: item.isActive ? 1 : 0, marginLeft: item.isActive ? "6px" : "0px" }}>{item.label}</span>
+                <span className="relative z-10 text-xs font-semibold overflow-hidden transition-[transform,opacity,colors,box-shadow] duration-500 ease-in-out" style={{ color: item.isActive ? "var(--storefront-bg, hsl(var(--background)))" : "transparent", maxWidth: item.isActive ? "80px" : "0px", opacity: item.isActive ? 1 : 0, marginLeft: item.isActive ? "6px" : "0px" }}>{item.label}</span>
               </Link>
             );
           })}

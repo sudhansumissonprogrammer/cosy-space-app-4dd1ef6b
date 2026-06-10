@@ -272,7 +272,7 @@ export default function StorefrontHomeV17() {
           <div className="hidden md:block absolute bottom-16 left-1/2 -translate-x-1/2 z-20">
             <Link
               to={storefrontPath(slug, "shop")}
-              className="inline-flex items-center justify-center px-10 py-3.5 rounded-full text-white font-medium text-base tracking-wide shadow-lg hover:opacity-90 transition-all"
+              className="inline-flex items-center justify-center px-10 py-3.5 rounded-full text-white font-medium text-base tracking-wide shadow-lg hover:opacity-90 transition-[transform,opacity,colors,box-shadow]"
               style={{ backgroundColor: "var(--v17-primary, #0F2A22)", color: "var(--v17-bg, var(--storefront-bg, #fff))", minWidth: "200px" }}
             >
               Shop Collection

@@ -2154,7 +2154,7 @@ function SegmentationTab({ storeId, onSendToBulk }: { storeId: string; onSendToB
           <Card
             key={seg.id}
             className={cn(
-              "cursor-pointer transition-all hover:shadow-md",
+              "cursor-pointer transition-[transform,opacity,colors,box-shadow] hover:shadow-md",
               selectedSegment === seg.id ? "ring-2 ring-primary" : ""
             )}
             onClick={() => loadSegment(seg.id)}
@@ -2784,7 +2784,7 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
         {/* ShopBanao Marketing Card */}
         <Card
           className={cn(
-            "cursor-pointer transition-all hover:shadow-md border-2",
+            "cursor-pointer transition-[transform,opacity,colors,box-shadow] hover:shadow-md border-2",
             selecting === "shopbanao" ? "border-green-500 bg-green-50/50" : "border-border hover:border-green-300"
           )}
           onClick={() => {
@@ -2821,7 +2821,7 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
         {/* Own Business API Card */}
         <Card
           className={cn(
-            "cursor-pointer transition-all hover:shadow-md border-2",
+            "cursor-pointer transition-[transform,opacity,colors,box-shadow] hover:shadow-md border-2",
             selecting === "own" ? "border-blue-500 bg-blue-50/50" : "border-border hover:border-blue-300"
           )}
           onClick={() => {

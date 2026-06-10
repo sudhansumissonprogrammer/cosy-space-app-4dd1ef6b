@@ -130,7 +130,7 @@ export default function StorefrontHomeV18() {
             <div className="absolute inset-0 flex items-end justify-center pb-16">
               <Link
                 to={storefrontPath(slug, "/categories")}
-                className="inline-flex items-center gap-2 px-10 py-3.5 text-sm font-bold tracking-[0.2em] uppercase border-2 bg-black/30 backdrop-blur-sm transition-all hover:bg-white hover:!text-black [&:hover_svg]:!stroke-black"
+                className="inline-flex items-center gap-2 px-10 py-3.5 text-sm font-bold tracking-[0.2em] uppercase border-2 bg-black/30 backdrop-blur-sm transition-[transform,opacity,colors,box-shadow] hover:bg-white hover:!text-black [&:hover_svg]:!stroke-black"
                 style={btnStyle}
               >
                 Shop Collection <ArrowRight className="h-4 w-4" />
@@ -148,7 +148,7 @@ export default function StorefrontHomeV18() {
             <div className="absolute inset-0 flex items-end justify-center pb-10">
               <Link
                 to={storefrontPath(slug, "/categories")}
-                className="inline-flex items-center gap-2 px-8 py-3 text-xs font-bold tracking-[0.2em] uppercase border-2 bg-black/30 backdrop-blur-sm transition-all hover:bg-white hover:!text-black [&:hover_svg]:!stroke-black"
+                className="inline-flex items-center gap-2 px-8 py-3 text-xs font-bold tracking-[0.2em] uppercase border-2 bg-black/30 backdrop-blur-sm transition-[transform,opacity,colors,box-shadow] hover:bg-white hover:!text-black [&:hover_svg]:!stroke-black"
                 style={btnStyle}
               >
                 Shop Collection <ArrowRight className="h-3.5 w-3.5" />
@@ -163,7 +163,7 @@ export default function StorefrontHomeV18() {
             </h1>
             <Link
               to={storefrontPath(slug, "/categories")}
-              className="inline-flex items-center gap-2 px-8 py-3 text-sm font-bold tracking-[0.2em] uppercase border-2 transition-all hover:bg-white hover:!text-black [&:hover_svg]:!stroke-black"
+              className="inline-flex items-center gap-2 px-8 py-3 text-sm font-bold tracking-[0.2em] uppercase border-2 transition-[transform,opacity,colors,box-shadow] hover:bg-white hover:!text-black [&:hover_svg]:!stroke-black"
               style={btnStyle}
             >
               Shop Collection <ArrowRight className="h-4 w-4" />

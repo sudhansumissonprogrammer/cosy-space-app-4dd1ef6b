@@ -291,7 +291,7 @@ export default function V20ProductDetail() {
         {images.length > 1 && (
           <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
             {images.map((_, i) => (
-              <button key={i} onClick={() => scrollToImage(i)} className="h-1.5 rounded-full transition-all"
+              <button key={i} onClick={() => scrollToImage(i)} className="h-1.5 rounded-full transition-[transform,opacity,colors,box-shadow]"
                 style={{ width: i === galleryIdx ? 16 : 6, background: i === galleryIdx ? "var(--storefront-primary, #036B52)" : "#d1d5db" }}
                 aria-label={`Image ${i + 1}`} />
             ))}

@@ -89,7 +89,7 @@ export default function PartnerLanding() {
             { icon: ShieldCheck, title: "Fair attribution", desc: "90-day cookie window. Once your referral pays, they're locked to you for life." },
             { icon: Users, title: "Anyone can join", desc: "Creators, agencies, freelancers, store owners — if you can share a link, you can earn." },
           ].map((b) => (
-            <Card key={b.title} className="rounded-2xl border p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg">
+            <Card key={b.title} className="rounded-2xl border p-5 transition-[transform,opacity,colors,box-shadow] hover:-translate-y-0.5 hover:shadow-lg">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary">
                 <b.icon className="h-5 w-5" />
               </div>

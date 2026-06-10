@@ -2309,7 +2309,7 @@ export default function CheckoutPage() {
             <button
               type="button"
               onClick={() => { setPartialPaymentMode("partial"); setPaymentMethod("razorpay"); }}
-              className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${partialPaymentMode === "partial" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+              className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-[transform,opacity,colors,box-shadow] ${partialPaymentMode === "partial" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
             >
               <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${partialPaymentMode === "partial" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
                 {partialPaymentMode === "partial" && <Check className="h-3 w-3 text-primary-foreground" />}
@@ -2329,7 +2329,7 @@ export default function CheckoutPage() {
             <button
               type="button"
               onClick={() => { setPartialPaymentMode("full"); setPaymentMethod("razorpay"); }}
-              className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${partialPaymentMode === "full" && paymentMethod === "razorpay" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+              className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-[transform,opacity,colors,box-shadow] ${partialPaymentMode === "full" && paymentMethod === "razorpay" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
             >
               <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${partialPaymentMode === "full" && paymentMethod === "razorpay" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
                 {partialPaymentMode === "full" && paymentMethod === "razorpay" && <Check className="h-3 w-3 text-primary-foreground" />}
@@ -2349,7 +2349,7 @@ export default function CheckoutPage() {
           <button
             type="button"
             onClick={() => { setPaymentMethod("cod"); }}
-            className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+            className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-[transform,opacity,colors,box-shadow] ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
           >
             <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "cod" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
               {paymentMethod === "cod" && <Check className="h-3 w-3 text-primary-foreground" />}
@@ -2370,7 +2370,7 @@ export default function CheckoutPage() {
           <button
             type="button"
             onClick={() => { setPaymentMethod("razorpay"); }}
-            className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${paymentMethod === "razorpay" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+            className={`flex w-full items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-[transform,opacity,colors,box-shadow] ${paymentMethod === "razorpay" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
           >
             <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${paymentMethod === "razorpay" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
               {paymentMethod === "razorpay" && <Check className="h-3 w-3 text-primary-foreground" />}
@@ -2473,7 +2473,7 @@ export default function CheckoutPage() {
           </div>
         )}
         <button
-          className="group relative flex h-14 w-full items-center justify-center gap-2 overflow-hidden text-base font-bold btn-gold shadow-lg shadow-primary/20 transition-all hover:shadow-xl hover:shadow-primary/30 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+          className="group relative flex h-14 w-full items-center justify-center gap-2 overflow-hidden text-base font-bold btn-gold shadow-lg shadow-primary/20 transition-[transform,opacity,colors,box-shadow] hover:shadow-xl hover:shadow-primary/30 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           style={{ borderRadius: "var(--storefront-button-radius, 0.75rem)" }}
           onClick={handlePlaceOrder}
           disabled={placing || paymentFailed}
@@ -2544,7 +2544,7 @@ export default function CheckoutPage() {
                 key={addr.id}
                 type="button"
                 onClick={() => { selectAddress(addr); setShowAddressDialog(false); }}
-                className={`relative w-full rounded-xl border-2 p-3 text-left transition-all ${selectedAddressId === addr.id ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}
+                className={`relative w-full rounded-xl border-2 p-3 text-left transition-[transform,opacity,colors,box-shadow] ${selectedAddressId === addr.id ? "border-primary bg-primary/5" : "border-input hover:border-primary/30"}`}
               >
                 {selectedAddressId === addr.id && (
                   <div className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary">

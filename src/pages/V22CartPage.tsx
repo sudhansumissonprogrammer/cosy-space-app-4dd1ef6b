@@ -89,7 +89,7 @@ export default function V22CartPage() {
               </div>
               <div className="h-2.5 w-full rounded-full overflow-hidden" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 8%, transparent)" }}>
                 <div
-                  className="h-full rounded-full transition-all duration-700 ease-out"
+                  className="h-full rounded-full transition-[transform,opacity,colors,box-shadow] duration-700 ease-out"
                   style={{
                     width: `${shippingProgress}%`,
                     background: "linear-gradient(90deg, var(--storefront-primary, #10b981), color-mix(in srgb, var(--storefront-primary, #10b981) 70%, #34d399))",
@@ -179,7 +179,7 @@ export default function V22CartPage() {
                 ) : null}
                 {showWhatsApp && (
                   <button
-                    className="flex h-10 sm:h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] text-xs sm:text-sm font-bold text-white transition-all hover:bg-[#1ebe5d] active:scale-[0.98] disabled:opacity-50"
+                    className="flex h-10 sm:h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] text-xs sm:text-sm font-bold text-white transition-[transform,opacity,colors,box-shadow] hover:bg-[#1ebe5d] active:scale-[0.98] disabled:opacity-50"
                     onClick={handleWhatsAppOrder}
                     disabled={!store.whatsapp_number}
                   >

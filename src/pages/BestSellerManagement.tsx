@@ -168,7 +168,7 @@ export default function BestSellerManagement() {
               onDragStart={() => handleDragStart(idx)}
               onDragOver={handleDragOver}
               onDrop={() => handleDrop(idx)}
-              className={`flex items-center gap-3 rounded-xl border bg-card p-3 transition-all ${
+              className={`flex items-center gap-3 rounded-xl border bg-card p-3 transition-[transform,opacity,colors,box-shadow] ${
                 dragIdx === idx ? "opacity-50 scale-[0.98]" : "hover:shadow-sm"
               }`}
             >

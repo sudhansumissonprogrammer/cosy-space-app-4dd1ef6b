@@ -119,7 +119,7 @@ function BannerSliderInner({ slides }: { slides: { image: string; title: string 
             <button
               key={i}
               onClick={() => setCurrent(i)}
-              className="h-1.5 rounded-full transition-all"
+              className="h-1.5 rounded-full transition-[transform,opacity,colors,box-shadow]"
               style={{
                 width: i === current ? "16px" : "6px",
                 backgroundColor: i === current ? "var(--storefront-primary, #fff)" : "rgba(255,255,255,0.5)",
