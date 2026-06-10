@@ -61,7 +61,7 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
             className="inline-flex items-center gap-2.5 group"
           >
             <div
-              className="flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-110"
+              className="flex h-10 w-10 items-center justify-center rounded-xl transition-transform hh:group-hover:scale-110"
               style={{
                 background: "linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)",
               }}
@@ -97,7 +97,7 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
                 src={img.url}
                 alt={img.name}
                 loading="lazy"
-                className="h-full w-full object-cover transition-[transform,opacity,colors,box-shadow] duration-500 group-hover:scale-110 group-hover:brightness-[0.4]"
+                className="h-full w-full object-cover transition-[transform,opacity,colors,box-shadow] duration-500 hh:group-hover:scale-110 group-hover:brightness-[0.4]"
               />
               {/* Enhanced hover overlay with product info */}
               <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-[transform,opacity,colors,box-shadow] duration-300">

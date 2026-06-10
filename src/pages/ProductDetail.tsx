@@ -888,7 +888,7 @@ export default function ProductDetail() {
                     window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
                   }}
                 >
-                  <svg viewBox="0 0 32 32" fill="white" className="h-7 w-7 shrink-0 transition-transform group-hover:scale-110">
+                  <svg viewBox="0 0 32 32" fill="white" className="h-7 w-7 shrink-0 transition-transform hh:group-hover:scale-110">
                     <path d="M16.004 3.2C9.056 3.2 3.406 8.848 3.404 15.8c-.001 2.222.58 4.392 1.683 6.303L3.2 28.8l6.867-1.802A12.56 12.56 0 0 0 16 28.398h.005C22.95 28.398 28.6 22.75 28.6 15.8 28.6 8.85 22.95 3.2 16.004 3.2Zm0 22.997h-.004a10.44 10.44 0 0 1-5.318-1.457l-.382-.226-3.955 1.038 1.055-3.858-.249-.395A10.42 10.42 0 0 1 5.54 15.8c.002-5.77 4.697-10.463 10.466-10.463 5.77 0 10.463 4.695 10.463 10.464 0 5.77-4.695 10.465-10.465 10.465v-.069Zm5.74-7.835c-.315-.158-1.863-.92-2.152-1.025-.289-.105-.499-.158-.67.15-.21.315-.815 1.025-.999 1.236-.184.21-.368.236-.683.079-.315-.158-1.33-.49-2.533-1.562-.937-.835-1.568-1.867-1.752-2.182-.184-.315-.02-.486.138-.643.142-.141.315-.368.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.71-1.71-.973-2.341-.256-.615-.517-.532-.71-.542-.184-.008-.394-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
                   </svg>
                   Order on WhatsApp
@@ -1803,7 +1803,7 @@ function FullscreenLightbox({
         </span>
         <button
           onClick={onClose}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm shadow transition-[transform,opacity,colors,box-shadow] hover:scale-110 active:scale-95"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm shadow transition-[transform,opacity,colors,box-shadow] hh:hover:scale-110 active:scale-95"
         >
           <X className="h-5 w-5 text-white" strokeWidth={2.5} />
         </button>

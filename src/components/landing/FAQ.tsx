@@ -49,7 +49,7 @@ const FAQ = () => {
         </div>
         <div className="space-y-4">
           {faqs.map((f, i) => (
-            <div key={i} className={`border-2 lg:border-4 border-foreground shadow-bauhaus transition-all duration-200 ${open === i ? "" : "bg-bauhaus-white"}`}>
+            <div key={i} className={`border-2 lg:border-4 border-foreground shadow-bauhaus transition-[transform,opacity,colors,box-shadow] duration-200 ${open === i ? "" : "bg-bauhaus-white"}`}>
               <button onClick={() => setOpen(open === i ? null : i)} className={`w-full flex items-center justify-between p-4 lg:p-5 text-left transition-colors duration-200 ${open === i ? "bg-bauhaus-red text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
                 <span className="font-bold text-sm lg:text-base pr-4">{f.q}</span>
                 <ChevronDown className={`h-5 w-5 flex-shrink-0 transition-transform duration-200 ${open === i ? "rotate-180" : ""}`} />

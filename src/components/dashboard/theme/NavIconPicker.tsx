@@ -70,7 +70,7 @@ export default function NavIconPicker({ value, onChange }: Props) {
                       type="button"
                       onClick={() => pick(slot, opt.id)}
                       title={opt.label}
-                      className={`flex h-9 w-9 items-center justify-center rounded-md border transition-all ${
+                      className={`flex h-9 w-9 items-center justify-center rounded-md border transition-[transform,opacity,colors,box-shadow] ${
                         active
                           ? "border-primary bg-primary/10 text-primary"
                           : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"

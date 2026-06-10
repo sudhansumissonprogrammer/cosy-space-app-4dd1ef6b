@@ -20,7 +20,7 @@ export default function MagazineStripCategories({ categories, storeSlug }: { cat
       {categories.map((cat, idx) => (
         <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="group flex overflow-hidden rounded-2xl border border-border transition-[transform,opacity,colors,box-shadow] hover:shadow-lg" style={{ height: "clamp(100px, 20vw, 160px)", animation: `magazineSlideIn 0.4s ease-out ${idx * 0.08}s both` }}>
           <div className="w-[55%] sm:w-[60%] overflow-hidden">
-            <CategoryImage cat={cat} size={600} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            <CategoryImage cat={cat} size={600} className="h-full w-full object-cover transition-transform duration-500 hh:group-hover:scale-105" />
           </div>
           <div className="flex-1 flex flex-col justify-center px-4 sm:px-6" style={{ background: "linear-gradient(135deg, var(--storefront-bg, hsl(var(--background))), var(--storefront-bg, hsl(var(--background))))" }}>
             <span className="text-sm sm:text-base font-bold leading-tight" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{cat.name}</span>

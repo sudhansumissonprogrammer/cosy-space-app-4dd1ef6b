@@ -17,7 +17,7 @@ interface Props {
 export default function ThemeStickySaveBar({ dirty, saving, onSave, onReset }: Props) {
   return (
     <div
-      className={`pointer-events-none fixed inset-x-0 z-40 flex justify-center transition-all duration-300 ${
+      className={`pointer-events-none fixed inset-x-0 z-40 flex justify-center transition-[transform,opacity,colors,box-shadow] duration-300 ${
         dirty ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
       }`}
       style={{ bottom: "calc(env(safe-area-inset-bottom, 0) + 12px)" }}

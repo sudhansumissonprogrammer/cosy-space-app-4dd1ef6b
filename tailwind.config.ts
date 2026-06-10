@@ -121,5 +121,12 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    // `hh:` variant — only applies on devices with real hover + fine pointer.
+    // Unlocks `hh:hover:scale-105`, `hh:group-hover:scale-105`, etc.
+    function ({ addVariant }: { addVariant: (name: string, value: string) => void }) {
+      addVariant("hh", "@media (hover: hover) and (pointer: fine)");
+    },
+  ],
 } satisfies Config;

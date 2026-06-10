@@ -48,7 +48,7 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
           alt={product.name}
           loading={priority ? "eager" : "lazy"}
           decoding={priority ? "sync" : "async"}
-          className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-300 ease-out hh:group-hover:scale-105"
           style={{ imageRendering: "auto" }}
         />
       </div>
