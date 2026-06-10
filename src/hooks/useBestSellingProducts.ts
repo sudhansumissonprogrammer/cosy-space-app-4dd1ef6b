@@ -45,19 +45,38 @@ export function useBestSellingProducts(storeId: string | undefined) {
           return { products: inlined.slice(0, BEST_SELLER_PAGE_SIZE), page: 0 };
         }
       }
-      const { supabase } = await import("@/integrations/supabase/client");
-      const offset = pageParam * BEST_SELLER_PAGE_SIZE;
-      const { data, error } = await supabase
-        .from("products")
-        .select(BEST_SELLER_COLUMNS)
-        .eq("store_id", storeId!)
-        .eq("is_active", true)
-        .eq("is_best_selling", true)
-        .order("display_order", { ascending: true })
-        .order("created_at", { ascending: false })
-        .range(offset, offset + BEST_SELLER_PAGE_SIZE - 1);
-      if (error) throw error;
-      return { products: data || [], page: pageParam };
+
+      const fetchFromSupabase = async () => {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const offset = pageParam * BEST_SELLER_PAGE_SIZE;
+        const { data, error } = await supabase
+          .from("products")
+          .select(BEST_SELLER_COLUMNS)
+          .eq("store_id", storeId!)
+          .eq("is_active", true)
+          .eq("is_best_selling", true)
+          .order("display_order", { ascending: true })
+          .order("created_at", { ascending: false })
+          .range(offset, offset + BEST_SELLER_PAGE_SIZE - 1);
+        if (error) throw error;
+        return data || [];
+      };
+
+      // Worker /api/products?best_selling=1 only serves the first page
+      // (KV+Cache, 24h TTL). Subsequent pages go direct to Supabase.
+      if (pageParam === 0) {
+        const { fetchViaWorker } = await import("@/lib/workerFetch");
+        const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+        const products = await fetchViaWorker<any[]>({
+          path: "/api/products?best_selling=1",
+          sessionKey: `__sf_bs_${hostname}`,
+          fallback: fetchFromSupabase,
+          transform: (json) => (Array.isArray(json) ? json : []),
+        });
+        return { products, page: 0 };
+      }
+
+      return { products: await fetchFromSupabase(), page: pageParam };
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
