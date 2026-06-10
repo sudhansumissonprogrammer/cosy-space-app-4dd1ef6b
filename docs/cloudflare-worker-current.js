@@ -1748,8 +1748,11 @@ function _isDefaultProductFilter(filters) {
   if (!filters) return true;
   if (filters.category) return false;
   if (filters.sort) return false;
-  if (filters.best_selling) return false;
   if (filters.page && Number(filters.page) > 1) return false;
+  // v8.52.1: page-0 best sellers are also a home-page hot path. Cache them
+  // immediately so first real visitor warms KV for everyone else.
+  if (filters.best_selling === "1") return true;
+  if (filters.best_selling) return false;
   return true;
 }
 function kvPutProducts(env, key, value, opts, filters) {
