@@ -4917,12 +4917,12 @@ async function _fetchProductsFromDb(storeId, filters, timeoutMs) {
     const page = parseInt(filters.page, 10);
     if (page > 0) params.set("offset", String(page * PRODUCTS_PAGE_SIZE));
 
-    // v8.6.0: cf.cacheEverything (60s) — fast invalidation via /api/purge-store still works,
-    // and CF dashboard now counts these as cache hits. Short TTL keeps stock/price freshness.
+    // v8.61.0: do not add a separate Cloudflare fetch cache here. The Worker
+    // already owns a versioned Cache API + KV layer; after purge, this inner
+    // 60s cache could still return deleted/demo products to the new version.
     const res = await fetch(`${SUPABASE_URL}/rest/v1/products?${params}`, {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, Accept: "application/json" },
       signal: controller.signal,
-      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 } },
     });
     clearTimeout(timeout);
     if (!res.ok) throw new Error(`DB error: ${res.status}`);
