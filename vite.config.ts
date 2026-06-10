@@ -214,8 +214,17 @@ export default defineConfig(({ mode }) => ({
             id.includes("/src/pages/Index.tsx") ||
             id.includes("/src/components/landing/Navbar") ||
             id.includes("/src/components/landing/Hero") ||
-            id.includes("/src/components/landing/LazyMount") ||
-            id.includes("/src/assets/shopbanao-logo")
+            id.includes("/src/components/landing/LazyMount")
+            // NOTE: /src/assets/shopbanao-logo intentionally REMOVED from this
+            // group (v8.9). The logo is imported by StorefrontFooter,
+            // CheckoutPage, and V22CheckoutPage for the "Powered by Storivo"
+            // badge on EVERY storefront page. When the logo's tiny URL-module
+            // lived in landing-shell, every storefront cold load pulled the
+            // entire landing-shell chunk (LandingApp + Index + Navbar + Hero,
+            // 7KB but 1+ extra round trip) just to read the logo URL — measured
+            // as a ~1.5s FCP regression on imitationworld cold mobile loads.
+            // Letting Rollup auto-place the asset module puts it in a tiny
+            // standalone chunk shared by both landing and storefront builds.
           ) {
             return "landing-shell";
           }
