@@ -2202,11 +2202,11 @@ export default function CheckoutPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label htmlFor="phone" className="text-xs">{t("Phone Number", "फ़ोन नंबर")} *</Label>
-                <Input id="phone" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} autoFocus />
+                <Input id="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} autoFocus />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="fullName" className="text-xs">{t("Full Name", "पूरा नाम")} *</Label>
-                <Input id="fullName" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
+                <Input id="fullName" autoComplete="name" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
               </div>
             </div>
 
@@ -2228,7 +2228,7 @@ export default function CheckoutPage() {
             {/* Use my location button - hidden for now */}
             <div className="space-y-1">
               <Label htmlFor="pincode" className="text-xs">{tCritical("Pincode", "पिनकोड")} * {pincodeLoading && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}</Label>
-              <Input id="pincode" placeholder="Enter pincode to auto-fill city & state" value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
+              <Input id="pincode" inputMode="numeric" autoComplete="postal-code" placeholder="Enter pincode to auto-fill city & state" value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
               {deliveryEstimate && (
                 <div className="flex items-center gap-1.5 pt-1 text-[11px] font-medium text-primary">
                   <Truck className="h-3.5 w-3.5" />
@@ -2239,18 +2239,18 @@ export default function CheckoutPage() {
             </div>
             <div className="space-y-1">
               <Label htmlFor="street" className="text-xs">{tCritical("Street Address", "पता")} *</Label>
-              <Input id="street" placeholder="House/Flat No., Building, Street" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
+              <Input id="street" autoComplete="street-address" placeholder="House/Flat No., Building, Street" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
             </div>
             {/* City + State — always visible, auto-filled from pincode when possible */}
             <div className="grid grid-cols-2 gap-3">
 
               <div className="space-y-1">
                 <Label htmlFor="city" className="text-xs">{t("City", "शहर")} *</Label>
-                <Input id="city" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
+                <Input id="city" autoComplete="address-level2" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="state" className="text-xs">{t("State", "राज्य")} *</Label>
-                <Input id="state" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
+                <Input id="state" autoComplete="address-level1" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
               </div>
             </div>
             {/* Email optional — collapsible */}
