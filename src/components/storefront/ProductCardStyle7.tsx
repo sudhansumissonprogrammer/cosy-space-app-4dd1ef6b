@@ -104,7 +104,7 @@ export default function ProductCardStyle7({ product, slug, store, priority = fal
 
           <button
             onClick={handleToggleWishlist}
-            className={`heart-burst ${heartBursting ? "bursting" : ""} absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition-transform hover:scale-110 active:scale-90`}
+            className={`heart-burst ${heartBursting ? "bursting" : ""} absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition-transform hh:hover-scale-110 active:scale-90`}
             style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
             aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
           >
