@@ -23,20 +23,24 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const headingFont = themeConfig?.heading_font || "Instrument Sans";
-  const bodyFont = themeConfig?.body_font || "Instrument Sans";
+  const headingFont = themeConfig?.heading_font;
+  const bodyFont = themeConfig?.body_font;
+  const headingFontCss = headingFont ? `'${headingFont}', sans-serif` : "var(--storefront-heading-font, sans-serif)";
+  const bodyFontCss = bodyFont ? `'${bodyFont}', sans-serif` : "var(--storefront-body-font, sans-serif)";
   const fontsToLoad = Array.from(new Set([headingFont, bodyFont])).filter(Boolean);
   // Phase 1 fix #6: trim weights to 400;600 so the URL matches the Worker-injected
   // Google Fonts link exactly. Same URL → browser cache hit → no duplicate download.
-  const googleFontsUrl = `https://fonts.googleapis.com/css2?${fontsToLoad.map(f => `family=${f.replace(/ /g, '+')}:wght@400;600`).join('&')}&display=swap`;
+  const googleFontsUrl = fontsToLoad.length
+    ? `https://fonts.googleapis.com/css2?${fontsToLoad.map(f => `family=${f.replace(/ /g, '+')}:wght@400;600`).join('&')}&display=swap`
+    : "";
 
   return (
     <>
       <style>{`
-        @import url('${googleFontsUrl}');
+        ${googleFontsUrl ? `@import url('${googleFontsUrl}');` : ""}
         :root {
-          --v17-heading-font: '${headingFont}', sans-serif;
-          --v17-body-font: '${bodyFont}', sans-serif;
+          --v17-heading-font: ${headingFontCss};
+          --v17-body-font: ${bodyFontCss};
           --v17-primary: #2B4C3F;
           --v17-bg: #FAFAF6;
           --v17-text: #000000;
@@ -55,11 +59,11 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
         .v17-header-solid > div > button svg, .v17-header-solid > div > a svg, .v17-header-solid > div > div button svg, .v17-header-solid > div > div a svg { color: #000; stroke: #000; }
       `}</style>
       <div style={{
-        fontFamily: `'${bodyFont}', var(--v17-body-font)`,
+        fontFamily: bodyFontCss,
         backgroundColor: "var(--v17-bg)",
         color: "var(--v17-text)",
-        "--storefront-heading-font": `'${headingFont}', sans-serif`,
-        "--storefront-body-font": `'${bodyFont}', sans-serif`,
+        "--storefront-heading-font": headingFontCss,
+        "--storefront-body-font": bodyFontCss,
         "--storefront-primary": "#0F2A22",
         "--storefront-footer-text": "#ffffff",
         "--storefront-marquee-gradient": "linear-gradient(90deg, #0F2A22, #0F2A22, #0F2A22)",
