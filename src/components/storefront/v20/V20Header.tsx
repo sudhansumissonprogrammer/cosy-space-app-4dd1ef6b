@@ -2,7 +2,7 @@
  * V20 Header — Theme 20 (Multi Purpose). Duplicated from V19Header.
  */
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Search, ChevronDown, User, ShoppingCart, MapPin } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
@@ -26,8 +26,15 @@ export default function V20Header({ store }: { store: any }) {
   const [scrolled, setScrolled] = useState(false);
   const { cartCount } = useCart();
   const location = useLocation();
-  const queryClient = useQueryClient();
-  const categories = (queryClient.getQueryData<Category[]>(["storefront-categories", store?.id]) || []) as Category[];
+  // Subscribe (don't snapshot) so the header re-renders when the parent's
+  // storefront-categories / storefront-products queries resolve. `enabled:false`
+  // prevents our own fetch — the parent owns the queryFn.
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ["storefront-categories", store?.id],
+    queryFn: () => [] as Category[],
+    enabled: false,
+    staleTime: Infinity,
+  });
   const themeConfig = useStorefrontThemeConfig(store?.id);
   const marqueeEnabled = themeConfig?.marquee_enabled !== false;
   const marqueeText = themeConfig?.marquee_text || "✦ FREE DELIVERY ON ALL ORDERS · 100% SAFE & SECURE · EASY RETURNS";
@@ -49,7 +56,12 @@ export default function V20Header({ store }: { store: any }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const products = (queryClient.getQueryData<any[]>(["storefront-products", store?.id]) || []) as any[];
+  const { data: products = [] } = useQuery<any[]>({
+    queryKey: ["storefront-products", store?.id],
+    queryFn: () => [] as any[],
+    enabled: false,
+    staleTime: Infinity,
+  });
 
   const addressLine = store?.city || store?.location || store?.name || "Your location";
   const logoSrc = store?.logo_url ? optimizeImageUrl(store.logo_url, 120, 90) : null;

@@ -153,7 +153,10 @@ export default function V22CheckoutPage() {
   const [state, setState] = useState(buyNowAddress?.state || savedInfo.state || "");
   const [pincode, setPincode] = useState(buyNowAddress?.pincode || savedInfo.pincode || "");
 
-  // Re-check localStorage for late-arriving address data (Theme-16 geocode race condition)
+  // Re-check localStorage for late-arriving address data (Theme-16 geocode race condition).
+  // Event-driven: writers dispatch "checkout_address_ready" on the window after setItem.
+  // Cross-tab fallback via StorageEvent. One late-tail check at 1.5s covers any legacy
+  // writer that hasn't been updated yet — replaces 25 setInterval ticks during checkout.
   useEffect(() => {
     let filled = false;
     const checkForAddress = () => {
@@ -164,7 +167,6 @@ export default function V22CheckoutPage() {
         const addr = JSON.parse(raw);
         if (addr) {
           filled = true;
-          // Use functional updates to avoid stale closures
           if (addr.street_address) setStreetAddress((prev: string) => prev || addr.street_address);
           if (addr.city) setCity((prev: string) => prev || addr.city);
           if (addr.state) setState((prev: string) => prev || addr.state);
@@ -172,11 +174,17 @@ export default function V22CheckoutPage() {
         }
       } catch {}
     };
-    // Poll aggressively for background geocode results (same-tab writes don't trigger StorageEvent)
-    const interval = setInterval(checkForAddress, 800);
-    const timeout = setTimeout(() => clearInterval(interval), 20000); // stop after 20s
-    checkForAddress(); // immediate check
-    return () => { clearInterval(interval); clearTimeout(timeout); };
+    checkForAddress();
+    const onReady = () => checkForAddress();
+    const onStorage = (e: StorageEvent) => { if (e.key === "checkout_address") checkForAddress(); };
+    window.addEventListener("checkout_address_ready", onReady);
+    window.addEventListener("storage", onStorage);
+    const tail = setTimeout(checkForAddress, 1500);
+    return () => {
+      window.removeEventListener("checkout_address_ready", onReady);
+      window.removeEventListener("storage", onStorage);
+      clearTimeout(tail);
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
