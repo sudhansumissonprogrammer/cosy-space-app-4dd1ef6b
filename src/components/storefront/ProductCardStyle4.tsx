@@ -68,7 +68,7 @@ export default function ProductCardStyle4({ product, slug, store, priority = fal
 
   return (
     <div
-      className="flex gap-3 rounded-2xl p-3 transition-all"
+      className="flex gap-3 rounded-2xl p-3 transition-[transform,opacity,colors,box-shadow]"
       style={{
         backgroundColor: "color-mix(in srgb, var(--storefront-bg, hsl(var(--card))) 50%, transparent)",
         border: "1px solid hsl(var(--border, 0 0% 90%) / 0.3)",
@@ -87,14 +87,14 @@ export default function ProductCardStyle4({ product, slug, store, priority = fal
               alt={product.name}
               width={200}
               height={200}
-              className={`h-full w-full object-cover transition-all duration-500 ${hasSecond && hoverLoaded ? "group-hover/img:opacity-0" : ""}`}
+              className={`h-full w-full object-cover transition-[transform,opacity,colors,box-shadow] duration-500 ${hasSecond && hoverLoaded ? "group-hover/img:opacity-0" : ""}`}
               loading={priority ? "eager" : "lazy"}
               decoding={priority ? "sync" : "async"}
               fetchPriority={priority ? "high" : "low"}
 
             />
             {hasSecond && hoverLoaded && (
-              <img src={optimizeImageUrl(images[1], 400, 72)} alt={product.name} width={400} height={400} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover/img:opacity-100" loading="lazy" fetchPriority="low" />
+              <img src={optimizeImageUrl(images[1], 400, 72)} alt={product.name} width={400} height={400} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-[transform,opacity,colors,box-shadow] duration-500 group-hover/img:opacity-100" loading="lazy" fetchPriority="low" />
             )}
             {hasDiscount && (
               <div className="absolute left-1 top-1 rounded-md bg-destructive px-1.5 py-0.5 text-[10px] font-bold text-destructive-foreground">
@@ -149,7 +149,7 @@ export default function ProductCardStyle4({ product, slug, store, priority = fal
           {qty === 0 ? (
             <button
               onClick={handleAdd}
-              className="rounded-xl px-4 py-1.5 text-xs font-bold transition-all active:scale-95"
+              className="rounded-xl px-4 py-1.5 text-xs font-bold transition-[transform,opacity,colors,box-shadow] active:scale-95"
               style={{
               backgroundColor: "color-mix(in srgb, var(--storefront-primary, #25D366) 8%, transparent)",
                 color: "var(--storefront-primary, #25D366)",
@@ -169,7 +169,7 @@ export default function ProductCardStyle4({ product, slug, store, priority = fal
             >
               <button
                 onClick={handleDecrease}
-                className="flex h-8 w-8 items-center justify-center transition-all active:scale-90"
+                className="flex h-8 w-8 items-center justify-center transition-[transform,opacity,colors,box-shadow] active:scale-90"
                 aria-label="Decrease quantity"
               >
                 <Minus className="h-3.5 w-3.5" />
@@ -179,7 +179,7 @@ export default function ProductCardStyle4({ product, slug, store, priority = fal
               </span>
               <button
                 onClick={handleIncrease}
-                className="flex h-8 w-8 items-center justify-center transition-all active:scale-90"
+                className="flex h-8 w-8 items-center justify-center transition-[transform,opacity,colors,box-shadow] active:scale-90"
                 aria-label="Increase quantity"
               >
                 <Plus className="h-3.5 w-3.5" />

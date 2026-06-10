@@ -62,8 +62,8 @@ export default function TwoRowCircleCarouselCategories({ categories, storeSlug }
             <div key={colIdx} className="flex flex-col gap-3 sm:gap-4 flex-shrink-0">
               {col.map((cat, rowIdx) =>
                 cat ? (
-                  <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex flex-col items-center gap-1 transition-all">
-                    <div className="h-[80px] w-[80px] sm:h-[96px] sm:w-[96px] md:h-[120px] md:w-[120px] rounded-full border-2 overflow-hidden transition-all border-border bg-secondary/30" onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
+                  <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="flex flex-col items-center gap-1 transition-[transform,opacity,colors,box-shadow]">
+                    <div className="h-[80px] w-[80px] sm:h-[96px] sm:w-[96px] md:h-[120px] md:w-[120px] rounded-full border-2 overflow-hidden transition-[transform,opacity,colors,box-shadow] border-border bg-secondary/30" onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
                       <CategoryImage cat={cat} size={300} className="h-full w-full object-cover scale-110" />
                     </div>
                     <span className="text-[10px] sm:text-[11px] font-semibold tracking-wide text-center leading-tight max-w-[80px] sm:max-w-[96px] md:max-w-[120px] truncate" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{cat.name}</span>

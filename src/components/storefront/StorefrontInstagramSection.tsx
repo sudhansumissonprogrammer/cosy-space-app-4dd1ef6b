@@ -97,10 +97,10 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
                 src={img.url}
                 alt={img.name}
                 loading="lazy"
-                className="h-full w-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-[0.4]"
+                className="h-full w-full object-cover transition-[transform,opacity,colors,box-shadow] duration-500 group-hover:scale-110 group-hover:brightness-[0.4]"
               />
               {/* Enhanced hover overlay with product info */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+              <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-[transform,opacity,colors,box-shadow] duration-300">
                 <ShoppingBag className="h-6 w-6 text-white mb-1.5" />
                 <span className="text-white text-xs font-semibold text-center px-2 line-clamp-2 leading-tight">
                   {img.name}
@@ -125,7 +125,7 @@ export default function StorefrontInstagramSection({ store }: StorefrontInstagra
             href={store.instagram_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-lg px-5 py-[7px] text-[14px] font-semibold transition-all duration-200 hover:opacity-90 active:scale-95"
+            className="inline-flex items-center gap-2 rounded-lg px-5 py-[7px] text-[14px] font-semibold transition-[transform,opacity,colors,box-shadow] duration-200 hover:opacity-90 active:scale-95"
             style={{
               background: "linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)",
               color: "#ffffff",

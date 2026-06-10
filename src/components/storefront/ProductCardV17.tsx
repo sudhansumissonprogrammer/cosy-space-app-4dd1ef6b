@@ -104,7 +104,7 @@ export default function ProductCardV17({ product, slug, store, priority = false,
                 alt={product.name}
                 width={400}
                 height={533}
-                className={`h-full w-full object-cover transition-all duration-500 ease-out ${hasSecond ? "group-hover:opacity-0" : "group-hover:scale-[1.07]"}`}
+                className={`h-full w-full object-cover transition-[transform,opacity,colors,box-shadow] duration-500 ease-out ${hasSecond ? "group-hover:opacity-0" : "group-hover:scale-[1.07]"}`}
                 loading={priority ? "eager" : "lazy"}
                 decoding={priority ? "sync" : "async"}
                 fetchPriority={priority ? "high" : "auto"}
@@ -117,7 +117,7 @@ export default function ProductCardV17({ product, slug, store, priority = false,
                   alt={product.name}
                   width={400}
                   height={533}
-                  className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 ease-out group-hover:opacity-100 group-hover:scale-[1.07]"
+                  className="absolute inset-0 h-full w-full object-cover opacity-0 transition-[transform,opacity,colors,box-shadow] duration-500 ease-out group-hover:opacity-100 group-hover:scale-[1.07]"
                   loading="lazy"
                   decoding="async"
                 />

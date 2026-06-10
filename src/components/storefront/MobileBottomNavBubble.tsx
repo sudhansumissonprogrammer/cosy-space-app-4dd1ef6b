@@ -65,7 +65,7 @@ export default function MobileBottomNavBubble({ store }: { store: StoreData }) {
               to={getTo(item.path)}
               onClick={handleClick}
               aria-label={item.label}
-              className={`relative flex items-center justify-center gap-1.5 rounded-full outline-none transition-all duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-[0.94] ${
+              className={`relative flex items-center justify-center gap-1.5 rounded-full outline-none transition-[transform,opacity,colors,box-shadow] duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-[0.94] ${
                 active ? "px-3.5 py-2 flex-[1.6]" : "px-2 py-2 flex-1"
               }`}
               style={
@@ -97,7 +97,7 @@ export default function MobileBottomNavBubble({ store }: { store: StoreData }) {
                 )}
               </div>
               <span
-                className={`text-[11px] font-bold whitespace-nowrap overflow-hidden transition-all duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                className={`text-[11px] font-bold whitespace-nowrap overflow-hidden transition-[transform,opacity,colors,box-shadow] duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                   active ? "max-w-[80px] opacity-100" : "max-w-0 opacity-0"
                 }`}
                 style={{

@@ -83,7 +83,7 @@ export default function MobileBottomNavGlass({ store }: { store: StoreData }) {
                 )}
                 <div
                   {...(isCart ? { "data-cart-target": "" } : {})}
-                  className={`relative flex items-center justify-center h-9 w-9 rounded-full transition-all duration-300 ${
+                  className={`relative flex items-center justify-center h-9 w-9 rounded-full transition-[transform,opacity,colors,box-shadow] duration-300 ${
                     isCart && cartBounce ? "cart-bounce" : ""
                   }`}
                   style={
@@ -98,7 +98,7 @@ export default function MobileBottomNavGlass({ store }: { store: StoreData }) {
                   }
                 >
                   <item.icon
-                    className="h-[20px] w-[20px] transition-all"
+                    className="h-[20px] w-[20px] transition-[transform,opacity,colors,box-shadow]"
                     strokeWidth={active ? 2.4 : 2}
                     style={{
                       color: active
@@ -113,7 +113,7 @@ export default function MobileBottomNavGlass({ store }: { store: StoreData }) {
                   )}
                 </div>
                 <span
-                  className={`mt-0.5 text-[9px] font-semibold leading-none transition-all ${
+                  className={`mt-0.5 text-[9px] font-semibold leading-none transition-[transform,opacity,colors,box-shadow] ${
                     active ? "opacity-100" : "opacity-60"
                   }`}
                   style={{

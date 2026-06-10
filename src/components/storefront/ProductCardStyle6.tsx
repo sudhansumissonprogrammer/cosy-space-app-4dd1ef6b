@@ -70,7 +70,7 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
                   width={400}
                   height={533}
                   data-no-crop="true"
-                  className={`absolute inset-0 h-full w-full object-cover object-center transition-all duration-[900ms] ease-out ${hasSecond && hoverLoaded ? "group-hover:opacity-0 group-hover:scale-[1.03]" : "group-hover:scale-[1.02]"}`}
+                  className={`absolute inset-0 h-full w-full object-cover object-center transition-[transform,opacity,colors,box-shadow] duration-[900ms] ease-out ${hasSecond && hoverLoaded ? "group-hover:opacity-0 group-hover:scale-[1.03]" : "group-hover:scale-[1.02]"}`}
                   loading={priority ? "eager" : "lazy"}
                   decoding={priority ? "sync" : "async"}
                   fetchPriority={priority ? "high" : "low"}
@@ -112,7 +112,7 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
 
         <div className="pt-3 pb-1">
           <h3
-            className="text-[13px] italic leading-snug line-clamp-2 transition-all duration-300 group-hover:underline underline-offset-4"
+            className="text-[13px] italic leading-snug line-clamp-2 transition-[transform,opacity,colors,box-shadow] duration-300 group-hover:underline underline-offset-4"
             style={{
               fontFamily: "'Cormorant Garamond', 'Playfair Display', Georgia, serif",
               color: "var(--storefront-text, hsl(var(--foreground)))",

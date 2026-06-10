@@ -150,7 +150,7 @@ export default function ProductCardStyle8({ product, slug, store, priority = fal
         ) : (
           <button
             onClick={handleAdd}
-            className={`flex h-8 min-w-[60px] items-center justify-center gap-1 rounded-md border-2 px-3 text-[11px] font-bold uppercase tracking-wider transition-all active:scale-95 ${justAdded ? "bg-success text-success-foreground border-success" : "bg-transparent hover:shadow-md"}`}
+            className={`flex h-8 min-w-[60px] items-center justify-center gap-1 rounded-md border-2 px-3 text-[11px] font-bold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] active:scale-95 ${justAdded ? "bg-success text-success-foreground border-success" : "bg-transparent hover:shadow-md"}`}
             style={justAdded ? undefined : {
               borderColor: "var(--storefront-primary, hsl(var(--primary)))",
               color: "var(--storefront-primary, hsl(var(--primary)))",

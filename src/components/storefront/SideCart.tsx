@@ -164,7 +164,7 @@ export default function SideCart({ store }: SideCartProps) {
                       </div>
                       <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, inherit) 8%, transparent)" }}>
                         <div
-                          className="h-full rounded-full transition-all duration-500 ease-out"
+                          className="h-full rounded-full transition-[transform,opacity,colors,box-shadow] duration-500 ease-out"
                           style={{
                             width: `${shippingProgress}%`,
                             background: "linear-gradient(90deg, var(--storefront-primary, #10b981), color-mix(in srgb, var(--storefront-primary, #10b981) 70%, #34d399))",
@@ -189,7 +189,7 @@ export default function SideCart({ store }: SideCartProps) {
                 {showCheckout && isTheme16 ? (
                   <button
                     onClick={closeCart}
-                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold transition-all hover:brightness-110 active:scale-[0.98]" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold transition-[transform,opacity,colors,box-shadow] hover:brightness-110 active:scale-[0.98]" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
                   >
                     <ShoppingBag className="h-4 w-4" />
                     Proceed to Checkout
@@ -198,7 +198,7 @@ export default function SideCart({ store }: SideCartProps) {
                   <Link
                     to={storefrontPath(store.slug, "checkout")}
                     onClick={closeCart}
-                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold transition-all hover:brightness-110 active:scale-[0.98]" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold transition-[transform,opacity,colors,box-shadow] hover:brightness-110 active:scale-[0.98]" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
                   >
                     <ShoppingBag className="h-4 w-4" />
                     Proceed to Checkout
@@ -206,7 +206,7 @@ export default function SideCart({ store }: SideCartProps) {
                 ) : null}
                 {showWhatsApp && (
                   <button
-                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] text-xs font-bold text-white transition-all hover:bg-[#1ebe5d] active:scale-[0.98] disabled:opacity-50"
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] text-xs font-bold text-white transition-[transform,opacity,colors,box-shadow] hover:bg-[#1ebe5d] active:scale-[0.98] disabled:opacity-50"
                     onClick={handleWhatsAppOrder}
                     disabled={!store.whatsapp_number}
                   >

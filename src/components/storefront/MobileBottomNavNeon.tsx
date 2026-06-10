@@ -80,7 +80,7 @@ export default function MobileBottomNavNeon({ store }: { store: StoreData }) {
         {/* Animated neon underline */}
         <span
           aria-hidden
-          className="pointer-events-none absolute top-0 h-[3px] rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+          className="pointer-events-none absolute top-0 h-[3px] rounded-full transition-[transform,opacity,colors,box-shadow] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
           style={{
             transform: `translateX(${glow.x}px)`,
             width: `${glow.w}px`,
@@ -94,7 +94,7 @@ export default function MobileBottomNavNeon({ store }: { store: StoreData }) {
         {/* Soft glow halo behind active item */}
         <span
           aria-hidden
-          className="pointer-events-none absolute top-0 h-12 rounded-b-full blur-2xl transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+          className="pointer-events-none absolute top-0 h-12 rounded-b-full blur-2xl transition-[transform,opacity,colors,box-shadow] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
           style={{
             transform: `translateX(${glow.x - 10}px)`,
             width: `${glow.w + 20}px`,
@@ -124,7 +124,7 @@ export default function MobileBottomNavNeon({ store }: { store: StoreData }) {
                 className={`relative flex items-center justify-center ${isCart && cartBounce ? "cart-bounce" : ""}`}
               >
                 <item.icon
-                  className="h-[20px] w-[20px] transition-all"
+                  className="h-[20px] w-[20px] transition-[transform,opacity,colors,box-shadow]"
                   strokeWidth={active ? 2.5 : 1.9}
                   style={{
                     color: active

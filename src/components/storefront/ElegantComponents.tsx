@@ -40,7 +40,7 @@ export function ElegantHeader({ store, colors }: { store: StoreData; colors: The
   return (
     <>
       <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3" style={{ backgroundColor: `var(--storefront-bg, ${colors.defaultBg})`, borderBottom: `1px solid var(--storefront-text, ${colors.defaultText})0a` }}>
-        <button onClick={() => setMenuOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label="Open menu">
+        <button onClick={() => setMenuOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-[transform,opacity,colors,box-shadow] active:scale-90" aria-label="Open menu">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={`var(--storefront-text, ${colors.defaultText})`} strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><line x1="3" y1="7" x2="21" y2="7" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="17" x2="21" y2="17" /></svg>
         </button>
 
@@ -74,8 +74,8 @@ export function ElegantHeader({ store, colors }: { store: StoreData; colors: The
         </Link>
 
         <div className="flex items-center gap-0.5">
-          <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label="Search products"><Search className="h-5 w-5" style={{ color: `var(--storefront-text, ${colors.defaultText})` }} aria-hidden="true" /></button>
-          <button onClick={openCart} className="relative flex h-10 w-10 items-center justify-center rounded-md transition-all active:scale-90" aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
+          <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-[transform,opacity,colors,box-shadow] active:scale-90" aria-label="Search products"><Search className="h-5 w-5" style={{ color: `var(--storefront-text, ${colors.defaultText})` }} aria-hidden="true" /></button>
+          <button onClick={openCart} className="relative flex h-10 w-10 items-center justify-center rounded-md transition-[transform,opacity,colors,box-shadow] active:scale-90" aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}>
             <ShoppingCart className="h-5 w-5" style={{ color: `var(--storefront-text, ${colors.defaultText})` }} aria-hidden="true" />
             {cartCount > 0 && <span className="absolute top-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold" style={{ backgroundColor: `var(--storefront-primary, ${colors.defaultPrimary})`, color: "#fff" }}>{cartCount > 9 ? "9+" : cartCount}</span>}
           </button>
@@ -120,8 +120,8 @@ export function ElegantTabBar({ store, colors, useTextForActive = false }: { sto
               <span className="text-[10px] font-medium" style={{ color: isActive ? activeColor : `var(--storefront-text, ${colors.defaultText})60` }}>{tab.label}</span>
             </div>
           );
-          if (tab.isCart) return <button key={tab.label} onClick={openCart} className="transition-all active:scale-90">{content}</button>;
-          return <Link key={tab.label} to={tab.to} className="transition-all active:scale-90">{content}</Link>;
+          if (tab.isCart) return <button key={tab.label} onClick={openCart} className="transition-[transform,opacity,colors,box-shadow] active:scale-90">{content}</button>;
+          return <Link key={tab.label} to={tab.to} className="transition-[transform,opacity,colors,box-shadow] active:scale-90">{content}</Link>;
         })}
       </div>
     </nav>

@@ -63,7 +63,7 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
             {store.logo_url ? <img src={store.logo_url} alt={store.name} className="h-12 w-auto max-w-[180px] object-contain origin-left" style={{ transform: "scale(2.2)" }} /> : <StoreTextLogo storeName={store.name} size="text-base" color="var(--storefront-text, hsl(var(--foreground)))" />}
           </Link>
 
-          <button onClick={() => setSearchOpen(true)} className="flex flex-1 items-center gap-2 rounded-full px-3.5 py-2 text-sm transition-all active:scale-[0.98]" style={{ backgroundColor: "var(--storefront-text, hsl(var(--foreground)))08", border: "1px solid var(--storefront-text, hsl(var(--foreground)))12" }} aria-label="Search products">
+          <button onClick={() => setSearchOpen(true)} className="flex flex-1 items-center gap-2 rounded-full px-3.5 py-2 text-sm transition-[transform,opacity,colors,box-shadow] active:scale-[0.98]" style={{ backgroundColor: "var(--storefront-text, hsl(var(--foreground)))08", border: "1px solid var(--storefront-text, hsl(var(--foreground)))12" }} aria-label="Search products">
             <SearchIcon className="h-4 w-4 shrink-0" style={{ color: "var(--storefront-text, hsl(var(--foreground)))50" }} aria-hidden="true" />
             <span style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }}>Search products...</span>
           </button>

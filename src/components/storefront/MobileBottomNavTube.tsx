@@ -85,7 +85,7 @@ export default function MobileBottomNavTube({ store }: { store: StoreData }) {
           {/* Sliding tube */}
           <span
             aria-hidden
-            className="pointer-events-none absolute top-1.5 bottom-1.5 rounded-full transition-all duration-[500ms] ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+            className="pointer-events-none absolute top-1.5 bottom-1.5 rounded-full transition-[transform,opacity,colors,box-shadow] duration-[500ms] ease-[cubic-bezier(0.34,1.56,0.64,1)]"
             style={{
               transform: `translateX(${tube.x}px)`,
               width: `${tube.w}px`,
@@ -118,7 +118,7 @@ export default function MobileBottomNavTube({ store }: { store: StoreData }) {
                   className={`relative flex items-center justify-center ${isCart && cartBounce ? "cart-bounce" : ""}`}
                 >
                   <item.icon
-                    className="h-[20px] w-[20px] transition-all"
+                    className="h-[20px] w-[20px] transition-[transform,opacity,colors,box-shadow]"
                     strokeWidth={active ? 2.4 : 2}
                     style={{
                       color: active
@@ -133,7 +133,7 @@ export default function MobileBottomNavTube({ store }: { store: StoreData }) {
                   )}
                 </div>
                 <span
-                  className={`text-[10.5px] font-semibold whitespace-nowrap overflow-hidden transition-all duration-[500ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                  className={`text-[10.5px] font-semibold whitespace-nowrap overflow-hidden transition-[transform,opacity,colors,box-shadow] duration-[500ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                     active ? "max-w-[60px] opacity-100" : "max-w-0 opacity-0"
                   }`}
                   style={{

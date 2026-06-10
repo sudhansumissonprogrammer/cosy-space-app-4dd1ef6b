@@ -18,7 +18,7 @@ export default function MagazineStripCategories({ categories, storeSlug }: { cat
   return (
     <div className="flex flex-col gap-3 md:grid md:grid-cols-2 lg:gap-4">
       {categories.map((cat, idx) => (
-        <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="group flex overflow-hidden rounded-2xl border border-border transition-all hover:shadow-lg" style={{ height: "clamp(100px, 20vw, 160px)", animation: `magazineSlideIn 0.4s ease-out ${idx * 0.08}s both` }}>
+        <Link key={cat.id} to={storefrontPath(storeSlug, `category/${cat.slug}`)} className="group flex overflow-hidden rounded-2xl border border-border transition-[transform,opacity,colors,box-shadow] hover:shadow-lg" style={{ height: "clamp(100px, 20vw, 160px)", animation: `magazineSlideIn 0.4s ease-out ${idx * 0.08}s both` }}>
           <div className="w-[55%] sm:w-[60%] overflow-hidden">
             <CategoryImage cat={cat} size={600} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
           </div>

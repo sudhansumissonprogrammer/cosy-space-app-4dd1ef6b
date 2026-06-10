@@ -44,7 +44,7 @@ export default function PdpAskWhatsApp({
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Ask about this product on WhatsApp"
-      className={`fixed left-4 z-40 flex items-center gap-2 rounded-full bg-[#25D366] px-3.5 h-11 text-white shadow-lg shadow-[#25D366]/30 transition-all duration-300 active:scale-95 hover:brightness-110 ${
+      className={`fixed left-4 z-40 flex items-center gap-2 rounded-full bg-[#25D366] px-3.5 h-11 text-white shadow-lg shadow-[#25D366]/30 transition-[transform,opacity,colors,box-shadow] duration-300 active:scale-95 hover:brightness-110 ${
         show ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0 pointer-events-none"
       }`}
       style={{ bottom: liftedAboveStickyBar ? "calc(80px + env(safe-area-inset-bottom))" : "20px" }}

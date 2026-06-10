@@ -56,7 +56,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
   };
 
   const linkClass = (path: string = "") =>
-    `text-[13px] lg:text-sm font-medium tracking-wide uppercase transition-all hover:opacity-70 relative pb-1 ${
+    `text-[13px] lg:text-sm font-medium tracking-wide uppercase transition-[transform,opacity,colors,box-shadow] hover:opacity-70 relative pb-1 ${
       isActive(path) ? "opacity-100" : "opacity-80"
     }`;
 
@@ -228,7 +228,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
             <button
               onClick={openCart}
               data-cart-target
-              className="relative flex h-9 w-9 items-center justify-center rounded-md transition-all hover:opacity-70 active:scale-[0.93]"
+              className="relative flex h-9 w-9 items-center justify-center rounded-md transition-[transform,opacity,colors,box-shadow] hover:opacity-70 active:scale-[0.93]"
               aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ""}`}
             >
               <CartIcon className={`h-5 w-5 ${cartBounce ? "cart-bounce" : ""}`} />

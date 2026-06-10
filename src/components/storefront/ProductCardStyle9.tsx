@@ -158,7 +158,7 @@ export default function ProductCardStyle9({ product, slug, store, priority = fal
             <button
               onClick={(e) => { createRipple(e); handleAdd(e); }}
               disabled={isAdding}
-              className={`ripple-container flex h-9 w-full items-center justify-center gap-1.5 rounded-full text-[12px] font-semibold transition-all active:scale-[0.97] ${justAdded ? "bg-success text-success-foreground" : ""}`}
+              className={`ripple-container flex h-9 w-full items-center justify-center gap-1.5 rounded-full text-[12px] font-semibold transition-[transform,opacity,colors,box-shadow] active:scale-[0.97] ${justAdded ? "bg-success text-success-foreground" : ""}`}
               style={justAdded ? undefined : {
                 backgroundColor: "var(--storefront-primary, hsl(var(--primary)))",
                 color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))",

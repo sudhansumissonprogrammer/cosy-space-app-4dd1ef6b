@@ -129,7 +129,7 @@ export default function V19ProductCard({ product, slug, store, priority = false 
           ) : (
             <button
               onClick={onAdd}
-              className={`v19-add-btn-outline transition-all duration-200 active:scale-90 ${justAdded ? "v19-add-success" : ""}`}
+              className={`v19-add-btn-outline transition-[transform,opacity,colors,box-shadow] duration-200 active:scale-90 ${justAdded ? "v19-add-success" : ""}`}
               aria-label={justAdded ? "Added to cart" : "Add to cart"}
             >
               {justAdded ? <Check className="h-3.5 w-3.5" strokeWidth={3.5} /> : "ADD"}

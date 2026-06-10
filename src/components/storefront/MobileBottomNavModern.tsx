@@ -74,7 +74,7 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
               >
                 <div
                   {...(isCart ? { "data-cart-target": "" } : {})}
-                  className={`relative flex items-center gap-1.5 rounded-full transition-all duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                  className={`relative flex items-center gap-1.5 rounded-full transition-[transform,opacity,colors,box-shadow] duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                     active ? "px-3 py-1.5" : "px-2 py-1.5"
                   }`}
                   style={
@@ -86,7 +86,7 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
                   }
                 >
                   <item.icon
-                    className={`shrink-0 transition-all duration-[400ms] ${
+                    className={`shrink-0 transition-[transform,opacity,colors,box-shadow] duration-[400ms] ${
                       active ? "h-[18px] w-[18px]" : "h-[22px] w-[22px]"
                     }`}
                     strokeWidth={active ? 2.4 : 1.8}
@@ -102,7 +102,7 @@ export default function MobileBottomNavModern({ store }: { store: StoreData }) {
                     </span>
                   )}
                   <span
-                    className={`text-[10px] font-semibold whitespace-nowrap overflow-hidden transition-all duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                    className={`text-[10px] font-semibold whitespace-nowrap overflow-hidden transition-[transform,opacity,colors,box-shadow] duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                       active ? "max-w-[70px] opacity-100" : "max-w-0 opacity-0"
                     }`}
                     style={{
