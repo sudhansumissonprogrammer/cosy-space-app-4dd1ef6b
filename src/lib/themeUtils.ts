@@ -283,15 +283,18 @@ export function buildThemeStyle(
  * href containing the required fonts, we leave it untouched.
  */
 export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
+  const fonts = getThemeFontList(themeConfig);
+
   // v6.3.0: If Worker already injected the storefront font link (data-sf-font),
   // it's the single source of truth — never overwrite or duplicate.
   const workerInjected = document.querySelector('link[data-sf-font]') as HTMLLinkElement | null;
   if (workerInjected) {
     workerInjected.dataset.loaded = workerInjected.sheet ? "true" : workerInjected.dataset.loaded || "false";
+    ensureSelfHostedFontFaces(fonts);
     return workerInjected;
   }
 
-  const fonts = getThemeFontList(themeConfig);
+  ensureSelfHostedFontFaces(fonts);
   const newHref = buildGoogleFontsHref(fonts);
 
   const linkId = "storefront-google-fonts";
