@@ -1,5 +1,10 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.55.0 — storefront TTFB unblock
+ * SHOPBANAO PRODUCTION ROUTER v8.61.0 — fresh product refresh
+ *
+ * v8.61.0 — Product/storefront RPC subrequests no longer use Cloudflare's
+ *           independent 60s fetch cache. The versioned Worker cache remains,
+ *           but after a purge the next refresh must hit live database data,
+ *           not a stale inner RPC response with deleted demo products.
  *
  * v8.55.0 — Stop holding storefront HTML open while backend/storefront data
  *           or product KV lookups are slow. The first byte/body now ships from
@@ -166,7 +171,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.60.0-instant-product-purge";
+const WORKER_VERSION = "8.61.0-fresh-product-refresh";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
