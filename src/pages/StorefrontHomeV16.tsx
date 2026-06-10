@@ -294,7 +294,7 @@ export default function StorefrontHomeV16() {
         {/* Shop by Category */}
         <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
 
-        <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 pt-4 pb-8 space-y-8">
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 pt-4 pb-8 space-y-8 min-h-[80vh]">
           {/* Best Sellers — first 12 on cold load, infinite scroll */}
           <BestSellersSection storeId={store.id} slug={slug!} store={store} cardStyle={cardStyle} isCarousel={isCarousel} />
 
