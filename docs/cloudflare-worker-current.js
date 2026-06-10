@@ -3710,16 +3710,20 @@ async function serveStreamedHtml(
           );
         }
       } else {
-        // v8.51.0 — RACE the storefront shell against a tight 200ms deadline.
+        // v8.51.0 — RACE the storefront shell against a tight deadline.
         // v8.47.0 awaited it unconditionally, which on cold KV (after every
         // worker deploy across colos) added 1-3s to TTFB and pushed mobile
-        // cold loads from 3-4s to 10-14s. Per-route SEO head is a nice-to-have
-        // for crawlers; missing it for one cold request is fine — the next
-        // warm request will have it. Humans never saw the head anyway.
+        // cold loads from 3-4s to 10-14s.
+        // v8.57.0 (#3) — Raised 200→500ms. Backed by #4 (CF tiered-cache on
+        // get_storefront_shell, sub-50ms global hit) and #8 (ctx.waitUntil
+        // anchors the in-flight fetch so even a race-loss warms the next
+        // visitor's _memStorefrontCache). When the race WINS,
+        // __STOREFRONT_DATA__ ships inline and React skips its post-
+        // hydration RPC — saving 500-900ms LCP on India mobile.
         try {
           earlyStorefrontResult = await Promise.race([
             storefrontPromise,
-            new Promise((resolve) => setTimeout(() => resolve(null), 200)),
+            new Promise((resolve) => setTimeout(() => resolve(null), 500)),
           ]);
         } catch {}
         const earlyStore = earlyStorefrontResult?.data?.store;
