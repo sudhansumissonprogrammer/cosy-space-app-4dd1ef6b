@@ -7078,93 +7078,132 @@ async function _handleScheduled(event, env, ctx) {
           // Sync KV store-info for all stores (skip unchanged)
           if (env?.STORE_KV) {
             const allSlugs = allStores.filter((s) => s.slug && s.id).map((s) => s.slug);
-            const readPromises = allSlugs.map((slug) => env.STORE_KV.get(`store-info:${slug}`).catch(() => null));
-            const existingValues = await Promise.all(readPromises);
 
-            // v8.5.0 cost-cut: route all cron KV writes through kvPutDedup
-            // (5-min in-isolate dedup) so multi-colo cron fan-out collapses
-            // identical writes. store-info already has read-before-write;
-            // also gate the related store-id/domain writes by their own
-            // existing-value check (not just store-info change) so a slug
-            // rename or custom_domain change still propagates correctly.
-            const kvWrites = [];
-            let kvWriteCount = 0,
-              kvSkipCount = 0;
-
-            // Pre-read store-id keys we'll potentially touch (one extra Promise.all
-            // round-trip but cuts ~80% of writes on steady-state cron ticks).
-            const subDomainKeys = allSlugs.map((slug) => `store-id:${slug}.${ROOT_DOMAIN}`);
-            const customDomainPairs = allStores
-              .filter((s) => s.custom_domain && s.slug)
-              .map((s) => ({
-                slug: s.slug,
-                cleanCustom: s.custom_domain
-                  .replace(/^www\./, "")
-                  .toLowerCase()
-                  .trim(),
-              }));
-            const customIdKeys = customDomainPairs.map((p) => `store-id:${p.cleanCustom}`);
-            const customDomainKeys = customDomainPairs.map((p) => `domain:${p.cleanCustom}`);
-
-            const [existingSubIds, existingCustomIds, existingDomainMaps] = await Promise.all([
-              Promise.all(subDomainKeys.map((k) => env.STORE_KV.get(k).catch(() => null))),
-              Promise.all(customIdKeys.map((k) => env.STORE_KV.get(k).catch(() => null))),
-              Promise.all(customDomainKeys.map((k) => env.STORE_KV.get(k).catch(() => null))),
-            ]);
-
-            for (let i = 0; i < allSlugs.length; i++) {
-              const s = allStores.find((st) => st.slug === allSlugs[i]);
-              if (!s) continue;
-              const payload = JSON.stringify({ id: s.id, cd: s.custom_domain || null });
-              let storeChanged = false;
-
-              if (existingValues[i] !== payload) {
-                kvWrites.push(kvPutDedup(env, `store-info:${s.slug}`, payload, { expirationTtl: STORE_INFO_KV_TTL }));
-                storeChanged = true;
-              }
-
-              // store-id:{subDomain} — write only if missing or changed
-              if (existingSubIds[i] !== s.id) {
-                const subDomain = `${s.slug}.${ROOT_DOMAIN}`;
-                kvWrites.push(kvPutDedup(env, `store-id:${subDomain}`, s.id, { expirationTtl: 86400 }));
-                storeChanged = true;
-              }
-
-              if (storeChanged) kvWriteCount++;
-              else kvSkipCount++;
-            }
-
-            // Custom domain writes — gated by their own existing-value checks
-            for (let j = 0; j < customDomainPairs.length; j++) {
-              const { slug, cleanCustom } = customDomainPairs[j];
-              const s = allStores.find((st) => st.slug === slug);
-              if (!s) continue;
-              if (existingCustomIds[j] !== s.id) {
-                kvWrites.push(kvPutDedup(env, `store-id:${cleanCustom}`, s.id, { expirationTtl: 86400 }));
-              }
-              const domainPayload = JSON.stringify({ slug: s.slug });
-              if (existingDomainMaps[j] !== domainPayload) {
-                kvWrites.push(
-                  kvPutDedup(env, `domain:${cleanCustom}`, domainPayload, { expirationTtl: KV_DOMAIN_TTL }),
-                );
-              }
-            }
-
-            // all-active-slugs — read-before-write (skip if unchanged)
+            // v8.59.0 #5 — Fingerprint short-circuit. Build a stable hash of
+            // every store's (slug,id,custom_domain). If the prior cron tick
+            // wrote the same fingerprint, the per-store KV.get loop below
+            // (10-30 reads on multi-store setups) is fully skipped. The
+            // fingerprint key itself uses kvPutDedup so it's free on repeat.
+            const sortedStoresForFp = [...allStores]
+              .filter((s) => s.slug && s.id)
+              .sort((a, b) => a.slug.localeCompare(b.slug))
+              .map((s) => `${s.slug}|${s.id}|${s.custom_domain || ""}`)
+              .join("\n");
+            let fingerprint = "";
             try {
-              const slugsPayload = JSON.stringify(allSlugs);
-              const existingSlugs = await env.STORE_KV.get("all-active-slugs").catch(() => null);
-              if (existingSlugs !== slugsPayload) {
-                kvWrites.push(kvPutDedup(env, "all-active-slugs", slugsPayload, { expirationTtl: 3_600 }));
-              }
+              const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(sortedStoresForFp));
+              const bytes = new Uint8Array(buf);
+              let hex = "";
+              for (let b of bytes) hex += b.toString(16).padStart(2, "0");
+              fingerprint = hex.slice(0, 32);
             } catch {}
-            _slugIndexSet = new Set(allSlugs);
-            _slugIndexExpiresAt = Date.now() + 1_800_000;
 
-            if (kvWrites.length > 0) await Promise.all(kvWrites);
-            console.log(
-              `[keepalive] warmed ${allStores.length} stores — KV: ${kvWriteCount} changed, ${kvSkipCount} skipped, ${kvWrites.length} total writes`,
-            );
+            const existingFp = await env.STORE_KV.get("cron-store-fingerprint").catch(() => null);
+            if (fingerprint && existingFp === fingerprint) {
+              _slugIndexSet = new Set(allSlugs);
+              _slugIndexExpiresAt = Date.now() + 1_800_000;
+              console.log(`[keepalive] fingerprint match — skipped ${allStores.length} per-store KV reads`);
+            } else {
+              const readPromises = allSlugs.map((slug) => env.STORE_KV.get(`store-info:${slug}`).catch(() => null));
+              const existingValues = await Promise.all(readPromises);
+
+              // v8.5.0 cost-cut: route all cron KV writes through kvPutDedup
+              // (5-min in-isolate dedup) so multi-colo cron fan-out collapses
+              // identical writes. store-info already has read-before-write;
+              // also gate the related store-id/domain writes by their own
+              // existing-value check (not just store-info change) so a slug
+              // rename or custom_domain change still propagates correctly.
+              const kvWrites = [];
+              let kvWriteCount = 0,
+                kvSkipCount = 0;
+
+              // Pre-read store-id keys we'll potentially touch (one extra Promise.all
+              // round-trip but cuts ~80% of writes on steady-state cron ticks).
+              const subDomainKeys = allSlugs.map((slug) => `store-id:${slug}.${ROOT_DOMAIN}`);
+              const customDomainPairs = allStores
+                .filter((s) => s.custom_domain && s.slug)
+                .map((s) => ({
+                  slug: s.slug,
+                  cleanCustom: s.custom_domain
+                    .replace(/^www\./, "")
+                    .toLowerCase()
+                    .trim(),
+                }));
+              const customIdKeys = customDomainPairs.map((p) => `store-id:${p.cleanCustom}`);
+              const customDomainKeys = customDomainPairs.map((p) => `domain:${p.cleanCustom}`);
+
+              const [existingSubIds, existingCustomIds, existingDomainMaps] = await Promise.all([
+                Promise.all(subDomainKeys.map((k) => env.STORE_KV.get(k).catch(() => null))),
+                Promise.all(customIdKeys.map((k) => env.STORE_KV.get(k).catch(() => null))),
+                Promise.all(customDomainKeys.map((k) => env.STORE_KV.get(k).catch(() => null))),
+              ]);
+
+              for (let i = 0; i < allSlugs.length; i++) {
+                const s = allStores.find((st) => st.slug === allSlugs[i]);
+                if (!s) continue;
+                const payload = JSON.stringify({ id: s.id, cd: s.custom_domain || null });
+                let storeChanged = false;
+
+                if (existingValues[i] !== payload) {
+                  kvWrites.push(kvPutDedup(env, `store-info:${s.slug}`, payload, { expirationTtl: STORE_INFO_KV_TTL }));
+                  storeChanged = true;
+                }
+
+                // store-id:{subDomain} — write only if missing or changed
+                if (existingSubIds[i] !== s.id) {
+                  const subDomain = `${s.slug}.${ROOT_DOMAIN}`;
+                  kvWrites.push(kvPutDedup(env, `store-id:${subDomain}`, s.id, { expirationTtl: 86400 }));
+                  storeChanged = true;
+                }
+
+                if (storeChanged) kvWriteCount++;
+                else kvSkipCount++;
+              }
+
+              // Custom domain writes — gated by their own existing-value checks
+              for (let j = 0; j < customDomainPairs.length; j++) {
+                const { slug, cleanCustom } = customDomainPairs[j];
+                const s = allStores.find((st) => st.slug === slug);
+                if (!s) continue;
+                if (existingCustomIds[j] !== s.id) {
+                  kvWrites.push(kvPutDedup(env, `store-id:${cleanCustom}`, s.id, { expirationTtl: 86400 }));
+                }
+                const domainPayload = JSON.stringify({ slug: s.slug });
+                if (existingDomainMaps[j] !== domainPayload) {
+                  kvWrites.push(
+                    kvPutDedup(env, `domain:${cleanCustom}`, domainPayload, { expirationTtl: KV_DOMAIN_TTL }),
+                  );
+                }
+              }
+
+              // all-active-slugs — read-before-write (skip if unchanged)
+              // v8.59.0 #4 — TTL bumped 3600 → 86400. Read-before-write still
+              // catches real changes; longer TTL means unchanged value isn't
+              // re-written every hour just because it expired.
+              try {
+                const slugsPayload = JSON.stringify(allSlugs);
+                const existingSlugs = await env.STORE_KV.get("all-active-slugs").catch(() => null);
+                if (existingSlugs !== slugsPayload) {
+                  kvWrites.push(kvPutDedup(env, "all-active-slugs", slugsPayload, { expirationTtl: 86_400 }));
+                }
+              } catch {}
+              _slugIndexSet = new Set(allSlugs);
+              _slugIndexExpiresAt = Date.now() + 1_800_000;
+
+              if (kvWrites.length > 0) await Promise.all(kvWrites);
+
+              // Stamp the fingerprint so the next tick can short-circuit.
+              if (fingerprint) {
+                kvWrites.push(
+                  kvPutDedup(env, "cron-store-fingerprint", fingerprint, { expirationTtl: 86_400 }),
+                );
+                await kvPutDedup(env, "cron-store-fingerprint", fingerprint, { expirationTtl: 86_400 });
+              }
+
+              console.log(
+                `[keepalive] warmed ${allStores.length} stores — KV: ${kvWriteCount} changed, ${kvSkipCount} skipped, ${kvWrites.length} total writes`,
+              );
+            }
           }
 
           // FIX #26 + v7.6.0 Fix G: Only warm stores with traffic in last 7 days.
