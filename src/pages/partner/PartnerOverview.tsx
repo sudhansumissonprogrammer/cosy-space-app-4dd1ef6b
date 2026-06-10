@@ -76,6 +76,7 @@ export default function PartnerOverview() {
 
   return (
     <>
+      <h1 className="sr-only">Partner overview</h1>
       {/* Hero earnings */}
       <Card className="overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-primary via-primary to-primary/70 p-5 text-primary-foreground shadow-lg">
         <div className="flex items-start justify-between gap-3">

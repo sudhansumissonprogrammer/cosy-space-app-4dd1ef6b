@@ -224,6 +224,7 @@ export default function CategoryDetail() {
 
   return (
     <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-5">
+      <h1 className="sr-only">{category?.name || "Category"} — {store.name}</h1>
       <nav className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground" aria-label="Breadcrumb">
         <Link to={storefrontPath(slug!, "")} className="hover:text-foreground transition-colors">Home</Link>
         <span>/</span>

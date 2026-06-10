@@ -87,6 +87,7 @@ export default function StorefrontLogin() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-12">
+      <h1 className="sr-only">Sign in to {store?.name || "Store"}</h1>
       <Card>
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">

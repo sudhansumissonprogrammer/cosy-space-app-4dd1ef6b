@@ -48,6 +48,7 @@ export default function PartnerWallet() {
 
   return (
     <>
+      <h1 className="sr-only">Partner wallet</h1>
       {/* Hero withdrawable */}
       <Card className="overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-primary via-primary to-primary/70 p-5 text-primary-foreground shadow-lg">
         <div className="flex items-start justify-between gap-3">

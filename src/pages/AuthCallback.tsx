@@ -107,6 +107,7 @@ export default function AuthCallback() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
+      <h1 className="sr-only">Verifying your account</h1>
       <div className="text-center space-y-3">
         <div className="h-8 w-8 mx-auto animate-spin rounded-full border-4 border-primary border-t-transparent" />
         <p className="text-sm text-muted-foreground">Verifying your account...</p>
