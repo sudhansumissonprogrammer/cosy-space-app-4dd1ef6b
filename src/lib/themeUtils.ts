@@ -19,6 +19,36 @@ const SELF_HOSTED_FONTS = new Set([
   "Mulish",
 ]);
 
+const SELF_HOSTED_FONT_FACES: Record<string, Array<{ weight: string; url: string; display?: "swap" | "optional" }>> = {
+  "Alegreya SC": [
+    { weight: "400", url: "/fonts/alegreya-sc-400.woff2", display: "swap" },
+    { weight: "700", url: "/fonts/alegreya-sc-700.woff2", display: "swap" },
+  ],
+  Poppins: [
+    { weight: "400", url: "/fonts/poppins-400.woff2" },
+    { weight: "500", url: "/fonts/poppins-500.woff2" },
+    { weight: "600", url: "/fonts/poppins-600.woff2" },
+    { weight: "700", url: "/fonts/poppins-700.woff2" },
+    { weight: "800", url: "/fonts/poppins-800.woff2" },
+  ],
+  Outfit: [
+    { weight: "100 900", url: "/fonts/outfit-latin.woff2" },
+    { weight: "100 900", url: "/fonts/outfit-latin-ext.woff2" },
+  ],
+  "Montserrat Alternates": [
+    { weight: "400", url: "/fonts/montserrat-alternates-400.woff2" },
+    { weight: "500", url: "/fonts/montserrat-alternates-500.woff2" },
+    { weight: "600", url: "/fonts/montserrat-alternates-600.woff2", display: "swap" },
+    { weight: "700", url: "/fonts/montserrat-alternates-700.woff2", display: "swap" },
+  ],
+  Mulish: [
+    { weight: "200 1000", url: "/fonts/mulish-latin.woff2" },
+  ],
+  Inter: [
+    { weight: "100 900", url: "/fonts/inter-latin.woff2", display: "swap" },
+  ],
+};
+
 function normalizeGoogleFontName(font: string): string {
   return font.trim().replace(/^['"]|['"]$/g, "").replace(/\s+/g, " ");
 }
@@ -120,6 +150,32 @@ function ensureGoogleFontsPreconnect() {
     if (crossOrigin) link.crossOrigin = crossOrigin;
     document.head.appendChild(link);
   });
+}
+
+function ensureSelfHostedFontFaces(fonts: string[]) {
+  if (typeof document === "undefined") return;
+  if (document.querySelector("style[data-sf-font-local]")) return;
+
+  const requestedFonts = fonts.map(normalizeGoogleFontName).filter((font) => SELF_HOSTED_FONT_FACES[font]);
+  if (!requestedFonts.length) return;
+
+  const css = [...new Set(requestedFonts)]
+    .flatMap((family) =>
+      SELF_HOSTED_FONT_FACES[family].map(
+        ({ weight, url, display = "optional" }) =>
+          `@font-face{font-family:'${family}';font-style:normal;font-weight:${weight};font-display:${display};src:url('${url}') format('woff2')}`
+      )
+    )
+    .join("");
+
+  if (!css) return;
+  let style = document.querySelector("style[data-sf-font-client]") as HTMLStyleElement | null;
+  if (!style) {
+    style = document.createElement("style");
+    style.setAttribute("data-sf-font-client", "1");
+    document.head.appendChild(style);
+  }
+  if (style.textContent !== css) style.textContent = css;
 }
 
 /** Convert hex color to HSL components string (e.g. "210 50% 40%") */
@@ -227,15 +283,18 @@ export function buildThemeStyle(
  * href containing the required fonts, we leave it untouched.
  */
 export function loadGoogleFonts(themeConfig: Record<string, any> | null) {
+  const fonts = getThemeFontList(themeConfig);
+
   // v6.3.0: If Worker already injected the storefront font link (data-sf-font),
   // it's the single source of truth — never overwrite or duplicate.
   const workerInjected = document.querySelector('link[data-sf-font]') as HTMLLinkElement | null;
   if (workerInjected) {
     workerInjected.dataset.loaded = workerInjected.sheet ? "true" : workerInjected.dataset.loaded || "false";
+    ensureSelfHostedFontFaces(fonts);
     return workerInjected;
   }
 
-  const fonts = getThemeFontList(themeConfig);
+  ensureSelfHostedFontFaces(fonts);
   const newHref = buildGoogleFontsHref(fonts);
 
   const linkId = "storefront-google-fonts";
