@@ -13,29 +13,23 @@ const TopProducts = React.forwardRef<HTMLDivElement, TopProductsProps>(function 
     queryKey: ["top-products-dashboard", storeId],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
+      // Server-side scope to this store via inner join on orders.
+      // Previously this fetched 500 global order_items + 500 orders and filtered client-side
+      // (slowest #2 query in pg_stat_statements, also a tenant-leak risk).
       const { data, error } = await supabase
         .from("order_items")
-        .select("product_name, quantity, total, order_id, product_id")
+        .select("product_name, quantity, total, orders!inner(store_id, status)")
+        .eq("orders.store_id", storeId)
+        .neq("orders.status", "cancelled")
         .limit(500);
       if (error) throw error;
 
-      // Filter by store orders
-      const { data: storeOrders } = await supabase
-        .from("orders")
-        .select("id")
-        .eq("store_id", storeId)
-        .neq("status", "cancelled")
-        .limit(500);
-
-      const orderIds = new Set((storeOrders || []).map((o) => o.id));
-      const filtered = (data || []).filter((item) => orderIds.has(item.order_id));
-
-      // Aggregate by product
       const map: Record<string, { name: string; qty: number; revenue: number }> = {};
-      filtered.forEach((item) => {
+      (data || []).forEach((item: any) => {
         const key = item.product_name;
+        if (!key) return;
         if (!map[key]) map[key] = { name: key, qty: 0, revenue: 0 };
-        map[key].qty += item.quantity;
+        map[key].qty += item.quantity || 0;
         map[key].revenue += Number(item.total || 0);
       });
 
