@@ -24,7 +24,7 @@ import { useLocation, useNavigationType } from "react-router-dom";
  */
 const STORAGE_PREFIX = "sf_scroll:";
 const ANCHOR_PREFIX = "sf_anchor:";
-const RESTORE_TIMEOUT_MS = 2500;
+const RESTORE_TIMEOUT_MS = 6000;
 
 function getKey(): string {
   try {
