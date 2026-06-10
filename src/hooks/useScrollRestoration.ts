@@ -24,7 +24,7 @@ import { useLocation, useNavigationType } from "react-router-dom";
  */
 const STORAGE_PREFIX = "sf_scroll:";
 const ANCHOR_PREFIX = "sf_anchor:";
-const RESTORE_TIMEOUT_MS = 2500;
+const RESTORE_TIMEOUT_MS = 6000;
 
 function getKey(): string {
   try {
@@ -217,34 +217,35 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
       if (tryAnchorRestore()) return;
 
       // Otherwise poll up to RESTORE_TIMEOUT_MS, also reacting to DOM mutations
-      // (Meesho/Flipkart feel — wait until the tapped card actually mounts).
+      // AND the storefront's "content-ready" event (Flipkart/Meesho feel —
+      // wait until the tapped card actually mounts, even on a cold remount).
       const start = performance.now();
       let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        observer.disconnect();
+        try { window.removeEventListener("storefront:content-ready", onReady); } catch {}
+      };
+      const onReady = () => { if (tryAnchorRestore()) finish(); };
+      window.addEventListener("storefront:content-ready", onReady);
       const observer = new MutationObserver(() => {
         if (done) return;
-        if (tryAnchorRestore()) {
-          done = true;
-          observer.disconnect();
-        }
+        if (tryAnchorRestore()) finish();
       });
       observer.observe(document.body, { childList: true, subtree: true });
 
       const tick = () => {
         if (done) return;
-        if (tryAnchorRestore()) {
-          done = true;
-          observer.disconnect();
-          return;
-        }
+        if (tryAnchorRestore()) { finish(); return; }
         if (performance.now() - start > RESTORE_TIMEOUT_MS) {
-          done = true;
-          observer.disconnect();
           // Final fallback: pixel Y (waiting for height too)
           const max = document.documentElement.scrollHeight - window.innerHeight;
           if (targetY != null && targetY > 0 && max < targetY && performance.now() - start < RESTORE_TIMEOUT_MS + 500) {
             requestAnimationFrame(tick);
             return;
           }
+          finish();
           restorePixel();
           return;
         }
@@ -253,6 +254,7 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
 
       // If no anchor stored, run pixel-Y path with extended polling
       if (!anchor) {
+        finish();
         const tickPixel = () => {
           if (targetY == null || targetY <= 0) {
             window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
@@ -265,7 +267,6 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
           }
           requestAnimationFrame(tickPixel);
         };
-        observer.disconnect();
         requestAnimationFrame(tickPixel);
         return;
       }

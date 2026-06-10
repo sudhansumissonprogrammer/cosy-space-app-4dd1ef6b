@@ -166,7 +166,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.59.0-kv-write-cuts";
+const WORKER_VERSION = "8.60.0-instant-product-purge";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -4140,7 +4140,15 @@ const inflightDomainResolutions = new Map();
 
 // In-memory version cache: domain → { version, ts }
 const _memProductVersion = new Map();
-const MEM_PV_TTL = 1_800_000; // v8.2.0 Fix #4: 5min → 30min. /api/purge bumps version on save → no staleness risk.
+// v8.60.0 — INSTANT REFLECT FIX
+// Previous: 30min memory TTL meant fresh isolates served stale product lists
+// for up to 30 minutes after an admin add/edit/delete. Now: 20s. KV reads are
+// cheap (single-digit ms at edge) and only happen when this short cache
+// expires; the actual product payload still lives in 24h KV + CF Cache API,
+// so this only adds a tiny KV roundtrip once per 20s window per isolate per
+// domain — no measurable latency hit, but every isolate worldwide sees new
+// versions within 20s of a purge.
+const MEM_PV_TTL = 20_000;
 const MEM_PV_MAX = 5_000;
 
 async function _getProductVersion(domain, env) {
@@ -4160,14 +4168,15 @@ async function _getProductVersion(domain, env) {
   return version;
 }
 
-// v8.59.0 #3 — Trailing-edge KV flush for pv:{domain}. Bursty merchant edits
-// (bulk product save, inventory sync) used to write KV once per save. Now the
-// in-memory version bumps instantly (same isolate sees new cache keys), and
-// KV is flushed once 30s after the LAST bump per domain. Other isolates
-// already accept up to MEM_PV_TTL of staleness, so this is no-op for them.
+// v8.60.0 — Bumps are still debounced for auto writes (bursty bulk imports),
+// but explicit /api/purge calls use `_flushProductVersionNow` to write KV
+// SYNCHRONOUSLY before the purge response returns. Combined with the 20s
+// MEM_PV_TTL, this means an admin add/edit/delete propagates to every
+// Cloudflare isolate worldwide within 20 seconds — no stale Demo, no missing
+// new product, no manual hard-refresh.
 const _pvFlushTimers = new Map(); // domain → timer
 const _pvPendingFlush = new Map(); // domain → next version
-const PV_FLUSH_DELAY_MS = 30_000;
+const PV_FLUSH_DELAY_MS = 5_000; // shortened from 30s
 
 async function _bumpProductVersion(domain, env) {
   const current = await _getProductVersion(domain, env);
@@ -4189,6 +4198,23 @@ async function _bumpProductVersion(domain, env) {
     _pvFlushTimers.set(domain, timer);
   }
   return next;
+}
+
+// v8.60.0 — Synchronous KV flush. Called from /api/purge-store so the new
+// version is durable BEFORE the response returns. Without this, a new isolate
+// spinning up right after a purge would read the OLD version from KV.
+async function _flushProductVersionNow(domain, env) {
+  if (!env?.STORE_KV) return;
+  const pending = _pvPendingFlush.get(domain);
+  const mem = _memProductVersion.get(domain);
+  const v = pending != null ? pending : mem?.version;
+  if (v == null) return;
+  const timer = _pvFlushTimers.get(domain);
+  if (timer) { clearTimeout(timer); _pvFlushTimers.delete(domain); }
+  _pvPendingFlush.delete(domain);
+  try {
+    await env.STORE_KV.put(`pv:${domain}`, String(v), { expirationTtl: 86400 });
+  } catch {}
 }
 
 function _buildProductsCacheKey(domain, filters, version) {
@@ -4226,6 +4252,9 @@ async function _purgeProductCachesForDomain(domain, _storeId, env) {
     .toLowerCase()
     .trim();
   await _bumpProductVersion(cleanDomain, env);
+  // v8.60.0 — flush new version to KV SYNCHRONOUSLY so other isolates
+  // worldwide see it on their next read (within MEM_PV_TTL = 20s).
+  await _flushProductVersionNow(cleanDomain, env);
   _clearInflightProductRequestsForDomain(cleanDomain);
 }
 

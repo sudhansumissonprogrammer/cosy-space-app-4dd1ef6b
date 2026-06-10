@@ -58,9 +58,11 @@ async function fetchPage({ storeId, category, page, sort }: FetchOpts): Promise<
     const url = `${window.location.origin}/api/products${qs ? `?${qs}` : ""}`;
 
     // ── sessionStorage cache: dedupe identical paged requests within a session ──
-    // Survives navigation (Shop → PDP → Shop back) without re-hitting Worker.
+    // Survives Shop → PDP → Shop back-navigation without re-hitting Worker.
+    // TTL = 60s (was 15min) so any add/edit/delete on the dashboard reflects
+    // on the storefront within a minute even if the user keeps the tab open.
     const SS_KEY = `__sf_pp_${window.location.hostname}_${qs || "root"}`;
-    const SS_TTL = 15 * 60 * 1000;
+    const SS_TTL = 60 * 1000;
     try {
       const cached = sessionStorage.getItem(SS_KEY);
       if (cached) {
