@@ -862,7 +862,7 @@ async function mirrorToCfCache(ctx, request, response, slug = null, env = null) 
     headers.delete("vary");
     // Force a deterministic, public Cache-Control so CF stores it. Lovable origin
     // sends `no-cache, max-age=0`; leaving that intact makes CF cache rate stay 0%.
-    forcePublicHtmlCacheControl(headers, 60);
+    forcePublicHtmlCacheControl(headers, STOREFRONT_HTML_TTL_SEC);
     headers.set("X-Edge-Mirror", "1");
     // Buffer body once so we can write to multiple cache keys.
     const buf = await cloned.arrayBuffer();
@@ -1649,10 +1649,9 @@ function setNoStoreHtmlHeaders(headers) {
   // visits, AND CF's automatic cache starts serving HIT on warm hits —
   // cutting Worker compute to ~0 for the bulk of anonymous traffic.
   // Purge button still wipes instantly via /api/purge-shell.
-  // v8.54.0: keep HTML cache very short. Long SWR was serving old
-  // modulepreload hashes after frontend publishes, so browsers downloaded
-  // stale App chunks before the real entry discovered the current ones.
-  headers.set("Cache-Control", "public, max-age=15, stale-while-revalidate=60");
+  // v8.55.0: versioned HTML keys make 5-minute HTML safe while avoiding the
+  // low-traffic cold MISS problem where custom domains paid 1–2s Worker time.
+  headers.set("Cache-Control", `public, max-age=${STOREFRONT_HTML_TTL_SEC}, stale-while-revalidate=${STOREFRONT_HTML_SWR_SEC}`);
   headers.delete("Pragma");
   headers.delete("Expires");
 }
