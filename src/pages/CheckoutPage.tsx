@@ -662,19 +662,15 @@ export default function CheckoutPage() {
     } catch {}
   };
 
-  // AddPaymentInfo — Shopify-grade funnel signal.
-  // Fires once per resolved payment category (cod / razorpay / cashfree /
-  // partial_cod_razorpay / partial_cod_cashfree) when the customer picks an
-  // option. Browser pixel + CAPI mirror with shared event_id for dedup.
-  // Works for COD-only stores (no gateway), Razorpay-only, Cashfree-only,
-  // and partial-payment-enabled stores transparently.
+  // AddPaymentInfo — fire ONLY at real payment intent (same gate as IC).
+  // Previously this fired in a mount-effect whenever a payment method resolved,
+  // which meant every checkout page-view = 1 APInfo (even before the user
+  // touched anything). That inverted the funnel (APInfo > AddToCart) and
+  // degraded Meta's attribution + EMQ. Now invoked from handlePlaceOrder /
+  // gateway-open paths alongside fireInitiateCheckoutOnce.
   const apiFiredRef = useRef<Set<string>>(new Set());
-  // Tracks the in-flight createGuestAccount promise so "View My Orders"
-  // can await it and avoid the phone-login fallback / re-prompt.
-  const guestAccountPromiseRef = useRef<Promise<void> | null>(null);
-  useEffect(() => {
-    if (checkoutItems.length === 0) return;
-    // Resolve the actual payment category Meta should attribute to.
+  const fireAddPaymentInfoOnce = () => {
+    if (!store?.id || checkoutItems.length === 0) return;
     let category: string;
     let value: number;
     if (paymentMethod === "cod" && !isPartialOrder) {
@@ -704,17 +700,23 @@ export default function CheckoutPage() {
       value,
       currency,
     };
-    fbPixelTrack("AddPaymentInfo", data, eid);
-    fireMetaCAPI({
-      storeId: store.id,
-      eventName: "AddPaymentInfo",
-      eventId: eid,
-      userEmail: email.trim() || undefined,
-      userPhone: normalizePhone(phone) || undefined,
-      externalId: customer?.id || undefined,
-      customData: data,
-    });
-  }, [paymentMethod, partialPaymentMode, activeGateway, isPartialOrder, checkoutItems.length]);
+    try { fbPixelTrack("AddPaymentInfo", data, eid); } catch {}
+    try {
+      fireMetaCAPI({
+        storeId: store.id,
+        eventName: "AddPaymentInfo",
+        eventId: eid,
+        userEmail: email.trim() || undefined,
+        userPhone: normalizePhone(phone) || undefined,
+        externalId: customer?.id || undefined,
+        customData: data,
+      });
+    } catch {}
+  };
+
+  // Tracks the in-flight createGuestAccount promise so "View My Orders"
+  // can await it and avoid the phone-login fallback / re-prompt.
+  const guestAccountPromiseRef = useRef<Promise<void> | null>(null);
 
   // Save abandoned cart on checkout entry (deduplicated via sessionStorage)
   const [abandonedCartId, setAbandonedCartId] = useState<string | null>(null);
