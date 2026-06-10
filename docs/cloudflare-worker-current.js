@@ -1378,6 +1378,15 @@ function injectDeepPreloads(head, deepChunks) {
 // any error so HTML response is never blocked.
 async function enrichHeadWithDeepPreloads(head, origin, env) {
   if (!head) return head;
+  // v8.56.0 — Always inject preconnect for R2 CDN (cdn.shopbanao.in) so the
+  // browser can warm TLS/TCP to the image host BEFORE the preload scanner
+  // sees the first <img>. Cheap (~140 bytes), idempotent, skipped if present.
+  if (!head.includes('href="https://cdn.shopbanao.in"') && head.includes("</head>")) {
+    const cdnHints =
+      `<link rel="preconnect" href="https://cdn.shopbanao.in" crossorigin />` +
+      `<link rel="dns-prefetch" href="https://cdn.shopbanao.in" />`;
+    head = head.replace("</head>", `${cdnHints}</head>`);
+  }
   const marker = head.match(/<!--ENTRY:([^>]+)-->/);
   if (!marker) return head;
   try {
