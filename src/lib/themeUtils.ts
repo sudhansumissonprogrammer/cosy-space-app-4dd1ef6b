@@ -81,9 +81,10 @@ function buildGoogleFontsHref(fonts: string[]): string | null {
     .map((font) => `family=${font.replace(/ /g, "+")}:wght@${GOOGLE_FONT_WEIGHTS}`)
     .join("&");
 
-  // display=block: keep selected storefront typography from flashing as a
-  // fallback font on cold loads. Worker preloads local heading fonts first.
-  return families ? `https://fonts.googleapis.com/css2?${families}&display=block` : null;
+  // display=swap: never block first paint waiting for the remote font. The
+  // brief FOUT is far cheaper than the up-to-3s render block display=block
+  // imposes on cold mobile loads. Worker still preloads local heading fonts.
+  return families ? `https://fonts.googleapis.com/css2?${families}&display=swap` : null;
 }
 
 function getButtonRadius(buttonStyle: string | undefined, defaultButtonRadius: string) {
