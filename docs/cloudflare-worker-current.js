@@ -2136,6 +2136,15 @@ async function prefetchStorefrontData(slug, ctx, env) {
 
   const fetchPromise = _fetchShellFromSupabase(slug, ctx, env);
   inflightRequests.set(slug, fetchPromise);
+  // v8.57.0 (#8) — Anchor fetch to ctx.waitUntil so the in-flight RPC always
+  // runs to completion even when the upstream race deadline (200–600ms) loses.
+  // _fetchShellFromSupabase already writes to _memStorefrontCache + KV + Cache
+  // API on success, so the NEXT visitor gets a memory hit instead of a fresh
+  // 400-700ms Supabase round-trip. Without this anchor, CF can cancel the
+  // pending fetch the moment the response stream closes.
+  if (ctx?.waitUntil) {
+    try { ctx.waitUntil(fetchPromise.catch(() => {})); } catch {}
+  }
 
   try {
     const data = await fetchPromise;
