@@ -230,13 +230,13 @@ export default function StorefrontHomeV17() {
 
   const aboveFold = products.slice(0, ABOVE_FOLD_COUNT);
   const belowFold = products.slice(ABOVE_FOLD_COUNT);
-  const allProductIds = [...products.map((p: any) => p.id), ...bestSellers.map((p: any) => p.id)];
+  const allProducts = [...products, ...bestSellers].map((p: any) => ({ id: p.id, has_variants: p.has_variants }));
 
   const hasBanner = !!(store as any).banner_url;
   const hasMobileHero = !!(store as any).mobile_hero_url || !!(store as any).mobile_hero_images;
 
   return (
-    <VariantCountProvider productIds={allProductIds}>
+    <VariantCountProvider products={allProducts}>
       {/* ─── Hero Banner — full-bleed behind transparent header ─── */}
       <section className="relative" style={{ marginTop: "-56px" }}>
         {hasBanner && (

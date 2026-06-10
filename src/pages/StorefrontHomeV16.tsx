@@ -233,11 +233,12 @@ export default function StorefrontHomeV16() {
     return [...storeCategories].sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0) || a.name.localeCompare(b.name));
   }, [storeCategories]);
 
-  // Collect visible product IDs for variant count provider
-  const allProductIds = useMemo(() => initialProducts.map((p: any) => p.id), [initialProducts]);
+  // Pass full product objects so the provider can skip the variant fetch
+  // entirely when no product has has_variants=true (saves ~800ms).
+  const allProducts = useMemo(() => initialProducts.map((p: any) => ({ id: p.id, has_variants: p.has_variants })), [initialProducts]);
 
   return (
-    <VariantCountProvider productIds={allProductIds}>
+    <VariantCountProvider products={allProducts}>
       <>
         {/* Search bar */}
         {!hideSearchBar && (
