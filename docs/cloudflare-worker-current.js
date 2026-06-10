@@ -1,5 +1,12 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.53.0 — storefront cold-load stale preload fix
+ * SHOPBANAO PRODUCTION ROUTER v8.55.0 — storefront TTFB unblock
+ *
+ * v8.55.0 — Stop holding storefront HTML open while backend/storefront data
+ *           or product KV lookups are slow. The first byte/body now ships from
+ *           shell + theme + cached products only; full store data warms in the
+ *           background and React falls back to its existing RPC path. Restores
+ *           custom-domain cold TTFB from ~1.5s to sub-400ms on misses.
+ *           Storefront HTML cache TTL raised 15s→300s with versioned keys.
  *
  * v8.53.0 — Fixed cold storefront loader staying 4-5s after deploy/cache miss:
  *           prebuilt-head/deep-chunks/html-KV are now versioned, stale HTML is
@@ -159,7 +166,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.54.0-storefront-html-cache-font-fix";
+const WORKER_VERSION = "8.55.0-storefront-ttfb-unblock";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -678,10 +685,12 @@ function getCanonicalHtmlCacheKey(slug, pathname) {
      KV global reads avg 2–8ms); MISS falls through to existing
      CF-cache / canonical / warm pipeline. Zero functional regression.
    ============================================================ */
-// v8.53.0: keep HTML KV short-lived. Raising this to 600s let deploy-era HTML
-// survive with old modulepreload hashes while the real module script used the
-// new hash; browsers wasted connection slots and React content painted late.
-const HTML_KV_TTL_SEC = 60;
+// v8.55.0: 15s/60s was too short for low-traffic custom domains; most ad/cold
+// visitors missed HTML cache and paid the Worker/backend path. 300s is short
+// enough for merchant edits/publishes, and keys are versioned by WORKER_VERSION.
+const STOREFRONT_HTML_TTL_SEC = 300;
+const STOREFRONT_HTML_SWR_SEC = 600;
+const HTML_KV_TTL_SEC = STOREFRONT_HTML_TTL_SEC;
 const HTML_KV_MAX_BYTES = 800_000; // 800 KB hard cap (KV value limit is 25 MB)
 const _htmlKvWriteRecent = new Map(); // key → expiresAt
 const HTML_KV_WRITE_DEDUP_MS = 540_000;
@@ -723,7 +732,7 @@ async function kvHtmlGet(env, slug, pathname) {
       }
     }
     if (!headers.has("Content-Type")) headers.set("Content-Type", "text/html; charset=utf-8");
-    headers.set("Cache-Control", `public, max-age=${HTML_KV_TTL_SEC}, stale-while-revalidate=600`);
+    headers.set("Cache-Control", `public, max-age=${STOREFRONT_HTML_TTL_SEC}, stale-while-revalidate=${STOREFRONT_HTML_SWR_SEC}`);
     return new Response(value, { status: meta.s || 200, headers });
   } catch {
     return null;
@@ -800,8 +809,8 @@ function isHtmlNavigationPath(pathname) {
   return !pathname.startsWith("/api/") && !pathname.startsWith("/assets/") && !pathname.includes(".");
 }
 
-function forcePublicHtmlCacheControl(headers, ttl = 60) {
-  headers.set("Cache-Control", `public, max-age=${ttl}, stale-while-revalidate=60`);
+function forcePublicHtmlCacheControl(headers, ttl = STOREFRONT_HTML_TTL_SEC) {
+  headers.set("Cache-Control", `public, max-age=${ttl}, stale-while-revalidate=${STOREFRONT_HTML_SWR_SEC}`);
 }
 
 function makePublicHtmlResponse(response, ttl = 3600) {
