@@ -11,15 +11,13 @@ import { logError } from "@/lib/logError";
 // chunks OFF the storefront critical path (~92KB gzip saved).
 const DashboardProviders = lazy(() =>
   Promise.all([
-    import("@/components/ui/toaster"),
     import("@/components/ui/tooltip"),
     import("@/contexts/AuthContext"),
     import("@/components/ui/sonner"),
-  ]).then(([toasterMod, tooltipMod, authMod, sonnerMod]) => ({
+  ]).then(([tooltipMod, authMod, sonnerMod]) => ({
     default: ({ children }: { children: React.ReactNode }) => (
       <authMod.AuthProvider>
         <tooltipMod.TooltipProvider delayDuration={300} skipDelayDuration={100}>
-          <toasterMod.Toaster />
           <sonnerMod.Toaster />
           {children}
         </tooltipMod.TooltipProvider>
