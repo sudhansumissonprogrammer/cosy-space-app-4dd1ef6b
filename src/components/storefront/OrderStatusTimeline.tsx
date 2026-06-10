@@ -49,7 +49,7 @@ export default function OrderStatusTimeline({ status, createdAt, updatedAt }: { 
                 />
               )}
               <div
-                className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all ${
+                className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-[transform,opacity,colors,box-shadow] ${
                   current ? "scale-110 shadow-lg" : ""
                 }`}
                 style={{

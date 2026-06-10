@@ -66,7 +66,7 @@ export default function MobileBottomNav3D({ store }: { store: StoreData }) {
               to={getTo(item.path)}
               onClick={handleClick}
               aria-label={item.label}
-              className="relative flex-1 flex flex-col items-center justify-center gap-1 rounded-2xl outline-none transition-all duration-200 ease-out active:translate-y-[2px] active:shadow-inner"
+              className="relative flex-1 flex flex-col items-center justify-center gap-1 rounded-2xl outline-none transition-[transform,opacity,colors,box-shadow] duration-200 ease-out active:translate-y-[2px] active:shadow-inner"
               style={{
                 padding: "8px 4px 7px",
                 transform: active ? "translateY(-3px)" : "translateY(0)",

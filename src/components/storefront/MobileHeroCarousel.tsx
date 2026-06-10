@@ -109,7 +109,7 @@ export default function MobileHeroCarousel({ images, storeName, linkTo, interval
               type="button"
               onClick={() => setIndex(i)}
               aria-label={`Go to slide ${i + 1}`}
-              className="h-1.5 rounded-full transition-all"
+              className="h-1.5 rounded-full transition-[transform,opacity,colors,box-shadow]"
               style={{
                 width: i === index ? 18 : 6,
                 backgroundColor: i === index ? "#111827" : "#d1d5db",

@@ -98,7 +98,7 @@ export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupP
       <DialogContent className="max-w-[340px] rounded-2xl p-0 overflow-hidden border-0 shadow-2xl">
         <button
           onClick={() => setShow(false)}
-          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full transition-all" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 8%, transparent)", color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}
+          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow]" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 8%, transparent)", color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}
         >
           <X className="h-4 w-4" strokeWidth={2.5} />
         </button>

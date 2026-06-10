@@ -277,7 +277,7 @@ function CarouselInner({
               goTo(i);
               resetTimer();
             }}
-            className={`h-2.5 rounded-full transition-all duration-300 ${
+            className={`h-2.5 rounded-full transition-[transform,opacity,colors,box-shadow] duration-300 ${
               i === current ? "w-6 bg-white" : "w-2.5 bg-white/50"
             }`}
             aria-label={`Go to slide ${i + 1}`}

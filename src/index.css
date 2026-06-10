@@ -546,7 +546,12 @@
   animation: sticky-cart-slide-up 520ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .sticky-cart-arrow {
-  animation: sticky-cart-arrow-nudge 1.6s ease-in-out infinite;
+  animation: sticky-cart-arrow-nudge 1.6s ease-in-out 3;
+}
+/* Hover-capable devices only: gentle scale on icon buttons (Sheet close, nav icons) */
+@media (hover: hover) and (pointer: fine) {
+  .hh\:hover-scale-110:hover { transform: scale(1.10); }
+  .hh\:hover-scale-105:hover { transform: scale(1.05); }
 }
 @media (prefers-reduced-motion: reduce) {
   .sticky-cart-bar,
@@ -888,7 +893,7 @@
 
 /* P6 — BackToTop bounce in/out */
 .back-to-top-enter { animation: btt-in 360ms cubic-bezier(0.34, 1.56, 0.64, 1); }
-.back-to-top-exit  { animation: btt-out 200ms ease-in forwards; }
+.back-to-top-exit  { animation: btt-out 160ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 @keyframes btt-in {
   0%   { opacity: 0; transform: translateY(20px) scale(0.6); }
   60%  { opacity: 1; transform: translateY(-3px) scale(1.08); }

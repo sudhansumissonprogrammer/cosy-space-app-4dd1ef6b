@@ -203,7 +203,7 @@ export default function CustomerReviews({
                     </div>
                     <div className="flex-1 h-3 rounded-sm bg-accent overflow-hidden border border-border">
                       <div
-                        className="h-full bg-amber-400 transition-all duration-500"
+                        className="h-full bg-amber-400 transition-[transform,opacity,colors,box-shadow] duration-500"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -217,7 +217,7 @@ export default function CustomerReviews({
 
           <div className="space-y-3">
             {displayed.map((review) => (
-              <div key={review.id} className="rounded-xl border border-border p-4 transition-all hover:shadow-sm">
+              <div key={review.id} className="rounded-xl border border-border p-4 transition-[transform,opacity,colors,box-shadow] hover:shadow-sm">
                 <div className="flex items-start gap-3">
                   <img src={review.avatar} alt={review.name} className="h-9 w-9 rounded-full bg-accent" loading="lazy" />
                   <div className="flex-1 min-w-0">

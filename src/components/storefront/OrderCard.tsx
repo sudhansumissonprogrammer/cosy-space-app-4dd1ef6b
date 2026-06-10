@@ -41,7 +41,7 @@ export default function OrderCard({ order, storeSlug, currency }: { order: any; 
       to={storefrontPath(storeSlug, `account/orders/${order.id}`)}
       onMouseEnter={prefetchOrderDetail}
       onTouchStart={prefetchOrderDetail}
-      className="group block rounded-2xl border bg-card p-3 transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-[0.99]"
+      className="group block rounded-2xl border bg-card p-3 transition-[transform,opacity,colors,box-shadow] hover:shadow-md hover:-translate-y-0.5 active:scale-[0.99]"
       style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}
     >
       <div className="flex items-center gap-3">
@@ -82,7 +82,7 @@ export default function OrderCard({ order, storeSlug, currency }: { order: any; 
           </p>
         </div>
 
-        <ChevronRight className="h-5 w-5 shrink-0 opacity-40 group-hover:opacity-80 group-hover:translate-x-0.5 transition-all" />
+        <ChevronRight className="h-5 w-5 shrink-0 opacity-40 group-hover:opacity-80 group-hover:translate-x-0.5 transition-[transform,opacity,colors,box-shadow]" />
       </div>
     </Link>
   );

@@ -61,7 +61,7 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
               >
                 <div
                   {...(isCart ? { "data-cart-target": "" } : {})}
-                  className={`relative flex items-center gap-1.5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                  className={`relative flex items-center gap-1.5 rounded-full transition-[transform,opacity,colors,box-shadow] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                     active
                       ? "pl-2.5 pr-3.5 py-1.5"
                       : "p-2"
@@ -69,7 +69,7 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
                   style={active ? { backgroundColor: "var(--storefront-text, hsl(var(--foreground)))" } : undefined}
                 >
                   <item.icon
-                    className="shrink-0 transition-all duration-400"
+                    className="shrink-0 transition-[transform,opacity,colors,box-shadow] duration-400"
                     style={{
                       width: active ? 22 : 24,
                       height: active ? 22 : 24,
@@ -84,7 +84,7 @@ export default function MobileBottomNavV15({ store }: { store: StoreData }) {
                     </span>
                   )}
                   <span
-                    className={`text-[10px] font-semibold whitespace-nowrap overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                    className={`text-[10px] font-semibold whitespace-nowrap overflow-hidden transition-[transform,opacity,colors,box-shadow] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
                       active
                         ? "max-w-[56px] opacity-100"
                         : "max-w-0 opacity-0"

@@ -69,7 +69,7 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
 
   return (
     <div
-      className="card-tilt group relative overflow-hidden rounded-2xl transition-all duration-300 ease-out cursor-pointer"
+      className="card-tilt group relative overflow-hidden rounded-2xl transition-[transform,opacity,colors,box-shadow] duration-300 ease-out cursor-pointer"
       style={{ boxShadow: cardShadow, contain: priority ? undefined : "layout style", contentVisibility: priority ? undefined : "auto", backgroundColor: "var(--storefront-bg, hsl(var(--card)))", border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 10%, transparent)" }}
       onMouseEnter={(e) => { primePdp(); setHoverLoaded(true); e.currentTarget.style.boxShadow = cardHoverShadow; }}
       onTouchStart={primePdp}
@@ -91,7 +91,7 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
               </span>
             </div>
           )}
-          <button onClick={handleToggleWishlist} className={`heart-burst ${heartBursting ? "bursting" : ""} absolute top-2 z-10 flex items-center justify-center p-1 transition-all duration-200 hover:scale-110 active:scale-95 lg:hidden`} style={{ left: "auto", right: "0.5rem", color: "hsl(var(--destructive))", background: "transparent", border: "none", boxShadow: "none", backdropFilter: "none", WebkitBackdropFilter: "none" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
+          <button onClick={handleToggleWishlist} className={`heart-burst ${heartBursting ? "bursting" : ""} absolute top-2 z-10 flex items-center justify-center p-1 transition-[transform,opacity,colors,box-shadow] duration-200 hover:scale-110 active:scale-95 lg:hidden`} style={{ left: "auto", right: "0.5rem", color: "hsl(var(--destructive))", background: "transparent", border: "none", boxShadow: "none", backdropFilter: "none", WebkitBackdropFilter: "none" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
             <Heart className={`h-[20px] w-[20px] transition-colors duration-200 ${wishlisted ? "fill-destructive text-destructive" : "fill-transparent text-white stroke-[2.25]"}`} style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.45))" }} aria-hidden="true" />
           </button>
           {(() => {
@@ -102,9 +102,9 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
             const hasSecond = images.length > 1;
             return (
               <>
-                <img src={optimizeImageUrl(images[0], 400, 72)} srcSet={getImageSrcSet(images[0], [300, 500, 700, 900], 72)} sizes="(max-width: 640px) 45vw, (max-width: 1024px) 28vw, (max-width: 1440px) 20vw, 16vw" alt={product.name} width={400} height={533} data-no-crop="true" className={`absolute inset-0 h-full w-full object-cover object-center transition-all duration-500 ease-out ${hasSecond && hoverLoaded ? "group-hover:opacity-0" : ""}`} loading={priority ? "eager" : "lazy"} decoding={priority ? "sync" : "async"} fetchPriority={priority ? "high" : "low"} />
+                <img src={optimizeImageUrl(images[0], 400, 72)} srcSet={getImageSrcSet(images[0], [300, 500, 700, 900], 72)} sizes="(max-width: 640px) 45vw, (max-width: 1024px) 28vw, (max-width: 1440px) 20vw, 16vw" alt={product.name} width={400} height={533} data-no-crop="true" className={`absolute inset-0 h-full w-full object-cover object-center transition-[transform,opacity,colors,box-shadow] duration-300 ease-out ${hasSecond && hoverLoaded ? "group-hover:opacity-0" : ""}`} loading={priority ? "eager" : "lazy"} decoding={priority ? "sync" : "async"} fetchPriority={priority ? "high" : "low"} />
                 {hasSecond && hoverLoaded && (
-                  <img src={optimizeImageUrl(images[1], 400, 72)} srcSet={getImageSrcSet(images[1], [300, 500, 700, 900], 72)} sizes="(max-width: 640px) 45vw, (max-width: 1024px) 28vw, (max-width: 1440px) 20vw, 16vw" alt={product.name} width={400} height={533} data-no-crop="true" className="absolute inset-0 h-full w-full object-cover object-center opacity-0 transition-all duration-500 ease-out group-hover:opacity-100" loading="lazy" decoding="async" fetchPriority="low" />
+                  <img src={optimizeImageUrl(images[1], 400, 72)} srcSet={getImageSrcSet(images[1], [300, 500, 700, 900], 72)} sizes="(max-width: 640px) 45vw, (max-width: 1024px) 28vw, (max-width: 1440px) 20vw, 16vw" alt={product.name} width={400} height={533} data-no-crop="true" className="absolute inset-0 h-full w-full object-cover object-center opacity-0 transition-[transform,opacity,colors,box-shadow] duration-300 ease-out group-hover:opacity-100" loading="lazy" decoding="async" fetchPriority="low" />
                 )}
               </>
             );
@@ -140,7 +140,7 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
           </div>
         ) : (
           <button
-            className={`ripple-container flex h-7 w-full items-center justify-center gap-1.5 rounded-md text-[10px] uppercase tracking-wider sm:h-7 sm:text-[10px] transition-all duration-300 active:scale-[0.95] ${justAdded ? "bg-success text-success-foreground" : isAdding ? "opacity-80 cursor-wait" : "hover:brightness-110"}`}
+            className={`ripple-container flex h-7 w-full items-center justify-center gap-1.5 rounded-md text-[10px] uppercase tracking-wider sm:h-7 sm:text-[10px] transition-[transform,opacity,colors,box-shadow] duration-300 active:scale-[0.95] ${justAdded ? "bg-success text-success-foreground" : isAdding ? "opacity-80 cursor-wait" : "hover:brightness-110"}`}
             style={
               justAdded
                 ? { fontFamily: "'Alegreya SC', serif", fontWeight: 500, letterSpacing: "0.06em" }

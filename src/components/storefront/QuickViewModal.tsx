@@ -48,7 +48,7 @@ export default function QuickViewModal({ open, onClose, product, store, slug }: 
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full transition-all hover:scale-110"
+          className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] hover:scale-110"
           style={{
             backgroundColor: "color-mix(in srgb, var(--storefront-bg, #fff) 80%, transparent)",
             backdropFilter: "blur(8px)",
@@ -71,14 +71,14 @@ export default function QuickViewModal({ open, onClose, product, store, slug }: 
               <>
                 <button
                   onClick={() => setImgIdx((i) => (i - 1 + images.length) % images.length)}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white hover:bg-black/50 transition-all"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white hover:bg-black/50 transition-[transform,opacity,colors,box-shadow]"
                   aria-label="Previous image"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => setImgIdx((i) => (i + 1) % images.length)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white hover:bg-black/50 transition-all"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white hover:bg-black/50 transition-[transform,opacity,colors,box-shadow]"
                   aria-label="Next image"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -92,7 +92,7 @@ export default function QuickViewModal({ open, onClose, product, store, slug }: 
                   <button
                     key={i}
                     onClick={() => setImgIdx(i)}
-                    className={`h-10 w-10 rounded-md overflow-hidden border-2 transition-all ${i === imgIdx ? "gallery-dot-active" : ""}`}
+                    className={`h-10 w-10 rounded-md overflow-hidden border-2 transition-[transform,opacity,colors,box-shadow] ${i === imgIdx ? "gallery-dot-active" : ""}`}
                     style={{
                       borderColor: i === imgIdx
                         ? "var(--storefront-primary, hsl(var(--primary)))"
@@ -172,7 +172,7 @@ export default function QuickViewModal({ open, onClose, product, store, slug }: 
             <div className="flex gap-3 mt-auto pt-4">
               <button
                 onClick={(e) => { handleAddToCart(e); onClose(); }}
-                className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold uppercase tracking-wider transition-all hover:brightness-110 active:scale-[0.97]"
+                className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] hover:brightness-110 active:scale-[0.97]"
                 style={{
                   backgroundColor: "var(--storefront-primary, hsl(var(--primary)))",
                   color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))",
@@ -184,7 +184,7 @@ export default function QuickViewModal({ open, onClose, product, store, slug }: 
               </button>
               <button
                 onClick={handleToggleWishlist}
-                className="flex h-12 w-12 items-center justify-center rounded-xl transition-all hover:scale-105 active:scale-95"
+                className="flex h-12 w-12 items-center justify-center rounded-xl transition-[transform,opacity,colors,box-shadow] hover:scale-105 active:scale-95"
                 style={{
                   border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 15%, transparent)",
                 }}

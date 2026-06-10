@@ -84,13 +84,13 @@ export default function SpotlightCarouselCategories({ categories, storeSlug }: {
       </div>
       {len > 1 && (
         <div className="flex items-center justify-center gap-4 mt-3">
-          <button onClick={goPrev} className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-accent active:scale-90 transition-all duration-200" aria-label="Previous"><ChevronLeft className="h-4 w-4" /></button>
+          <button onClick={goPrev} className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-accent active:scale-90 transition-[transform,opacity,colors,box-shadow] duration-200" aria-label="Previous"><ChevronLeft className="h-4 w-4" /></button>
           <div className="flex gap-1.5 items-center">
             {categories.map((_, i) => (
               <div key={i} className="rounded-full cursor-pointer" onClick={() => go(i)} style={{ width: i === active ? 20 : 6, height: 6, backgroundColor: i === active ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--border)", transform: i === active ? "scaleY(1)" : "scaleY(0.8)", transition: "all 0.4s cubic-bezier(0.25, 1, 0.5, 1)" }} />
             ))}
           </div>
-          <button onClick={goNext} className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-accent active:scale-90 transition-all duration-200" aria-label="Next"><ChevronRight className="h-4 w-4" /></button>
+          <button onClick={goNext} className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-accent active:scale-90 transition-[transform,opacity,colors,box-shadow] duration-200" aria-label="Next"><ChevronRight className="h-4 w-4" /></button>
         </div>
       )}
       <style>{`

@@ -121,7 +121,7 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
           return (
             <div
               key={product.id}
-              className="flex items-center gap-3 rounded-xl p-3 transition-all" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)", backgroundColor: "var(--storefront-bg, hsl(var(--card)))" }}
+              className="flex items-center gap-3 rounded-xl p-3 transition-[transform,opacity,colors,box-shadow]" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)", backgroundColor: "var(--storefront-bg, hsl(var(--card)))" }}
             >
               <img
                 src={optimizeImageUrl(cleanImageUrl(product.image_url) || "/placeholder.svg", 200)}

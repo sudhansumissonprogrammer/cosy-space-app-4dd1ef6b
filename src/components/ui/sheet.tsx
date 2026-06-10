@@ -28,8 +28,11 @@ const SheetOverlay = React.forwardRef<
 ));
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
+// iOS-style drawer easing (Ionic Framework curve)
+const DRAWER_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+
 const sheetVariants = cva(
-  "fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-150 data-[state=open]:duration-200",
+  "fixed z-50 gap-4 bg-background p-6 shadow-lg transition-transform data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-400",
   {
     variants: {
       side: {
@@ -52,12 +55,17 @@ interface SheetContentProps
     VariantProps<typeof sheetVariants> {}
 
 const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Content>, SheetContentProps>(
-  ({ side = "right", className, children, ...props }, ref) => (
+  ({ side = "right", className, children, style, ...props }, ref) => (
     <SheetPortal>
       <SheetOverlay />
-      <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
+      <SheetPrimitive.Content
+        ref={ref}
+        className={cn(sheetVariants({ side }), className)}
+        style={{ animationTimingFunction: DRAWER_EASE, transitionTimingFunction: DRAWER_EASE, ...style }}
+        {...props}
+      >
         {children}
-        <SheetPrimitive.Close className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card shadow-sm transition-all hover:bg-accent hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+        <SheetPrimitive.Close className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card shadow-sm transition-[transform,background-color] duration-150 ease-out hover:bg-accent hh:hover-scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
           <X className="h-5 w-5 text-foreground" strokeWidth={2.5} />
           <span className="sr-only">Close</span>
         </SheetPrimitive.Close>

@@ -25,7 +25,7 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
   const rating = getProductRating(product.id);
 
   return (
-    <div onMouseEnter={() => setHoverLoaded(true)} className="card-tilt group relative overflow-hidden transition-all active:scale-[0.98]" style={{ borderRadius: "12px", backgroundColor: "hsl(var(--card, 0 0% 100%))" }}>
+    <div onMouseEnter={() => setHoverLoaded(true)} className="card-tilt group relative overflow-hidden transition-[transform,opacity,colors,box-shadow] active:scale-[0.98]" style={{ borderRadius: "12px", backgroundColor: "hsl(var(--card, 0 0% 100%))" }}>
       <Link
         to={storefrontPath(slug, `product/${product.slug || product.id}`)}
         className="block"
@@ -50,13 +50,13 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
                   alt={product.name}
                   width={400}
                   height={533}
-                  className={`h-full w-full object-cover transition-all duration-500 group-hover:scale-105 ${hasSecond && hoverLoaded ? "group-hover:opacity-0" : ""}`}
+                  className={`h-full w-full object-cover transition-[transform,opacity,colors,box-shadow] duration-300 group-hover:scale-105 ${hasSecond && hoverLoaded ? "group-hover:opacity-0" : ""}`}
                   loading={priority ? "eager" : "lazy"}
                   fetchPriority={priority ? "high" : "low"}
                   decoding={priority ? "sync" : "async"}
                 />
                 {hasSecond && hoverLoaded && (
-                  <img src={optimizeImageUrl(images[1], 400, 72)} srcSet={getImageSrcSet(images[1], [300, 500, 700, 900], 72)} sizes={PRODUCT_CARD_SIZES} alt={product.name} width={400} height={533} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:scale-105" loading="lazy" decoding="async" fetchPriority="low" />
+                  <img src={optimizeImageUrl(images[1], 400, 72)} srcSet={getImageSrcSet(images[1], [300, 500, 700, 900], 72)} sizes={PRODUCT_CARD_SIZES} alt={product.name} width={400} height={533} className="absolute inset-0 h-full w-full object-cover opacity-0 transition-[transform,opacity,colors,box-shadow] duration-300 group-hover:opacity-100 group-hover:scale-105" loading="lazy" decoding="async" fetchPriority="low" />
                 )}
               </>
             );
@@ -68,10 +68,10 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
           )}
           {/* Mobile: floating icons */}
           <div className="absolute bottom-2.5 right-2.5 flex flex-col gap-1.5 lg:hidden">
-            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleWishlist(e); }} className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90" style={{ backgroundColor: wishlisted ? "color-mix(in srgb, #ef4444 15%, var(--storefront-bg, #fff))" : "color-mix(in srgb, var(--storefront-bg, #fff) 92%, transparent)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleWishlist(e); }} className="flex h-8 w-8 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] active:scale-90" style={{ backgroundColor: wishlisted ? "color-mix(in srgb, #ef4444 15%, var(--storefront-bg, #fff))" : "color-mix(in srgb, var(--storefront-bg, #fff) 92%, transparent)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
               <Heart className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`} style={{ color: wishlisted ? "#ef4444" : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 40%, transparent)" }} aria-hidden="true" />
             </button>
-            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onVariantRequired) { onVariantRequired(); return; } handleAddToCart(e); }} className="flex h-8 w-8 items-center justify-center rounded-full transition-all active:scale-90" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={`Add ${product.name} to cart`}>
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onVariantRequired) { onVariantRequired(); return; } handleAddToCart(e); }} className="flex h-8 w-8 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] active:scale-90" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={`Add ${product.name} to cart`}>
               <ShoppingCart className="h-4 w-4" style={{ color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }} aria-hidden="true" />
             </button>
           </div>

@@ -8,7 +8,6 @@ export function prefetchAuthChunks() {
   if (started) return;
   started = true;
   Promise.all([
-    import("@/components/ui/toaster"),
     import("@/components/ui/tooltip"),
     import("@/components/ui/sonner"),
     import("@/contexts/AuthContext"),

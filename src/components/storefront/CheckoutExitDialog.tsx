@@ -12,7 +12,7 @@ export default function CheckoutExitDialog({ open, onOpenChange, onConfirmExit }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[320px] rounded-2xl p-0 overflow-hidden">
-        <button onClick={() => onOpenChange(false)} className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full hover:scale-110 active:scale-95 transition-all" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 8%, transparent)", color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }} aria-label="Close dialog"><X className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" /></button>
+        <button onClick={() => onOpenChange(false)} className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full hover:scale-110 active:scale-95 transition-[transform,opacity,colors,box-shadow]" style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 8%, transparent)", color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }} aria-label="Close dialog"><X className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" /></button>
         <div className="p-6 pt-8 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-warning/10"><ArrowLeft className="h-5 w-5 text-warning" /></div>
           <DialogHeader className="space-y-1">

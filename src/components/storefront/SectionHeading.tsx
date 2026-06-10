@@ -52,7 +52,7 @@ export default function SectionHeading({ title, slug, linkTo, className = "" }: 
           {slug && linkTo && (
             <Link
               to={storefrontPath(slug, linkTo)}
-              className="group text-sm font-semibold flex items-center gap-1 transition-all"
+              className="group text-sm font-semibold flex items-center gap-1 transition-[transform,opacity,colors,box-shadow]"
               style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}
             >
               <span className="hidden sm:inline">View All</span>

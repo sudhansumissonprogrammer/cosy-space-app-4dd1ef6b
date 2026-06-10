@@ -136,7 +136,7 @@ export default function CartUpsell({ storeId, currency }: CartUpsellProps) {
                 </div>
                 <button
                   onClick={() => handleAdd(product)}
-                  className="flex h-6 w-full items-center justify-center gap-1 rounded-md text-[9px] font-bold uppercase tracking-wide transition-all active:scale-95" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
+                  className="flex h-6 w-full items-center justify-center gap-1 rounded-md text-[9px] font-bold uppercase tracking-wide transition-[transform,opacity,colors,box-shadow] active:scale-95" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}
                 >
                   <Plus className="h-3 w-3" strokeWidth={2.5} />
                   Add

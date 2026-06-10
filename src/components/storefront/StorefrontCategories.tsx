@@ -41,9 +41,9 @@ export default function StorefrontCategories({ categories, storeSlug, isLoading 
               <Link
                 key={cat.id}
                 to={storefrontPath(storeSlug, `category/${cat.slug}`)}
-                className="chip-magnetic flex flex-col items-center gap-1.5 flex-shrink-0 transition-all"
+                className="chip-magnetic flex flex-col items-center gap-1.5 flex-shrink-0 transition-[transform,opacity,colors,box-shadow]"
               >
-                <div className="h-20 w-20 rounded-full border-2 overflow-hidden transition-all sm:h-20 sm:w-20 border-border" style={{ "--tw-border-opacity": 1 } as any} onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
+                <div className="h-20 w-20 rounded-full border-2 overflow-hidden transition-[transform,opacity,colors,box-shadow] sm:h-20 sm:w-20 border-border" style={{ "--tw-border-opacity": 1 } as any} onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--storefront-primary, hsl(var(--primary)))"} onMouseLeave={(e) => e.currentTarget.style.borderColor = ""}>
                   {cat.image_url ? (
                     <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" loading="lazy" />
                   ) : (

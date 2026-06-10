@@ -43,13 +43,13 @@ export default function RevealGridCategories({ categories, storeSlug }: { catego
       </div>
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-4 mt-3">
-          <button onClick={goPrev} className="h-9 w-9 rounded-full flex items-center justify-center transition-all active:scale-95" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 15%, transparent)" }} aria-label="Previous"><ChevronLeft className="h-4 w-4" /></button>
+          <button onClick={goPrev} className="h-9 w-9 rounded-full flex items-center justify-center transition-[transform,opacity,colors,box-shadow] active:scale-95" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 15%, transparent)" }} aria-label="Previous"><ChevronLeft className="h-4 w-4" /></button>
           <div className="flex gap-1.5">
             {Array.from({ length: totalPages }).map((_, i) => (
-              <div key={i} className="h-1.5 rounded-full transition-all duration-300" style={{ width: i === page ? 20 : 6, backgroundColor: i === page ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--border)" }} />
+              <div key={i} className="h-1.5 rounded-full transition-[transform,opacity,colors,box-shadow] duration-300" style={{ width: i === page ? 20 : 6, backgroundColor: i === page ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--border)" }} />
             ))}
           </div>
-          <button onClick={goNext} className="h-9 w-9 rounded-full flex items-center justify-center transition-all active:scale-95" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 15%, transparent)" }} aria-label="Next"><ChevronRight className="h-4 w-4" /></button>
+          <button onClick={goNext} className="h-9 w-9 rounded-full flex items-center justify-center transition-[transform,opacity,colors,box-shadow] active:scale-95" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 15%, transparent)" }} aria-label="Next"><ChevronRight className="h-4 w-4" /></button>
         </div>
       )}
       <style>{`@keyframes revealSlideUp { from { opacity: 0; transform: translateY(40px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }`}</style>

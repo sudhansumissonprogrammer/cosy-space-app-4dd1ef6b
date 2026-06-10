@@ -58,7 +58,7 @@ export default function MobileBottomNavIndicator({ store }: { store: StoreData }
       {/* Top sliding indicator bar */}
       <div className="relative h-[3px] w-full overflow-hidden">
         <div
-          className="absolute top-0 h-full rounded-b-full transition-all duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="absolute top-0 h-full rounded-b-full transition-[transform,opacity,colors,box-shadow] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{
             left: `${indicatorLeft}%`,
             width: `${indicatorWidth}%`,
@@ -84,7 +84,7 @@ export default function MobileBottomNavIndicator({ store }: { store: StoreData }
               to={getTo(item.path)}
               onClick={handleClick}
               aria-label={item.label}
-              className="flex-1 relative flex flex-col items-center justify-center gap-1 py-1.5 px-1 outline-none transition-all duration-200 active:scale-[0.94]"
+              className="flex-1 relative flex flex-col items-center justify-center gap-1 py-1.5 px-1 outline-none transition-[transform,opacity,colors,box-shadow] duration-200 active:scale-[0.94]"
             >
               <div
                 {...(isCart ? { "data-cart-target": "" } : {})}
