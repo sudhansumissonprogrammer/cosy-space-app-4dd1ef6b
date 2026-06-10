@@ -34,10 +34,43 @@ function V17Inner({ store, themeConfig }: { store: any; themeConfig: any }) {
     ? `https://fonts.googleapis.com/css2?${fontsToLoad.map(f => `family=${f.replace(/ /g, '+')}:wght@400;600`).join('&')}&display=swap`
     : "";
 
+  // Inject Google Fonts via <link> instead of CSS @import url() inside <style>.
+  // The previous @import caused a 2-hop serial waterfall (parse <style> →
+  // discover URL → fetch CSS → discover woff2 → fetch font) that added
+  // 800-1200ms on cold mobile. <link> in <head> lets the preload scanner
+  // start the fetch immediately in parallel with chunk parsing.
+  useEffect(() => {
+    if (!googleFontsUrl) return;
+    // Preconnect first so DNS + TLS to fonts.gstatic.com is warm before the
+    // .woff2 request fires.
+    const ensurePreconnect = (href: string) => {
+      if (document.head.querySelector(`link[rel="preconnect"][href="${href}"]`)) return;
+      const link = document.createElement("link");
+      link.rel = "preconnect";
+      link.href = href;
+      if (href.includes("gstatic")) link.crossOrigin = "anonymous";
+      document.head.appendChild(link);
+    };
+    ensurePreconnect("https://fonts.googleapis.com");
+    ensurePreconnect("https://fonts.gstatic.com");
+
+    if (document.head.querySelector(`link[data-v17-font="1"][href="${googleFontsUrl}"]`)) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = googleFontsUrl;
+    link.setAttribute("data-v17-font", "1");
+    // media=print + onload swap = non-blocking stylesheet load (browser won't
+    // hold first paint waiting for it).
+    link.media = "print";
+    link.onload = () => { link.media = "all"; };
+    document.head.appendChild(link);
+  }, [googleFontsUrl]);
+
   return (
     <>
       <style>{`
-        ${googleFontsUrl ? `@import url('${googleFontsUrl}');` : ""}
+        /* Google Fonts now injected as <link> via the useEffect above —
+           the previous @import url() caused a 2-hop serial waterfall. */
         :root {
           --v17-heading-font: ${headingFontCss};
           --v17-body-font: ${bodyFontCss};
