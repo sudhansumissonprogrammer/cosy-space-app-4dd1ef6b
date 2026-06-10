@@ -1277,7 +1277,7 @@ function _buildPrebuiltHead(html) {
   }
   // v8.22.0: Stash the entry chunk path so deep-preload pass can fetch + parse
   // it after this synchronous build completes. We cannot fetch here (no async).
-  const entry = [...seen][0];
+  const entry = [...seen].find((p) => /\/assets\/(?:index|main)-[A-Za-z0-9_-]+\.(?:js|tsx)$/.test(p)) || [...seen][0];
   if (entry) head += `<!--ENTRY:${entry}-->`;
 
   _memPrebuiltHead = head;
@@ -1336,10 +1336,11 @@ async function getDeepChunkPreloads(entryPath, origin, env) {
       found.add(p);
     }
 
-    // Storefront-critical chunk names — prioritize these first
+      // Storefront-critical chunk names — prioritize these first
     const PRIORITY =
       /(?:App-|storefront-shell-|supabase-|radix|router-query-|framework-|entry-utils-|icons-|ErrorBoundary-|logError-)/;
     const arr = [...found]
+      .filter((p) => !/\/assets\/main-[A-Za-z0-9_-]+\.tsx$/.test(p))
       .sort((a, b) => {
         const pa = PRIORITY.test(a) ? 0 : 1;
         const pb = PRIORITY.test(b) ? 0 : 1;
