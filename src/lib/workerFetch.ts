@@ -48,9 +48,9 @@ export async function fetchViaWorker<T>({
   }
 
   try {
+    // Respect Worker Cache-Control. Session cache + staleTime gate freshness.
     const res = await fetch(`${window.location.origin}${path}`, {
       headers: { Accept: "application/json" },
-      cache: "no-store",
     });
     if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
     const json = await res.json();

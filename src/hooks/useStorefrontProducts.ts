@@ -27,9 +27,10 @@ async function fetchProducts(storeId: string): Promise<any[]> {
     // Production must not trust products embedded in cached HTML: a browser
     // refresh should hit the Worker product endpoint and use its versioned
     // edge cache, otherwise deleted/demo items can survive in old HTML.
+    // Respect Worker Cache-Control (s-maxage=300, stale-while-revalidate).
+    // React Query staleTime still gates re-fetches at the React layer.
     const res = await fetch(`${window.location.origin}/api/products`, {
       headers: { Accept: "application/json" },
-      cache: "no-store",
     });
     if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
     return await res.json();
