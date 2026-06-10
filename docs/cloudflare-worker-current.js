@@ -159,7 +159,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.53.0-storefront-cold-load-preload-fix";
+const WORKER_VERSION = "8.54.0-storefront-html-cache-font-fix";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -1641,7 +1641,10 @@ function setNoStoreHtmlHeaders(headers) {
   // visits, AND CF's automatic cache starts serving HIT on warm hits —
   // cutting Worker compute to ~0 for the bulk of anonymous traffic.
   // Purge button still wipes instantly via /api/purge-shell.
-  headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=86400");
+  // v8.54.0: keep HTML cache very short. Long SWR was serving old
+  // modulepreload hashes after frontend publishes, so browsers downloaded
+  // stale App chunks before the real entry discovered the current ones.
+  headers.set("Cache-Control", "public, max-age=15, stale-while-revalidate=60");
   headers.delete("Pragma");
   headers.delete("Expires");
 }
@@ -1937,9 +1940,14 @@ async function getFreshSpaShell(request, ctx, env) {
 }
 
 async function getNavigationSpaShell(request, ctx, env) {
-  const fresh = await getFreshSpaShell(request, ctx, env);
-  if (fresh?.html) return fresh;
-  return getSpaShell(request, ctx, env);
+  const cached = await getSpaShell(request, ctx, env);
+  if (cached?.html) {
+    // Refresh in the background so new publishes still propagate, but never
+    // put the human navigation TTFB behind the Lovable origin round-trip.
+    if (ctx?.waitUntil) ctx.waitUntil(getFreshSpaShell(request, ctx, env).catch(() => null));
+    return cached;
+  }
+  return getFreshSpaShell(request, ctx, env);
 }
 
 /* ============================================================
