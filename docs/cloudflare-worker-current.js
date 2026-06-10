@@ -3993,6 +3993,7 @@ function _buildProductsCacheKey(domain, filters, version) {
   if (filters.category) parts.push(`category=${filters.category}`);
   if (filters.page) parts.push(`page=${filters.page}`);
   if (filters.sort) parts.push(`sort=${filters.sort}`);
+  if (filters.best_selling) parts.push(`bs=${filters.best_selling}`);
   return new Request(parts.join(":"));
 }
 
@@ -4001,6 +4002,7 @@ function _buildProductsKvKey(domain, filters, version) {
   if (filters.category) key += `:cat=${filters.category}`;
   if (filters.page) key += `:p=${filters.page}`;
   if (filters.sort) key += `:s=${filters.sort}`;
+  if (filters.best_selling) key += `:bs=${filters.best_selling}`;
   return key;
 }
 
