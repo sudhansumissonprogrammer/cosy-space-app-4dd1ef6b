@@ -89,7 +89,7 @@ export function useStorefront(slugOverride?: string) {
       }
 
       // 3. Fresh RPC call — use shell (lightweight, no products)
-      return rpcGetStorefrontShell(slug!);
+      const data = await rpcGetStorefrontShell(slug!); if (data?.store?.id && data?.theme_config) { queryClient.setQueryData(["storefront-theme-config", data.store.id], data.theme_config); } return data;
     },
     enabled: !!slug,
     staleTime: 2 * 60 * 1000,
