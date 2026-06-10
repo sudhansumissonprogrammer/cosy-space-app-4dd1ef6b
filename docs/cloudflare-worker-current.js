@@ -4252,6 +4252,9 @@ async function _purgeProductCachesForDomain(domain, _storeId, env) {
     .toLowerCase()
     .trim();
   await _bumpProductVersion(cleanDomain, env);
+  // v8.60.0 — flush new version to KV SYNCHRONOUSLY so other isolates
+  // worldwide see it on their next read (within MEM_PV_TTL = 20s).
+  await _flushProductVersionNow(cleanDomain, env);
   _clearInflightProductRequestsForDomain(cleanDomain);
 }
 
