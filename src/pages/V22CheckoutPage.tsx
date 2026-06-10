@@ -622,16 +622,15 @@ export default function V22CheckoutPage() {
     } catch {}
   };
 
-  // AddPaymentInfo — Shopify-grade funnel signal.
-  // Fires once per resolved payment category (cod / razorpay / cashfree /
-  // partial_cod_razorpay / partial_cod_cashfree) when the customer picks an
-  // option. Browser pixel + CAPI mirror with shared event_id for dedup.
-  // Works for COD-only stores (no gateway), Razorpay-only, Cashfree-only,
-  // and partial-payment-enabled stores transparently.
+  // AddPaymentInfo — fire ONLY at real payment intent (same gate as IC).
+  // Previously this fired in a mount-effect whenever a payment method resolved,
+  // which meant every checkout page-view = 1 APInfo (even before the user
+  // touched anything). That inverted the funnel (APInfo > AddToCart) and
+  // degraded Meta's attribution + EMQ. Now invoked from handlePlaceOrder /
+  // gateway-open paths alongside fireInitiateCheckoutOnce.
   const apiFiredRef = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (checkoutItems.length === 0) return;
-    // Resolve the actual payment category Meta should attribute to.
+  const fireAddPaymentInfoOnce = () => {
+    if (!store?.id || checkoutItems.length === 0) return;
     let category: string;
     let value: number;
     if (paymentMethod === "cod" && !isPartialOrder) {
@@ -657,17 +656,19 @@ export default function V22CheckoutPage() {
       value,
       currency,
     };
-    fbPixelTrack("AddPaymentInfo", data, eid);
-    fireMetaCAPI({
-      storeId: store.id,
-      eventName: "AddPaymentInfo",
-      eventId: eid,
-      userEmail: email.trim() || undefined,
-      userPhone: normalizePhone(phone) || undefined,
-      externalId: customer?.id || undefined,
-      customData: data,
-    });
-  }, [paymentMethod, partialPaymentMode, activeGateway, isPartialOrder, checkoutItems.length]);
+    try { fbPixelTrack("AddPaymentInfo", data, eid); } catch {}
+    try {
+      fireMetaCAPI({
+        storeId: store.id,
+        eventName: "AddPaymentInfo",
+        eventId: eid,
+        userEmail: email.trim() || undefined,
+        userPhone: normalizePhone(phone) || undefined,
+        externalId: customer?.id || undefined,
+        customData: data,
+      });
+    } catch {}
+  };
 
   // Save abandoned cart on checkout entry (deduplicated via sessionStorage)
   const [abandonedCartId, setAbandonedCartId] = useState<string | null>(null);
@@ -1227,8 +1228,9 @@ export default function V22CheckoutPage() {
       setPlacing(false);
       toast.error(resp?.error?.description || "Payment failed. You can retry below.");
     });
-    // Real intent signal — fire IC the instant the Razorpay modal is about to open.
+    // Real intent signal — fire IC + APInfo the instant the Razorpay modal is about to open.
     fireInitiateCheckoutOnce();
+    fireAddPaymentInfoOnce();
     rzp.open();
   };
 
@@ -1293,8 +1295,9 @@ export default function V22CheckoutPage() {
       // Disable beforeunload lock — Cashfree triggers UPI deep links from top window
       // which would otherwise show the browser's "Leave site?" confirmation popup.
       window.dispatchEvent(new CustomEvent("payment-in-progress"));
-      // Real intent signal — fire IC the instant the Cashfree drop-in is about to open.
+      // Real intent signal — fire IC + APInfo the instant the Cashfree drop-in is about to open.
       fireInitiateCheckoutOnce();
+      fireAddPaymentInfoOnce();
       const result = await cashfree.checkout({
         paymentSessionId: cfData.payment_session_id,
         redirectTarget: "_modal",
@@ -1428,6 +1431,7 @@ export default function V22CheckoutPage() {
       setPlacingStep(3);
       // COD path — user clicked Place Order with valid details = real intent.
       fireInitiateCheckoutOnce();
+      fireAddPaymentInfoOnce();
       finalizeOrder(newOrder.id, newOrder.number, newOrder.profit);
     } catch (err: any) {
       console.error("[checkout] handlePlaceOrder failed:", err);
