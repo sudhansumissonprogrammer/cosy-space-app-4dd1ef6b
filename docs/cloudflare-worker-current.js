@@ -1737,6 +1737,7 @@ function _isDefaultProductFilter(filters) {
   if (!filters) return true;
   if (filters.category) return false;
   if (filters.sort) return false;
+  if (filters.best_selling) return false;
   if (filters.page && Number(filters.page) > 1) return false;
   return true;
 }
