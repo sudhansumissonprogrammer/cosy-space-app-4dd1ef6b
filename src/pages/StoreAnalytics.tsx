@@ -519,7 +519,7 @@ export default function StoreAnalytics() {
         <div className="flex flex-wrap items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1.5 justify-start", !customFrom && "text-muted-foreground")}>
+              <Button variant="outline" size="sm" className={cn("h-9 text-xs gap-1.5 justify-start", !customFrom && "text-muted-foreground")}>
                 <CalendarIcon className="h-3.5 w-3.5" />
                 {customFrom ? format(customFrom, "MMM d, yyyy") : "From"}
               </Button>
@@ -538,7 +538,7 @@ export default function StoreAnalytics() {
           <span className="text-xs text-muted-foreground">to</span>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1.5 justify-start", !customTo && "text-muted-foreground")}>
+              <Button variant="outline" size="sm" className={cn("h-9 text-xs gap-1.5 justify-start", !customTo && "text-muted-foreground")}>
                 <CalendarIcon className="h-3.5 w-3.5" />
                 {customTo ? format(customTo, "MMM d, yyyy") : "To"}
               </Button>

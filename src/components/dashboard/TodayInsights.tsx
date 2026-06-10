@@ -99,7 +99,7 @@ export default function TodayInsights({ storeId, storeSlug, currencySymbol }: Pr
         <Button
           variant="outline"
           size="sm"
-          className="mt-3 w-full gap-1.5 text-xs h-8 font-semibold"
+          className="mt-3 w-full gap-1.5 text-xs h-9 font-semibold"
           onClick={() => navigate(`/dashboard/analytics`)}
         >
           <BarChart3 className="h-3.5 w-3.5" />

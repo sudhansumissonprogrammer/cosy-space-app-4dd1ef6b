@@ -394,7 +394,7 @@ export default function StorePayments() {
                       </div>
                     </div>
                     <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-9 w-9">
                         <ChevronDown className={`h-4 w-4 transition-transform ${razorpayOpen ? "rotate-180" : ""}`} />
                       </Button>
                     </CollapsibleTrigger>
@@ -484,7 +484,7 @@ export default function StorePayments() {
                       </div>
                     </div>
                     <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-9 w-9">
                         <ChevronDown className={`h-4 w-4 transition-transform ${cashfreeOpen ? "rotate-180" : ""}`} />
                       </Button>
                     </CollapsibleTrigger>
@@ -592,7 +592,7 @@ export default function StorePayments() {
                       </div>
                     </div>
                     <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-9 w-9">
                         <ChevronDown className={`h-4 w-4 transition-transform ${payuOpen ? "rotate-180" : ""}`} />
                       </Button>
                     </CollapsibleTrigger>

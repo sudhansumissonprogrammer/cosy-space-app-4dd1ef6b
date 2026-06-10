@@ -218,7 +218,7 @@ export default function Dashboard() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 text-xs h-8 font-semibold"
+              className="gap-1.5 text-xs h-9 font-semibold"
               asChild
             >
               <a href={storeUrl!} target="_blank" rel="noopener noreferrer">
@@ -231,7 +231,7 @@ export default function Dashboard() {
               variant="outline"
               size="sm"
               onClick={() => setShowOnboarding(true)}
-              className="gap-1 text-xs h-8"
+              className="gap-1 text-xs h-9"
             >
               <HelpCircle className="w-3.5 h-3.5" />
               Guide
@@ -267,7 +267,7 @@ export default function Dashboard() {
           <p className="text-xs font-medium text-foreground truncate flex-1">
             {customDomain || `${store.slug}.shopbanao.in`}
           </p>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={handleCopy} title="Copy link">
+          <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={handleCopy} title="Copy link">
             {copied ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
           </Button>
         </div>
@@ -352,7 +352,7 @@ export default function Dashboard() {
                         storeSlug={store.slug}
                         storeName={store.name}
                         trigger={
-                          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+                          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9">
                             <Share2 className="h-3 w-3" />
                             Share your store to get started
                           </Button>
@@ -386,7 +386,7 @@ export default function Dashboard() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-1.5 text-xs h-8"
+                      className="gap-1.5 text-xs h-9"
                       onClick={() => navigate(`/dashboard/stores/${storeSlug}/products/create`)}
                     >
                       <Plus className="h-3 w-3" />

@@ -172,7 +172,7 @@ export default function AdminLayout() {
                 </button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" aria-label="Account">
+                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" aria-label="Account">
                       <div className="flex h-7 w-7 items-center justify-center rounded-full bg-destructive/90">
                         <User className="h-3.5 w-3.5 text-destructive-foreground" />
                       </div>

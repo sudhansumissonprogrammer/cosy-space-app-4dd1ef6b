@@ -134,7 +134,7 @@ function SetupTab({ storeId }: { storeId: string }) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9"
                 onClick={() => setShowToken(!showToken)}
               >
                 {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -594,14 +594,14 @@ function ChatTab({ storeId }: { storeId: string }) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-9 w-9"
                 onClick={() => setShowSearch(!showSearch)}
               >
                 <Search className="h-4 w-4" />
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -626,7 +626,7 @@ function ChatTab({ storeId }: { storeId: string }) {
                   className="text-sm h-8"
                   onKeyDown={(e) => e.key === "Enter" && startNewChat()}
                 />
-                <Button size="sm" className="h-8 px-3" onClick={startNewChat} disabled={!newChatPhone.trim()}>
+                <Button size="sm" className="h-9 px-3" onClick={startNewChat} disabled={!newChatPhone.trim()}>
                   <Send className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -749,7 +749,7 @@ function ChatTab({ storeId }: { storeId: string }) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 md:hidden shrink-0"
+                  className="h-9 w-9 md:hidden shrink-0"
                   onClick={() => setSelectedPhone(null)}
                 >
                   <ArrowLeft className="h-5 w-5" />
@@ -778,7 +778,7 @@ function ChatTab({ storeId }: { storeId: string }) {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                    <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -1703,7 +1703,7 @@ function BulkMessagingTab({ storeId, initialNumbers }: { storeId: string; initia
                       key={t.label}
                       variant="outline"
                       size="sm"
-                      className="text-xs h-7"
+                      className="text-xs h-9"
                       onClick={() => setMessage(t.body)}
                     >
                       {t.label}
@@ -2701,7 +2701,7 @@ function MetaTemplatesTab({ storeId }: { storeId: string }) {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      className="h-9 w-9 text-destructive hover:text-destructive"
                       onClick={() => deleteTemplate(t.template_name)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />

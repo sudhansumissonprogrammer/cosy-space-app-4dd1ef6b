@@ -333,7 +333,7 @@ export default function CustomerLeads() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-9 w-9"
                               title="Send recovery message on WhatsApp"
                               onClick={() => {
                                 const phone = lead.phone.replace(/[^0-9+]/g, "");
@@ -348,7 +348,7 @@ export default function CustomerLeads() {
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Button variant="ghost" size="icon" className="h-9 w-9">
                                   <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                               </AlertDialogTrigger>

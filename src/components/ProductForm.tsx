@@ -775,7 +775,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-7 gap-1.5 text-xs text-primary hover:text-primary/80"
+                  className="h-9 gap-1.5 text-xs text-primary hover:text-primary/80"
                   disabled={generatingDesc || !name.trim()}
                   onClick={handleGenerateDescription}
                 >
@@ -994,7 +994,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7"
+                              className="h-9 w-9"
                               onClick={() => setVariants((prev) => prev.filter((_, idx) => idx !== i))}
                             >
                               <Trash2 className="h-3.5 w-3.5 text-destructive" />

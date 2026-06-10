@@ -112,7 +112,7 @@ export default function PartnerWithdrawals() {
                 { label: "75%", v: 75 as const },
                 { label: "Max", v: "max" as const },
               ].map((q) => (
-                <Button key={q.label} type="button" size="sm" variant="outline" className="h-7 px-2.5 text-xs" onClick={() => setQuick(q.v)}>
+                <Button key={q.label} type="button" size="sm" variant="outline" className="h-9 px-2.5 text-xs" onClick={() => setQuick(q.v)}>
                   {q.label}
                 </Button>
               ))}
@@ -185,7 +185,7 @@ export default function PartnerWithdrawals() {
                   {w.status}
                 </span>
                 {w.status === "pending" && (
-                  <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => cancel(w.id)}>Cancel</Button>
+                  <Button size="sm" variant="ghost" className="h-9 px-2 text-xs" onClick={() => cancel(w.id)}>Cancel</Button>
                 )}
               </div>
             </div>

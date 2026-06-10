@@ -244,7 +244,7 @@ export default function CategoryManagement() {
                       <Button
                         size="icon"
                         variant="secondary"
-                        className="h-8 w-8"
+                        className="h-9 w-9"
                         disabled={idx === 0 || reordering}
                         onClick={() => moveCategory(idx, "up")}
                       >
@@ -253,7 +253,7 @@ export default function CategoryManagement() {
                       <Button
                         size="icon"
                         variant="secondary"
-                        className="h-8 w-8"
+                        className="h-9 w-9"
                         disabled={idx === categories.length - 1 || reordering}
                         onClick={() => moveCategory(idx, "down")}
                       >
@@ -261,12 +261,12 @@ export default function CategoryManagement() {
                       </Button>
                     </div>
                     <div className="flex gap-1">
-                      <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => openEdit(cat)}>
+                      <Button size="icon" variant="secondary" className="h-9 w-9" onClick={() => openEdit(cat)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button size="icon" variant="destructive" className="h-8 w-8">
+                          <Button size="icon" variant="destructive" className="h-9 w-9">
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </AlertDialogTrigger>

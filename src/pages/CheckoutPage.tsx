@@ -2191,7 +2191,7 @@ export default function CheckoutPage() {
                 <p className="text-xs text-muted-foreground">{[selectedAddr.street_address, selectedAddr.city, selectedAddr.state, selectedAddr.pincode].filter(Boolean).join(", ")}</p>
                 {selectedAddr.phone && <p className="text-xs text-muted-foreground">{selectedAddr.phone}</p>}
               </div>
-              <Button size="sm" variant="ghost" className="text-xs h-7 px-2" onClick={() => setShowAddressDialog(true)}>
+              <Button size="sm" variant="ghost" className="text-xs h-9 px-2" onClick={() => setShowAddressDialog(true)}>
                 <Pencil className="h-3 w-3 mr-1" /> Change
               </Button>
             </div>
@@ -2218,7 +2218,7 @@ export default function CheckoutPage() {
                   {returningOrder.customer_name ? <><span className="font-semibold">{returningOrder.customer_name.split(" ")[0]}</span> · </> : null}
                   {[returningOrder.city, returningOrder.pincode].filter(Boolean).join(", ")}
                 </p>
-                <Button size="sm" className="h-7 text-[11px] px-2.5" onClick={applyReturningOrder}>Use</Button>
+                <Button size="sm" className="h-9 text-[11px] px-2.5" onClick={applyReturningOrder}>Use</Button>
                 <button onClick={() => setReturningDismissed(true)} className="text-muted-foreground hover:text-foreground" aria-label="Dismiss">
                   <X className="h-3.5 w-3.5" />
                 </button>

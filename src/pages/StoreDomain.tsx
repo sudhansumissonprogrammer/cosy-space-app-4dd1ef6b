@@ -55,10 +55,10 @@ export default function StoreDomain() {
           <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2.5">
             <Globe className="h-4 w-4 shrink-0 text-primary" />
             <code className="flex-1 text-sm font-medium">{subdomainUrl}</code>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyToClipboard(subdomainUrl)}>
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => copyToClipboard(subdomainUrl)}>
               <Copy className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
               <a href={subdomainUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
