@@ -6504,7 +6504,7 @@ async function _handleFetch(request, env, ctx) {
           data: null,
           source: "none",
         })),
-        _getInlineProductsOrNull(hostname, slug, env, ctx),
+        _getInlineProductsFastOrNull(hostname),
       ]);
 
       // If we have the shell + data, serve fully injected HTML — same as warm path
@@ -6563,7 +6563,7 @@ async function _handleFetch(request, env, ctx) {
       _resolveStoreInfo(slug, hostname, env),
       _batchKvRead(slug, env),
       _getCachedPrebuiltHead(env),
-      _getInlineProductsOrNull(hostname, slug, env, ctx),
+      _getInlineProductsFastOrNull(hostname),
       _getInlinePdpCategoryOrNull(hostname, pdpCategoryRoute, env, ctx),
     ]);
     const pdpCategoryInline = pdpCategoryJson
@@ -6720,7 +6720,7 @@ async function _handleFetch(request, env, ctx) {
           data: null,
           source: "none",
         })),
-        _getInlineProductsOrNull(hostname, resolvedSlugCD, env, ctx),
+        _getInlineProductsFastOrNull(hostname),
       ]);
 
       if (shellResult?.html && prefetchResult?.data) {
@@ -6794,7 +6794,7 @@ async function _handleFetch(request, env, ctx) {
         handleBot(request, resolvedSlug, url, true),
         _batchKvRead(resolvedSlug, env),
         _getCachedPrebuiltHead(env),
-        _getInlineProductsOrNull(hostname, resolvedSlug, env, ctx),
+        _getInlineProductsFastOrNull(hostname),
         _getInlinePdpCategoryOrNull(hostname, pdpCategoryRouteCD, env, ctx),
       ]);
     const pdpCategoryInlineCD = pdpCategoryJsonCD
