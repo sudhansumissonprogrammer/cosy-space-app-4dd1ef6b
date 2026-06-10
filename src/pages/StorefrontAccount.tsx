@@ -28,7 +28,7 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("*, order_items(*, products(image_url))")
+        .select("*, order_items(*)")
         .eq("storefront_customer_id", customerId)
         .order("created_at", { ascending: false });
       if (error) throw error;

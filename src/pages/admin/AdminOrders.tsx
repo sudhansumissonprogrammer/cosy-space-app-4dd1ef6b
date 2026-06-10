@@ -78,7 +78,7 @@ export default function AdminOrders() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("orders")
-        .select("*, stores:store_id(name), order_items(*, products:product_id(image_url))")
+        .select("*, stores:store_id(name), order_items(*)")
         .order("created_at", { ascending: false })
         .range(webPag.from, webPag.to);
       if (error) throw error;
