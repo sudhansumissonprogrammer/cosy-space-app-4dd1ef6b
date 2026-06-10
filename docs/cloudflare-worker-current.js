@@ -2212,12 +2212,6 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
       },
       signal: controller.signal,
       body: JSON.stringify({ _slug: slug }),
-      cf: {
-        cacheEverything: true,
-        cacheTtl: 60,
-        cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 },
-        cacheKey: `sf-shell:${WORKER_VERSION}:${slug}`,
-      },
     });
     clearTimeout(timeout);
     if (!res.ok) return null;
@@ -4358,7 +4352,6 @@ async function _fetchPdpFromDb(storeSlug, productSlug, timeoutMs) {
       },
       body: JSON.stringify({ _store_slug: storeSlug, _product_slug: productSlug }),
       signal: controller.signal,
-      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 }, cacheKey: `pdp:${WORKER_VERSION}:${storeSlug}:${productSlug}` },
     });
     clearTimeout(timeout);
     if (!res.ok) throw new Error(`PDP RPC error: ${res.status}`);
@@ -4384,7 +4377,6 @@ async function _fetchCategoryFromDb(storeSlug, categorySlug, limit, timeoutMs) {
       },
       body: JSON.stringify({ _store_slug: storeSlug, _category_slug: categorySlug, _limit: limit }),
       signal: controller.signal,
-      cf: { cacheEverything: true, cacheTtl: 60, cacheTtlByStatus: { "200-299": 60, 404: 30, "500-599": 0 }, cacheKey: `cat:${WORKER_VERSION}:${storeSlug}:${categorySlug}:${limit}` },
     });
     clearTimeout(timeout);
     if (!res.ok) throw new Error(`Category RPC error: ${res.status}`);
