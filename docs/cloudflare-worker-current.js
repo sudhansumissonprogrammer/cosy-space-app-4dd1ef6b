@@ -1,5 +1,11 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.51.0 — TTFB UNBLOCK (cold-load regression fix)
+ * SHOPBANAO PRODUCTION ROUTER v8.52.0 — /api/products best_selling filter
+ *
+ * v8.52.0 — Added `?best_selling=1` query param to /api/products. Frontend
+ *           BestSellersSection now hits the Worker edge cache (KV+Cache,
+ *           24h TTL) instead of going direct to Supabase, saving ~800ms on
+ *           cold home loads. Same KV+Cache pattern as the default products
+ *           feed; cache key/coalesce key include the new bs= flag.
  *
  * v8.51.0 — Race storefront shell against 200ms deadline in head-flush path.
  *           v8.47.0 introduced an UNCONDITIONAL `await storefrontPromise`
