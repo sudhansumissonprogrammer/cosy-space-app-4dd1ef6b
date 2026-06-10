@@ -109,14 +109,6 @@ export function useStorefront(slugOverride?: string) {
       ? { initialData: injected, initialDataUpdatedAt: Date.now() }
       : {}),
   });
-  // v8.45.0 u2014 Flash fix: seed theme config synchronously during render
-  // so the very first frame of the new store has the correct theme.
-  useMemo(() => {
-    const d = data as any;
-    if (d?.store?.id && d?.theme_config) {
-      queryClient.setQueryData(["storefront-theme-config", d.store.id], d.theme_config);
-    }
-  }, [data?.store?.id, data?.theme_config, queryClient]);
 
 
   // Seed individual cache keys so child pages get instant cache hits.
@@ -202,5 +194,5 @@ export function useStorefront(slugOverride?: string) {
 
   const store = (data as any)?.store as StoreData | undefined;
 
-  return { store: store ?? null, isLoading, slug };
+  return { store: store ?? null, isLoading, slug, themeConfig: (data as any)?.theme_config ?? null };
 }
