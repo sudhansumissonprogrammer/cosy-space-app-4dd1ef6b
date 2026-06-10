@@ -711,7 +711,10 @@ const STOREFRONT_HTML_SWR_SEC = 600;
 const HTML_KV_TTL_SEC = STOREFRONT_HTML_TTL_SEC;
 const HTML_KV_MAX_BYTES = 800_000; // 800 KB hard cap (KV value limit is 25 MB)
 const _htmlKvWriteRecent = new Map(); // key → expiresAt
-const HTML_KV_WRITE_DEDUP_MS = 540_000;
+// v8.58.0: 540s dedup > 300s TTL meant a 4-minute mandatory MISS window
+// every cycle (key expired in KV but worker refused to re-write). Now set to
+// 80% of TTL so KV stays continuously populated for hot URLs.
+const HTML_KV_WRITE_DEDUP_MS = 240_000;
 const HTML_KV_WRITE_DEDUP_MAX = 5_000;
 
 function getHtmlKvKey(slug, pathname) {
