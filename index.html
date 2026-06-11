@@ -202,7 +202,7 @@
         /* Skip pixel on Lovable preview/editor/dev hosts so Meta doesn't
            detect lovableproject.com / lovable.dev as event-sending domains
            for the customer's pixel (dilutes domain authority + EMQ). */
-        if(h==='localhost'||h==='127.0.0.1'||h.endsWith('.lovableproject.com')||h.endsWith('.lovable.dev')||h.endsWith('.sandbox.lovable.dev'))return;
+        if(h==='localhost'||h==='127.0.0.1'||h.endsWith('.lovableproject.com')||h.endsWith('.lovable.app')||h.endsWith('.lovable.dev')||h.endsWith('.sandbox.lovable.dev'))return;
         var isSf=p.indexOf('/store/')===0;
         if(!isSf && h.endsWith('.shopbanao.in') && h!=='shopbanao.in' && h!=='www.shopbanao.in'){
           var sub=h.replace('.shopbanao.in','');if(sub&&sub.indexOf('.')===-1)isSf=true;
@@ -228,6 +228,7 @@
             var pid=w.__STOREFRONT_DATA__&&w.__STOREFRONT_DATA__.store&&w.__STOREFRONT_DATA__.store.facebook_pixel_id;
             if(pid&&w.__SF_PIXEL_INITED__!==pid){
               w.__SF_PIXEL_INITED__=pid;
+              w.fbq('consent','grant');
               w.fbq('init',pid);
               /* Generate event_id so the same PageView fired server-side via
                  CAPI (see useFacebookPixel.ts) deduplicates against this one.

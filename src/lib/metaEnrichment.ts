@@ -13,7 +13,9 @@
  */
 
 const FBC_COOKIE = "_fbc";
+const FBP_COOKIE = "_fbp";
 const FBC_TTL_DAYS = 90; // Meta's recommended lifetime
+const FBP_TTL_DAYS = 90;
 const SF_VID_COOKIE = "sf_vid";
 const SF_VID_TTL_DAYS = 730; // 2y — Meta external_id should be stable
 const SF_VID_LS_KEY = "__sf_vid__";
@@ -52,12 +54,19 @@ export function ensureFbcPersisted(): void {
     const params = new URLSearchParams(window.location.search);
     const fbclid = params.get("fbclid");
     if (!fbclid) return;
-    if (getCookie(FBC_COOKIE)) return; // already set
     const fbc = `fb.1.${Date.now()}.${fbclid}`;
     setCookie(FBC_COOKIE, fbc, FBC_TTL_DAYS);
   } catch {
     /* noop */
   }
+}
+
+export function ensureFbpCookie(): void {
+  if (typeof document === "undefined") return;
+  if (getCookie(FBP_COOKIE)) return;
+  const creationTime = Date.now();
+  const randomNumber = Math.floor(Math.random() * 10_000_000_000);
+  setCookie(FBP_COOKIE, `fb.1.${creationTime}.${randomNumber}`, FBP_TTL_DAYS);
 }
 
 /**

@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from "react";
-import { getOrCreateSfVid } from "@/lib/metaEnrichment";
+import { ensureFbpCookie, getOrCreateSfVid } from "@/lib/metaEnrichment";
 
 
 declare global {
@@ -28,26 +28,39 @@ function ensureFbqShim() {
   f.fbq = q;
 }
 
-/**
- * Pre-warm the `_fbp` first-party cookie BEFORE fbevents.js loads.
- *
- * Why: we defer fbevents.js to requestIdleCallback (~1s after FCP) for speed.
- * But the Conversions API mirror fires immediately and needs `_fbp` to
- * deduplicate against the browser pixel. Without this, server-side PageView
- * has no fbp → Meta treats it as a separate event → EMQ drops.
- *
- * Format must match Meta spec exactly: `fb.<subdomainIndex>.<creationTime>.<randomNumber>`
- * https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/fbp-and-fbc
- */
-function ensureFbpCookie() {
-  if (typeof document === "undefined") return;
-  if (document.cookie.includes("_fbp=")) return; // already set by browser or prior visit
-  const subdomainIndex = 1; // 1 = used directly on the registrable domain (works for www + apex)
-  const creationTime = Date.now();
-  const randomNumber = Math.floor(Math.random() * 10_000_000_000);
-  const fbp = `fb.${subdomainIndex}.${creationTime}.${randomNumber}`;
-  // 90-day cookie (Meta's standard window), top-level path, same-site Lax
-  document.cookie = `_fbp=${fbp}; path=/; max-age=${60 * 60 * 24 * 90}; SameSite=Lax`;
+function grantMetaConsent() {
+  try {
+    if (typeof window !== "undefined" && typeof window.fbq === "function") {
+      window.fbq("consent", "grant");
+    }
+  } catch {
+    /* noop */
+  }
+}
+
+function schedulePixelSelfTest(pixelId: string) {
+  if (typeof window === "undefined") return;
+  const w = window as any;
+  const key = `pixel:${pixelId}`;
+  if (w.__SF_PIXEL_SELF_TESTED__ === key) return;
+  w.__SF_PIXEL_SELF_TESTED__ = key;
+  setTimeout(() => {
+    try {
+      const fbq: any = window.fbq;
+      const state = typeof fbq?.getState === "function" ? fbq.getState() : null;
+      const pixels = Array.isArray(state?.pixels) ? state.pixels : [];
+      const registered = pixels.some((p: any) => String(p?.id) === String(pixelId));
+      if (fbq?.loaded === true && typeof fbq.callMethod === "function" && !registered) {
+        console.warn("[Meta Pixel] SDK loaded but pixel is not registered", {
+          pixelId,
+          queueLength: Array.isArray(fbq.queue) ? fbq.queue.length : null,
+          hasCallMethod: typeof fbq.callMethod === "function",
+        });
+      }
+    } catch {
+      /* diagnostic only */
+    }
+  }, 5000);
 }
 
 // Run once on module load — ensures shim + _fbp exist before any event fires
@@ -72,6 +85,7 @@ function isNonProductionHost(): boolean {
     host === "localhost" ||
     host === "127.0.0.1" ||
     host.endsWith(".lovableproject.com") ||
+    host.endsWith(".lovable.app") ||
     host.endsWith(".lovable.dev") ||
     host.endsWith(".sandbox.lovable.dev")
   );
@@ -86,12 +100,9 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     // skip — avoids duplicate init + duplicate PageView.
     const alreadyInited = (window as any).__SF_PIXEL_INITED__ === pixelId;
 
-    // FIX: The previous guard `if (document.getElementById("fb-pixel-script") && alreadyInited)`
-    // short-circuited on cold loads because the <script> is deferred to
-    // requestIdleCallback, so getElementById() returned null when this effect
-    // ran → guard fell through → a SECOND init + PageView fired. That's the
-    // root of the ~95% inflated Events Manager counts.
-    if (alreadyInited) return;
+    // Even when inline code already initialized the pixel, keep running this
+    // effect so PageView CAPI can mirror the shared event_id and the self-test
+    // can verify the SDK registered the pixel after it loads.
 
     // Defer actual script loading to idle time — events are queued by shim
     const schedule =
@@ -129,6 +140,7 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
       // Always-on Advanced Matching: pass anon visitor ID as external_id
       // so EMQ stays high even for logged-out browsers.
       const sfVid = getOrCreateSfVid();
+      grantMetaConsent();
       if (sfVid) {
         window.fbq("init", pixelId, { external_id: sfVid });
       } else {
@@ -143,31 +155,30 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
       (window as any).__SF_PIXEL_INITED__ = pixelId;
     }
 
+    schedulePixelSelfTest(pixelId);
+
     // Mirror PageView to Conversions API with the SAME event_id so Meta's
     // "browser ⇄ server" diagnostic stops flagging missing coverage. Dedup
     // is guaranteed because the inline pixel and the CAPI call share eid.
     // Fire-and-forget; metaCapi internally gates on __SF_META_CAPI_ENABLED__
     // and short-circuits for stores without an access token.
     //
-    // PERF: Defer the import + network call to idle time so the 2.3s CAPI
-    // POST + edge-fn module fetch never competes with React hydration or
-    // LCP image decode. CAPI is purely server-side analytics — its arrival
-    // time is irrelevant to UX. 3s safety timeout guarantees it eventually
-    // fires even on a busy main thread.
+    // Fire immediately after this effect instead of requestIdleCallback: on
+    // slow mobile cold loads, idle can be delayed long enough that PageView
+    // CAPI appears missing in diagnostics even though the pixel event queued.
     if (storeId && pageViewEventId) {
-      const fireCapi = () => {
-        import("@/lib/metaCapi").then((m) => {
-          m.fireMetaCAPI({
-            storeId,
-            eventName: "PageView",
-            eventId: pageViewEventId,
-          });
-        }).catch(() => {});
-      };
-      if (typeof requestIdleCallback !== "undefined") {
-        requestIdleCallback(fireCapi, { timeout: 3000 });
-      } else {
-        setTimeout(fireCapi, 1500);
+      const firedKey = `pv:${storeId}:${pageViewEventId}`;
+      if ((window as any).__SF_PV_CAPI_FIRED__ !== firedKey) {
+        (window as any).__SF_PV_CAPI_FIRED__ = firedKey;
+        setTimeout(() => {
+          import("@/lib/metaCapi").then((m) => {
+            m.fireMetaCAPI({
+              storeId,
+              eventName: "PageView",
+              eventId: pageViewEventId,
+            });
+          }).catch(() => {});
+        }, 0);
       }
     }
 

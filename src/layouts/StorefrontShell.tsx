@@ -7,7 +7,7 @@ import { StorefrontAuthProvider } from "@/contexts/StorefrontAuthContext";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
-import { useFacebookPixel } from "@/hooks/useFacebookPixel";
+import { generateEventId, useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { ensureFbcPersisted, getOrCreateSfVid } from "@/lib/metaEnrichment";
 import { useGA4 } from "@/hooks/useGA4";
 import { usePageviewBeacon } from "@/hooks/usePageviewBeacon";
@@ -183,9 +183,15 @@ export default function StorefrontShell({
     if (lastPageviewPath.current === pathname) return;
     lastPageviewPath.current = pathname;
     if (typeof window !== "undefined" && typeof window.fbq === "function") {
-      try { window.fbq("track", "PageView"); } catch {}
+      const eid = generateEventId();
+      try { window.fbq("track", "PageView", {}, { eventID: eid }); } catch {}
+      if (store?.id) {
+        import("@/lib/metaCapi").then((m) => {
+          m.fireMetaCAPI({ storeId: store.id, eventName: "PageView", eventId: eid });
+        }).catch(() => {});
+      }
     }
-  }, [pathname, (store as any)?.facebook_pixel_id]);
+  }, [pathname, store?.id, (store as any)?.facebook_pixel_id]);
 
   // Persist ?fbclid → _fbc cookie + expose store id globally for tracking helpers
   useEffect(() => {
