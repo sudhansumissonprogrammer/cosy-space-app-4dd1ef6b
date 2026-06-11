@@ -79,13 +79,15 @@ export function trackInitiateCheckout(params: TrackInitiateCheckoutParams) {
       storeId,
       eventName: "InitiateCheckout",
       eventId: eid,
-      value,
-      currency,
-      contentIds,
-      contentType: "product",
-      numItems,
-      contents: pixelPayload.contents,
-    } as any);
+      customData: {
+        content_ids: contentIds,
+        content_type: "product",
+        contents: pixelPayload.contents,
+        value,
+        currency,
+        num_items: numItems,
+      },
+    });
   } catch {
     /* swallow */
   }
