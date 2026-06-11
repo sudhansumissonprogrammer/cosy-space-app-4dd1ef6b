@@ -175,6 +175,7 @@ export default function V22ProductDetail() {
   const [openAccordion, setOpenAccordion] = useState<string | null>("description");
   const [variantPromptOpen, setVariantPromptOpen] = useState(false);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
+  const [buyNowModalOpen, setBuyNowModalOpen] = useState(false);
   const inlineCtaRef = useRef<HTMLDivElement>(null);
 
 
