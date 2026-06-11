@@ -40,6 +40,9 @@ import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 import WarrantyBadge from "@/components/storefront/WarrantyBadge";
 import PdpTrustBadges from "@/components/storefront/PdpTrustBadges";
+import BuyNowPhoneModal from "@/components/storefront/BuyNowPhoneModal";
+import { trackInitiateCheckout } from "@/lib/trackInitiateCheckout";
+import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 
 const PRODUCT_SUFFIX_RE = /-[a-z0-9]{4}$/i;
 
