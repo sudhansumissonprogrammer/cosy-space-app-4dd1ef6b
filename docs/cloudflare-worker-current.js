@@ -3809,7 +3809,9 @@ async function serveStreamedHtml(
       // shell/products/font fallback fetches on real Worker-served storefronts.
       const slugScript = `<script>window.__SF_WORKER__=true;window.__STORE_SLUG__="${escapeHtml(slug)}";${themeHint}${productsHint}${pdpCatHint}</script>`;
 
-      const productImagePreloads = inlineProducts ? _buildProductImagePreloads(inlineProducts, 6) : "";
+      // v8.66.0: home cold load should not queue 6 product images before the
+      // app is interactive; keep the two likely above-fold LCP candidates only.
+      const productImagePreloads = inlineProducts ? _buildProductImagePreloads(inlineProducts, 2) : "";
 
       let perRouteSeoHead = "";
       let earlyStorefrontResult = null;
@@ -3897,7 +3899,7 @@ async function serveStreamedHtml(
       if (Array.isArray(storefrontResult?.data?.products) && storefrontResult.data.products.length > 0) {
         preloaderProductsJson = JSON.stringify(storefrontResult.data.products);
       }
-      const productPreloaderGrid = preloaderProductsJson ? _buildProductPreloaderGrid(preloaderProductsJson, 8) : "";
+      const productPreloaderGrid = preloaderProductsJson ? _buildProductPreloaderGrid(preloaderProductsJson, 2) : "";
 
       let bodyChunk = html.slice(headEnd + 7);
 
