@@ -1280,6 +1280,17 @@ export default function ProductDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Phone-capture popup for Buy Now (skipped when checkout_phone is already saved) */}
+      <BuyNowPhoneModal
+        open={buyNowModalOpen}
+        onOpenChange={setBuyNowModalOpen}
+        storeSlug={store.slug}
+        storeId={store.id}
+        productId={product.id}
+        productName={product.name}
+        source="buy_now_pdp"
+      />
     </div>
   );
 }
