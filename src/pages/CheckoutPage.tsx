@@ -182,6 +182,34 @@ export default function CheckoutPage() {
   // Lazily fetch/create customer record on checkout
   useEffect(() => { ensureCustomer(); }, [ensureCustomer]);
 
+  // Match-Quality booster: as the buyer fills checkout fields (name, email,
+  // phone, city, state, pincode), push them into the global Meta CAPI
+  // registry. Every subsequent CAPI event (Lead, AddPaymentInfo,
+  // InitiateCheckout, Purchase) auto-merges these identity fields, and
+  // setCapiUser also re-inits the pixel with Advanced Matching so the
+  // browser-side em/ph/ct/st/zp hashes ride on every fbq("track", ...) call.
+  // Debounced to avoid thrashing fbq("init") on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
+      const firstName = parts[0];
+      const lastName = parts.length > 1 ? parts.slice(1).join(" ") : undefined;
+      const hasAny = !!(email || phone || fullName || city || state || pincode);
+      if (!hasAny) return;
+      setCapiUser({
+        email: email.trim() || undefined,
+        phone: normalizePhone(phone) || undefined,
+        externalId: customer?.id || undefined,
+        firstName,
+        lastName,
+        city: city.trim() || undefined,
+        state: state.trim() || undefined,
+        zipCode: pincode.trim() || undefined,
+      });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [email, phone, fullName, city, state, pincode, customer?.id]);
+
   // Track URL coupon (e.g. ?coupon=SAVE100 from WhatsApp recovery link) — auto-applied below.
   // Falls back to sessionStorage so the coupon persists across product → cart → checkout navigation.
   const urlCoupon =
