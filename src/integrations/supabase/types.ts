@@ -587,6 +587,45 @@ export type Database = {
           },
         ]
       }
+      landing_leads: {
+        Row: {
+          business: string | null
+          city: string | null
+          created_at: string
+          id: string
+          name: string
+          page_path: string | null
+          phone: string
+          referrer: string | null
+          status: string
+          user_agent: string | null
+        }
+        Insert: {
+          business?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          page_path?: string | null
+          phone: string
+          referrer?: string | null
+          status?: string
+          user_agent?: string | null
+        }
+        Update: {
+          business?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          page_path?: string | null
+          phone?: string
+          referrer?: string | null
+          status?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       media_library: {
         Row: {
           created_at: string
