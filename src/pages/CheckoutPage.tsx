@@ -150,56 +150,21 @@ export default function CheckoutPage() {
     } catch {}
   };
 
-  // Form — pre-fill from localStorage for returning users
-  // Theme-16 BuyNowPhoneModal stores checkout_phone & checkout_address
+  // Form — pre-fill from localStorage for returning users.
+  // BuyNowPhoneModal stores `checkout_phone` (no address — phone only).
   const savedInfo = (() => {
     try { return JSON.parse(localStorage.getItem(`express_checkout_${store.id}`) || "{}"); } catch { return {}; }
   })();
   const buyNowPhone = (() => { try { return localStorage.getItem("checkout_phone") || ""; } catch { return ""; } })();
-  const buyNowAddress = (() => { try { return JSON.parse(localStorage.getItem("checkout_address") || "null"); } catch { return null; } })();
 
   const [fullName, setFullName] = useState(savedInfo.fullName || "");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState(buyNowPhone || savedInfo.phone || "");
-  const [streetAddress, setStreetAddress] = useState(buyNowAddress?.street_address || savedInfo.streetAddress || "");
-  const [city, setCity] = useState(buyNowAddress?.city || savedInfo.city || "");
-  const [state, setState] = useState(buyNowAddress?.state || savedInfo.state || "");
-  const [pincode, setPincode] = useState(buyNowAddress?.pincode || savedInfo.pincode || "");
+  const [streetAddress, setStreetAddress] = useState(savedInfo.streetAddress || "");
+  const [city, setCity] = useState(savedInfo.city || "");
+  const [state, setState] = useState(savedInfo.state || "");
+  const [pincode, setPincode] = useState(savedInfo.pincode || "");
 
-  // Re-check localStorage for late-arriving address data (Theme-16 geocode race condition)
-  useEffect(() => {
-    let filled = false;
-    const checkForAddress = () => {
-      if (filled) return;
-      try {
-        const raw = localStorage.getItem("checkout_address");
-        if (!raw) return;
-        const addr = JSON.parse(raw);
-        if (addr) {
-          filled = true;
-          // Use functional updates to avoid stale closures
-          if (addr.street_address) setStreetAddress((prev: string) => prev || addr.street_address);
-          if (addr.city) setCity((prev: string) => prev || addr.city);
-          if (addr.state) setState((prev: string) => prev || addr.state);
-          if (addr.pincode) setPincode((prev: string) => prev || addr.pincode);
-        }
-      } catch {}
-    };
-    // Event-driven: writers dispatch "checkout_address_ready" on the window after setItem.
-    // Cross-tab fallback via StorageEvent. Single late-tail check at 1.5s covers any
-    // legacy writer that hasn't been updated yet — replaces 25 setInterval ticks.
-    checkForAddress();
-    const onReady = () => checkForAddress();
-    const onStorage = (e: StorageEvent) => { if (e.key === "checkout_address") checkForAddress(); };
-    window.addEventListener("checkout_address_ready", onReady);
-    window.addEventListener("storage", onStorage);
-    const tail = setTimeout(checkForAddress, 1500);
-    return () => {
-      window.removeEventListener("checkout_address_ready", onReady);
-      window.removeEventListener("storage", onStorage);
-      clearTimeout(tail);
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
