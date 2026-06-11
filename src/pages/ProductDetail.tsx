@@ -433,6 +433,14 @@ export default function ProductDetail() {
       value: Number(eventData.value),
       currency: eventData.currency,
     });
+    // GA4 view_item — for GA4 ecommerce funnels + Google Ads remarketing.
+    try {
+      import("@/hooks/useGA4").then((m) => m.ga4Track("view_item", {
+        currency: eventData.currency,
+        value: Number(eventData.value),
+        items: [{ item_id: product.id, item_name: product.name, price: Number(eventData.value), quantity: 1 }],
+      })).catch(() => {});
+    } catch {}
   }, [product?.id]);
 
   // Singular /product/ canonical — consolidates the legacy /products/ alias.
