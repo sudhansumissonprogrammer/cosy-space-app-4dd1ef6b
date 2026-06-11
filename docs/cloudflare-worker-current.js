@@ -6809,7 +6809,7 @@ async function _handleFetch(request, env, ctx) {
       // Shell ready but data not — inject a Promise so React awaits it (one skeleton)
       if (shellResult?.html) {
         const dataPromiseScript = _buildPrefetchPromiseScript(slug);
-        const headPreloads = inlineProductsCold ? _buildProductImagePreloads(inlineProductsCold, 6) : "";
+        const headPreloads = inlineProductsCold ? _buildProductImagePreloads(inlineProductsCold, 2) : "";
         let html = shellResult.html;
         html = html.replace("</head>", `${headPreloads}\n${dataPromiseScript}\n</head>`);
         const headers = new Headers();
@@ -7025,7 +7025,7 @@ async function _handleFetch(request, env, ctx) {
 
       if (shellResult?.html) {
         const dataPromiseScript = _buildPrefetchPromiseScript(resolvedSlugCD);
-        const headPreloads = inlineProductsCdCold ? _buildProductImagePreloads(inlineProductsCdCold, 6) : "";
+        const headPreloads = inlineProductsCdCold ? _buildProductImagePreloads(inlineProductsCdCold, 2) : "";
         let html = shellResult.html;
         html = html.replace("</head>", `${headPreloads}\n${dataPromiseScript}\n</head>`);
         const headers = new Headers();
