@@ -3705,9 +3705,11 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
     productsJson = inlineProducts;
   }
   if (productsJson) {
-    // Phase 1 fix #2: cut from 6→2 preloads (above-fold mobile only).
+    // v8.66.0: keep only first 2 visible product images warm. The hidden
+    // 8-image grid was great for full-grid completion, but on home/category
+    // cold mobile it competes with JS/CSS/fonts and delays perceived settle.
     productImagePreloads = _buildProductImagePreloads(productsJson, 2);
-    productPreloaderGrid = _buildProductPreloaderGrid(productsJson, 8);
+    productPreloaderGrid = _buildProductPreloaderGrid(productsJson, 2);
   }
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
