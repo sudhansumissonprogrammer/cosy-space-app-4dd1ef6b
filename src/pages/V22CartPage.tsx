@@ -172,17 +172,7 @@ export default function V22CartPage() {
                   <button
                     className="flex h-10 sm:h-12 w-full items-center justify-center gap-2 text-xs sm:text-sm font-bold btn-gold"
                     style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
-                    onClick={() => {
-                      try {
-                        trackInitiateCheckout({
-                          storeId: store.id,
-                          value: cartTotal,
-                          currency,
-                          items: items.map((i) => ({ productId: i.productId, variantId: i.variantId, name: i.name, price: i.price, quantity: i.quantity })),
-                        });
-                      } catch {}
-                      navigate(storefrontPath(store.slug, "checkout"));
-                    }}
+                    onClick={() => navigate(storefrontPath(store.slug, "checkout"))}
                   >
                     <ShoppingBag className="h-4 w-4" />
                     Proceed to Checkout
