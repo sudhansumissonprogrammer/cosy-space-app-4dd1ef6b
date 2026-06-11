@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from "react";
-import { getOrCreateSfVid } from "@/lib/metaEnrichment";
+import { ensureFbpCookie, getOrCreateSfVid } from "@/lib/metaEnrichment";
 
 
 declare global {
@@ -26,28 +26,6 @@ function ensureFbqShim() {
   q.version = "2.0";
   q.queue = [];
   f.fbq = q;
-}
-
-/**
- * Pre-warm the `_fbp` first-party cookie BEFORE fbevents.js loads.
- *
- * Why: we defer fbevents.js to requestIdleCallback (~1s after FCP) for speed.
- * But the Conversions API mirror fires immediately and needs `_fbp` to
- * deduplicate against the browser pixel. Without this, server-side PageView
- * has no fbp → Meta treats it as a separate event → EMQ drops.
- *
- * Format must match Meta spec exactly: `fb.<subdomainIndex>.<creationTime>.<randomNumber>`
- * https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/fbp-and-fbc
- */
-function ensureFbpCookie() {
-  if (typeof document === "undefined") return;
-  if (document.cookie.includes("_fbp=")) return; // already set by browser or prior visit
-  const subdomainIndex = 1; // 1 = used directly on the registrable domain (works for www + apex)
-  const creationTime = Date.now();
-  const randomNumber = Math.floor(Math.random() * 10_000_000_000);
-  const fbp = `fb.${subdomainIndex}.${creationTime}.${randomNumber}`;
-  // 90-day cookie (Meta's standard window), top-level path, same-site Lax
-  document.cookie = `_fbp=${fbp}; path=/; max-age=${60 * 60 * 24 * 90}; SameSite=Lax`;
 }
 
 function grantMetaConsent() {
@@ -107,6 +85,7 @@ function isNonProductionHost(): boolean {
     host === "localhost" ||
     host === "127.0.0.1" ||
     host.endsWith(".lovableproject.com") ||
+    host.endsWith(".lovable.app") ||
     host.endsWith(".lovable.dev") ||
     host.endsWith(".sandbox.lovable.dev")
   );
