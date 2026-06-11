@@ -1256,6 +1256,16 @@ export default function V22ProductDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BuyNowPhoneModal
+        open={buyNowModalOpen}
+        onOpenChange={setBuyNowModalOpen}
+        storeSlug={store.slug}
+        storeId={store.id}
+        productId={product.id}
+        productName={product.name}
+        source="buy_now_pdp_v22"
+      />
     </div>
   );
 }
