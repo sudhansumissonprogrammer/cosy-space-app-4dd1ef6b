@@ -9,6 +9,7 @@ import { ArrowLeft, Plus, Minus, ShoppingCart, Tag, Info, ChevronRight, Receipt,
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
+import { trackInitiateCheckout } from "@/lib/trackInitiateCheckout";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import type { CSSProperties } from "react";
@@ -312,7 +313,17 @@ export default function V19CartPage() {
             <span className="text-[11px] font-bold" style={{ color: GREEN }}>TOTAL</span>
           </div>
           <button
-            onClick={() => navigate(storefrontPath(slug, "checkout"))}
+            onClick={() => {
+              try {
+                trackInitiateCheckout({
+                  storeId: store.id,
+                  value: cartTotal,
+                  currency: store.currency || "INR",
+                  items: items.map((i) => ({ productId: i.productId, variantId: i.variantId, name: i.name, price: i.price, quantity: i.quantity })),
+                });
+              } catch {}
+              navigate(storefrontPath(slug, "checkout"));
+            }}
             className="flex-1 h-12 rounded-lg flex items-center justify-between px-4 text-white text-[14px] font-extrabold active:scale-[0.98] transition-transform"
             style={{ background: GREEN }}
           >
