@@ -183,7 +183,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.62.0-cold-pop-elimination";
+const WORKER_VERSION = "8.63.0-pdp-instant-cache-lcp-preload";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
