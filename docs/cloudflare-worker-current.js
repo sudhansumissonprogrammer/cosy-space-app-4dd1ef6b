@@ -4578,7 +4578,7 @@ function _buildPdpResponse(data, cacheKey, kvKey, ctx, env, source) {
     ctx.waitUntil(
       Promise.all([
         cache.put(cacheKey, response.clone()).catch(() => {}),
-        ctx?.__skipKvWarm ? Promise.resolve() : kvPutLongTail(env, kvKey, body, { expirationTtl: PDP_KV_TTL }), // v8.19.0 B
+        ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: PDP_KV_TTL }), // v8.63.0: dedup not long-tail — ad first-click was always cold
       ]),
     );
   } else {
