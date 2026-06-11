@@ -585,22 +585,10 @@ export default function ProductDetail() {
     });
     closeCart();
 
-    // InitiateCheckout — fires Pixel + CAPI (deduped) + GA4 begin_checkout.
-    // Single source of truth so main Buy Now and sticky Buy Now stay in sync.
-    try {
-      trackInitiateCheckout({
-        storeId: store.id,
-        value: variantPrice * quantity,
-        currency,
-        items: [{
-          productId: product.id,
-          variantId: selectedVariant?.id,
-          name: product.name,
-          price: variantPrice,
-          quantity,
-        }],
-      });
-    } catch {}
+    // NOTE: InitiateCheckout is intentionally NOT fired here. CheckoutPage
+    // fires it once at payment-intent time (with full user identity for
+    // CAPI dedup). Firing it here too would double-count IC in Meta.
+
 
     // Phone-lead capture: if we already have a valid phone for this device,
     // skip the modal and go straight to checkout (Quick Buy returning shopper).

@@ -574,20 +574,10 @@ export default function V22ProductDetail() {
     });
     closeCart();
 
-    try {
-      trackInitiateCheckout({
-        storeId: store.id,
-        value: variantPrice * quantity,
-        currency,
-        items: [{
-          productId: product.id,
-          variantId: selectedVariant?.id,
-          name: product.name,
-          price: variantPrice,
-          quantity,
-        }],
-      });
-    } catch {}
+    // InitiateCheckout is fired once by CheckoutPage at payment-intent time
+    // (with user identity for CAPI dedup). Don't fire from PDP — that would
+    // double-count IC in Meta.
+
 
     let savedPhone: string | null = null;
     try { savedPhone = localStorage.getItem("checkout_phone"); } catch {}
