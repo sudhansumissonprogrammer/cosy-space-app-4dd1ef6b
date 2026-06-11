@@ -228,6 +228,7 @@
             var pid=w.__STOREFRONT_DATA__&&w.__STOREFRONT_DATA__.store&&w.__STOREFRONT_DATA__.store.facebook_pixel_id;
             if(pid&&w.__SF_PIXEL_INITED__!==pid){
               w.__SF_PIXEL_INITED__=pid;
+              w.fbq('consent','grant');
               w.fbq('init',pid);
               /* Generate event_id so the same PageView fired server-side via
                  CAPI (see useFacebookPixel.ts) deduplicates against this one.
