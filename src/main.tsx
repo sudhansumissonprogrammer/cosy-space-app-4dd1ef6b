@@ -23,8 +23,11 @@ installChunkLoadRecovery();
 
 // Capture ?ref=SBP… anywhere in the site (landing, signup, storefront subdomain).
 // Runs before App mounts so the cookie is set even on the landing fast-path.
+// PERF: /* @vite-ignore */ stops Vite from emitting a <link rel="modulepreload">
+// hint for this chunk, so it only downloads on URLs that actually contain ?ref=.
+// Without this, every cold visit fetched the 1KB chunk in the critical window.
 if (typeof window !== "undefined" && window.location.search.includes("ref=")) {
-  import("@/lib/referralTracking")
+  import(/* @vite-ignore */ "@/lib/referralTracking")
     .then(({ captureReferralFromURL }) => captureReferralFromURL())
     .catch(() => {});
 }
