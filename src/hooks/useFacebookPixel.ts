@@ -121,12 +121,9 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     // skip — avoids duplicate init + duplicate PageView.
     const alreadyInited = (window as any).__SF_PIXEL_INITED__ === pixelId;
 
-    // FIX: The previous guard `if (document.getElementById("fb-pixel-script") && alreadyInited)`
-    // short-circuited on cold loads because the <script> is deferred to
-    // requestIdleCallback, so getElementById() returned null when this effect
-    // ran → guard fell through → a SECOND init + PageView fired. That's the
-    // root of the ~95% inflated Events Manager counts.
-    if (alreadyInited) return;
+    // Even when inline code already initialized the pixel, keep running this
+    // effect so PageView CAPI can mirror the shared event_id and the self-test
+    // can verify the SDK registered the pixel after it loads.
 
     // Defer actual script loading to idle time — events are queued by shim
     const schedule =
@@ -164,6 +161,7 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
       // Always-on Advanced Matching: pass anon visitor ID as external_id
       // so EMQ stays high even for logged-out browsers.
       const sfVid = getOrCreateSfVid();
+      grantMetaConsent();
       if (sfVid) {
         window.fbq("init", pixelId, { external_id: sfVid });
       } else {
@@ -177,6 +175,8 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
       window.fbq("track", "PageView", {}, { eventID: pageViewEventId });
       (window as any).__SF_PIXEL_INITED__ = pixelId;
     }
+
+    schedulePixelSelfTest(pixelId);
 
     // Mirror PageView to Conversions API with the SAME event_id so Meta's
     // "browser ⇄ server" diagnostic stops flagging missing coverage. Dedup
