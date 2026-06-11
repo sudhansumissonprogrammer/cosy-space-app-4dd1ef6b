@@ -1117,13 +1117,11 @@ export default function CheckoutPage() {
           price: item.price,
           quantity: item.quantity,
         })),
-        lead: {
-          name: fullName.trim(),
-          phone: normalizePhone(phone),
-          product_name: checkoutItems.map((i) => i.name).join(", "),
-          product_id: checkoutItems.length === 1 ? checkoutItems[0].productId : null,
-          source: "website_order",
-        },
+        // Intentionally NOT sending `lead` here. A customer who completes
+        // checkout is no longer a "lead" — the BuyNow popup already saved
+        // their phone earlier (if they used it), and the dashboard hides any
+        // lead whose phone has a non-cancelled order. Sending lead here would
+        // create a redundant customer_leads row that's immediately hidden.
         coupon_id: appliedCoupon?.id ?? null,
         abandoned_cart_id: abandonedCartId ?? null,
         // Meta tracking signals — server stores these on the order row and uses

@@ -820,13 +820,7 @@ export default function V22CheckoutPage() {
           price: item.price,
           quantity: item.quantity,
         })),
-        lead: {
-          name: fullName.trim(),
-          phone: normalizePhone(phone),
-          product_name: checkoutItems.map((i) => i.name).join(", "),
-          product_id: checkoutItems.length === 1 ? checkoutItems[0].productId : null,
-          source: "website_order",
-        },
+        // No `lead` — see CheckoutPage.tsx for rationale (purchasers are not leads).
         coupon_id: appliedCoupon?.id ?? null,
         abandoned_cart_id: abandonedCartId ?? null,
         // Meta tracking signals — server stores these on the order row and uses
