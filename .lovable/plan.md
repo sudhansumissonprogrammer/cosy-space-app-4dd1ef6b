@@ -1,80 +1,89 @@
+# Fix: Buy Now lead capture + InitiateCheckout tracking across all themes
 
-# Emil Design Engineering — Tiers E, F, G, H
+## Goals
+1. Show a phone-capture popup when shopper taps **Buy Now** (main button OR sticky bar) on any storefront theme — captures phone, saves to that store's `customer_leads`, autofills phone on the checkout page.
+2. Fire **InitiateCheckout** (Meta Pixel + CAPI dedupe + GA4 `begin_checkout`) when shopper proceeds toward checkout, so main and sticky buttons have identical tracking and the funnel gap closes.
+3. Do all of the above **without** any Google Maps / geolocation / reverse-geocode call (the prior version had those — this version drops them entirely).
 
-Execute all four remaining tiers in one pass, then re-run the skill audit and report any remaining gaps.
+## Current state — what I verified
 
----
+| Item | Status |
+|---|---|
+| `BuyNowPhoneModal.tsx` | Exists. Captures phone, saves to `customer_leads`, autofills checkout via `localStorage["checkout_phone"]`. Also calls geolocation + reverse-geocode → we will **remove that call**. |
+| `customer_leads` table | Already store-scoped. RLS: store owners SELECT/DELETE their own, anyone INSERT, admins manage all. |
+| `/dashboard/stores/:storeSlug/leads` | Already exists (`CustomerLeads.tsx`) and reads from `customer_leads`. |
+| Main PDP (`ProductDetail.tsx`) | `handleBuyNow` currently does **add-to-cart → navigate to checkout** with **no tracking and no modal** (the modal call was commented out). Main + sticky Buy Now both call same handler — tracking parity already guaranteed once we add it. |
+| V22 PDP (`V22ProductDetail.tsx`) | Same shape — main + sticky Buy Now → `handleBuyNow` with no tracking. |
+| V19/V20 PDP | Add-to-cart only. **No Buy Now button**, so no popup needed there. (V19/V20 cart pages do have "Proceed to Checkout" — covered below.) |
+| Cart pages (4 variants) | All call `navigate(checkout)` with **no InitiateCheckout** firing. |
+| Checkout autofill | Already reads `localStorage["checkout_phone"]` (line 158) and uses it as the initial `phone` state. ✅ Works as-is — we only need to make sure the modal writes it. |
+| `fireMetaCAPI` supports `InitiateCheckout` | ✅ Already in the allowed event set (line 98). |
+| `ga4Track` helper | ✅ Exists in `src/hooks/useGA4.ts`. |
 
-## Tier E — Shared primitives + page sweep
+## What I will change
 
-1. **`src/components/ui/hover-card.tsx`** — add `style={{ transformOrigin: "var(--radix-hover-card-content-transform-origin)" }}` to Content.
-2. **`src/components/ui/menubar.tsx`** — add `style={{ transformOrigin: "var(--radix-menubar-content-transform-origin)" }}` to both MenubarContent and MenubarSubContent.
-3. **`src/components/ui/context-menu.tsx`** — add `style={{ transformOrigin: "var(--radix-context-menu-content-transform-origin)" }}` to both Content and SubContent.
-4. **`src/components/ui/dialog.tsx`** — Close button: `transition-opacity` → `transition-[transform,opacity] duration-150 ease-out active:scale-95`. Keep Dialog itself centered (modals are exempt).
-5. **`src/components/ui/sheet.tsx`** — fix `data-[state=open]:duration-400` (invalid Tailwind class) → `data-[state=open]:duration-500`.
-6. **Mass page sweep** — sed `transition-all` → `transition-[transform,opacity,colors,box-shadow]` across `src/pages/**` and `src/layouts/**` (~110 hits, ~35 files).
+### 1. Strip Maps/geolocation from `BuyNowPhoneModal.tsx`
+- Delete the `triggerGeolocation()` function and all its call sites.
+- Delete the late-arriving `checkout_address` re-check effect in `CheckoutPage.tsx` (lines ~169–202) — it only existed to catch the reverse-geocode race. Leave the `localStorage["checkout_phone"]` autofill untouched.
+- Keep: phone validation, `customer_leads` insert (per-store), auto-login via `create-guest-account`, `localStorage["checkout_phone"]` write, navigate to checkout.
+- Result: pop-up flow is **phone-only**, no location prompt, no third-party API.
 
----
+### 2. Re-enable modal on Buy Now — every theme
 
-## Tier F — Decorative infinites + skeleton
+**`src/pages/ProductDetail.tsx`** (covers themes V1–V18, V21):
+- Add modal-open state.
+- Rewrite `handleBuyNow` so that:
+  - If `localStorage["checkout_phone"]` already has a valid 10-digit number → save a fresh `customer_leads` row, fire tracking, add to cart, navigate straight to checkout (no popup — returning shopper).
+  - Otherwise → add to cart, open `BuyNowPhoneModal`. Modal's "Continue" saves the lead, writes `checkout_phone`, navigates to checkout.
+- Render `<BuyNowPhoneModal>` once near the bottom of the JSX. Pass `storeId`, `productId`, `productName`, `source="buy_now_pdp"`.
 
-1. **`src/components/ui/skeleton.tsx`** — replace `animate-pulse` with a custom shimmer keyframe (gradient sweep, 1.6s ease-in-out infinite, gated behind `prefers-reduced-motion`). Adds `.skeleton-shimmer` class + `@keyframes skeleton-shimmer` to `index.css`.
-2. **`src/index.css` audit** — cap or gate:
-   - `cart-breathe` (line 528) — keep infinite but wrap in `@media (prefers-reduced-motion: no-preference)` and add `animation-play-state: paused` when tab hidden.
-   - `cta-shimmer-sweep` (line 723) — gate behind `prefers-reduced-motion: no-preference`.
-   - `gallery-dot-pulse` (lines 793, 929) + `sale-badge-pulse` (line 834) — keep infinite (very subtle) but gate behind reduced-motion.
-   - `marquee` (line 239) — add reduced-motion guard.
-   - **Dashboard live-store dot** (`Dashboard.tsx:264`) — replace `animate-pulse` with static + subtle ring.
+**`src/pages/V22ProductDetail.tsx`**: same change, `source="buy_now_pdp_v22"`.
 
----
+**V19/V20 PDPs**: skipped — they have no Buy Now button. (If you want one added later, separate ask.)
 
-## Tier G — Touch hover gating
+### 3. Fire InitiateCheckout — every theme, every entry point
 
-Migrate all unguarded `hover:scale-105` / `hover:scale-110` on touch-prone storefront components to the existing `hh:hover-scale-105` / `hh:hover-scale-110` utilities (defined last turn in `index.css`).
+Create a tiny shared helper `src/lib/trackInitiateCheckout.ts` so the call site is one line and the payload is consistent:
 
-Target files (~20):
-- `ProductCardStyle1/2/3/5/7/8/9/10.tsx`, `ProductCardV17.tsx`
-- `QuickViewModal.tsx`, `FloatingWhatsApp.tsx`, `UniversalCategories.tsx`, `StorefrontFooter.tsx`
-- `pages/ProductDetail.tsx`, `V22ProductDetail.tsx`
-- `pages/StorefrontHomeV2.tsx`, `StorefrontHomeV17.tsx`, `StorefrontContact.tsx`, `StorefrontCategories.tsx`, `ThemeShowcase.tsx`
+```text
+trackInitiateCheckout({
+  storeId, productId?, productName?,
+  value, currency, numItems,
+  contentIds: [productId]
+})
+```
 
-Rule: only touch-prone elements (cards, CTAs, icons clicked on mobile) get the swap. Desktop-only admin UIs keep `hover:scale-*`.
+It fires three things with a shared `event_id`:
+- `fbPixelTrack("InitiateCheckout", payload, eid)` — browser Pixel
+- `fireMetaCAPI({ eventName: "InitiateCheckout", eventId: eid, ...payload })` — server CAPI (dedupes by eid)
+- `ga4Track("begin_checkout", { items, value, currency })` — GA4
 
----
+Call sites added:
+- `handleBuyNow` in `ProductDetail.tsx` (covers main + sticky — same function)
+- `handleBuyNow` in `V22ProductDetail.tsx` (covers main + sticky — same function)
+- `Proceed to Checkout` onClick in: `CartPage.tsx`, `V19CartPage.tsx`, `V20CartPage.tsx`, `V22CartPage.tsx`
 
-## Tier H — Micro-polish
+Result: every path from PDP/cart → checkout fires identical InitiateCheckout. Meta's mid-funnel signal stops being empty.
 
-1. **`src/index.css:605` ripple-wave** — `transform: scale(0)` → `transform: scale(0.15); opacity: 0.4`.
-2. **`src/components/storefront/DeliveryTimeline.tsx:81-82`** — `dt-stamp` keyframe start `scale(0.6)`; `dt-particle` start `scale(0.2)`.
-3. **`src/components/ui/input-otp.tsx:44`** — caret `duration-1000` → `duration-700`.
-4. **`src/index.css:880` `.img-blurup`** — `ease` → `cubic-bezier(0.22, 1, 0.36, 1)`.
-5. **`src/index.css:887` `.logo-shrink`** — `ease` → `cubic-bezier(0.22, 1, 0.36, 1)`.
-6. **Pulse keyframe consolidation** — leave standalone (merging risks visual regressions across themes); just confirm all 3 are gated by reduced-motion in Tier F.
+### 4. Leads visibility — no DB changes needed
+`customer_leads` is already store-scoped via RLS (`is_store_owner(store_id)`). The dashboard page already reads it. As long as the modal inserts the correct `store_id` (it does — we pass it in), leads will show up automatically in the right store's **Dashboard → Customer Leads** page, with the new `source` values (`buy_now_pdp`, `buy_now_pdp_v22`) visible in the source column.
 
----
+## Files touched
+- `src/components/storefront/BuyNowPhoneModal.tsx` — remove geolocation/reverse-geocode (~50 lines deleted)
+- `src/pages/CheckoutPage.tsx` — remove `checkout_address` race-condition effect (~35 lines deleted)
+- `src/pages/ProductDetail.tsx` — wire modal + tracking into `handleBuyNow`, render modal
+- `src/pages/V22ProductDetail.tsx` — same as above
+- `src/pages/CartPage.tsx`, `V19CartPage.tsx`, `V20CartPage.tsx`, `V22CartPage.tsx` — fire InitiateCheckout on Proceed click
+- **New:** `src/lib/trackInitiateCheckout.ts` — shared helper
 
-## After all edits — re-run the skill audit
+## Not touched (out of scope of this fix)
+- WhatsApp order button on PDP — different funnel, has its own tracking pattern.
+- Reverse-geocode edge function — left in place (used elsewhere on checkout's manual "use my location" button); we just stop auto-calling it from the popup.
+- Landing page `LeadPopup` — separate marketing funnel, unrelated.
 
-Run the same scans (transition-all, ease-in, scale(0), unguarded hover, infinite animations, framer-motion shorthand) and produce a fresh Before/After table of anything still outstanding. Likely candidates that will remain (acknowledge upfront, don't fix this pass):
-- Page-level `transition-all` inside conditional class strings that sed can't catch
-- Marketing landing page animations (intentionally decorative)
-- Theme V19/V20 custom keyframes that may have their own design intent
-
----
-
-## Technical notes
-
-- All edits are presentation-layer; zero changes to data, RPCs, edge functions, or Cloudflare worker.
-- No new dependencies. Reuses existing easing tokens in `index.css`.
-- Bundle size change: ~0 (class string edits only). Skeleton custom CSS adds ~200 bytes.
-- Verification: spot-check Dialog close press, skeleton shimmer on Dashboard load, product card hover on mobile DevTools, OTP caret blink.
-
----
-
-## Execution order
-
-1. Tier E (primitives + sed sweep) — single batch
-2. Tier F (skeleton + index.css guards) — single batch
-3. Tier G (sed-replace hover:scale → hh:hover-scale on 20 files)
-4. Tier H (5 surgical edits)
-5. Re-run audit scans → fresh report
+## How to verify after build
+1. On any storefront PDP, tap **Buy Now** with a clean browser → modal opens, ask phone, on Continue: lead lands in **Dashboard → Customer Leads** for that store, checkout opens with phone prefilled, no location prompt appears.
+2. Reload the same product, tap **Buy Now** again → modal is skipped (returning shopper), straight to checkout, phone prefilled, a fresh lead row added.
+3. Tap the sticky bottom Buy Now (scroll past inline CTA) → same modal/flow.
+4. Open Meta Events Manager → InitiateCheckout fires from both browser (Pixel) and server (CAPI) with the same event_id, deduped.
+5. GA4 Realtime → `begin_checkout` event appears.

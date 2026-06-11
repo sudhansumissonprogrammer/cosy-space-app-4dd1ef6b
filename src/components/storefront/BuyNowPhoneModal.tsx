@@ -1,8 +1,21 @@
 /**
- * BuyNowPhoneModal — Theme 16 exclusive.
- * Collects phone, triggers geolocation + reverse-geocode,
- * saves to localStorage, then redirects to checkout.
- * If phone already saved, skips modal and goes direct to checkout (Quick Buy).
+ * BuyNowPhoneModal — Phone-only Quick Buy lead capture.
+ *
+ * Flow:
+ *  1. Shopper taps "Buy Now" on a PDP.
+ *  2. We open this modal asking for a 10-digit phone.
+ *  3. On submit:
+ *     - Save a lead row in `customer_leads` for this store (shows in dashboard
+ *       → Customer Leads). Fire-and-forget; never blocks navigation.
+ *     - Persist phone in localStorage so the checkout page auto-fills it.
+ *     - Auto-login the shopper by phone (`create-guest-account` edge fn) so
+ *       checkout treats them as a logged-in customer.
+ *     - Navigate to checkout.
+ *  4. If a valid phone is already in localStorage (returning shopper), the
+ *     modal is skipped entirely and we go straight to checkout (Quick Buy).
+ *
+ * IMPORTANT: no geolocation, no reverse-geocode, no Google Maps API.
+ * City/address are typed by the shopper on the checkout page.
  */
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -85,51 +98,6 @@ async function autoLoginByPhone(storeId: string | undefined, phone: string) {
   }
 }
 
-/** Fire-and-forget geolocation + reverse geocode */
-function triggerGeolocation() {
-  if (!("geolocation" in navigator)) {
-    console.warn("[BuyNow] Geolocation not available");
-    return;
-  }
-
-  const doGeocode = async (pos: GeolocationPosition) => {
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const res = await fetch(`${supabaseUrl}/functions/v1/reverse-geocode`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: anonKey,
-          Authorization: `Bearer ${anonKey}`,
-        },
-        body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      });
-      const data = await res.json();
-      if (data?.success && data?.address) {
-        localStorage.setItem("checkout_address", JSON.stringify(data.address));
-        // Notify same-tab listeners (StorageEvent only fires cross-tab)
-        try { window.dispatchEvent(new Event("checkout_address_ready")); } catch {}
-        console.log("[BuyNow] Address saved:", data.address);
-      }
-    } catch (err) {
-      console.warn("[BuyNow] Geocode failed:", err);
-    }
-  };
-
-  navigator.geolocation.getCurrentPosition(
-    (pos) => doGeocode(pos),
-    () => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => doGeocode(pos),
-        (err2) => console.warn("[BuyNow] All geo failed:", err2.message),
-        { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 }
-      );
-    },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 600000 }
-  );
-}
-
 export default function BuyNowPhoneModal({
   open,
   onOpenChange,
@@ -165,7 +133,6 @@ export default function BuyNowPhoneModal({
         onBeforeNavigate?.();
         onOpenChange(false);
         navigate(storefrontPath(storeSlug, "checkout"));
-        triggerGeolocation();
       }
     } catch {}
   }, [open]);
@@ -192,7 +159,6 @@ export default function BuyNowPhoneModal({
     onBeforeNavigate?.();
     onOpenChange(false);
     navigate(storefrontPath(storeSlug, "checkout"));
-    triggerGeolocation();
   };
 
   return (

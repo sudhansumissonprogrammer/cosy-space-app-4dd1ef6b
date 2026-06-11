@@ -9,6 +9,7 @@ import { useCart } from "@/contexts/CartContext";
 import { ArrowLeft, Minus, Plus, ShoppingCart, Trash2, MessageCircle, Package, ShoppingBag, Truck, Check } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
+import { trackInitiateCheckout } from "@/lib/trackInitiateCheckout";
 
 export default function CartPage() {
   const store = useOutletContext<StoreData>();

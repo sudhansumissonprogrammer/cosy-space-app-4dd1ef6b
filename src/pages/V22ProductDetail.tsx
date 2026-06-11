@@ -37,6 +37,9 @@ import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
+import BuyNowPhoneModal from "@/components/storefront/BuyNowPhoneModal";
+import { trackInitiateCheckout } from "@/lib/trackInitiateCheckout";
+import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 
 const PRODUCT_SUFFIX_RE = /-[a-z0-9]{4}$/i;
 
@@ -172,6 +175,7 @@ export default function V22ProductDetail() {
   const [openAccordion, setOpenAccordion] = useState<string | null>("description");
   const [variantPromptOpen, setVariantPromptOpen] = useState(false);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
+  const [buyNowModalOpen, setBuyNowModalOpen] = useState(false);
   const inlineCtaRef = useRef<HTMLDivElement>(null);
 
 
@@ -569,7 +573,30 @@ export default function V22ProductDetail() {
       quantity,
     });
     closeCart();
-    navigate(storefrontPath(store.slug, "checkout"));
+
+    try {
+      trackInitiateCheckout({
+        storeId: store.id,
+        value: variantPrice * quantity,
+        currency,
+        items: [{
+          productId: product.id,
+          variantId: selectedVariant?.id,
+          name: product.name,
+          price: variantPrice,
+          quantity,
+        }],
+      });
+    } catch {}
+
+    let savedPhone: string | null = null;
+    try { savedPhone = localStorage.getItem("checkout_phone"); } catch {}
+    const normalized = normalizePhone(savedPhone);
+    if (normalized && isValidIndianPhone(normalized)) {
+      navigate(storefrontPath(store.slug, "checkout"));
+    } else {
+      setBuyNowModalOpen(true);
+    }
   };
 
 
@@ -1229,6 +1256,16 @@ export default function V22ProductDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BuyNowPhoneModal
+        open={buyNowModalOpen}
+        onOpenChange={setBuyNowModalOpen}
+        storeSlug={store.slug}
+        storeId={store.id}
+        productId={product.id}
+        productName={product.name}
+        source="buy_now_pdp_v22"
+      />
     </div>
   );
 }

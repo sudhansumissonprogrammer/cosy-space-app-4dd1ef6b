@@ -40,6 +40,9 @@ import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 import WarrantyBadge from "@/components/storefront/WarrantyBadge";
 import PdpTrustBadges from "@/components/storefront/PdpTrustBadges";
+import BuyNowPhoneModal from "@/components/storefront/BuyNowPhoneModal";
+import { trackInitiateCheckout } from "@/lib/trackInitiateCheckout";
+import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 
 const PRODUCT_SUFFIX_RE = /-[a-z0-9]{4}$/i;
 
@@ -175,6 +178,7 @@ export default function ProductDetail() {
   const [openAccordion, setOpenAccordion] = useState<string | null>("description");
   const [variantPromptOpen, setVariantPromptOpen] = useState(false);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
+  const [buyNowModalOpen, setBuyNowModalOpen] = useState(false);
   const inlineCtaRef = useRef<HTMLDivElement>(null);
 
 
@@ -569,13 +573,7 @@ export default function ProductDetail() {
       return;
     }
 
-    // TEMP DISABLED: Theme 16/21 phone-lead modal + map autofill flow.
-    // Reverting to direct add-to-cart → checkout for instant Quick Buy.
-    // To re-enable, restore the theme-16 / theme-21 branch below.
-    // if ((store as any).theme === "theme-16" || (store as any).theme === "theme-21") {
-    //   addToCart({ ... }); closeCart(); setBuyNowModalOpen(true); return;
-    // }
-
+    // Add to cart first so it's available either way.
     addToCart({
       productId: product.id,
       variantId: selectedVariant?.id,
@@ -586,8 +584,38 @@ export default function ProductDetail() {
       quantity,
     });
     closeCart();
-    navigate(storefrontPath(store.slug, "checkout"));
+
+    // InitiateCheckout — fires Pixel + CAPI (deduped) + GA4 begin_checkout.
+    // Single source of truth so main Buy Now and sticky Buy Now stay in sync.
+    try {
+      trackInitiateCheckout({
+        storeId: store.id,
+        value: variantPrice * quantity,
+        currency,
+        items: [{
+          productId: product.id,
+          variantId: selectedVariant?.id,
+          name: product.name,
+          price: variantPrice,
+          quantity,
+        }],
+      });
+    } catch {}
+
+    // Phone-lead capture: if we already have a valid phone for this device,
+    // skip the modal and go straight to checkout (Quick Buy returning shopper).
+    // Otherwise open the modal — it saves a lead, persists the phone, and then
+    // navigates to checkout itself.
+    let savedPhone: string | null = null;
+    try { savedPhone = localStorage.getItem("checkout_phone"); } catch {}
+    const normalized = normalizePhone(savedPhone);
+    if (normalized && isValidIndianPhone(normalized)) {
+      navigate(storefrontPath(store.slug, "checkout"));
+    } else {
+      setBuyNowModalOpen(true);
+    }
   };
+
 
 
   const handleWishlist = () => {
@@ -1252,6 +1280,17 @@ export default function ProductDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Phone-capture popup for Buy Now (skipped when checkout_phone is already saved) */}
+      <BuyNowPhoneModal
+        open={buyNowModalOpen}
+        onOpenChange={setBuyNowModalOpen}
+        storeSlug={store.slug}
+        storeId={store.id}
+        productId={product.id}
+        productName={product.name}
+        source="buy_now_pdp"
+      />
     </div>
   );
 }
