@@ -22,7 +22,7 @@ const FinalCTA = lazy(() => import("@/components/landing/FinalCTA"));
 const Footer = lazy(() => import("@/components/landing/Footer"));
 const LandingWhatsApp = lazy(() => import("@/components/landing/LandingWhatsApp"));
 const ExitIntentPopup = lazy(() => import("@/components/landing/ExitIntentPopup"));
-const LeadPopup = lazy(() => import("@/components/landing/LeadPopup"));
+
 
 const Index = () => {
   // Mount JSON-LD quickly. AI crawlers (Perplexity, ChatGPT-User) often only
@@ -61,7 +61,7 @@ const Index = () => {
           <LazyMount minHeight={400}><FinalCTA /></LazyMount>
           <LazyMount minHeight={0}><LandingWhatsApp /></LazyMount>
           <LazyMount minHeight={0}><ExitIntentPopup /></LazyMount>
-          <LazyMount minHeight={0}><LeadPopup /></LazyMount>
+          
           {seoReady && <LandingJsonLd />}
         </Suspense>
       </main>
