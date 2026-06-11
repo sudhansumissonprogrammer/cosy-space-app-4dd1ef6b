@@ -21,6 +21,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI, getMetaCookies } from "@/lib/metaCapi";
+import { setCapiUser } from "@/lib/metaEnrichment";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import { estimateDelivery, type DeliveryEstimate } from "@/lib/deliveryEstimate";
@@ -200,6 +201,28 @@ export default function V22CheckoutPage() {
 
   // Lazily fetch/create customer record on checkout
   useEffect(() => { ensureCustomer(); }, [ensureCustomer]);
+
+  // Match-Quality booster: push checkout form identity into the global
+  // Meta CAPI registry + Pixel Advanced Matching. See CheckoutPage.tsx for
+  // full rationale. Debounced 400ms to avoid re-init thrash on every key.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const hasAny = !!(email || phone || fullName || city || state || pincode);
+      if (!hasAny) return;
+      const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
+      setCapiUser({
+        email: email.trim() || undefined,
+        phone: normalizePhone(phone) || undefined,
+        externalId: customer?.id || undefined,
+        firstName: parts[0],
+        lastName: parts.length > 1 ? parts.slice(1).join(" ") : undefined,
+        city: city.trim() || undefined,
+        state: state.trim() || undefined,
+        zipCode: pincode.trim() || undefined,
+      });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [email, phone, fullName, city, state, pincode, customer?.id]);
 
   // Track URL coupon (e.g. ?coupon=SAVE100 from WhatsApp recovery link) — auto-applied below.
   // Falls back to sessionStorage so the coupon persists across product → cart → checkout navigation.
