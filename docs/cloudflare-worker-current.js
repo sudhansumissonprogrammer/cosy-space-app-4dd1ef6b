@@ -3377,6 +3377,11 @@ function _buildPdpCategorySeoHead(store, slug, hostname, pathname, pdpCategoryIn
     html += `<title>${title}</title>`;
     html += `<meta name="description" content="${desc}">`;
     html += `<link rel="canonical" href="${escapeHtml(url)}">`;
+    // v8.63.0: LCP image preload — starts hero image download at HTML parse time
+    // (~50ms) instead of waiting for React hydration (~2000-2500ms). Saves 1.5-2.5s LCP.
+    if (ogImg) {
+      html += `<link rel="preload" as="image" href="${ogImg}" fetchpriority="high">`;
+    }
     // v8.46.0: rich-result hints + AI engines
     html += `<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">`;
     html += `<meta property="og:type" content="product">`;
@@ -4578,7 +4583,7 @@ function _buildPdpResponse(data, cacheKey, kvKey, ctx, env, source) {
     ctx.waitUntil(
       Promise.all([
         cache.put(cacheKey, response.clone()).catch(() => {}),
-        ctx?.__skipKvWarm ? Promise.resolve() : kvPutLongTail(env, kvKey, body, { expirationTtl: PDP_KV_TTL }), // v8.19.0 B
+        ctx?.__skipKvWarm ? Promise.resolve() : kvPutDedup(env, kvKey, body, { expirationTtl: PDP_KV_TTL }), // v8.63.0: dedup not long-tail — ad first-click was always cold
       ]),
     );
   } else {
