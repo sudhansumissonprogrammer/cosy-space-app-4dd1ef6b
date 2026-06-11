@@ -3870,6 +3870,10 @@ async function serveStreamedHtml(
         "<head>",
         `<head>${themeCss}${productImagePreloads}${perRouteSeoHead}${prebuiltHead || ""}${slugScript}`,
       );
+      // v8.66.0: guard against legacy/prebuilt shells carrying an empty
+      // `<link rel="preload" as="image">`; it wastes a preload slot and can
+      // slow the real first product image on mobile cold loads.
+      headChunk = headChunk.replace(/<link\s+rel=["']preload["']\s+as=["']image["']\s*\/?>(\s*)/gi, "$1");
       headChunk += "</head>";
 
       await writeChunk(enc.encode(headChunk));
