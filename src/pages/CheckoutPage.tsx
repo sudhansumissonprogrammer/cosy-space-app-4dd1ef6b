@@ -20,6 +20,7 @@ import { useCart } from "@/contexts/CartContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
+import { ga4Track } from "@/hooks/useGA4";
 import { fireMetaCAPI, getMetaCookies } from "@/lib/metaCapi";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
@@ -1369,6 +1370,21 @@ export default function CheckoutPage() {
         purchaseEventIdRef.current,
       );
     }
+    // GA4 purchase — for Google Ads conversion tracking + GA4 ecommerce reports.
+    try {
+      ga4Track("purchase", {
+        transaction_id: newOrderId,
+        value: total,
+        currency,
+        items: checkoutItems.map((i) => ({
+          item_id: i.productId,
+          item_name: i.name,
+          item_variant: i.variantId,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+      });
+    } catch {}
     // Funnel: purchase event for analytics dashboard
     try {
       fireStorefrontEvent({
