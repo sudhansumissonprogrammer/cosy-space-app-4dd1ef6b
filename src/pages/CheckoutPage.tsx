@@ -1339,8 +1339,8 @@ export default function CheckoutPage() {
     try { sessionStorage.removeItem("pending_coupon"); localStorage.removeItem("pending_coupon"); } catch {}
     if (!isSingleMode) clearCart();
     saveExpressInfo();
-    // Clean up theme-16 BuyNow modal localStorage after order
-    try { localStorage.removeItem("checkout_phone"); localStorage.removeItem("checkout_address"); } catch {}
+    // Clean up BuyNow modal localStorage after order
+    try { localStorage.removeItem("checkout_phone"); } catch {}
     window.dispatchEvent(new CustomEvent("order-placed"));
     // Browser Pixel Purchase fires once per order (sessionStorage guard).
     // Server-side CAPI Purchase is fired by the edge functions:
