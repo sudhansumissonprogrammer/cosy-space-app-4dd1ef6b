@@ -183,7 +183,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.64.0-pdp-modulepreload";
+const WORKER_VERSION = "8.65.0-category-modulepreload-lcp";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -1519,8 +1519,8 @@ async function enrichHeadWithPdpChunkPreloads(head, origin, env) {
       const res = await fetch(`${origin}${appMatch[1]}`, { cf: { cacheTtl: 3600, cacheEverything: true } });
       if (!res.ok) return head;
       const code = await res.text();
-      // PDP-critical chunk names: page entry + dynamic deps revealed by perf trace.
-      const pdpRx = /\/assets\/(?:ProductDetail|V19ProductDetail|V20ProductDetail|V22ProductDetail|productSelectors|PdpEnhancements|VariantPickerDialog|SideCart|alert-dialog|CheckoutExitDialog|FrequentlyBoughtTogether|CustomerReviews|RelatedProducts)-[A-Za-z0-9_-]+\.js$/;
+      // PDP + Category critical chunk names (v8.65 adds CategoryDetail + Shop deps).
+      const pdpRx = /\/assets\/(?:ProductDetail|V19ProductDetail|V20ProductDetail|V22ProductDetail|productSelectors|PdpEnhancements|VariantPickerDialog|SideCart|alert-dialog|CheckoutExitDialog|FrequentlyBoughtTogether|CustomerReviews|RelatedProducts|CategoryDetail|StorefrontShop|ShopFilterBar)-[A-Za-z0-9_-]+\.js$/;
       const found = new Set();
       const RX = /["'`](?:\.\/|\.?\/?assets\/)?([A-Za-z0-9_\-]+-[A-Za-z0-9]{6,})\.js["'`]/g;
       for (const m of code.matchAll(RX)) {
@@ -1542,7 +1542,7 @@ async function enrichHeadWithPdpChunkPreloads(head, origin, env) {
 }
 
 function _isPdpPath(pathname) {
-  return /^\/products?\/[^/]+/.test(pathname || "");
+  return /^\/products?\/[^/]+/.test(pathname || "") || /^\/category\/[^/]+/.test(pathname || "");
 }
 
 /* ============================================================
@@ -3682,9 +3682,22 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
   let productImagePreloads = "";
   let productPreloaderGrid = "";
   let productsJson = "";
-  if (Array.isArray(storefrontData?.products) && storefrontData.products.length > 0) {
+  // v8.65.0: On /category/* pages, prefer the inline CATEGORY products list
+  // (the actual products visible above the fold) over the store's homepage
+  // products. Without this, the LCP image preload pointed at the wrong
+  // products → browser couldn't preload the real first-row images and LCP
+  // waited ~600-1100ms for JS-discovered <img> tags.
+  if (pdpCategoryInline?.kind === "category" && pdpCategoryInline?.json) {
+    try {
+      const catParsed = JSON.parse(pdpCategoryInline.json);
+      if (Array.isArray(catParsed?.products) && catParsed.products.length > 0) {
+        productsJson = JSON.stringify(catParsed.products);
+      }
+    } catch {}
+  }
+  if (!productsJson && Array.isArray(storefrontData?.products) && storefrontData.products.length > 0) {
     productsJson = JSON.stringify(storefrontData.products);
-  } else if (inlineProducts && typeof inlineProducts === "string") {
+  } else if (!productsJson && inlineProducts && typeof inlineProducts === "string") {
     productsJson = inlineProducts;
   }
   if (productsJson) {
