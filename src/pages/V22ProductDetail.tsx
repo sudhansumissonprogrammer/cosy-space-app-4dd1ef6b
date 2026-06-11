@@ -573,7 +573,30 @@ export default function V22ProductDetail() {
       quantity,
     });
     closeCart();
-    navigate(storefrontPath(store.slug, "checkout"));
+
+    try {
+      trackInitiateCheckout({
+        storeId: store.id,
+        value: variantPrice * quantity,
+        currency,
+        items: [{
+          productId: product.id,
+          variantId: selectedVariant?.id,
+          name: product.name,
+          price: variantPrice,
+          quantity,
+        }],
+      });
+    } catch {}
+
+    let savedPhone: string | null = null;
+    try { savedPhone = localStorage.getItem("checkout_phone"); } catch {}
+    const normalized = normalizePhone(savedPhone);
+    if (normalized && isValidIndianPhone(normalized)) {
+      navigate(storefrontPath(store.slug, "checkout"));
+    } else {
+      setBuyNowModalOpen(true);
+    }
   };
 
 
