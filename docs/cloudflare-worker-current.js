@@ -183,7 +183,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.65.0-category-modulepreload-lcp";
+const WORKER_VERSION = "8.66.0-home-preload-cap";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -1238,8 +1238,12 @@ function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname, inlinePro
   let productImagePreloads = "";
   let productPreloaderGrid = "";
   if (inlineProducts && typeof inlineProducts === "string") {
-    productImagePreloads = _buildProductImagePreloads(inlineProducts, 6);
-    productPreloaderGrid = _buildProductPreloaderGrid(inlineProducts, 8);
+    // v8.66.0: cap home/cold image warmers to first 2 above-fold products.
+    // Loading 6-8 hidden images on mobile made the home page feel 7-8s slow
+    // even when FCP was fast, because LCP/visible images competed with our
+    // own preload flood.
+    productImagePreloads = _buildProductImagePreloads(inlineProducts, 2);
+    productPreloaderGrid = _buildProductPreloaderGrid(inlineProducts, 2);
   }
 
   // Preconnect to Supabase storage so image TLS/TCP is already warm by the
