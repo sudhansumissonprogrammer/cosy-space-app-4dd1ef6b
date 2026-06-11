@@ -50,6 +50,41 @@ function ensureFbpCookie() {
   document.cookie = `_fbp=${fbp}; path=/; max-age=${60 * 60 * 24 * 90}; SameSite=Lax`;
 }
 
+function grantMetaConsent() {
+  try {
+    if (typeof window !== "undefined" && typeof window.fbq === "function") {
+      window.fbq("consent", "grant");
+    }
+  } catch {
+    /* noop */
+  }
+}
+
+function schedulePixelSelfTest(pixelId: string) {
+  if (typeof window === "undefined") return;
+  const w = window as any;
+  const key = `pixel:${pixelId}`;
+  if (w.__SF_PIXEL_SELF_TESTED__ === key) return;
+  w.__SF_PIXEL_SELF_TESTED__ = key;
+  setTimeout(() => {
+    try {
+      const fbq: any = window.fbq;
+      const state = typeof fbq?.getState === "function" ? fbq.getState() : null;
+      const pixels = Array.isArray(state?.pixels) ? state.pixels : [];
+      const registered = pixels.some((p: any) => String(p?.id) === String(pixelId));
+      if (fbq?.loaded === true && !registered) {
+        console.warn("[Meta Pixel] SDK loaded but pixel is not registered", {
+          pixelId,
+          queueLength: Array.isArray(fbq.queue) ? fbq.queue.length : null,
+          hasCallMethod: typeof fbq.callMethod === "function",
+        });
+      }
+    } catch {
+      /* diagnostic only */
+    }
+  }, 5000);
+}
+
 // Run once on module load — ensures shim + _fbp exist before any event fires
 ensureFbqShim();
 ensureFbpCookie();
