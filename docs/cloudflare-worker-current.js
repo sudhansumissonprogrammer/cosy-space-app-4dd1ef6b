@@ -4037,6 +4037,9 @@ async function fetchAndInjectSlug(
   let prebuiltHead = cachedHeadMem || (await getPrebuiltHead(shellResult.html, env));
   prebuiltHead = await enrichHeadWithDeepPreloads(prebuiltHead, new URL(request.url).origin, env);
   prebuiltHead = await enrichHeadWithThemeChunkPreloads(prebuiltHead, new URL(request.url).origin, env, themeLite?.th);
+  if (_isPdpPath(new URL(request.url).pathname)) {
+    prebuiltHead = await enrichHeadWithPdpChunkPreloads(prebuiltHead, new URL(request.url).origin, env);
+  }
   // FIX #3: Always build Link header for every response
   const linkHeader = _buildLinkPreloadHeader(shellResult.html);
 
@@ -6869,6 +6872,9 @@ async function _handleFetch(request, env, ctx) {
     let prebuiltHead = cachedHead || (await getPrebuiltHead(shellResult.html, env));
     prebuiltHead = await enrichHeadWithDeepPreloads(prebuiltHead, new URL(request.url).origin, env);
     prebuiltHead = await enrichHeadWithThemeChunkPreloads(prebuiltHead, new URL(request.url).origin, env, themeLite?.th);
+    if (_isPdpPath(new URL(request.url).pathname)) {
+      prebuiltHead = await enrichHeadWithPdpChunkPreloads(prebuiltHead, new URL(request.url).origin, env);
+    }
     // FIX #3: Always set Link header
     const linkHeader = _buildLinkPreloadHeader(shellResult.html);
 
@@ -7073,6 +7079,9 @@ async function _handleFetch(request, env, ctx) {
     let prebuiltHeadCD = cachedHeadCDReal || (await getPrebuiltHead(shellResultCD.html, env));
     prebuiltHeadCD = await enrichHeadWithDeepPreloads(prebuiltHeadCD, new URL(request.url).origin, env);
     prebuiltHeadCD = await enrichHeadWithThemeChunkPreloads(prebuiltHeadCD, new URL(request.url).origin, env, themeLiteCD?.th);
+    if (_isPdpPath(new URL(request.url).pathname)) {
+      prebuiltHeadCD = await enrichHeadWithPdpChunkPreloads(prebuiltHeadCD, new URL(request.url).origin, env);
+    }
     // FIX #3
     const linkHeaderCD = _buildLinkPreloadHeader(shellResultCD.html);
 
