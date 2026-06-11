@@ -626,6 +626,20 @@ export default function CheckoutPage() {
         customData: { ...eventData },
       });
     } catch {}
+    // GA4 begin_checkout — for GA4 funnels + Google Ads.
+    try {
+      ga4Track("begin_checkout", {
+        currency,
+        value: subtotal,
+        items: checkoutItems.map((i) => ({
+          item_id: i.productId,
+          item_name: i.name,
+          item_variant: i.variantId,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+      });
+    } catch {}
   };
 
   // AddPaymentInfo — fire ONLY at real payment intent (same gate as IC).

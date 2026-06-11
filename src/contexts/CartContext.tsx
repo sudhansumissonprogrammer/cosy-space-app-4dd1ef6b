@@ -178,6 +178,14 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
         currency,
       })).catch(() => {});
     }
+    // GA4 add_to_cart — for GA4 ecommerce funnels + Google Ads.
+    try {
+      import("@/hooks/useGA4").then((m) => m.ga4Track("add_to_cart", {
+        currency,
+        value: item.price * (item.quantity || 1),
+        items: [{ item_id: item.productId, item_name: item.name, item_variant: item.variantId, price: item.price, quantity: item.quantity || 1 }],
+      })).catch(() => {});
+    } catch {}
   }, [slug, storeId, currency]);
 
   const removeFromCart = useCallback((productId: string, variantId?: string) => {

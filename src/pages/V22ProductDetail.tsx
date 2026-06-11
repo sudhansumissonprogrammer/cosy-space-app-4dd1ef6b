@@ -423,6 +423,23 @@ export default function V22ProductDetail() {
         currency: eventData.currency,
       },
     });
+    // GA4 view_item + internal storefront view_product (parity with ProductDetail).
+    try {
+      import("@/lib/storefrontEvents").then((m) => m.fireStorefrontEvent({
+        storeId: store.id,
+        eventName: "view_product",
+        productId: product.id,
+        value: Number(eventData.value),
+        currency: eventData.currency,
+      })).catch(() => {});
+    } catch {}
+    try {
+      import("@/hooks/useGA4").then((m) => m.ga4Track("view_item", {
+        currency: eventData.currency,
+        value: Number(eventData.value),
+        items: [{ item_id: product.id, item_name: product.name, price: Number(eventData.value), quantity: 1 }],
+      })).catch(() => {});
+    } catch {}
   }, [product?.id]);
 
   // Singular /product/ canonical — consolidates the legacy /products/ alias.
