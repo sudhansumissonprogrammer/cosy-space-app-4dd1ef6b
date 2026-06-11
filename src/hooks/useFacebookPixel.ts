@@ -184,25 +184,22 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     // Fire-and-forget; metaCapi internally gates on __SF_META_CAPI_ENABLED__
     // and short-circuits for stores without an access token.
     //
-    // PERF: Defer the import + network call to idle time so the 2.3s CAPI
-    // POST + edge-fn module fetch never competes with React hydration or
-    // LCP image decode. CAPI is purely server-side analytics — its arrival
-    // time is irrelevant to UX. 3s safety timeout guarantees it eventually
-    // fires even on a busy main thread.
+    // Fire immediately after this effect instead of requestIdleCallback: on
+    // slow mobile cold loads, idle can be delayed long enough that PageView
+    // CAPI appears missing in diagnostics even though the pixel event queued.
     if (storeId && pageViewEventId) {
-      const fireCapi = () => {
-        import("@/lib/metaCapi").then((m) => {
-          m.fireMetaCAPI({
-            storeId,
-            eventName: "PageView",
-            eventId: pageViewEventId,
-          });
-        }).catch(() => {});
-      };
-      if (typeof requestIdleCallback !== "undefined") {
-        requestIdleCallback(fireCapi, { timeout: 3000 });
-      } else {
-        setTimeout(fireCapi, 1500);
+      const firedKey = `pv:${storeId}:${pageViewEventId}`;
+      if ((window as any).__SF_PV_CAPI_FIRED__ !== firedKey) {
+        (window as any).__SF_PV_CAPI_FIRED__ = firedKey;
+        setTimeout(() => {
+          import("@/lib/metaCapi").then((m) => {
+            m.fireMetaCAPI({
+              storeId,
+              eventName: "PageView",
+              eventId: pageViewEventId,
+            });
+          }).catch(() => {});
+        }, 0);
       }
     }
 
