@@ -72,7 +72,7 @@ function schedulePixelSelfTest(pixelId: string) {
       const state = typeof fbq?.getState === "function" ? fbq.getState() : null;
       const pixels = Array.isArray(state?.pixels) ? state.pixels : [];
       const registered = pixels.some((p: any) => String(p?.id) === String(pixelId));
-      if (fbq?.loaded === true && !registered) {
+      if (fbq?.loaded === true && typeof fbq.callMethod === "function" && !registered) {
         console.warn("[Meta Pixel] SDK loaded but pixel is not registered", {
           pixelId,
           queueLength: Array.isArray(fbq.queue) ? fbq.queue.length : null,
