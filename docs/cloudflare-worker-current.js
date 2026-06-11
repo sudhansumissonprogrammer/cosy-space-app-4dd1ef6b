@@ -183,7 +183,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.65.0-category-modulepreload-lcp";
+const WORKER_VERSION = "8.66.0-home-preload-cap";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -1238,8 +1238,12 @@ function _buildInstantSkeletonPage(slug, bgColor, themeLite, hostname, inlinePro
   let productImagePreloads = "";
   let productPreloaderGrid = "";
   if (inlineProducts && typeof inlineProducts === "string") {
-    productImagePreloads = _buildProductImagePreloads(inlineProducts, 6);
-    productPreloaderGrid = _buildProductPreloaderGrid(inlineProducts, 8);
+    // v8.66.0: cap home/cold image warmers to first 2 above-fold products.
+    // Loading 6-8 hidden images on mobile made the home page feel 7-8s slow
+    // even when FCP was fast, because LCP/visible images competed with our
+    // own preload flood.
+    productImagePreloads = _buildProductImagePreloads(inlineProducts, 2);
+    productPreloaderGrid = _buildProductPreloaderGrid(inlineProducts, 2);
   }
 
   // Preconnect to Supabase storage so image TLS/TCP is already warm by the
@@ -3701,9 +3705,11 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
     productsJson = inlineProducts;
   }
   if (productsJson) {
-    // Phase 1 fix #2: cut from 6→2 preloads (above-fold mobile only).
+    // v8.66.0: keep only first 2 visible product images warm. The hidden
+    // 8-image grid was great for full-grid completion, but on home/category
+    // cold mobile it competes with JS/CSS/fonts and delays perceived settle.
     productImagePreloads = _buildProductImagePreloads(productsJson, 2);
-    productPreloaderGrid = _buildProductPreloaderGrid(productsJson, 8);
+    productPreloaderGrid = _buildProductPreloaderGrid(productsJson, 2);
   }
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
@@ -3803,7 +3809,9 @@ async function serveStreamedHtml(
       // shell/products/font fallback fetches on real Worker-served storefronts.
       const slugScript = `<script>window.__SF_WORKER__=true;window.__STORE_SLUG__="${escapeHtml(slug)}";${themeHint}${productsHint}${pdpCatHint}</script>`;
 
-      const productImagePreloads = inlineProducts ? _buildProductImagePreloads(inlineProducts, 6) : "";
+      // v8.66.0: home cold load should not queue 6 product images before the
+      // app is interactive; keep the two likely above-fold LCP candidates only.
+      const productImagePreloads = inlineProducts ? _buildProductImagePreloads(inlineProducts, 2) : "";
 
       let perRouteSeoHead = "";
       let earlyStorefrontResult = null;
@@ -3862,6 +3870,10 @@ async function serveStreamedHtml(
         "<head>",
         `<head>${themeCss}${productImagePreloads}${perRouteSeoHead}${prebuiltHead || ""}${slugScript}`,
       );
+      // v8.66.0: guard against legacy/prebuilt shells carrying an empty
+      // `<link rel="preload" as="image">`; it wastes a preload slot and can
+      // slow the real first product image on mobile cold loads.
+      headChunk = headChunk.replace(/<link\s+rel=["']preload["']\s+as=["']image["']\s*\/?>(\s*)/gi, "$1");
       headChunk += "</head>";
 
       await writeChunk(enc.encode(headChunk));
@@ -3891,7 +3903,7 @@ async function serveStreamedHtml(
       if (Array.isArray(storefrontResult?.data?.products) && storefrontResult.data.products.length > 0) {
         preloaderProductsJson = JSON.stringify(storefrontResult.data.products);
       }
-      const productPreloaderGrid = preloaderProductsJson ? _buildProductPreloaderGrid(preloaderProductsJson, 8) : "";
+      const productPreloaderGrid = preloaderProductsJson ? _buildProductPreloaderGrid(preloaderProductsJson, 2) : "";
 
       let bodyChunk = html.slice(headEnd + 7);
 
@@ -6801,7 +6813,7 @@ async function _handleFetch(request, env, ctx) {
       // Shell ready but data not — inject a Promise so React awaits it (one skeleton)
       if (shellResult?.html) {
         const dataPromiseScript = _buildPrefetchPromiseScript(slug);
-        const headPreloads = inlineProductsCold ? _buildProductImagePreloads(inlineProductsCold, 6) : "";
+        const headPreloads = inlineProductsCold ? _buildProductImagePreloads(inlineProductsCold, 2) : "";
         let html = shellResult.html;
         html = html.replace("</head>", `${headPreloads}\n${dataPromiseScript}\n</head>`);
         const headers = new Headers();
@@ -7017,7 +7029,7 @@ async function _handleFetch(request, env, ctx) {
 
       if (shellResult?.html) {
         const dataPromiseScript = _buildPrefetchPromiseScript(resolvedSlugCD);
-        const headPreloads = inlineProductsCdCold ? _buildProductImagePreloads(inlineProductsCdCold, 6) : "";
+        const headPreloads = inlineProductsCdCold ? _buildProductImagePreloads(inlineProductsCdCold, 2) : "";
         let html = shellResult.html;
         html = html.replace("</head>", `${headPreloads}\n${dataPromiseScript}\n</head>`);
         const headers = new Headers();
