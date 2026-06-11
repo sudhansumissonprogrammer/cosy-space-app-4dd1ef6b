@@ -7,7 +7,6 @@ import { ArrowLeft, Plus, Minus, ShoppingCart, Tag, Info, ChevronRight, Receipt,
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
-import { trackInitiateCheckout } from "@/lib/trackInitiateCheckout";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import type { CSSProperties } from "react";
