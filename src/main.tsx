@@ -23,13 +23,20 @@ installChunkLoadRecovery();
 
 // Capture ?ref=SBP… anywhere in the site (landing, signup, storefront subdomain).
 // Runs before App mounts so the cookie is set even on the landing fast-path.
-// PERF: /* @vite-ignore */ stops Vite from emitting a <link rel="modulepreload">
-// hint for this chunk, so it only downloads on URLs that actually contain ?ref=.
-// Without this, every cold visit fetched the 1KB chunk in the critical window.
+// PERF: defer to idle so the chunk download never competes with LCP. The
+// referral cookie only matters before the user submits a signup form, not in
+// the first second of paint — idle scheduling drops ~1KB + 1 RTT from cold.
 if (typeof window !== "undefined" && window.location.search.includes("ref=")) {
-  import(/* @vite-ignore */ "@/lib/referralTracking")
-    .then(({ captureReferralFromURL }) => captureReferralFromURL())
-    .catch(() => {});
+  const loadRef = () => {
+    import("@/lib/referralTracking")
+      .then(({ captureReferralFromURL }) => captureReferralFromURL())
+      .catch(() => {});
+  };
+  if (typeof requestIdleCallback !== "undefined") {
+    requestIdleCallback(loadRef, { timeout: 4000 });
+  } else {
+    setTimeout(loadRef, 1500);
+  }
 }
 
 /**
