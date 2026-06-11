@@ -183,7 +183,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.63.0-pdp-instant-cache-lcp-preload";
+const WORKER_VERSION = "8.64.0-pdp-modulepreload";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -1498,6 +1498,51 @@ async function enrichHeadWithThemeChunkPreloads(head, origin, env, themeName) {
     .map((p) => `<link rel="modulepreload" href="${p}" />`)
     .join("");
   return tags ? head.replace("</head>", `${tags}</head>`) : head;
+}
+
+/* v8.64.0 — PDP modulepreload enricher.
+   Storefront PDP cold-load profile showed ProductDetail + productSelectors +
+   PdpEnhancements + dialog chunks waterfalled serially after App.js parsed,
+   adding ~2-3s to FCP on ad clicks. We scan App.js once, cache in memory,
+   and inject <link rel="modulepreload"> for PDP-critical chunks ONLY on
+   /product/* and /products/* paths. Purely additive — non-PDP pages
+   unchanged. Cap at 6 to avoid head bloat. */
+const _memPdpChunkPreloads = new Map();
+async function enrichHeadWithPdpChunkPreloads(head, origin, env) {
+  if (!head) return head;
+  const appMatch = head.match(/href="(\/assets\/App-[^"]+\.js)"/);
+  if (!appMatch) return head;
+  const cacheKey = appMatch[1];
+  let chunks = _memPdpChunkPreloads.get(cacheKey);
+  if (!chunks) {
+    try {
+      const res = await fetch(`${origin}${appMatch[1]}`, { cf: { cacheTtl: 3600, cacheEverything: true } });
+      if (!res.ok) return head;
+      const code = await res.text();
+      // PDP-critical chunk names: page entry + dynamic deps revealed by perf trace.
+      const pdpRx = /\/assets\/(?:ProductDetail|V19ProductDetail|V20ProductDetail|V22ProductDetail|productSelectors|PdpEnhancements|VariantPickerDialog|SideCart|alert-dialog|CheckoutExitDialog|FrequentlyBoughtTogether|CustomerReviews|RelatedProducts)-[A-Za-z0-9_-]+\.js$/;
+      const found = new Set();
+      const RX = /["'`](?:\.\/|\.?\/?assets\/)?([A-Za-z0-9_\-]+-[A-Za-z0-9]{6,})\.js["'`]/g;
+      for (const m of code.matchAll(RX)) {
+        const p = "/assets/" + m[1] + ".js";
+        if (pdpRx.test(p)) found.add(p);
+      }
+      chunks = [...found].slice(0, 6);
+      _memPdpChunkPreloads.set(cacheKey, chunks);
+    } catch {
+      return head;
+    }
+  }
+  if (!chunks.length) return head;
+  const tags = chunks
+    .filter((p) => !head.includes(`href="${p}"`))
+    .map((p) => `<link rel="modulepreload" href="${p}" />`)
+    .join("");
+  return tags ? head.replace("</head>", `${tags}</head>`) : head;
+}
+
+function _isPdpPath(pathname) {
+  return /^\/products?\/[^/]+/.test(pathname || "");
 }
 
 /* ============================================================
