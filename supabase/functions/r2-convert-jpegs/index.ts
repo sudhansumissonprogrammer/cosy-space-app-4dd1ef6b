@@ -97,30 +97,47 @@ Deno.serve(async (req) => {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
     const token = authHeader.replace("Bearer ", "");
-    const { data: claims } = await supabase.auth.getClaims(token);
-    const uid = claims?.claims?.sub;
-    if (!uid) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: uid, _role: "admin" });
-    if (!isAdmin) {
-      return new Response(JSON.stringify({ error: "Admin only" }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, serviceRoleKey);
+
+    // Allow: (a) service-role calls, (b) platform admins, (c) store owners for their own store.
+    const isServiceRole = token === serviceRoleKey;
+    let callerUid: string | null = null;
+    if (!isServiceRole) {
+      const { data: claims } = await supabase.auth.getClaims(token);
+      callerUid = claims?.claims?.sub || null;
+      if (!callerUid) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const body = await req.json().catch(() => ({}));
     const storeId: string | undefined = body.store_id;
     const limit: number = Math.min(Math.max(Number(body.limit) || 25, 1), 100);
 
+    if (!isServiceRole && callerUid) {
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: callerUid, _role: "admin" });
+      if (!isAdmin) {
+        if (!storeId) {
+          return new Response(JSON.stringify({ error: "store_id required for non-admin callers" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { data: store } = await supabase
+          .from("stores").select("owner_id").eq("id", storeId).maybeSingle();
+        if (!store || store.owner_id !== callerUid) {
+          return new Response(JSON.stringify({ error: "Not store owner" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
+
     // Find JPEG/PNG product rows on cdn.shopbanao.in
+
     let q = supabase
       .from("products")
       .select("id, image_url, store_id")
