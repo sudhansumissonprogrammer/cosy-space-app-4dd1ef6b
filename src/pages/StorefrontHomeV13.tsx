@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useCallback, lazy, Suspense } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { buildStorefrontH1 } from "@/lib/storefrontSeoH1";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { Minus, Plus, Search, UtensilsCrossed, SlidersHorizontal, X, ChevronDown } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";

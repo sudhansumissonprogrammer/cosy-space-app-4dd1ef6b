@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
+import { buildStorefrontH1 } from "@/lib/storefrontSeoH1";
 import { ChevronRight, ChevronLeft, Tag } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import V20ProductCard from "@/components/storefront/v20/V20ProductCard";

@@ -8,6 +8,7 @@ import { useState, useMemo, useRef, useEffect, lazy, Suspense, useCallback } fro
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { buildStorefrontH1 } from "@/lib/storefrontSeoH1";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 // supabase is dynamic-imported inside queryFns to keep the 171KB chunk OFF
 // the storefront-shell static graph (V16 is bundled into storefront-shell).
