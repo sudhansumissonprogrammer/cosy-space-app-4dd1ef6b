@@ -113,18 +113,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const key = `${bucket}/${rawPath}`;
-    const contentType = file.type || "application/octet-stream";
-    const body = new Uint8Array(await file.arrayBuffer());
-
-    const res = await r2.fetch(`${r2Endpoint}/${key}`, {
-      method: "PUT",
-      body,
-      headers: {
-        "Content-Type": contentType,
-        "Cache-Control": "public, max-age=31536000, immutable",
-      },
-    });
 
     let key = `${bucket}/${rawPath}`;
     let contentType = file.type || "application/octet-stream";
