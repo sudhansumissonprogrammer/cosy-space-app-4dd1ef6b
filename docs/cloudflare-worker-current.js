@@ -3293,7 +3293,13 @@ function _buildSeoBodyBlock(store, categories, products) {
   const wa = store.whatsapp_number ? escapeHtml(String(store.whatsapp_number)) : "";
 
   let html = `<div id="seo-content" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:normal" aria-hidden="false">`;
-  html += `<h1>${name}</h1>`;
+  // v8.65.0 — Descriptive H1 for AI search / "Understandable" audit. Was just
+  // `<h1>{name}</h1>` which fails the "describe what the page is about" rule
+  // (brand name alone doesn't count). Mirrors src/lib/storefrontSeoH1.ts.
+  const seoTail = escapeHtml(
+    (store.seo_h1_suffix || store.tagline || (store.description || "").split(/(?<=[.!?])\s/)[0] || "Shop Online with COD, UPI Payments & Fast Delivery Across India").slice(0, 90)
+  );
+  html += `<h1>${name}${seoTail ? ` — ${seoTail}` : ""}</h1>`;
   if (about) html += `<p>${about}</p>`;
   if (loc || wa) {
     const bits = [];
