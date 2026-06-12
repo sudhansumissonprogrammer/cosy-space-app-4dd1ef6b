@@ -118,9 +118,7 @@ Deno.serve(async (req) => {
     const storeId: string | undefined = body.store_id;
     const limit: number = Math.min(Math.max(Number(body.limit) || 25, 1), 100);
 
-    // TEMPORARY: auth gate disabled for one-time JPEG→WebP backfill.
-    // TODO: restore admin/owner gate after backfill is complete.
-    if (false && !isServiceRole && callerUid) {
+    if (!isServiceRole && callerUid) {
       const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: callerUid, _role: "admin" });
       if (!isAdmin) {
         if (!storeId) {
