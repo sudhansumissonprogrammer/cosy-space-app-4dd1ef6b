@@ -126,6 +126,50 @@ Deno.serve(async (req) => {
       },
     });
 
+    let key = `${bucket}/${rawPath}`;
+    let contentType = file.type || "application/octet-stream";
+    let body = new Uint8Array(await file.arrayBuffer());
+    let converted = false;
+
+    // WebP guarantee: convert JPEG/PNG → WebP server-side when browser couldn't.
+    // Pipeline files only (those matching `*-NNNw.<ext>`) — leaves raw
+    // assets/originals untouched. Errors are non-fatal: fall back to original.
+    const isPipelinePath = /-\d+w\.(jpe?g|png|webp)$/i.test(rawPath);
+    const needsConvert =
+      isPipelinePath &&
+      contentType !== "image/webp" &&
+      (contentType === "image/jpeg" || contentType === "image/png");
+
+    if (needsConvert) {
+      try {
+        const imageData =
+          contentType === "image/jpeg"
+            ? await decodeJpeg(body)
+            : await decodePng(body);
+        const webpBuf = await encodeWebp(imageData, { quality: 80 });
+        body = new Uint8Array(webpBuf);
+        contentType = "image/webp";
+        key = key.replace(/\.(jpe?g|png)$/i, ".webp");
+        converted = true;
+        console.log(
+          `[r2-upload] Server WebP convert OK: ${rawPath} → ${(body.length / 1024).toFixed(1)}KB`,
+        );
+      } catch (convErr) {
+        console.warn(
+          `[r2-upload] WebP convert failed, uploading original: ${convErr instanceof Error ? convErr.message : convErr}`,
+        );
+      }
+    }
+
+    const res = await r2.fetch(`${r2Endpoint}/${key}`, {
+      method: "PUT",
+      body,
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+
     if (!res.ok) {
       const text = await res.text();
       console.error("[r2-upload] R2 PUT failed:", res.status, text);
@@ -138,7 +182,7 @@ Deno.serve(async (req) => {
 
     const publicUrl = `${R2_PUBLIC_URL}/${key}`;
     return new Response(
-      JSON.stringify({ publicUrl, path: key }),
+      JSON.stringify({ publicUrl, path: key, converted }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
