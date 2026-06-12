@@ -3139,7 +3139,11 @@ function _stripPlatformSeoHead(html) {
     .replace(/<meta[^>]+name=["'](?:description|keywords|author)["'][^>]*>\s*/gi, "")
     .replace(/<meta[^>]+property=["']og:[^"']+["'][^>]*>\s*/gi, "")
     .replace(/<meta[^>]+name=["']twitter:[^"']+["'][^>]*>\s*/gi, "")
-    .replace(/<meta[^>]+name=["']theme-color["'][^>]*>\s*/gi, "");
+    .replace(/<meta[^>]+name=["']theme-color["'][^>]*>\s*/gi, "")
+    // v8.65.0 — Strip platform-scoped JSON-LD (Organization/SoftwareApplication/FAQPage
+    // for ShopBanao itself) so storefront JSON-LD is the only structured data crawlers
+    // see on customer stores. Added when landing got its 5 JSON-LD blocks for AI search.
+    .replace(/<script[^>]+data-platform-seo[^>]*>[\s\S]*?<\/script>\s*/gi, "");
 
   return head + body;
 }
