@@ -6,11 +6,21 @@
  *   bucket: logical bucket prefix (e.g. "product-images", "store-assets")
  *   path:   the key suffix (e.g. "userId/storeId/123abc-800w.webp")
  *
- * Returns: { publicUrl, path }
- * publicUrl is served by Cloudflare R2 custom domain (R2_PUBLIC_URL).
+ * WebP guarantee:
+ * If the incoming file is NOT WebP (browser fell back to JPEG/PNG because
+ * canvas.toBlob("image/webp") returned null on old Safari / some Android
+ * WebView / privacy browsers), we decode + re-encode to WebP server-side
+ * using jSquash WASM before R2 PUT. Path extension is forced to .webp.
+ * On any conversion error we fall back to uploading the original — never
+ * break a merchant's upload.
+ *
+ * Returns: { publicUrl, path, converted? }
  */
 import { AwsClient } from "npm:aws4fetch@1.0.20";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import encodeWebp from "npm:@jsquash/webp@1.4.0/encode.js";
+import decodeJpeg from "npm:@jsquash/jpeg@1.5.0/decode.js";
+import decodePng from "npm:@jsquash/png@3.1.0/decode.js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
