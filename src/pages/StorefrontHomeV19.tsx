@@ -260,7 +260,7 @@ export default function StorefrontHomeV19() {
 
   return (
     <div className="space-y-5 md:space-y-7 pb-4">
-      <h1 className="sr-only">{store?.name || "Store"}</h1>
+      <h1 className="sr-only">{buildStorefrontH1(store)}</h1>
       {(() => {
         const heroImagesRaw = (store as any).mobile_hero_images;
         const heroList: string[] = Array.isArray(heroImagesRaw)

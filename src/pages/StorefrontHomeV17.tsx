@@ -238,7 +238,7 @@ export default function StorefrontHomeV17() {
 
   return (
     <VariantCountProvider products={allProducts}>
-      <h1 className="sr-only">{store?.name || "Store"}</h1>
+      <h1 className="sr-only">{buildStorefrontH1(store)}</h1>
       {/* ─── Hero Banner — full-bleed behind transparent header ─── */}
       <section className="relative" style={{ marginTop: "-56px" }}>
         {hasBanner && (
