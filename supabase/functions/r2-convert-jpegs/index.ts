@@ -137,11 +137,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    const body = await req.json().catch(() => ({}));
-    const storeId: string | undefined = body.store_id;
-    const limit: number = Math.min(Math.max(Number(body.limit) || 25, 1), 100);
-
     // Find JPEG/PNG product rows on cdn.shopbanao.in
+
     let q = supabase
       .from("products")
       .select("id, image_url, store_id")
