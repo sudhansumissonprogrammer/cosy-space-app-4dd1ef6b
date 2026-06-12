@@ -128,8 +128,8 @@ Deno.serve(async (req) => {
           });
         }
         const { data: store } = await supabase
-          .from("stores").select("user_id").eq("id", storeId).maybeSingle();
-        if (!store || store.user_id !== callerUid) {
+          .from("stores").select("owner_id").eq("id", storeId).maybeSingle();
+        if (!store || store.owner_id !== callerUid) {
           return new Response(JSON.stringify({ error: "Not store owner" }), {
             status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
