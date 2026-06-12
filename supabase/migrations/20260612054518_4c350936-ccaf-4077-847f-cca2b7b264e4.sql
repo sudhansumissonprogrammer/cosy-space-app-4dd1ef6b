@@ -1,0 +1,1 @@
+UPDATE products SET image_url = 'https://cdn.shopbanao.in/product-images/2479461d-8d10-4024-aa94-f3d02adc5f80/771a3012-393c-421a-b1c9-2ca918e6917f/1781158665885-2ms9f1-800w.jpg' WHERE id = '112e0b6e-06c1-4d89-88ab-fe0aae8beaf4';
