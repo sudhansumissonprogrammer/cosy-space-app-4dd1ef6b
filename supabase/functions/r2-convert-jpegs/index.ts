@@ -101,21 +101,39 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, serviceRoleKey);
 
-    // Allow service-role calls (internal/admin tooling) OR platform admins.
+    // Allow: (a) service-role calls, (b) platform admins, (c) store owners for their own store.
     const isServiceRole = token === serviceRoleKey;
+    let callerUid: string | null = null;
     if (!isServiceRole) {
       const { data: claims } = await supabase.auth.getClaims(token);
-      const uid = claims?.claims?.sub;
-      if (!uid) {
+      callerUid = claims?.claims?.sub || null;
+      if (!callerUid) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: uid, _role: "admin" });
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const storeId: string | undefined = body.store_id;
+    const limit: number = Math.min(Math.max(Number(body.limit) || 25, 1), 100);
+
+    if (!isServiceRole && callerUid) {
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: callerUid, _role: "admin" });
       if (!isAdmin) {
-        return new Response(JSON.stringify({ error: "Admin only" }), {
-          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        // Must be store owner of the requested store
+        if (!storeId) {
+          return new Response(JSON.stringify({ error: "store_id required for non-admin callers" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { data: store } = await supabase
+          .from("stores").select("user_id").eq("id", storeId).maybeSingle();
+        if (!store || store.user_id !== callerUid) {
+          return new Response(JSON.stringify({ error: "Not store owner" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
     }
 
