@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect, lazy, Suspense, useCallback } fro
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { buildStorefrontH1 } from "@/lib/storefrontSeoH1";
 import { useStorefrontProducts, PRODUCT_COLUMNS, PAGE_SIZE } from "@/hooks/useStorefrontProducts";
 import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
 // supabase is dynamic-imported inside the infinite-scroll queryFn (only fires
@@ -199,7 +200,7 @@ export default function StorefrontHome() {
   return (
     <VariantCountProvider products={allProducts}>
     <>
-      <h1 className="sr-only">{store?.name || "Store"}</h1>
+      <h1 className="sr-only">{buildStorefrontH1(store)}</h1>
       {/* Search bar trigger — hidden when header already has search */}
       {!hideSearchBar && (
         <div className="backdrop-blur-md px-4 pt-3 pb-1" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", minHeight: 52, contain: "layout style" }}>

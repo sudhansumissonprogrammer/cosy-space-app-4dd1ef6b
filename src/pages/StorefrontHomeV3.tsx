@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef, lazy, Suspense } fro
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { buildStorefrontH1 } from "@/lib/storefrontSeoH1";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { Search, ArrowUpDown, ChevronLeft, ChevronRight, Zap, Tag, Clock } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
@@ -305,7 +306,7 @@ export default function StorefrontHomeV3() {
 
   return (
     <>
-      <h1 className="sr-only">{store?.name || "Store"}</h1>
+      <h1 className="sr-only">{buildStorefrontH1(store)}</h1>
       {/* Banner Slider */}
       <BannerSlider store={store} />
 

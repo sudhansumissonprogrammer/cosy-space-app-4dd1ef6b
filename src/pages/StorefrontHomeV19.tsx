@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
+import { buildStorefrontH1 } from "@/lib/storefrontSeoH1";
 import { ChevronRight, ChevronLeft, Tag } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import V19ProductCard from "@/components/storefront/v19/V19ProductCard";
@@ -259,7 +260,7 @@ export default function StorefrontHomeV19() {
 
   return (
     <div className="space-y-5 md:space-y-7 pb-4">
-      <h1 className="sr-only">{store?.name || "Store"}</h1>
+      <h1 className="sr-only">{buildStorefrontH1(store)}</h1>
       {(() => {
         const heroImagesRaw = (store as any).mobile_hero_images;
         const heroList: string[] = Array.isArray(heroImagesRaw)

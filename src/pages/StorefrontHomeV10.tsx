@@ -2,6 +2,7 @@ import { useMemo, lazy, Suspense } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { buildStorefrontH1 } from "@/lib/storefrontSeoH1";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
 import { Tag } from "lucide-react";
@@ -81,7 +82,7 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
 
   return (
     <div>
-      <h1 className="sr-only">{store?.name || "Store"}</h1>
+      <h1 className="sr-only">{buildStorefrontH1(store)}</h1>
       <ResponsiveHeroBanner store={store} HeroBannerCarousel={HeroBannerCarousel} />
       <UniversalCategories categories={storeCategories} storeSlug={effectiveSlug} categoryStyle={categoryStyle} />
       {(themeConfig?.marquee_enabled ?? true) && <AnnouncementStrip customText={themeConfig?.marquee_text} />}

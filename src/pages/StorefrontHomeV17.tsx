@@ -12,6 +12,7 @@ import { lazy, Suspense, useState } from "react";
 import { useOutletContext, useParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { buildStorefrontH1 } from "@/lib/storefrontSeoH1";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { useBestSellingProducts } from "@/hooks/useBestSellingProducts";
 import { ArrowRight } from "lucide-react";
@@ -237,7 +238,7 @@ export default function StorefrontHomeV17() {
 
   return (
     <VariantCountProvider products={allProducts}>
-      <h1 className="sr-only">{store?.name || "Store"}</h1>
+      <h1 className="sr-only">{buildStorefrontH1(store)}</h1>
       {/* ─── Hero Banner — full-bleed behind transparent header ─── */}
       <section className="relative" style={{ marginTop: "-56px" }}>
         {hasBanner && (

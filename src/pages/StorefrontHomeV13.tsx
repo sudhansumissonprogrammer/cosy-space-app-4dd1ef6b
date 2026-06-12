@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useCallback, lazy, Suspense } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { buildStorefrontH1 } from "@/lib/storefrontSeoH1";
 import { useStorefrontProducts } from "@/hooks/useStorefrontProducts";
 import { Minus, Plus, Search, UtensilsCrossed, SlidersHorizontal, X, ChevronDown } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
@@ -510,7 +511,7 @@ export default function StorefrontHomeV13() {
 
   return (
     <div className="min-h-screen">
-      <h1 className="sr-only">{store?.name || "Store"}</h1>
+      <h1 className="sr-only">{buildStorefrontH1(store)}</h1>
       {/* Universal Categories (if images exist and not pill/text-only) */}
       {categories.length > 0 && categoryStyle !== "style-5" && (
         <div className="pt-3">
