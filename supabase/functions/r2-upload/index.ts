@@ -6,11 +6,21 @@
  *   bucket: logical bucket prefix (e.g. "product-images", "store-assets")
  *   path:   the key suffix (e.g. "userId/storeId/123abc-800w.webp")
  *
- * Returns: { publicUrl, path }
- * publicUrl is served by Cloudflare R2 custom domain (R2_PUBLIC_URL).
+ * WebP guarantee:
+ * If the incoming file is NOT WebP (browser fell back to JPEG/PNG because
+ * canvas.toBlob("image/webp") returned null on old Safari / some Android
+ * WebView / privacy browsers), we decode + re-encode to WebP server-side
+ * using jSquash WASM before R2 PUT. Path extension is forced to .webp.
+ * On any conversion error we fall back to uploading the original — never
+ * break a merchant's upload.
+ *
+ * Returns: { publicUrl, path, converted? }
  */
 import { AwsClient } from "npm:aws4fetch@1.0.20";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import encodeWebp from "npm:@jsquash/webp@1.4.0/encode.js";
+import decodeJpeg from "npm:@jsquash/jpeg@1.5.0/decode.js";
+import decodePng from "npm:@jsquash/png@3.1.0/decode.js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -103,9 +113,41 @@ Deno.serve(async (req) => {
       });
     }
 
-    const key = `${bucket}/${rawPath}`;
-    const contentType = file.type || "application/octet-stream";
-    const body = new Uint8Array(await file.arrayBuffer());
+
+    let key = `${bucket}/${rawPath}`;
+    let contentType = file.type || "application/octet-stream";
+    let body = new Uint8Array(await file.arrayBuffer());
+    let converted = false;
+
+    // WebP guarantee: convert JPEG/PNG → WebP server-side when browser couldn't.
+    // Pipeline files only (those matching `*-NNNw.<ext>`) — leaves raw
+    // assets/originals untouched. Errors are non-fatal: fall back to original.
+    const isPipelinePath = /-\d+w\.(jpe?g|png|webp)$/i.test(rawPath);
+    const needsConvert =
+      isPipelinePath &&
+      contentType !== "image/webp" &&
+      (contentType === "image/jpeg" || contentType === "image/png");
+
+    if (needsConvert) {
+      try {
+        const imageData =
+          contentType === "image/jpeg"
+            ? await decodeJpeg(body)
+            : await decodePng(body);
+        const webpBuf = await encodeWebp(imageData, { quality: 80 });
+        body = new Uint8Array(webpBuf);
+        contentType = "image/webp";
+        key = key.replace(/\.(jpe?g|png)$/i, ".webp");
+        converted = true;
+        console.log(
+          `[r2-upload] Server WebP convert OK: ${rawPath} → ${(body.length / 1024).toFixed(1)}KB`,
+        );
+      } catch (convErr) {
+        console.warn(
+          `[r2-upload] WebP convert failed, uploading original: ${convErr instanceof Error ? convErr.message : convErr}`,
+        );
+      }
+    }
 
     const res = await r2.fetch(`${r2Endpoint}/${key}`, {
       method: "PUT",
@@ -128,7 +170,7 @@ Deno.serve(async (req) => {
 
     const publicUrl = `${R2_PUBLIC_URL}/${key}`;
     return new Response(
-      JSON.stringify({ publicUrl, path: key }),
+      JSON.stringify({ publicUrl, path: key, converted }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
