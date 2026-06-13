@@ -194,7 +194,22 @@ export default function StorefrontOrderDetail() {
           {/* Timeline */}
           <section className="rounded-2xl border bg-card p-5"
                    style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}>
+            {(() => {
+              const meta = getOrderStatusMeta(order.status);
+              return (
+                <div className="mb-4 flex items-center justify-between gap-2">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold ${meta.bg} ${meta.text}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+                    {meta.label}
+                  </span>
+                  <span className="text-[11px]" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}>
+                    Updated {new Date(order.updated_at || order.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+              );
+            })()}
             <OrderStatusTimeline status={order.status} createdAt={order.created_at} updatedAt={order.updated_at} />
+
             {order.tracking_number && order.status !== "cancelled" && (
               <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-dashed p-3"
                    style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 18%, transparent)" }}>
