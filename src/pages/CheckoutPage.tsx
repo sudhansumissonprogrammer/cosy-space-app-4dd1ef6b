@@ -1938,6 +1938,16 @@ export default function CheckoutPage() {
   };
 
   const handlePlaceOrder = async () => {
+    // Guard: never let an order through before we know what the store accepts.
+    if (!paymentConfigLoaded) {
+      toast.error(t("Loading payment options, please wait…", "भुगतान विकल्प लोड हो रहे हैं, कृपया प्रतीक्षा करें…"));
+      return;
+    }
+    // Defensive: if partial+online is the required flow, plain COD must never reach the server.
+    if (hasAnyPartialPayment && hasOnline && paymentMethod === "cod" && !isPartialOrder) {
+      toast.error(t("Please choose a partial or full online payment option.", "कृपया आंशिक या पूर्ण ऑनलाइन भुगतान चुनें।"));
+      return;
+    }
     // Make sure the address section is open so the inputs exist in the DOM
     if (!expressMode) setExpressMode(true);
 
