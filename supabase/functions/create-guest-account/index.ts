@@ -143,6 +143,7 @@ Deno.serve(async (req) => {
     }
 
     // 3) Upsert storefront_customers — COALESCE-style: never clobber saved fields.
+    //    Unique index (user_id, store_id) blocks duplicate-row races.
     const { data: existingCustomer } = await supabase
       .from("storefront_customers")
       .select("id, name, email, phone")
@@ -154,9 +155,7 @@ Deno.serve(async (req) => {
     if (existingCustomer) {
       customerId = existingCustomer.id;
       const patch: Record<string, unknown> = {};
-      // Phone is the identity key — always keep it canonical.
       if (existingCustomer.phone !== normalizedPhone) patch.phone = normalizedPhone;
-      // Only fill name/email when currently empty. Never overwrite a user-saved value.
       if (!existingCustomer.name && name) patch.name = name;
       if (!existingCustomer.email && realEmail) patch.email = realEmail;
       if (Object.keys(patch).length > 0) {
@@ -165,17 +164,20 @@ Deno.serve(async (req) => {
     } else {
       const { data: newCustomer, error: insertErr } = await supabase
         .from("storefront_customers")
-        .insert({
-          user_id: userId,
-          store_id,
-          email: realEmail,
-          name: name || null,
-          phone: normalizedPhone,
-        })
+        .upsert(
+          {
+            user_id: userId,
+            store_id,
+            email: realEmail,
+            name: name || null,
+            phone: normalizedPhone,
+          },
+          { onConflict: "user_id,store_id" }
+        )
         .select("id")
         .single();
       if (insertErr || !newCustomer) {
-        console.error("Insert customer error:", insertErr);
+        console.error("Upsert customer error:", insertErr);
         return new Response(
           JSON.stringify({ error: insertErr?.message || "Could not create customer" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -245,7 +247,10 @@ Deno.serve(async (req) => {
 /**
  * Mint a session WITHOUT changing the user's password.
  * Uses admin.generateLink({type:'magiclink'}) → anon.verifyOtp.
- * Falls back to a password rotation only if the magic-link path fails.
+ *
+ * IMPORTANT: on rate-limit (429) we return null instead of rotating the
+ * password — rotating would invalidate every refresh token on the user's
+ * other devices. The caller proceeds without a new session in that case.
  */
 async function mintSession(
   admin: any,
@@ -253,6 +258,7 @@ async function mintSession(
   email: string,
   userId: string
 ): Promise<{ access_token: string; refresh_token: string } | null> {
+  let rateLimited = false;
   try {
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: "magiclink",
@@ -270,15 +276,24 @@ async function mintSession(
           refresh_token: vData.session.refresh_token,
         };
       }
-      console.warn("[create-guest-account] verifyOtp failed, falling back:", vErr?.message);
+      console.warn("[create-guest-account] verifyOtp failed:", vErr?.message);
     } else {
-      console.warn("[create-guest-account] generateLink failed, falling back:", linkErr?.message);
+      const msg = (linkErr?.message || "").toLowerCase();
+      const status = (linkErr as any)?.status;
+      rateLimited =
+        status === 429 ||
+        msg.includes("rate limit") ||
+        msg.includes("too many") ||
+        msg.includes("over_email_send_rate_limit");
+      console.warn("[create-guest-account] generateLink failed:", linkErr?.message, "rateLimited=", rateLimited);
     }
   } catch (e) {
     console.warn("[create-guest-account] magiclink mint threw:", (e as Error).message);
   }
 
-  // Fallback: rotate password (legacy) — only on magic-link failure.
+  if (rateLimited) return null;
+
+  // Fallback (non-rate-limit failures only): rotate password.
   try {
     const freshPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
     const { error: updErr } = await admin.auth.admin.updateUserById(userId, {
