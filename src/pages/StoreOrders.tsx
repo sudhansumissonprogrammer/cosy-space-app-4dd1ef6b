@@ -429,7 +429,7 @@ export default function StoreOrders() {
                     : "bg-background text-muted-foreground border-input hover:bg-accent"
                 )}
               >
-                {s.charAt(0).toUpperCase() + s.slice(1)}
+                {orderStatusLabel(s)}
               </button>
             ))}
           </div>
