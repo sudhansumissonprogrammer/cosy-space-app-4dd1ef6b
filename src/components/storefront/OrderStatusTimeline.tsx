@@ -7,7 +7,9 @@ const STEPS = [
   { key: "delivered", label: "Delivered",  icon: Home },
 ] as const;
 
-const orderRank: Record<string, number> = { pending: 0, confirmed: 1, shipped: 2, delivered: 3 };
+// `partially_paid` = advance received → treat as Confirmed in the timeline
+// (dashboard still shows the raw "partially_paid" badge for the merchant).
+const orderRank: Record<string, number> = { pending: 0, confirmed: 1, partially_paid: 1, shipped: 2, delivered: 3 };
 
 export default function OrderStatusTimeline({ status, createdAt, updatedAt }: { status: string; createdAt: string; updatedAt?: string }) {
   if (status === "cancelled") {
