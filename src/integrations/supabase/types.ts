@@ -3608,6 +3608,7 @@ export type Database = {
         Args: { _order_id: string }
         Returns: boolean
       }
+      canonicalize_indian_phone: { Args: { raw: string }; Returns: string }
       check_product_limit: { Args: { _user_id: string }; Returns: Json }
       cleanup_app_logs: { Args: never; Returns: Json }
       cleanup_old_analytics: { Args: never; Returns: Json }
@@ -3617,6 +3618,7 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      each: { Args: { hs: unknown }; Returns: Record<string, unknown>[] }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
