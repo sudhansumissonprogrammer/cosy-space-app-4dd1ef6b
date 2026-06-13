@@ -183,9 +183,37 @@ export default function StoreOrders() {
       if (error) throw error;
       return { orderId, status, tracking_number, tracking_url };
     },
+    // Optimistically patch every cached orders list so the badge, dropdown,
+    // and the open mobile detail sheet all flip to the new status instantly.
+    onMutate: async ({ orderId, status, tracking_number, tracking_url }) => {
+      await queryClient.cancelQueries({ queryKey: ["website-orders-all", storeId] });
+      const snapshots = queryClient.getQueriesData<any[]>({ queryKey: ["website-orders-all", storeId] });
+      for (const [key, list] of snapshots) {
+        if (!Array.isArray(list)) continue;
+        queryClient.setQueryData(key as any, list.map((o: any) =>
+          o?.id === orderId
+            ? { ...o, status, ...(tracking_number !== undefined ? { tracking_number } : {}), ...(tracking_url !== undefined ? { tracking_url } : {}) }
+            : o
+        ));
+      }
+      setMobileDetailOrder((prev: any) =>
+        prev && prev.id === orderId
+          ? { ...prev, status, ...(tracking_number !== undefined ? { tracking_number } : {}), ...(tracking_url !== undefined ? { tracking_url } : {}) }
+          : prev
+      );
+      return { snapshots };
+    },
+    onError: (err: any, _vars, ctx) => {
+      // Roll back optimistic patch
+      if (ctx?.snapshots) {
+        for (const [key, data] of ctx.snapshots) queryClient.setQueryData(key as any, data);
+      }
+      toast.error(err.message);
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
       queryClient.invalidateQueries({ queryKey: ["website-orders-count", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["recent-orders-dashboard", storeId] });
       toast.success("Order updated");
 
       if (storeId && result) {
@@ -212,8 +240,8 @@ export default function StoreOrders() {
         }
       }
     },
-    onError: (err: any) => toast.error(err.message),
   });
+
 
   const deleteOrder = useMutation({
     mutationFn: async (orderId: string) => {
