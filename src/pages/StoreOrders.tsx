@@ -575,7 +575,7 @@ export default function StoreOrders() {
                               <div className="flex items-center gap-2 min-w-0">
                                 <span className="font-mono text-xs font-semibold text-foreground">{getOrderDisplayId(order)}</span>
                                 <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold", statusColor(order.status))}>
-                                  {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                  {orderStatusLabel(order.status)}
                                 </span>
                               </div>
                               <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -822,7 +822,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
         <div className="flex items-center justify-between">
           <SheetTitle className="text-lg font-bold">Order {displayId}</SheetTitle>
           <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold", statusColor(order.status))}>
-            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+            {orderStatusLabel(order.status)}
           </span>
         </div>
         <p className="text-xs text-muted-foreground -mt-1">{format(new Date(order.created_at), "MMM d, yyyy · h:mm a")}</p>

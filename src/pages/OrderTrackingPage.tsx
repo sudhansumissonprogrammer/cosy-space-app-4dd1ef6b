@@ -12,15 +12,17 @@ import {
   Loader2, AlertCircle, ArrowRight,
 } from "lucide-react";
 import { format } from "date-fns";
+import { orderStatusBadgeClass, orderStatusLabel, orderStatusRank } from "@/lib/orderStatus";
 
 const STATUS_STEPS = [
+  { key: "pending", label: "Placed", icon: Clock },
   { key: "confirmed", label: "Confirmed", icon: CheckCircle2 },
   { key: "shipped", label: "Shipped", icon: Truck },
   { key: "delivered", label: "Delivered", icon: CheckCircle2 },
 ];
 
 function StatusTimeline({ status }: { status: string }) {
-  const currentIdx = STATUS_STEPS.findIndex((s) => s.key === status);
+  const currentIdx = orderStatusRank(status);
   const isCancelled = status === "cancelled";
 
   return (
@@ -128,13 +130,7 @@ export default function OrderTrackingPage() {
     }
   };
 
-  const statusColors: Record<string, string> = {
-    pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    confirmed: "bg-blue-100 text-blue-800 border-blue-200",
-    shipped: "bg-purple-100 text-purple-800 border-purple-200",
-    delivered: "bg-green-100 text-green-800 border-green-200",
-    cancelled: "bg-red-100 text-red-800 border-red-200",
-  };
+  // statusColors removed — use shared orderStatusBadgeClass()
 
   return (
     <div className="min-h-screen bg-background">
@@ -193,7 +189,7 @@ export default function OrderTrackingPage() {
                     </CardDescription>
                   </div>
                   <Badge className={statusColors[order.status] || ""}>
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    {orderStatusLabel(order.status)}
                   </Badge>
                 </div>
               </CardHeader>
