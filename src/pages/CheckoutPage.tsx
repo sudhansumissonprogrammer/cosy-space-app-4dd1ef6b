@@ -440,7 +440,7 @@ export default function CheckoutPage() {
   const storePartialValue = (store as any).partial_payment_value ?? null;
   const hasAnyPartialPayment = storePartialEnabled && !!storePartialValue;
 
-  const availableMethods = paymentConfig?.payment_methods || ["cod"];
+  const availableMethods = paymentConfig?.payment_methods ?? [];
   const hasCod = availableMethods.includes("cod");
   const hasRazorpay = availableMethods.includes("razorpay");
   const hasCashfree = availableMethods.includes("cashfree");
@@ -451,7 +451,10 @@ export default function CheckoutPage() {
     hasRazorpay ? "razorpay" : hasCashfree ? "cashfree" : hasPayu ? "payu" : null;
 
   useEffect(() => {
-    // When partial payment is enabled, always default to online (COD is hidden)
+    // Wait until payment config has actually loaded before picking a default —
+    // otherwise we briefly select "cod" and a fast tap on Place Order locks it in
+    // even when the store requires partial/online payment.
+    if (!paymentConfigLoaded) return;
     if (hasAnyPartialPayment && hasOnline) {
       setPaymentMethod("razorpay"); // generic "online" flag — actual gateway resolved via activeGateway
       setPartialPaymentMode("partial");
@@ -460,7 +463,7 @@ export default function CheckoutPage() {
     } else if (hasOnline) {
       setPaymentMethod("razorpay");
     }
-  }, [hasCod, hasOnline, hasAnyPartialPayment]);
+  }, [paymentConfigLoaded, hasCod, hasOnline, hasAnyPartialPayment]);
 
   // Preload SDKs + pre-warm edge functions so everything is ready instantly when user clicks Pay
   useEffect(() => {
