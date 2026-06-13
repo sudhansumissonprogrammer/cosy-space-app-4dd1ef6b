@@ -41,10 +41,10 @@ import PullToRefreshIndicator from "@/components/dashboard/PullToRefreshIndicato
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 
-const STATUS_OPTIONS = ["pending", "confirmed", "partially_paid", "shipped", "delivered", "cancelled"] as const;
-
-import { orderStatusBadgeClass, orderStatusLabel } from "@/lib/orderStatus";
+import { ORDER_STATUS_OPTIONS, orderStatusBadgeClass, orderStatusLabel } from "@/lib/orderStatus";
+const STATUS_OPTIONS = ORDER_STATUS_OPTIONS.map(o => o.value);
 const statusColor = (status: string) => orderStatusBadgeClass(status);
+
 
 export default function StoreOrders() {
   const slugStore = useStoreSlugParam();
