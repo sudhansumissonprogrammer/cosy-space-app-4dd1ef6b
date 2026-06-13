@@ -3449,6 +3449,7 @@ export type Database = {
           source: string | null
           store_id: string | null
           total_spent: number | null
+          updated_at: string | null
         }
         Relationships: []
       }
