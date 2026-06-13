@@ -1079,7 +1079,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
               </SelectTrigger>
               <SelectContent>
                 {STATUS_OPTIONS.map(s => (
-                  <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                  <SelectItem key={s} value={s}>{orderStatusLabel(s)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
