@@ -697,7 +697,7 @@ export default function StoreOrders() {
                                   <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
                                   <SelectContent>
                                     {STATUS_OPTIONS.map((s) => (
-                                      <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                                      <SelectItem key={s} value={s}>{orderStatusLabel(s)}</SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
