@@ -162,13 +162,13 @@ export default function StoreAnalytics() {
 
 
 
-  // Customers
+  // Customers — unified view (storefront + WhatsApp).
   const { data: customers } = useQuery({
     queryKey: ["analytics-customers", storeIds],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("customers")
+      const { data, error } = await (supabase as any)
+        .from("merchant_customers_v")
         .select("id, created_at, order_count")
         .in("store_id", storeIds);
       if (error) throw error;

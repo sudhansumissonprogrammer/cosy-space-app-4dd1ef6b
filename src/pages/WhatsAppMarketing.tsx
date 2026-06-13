@@ -2026,7 +2026,7 @@ function SegmentationTab({ storeId, onSendToBulk }: { storeId: string; onSendToB
         setSegmentPhones([...new Set(phones)]);
       } else {
         // Existing segment logic
-        let query = supabase.from("customers").select("phone").eq("store_id", storeId).not("phone", "is", null);
+        let query = (supabase as any).from("merchant_customers_v").select("phone").eq("store_id", storeId).not("phone", "is", null);
 
         switch (segmentId) {
           case "repeat_buyers": query = query.gte("order_count", 2); break;
