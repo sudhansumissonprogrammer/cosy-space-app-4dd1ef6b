@@ -1042,16 +1042,20 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
             <Button
               variant="outline"
               className="w-full h-10 text-sm font-medium border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-400 dark:hover:bg-purple-950/30"
-              onClick={() => {
-                (supabase as any).from("orders").update({ balance_due: 0, status: "delivered" }).eq("id", order.id).then(() => {
-                  toast.success("Order marked as fully paid");
-                  onStatusChange("delivered");
-                });
+              onClick={async () => {
+                const { error } = await (supabase as any)
+                  .from("orders")
+                  .update({ balance_due: 0, status: "delivered" })
+                  .eq("id", order.id);
+                if (error) { toast.error(error.message); return; }
+                toast.success("Order marked as fully paid");
+                onStatusChange("delivered");
               }}
             >
               ✅ Mark as Fully Paid (Collected {order.currency} {Number(order.balance_due).toFixed(0)})
             </Button>
           )}
+
           {order.customer_phone && (
             <Button
               variant="outline"
