@@ -3438,6 +3438,21 @@ export type Database = {
       }
     }
     Views: {
+      merchant_customers_v: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string | null
+          name: string | null
+          order_count: number | null
+          phone: string | null
+          source: string | null
+          store_id: string | null
+          total_spent: number | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
       store_payment_config_public: {
         Row: {
           created_at: string | null

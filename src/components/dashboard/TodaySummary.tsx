@@ -25,8 +25,8 @@ export default function TodaySummary({ storeId, currencySymbol }: TodaySummaryPr
           .eq("store_id", storeId)
           .gte("created_at", iso)
           .in("status", REVENUE_STATUSES),
-        supabase
-          .from("customers")
+        (supabase as any)
+          .from("merchant_customers_v")
           .select("id", { count: "estimated", head: true })
           .eq("store_id", storeId)
           .gte("created_at", iso),

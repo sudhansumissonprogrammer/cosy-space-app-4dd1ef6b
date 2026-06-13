@@ -118,25 +118,37 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3) Ensure storefront_customers row exists for this store (if given)
+    // 3) Ensure storefront_customers row exists for this store (if given).
+    //    Uses upsert on (user_id, store_id) — the unique index blocks the race
+    //    between concurrent phone-login + create-guest-account calls.
+    //    Also patches `name` when it was previously empty (never clobbers a
+    //    user-saved value, mirroring create-guest-account COALESCE-style).
     let storefrontCustomerId: string | null = null;
     if (store_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(store_id)) {
       const { data: existingCustomer } = await adminClient
         .from("storefront_customers")
-        .select("id")
+        .select("id, name, phone")
         .eq("user_id", userId)
         .eq("store_id", store_id)
         .maybeSingle();
 
       if (existingCustomer) {
         storefrontCustomerId = existingCustomer.id;
+        const patch: Record<string, unknown> = {};
+        if (existingCustomer.phone !== normalizedPhone) patch.phone = normalizedPhone;
+        if (!existingCustomer.name && name) patch.name = name;
+        if (Object.keys(patch).length > 0) {
+          await adminClient.from("storefront_customers").update(patch).eq("id", existingCustomer.id);
+        }
       } else {
-        const { data: created } = await adminClient.from("storefront_customers").insert({
-          user_id: userId,
-          store_id,
-          phone: normalizedPhone,
-          name: name || null,
-        }).select("id").single();
+        const { data: created } = await adminClient
+          .from("storefront_customers")
+          .upsert(
+            { user_id: userId, store_id, phone: normalizedPhone, name: name || null },
+            { onConflict: "user_id,store_id" }
+          )
+          .select("id")
+          .single();
         storefrontCustomerId = created?.id ?? null;
       }
     }
@@ -203,7 +215,11 @@ Deno.serve(async (req) => {
 /**
  * Mint a session for an existing user WITHOUT changing their password.
  * Uses admin.generateLink({type:'magiclink'}) → anon.verifyOtp.
- * Falls back to a password rotation only if magic-link path fails.
+ *
+ * IMPORTANT: if generateLink is rate-limited (429 / "rate limit"), we do NOT
+ * fall back to password rotation — that would invalidate every existing
+ * refresh token on the user's other devices (the exact bug we just fixed).
+ * We only fall back to password rotation on hard, non-rate-limit errors.
  */
 async function mintSession(
   admin: any,
@@ -211,15 +227,12 @@ async function mintSession(
   email: string,
   userId: string
 ): Promise<{ access_token: string; refresh_token: string } | null> {
-  // Preferred: magic link (no password change → other devices stay logged in)
+  let rateLimited = false;
   try {
     const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
       type: "magiclink",
       email,
     });
-    const hashedToken =
-      linkData?.properties?.hashed_token ||
-      (linkData as any)?.properties?.email_otp; // fallback shape
     const tokenHash = linkData?.properties?.hashed_token;
     if (!linkErr && tokenHash) {
       const { data: vData, error: vErr } = await anon.auth.verifyOtp({
@@ -232,17 +245,26 @@ async function mintSession(
           refresh_token: vData.session.refresh_token,
         };
       }
-      console.warn("[phone-login] verifyOtp failed, falling back:", vErr?.message);
+      console.warn("[phone-login] verifyOtp failed:", vErr?.message);
     } else {
-      console.warn("[phone-login] generateLink failed, falling back:", linkErr?.message);
+      const msg = (linkErr?.message || "").toLowerCase();
+      const status = (linkErr as any)?.status;
+      rateLimited =
+        status === 429 ||
+        msg.includes("rate limit") ||
+        msg.includes("too many") ||
+        msg.includes("over_email_send_rate_limit");
+      console.warn("[phone-login] generateLink failed:", linkErr?.message, "rateLimited=", rateLimited);
     }
-    // mark `hashedToken` as used to satisfy linter (no-op)
-    void hashedToken;
   } catch (e) {
     console.warn("[phone-login] magiclink mint threw:", (e as Error).message);
   }
 
-  // Fallback: rotate password (legacy path) — only on magic-link failure.
+  // Rate-limited: bail out instead of rotating password. The caller's
+  // existing session (if any) stays valid; UI shows a soft retry message.
+  if (rateLimited) return null;
+
+  // Fallback (non-rate-limit failures only): rotate password.
   try {
     const freshPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
     const { error: updErr } = await admin.auth.admin.updateUserById(userId, {

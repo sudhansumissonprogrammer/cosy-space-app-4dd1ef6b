@@ -41,7 +41,11 @@ export default function StoreCustomers() {
   const { data: countData } = useQuery({
     queryKey: ["store-customers-count", storeId],
     queryFn: async () => {
-      const { count, error } = await supabase.from("customers").select("*", { count: "estimated", head: true }).eq("store_id", storeId!);
+      // Unified view: storefront sign-ins/checkouts + WhatsApp-only buyers.
+      const { count, error } = await (supabase as any)
+        .from("merchant_customers_v")
+        .select("*", { count: "estimated", head: true })
+        .eq("store_id", storeId!);
       if (error) throw error;
       return count;
     },
@@ -53,8 +57,8 @@ export default function StoreCustomers() {
   const { data: customers, isLoading } = useQuery({
     queryKey: ["store-customers", storeId, pagination.page],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("customers").select("*").eq("store_id", storeId!)
+      const { data, error } = await (supabase as any)
+        .from("merchant_customers_v").select("*").eq("store_id", storeId!)
         .order("order_count", { ascending: false })
         .range(pagination.from, pagination.to);
       if (error) throw error;
