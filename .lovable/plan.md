@@ -1,54 +1,44 @@
+## Plan to fix all order status mismatch
 
-# Account Creation Hardening — Fix All 3 Issues
+### Root causes found
+- The database has one real order status (`orders.status`), but some UI parts still make their own interpretation.
+- Storefront order list cache stays fresh for 10 minutes, so the order card can show old `pending` while order detail refetches and shows `partially_paid`.
+- Storefront order detail payment text uses `payment_type === "partial"` to show `Partially Paid`, even when the actual order status is still `pending` and payment is not verified yet.
+- Dashboard mobile detail sheet keeps a local copy of the order; after a status change, it can temporarily differ from the main list until refetch finishes.
+- Some labels still render raw status text like `partially_paid` / `Partially_paid` instead of the shared status label.
 
-## What changes
+### Fixes to implement
 
-### Fix 1 — Stop killing other-device sessions (severe)
-Today both `create-guest-account` and `phone-login` rotate the user's password on **every** call, which invalidates every refresh token that user has on any other device. Customer logs in on phone, then checks out on laptop → phone gets silently logged out.
+1. **Make `src/lib/orderStatus.ts` the only status source**
+   - Export shared status options for dropdowns/filters.
+   - Use `orderStatusLabel()` everywhere instead of `s.charAt(0) + s.slice(1)`.
+   - Add safe handling for backend/legacy statuses like `failed` so unknown statuses never fall back to `Pending` incorrectly.
 
-**Approach:** Use Supabase admin `generateLink({ type: 'magiclink' })` + `verifyOtp({ type: 'magiclink', token_hash })` to mint a session **without touching the password**. This is the official supported path for "log this user in server-side." Zero refresh-token disruption across devices, zero race between parallel tabs.
+2. **Fix storefront order card vs detail stale cache**
+   - Reduce/refetch the `storefront-customer-orders` query so order cards refresh when opened/focused.
+   - Add a customer-order realtime subscription or focused invalidation so dashboard status changes (`pending → partially_paid → confirmed → shipped → delivered`) update customer order cards and detail quickly.
+   - When detail loads from list cache, keep the instant render but force fresh DB status immediately.
 
-Behavior:
-- **New user** → `admin.createUser()` once (no password set, or a one-time random one that is never rotated again).
-- **Existing user** → skip password update entirely; just generate a magic link, extract the `token_hash`, and exchange it for a session via `verifyOtp`.
-- Same client-facing return shape (`{ session: { access_token, refresh_token } }`), so no frontend changes needed.
+3. **Fix storefront order detail payment wording**
+   - Separate fulfillment status from payment status:
+     - `status = pending` + `payment_type = partial` + not verified: show order status `Pending`, payment text `Advance payment pending`.
+     - `status = partially_paid`: show order status `Partially Paid`, payment text `Advance paid`.
+     - `status = confirmed/shipped/delivered`: show that exact order status everywhere; payment block can still show advance/balance only as payment details, not as order status.
+   - Add a visible shared status badge/title in order detail, not only the timeline step, because `partially_paid` maps to the Confirmed step but should still label as `Partially Paid`.
 
-### Fix 2 — Replace `listUsers` pagination with O(1) lookup (scalability)
-Current fallback paginates up to 50,000 / 4,000 users on every checkout — already slow at ~1.8k users, breaks at 10k+.
+4. **Fix dashboard order page live consistency**
+   - Use optimistic cache updates when merchant changes status from dropdown, mobile sheet, swipe-to-ship, or bulk update.
+   - Update both dashboard list and open mobile detail sheet immediately from the same mutation result.
+   - Replace raw dropdown/filter labels with shared labels (`Partially Paid`, `Confirmed`, `Shipped`, etc.).
+   - Fix the “Mark as Fully Paid” mobile action so it updates status + balance in one path and does not double-update or leave stale balance/status in the sheet.
 
-**Approach:** Add a `SECURITY DEFINER` SQL helper:
+5. **Fix invoice/recent order/status surfaces**
+   - Replace remaining invoice/local status color maps with shared status label/classes where applicable.
+   - Keep dashboard Recent Orders, order table, mobile order cards, storefront order cards, storefront detail, public tracking, and invoices all using the same label/color rules.
 
-```sql
-CREATE FUNCTION public.get_auth_user_id_by_email(_email text)
-RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public
-AS $$ SELECT id FROM auth.users WHERE lower(email) = lower(_email) LIMIT 1 $$;
-REVOKE ALL ON FUNCTION public.get_auth_user_id_by_email(text) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.get_auth_user_id_by_email(text) TO service_role;
-```
-
-Both edge functions replace their `listUsers` loops with a single `supabase.rpc("get_auth_user_id_by_email", { _email: phoneEmail })` call.
-
-### Fix 3 — Stop clobbering customer-edited profile fields (polish)
-In `create-guest-account`, when the `storefront_customers` row already exists, the `UPDATE` overwrites `name`, `phone`, `email` even if the customer had set them later in /account.
-
-**Approach:** Switch to COALESCE-style guarded update — only fill columns that are currently NULL/empty. Phone always stays canonical (it's the identity key). Never overwrite a customer-saved name or email from a fresh checkout typo.
-
-## Files touched
-
-- `supabase/migrations/<new>.sql` — adds `get_auth_user_id_by_email()` helper.
-- `supabase/functions/phone-login/index.ts` — swap listUsers loop for RPC; replace password-rotate path with `generateLink` + `verifyOtp`.
-- `supabase/functions/create-guest-account/index.ts` — same two swaps + COALESCE-style storefront_customers update.
-
-No frontend changes. No DB schema changes other than the one helper function.
-
-## Risk & rollback
-
-- Magic-link path is the officially supported Supabase admin pattern, so no API risk.
-- If `generateLink` ever returns an error, fall back to `signInWithPassword` with a freshly-set password (current behavior) — degrades gracefully instead of failing.
-- Helper function is additive; safe to revert by dropping it.
-
-## Verification after ship
-
-1. Trigger checkout twice from two different browsers on the same phone number — confirm both sessions stay alive (no `refresh_token_not_found` 400s in auth logs).
-2. Check edge-function logs for `phone-login` and `create-guest-account` — should see no `listUsers` calls.
-3. Edit name/email in /account, then do a fresh checkout with a typo — confirm /account values are preserved.
+### Expected result
+- If payment gateway verifies partial payment: dashboard, order card, order detail, tracking, invoice all show `Partially Paid`.
+- If store owner changes it to `Confirmed`: every surface shows `Confirmed`.
+- If store owner changes it to `Shipped` or `Delivered`: every surface updates to that status.
+- If a partial payment order is still truly `Pending`, storefront detail will no longer say `Advance paid`; it will show `Pending` and `Advance payment pending`.
+- No overlapping/conflicting status labels between dashboard and storefront.

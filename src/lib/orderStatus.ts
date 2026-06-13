@@ -77,3 +77,40 @@ export function orderStatusBadgeClass(status: string | null | undefined): string
 export function orderStatusRank(status: string | null | undefined): number {
   return getOrderStatusMeta(status).rank;
 }
+
+// Status options for dashboard dropdowns / filters / bulk-update.
+// Order matches the natural lifecycle the merchant sees.
+export const ORDER_STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
+  { value: "pending",        label: ORDER_STATUS_META.pending.label },
+  { value: "confirmed",      label: ORDER_STATUS_META.confirmed.label },
+  { value: "partially_paid", label: ORDER_STATUS_META.partially_paid.label },
+  { value: "shipped",        label: ORDER_STATUS_META.shipped.label },
+  { value: "delivered",      label: ORDER_STATUS_META.delivered.label },
+  { value: "cancelled",      label: ORDER_STATUS_META.cancelled.label },
+];
+
+/**
+ * Customer-facing payment line on the storefront order detail.
+ * Separates fulfillment status (orders.status) from payment state so a
+ * pending partial order never falsely says "Partially Paid".
+ */
+export function paymentDisplay(order: {
+  status?: string | null;
+  payment_type?: string | null;
+  payment_method?: string | null;
+  payment_verified?: boolean | null;
+}): { label: string; tone: "paid" | "pending" | "cod" } {
+  const isCod = !!order.payment_method && /cod|cash/i.test(order.payment_method);
+  const isPartial = order.payment_type === "partial";
+  const verified = !!order.payment_verified;
+  const status = order.status || "";
+
+  if (status === "partially_paid") return { label: "Advance paid · Balance on delivery", tone: "paid" };
+  if (status === "cancelled")     return { label: isCod ? "Pay on Delivery" : verified ? "Paid" : "Not paid", tone: isCod ? "cod" : verified ? "paid" : "pending" };
+
+  if (isPartial && !verified)     return { label: "Advance payment pending", tone: "pending" };
+  if (isCod && !isPartial)        return { label: "Pay on Delivery", tone: "cod" };
+  if (verified)                   return { label: "Paid", tone: "paid" };
+  return { label: "Payment pending", tone: "pending" };
+}
+
