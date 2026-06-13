@@ -7,18 +7,18 @@ const corsHeaders = {
 };
 
 /**
- * Direct phone login (NO OTP).
+ * Direct phone login (NO OTP, NO password rotation).
  *
- * Behavior:
- * - Looks up an auth user keyed by `${normalizedPhone}@phone.guest`
- *   (the same scheme used by create-guest-account).
- * - If found, resets that user's password to a fresh random value and
- *   returns a real session (access + refresh tokens) for auto-login.
- * - If not found, creates a new user keyed by phone + creates a
- *   storefront_customers row for the given store, then signs in.
- *
- * The client takes the returned tokens and calls supabase.auth.setSession(...)
- * to log the user in immediately.
+ * Flow:
+ *  1. Canonicalize phone → 10-digit → email `<digits>@phone.guest`.
+ *  2. Look up auth user via RPC `get_auth_user_id_by_email` (O(1)).
+ *     If missing, `admin.createUser` once with a one-time random password.
+ *  3. Mint a session WITHOUT touching the password by calling
+ *     `admin.generateLink({ type: 'magiclink' })` and exchanging the returned
+ *     `hashed_token` via anon `auth.verifyOtp({ type: 'magiclink', token_hash })`.
+ *     This preserves refresh tokens on the user's other devices.
+ *  4. Fallback: if generateLink fails, rotate password + signInWithPassword.
+ *  5. Ensure storefront_customers row + optional claim of a fresh order.
  */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -57,9 +57,7 @@ Deno.serve(async (req) => {
       );
     }
     const normalizedPhone = local;
-
     const phoneEmail = `${normalizedPhone}@phone.guest`;
-
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -68,75 +66,59 @@ Deno.serve(async (req) => {
     const adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
-
-    // Generate a fresh password each time so login is deterministic
-    const freshPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
-    let userId: string;
-    let isNewUser = false;
-
-    // Try to create the user first. If it already exists, fall back to update.
-    // This avoids the unreliable listUsers() pagination scan.
-    const { data: newUser, error: createErr } = await adminClient.auth.admin.createUser({
-      email: phoneEmail,
-      password: freshPassword,
-      email_confirm: true,
-      user_metadata: {
-        full_name: name || null,
-        phone: normalizedPhone,
-        user_type: "customer",
-      },
+    const anonClient = createClient(supabaseUrl, anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    if (newUser?.user) {
-      userId = newUser.user.id;
-      isNewUser = true;
-    } else {
-      // User likely already exists — find them by paginating listUsers
-      const errMsg = createErr?.message?.toLowerCase() || "";
-      const isDuplicate =
-        errMsg.includes("already") ||
-        errMsg.includes("registered") ||
-        errMsg.includes("exists") ||
-        (createErr as any)?.code === "email_exists";
+    let userId: string | null = null;
+    let isNewUser = false;
 
-      if (!isDuplicate && createErr) {
-        return new Response(
-          JSON.stringify({ error: createErr.message || "Could not create user" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+    // 1) O(1) lookup via SQL helper
+    const { data: existingId } = await adminClient
+      .rpc("get_auth_user_id_by_email", { _email: phoneEmail });
+    if (existingId && typeof existingId === "string") {
+      userId = existingId;
+    }
 
-      // Paginate through users to find the matching one
-      let foundUser: { id: string } | null = null;
-      for (let page = 1; page <= 20 && !foundUser; page++) {
-        const { data: list } = await adminClient.auth.admin.listUsers({ page, perPage: 200 });
-        if (!list?.users?.length) break;
-        const match = list.users.find((u) => u.email?.toLowerCase() === phoneEmail);
-        if (match) foundUser = { id: match.id };
-        if (list.users.length < 200) break;
-      }
-
-      if (!foundUser) {
-        return new Response(
-          JSON.stringify({ error: "Account exists but could not be located. Please try again." }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      userId = foundUser.id;
-      const { error: updateErr } = await adminClient.auth.admin.updateUserById(userId, {
-        password: freshPassword,
+    // 2) Create if missing
+    if (!userId) {
+      const oneTimePassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
+      const { data: newUser, error: createErr } = await adminClient.auth.admin.createUser({
+        email: phoneEmail,
+        password: oneTimePassword,
         email_confirm: true,
+        user_metadata: {
+          full_name: name || null,
+          phone: normalizedPhone,
+          user_type: "customer",
+        },
       });
-      if (updateErr) {
-        return new Response(
-          JSON.stringify({ error: updateErr.message }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      if (newUser?.user) {
+        userId = newUser.user.id;
+        isNewUser = true;
+      } else {
+        // Race: another request created it between lookup and create.
+        const errMsg = (createErr?.message || "").toLowerCase();
+        const isDuplicate =
+          errMsg.includes("already") ||
+          errMsg.includes("registered") ||
+          errMsg.includes("exists") ||
+          (createErr as any)?.code === "email_exists";
+        if (isDuplicate) {
+          const { data: id2 } = await adminClient
+            .rpc("get_auth_user_id_by_email", { _email: phoneEmail });
+          if (id2 && typeof id2 === "string") userId = id2;
+        }
+        if (!userId) {
+          return new Response(
+            JSON.stringify({ error: createErr?.message || "Could not create user" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
     }
 
-    // Ensure a storefront_customers row exists for this store (if store_id given)
+    // 3) Ensure storefront_customers row exists for this store (if given)
     let storefrontCustomerId: string | null = null;
     if (store_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(store_id)) {
       const { data: existingCustomer } = await adminClient
@@ -159,9 +141,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Optionally claim a guest order placed seconds ago — verify the order's
-    // customer_phone matches the phone we just authenticated, then link it to
-    // the storefront customer so it shows up in /account.
+    // 4) Optional: claim a guest order placed seconds ago.
     if (
       claim_order_id &&
       storefrontCustomerId &&
@@ -176,7 +156,6 @@ Deno.serve(async (req) => {
           .maybeSingle();
         if (order && order.store_id === store_id && !order.storefront_customer_id) {
           const orderPhoneDigits = (order.customer_phone || "").replace(/\D/g, "");
-          // Match either exact 10-digit or with country-code suffix
           const matches =
             orderPhoneDigits.endsWith(normalizedPhone) ||
             normalizedPhone.endsWith(orderPhoneDigits);
@@ -188,22 +167,15 @@ Deno.serve(async (req) => {
           }
         }
       } catch (_e) {
-        // non-fatal — login should still succeed
+        // non-fatal
       }
     }
 
-    // Sign in to mint a real session
-    const anonClient = createClient(supabaseUrl, anonKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-    const { data: signInData, error: signInErr } = await anonClient.auth.signInWithPassword({
-      email: phoneEmail,
-      password: freshPassword,
-    });
-
-    if (signInErr || !signInData?.session) {
+    // 5) Mint a session WITHOUT rotating password (preserves other devices).
+    const session = await mintSession(adminClient, anonClient, phoneEmail, userId);
+    if (!session) {
       return new Response(
-        JSON.stringify({ error: signInErr?.message || "Could not create session" }),
+        JSON.stringify({ error: "Could not create session" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -213,8 +185,8 @@ Deno.serve(async (req) => {
         success: true,
         is_new_user: isNewUser,
         session: {
-          access_token: signInData.session.access_token,
-          refresh_token: signInData.session.refresh_token,
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
         },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -227,3 +199,66 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+/**
+ * Mint a session for an existing user WITHOUT changing their password.
+ * Uses admin.generateLink({type:'magiclink'}) → anon.verifyOtp.
+ * Falls back to a password rotation only if magic-link path fails.
+ */
+async function mintSession(
+  admin: any,
+  anon: any,
+  email: string,
+  userId: string
+): Promise<{ access_token: string; refresh_token: string } | null> {
+  // Preferred: magic link (no password change → other devices stay logged in)
+  try {
+    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+    });
+    const hashedToken =
+      linkData?.properties?.hashed_token ||
+      (linkData as any)?.properties?.email_otp; // fallback shape
+    const tokenHash = linkData?.properties?.hashed_token;
+    if (!linkErr && tokenHash) {
+      const { data: vData, error: vErr } = await anon.auth.verifyOtp({
+        type: "magiclink",
+        token_hash: tokenHash,
+      });
+      if (!vErr && vData?.session) {
+        return {
+          access_token: vData.session.access_token,
+          refresh_token: vData.session.refresh_token,
+        };
+      }
+      console.warn("[phone-login] verifyOtp failed, falling back:", vErr?.message);
+    } else {
+      console.warn("[phone-login] generateLink failed, falling back:", linkErr?.message);
+    }
+    // mark `hashedToken` as used to satisfy linter (no-op)
+    void hashedToken;
+  } catch (e) {
+    console.warn("[phone-login] magiclink mint threw:", (e as Error).message);
+  }
+
+  // Fallback: rotate password (legacy path) — only on magic-link failure.
+  try {
+    const freshPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
+    const { error: updErr } = await admin.auth.admin.updateUserById(userId, {
+      password: freshPassword,
+    });
+    if (updErr) return null;
+    const { data: sData, error: sErr } = await anon.auth.signInWithPassword({
+      email,
+      password: freshPassword,
+    });
+    if (sErr || !sData?.session) return null;
+    return {
+      access_token: sData.session.access_token,
+      refresh_token: sData.session.refresh_token,
+    };
+  } catch {
+    return null;
+  }
+}
