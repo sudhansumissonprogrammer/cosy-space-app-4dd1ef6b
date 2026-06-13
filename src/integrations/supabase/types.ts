@@ -3762,6 +3762,7 @@ export type Database = {
         Returns: number
       }
       verify_cron_secret: { Args: { _secret: string }; Returns: boolean }
+      verify_phone_account_integrity: { Args: never; Returns: undefined }
       wallet_adjust: {
         Args: {
           _amount: number
