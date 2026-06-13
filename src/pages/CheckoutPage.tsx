@@ -367,7 +367,7 @@ export default function CheckoutPage() {
   });
 
   // Fetch payment config for this store
-  const { data: paymentConfig } = useQuery({
+  const { data: paymentConfig, isFetched: paymentConfigFetched, isError: paymentConfigError } = useQuery({
     queryKey: ["store-payment-config", store.id],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_store_payment_config", { _store_id: store.id });
@@ -382,7 +382,10 @@ export default function CheckoutPage() {
       } | null;
     },
     staleTime: 30 * 60 * 1000,
+    retry: 2,
+    refetchOnWindowFocus: false,
   });
+  const paymentConfigLoaded = paymentConfigFetched && !paymentConfigError;
 
   // Fetch shipping config — KEY ALIGNED with CartPage + PDP so checkout
   // reuses the cache instead of re-fetching on every entry.
