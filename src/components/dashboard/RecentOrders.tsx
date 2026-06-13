@@ -92,8 +92,8 @@ const RecentOrders = React.forwardRef<HTMLDivElement, RecentOrdersProps>(functio
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-bold text-foreground">{currencySymbol}{Number(order.total).toFixed(0)}</p>
-                  <Badge variant="secondary" className={`text-[9px] px-1.5 py-0 ${statusColors[order.status] || ""}`}>
-                    {order.status}
+                  <Badge variant="secondary" className={`text-[9px] px-1.5 py-0 ${orderStatusBadgeClass(order.status)}`}>
+                    {orderStatusLabel(order.status)}
                   </Badge>
                 </div>
               </button>
