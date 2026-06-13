@@ -188,7 +188,7 @@ export default function OrderTrackingPage() {
                       {format(new Date(order.created_at), "dd MMM yyyy, hh:mm a")}
                     </CardDescription>
                   </div>
-                  <Badge className={statusColors[order.status] || ""}>
+                  <Badge className={orderStatusBadgeClass(order.status)}>
                     {orderStatusLabel(order.status)}
                   </Badge>
                 </div>
