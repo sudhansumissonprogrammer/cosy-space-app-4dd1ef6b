@@ -367,7 +367,7 @@ export default function CheckoutPage() {
   });
 
   // Fetch payment config for this store
-  const { data: paymentConfig } = useQuery({
+  const { data: paymentConfig, isFetched: paymentConfigFetched, isError: paymentConfigError } = useQuery({
     queryKey: ["store-payment-config", store.id],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_store_payment_config", { _store_id: store.id });
@@ -382,7 +382,10 @@ export default function CheckoutPage() {
       } | null;
     },
     staleTime: 30 * 60 * 1000,
+    retry: 2,
+    refetchOnWindowFocus: false,
   });
+  const paymentConfigLoaded = paymentConfigFetched && !paymentConfigError;
 
   // Fetch shipping config — KEY ALIGNED with CartPage + PDP so checkout
   // reuses the cache instead of re-fetching on every entry.
@@ -437,7 +440,7 @@ export default function CheckoutPage() {
   const storePartialValue = (store as any).partial_payment_value ?? null;
   const hasAnyPartialPayment = storePartialEnabled && !!storePartialValue;
 
-  const availableMethods = paymentConfig?.payment_methods || ["cod"];
+  const availableMethods = paymentConfig?.payment_methods ?? [];
   const hasCod = availableMethods.includes("cod");
   const hasRazorpay = availableMethods.includes("razorpay");
   const hasCashfree = availableMethods.includes("cashfree");
@@ -448,7 +451,10 @@ export default function CheckoutPage() {
     hasRazorpay ? "razorpay" : hasCashfree ? "cashfree" : hasPayu ? "payu" : null;
 
   useEffect(() => {
-    // When partial payment is enabled, always default to online (COD is hidden)
+    // Wait until payment config has actually loaded before picking a default —
+    // otherwise we briefly select "cod" and a fast tap on Place Order locks it in
+    // even when the store requires partial/online payment.
+    if (!paymentConfigLoaded) return;
     if (hasAnyPartialPayment && hasOnline) {
       setPaymentMethod("razorpay"); // generic "online" flag — actual gateway resolved via activeGateway
       setPartialPaymentMode("partial");
@@ -457,7 +463,7 @@ export default function CheckoutPage() {
     } else if (hasOnline) {
       setPaymentMethod("razorpay");
     }
-  }, [hasCod, hasOnline, hasAnyPartialPayment]);
+  }, [paymentConfigLoaded, hasCod, hasOnline, hasAnyPartialPayment]);
 
   // Preload SDKs + pre-warm edge functions so everything is ready instantly when user clicks Pay
   useEffect(() => {
@@ -1932,6 +1938,16 @@ export default function CheckoutPage() {
   };
 
   const handlePlaceOrder = async () => {
+    // Guard: never let an order through before we know what the store accepts.
+    if (!paymentConfigLoaded) {
+      toast.error(t("Loading payment options, please wait…", "भुगतान विकल्प लोड हो रहे हैं, कृपया प्रतीक्षा करें…"));
+      return;
+    }
+    // Defensive: if partial+online is the required flow, plain COD must never reach the server.
+    if (hasAnyPartialPayment && hasOnline && paymentMethod === "cod" && !isPartialOrder) {
+      toast.error(t("Please choose a partial or full online payment option.", "कृपया आंशिक या पूर्ण ऑनलाइन भुगतान चुनें।"));
+      return;
+    }
     // Make sure the address section is open so the inputs exist in the DOM
     if (!expressMode) setExpressMode(true);
 
@@ -2349,6 +2365,25 @@ export default function CheckoutPage() {
             <span className="text-sm font-bold text-foreground">{formatPrice(total, currency)}</span>
           </div>
         </div>
+        {/* Loading skeleton until paymentConfig resolves — prevents showing stale COD-only options */}
+        {!paymentConfigLoaded && !paymentConfigError && (
+          <div className="space-y-2">
+            <div className="h-[68px] rounded-xl border-2 border-border bg-muted/30 animate-pulse" />
+            <div className="h-[68px] rounded-xl border-2 border-border bg-muted/30 animate-pulse" />
+          </div>
+        )}
+        {paymentConfigError && (
+          <div className="rounded-xl border-2 border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+            {t("Couldn't load payment options. Please refresh and try again.", "भुगतान विकल्प लोड नहीं हो सके। कृपया पेज रिफ्रेश करें।")}
+          </div>
+        )}
+
+        {paymentConfigLoaded && !hasCod && !hasOnline && (
+          <div className="rounded-xl border-2 border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+            {t("This store has no payment methods configured.", "इस स्टोर पर कोई भुगतान विधि उपलब्ध नहीं है।")}
+          </div>
+        )}
+
 
         {/* Partial Payment Option */}
         {hasAnyPartialPayment && hasOnline && (
@@ -2523,7 +2558,7 @@ export default function CheckoutPage() {
           className="group relative flex h-14 w-full items-center justify-center gap-2 overflow-hidden text-base font-bold btn-gold shadow-lg shadow-primary/20 transition-[transform,opacity,colors,box-shadow] hover:shadow-xl hover:shadow-primary/30 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           style={{ borderRadius: "var(--storefront-button-radius, 0.75rem)" }}
           onClick={handlePlaceOrder}
-          disabled={placing || paymentFailed}
+          disabled={placing || paymentFailed || !paymentConfigLoaded || (!hasCod && !hasOnline) || (hasAnyPartialPayment && hasOnline && paymentMethod === "cod" && !isPartialOrder)}
         >
           {/* subtle shine layer */}
           <span aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 transition-opacity group-hover:opacity-100" />

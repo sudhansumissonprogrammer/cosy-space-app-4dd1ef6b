@@ -1,44 +1,57 @@
-## Plan to fix all order status mismatch
+# Fix checkout payment-method visibility
 
-### Root causes found
-- The database has one real order status (`orders.status`), but some UI parts still make their own interpretation.
-- Storefront order list cache stays fresh for 10 minutes, so the order card can show old `pending` while order detail refetches and shows `partially_paid`.
-- Storefront order detail payment text uses `payment_type === "partial"` to show `Partially Paid`, even when the actual order status is still `pending` and payment is not verified yet.
-- Dashboard mobile detail sheet keeps a local copy of the order; after a status change, it can temporarily differ from the main list until refetch finishes.
-- Some labels still render raw status text like `partially_paid` / `Partially_paid` instead of the shared status label.
+## Desired behaviour (your rules)
 
-### Fixes to implement
+| Store config | Options shown at checkout |
+|---|---|
+| Partial COD ON + online gateway installed | **Advance Online + Balance COD** and **Pay Full Online** only — no plain COD |
+| COD enabled, no partial, online gateway installed | **COD** and **Pay Full Online** |
+| COD enabled, no online gateway | **COD** only |
+| Only online gateway (no COD) | **Pay Full Online** only |
 
-1. **Make `src/lib/orderStatus.ts` the only status source**
-   - Export shared status options for dropdowns/filters.
-   - Use `orderStatusLabel()` everywhere instead of `s.charAt(0) + s.slice(1)`.
-   - Add safe handling for backend/legacy statuses like `failed` so unknown statuses never fall back to `Pending` incorrectly.
+The UI in `src/pages/CheckoutPage.tsx` (lines 2354–2431) already follows this — *when* `paymentConfig` has loaded.
 
-2. **Fix storefront order card vs detail stale cache**
-   - Reduce/refetch the `storefront-customer-orders` query so order cards refresh when opened/focused.
-   - Add a customer-order realtime subscription or focused invalidation so dashboard status changes (`pending → partially_paid → confirmed → shipped → delivered`) update customer order cards and detail quickly.
-   - When detail loads from list cache, keep the instant render but force fresh DB status immediately.
+## Root cause of Sandeep's COD order (628f8e69…)
 
-3. **Fix storefront order detail payment wording**
-   - Separate fulfillment status from payment status:
-     - `status = pending` + `payment_type = partial` + not verified: show order status `Pending`, payment text `Advance payment pending`.
-     - `status = partially_paid`: show order status `Partially Paid`, payment text `Advance paid`.
-     - `status = confirmed/shipped/delivered`: show that exact order status everywhere; payment block can still show advance/balance only as payment details, not as order status.
-   - Add a visible shared status badge/title in order detail, not only the timeline step, because `partially_paid` maps to the Confirmed step but should still label as `Partially Paid`.
+`CheckoutPage.tsx` line 440:
+```
+const availableMethods = paymentConfig?.payment_methods || ["cod"];
+```
+Before the `get_store_payment_config` RPC resolves (slow 3G / RPC error / cold cache), the page assumes COD-only. That makes `hasOnline=false`, hides the partial block, and shows the plain COD button. A fast tap on Place Order writes `payment_method=cod`, `payment_type=full`, `status=confirmed` — bypassing the partial-payment requirement.
 
-4. **Fix dashboard order page live consistency**
-   - Use optimistic cache updates when merchant changes status from dropdown, mobile sheet, swipe-to-ship, or bulk update.
-   - Update both dashboard list and open mobile detail sheet immediately from the same mutation result.
-   - Replace raw dropdown/filter labels with shared labels (`Partially Paid`, `Confirmed`, `Shipped`, etc.).
-   - Fix the “Mark as Fully Paid” mobile action so it updates status + balance in one path and does not double-update or leave stale balance/status in the sheet.
+The Cart→Checkout flow has no other gate, so the customer never sees the correct option set.
 
-5. **Fix invoice/recent order/status surfaces**
-   - Replace remaining invoice/local status color maps with shared status label/classes where applicable.
-   - Keep dashboard Recent Orders, order table, mobile order cards, storefront order cards, storefront detail, public tracking, and invoices all using the same label/color rules.
+## Fix (frontend only, `src/pages/CheckoutPage.tsx`)
 
-### Expected result
-- If payment gateway verifies partial payment: dashboard, order card, order detail, tracking, invoice all show `Partially Paid`.
-- If store owner changes it to `Confirmed`: every surface shows `Confirmed`.
-- If store owner changes it to `Shipped` or `Delivered`: every surface updates to that status.
-- If a partial payment order is still truly `Pending`, storefront detail will no longer say `Advance paid`; it will show `Pending` and `Advance payment pending`.
-- No overlapping/conflicting status labels between dashboard and storefront.
+1. **Remove the unsafe fallback.** Replace
+   ```
+   const availableMethods = paymentConfig?.payment_methods || ["cod"];
+   ```
+   with
+   ```
+   const paymentConfigLoaded = paymentConfig !== undefined; // query settled
+   const availableMethods = paymentConfig?.payment_methods ?? [];
+   ```
+   Until the RPC settles, no method flags are true → no payment buttons render.
+
+2. **Skeleton while loading.** In the Payment block (line 2342), if `!paymentConfigLoaded`, render a small "Loading payment options…" skeleton instead of the buttons, so the user never sees a stale COD-only state.
+
+3. **Disable Place Order until loaded + valid selection.** In the Place Order button (around line 685 handler and its button render), add guards:
+   - `disabled` when `!paymentConfigLoaded`
+   - `disabled` when `hasAnyPartialPayment && hasOnline && paymentMethod === "cod"` (defensive — should be impossible after fix #1)
+   - In `handlePlaceOrder`, early-return with a toast if either condition is true.
+
+4. **Default-selection effect (line 450).** Keep current logic but also guard with `if (!paymentConfigLoaded) return;` so we don't briefly set `cod` before config arrives.
+
+5. **Query hardening.** Add `retry: 2` and `refetchOnWindowFocus: false` to the `paymentConfig` `useQuery` so a transient network blip doesn't leave it permanently `undefined`. On error, surface a toast and keep Place Order disabled.
+
+## Out of scope (call out, do not change here)
+
+- Server-side enforcement (edge function rejecting `cod`+`full` when store has partial enabled). Worth doing in Phase 1 of the earlier security audit, but this plan is UI-only per your request.
+- The existing Sandeep order — no data change needed unless you want it reclassified.
+
+## Files touched
+
+- `src/pages/CheckoutPage.tsx` only.
+
+No DB migration, no edge-function change, no other components.
