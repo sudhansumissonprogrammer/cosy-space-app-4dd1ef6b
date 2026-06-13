@@ -2558,7 +2558,7 @@ export default function CheckoutPage() {
           className="group relative flex h-14 w-full items-center justify-center gap-2 overflow-hidden text-base font-bold btn-gold shadow-lg shadow-primary/20 transition-[transform,opacity,colors,box-shadow] hover:shadow-xl hover:shadow-primary/30 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           style={{ borderRadius: "var(--storefront-button-radius, 0.75rem)" }}
           onClick={handlePlaceOrder}
-          disabled={placing || paymentFailed}
+          disabled={placing || paymentFailed || !paymentConfigLoaded || (!hasCod && !hasOnline) || (hasAnyPartialPayment && hasOnline && paymentMethod === "cod" && !isPartialOrder)}
         >
           {/* subtle shine layer */}
           <span aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 transition-opacity group-hover:opacity-100" />
