@@ -7,6 +7,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { normalizePhone } from "@/lib/phoneUtils";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import OrderStatusTimeline from "@/components/storefront/OrderStatusTimeline";
+import { getOrderStatusMeta, paymentDisplay } from "@/lib/orderStatus";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -86,6 +87,12 @@ export default function StorefrontOrderDetail() {
       return data;
     },
     enabled: !!orderId,
+    // Always refetch on mount/focus so the merchant's dashboard changes
+    // (pending → partially_paid → confirmed → shipped → delivered) show up
+    // immediately to the customer — no stale list cache mismatch.
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     // Instant render: hydrate from the orders-list cache if we have it,
     // then refetch in the background to fill in slug/name fields the list omits.
     initialData: () => {
@@ -98,6 +105,7 @@ export default function StorefrontOrderDetail() {
     },
     initialDataUpdatedAt: 0,
   });
+
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
@@ -186,7 +194,22 @@ export default function StorefrontOrderDetail() {
           {/* Timeline */}
           <section className="rounded-2xl border bg-card p-5"
                    style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}>
+            {(() => {
+              const meta = getOrderStatusMeta(order.status);
+              return (
+                <div className="mb-4 flex items-center justify-between gap-2">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold ${meta.bg} ${meta.text}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+                    {meta.label}
+                  </span>
+                  <span className="text-[11px]" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}>
+                    Updated {new Date(order.updated_at || order.created_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+              );
+            })()}
             <OrderStatusTimeline status={order.status} createdAt={order.created_at} updatedAt={order.updated_at} />
+
             {order.tracking_number && order.status !== "cancelled" && (
               <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-dashed p-3"
                    style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 18%, transparent)" }}>
@@ -304,12 +327,22 @@ export default function StorefrontOrderDetail() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium">{payLabel(order.payment_method)}</p>
-                <p className="text-[10px] inline-flex items-center gap-1"
-                   style={{ color: isPaid ? "rgb(16 185 129)" : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}>
-                  {isPaid && <ShieldCheck className="h-3 w-3" />}
-                  {order.payment_type === "partial" ? "Partially Paid" : isPaid ? "Paid" : "Pay on Delivery"}
-                </p>
+                {(() => {
+                  const pay = paymentDisplay(order);
+                  const color = pay.tone === "paid"
+                    ? "rgb(16 185 129)"
+                    : pay.tone === "pending"
+                    ? "rgb(217 119 6)"
+                    : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)";
+                  return (
+                    <p className="text-[10px] inline-flex items-center gap-1" style={{ color }}>
+                      {pay.tone === "paid" && <ShieldCheck className="h-3 w-3" />}
+                      {pay.label}
+                    </p>
+                  );
+                })()}
               </div>
+
             </div>
 
             <dl className="space-y-1.5 text-xs">

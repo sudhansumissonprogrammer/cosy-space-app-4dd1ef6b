@@ -41,10 +41,10 @@ import PullToRefreshIndicator from "@/components/dashboard/PullToRefreshIndicato
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 
-const STATUS_OPTIONS = ["pending", "confirmed", "partially_paid", "shipped", "delivered", "cancelled"] as const;
-
-import { orderStatusBadgeClass, orderStatusLabel } from "@/lib/orderStatus";
+import { ORDER_STATUS_OPTIONS, orderStatusBadgeClass, orderStatusLabel } from "@/lib/orderStatus";
+const STATUS_OPTIONS = ORDER_STATUS_OPTIONS.map(o => o.value);
 const statusColor = (status: string) => orderStatusBadgeClass(status);
+
 
 export default function StoreOrders() {
   const slugStore = useStoreSlugParam();
@@ -183,9 +183,37 @@ export default function StoreOrders() {
       if (error) throw error;
       return { orderId, status, tracking_number, tracking_url };
     },
+    // Optimistically patch every cached orders list so the badge, dropdown,
+    // and the open mobile detail sheet all flip to the new status instantly.
+    onMutate: async ({ orderId, status, tracking_number, tracking_url }) => {
+      await queryClient.cancelQueries({ queryKey: ["website-orders-all", storeId] });
+      const snapshots = queryClient.getQueriesData<any[]>({ queryKey: ["website-orders-all", storeId] });
+      for (const [key, list] of snapshots) {
+        if (!Array.isArray(list)) continue;
+        queryClient.setQueryData(key as any, list.map((o: any) =>
+          o?.id === orderId
+            ? { ...o, status, ...(tracking_number !== undefined ? { tracking_number } : {}), ...(tracking_url !== undefined ? { tracking_url } : {}) }
+            : o
+        ));
+      }
+      setMobileDetailOrder((prev: any) =>
+        prev && prev.id === orderId
+          ? { ...prev, status, ...(tracking_number !== undefined ? { tracking_number } : {}), ...(tracking_url !== undefined ? { tracking_url } : {}) }
+          : prev
+      );
+      return { snapshots };
+    },
+    onError: (err: any, _vars, ctx) => {
+      // Roll back optimistic patch
+      if (ctx?.snapshots) {
+        for (const [key, data] of ctx.snapshots) queryClient.setQueryData(key as any, data);
+      }
+      toast.error(err.message);
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
       queryClient.invalidateQueries({ queryKey: ["website-orders-count", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["recent-orders-dashboard", storeId] });
       toast.success("Order updated");
 
       if (storeId && result) {
@@ -212,8 +240,8 @@ export default function StoreOrders() {
         }
       }
     },
-    onError: (err: any) => toast.error(err.message),
   });
+
 
   const deleteOrder = useMutation({
     mutationFn: async (orderId: string) => {
@@ -401,7 +429,7 @@ export default function StoreOrders() {
                     : "bg-background text-muted-foreground border-input hover:bg-accent"
                 )}
               >
-                {s.charAt(0).toUpperCase() + s.slice(1)}
+                {orderStatusLabel(s)}
               </button>
             ))}
           </div>
@@ -453,7 +481,7 @@ export default function StoreOrders() {
                   </SelectTrigger>
                   <SelectContent>
                     {STATUS_OPTIONS.map(s => (
-                      <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                      <SelectItem key={s} value={s}>{orderStatusLabel(s)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -669,7 +697,7 @@ export default function StoreOrders() {
                                   <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
                                   <SelectContent>
                                     {STATUS_OPTIONS.map((s) => (
-                                      <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                                      <SelectItem key={s} value={s}>{orderStatusLabel(s)}</SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
@@ -1014,16 +1042,20 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
             <Button
               variant="outline"
               className="w-full h-10 text-sm font-medium border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-400 dark:hover:bg-purple-950/30"
-              onClick={() => {
-                (supabase as any).from("orders").update({ balance_due: 0, status: "delivered" }).eq("id", order.id).then(() => {
-                  toast.success("Order marked as fully paid");
-                  onStatusChange("delivered");
-                });
+              onClick={async () => {
+                const { error } = await (supabase as any)
+                  .from("orders")
+                  .update({ balance_due: 0, status: "delivered" })
+                  .eq("id", order.id);
+                if (error) { toast.error(error.message); return; }
+                toast.success("Order marked as fully paid");
+                onStatusChange("delivered");
               }}
             >
               ✅ Mark as Fully Paid (Collected {order.currency} {Number(order.balance_due).toFixed(0)})
             </Button>
           )}
+
           {order.customer_phone && (
             <Button
               variant="outline"
@@ -1051,7 +1083,7 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
               </SelectTrigger>
               <SelectContent>
                 {STATUS_OPTIONS.map(s => (
-                  <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                  <SelectItem key={s} value={s}>{orderStatusLabel(s)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

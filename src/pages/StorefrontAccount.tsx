@@ -34,10 +34,15 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
       if (error) throw error;
       return data;
     },
-    // Orders change infrequently within a session — avoid refetch on every
-    // tab switch into Orders.
-    staleTime: 10 * 60 * 1000,
+    // Status changes (merchant ships, cancels, marks delivered) must reach
+    // the customer's order cards quickly. 30s freshness + refetch on focus
+    // keeps the cards in sync with the dashboard and the order detail page
+    // — preventing the "card says Pending, detail says Partially Paid" gap.
+    staleTime: 30 * 1000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
+
 
 
   const ownerPhone = store.whatsapp_number ? normalizePhone(store.whatsapp_number) : "";

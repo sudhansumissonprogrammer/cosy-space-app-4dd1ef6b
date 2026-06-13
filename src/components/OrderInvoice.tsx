@@ -6,6 +6,7 @@ import { Printer, X, Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 // sendInvoiceToWhatsApp is dynamically imported on click to defer jspdf/html2canvas (~250 KB gz)
 import { toast } from "sonner";
+import { orderStatusLabel } from "@/lib/orderStatus";
 
 interface OrderInvoiceProps {
   order: any;
@@ -310,7 +311,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
               <span className="font-semibold text-foreground">{(order.payment_method || "cod").toUpperCase()}</span>
             </p>
             <span className={`inline-block mt-0.5 rounded px-1.5 py-px text-[8px] font-bold uppercase border ${statusColor[order.status] || "bg-muted text-muted-foreground border-border"}`}>
-              {order.status}
+              {orderStatusLabel(order.status)}
             </span>
           </div>
         </div>
