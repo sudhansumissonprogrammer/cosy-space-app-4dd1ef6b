@@ -327,12 +327,22 @@ export default function StorefrontOrderDetail() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium">{payLabel(order.payment_method)}</p>
-                <p className="text-[10px] inline-flex items-center gap-1"
-                   style={{ color: isPaid ? "rgb(16 185 129)" : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}>
-                  {isPaid && <ShieldCheck className="h-3 w-3" />}
-                  {order.payment_type === "partial" ? "Partially Paid" : isPaid ? "Paid" : "Pay on Delivery"}
-                </p>
+                {(() => {
+                  const pay = paymentDisplay(order);
+                  const color = pay.tone === "paid"
+                    ? "rgb(16 185 129)"
+                    : pay.tone === "pending"
+                    ? "rgb(217 119 6)"
+                    : "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)";
+                  return (
+                    <p className="text-[10px] inline-flex items-center gap-1" style={{ color }}>
+                      {pay.tone === "paid" && <ShieldCheck className="h-3 w-3" />}
+                      {pay.label}
+                    </p>
+                  );
+                })()}
               </div>
+
             </div>
 
             <dl className="space-y-1.5 text-xs">
