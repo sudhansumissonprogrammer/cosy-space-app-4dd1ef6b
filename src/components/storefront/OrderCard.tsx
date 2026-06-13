@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ChevronRight, Package } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
+import { getOrderStatusMeta } from "@/lib/orderStatus";
 
 let detailChunkLoaded = false;
 const prefetchOrderDetail = () => {
@@ -9,22 +10,15 @@ const prefetchOrderDetail = () => {
   import("@/pages/StorefrontOrderDetail").catch(() => { detailChunkLoaded = false; });
 };
 
-const statusMeta: Record<string, { label: string; dot: string; text: string; bg: string }> = {
-  pending:   { label: "Pending",   dot: "bg-amber-500",   text: "text-amber-700",   bg: "bg-amber-50" },
-  confirmed: { label: "Confirmed", dot: "bg-blue-500",    text: "text-blue-700",    bg: "bg-blue-50" },
-  shipped:   { label: "Shipped",   dot: "bg-violet-500",  text: "text-violet-700",  bg: "bg-violet-50" },
-  delivered: { label: "Delivered", dot: "bg-emerald-500", text: "text-emerald-700", bg: "bg-emerald-50" },
-  cancelled: { label: "Cancelled", dot: "bg-red-500",     text: "text-red-700",     bg: "bg-red-50" },
-};
-
 const subtitle = (status: string, createdAt: string) => {
   const d = new Date(createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
   switch (status) {
-    case "delivered": return `Delivered`;
-    case "shipped":   return `Arriving soon`;
-    case "cancelled": return `Cancelled`;
-    case "confirmed": return `Order confirmed`;
-    default:          return `Placed on ${d}`;
+    case "delivered":      return `Delivered`;
+    case "shipped":        return `Arriving soon`;
+    case "cancelled":      return `Cancelled`;
+    case "confirmed":      return `Order confirmed`;
+    case "partially_paid": return `Advance received`;
+    default:               return `Placed on ${d}`;
   }
 };
 
@@ -33,7 +27,7 @@ export default function OrderCard({ order, storeSlug, currency }: { order: any; 
   const first = items[0];
   const firstImg = first?.products?.image_url || first?.image_url;
   const more = items.length - 1;
-  const meta = statusMeta[order.status] || statusMeta.pending;
+  const meta = getOrderStatusMeta(order.status);
   const orderShort = order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`;
 
   return (
