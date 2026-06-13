@@ -6,6 +6,7 @@ import { Printer, X, Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 // sendInvoiceToWhatsApp is dynamically imported on click to defer jspdf/html2canvas (~250 KB gz)
 import { toast } from "sonner";
+import { orderStatusLabel } from "@/lib/orderStatus";
 
 interface OrderInvoiceProps {
   order: any;
