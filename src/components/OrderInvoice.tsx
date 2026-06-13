@@ -311,7 +311,7 @@ export default function OrderInvoice({ order, store, onClose }: OrderInvoiceProp
               <span className="font-semibold text-foreground">{(order.payment_method || "cod").toUpperCase()}</span>
             </p>
             <span className={`inline-block mt-0.5 rounded px-1.5 py-px text-[8px] font-bold uppercase border ${statusColor[order.status] || "bg-muted text-muted-foreground border-border"}`}>
-              {order.status}
+              {orderStatusLabel(order.status)}
             </span>
           </div>
         </div>
