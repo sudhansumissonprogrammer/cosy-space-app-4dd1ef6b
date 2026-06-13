@@ -168,7 +168,38 @@ export function StorefrontAuthProvider({
       // Only call getSession if we had a stored token (avoids a needless network
       // hit on cold loads for anonymous visitors).
       if (hasAuthToken) {
-        supabaseStorefront.auth.getSession().then(({ data: { session: sess } }) => {
+        supabaseStorefront.auth.getSession().then(async ({ data: { session: sess } }) => {
+          // Orphan-session self-heal: validate the stored JWT against the auth
+          // server. If the underlying user no longer exists (e.g. they were
+          // merged into another account by the phone-canonicalization migration),
+          // getUser() returns 403 / user_not_found. Drop the dead session so the
+          // browser starts fresh on the next phone-login.
+          if (sess?.user) {
+            try {
+              const { data: verified, error: verifyErr } = await supabaseStorefront.auth.getUser();
+              const msg = (verifyErr?.message || "").toLowerCase();
+              const status = (verifyErr as any)?.status;
+              const isOrphan =
+                !!verifyErr &&
+                (status === 401 ||
+                  status === 403 ||
+                  msg.includes("user_not_found") ||
+                  msg.includes("user not found") ||
+                  msg.includes("user from sub claim"));
+              if (isOrphan || (!verifyErr && !verified?.user)) {
+                console.warn("[storefront-auth] orphan session detected — signing out");
+                try { await supabaseStorefront.auth.signOut({ scope: "local" }); } catch {}
+                try { localStorage.removeItem(STOREFRONT_AUTH_STORAGE_KEY); } catch {}
+                setSession(null);
+                setUser(null);
+                setCustomer(null);
+                setLoading(false);
+                return;
+              }
+            } catch {
+              // Network glitch — keep the session, onAuthStateChange will retry.
+            }
+          }
           setSession(sess);
           setUser(sess?.user ?? null);
           setLoading(false);
