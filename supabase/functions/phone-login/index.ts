@@ -42,15 +42,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    const normalizedPhone = phone.replace(/[^0-9]/g, "");
-    if (normalizedPhone.length < 7) {
+    // Canonical 10-digit Indian mobile — single source of truth across the
+    // stack. Mirror of src/lib/phoneUtils.ts (toCanonicalIndianPhone) and
+    // supabase/functions/create-guest-account/index.ts.
+    const rawDigits = phone.replace(/\D/g, "");
+    let local = rawDigits;
+    if (local.length === 13 && local.startsWith("091")) local = local.slice(3);
+    else if (local.length === 12 && local.startsWith("91")) local = local.slice(2);
+    else if (local.length === 11 && local.startsWith("0")) local = local.slice(1);
+    if (!(local.length === 10 && /^[6-9]/.test(local))) {
       return new Response(
-        JSON.stringify({ error: "Phone number too short" }),
+        JSON.stringify({ error: "Enter a valid 10-digit Indian mobile number" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    const normalizedPhone = local;
 
     const phoneEmail = `${normalizedPhone}@phone.guest`;
+
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

@@ -69,3 +69,34 @@ export function formatPhoneDisplay(raw: string | null | undefined): string {
   if (m) return `+91 ${m[1]} ${m[2]}`;
   return norm;
 }
+
+/**
+ * Canonical 10-digit Indian mobile (e.g. "9692282485").
+ *
+ * This is the ONE format used across the whole stack as the primary
+ * identity key for a customer:
+ *  - auth.users.email  =  `<canonical>@phone.guest`
+ *  - storefront_customers.phone  =  `<canonical>`
+ *  - customer_leads.phone  =  `<canonical>`
+ *  - orders.customer_phone  =  `<canonical>`
+ *
+ * Strips +91 / 91 / leading 0 / spaces / dashes / parens.
+ * Returns "" if it can't produce a valid 10-digit number starting 6-9.
+ *
+ * NOTE: keep this function in lock-step with the same logic in
+ * supabase/functions/create-guest-account/index.ts and phone-login/index.ts.
+ * Divergence creates duplicate accounts for the same person.
+ */
+export function toCanonicalIndianPhone(raw: string | null | undefined): string {
+  if (!raw) return "";
+  const digits = String(raw).replace(/\D/g, "");
+  if (!digits) return "";
+
+  let local = digits;
+  if (local.length === 13 && local.startsWith("091")) local = local.slice(3);
+  else if (local.length === 12 && local.startsWith("91")) local = local.slice(2);
+  else if (local.length === 11 && local.startsWith("0")) local = local.slice(1);
+
+  if (local.length === 10 && /^[6-9]/.test(local)) return local;
+  return "";
+}
