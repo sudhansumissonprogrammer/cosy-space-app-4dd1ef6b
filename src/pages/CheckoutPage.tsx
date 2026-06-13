@@ -2355,6 +2355,25 @@ export default function CheckoutPage() {
             <span className="text-sm font-bold text-foreground">{formatPrice(total, currency)}</span>
           </div>
         </div>
+        {/* Loading skeleton until paymentConfig resolves — prevents showing stale COD-only options */}
+        {!paymentConfigLoaded && !paymentConfigError && (
+          <div className="space-y-2">
+            <div className="h-[68px] rounded-xl border-2 border-border bg-muted/30 animate-pulse" />
+            <div className="h-[68px] rounded-xl border-2 border-border bg-muted/30 animate-pulse" />
+          </div>
+        )}
+        {paymentConfigError && (
+          <div className="rounded-xl border-2 border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+            {t("Couldn't load payment options. Please refresh and try again.", "भुगतान विकल्प लोड नहीं हो सके। कृपया पेज रिफ्रेश करें।")}
+          </div>
+        )}
+
+        {paymentConfigLoaded && !hasCod && !hasOnline && (
+          <div className="rounded-xl border-2 border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+            {t("This store has no payment methods configured.", "इस स्टोर पर कोई भुगतान विधि उपलब्ध नहीं है।")}
+          </div>
+        )}
+
 
         {/* Partial Payment Option */}
         {hasAnyPartialPayment && hasOnline && (
