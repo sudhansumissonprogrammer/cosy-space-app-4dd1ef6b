@@ -87,6 +87,12 @@ export default function StorefrontOrderDetail() {
       return data;
     },
     enabled: !!orderId,
+    // Always refetch on mount/focus so the merchant's dashboard changes
+    // (pending → partially_paid → confirmed → shipped → delivered) show up
+    // immediately to the customer — no stale list cache mismatch.
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     // Instant render: hydrate from the orders-list cache if we have it,
     // then refetch in the background to fill in slug/name fields the list omits.
     initialData: () => {
@@ -99,6 +105,7 @@ export default function StorefrontOrderDetail() {
     },
     initialDataUpdatedAt: 0,
   });
+
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
