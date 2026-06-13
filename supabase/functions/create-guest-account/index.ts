@@ -69,12 +69,25 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Phone is the PRIMARY identifier. Always use phone-based pseudo-email for auth uniqueness.
-    // Real email (if provided) is stored on storefront_customers for communication only.
-    const normalizedPhone = phone.replace(/[^0-9]/g, "");
+    // Canonical 10-digit Indian mobile is the single source of truth.
+    // Same logic lives in src/lib/phoneUtils.ts (toCanonicalIndianPhone) and
+    // supabase/functions/phone-login/index.ts. Keep them aligned.
+    const rawDigits = phone.replace(/\D/g, "");
+    let local = rawDigits;
+    if (local.length === 13 && local.startsWith("091")) local = local.slice(3);
+    else if (local.length === 12 && local.startsWith("91")) local = local.slice(2);
+    else if (local.length === 11 && local.startsWith("0")) local = local.slice(1);
+    if (!(local.length === 10 && /^[6-9]/.test(local))) {
+      return new Response(
+        JSON.stringify({ error: "Invalid Indian mobile number" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const normalizedPhone = local;
     const phoneEmail = `${normalizedPhone}@phone.guest`;
     const realEmail = email ? email.toLowerCase().trim() : null;
     const normalizedEmail = phoneEmail; // for downstream session generation
+
 
     // Lookup existing user by phone-based email (primary key)
     // Find existing user by paginating (listUsers default = 50 per page)
