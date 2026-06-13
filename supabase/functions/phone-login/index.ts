@@ -118,25 +118,37 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3) Ensure storefront_customers row exists for this store (if given)
+    // 3) Ensure storefront_customers row exists for this store (if given).
+    //    Uses upsert on (user_id, store_id) — the unique index blocks the race
+    //    between concurrent phone-login + create-guest-account calls.
+    //    Also patches `name` when it was previously empty (never clobbers a
+    //    user-saved value, mirroring create-guest-account COALESCE-style).
     let storefrontCustomerId: string | null = null;
     if (store_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(store_id)) {
       const { data: existingCustomer } = await adminClient
         .from("storefront_customers")
-        .select("id")
+        .select("id, name, phone")
         .eq("user_id", userId)
         .eq("store_id", store_id)
         .maybeSingle();
 
       if (existingCustomer) {
         storefrontCustomerId = existingCustomer.id;
+        const patch: Record<string, unknown> = {};
+        if (existingCustomer.phone !== normalizedPhone) patch.phone = normalizedPhone;
+        if (!existingCustomer.name && name) patch.name = name;
+        if (Object.keys(patch).length > 0) {
+          await adminClient.from("storefront_customers").update(patch).eq("id", existingCustomer.id);
+        }
       } else {
-        const { data: created } = await adminClient.from("storefront_customers").insert({
-          user_id: userId,
-          store_id,
-          phone: normalizedPhone,
-          name: name || null,
-        }).select("id").single();
+        const { data: created } = await adminClient
+          .from("storefront_customers")
+          .upsert(
+            { user_id: userId, store_id, phone: normalizedPhone, name: name || null },
+            { onConflict: "user_id,store_id" }
+          )
+          .select("id")
+          .single();
         storefrontCustomerId = created?.id ?? null;
       }
     }
