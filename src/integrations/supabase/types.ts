@@ -3637,6 +3637,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_auth_user_id_by_email: { Args: { _email: string }; Returns: string }
       get_category_page: {
         Args: { _category_slug: string; _limit?: number; _store_slug: string }
         Returns: Json
