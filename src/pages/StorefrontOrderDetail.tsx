@@ -145,7 +145,7 @@ export default function StorefrontOrderDetail() {
   const items = order.order_items || [];
   const orderShort = order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`;
   const subtotal = items.reduce((s: number, it: any) => s + Number(it.total || 0), 0);
-  const canCancel = order.status === "pending" || order.status === "confirmed";
+  const canCancel = order.status === "pending" || order.status === "confirmed" || order.status === "partially_paid";
   const deliveredAt = order.status === "delivered" ? new Date(order.updated_at) : null;
   const canReturn = !!deliveredAt && (Date.now() - deliveredAt.getTime()) < 7 * 24 * 60 * 60 * 1000;
   const isPaid = !!order.payment_verified || (order.payment_method && !/cod|cash/i.test(order.payment_method));
