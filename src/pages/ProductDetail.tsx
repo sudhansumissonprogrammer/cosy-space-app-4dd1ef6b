@@ -15,7 +15,7 @@ import {
   ArrowLeft, Package, ChevronLeft, ChevronRight, ShoppingBag, ShoppingCart,
   Share2, Copy, Facebook, Twitter, X, ZoomIn, Star, Shield, Truck, RotateCcw,
   Clock, Eye, Flame, Heart, Minus, Plus, Check, ChevronDown, CreditCard, ThumbsUp,
-  Lock, Timer, Zap, ShieldCheck, Maximize2
+  Lock, Timer, Zap, ShieldCheck, Maximize2, Play
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
