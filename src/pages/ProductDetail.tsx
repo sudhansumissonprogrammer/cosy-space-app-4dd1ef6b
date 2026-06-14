@@ -488,6 +488,16 @@ export default function ProductDetail() {
     return imgs;
   })();
 
+  const productVideo = (() => {
+    const p = product as any;
+    if (!p?.video_url) return null;
+    return {
+      url: p.video_url as string,
+      poster: (p.video_poster_url as string | null) || allImages[0] || "",
+    };
+  })();
+
+
   const fakeReviews = useMemo(() => product ? getFakeReviews(product.id) : [], [product?.id]);
 
   // Fetch real reviews
