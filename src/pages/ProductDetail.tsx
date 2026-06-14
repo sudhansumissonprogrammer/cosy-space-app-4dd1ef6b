@@ -1765,11 +1765,11 @@ function ImageGallery({
         )}
       </div>
 
-      {lightboxOpen && createPortal(
+      {lightboxOpen && lightboxImages.length > 0 && createPortal(
         <FullscreenLightbox
-          images={images}
+          images={lightboxImages}
           productName={productName}
-          initialIndex={activeIndex}
+          initialIndex={Math.max(0, lightboxInitial)}
           onClose={() => setLightboxOpen(false)}
         />,
         document.body
