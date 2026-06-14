@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical, Trash2, Image as ImageIcon, Sparkles } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical, Trash2, Image as ImageIcon, Sparkles, Video as VideoIcon, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
 import {
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
+import { uploadCompressedVideo } from "@/lib/uploadCompressedVideo";
 import { copyExternalImageInBackground, isExternalImageUrl } from "@/lib/externalImageCopy";
 
 import { cn } from "@/lib/utils";
@@ -70,6 +71,13 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const [expandedVariant, setExpandedVariant] = useState<number | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [generatingDesc, setGeneratingDesc] = useState(false);
+
+  // Product video state
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoPosterUrl, setVideoPosterUrl] = useState<string | null>(null);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [videoStage, setVideoStage] = useState<string>("");
 
   const handleGenerateDescription = async () => {
     if (!name.trim()) {
@@ -259,6 +267,9 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       setIsBestSelling((existingProduct as any).is_best_selling ?? false);
       setIsCategoryPinned((existingProduct as any).is_category_pinned ?? false);
       if (existingProduct.image_url) setImagePreview(existingProduct.image_url);
+      const ep = existingProduct as any;
+      if (ep.video_url) setVideoUrl(ep.video_url);
+      if (ep.video_poster_url) setVideoPosterUrl(ep.video_poster_url);
     }
   }, [existingProduct]);
 
@@ -332,6 +343,44 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
     return result.mainUrl;
   };
 
+  const handleVideoSelect = async (file: File | null) => {
+    if (!file || !user || !storeId) return;
+    setVideoUploading(true);
+    setVideoProgress(0);
+    setVideoStage("Preparing…");
+    try {
+      const result = await uploadCompressedVideo(file, {
+        userId: user.id,
+        storeId,
+        onProgress: (p) => setVideoProgress(Math.round(p * 100)),
+        onStage: (s) => {
+          setVideoStage(
+            s === "loading-ffmpeg" ? "Loading compressor…" :
+            s === "compressing" ? "Compressing video…" :
+            s === "uploading-video" ? "Uploading video…" :
+            "Uploading thumbnail…"
+          );
+        },
+      });
+      setVideoUrl(result.videoUrl);
+      setVideoPosterUrl(result.posterUrl);
+      const savedKB = Math.max(0, Math.round((result.originalBytes - result.compressedBytes) / 1024));
+      toast.success(`Video ready — saved ${savedKB > 1024 ? (savedKB / 1024).toFixed(1) + "MB" : savedKB + "KB"}`);
+    } catch (err: any) {
+      toast.error(err?.message || "Video upload failed");
+    } finally {
+      setVideoUploading(false);
+      setVideoStage("");
+      setVideoProgress(0);
+    }
+  };
+
+  const removeVideo = () => {
+    setVideoUrl(null);
+    setVideoPosterUrl(null);
+  };
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !storeId) return;
@@ -374,6 +423,8 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
           ? ((existingProduct as any)?.category_pinned_at ?? new Date().toISOString())
           : null,
         image_url: imageUrl,
+        video_url: videoUrl,
+        video_poster_url: videoPosterUrl,
       } as any;
 
       let savedProductId = productId;
@@ -685,6 +736,77 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                 </button>
               </div>
               <p className="text-xs text-muted-foreground">Max 6MB per image</p>
+
+              {/* Product video (optional) — appears as slide #2 on PDP */}
+              <div className="space-y-2 pt-2 border-t border-border/50 mt-3">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-sm font-semibold flex items-center gap-1.5">
+                    <VideoIcon className="h-4 w-4" /> Product Video (optional)
+                  </Label>
+                  <span className="text-[10px] text-muted-foreground">Max 60s · Auto-compressed</span>
+                </div>
+                {videoUrl && !videoUploading ? (
+                  <div className="flex flex-wrap gap-3 items-start">
+                    <div className="relative inline-block">
+                      {videoPosterUrl ? (
+                        <img
+                          src={videoPosterUrl}
+                          alt="Video thumbnail"
+                          className="h-28 w-28 rounded-lg border object-cover"
+                        />
+                      ) : (
+                        <div className="h-28 w-28 rounded-lg border bg-muted flex items-center justify-center">
+                          <VideoIcon className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/30 pointer-events-none">
+                        <Play className="h-7 w-7 text-white drop-shadow" fill="currentColor" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeVideo}
+                        className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                        aria-label="Remove video"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <div className="text-xs text-muted-foreground self-center">
+                      Video uploaded. Shows as slide 2 on the product page.
+                    </div>
+                  </div>
+                ) : videoUploading ? (
+                  <div className="rounded-lg border border-dashed p-4 space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>{videoStage || "Processing…"}</span>
+                      <span className="ml-auto tabular-nums text-muted-foreground">{videoProgress}%</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full bg-primary transition-all"
+                        style={{ width: `${Math.max(2, videoProgress)}%` }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Compression runs in your browser — keep this tab open.
+                    </p>
+                  </div>
+                ) : (
+                  <label className="flex h-28 w-full max-w-sm cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input transition-colors hover:border-primary/50">
+                    <VideoIcon className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Click to upload video</span>
+                    <span className="text-[10px] text-muted-foreground/70">MP4 / MOV / WebM · up to 60s · max 100MB</span>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={(e) => handleVideoSelect(e.target.files?.[0] || null)}
+                    />
+                  </label>
+                )}
+              </div>
+
 
               {/* Media Library Picker */}
               <MediaLibraryPicker

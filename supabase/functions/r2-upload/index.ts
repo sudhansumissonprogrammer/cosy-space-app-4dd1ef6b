@@ -45,6 +45,7 @@ const r2Endpoint = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKE
 
 const ALLOWED_BUCKETS = new Set([
   "product-images",
+  "product-videos",
   "store-assets",
   "store-logos",
   "store-banners",
@@ -106,8 +107,10 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (file.size > 15 * 1024 * 1024) {
-      return new Response(JSON.stringify({ error: "File too large (max 15MB)" }), {
+    const isVideo = (file.type || "").startsWith("video/") || bucket === "product-videos";
+    const sizeLimit = isVideo ? 100 * 1024 * 1024 : 15 * 1024 * 1024;
+    if (file.size > sizeLimit) {
+      return new Response(JSON.stringify({ error: `File too large (max ${isVideo ? "100MB" : "15MB"})` }), {
         status: 413,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -122,8 +125,10 @@ Deno.serve(async (req) => {
     // WebP guarantee: convert JPEG/PNG → WebP server-side when browser couldn't.
     // Pipeline files only (those matching `*-NNNw.<ext>`) — leaves raw
     // assets/originals untouched. Errors are non-fatal: fall back to original.
+    // Skip entirely for videos.
     const isPipelinePath = /-\d+w\.(jpe?g|png|webp)$/i.test(rawPath);
     const needsConvert =
+      !isVideo &&
       isPipelinePath &&
       contentType !== "image/webp" &&
       (contentType === "image/jpeg" || contentType === "image/png");
