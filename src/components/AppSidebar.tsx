@@ -32,7 +32,7 @@ export function AppSidebar() {
 
   // Prefetch all dashboard page chunks on mount
   useEffect(() => { prefetchDashboardRoutes(); }, []);
-  const [pendingOrders, setPendingOrders] = useState(0);
+  
 
   const { data: ownStore, isLoading: ownStoreLoading } = useMyStore();
   const { adminStore } = useAdminStoreView(ownStore, ownStoreLoading);
