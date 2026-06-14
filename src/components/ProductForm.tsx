@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical, Trash2, Image as ImageIcon, Sparkles } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft, Plus, GripVertical, Trash2, Image as ImageIcon, Sparkles, Video as VideoIcon, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
 import {
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
+import { uploadCompressedVideo } from "@/lib/uploadCompressedVideo";
 import { copyExternalImageInBackground, isExternalImageUrl } from "@/lib/externalImageCopy";
 
 import { cn } from "@/lib/utils";
@@ -70,6 +71,13 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const [expandedVariant, setExpandedVariant] = useState<number | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [generatingDesc, setGeneratingDesc] = useState(false);
+
+  // Product video state
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoPosterUrl, setVideoPosterUrl] = useState<string | null>(null);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [videoStage, setVideoStage] = useState<string>("");
 
   const handleGenerateDescription = async () => {
     if (!name.trim()) {
