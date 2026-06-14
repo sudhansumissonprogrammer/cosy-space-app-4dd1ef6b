@@ -1737,17 +1737,30 @@ function ImageGallery({
         {/* Thumbnail strip — mobile + desktop */}
         {len > 1 && (
           <div className="flex gap-2 overflow-x-auto scrollbar-hide px-3 sm:px-0.5 py-2 sm:py-1">
-            {images.map((img, i) => (
-              <button
-                key={i}
-                onClick={() => scrollTo(i)}
-                className={`h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-[transform,opacity,colors,box-shadow] ${
-                  i === activeIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-muted-foreground/30"
-                }`}
-              >
-                <img src={optimizeImageUrl(img, 120)} alt="" className="h-full w-full object-cover" loading="lazy" />
-              </button>
-            ))}
+            {slides.map((slide, i) => {
+              const thumbSrc = slide.kind === "video" ? (slide.poster || "") : slide.url;
+              return (
+                <button
+                  key={i}
+                  onClick={() => scrollTo(i)}
+                  className={`relative h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-[transform,opacity,colors,box-shadow] ${
+                    i === activeIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-muted-foreground/30"
+                  }`}
+                  aria-label={slide.kind === "video" ? "Play product video" : `View image ${i + 1}`}
+                >
+                  {thumbSrc ? (
+                    <img src={optimizeImageUrl(thumbSrc, 120)} alt="" className="h-full w-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="h-full w-full bg-muted" />
+                  )}
+                  {slide.kind === "video" && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/35">
+                      <Play className="h-4 w-4 text-white drop-shadow" fill="currentColor" />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
