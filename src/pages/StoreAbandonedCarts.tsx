@@ -46,12 +46,15 @@ export default function StoreAbandonedCarts() {
 
   const { data: carts, isLoading } = useQuery({
     queryKey: ["abandoned-carts", storeId],
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("abandoned_carts")
         .select("*")
         .eq("store_id", storeId!)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(500);
       if (error) throw error;
       return data as any[];
     },
