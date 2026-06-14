@@ -1623,18 +1623,42 @@ function ImageGallery({
             className="overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none"
           >
             <div className="flex touch-pan-y">
-              {renderImages.map((src, i) => {
+              {renderSlides.map((slide, i) => {
                 const realIdx = len === 1 ? 0 : i;
+                if (slide.kind === "video") {
+                  const isActive = realIdx === activeIndex;
+                  return (
+                    <div
+                      key={`${i}-vid-${slide.url}`}
+                      className="relative flex-[0_0_100%] min-w-0 bg-black"
+                      onClick={(e) => {
+                        // Don't open lightbox for video slide
+                        e.stopPropagation();
+                      }}
+                    >
+                      <video
+                        src={slide.url}
+                        poster={slide.poster ? optimizeImageUrl(slide.poster, 800) : undefined}
+                        preload={isActive && videoPlaying ? "auto" : "none"}
+                        playsInline
+                        controls
+                        className="w-full h-auto max-h-[80vh] object-contain bg-black"
+                        onPlay={() => setVideoPlaying(true)}
+                        onPause={() => setVideoPlaying(false)}
+                      />
+                    </div>
+                  );
+                }
                 const loaded = imageLoaded[realIdx];
                 return (
                   <div
-                    key={`${i}-${src}`}
+                    key={`${i}-${slide.url}`}
                     className="relative flex-[0_0_100%] min-w-0"
                     onClick={() => setLightboxOpen(true)}
                   >
                     {!loaded && <Skeleton className="aspect-[4/5] sm:aspect-square w-full rounded-none" />}
                     <img
-                      src={optimizeImageUrl(src, 800)}
+                      src={optimizeImageUrl(slide.url, 800)}
                       alt={productName}
                       className={`w-full h-auto max-h-[80vh] object-contain bg-muted/30 transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                       decoding="async"
