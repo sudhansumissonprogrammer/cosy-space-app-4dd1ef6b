@@ -423,6 +423,8 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
           ? ((existingProduct as any)?.category_pinned_at ?? new Date().toISOString())
           : null,
         image_url: imageUrl,
+        video_url: videoUrl,
+        video_poster_url: videoPosterUrl,
       } as any;
 
       let savedProductId = productId;
