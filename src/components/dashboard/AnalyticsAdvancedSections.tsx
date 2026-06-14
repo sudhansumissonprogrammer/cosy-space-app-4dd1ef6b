@@ -113,7 +113,7 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
         .gte("created_at", start)
         .lte("created_at", end)
         .order("created_at", { ascending: false })
-        .limit(20000);
+        .limit(5000);
       return (data || []) as any[];
     },
     enabled: !!storeId,

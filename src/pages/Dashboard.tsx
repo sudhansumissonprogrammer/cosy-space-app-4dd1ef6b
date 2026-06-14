@@ -141,6 +141,9 @@ export default function Dashboard() {
   const { data: walletSummary } = useQuery({
     queryKey: ["store-wallet", storeId],
     enabled: !!storeId,
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_store_wallet_summary", { _store_id: storeId! });
       if (error) throw error;

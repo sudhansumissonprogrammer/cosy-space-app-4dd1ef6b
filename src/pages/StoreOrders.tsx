@@ -96,9 +96,10 @@ export default function StoreOrders() {
 
   const { data: allOrders, isLoading } = useQuery({
     queryKey: ["website-orders-all", storeId, statusFilter, pagination.from, pagination.to],
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+    // 30s cache: realtime subscription invalidates on new orders, so
+    // staleTime:0 was double-fetching on every focus/mount.
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       let query = supabase
         .from("orders")

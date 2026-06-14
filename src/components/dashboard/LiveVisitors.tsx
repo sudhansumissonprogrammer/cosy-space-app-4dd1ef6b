@@ -33,10 +33,11 @@ export default function LiveVisitors({ storeId }: Props) {
   const { data } = useQuery({
     queryKey: ["live-visitors", storeId, sinceIso],
     enabled: !!storeId,
-    refetchInterval: POLL_MS,
-    refetchIntervalInBackground: false,
+    // No polling: realtime INSERT subscription below nudges a refetch the
+    // moment a pageview lands, and the 30s window-slide tick re-derives
+    // sinceIso so stale sessions drop out. Polling on top was duplicate work.
     refetchOnWindowFocus: true,
-    staleTime: 0,
+    staleTime: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("page_views")

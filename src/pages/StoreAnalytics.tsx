@@ -94,10 +94,11 @@ export default function StoreAnalytics() {
 
   const { data: allOrders, isLoading } = useQuery({
     queryKey: ["analytics-orders", storeIds, ordersGte],
-    staleTime: 60_000,
-    refetchInterval: 2 * 60_000,
-    refetchOnWindowFocus: true,
-    refetchOnMount: "always",
+    // Analytics is not real-time: drop the 2-min auto-refetch (was pulling
+    // unlimited orders + nested order_items every 2 min for every open tab).
+    // Users can pull-to-refresh / reload to update.
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       let q = supabase
         .from("orders")
@@ -117,10 +118,8 @@ export default function StoreAnalytics() {
   // query at the last 30 days so the dashboard never pulls millions of rows.
   const { data: pageViews } = useQuery({
     queryKey: ["analytics-views", storeIds],
-    staleTime: 60_000,
-    refetchInterval: 2 * 60_000,
-    refetchOnWindowFocus: true,
-    refetchOnMount: "always",
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       const since = subDays(new Date(), 30).toISOString();
       // NOTE: Supabase caps queries at 1000 rows by default. Stores with high
