@@ -343,6 +343,44 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
     return result.mainUrl;
   };
 
+  const handleVideoSelect = async (file: File | null) => {
+    if (!file || !user || !storeId) return;
+    setVideoUploading(true);
+    setVideoProgress(0);
+    setVideoStage("Preparing…");
+    try {
+      const result = await uploadCompressedVideo(file, {
+        userId: user.id,
+        storeId,
+        onProgress: (p) => setVideoProgress(Math.round(p * 100)),
+        onStage: (s) => {
+          setVideoStage(
+            s === "loading-ffmpeg" ? "Loading compressor…" :
+            s === "compressing" ? "Compressing video…" :
+            s === "uploading-video" ? "Uploading video…" :
+            "Uploading thumbnail…"
+          );
+        },
+      });
+      setVideoUrl(result.videoUrl);
+      setVideoPosterUrl(result.posterUrl);
+      const savedKB = Math.max(0, Math.round((result.originalBytes - result.compressedBytes) / 1024));
+      toast.success(`Video ready — saved ${savedKB > 1024 ? (savedKB / 1024).toFixed(1) + "MB" : savedKB + "KB"}`);
+    } catch (err: any) {
+      toast.error(err?.message || "Video upload failed");
+    } finally {
+      setVideoUploading(false);
+      setVideoStage("");
+      setVideoProgress(0);
+    }
+  };
+
+  const removeVideo = () => {
+    setVideoUrl(null);
+    setVideoPosterUrl(null);
+  };
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !storeId) return;
