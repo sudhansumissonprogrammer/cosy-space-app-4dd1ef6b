@@ -681,6 +681,7 @@ export default function ProductDetail() {
         <ImageGallery
           key={product.id}
           images={allImages}
+          video={productVideo}
           productName={product.name}
           hasDiscount={hasDiscount}
           discountPct={discountPct}
