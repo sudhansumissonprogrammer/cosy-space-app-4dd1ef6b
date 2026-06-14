@@ -49,37 +49,24 @@ export function AppSidebar() {
   const isWhatsAppOnly = store?.order_mode === "whatsapp";
   const { isVisible, isComingSoon } = useMenuConfig();
 
-  // Poll pending order count (replaces realtime WebSocket to save Supabase connections + DB queries).
-  // Refetches every 60s while tab is visible, and immediately when tab becomes visible after being hidden.
-  useEffect(() => {
-    if (!storeId || isWhatsAppOnly) return;
-    let cancelled = false;
-
-    const fetchCount = async () => {
+  // Pending order count — replaces raw setInterval. React Query dedupes
+  // across mount points, pauses while tab is hidden, and refetches on focus.
+  const { data: pendingOrders = 0 } = useQuery({
+    queryKey: ["sidebar-pending-orders", storeId],
+    enabled: !!storeId && !isWhatsAppOnly,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
+    queryFn: async () => {
       const { count } = await supabase
         .from("orders")
         .select("*", { count: "estimated", head: true })
-        .eq("store_id", storeId)
+        .eq("store_id", storeId!)
         .eq("status", "pending");
-      if (!cancelled) setPendingOrders(count ?? 0);
-    };
-
-    fetchCount();
-    const intervalId = window.setInterval(() => {
-      if (document.visibilityState === "visible") fetchCount();
-    }, 60_000);
-
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") fetchCount();
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, [storeId, isWhatsAppOnly]);
+      return count ?? 0;
+    },
+  });
 
   const isActive = (path: string, exact?: boolean) =>
     exact ? location.pathname === path : location.pathname.startsWith(path);
