@@ -1702,14 +1702,14 @@ function ImageGallery({
           {/* Dots */}
           {len > 1 && (
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5 rounded-full bg-black/30 backdrop-blur-sm px-2.5 py-1.5">
-              {images.map((_, i) => (
+              {slides.map((_, i) => (
                 <button
                   key={i}
                   onClick={(e) => { e.stopPropagation(); scrollTo(i); }}
                   className={`rounded-full transition-[transform,opacity,colors,box-shadow] duration-300 ${
                     i === activeIndex ? "w-5 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/50 hover:bg-white/70"
                   }`}
-                  aria-label={`View image ${i + 1}`}
+                  aria-label={`View slide ${i + 1}`}
                 />
               ))}
             </div>
