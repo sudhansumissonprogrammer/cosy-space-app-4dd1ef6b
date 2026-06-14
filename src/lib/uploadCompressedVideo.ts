@@ -161,12 +161,14 @@ export async function uploadCompressedVideo(
     try { await ffmpeg.deleteFile(posterName); } catch {}
 
     opts.onStage?.("uploading-video");
-    const videoBlob = new Blob([videoBytes], { type: "video/mp4" });
+    const videoBuf = new Uint8Array(videoBytes).buffer;
+    const videoBlob = new Blob([videoBuf], { type: "video/mp4" });
     const videoPath = genPath(opts.userId, opts.storeId, "mp4");
     const videoUrl = await uploadToR2(videoBlob, "video.mp4", "product-videos", videoPath);
 
     opts.onStage?.("uploading-poster");
-    const posterBlob = new Blob([posterBytes], { type: "image/jpeg" });
+    const posterBuf = new Uint8Array(posterBytes).buffer;
+    const posterBlob = new Blob([posterBuf], { type: "image/jpeg" });
     const posterPath = genPath(opts.userId, opts.storeId, "jpg");
     const posterUrl = await uploadToR2(posterBlob, "poster.jpg", "product-videos", posterPath);
 
