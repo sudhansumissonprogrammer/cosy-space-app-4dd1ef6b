@@ -1467,11 +1467,41 @@ function ShareButtons({ productName, storeSlug, productSlugOrId }: { productName
 }
 
 /* ── Image Gallery with Zoom Icon + Dots Inside Image ── */
-function ImageGallery({ images, productName, hasDiscount, discountPct, onShare, showWarrantyBadge }: { images: string[]; productName: string; hasDiscount: number | boolean | null; discountPct: number; onShare?: () => void; showWarrantyBadge?: boolean }) {
+function ImageGallery({
+  images,
+  video,
+  productName,
+  hasDiscount,
+  discountPct,
+  onShare,
+  showWarrantyBadge,
+}: {
+  images: string[];
+  video?: { url: string; poster: string } | null;
+  productName: string;
+  hasDiscount: number | boolean | null;
+  discountPct: number;
+  onShare?: () => void;
+  showWarrantyBadge?: boolean;
+}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
-  const len = images.length;
+  const [videoPlaying, setVideoPlaying] = useState(false);
+
+  // Build slides: image #1, video (if present), then remaining images.
+  type Slide =
+    | { kind: "image"; url: string }
+    | { kind: "video"; url: string; poster: string };
+  const slides: Slide[] = (() => {
+    const out: Slide[] = [];
+    if (images[0]) out.push({ kind: "image", url: images[0] });
+    if (video?.url) out.push({ kind: "video", url: video.url, poster: video.poster || images[0] || "" });
+    for (let i = 1; i < images.length; i++) out.push({ kind: "image", url: images[i] });
+    return out;
+  })();
+
+  const len = slides.length;
   const canLoop = len > 1;
 
   const [emblaRef, embla] = useEmblaCarousel({
@@ -1482,10 +1512,14 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare, 
     duration: 22,
   });
 
-  // Sync activeIndex with Embla
+  // Sync activeIndex with Embla — pause video when sliding away.
   useEffect(() => {
     if (!embla) return;
-    const onSelect = () => setActiveIndex(embla.selectedScrollSnap());
+    const onSelect = () => {
+      const i = embla.selectedScrollSnap();
+      setActiveIndex(i);
+      if (slides[i]?.kind !== "video") setVideoPlaying(false);
+    };
     embla.on("select", onSelect);
     embla.on("reInit", onSelect);
     onSelect();
@@ -1493,17 +1527,19 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare, 
       embla.off("select", onSelect);
       embla.off("reInit", onSelect);
     };
-  }, [embla]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [embla, slides.length]);
 
-  // Re-init on image-list change — only reset loaded state when URLs actually change
-  const imagesKey = images.join("|");
+  // Re-init on slide-list change — only reset loaded state when URLs actually change
+  const slidesKey = slides.map((s) => (s.kind === "video" ? "v:" + s.url : "i:" + s.url)).join("|");
   useEffect(() => {
     if (embla) embla.reInit();
     setImageLoaded({});
+    setVideoPlaying(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imagesKey, embla]);
+  }, [slidesKey, embla]);
 
-  // Smart preload: only active + 2 neighbours (handles big galleries)
+  // Smart preload: only active + 2 neighbours (image slides only — videos use preload="none")
   useEffect(() => {
     if (len === 0) return;
     const want = new Set<number>([activeIndex]);
@@ -1512,12 +1548,15 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare, 
       want.add((activeIndex - 1 + len) % len);
     }
     want.forEach((idx) => {
+      const s = slides[idx];
+      if (!s || s.kind !== "image") return;
       if (imageLoaded[idx]) return;
       const img = new Image();
       img.onload = () => setImageLoaded((prev) => (prev[idx] ? prev : { ...prev, [idx]: true }));
-      img.src = optimizeImageUrl(images[idx], 800);
+      img.src = optimizeImageUrl(s.url, 800);
     });
-  }, [activeIndex, imagesKey, len, imageLoaded]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex, slidesKey, len, imageLoaded]);
 
   const scrollTo = useCallback((i: number) => embla?.scrollTo(i), [embla]);
   const scrollPrev = useCallback(() => embla?.scrollPrev(), [embla]);
@@ -1533,8 +1572,19 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare, 
     );
   }
 
-  // For single-image products, render a fake 2-slide loop so user can still swipe and see same image cycle
-  const renderImages = len === 1 ? [images[0], images[0]] : images;
+  // For single-slide products, render a fake 2-slide loop so user can still swipe
+  const renderSlides: Slide[] = len === 1 ? [slides[0], slides[0]] : slides;
+
+  // Lightbox only handles images — strip video slides
+  const lightboxImages = slides.filter((s): s is Extract<Slide, { kind: "image" }> => s.kind === "image").map((s) => s.url);
+  const lightboxInitial = (() => {
+    const cur = slides[activeIndex];
+    if (cur?.kind === "image") {
+      return lightboxImages.findIndex((u) => u === cur.url);
+    }
+    return 0;
+  })();
+
 
   return (
     <>
