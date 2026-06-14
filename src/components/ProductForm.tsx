@@ -737,6 +737,77 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
               </div>
               <p className="text-xs text-muted-foreground">Max 6MB per image</p>
 
+              {/* Product video (optional) — appears as slide #2 on PDP */}
+              <div className="space-y-2 pt-2 border-t border-border/50 mt-3">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-sm font-semibold flex items-center gap-1.5">
+                    <VideoIcon className="h-4 w-4" /> Product Video (optional)
+                  </Label>
+                  <span className="text-[10px] text-muted-foreground">Max 60s · Auto-compressed</span>
+                </div>
+                {videoUrl && !videoUploading ? (
+                  <div className="flex flex-wrap gap-3 items-start">
+                    <div className="relative inline-block">
+                      {videoPosterUrl ? (
+                        <img
+                          src={videoPosterUrl}
+                          alt="Video thumbnail"
+                          className="h-28 w-28 rounded-lg border object-cover"
+                        />
+                      ) : (
+                        <div className="h-28 w-28 rounded-lg border bg-muted flex items-center justify-center">
+                          <VideoIcon className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/30 pointer-events-none">
+                        <Play className="h-7 w-7 text-white drop-shadow" fill="currentColor" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeVideo}
+                        className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground"
+                        aria-label="Remove video"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <div className="text-xs text-muted-foreground self-center">
+                      Video uploaded. Shows as slide 2 on the product page.
+                    </div>
+                  </div>
+                ) : videoUploading ? (
+                  <div className="rounded-lg border border-dashed p-4 space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>{videoStage || "Processing…"}</span>
+                      <span className="ml-auto tabular-nums text-muted-foreground">{videoProgress}%</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full bg-primary transition-all"
+                        style={{ width: `${Math.max(2, videoProgress)}%` }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Compression runs in your browser — keep this tab open.
+                    </p>
+                  </div>
+                ) : (
+                  <label className="flex h-28 w-full max-w-sm cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-input transition-colors hover:border-primary/50">
+                    <VideoIcon className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Click to upload video</span>
+                    <span className="text-[10px] text-muted-foreground/70">MP4 / MOV / WebM · up to 60s · max 100MB</span>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={(e) => handleVideoSelect(e.target.files?.[0] || null)}
+                    />
+                  </label>
+                )}
+              </div>
+
+
               {/* Media Library Picker */}
               <MediaLibraryPicker
                 storeId={storeId!}
