@@ -145,8 +145,15 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
 
     // Init + PageView fire immediately via shim (queued until script loads)
     // — but skip if inline script already did it (avoids double PageView).
+    //
+    // Anti-ban hardening: even if `__SF_PIXEL_INITED__` somehow wasn't set by
+    // the inline bootstrap (e.g. CSP race, stripped inline script on certain
+    // hosts), `__SF_PV_EVENT_ID__` is a second independent signal that an
+    // initial PageView has already been fired this pageload. Skip re-firing
+    // it — Meta treats duplicate PVs per real visit as bot-like inflation.
     let pageViewEventId: string | undefined =
       (window as any).__SF_PV_EVENT_ID__ || undefined;
+    const inlinePvAlreadyFired = !!pageViewEventId;
     if (!alreadyInited) {
       // Always-on Advanced Matching: pass anon visitor ID as external_id
       // so EMQ stays high even for logged-out browsers.
@@ -157,12 +164,12 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
       } else {
         window.fbq("init", pixelId);
       }
-      // Generate shared event_id so the CAPI mirror below dedupes.
-      if (!pageViewEventId) {
+      // Only fire PageView if the inline bootstrap didn't already do so.
+      if (!inlinePvAlreadyFired) {
         pageViewEventId = generateEventId();
         (window as any).__SF_PV_EVENT_ID__ = pageViewEventId;
+        window.fbq("track", "PageView", {}, { eventID: pageViewEventId });
       }
-      window.fbq("track", "PageView", {}, { eventID: pageViewEventId });
       (window as any).__SF_PIXEL_INITED__ = pixelId;
     }
 

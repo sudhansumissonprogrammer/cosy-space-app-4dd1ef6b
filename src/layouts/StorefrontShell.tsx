@@ -199,6 +199,13 @@ export default function StorefrontShell({
     ensureFbcPersisted();
     getOrCreateSfVid(); // stable anon external_id for Pixel + CAPI
     if (store?.id) (window as any).__SF_STORE_ID__ = store.id;
+    // Anti-ban: on custom domains, purge any stale cookies scoped to the
+    // shared `.shopbanao.in` platform domain so Meta can't correlate this
+    // merchant with unrelated stores that share the platform suffix. Runs
+    // at most once per tab session and is a no-op on platform subdomains.
+    import("@/lib/purgeSharedDomainCookies")
+      .then((m) => m.purgeSharedDomainCookies())
+      .catch(() => {});
   }, [store?.id]);
 
   // GA4 tag — read measurement ID from store.features.ga4_measurement_id
