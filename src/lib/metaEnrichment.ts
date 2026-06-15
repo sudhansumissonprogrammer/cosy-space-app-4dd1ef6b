@@ -12,6 +12,8 @@
  *     are blocked and CAPI is the only signal Meta gets.
  */
 
+import { hasMarketingConsent } from "@/lib/marketingConsent";
+
 const FBC_COOKIE = "_fbc";
 const FBP_COOKIE = "_fbp";
 const FBC_TTL_DAYS = 90; // Meta's recommended lifetime
@@ -50,6 +52,7 @@ function getCookie(name: string): string | null {
  */
 export function ensureFbcPersisted(): void {
   if (typeof window === "undefined") return;
+  if (!hasMarketingConsent()) return;
   try {
     const params = new URLSearchParams(window.location.search);
     const fbclid = params.get("fbclid");
@@ -63,6 +66,7 @@ export function ensureFbcPersisted(): void {
 
 export function ensureFbpCookie(): void {
   if (typeof document === "undefined") return;
+  if (!hasMarketingConsent()) return;
   if (getCookie(FBP_COOKIE)) return;
   const creationTime = Date.now();
   const randomNumber = Math.floor(Math.random() * 10_000_000_000);
@@ -79,6 +83,7 @@ export function ensureFbpCookie(): void {
  */
 export function getOrCreateSfVid(): string {
   if (typeof window === "undefined") return "";
+  if (!hasMarketingConsent()) return "";
   try {
     const fromCookie = getCookie(SF_VID_COOKIE);
     if (fromCookie) {
