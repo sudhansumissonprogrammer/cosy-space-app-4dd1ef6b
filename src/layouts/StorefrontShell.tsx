@@ -168,20 +168,21 @@ export default function StorefrontShell({
   useScrollRestoration();
 
   // SPA route-change PageView for Meta Pixel (Shopify-style).
-  // Skip the first pathname — the inline pixel in index.html (or the
-  // useFacebookPixel hook) already fired PageView for the initial load.
-  // Subsequent client-side navigations need an explicit fbq('track','PageView')
-  // so Meta sees every page in the funnel, not just the entry page.
-  const lastPageviewPath = useRef<string | null>(null);
+  // Dedup across StorefrontShell remounts (Suspense fallback/resolve, layout
+  // swap, dev StrictMode): sessionStorage holds the last fired path so a
+  // remount on the same URL doesn't refire PageView and inflate counts —
+  // which Meta's bot-detection treats as suspicious traffic.
   useEffect(() => {
     const pixelId = (store as any)?.facebook_pixel_id;
     if (!pixelId) return;
-    if (lastPageviewPath.current === null) {
-      lastPageviewPath.current = pathname;
-      return;
-    }
-    if (lastPageviewPath.current === pathname) return;
-    lastPageviewPath.current = pathname;
+    let last: string | null = null;
+    try { last = sessionStorage.getItem("__sf_last_pv_path__"); } catch {}
+    if (last === pathname) return;
+    try { sessionStorage.setItem("__sf_last_pv_path__", pathname); } catch {}
+    // Initial load is already covered by the inline pixel in index.html
+    // (which sets __SF_PV_EVENT_ID__) + useFacebookPixel CAPI mirror. Skip
+    // if this is the very first path we've seen this tab session.
+    if (last === null) return;
     if (typeof window !== "undefined" && typeof window.fbq === "function") {
       const eid = generateEventId();
       try { window.fbq("track", "PageView", {}, { eventID: eid }); } catch {}
