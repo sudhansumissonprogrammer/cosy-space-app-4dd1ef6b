@@ -35,6 +35,23 @@
         }catch(_){}
       })();
     </script>
+    <!-- v8.67.0 BAN-FIX P1-1: Strip __sh=<timestamp> cache-buster from URL
+         BEFORE the Pixel/CAPI/React mounts. The shell-heal reload adds __sh
+         so CF re-fetches; once we're on the new page we no longer need it,
+         and leaving it in the URL makes browser PageView event_source_url
+         differ from server CAPI's canonical URL → event_id dedup fails →
+         Meta flags anomalous dedup ratio. Synchronous + first-thing-in-head
+         so it runs before any analytics script reads location.href. -->
+    <script>
+      (function(){
+        try{
+          if (location.search.indexOf('__sh=') === -1) return;
+          var cleaned = location.search.replace(/[?&]__sh=\d+/, '');
+          if (cleaned && cleaned[0] !== '?') cleaned = '?' + cleaned.slice(1);
+          history.replaceState(null, '', location.pathname + cleaned + location.hash);
+        }catch(_){}
+      })();
+    </script>
     <!-- Preconnect to backend + CDN origins so the first Supabase REST call
          and first storefront image skip the cold DNS+TCP+TLS handshake
          (~150–300 ms saved on cold visits, mobile especially). Safe on all
@@ -181,7 +198,22 @@
     <meta name="theme-color" content="#4361ee" />
     <link rel="apple-touch-icon" href="/favicon.png?v=2" />
     <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- v8.67.0 BAN-FIX P0-2: Hard-coded branded OG image. The Lovable preview
+         pipeline auto-injects a pub-*.r2.dev/...lovable.app-*.png URL at the
+         END of <head> if no og:image exists. Meta's ad-quality crawler flags
+         lovable.app preview URLs as scaffolded/template sites → ad rejection.
+         Putting our own og:image here FIRST means Facebook picks ours (FB uses
+         the first og:image when multiple are present). -->
+    <meta property="og:image" content="https://shopbanao.in/og-image.jpg" />
+    <meta property="og:image:secure_url" content="https://shopbanao.in/og-image.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="ShopBanao — India's easiest online store builder" />
+    <meta name="twitter:image" content="https://shopbanao.in/og-image.jpg" />
+    <meta property="og:url" content="https://shopbanao.in/" />
+    <meta property="og:site_name" content="ShopBanao" />
     <link rel="icon" type="image/png" href="/favicon.png?v=2">
     <!-- ─── Sitewide JSON-LD (landing brand identity) ───
          Static blocks so AI crawlers (Perplexity / ChatGPT / Claude / Google

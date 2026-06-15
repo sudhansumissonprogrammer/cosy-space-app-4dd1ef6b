@@ -93,8 +93,15 @@ Deno.serve(async (req) => {
           ? "in stock"
           : "out of stock";
       const regularPrice = `${Number(p.price || 0).toFixed(2)} ${currency}`;
-      const salePrice = p.sale_price && Number(p.sale_price) > 0 && Number(p.sale_price) < Number(p.price || 0)
-        ? `${Number(p.sale_price).toFixed(2)} ${currency}`
+      // v8.67.0 BAN-FIX P1-2: Cap absurd discounts (sale_price < 5% of price).
+      // Meta Commerce catalog auto-flags >70% manufactured discounts as
+      // deceptive pricing → suspends the entire catalog + pixel. This usually
+      // happens from paise/rupee data-entry mistakes (e.g. ₹1,90,000 → ₹1,800).
+      const regN = Number(p.price || 0);
+      const saleN = Number(p.sale_price || 0);
+      const validSale = saleN > 0 && saleN < regN && (regN === 0 || saleN / regN >= 0.05);
+      const salePrice = validSale
+        ? `${saleN.toFixed(2)} ${currency}`
         : "";
       rows.push([
         csvEscape(p.id),
