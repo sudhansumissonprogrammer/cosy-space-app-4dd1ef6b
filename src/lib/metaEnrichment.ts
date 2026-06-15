@@ -26,14 +26,30 @@ function setCookie(name: string, value: string, days: number) {
   if (typeof document === "undefined") return;
   const d = new Date();
   d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
-  // Set on root domain so subdomains share it (e.g. shop.brand.com + brand.com)
+  // v8.61.0 BAN-FIX P0-4: Scope cookies to the EXACT hostname, never to the
+  // apex .shopbanao.in. Previously a visitor on store-a.shopbanao.in wrote
+  // _fbp to the apex; that same _fbp was then read by store-b.shopbanao.in
+  // and flowed into a DIFFERENT pixel ID's CAPI events. Meta's coordinated
+  // inauthentic behavior detector saw the same _fbp value attached to many
+  // pixel IDs across many stores → flagged the whole network → banned both
+  // FB + IG ad accounts at the business level. Now each store gets its own
+  // cookie scope. For merchant custom domains (brand.com) we still allow
+  // shop.brand.com + brand.com to share, since those are the same business.
   let domain = "";
   try {
     const host = window.location.hostname;
-    const parts = host.split(".");
-    if (parts.length >= 2 && host !== "localhost") {
-      domain = `; domain=.${parts.slice(-2).join(".")}`;
+    const isPlatformSubdomain =
+      host.endsWith(".shopbanao.in") ||
+      host.endsWith(".lovable.app") ||
+      host.endsWith(".lovableproject.com");
+    if (!isPlatformSubdomain && host !== "localhost") {
+      const parts = host.split(".");
+      if (parts.length >= 2) {
+        domain = `; domain=.${parts.slice(-2).join(".")}`;
+      }
     }
+    // Platform subdomains: no domain attribute → cookie is host-only,
+    // perfectly isolated per store.
   } catch {}
   // Add Secure on HTTPS — Meta + browser best practice. Prevents _fbp/_fbc
   // (and sf_vid) from leaking over plaintext and silences security audits.

@@ -248,37 +248,15 @@ function _isPlatformHost(req) {
   } // fail-open: keep debug headers
 }
 
+// v8.61.0 BAN-FIX P0-3: NO-OP.
+// Previous behavior stripped connect.facebook.net + fbq() + <noscript> pixels
+// from any HTML served to a bot UA. Meta's fraud system fingerprints exactly
+// this divergence (page WITH pixel for users, page WITHOUT pixel for crawler)
+// and flags the domain as "inconsistent content" → ad-account ban. Bots now
+// receive the same Pixel scripts as real users; the original concern (cross-
+// store pixel linking) is solved by unique pixel-per-store at the app layer.
 async function _stripTrackersForBot(response) {
-  try {
-    const ct = (response.headers.get("content-type") || "").toLowerCase();
-    if (!ct.includes("text/html")) return response;
-    let html = await response.text();
-    // External tracker scripts
-    html = html.replace(
-      /<script\b[^>]*\b(?:src|href)\s*=\s*["'][^"']*(?:connect\.facebook\.net|fbevents\.js|googletagmanager\.com|google-analytics\.com|gtag\/js|googleadservices\.com)[^"']*["'][^>]*>\s*<\/script>/gi,
-      "",
-    );
-    // Inline scripts containing fbq(), gtag(), or dataLayer init
-    html = html.replace(
-      /<script\b(?![^>]*\bsrc=)[^>]*>[\s\S]*?(?:fbq\s*\(|gtag\s*\(|dataLayer\s*=|_fbq\s*=)[\s\S]*?<\/script>/gi,
-      "",
-    );
-    // <noscript> tracking pixels
-    html = html.replace(
-      /<noscript\b[^>]*>[\s\S]*?(?:facebook\.com\/tr|google-analytics\.com|googletagmanager\.com)[\s\S]*?<\/noscript>/gi,
-      "",
-    );
-    const headers = new Headers(response.headers);
-    headers.delete("content-length");
-    headers.set("x-bot-mode", "stripped"); // will itself be stripped on custom domains below
-    return new Response(html, {
-      status: response.status,
-      statusText: response.statusText,
-      headers,
-    });
-  } catch {
-    return response;
-  }
+  return response;
 }
 
 async function finalizeResponse(request, response) {
@@ -405,8 +383,13 @@ const SEARCH_BOT_REGEX = /Googlebot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Ap
 // v6.9.4: Expanded bot block list. These crawlers generate massive request
 // volume with zero business value. Blocked at the edge with 403 + 1-day cache
 // so Cloudflare returns the cached 403 without hitting the Worker again.
+// v8.61.0 BAN-FIX P0-1: Removed FacebookBot, Meta-ExternalAgent, Meta-ExternalFetcher.
+// These are Meta's ad-policy crawlers that verify every ad URL pre-approval and
+// during the campaign. Returning 403 → cached 24h → Meta marks every storefront
+// as `unverifiable_url` → ad account banned without warning. NEVER re-add these
+// three UAs. ChatGPT/Claude/etc remain blocked — they have zero ad-policy impact.
 const BLOCKED_BOT_REGEX =
-  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|GPTBot|ClaudeBot|anthropic-ai|CCBot|Bytespider|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider|Amazonbot|PerplexityBot|OAI-SearchBot|DuckAssistBot|Google-Extended|GoogleOther|FriendlyCrawler|ImagesiftBot|Diffbot|magpie-crawler|TurnitinBot|grapeshot|linkfluence|proximic|trendictionbot|TweetmemeBot|Buck|webmeup-crawler|SiteAuditBot|VelenPublicWebCrawler|sentibot|EzoicBot|netEstate|coccocbot|YaK|Neevabot|admantx|cohere-ai|FacebookBot|Bravebot|Timpibot|ChatGPT-User|cohere-training-data-crawler|Meta-ExternalAgent|Meta-ExternalFetcher|ICC-Crawler|Webzio|YouBot|ISSCyberRiskCrawler|Sidetrade|news-please|Scrapy|python-requests|Go-http-client|node-fetch|axios\//i;
+  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|GPTBot|ClaudeBot|anthropic-ai|CCBot|Bytespider|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider|Amazonbot|PerplexityBot|OAI-SearchBot|DuckAssistBot|Google-Extended|GoogleOther|FriendlyCrawler|ImagesiftBot|Diffbot|magpie-crawler|TurnitinBot|grapeshot|linkfluence|proximic|trendictionbot|TweetmemeBot|Buck|webmeup-crawler|SiteAuditBot|VelenPublicWebCrawler|sentibot|EzoicBot|netEstate|coccocbot|YaK|Neevabot|admantx|cohere-ai|Bravebot|Timpibot|ChatGPT-User|cohere-training-data-crawler|ICC-Crawler|Webzio|YouBot|ISSCyberRiskCrawler|Sidetrade|news-please|Scrapy|python-requests|Go-http-client|node-fetch|axios\//i;
 
 // Common attack/probe paths — return 410 Gone with long cache so CF serves cached.
 const ATTACK_PATH_REGEX =
@@ -5458,13 +5441,19 @@ async function handleBot(request, slug, url, isCustom) {
   return null;
 }
 
+// v8.61.0 BAN-FIX P0-2: Removed <meta http-equiv="refresh"> + window.location.replace().
+// The redirect was the cloaking signal — Meta saw bot-only HTML with a redirect back
+// to the SPA URL, classified it as "doorway page" cloaking and banned the account.
+// Now the OG document is a static, self-contained preview card. Meta crawlers read
+// OG tags and stop; they never follow a redirect anyway. Human users never hit this
+// code path (BOT_UA_REGEX gate in handleBot()).
 function buildOgHtml(og, finalUrl) {
   const title = escapeHtml(og.title || "");
   const desc = escapeHtml(og.description || "");
   const img = escapeHtml(og.image || "");
   const siteName = escapeHtml(og.title?.split("—")[0]?.trim() || og.title || "");
   const safeUrl = escapeHtml(finalUrl);
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><meta name="description" content="${desc}"><meta property="og:title" content="${title}"><meta property="og:description" content="${desc}"><meta property="og:url" content="${safeUrl}"><meta property="og:type" content="website"><meta property="og:site_name" content="${siteName}">${img ? `<meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${title}"><meta name="twitter:description" content="${desc}">${img ? `<meta name="twitter:image" content="${img}">` : ""}<link rel="canonical" href="${safeUrl}"><meta http-equiv="refresh" content="0;url=${safeUrl}"><script>window.location.replace(${JSON.stringify(finalUrl)});</script></head><body><p>Redirecting to <a href="${safeUrl}">${siteName}</a>...</p></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><meta name="description" content="${desc}"><meta property="og:title" content="${title}"><meta property="og:description" content="${desc}"><meta property="og:url" content="${safeUrl}"><meta property="og:type" content="website"><meta property="og:site_name" content="${siteName}">${img ? `<meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${title}"><meta name="twitter:description" content="${desc}">${img ? `<meta name="twitter:image" content="${img}">` : ""}<link rel="canonical" href="${safeUrl}"></head><body><h1>${title}</h1><p>${desc}</p>${img ? `<img src="${img}" alt="${title}" width="1200" height="630">` : ""}<p><a href="${safeUrl}">${siteName}</a></p></body></html>`;
 }
 
 /* ============================================================
