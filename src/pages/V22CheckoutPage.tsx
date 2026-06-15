@@ -654,25 +654,27 @@ export default function V22CheckoutPage() {
   const apiFiredRef = useRef<Set<string>>(new Set());
   const fireAddPaymentInfoOnce = () => {
     if (!store?.id || checkoutItems.length === 0) return;
-    let category: string;
+    let paymentMethodLabel: string;
     let value: number;
     if (paymentMethod === "cod" && !isPartialOrder) {
-      category = "cod";
+      paymentMethodLabel = "cod";
       value = total;
     } else if (isPartialOrder) {
-      category = activeGateway === "cashfree" ? "partial_cod_cashfree" : "partial_cod_razorpay";
+      paymentMethodLabel = activeGateway === "cashfree" ? "partial_cod_cashfree" : "partial_cod_razorpay";
       value = partialAdvanceTotal;
     } else if (paymentMethod === "razorpay") {
-      category = activeGateway === "cashfree" ? "cashfree" : "razorpay";
+      paymentMethodLabel = activeGateway === "cashfree" ? "cashfree" : "razorpay";
       value = total;
     } else {
       return;
     }
-    if (apiFiredRef.current.has(category)) return;
-    apiFiredRef.current.add(category);
+    if (apiFiredRef.current.has(paymentMethodLabel)) return;
+    apiFiredRef.current.add(paymentMethodLabel);
     const eid = generateEventId();
+    // `content_category` is reserved for *product* category in Meta's schema;
+    // gateway name moved to a custom `payment_method` field.
     const data = {
-      content_category: category,
+      payment_method: paymentMethodLabel,
       content_ids: checkoutItems.map((i) => i.productId),
       contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
       num_items: checkoutItems.length,
