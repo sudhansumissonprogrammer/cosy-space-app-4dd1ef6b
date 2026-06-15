@@ -115,23 +115,18 @@ export default function CheckoutAwareLayout({
       return e.returnValue;
     };
 
-    // 2. Push fake history entries to intercept browser back button
-    window.history.pushState({ checkoutLock: true }, "");
-    window.history.pushState({ checkoutLock: true }, "");
-
-    const handlePopState = (e: PopStateEvent) => {
-      if (paymentInProgressRef.current) return;
-      // Re-push state to keep user on page and show exit dialog
-      window.history.pushState({ checkoutLock: true }, "");
-      setShowExitDialog(true);
-    };
+    // v8.61.0 BAN-FIX P1-6: removed double history.pushState + popstate
+    // intercept. Meta's manual landing-page review classifies back-button
+    // trapping as "manipulative navigation" — a documented prohibited
+    // dark pattern and a strong negative signal in ad-account reviews.
+    // The beforeunload warning above is standard browser behavior and
+    // perfectly acceptable; exit-intent UI should live in a visible
+    // dialog, not via browser-navigation hijacking.
 
     window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("popstate", handlePopState);
 
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.removeEventListener("popstate", handlePopState);
     };
   }, [isCheckout, orderPlaced, paymentInProgress]);
 

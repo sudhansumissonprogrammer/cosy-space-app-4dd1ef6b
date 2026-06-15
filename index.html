@@ -251,7 +251,13 @@
             if(pid&&w.__SF_PIXEL_INITED__!==pid){
               w.__SF_PIXEL_INITED__=pid;
               w.fbq('consent','grant');
-              w.fbq('init',pid);
+              /* v8.61.0 BAN-FIX P1-2: pass external_id from sf_vid cookie so
+                 Advanced Matching is non-zero on first-paint init. Without
+                 this, the React hook later sees __SF_PIXEL_INITED__ === pid
+                 and SKIPS re-init, so external_id is silently never sent → 
+                 EMQ stuck at ~4/10 instead of ~8/10. */
+              var sfv=(document.cookie.match(/(?:^|;\s*)sf_vid=([^;]+)/)||[])[1]||'';
+              if(sfv){w.fbq('init',pid,{external_id:sfv});}else{w.fbq('init',pid);}
               /* Generate event_id so the same PageView fired server-side via
                  CAPI (see useFacebookPixel.ts) deduplicates against this one.
                  Without a shared eventID Meta counts them as two PageViews. */

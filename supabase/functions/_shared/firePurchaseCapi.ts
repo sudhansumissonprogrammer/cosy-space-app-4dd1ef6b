@@ -163,7 +163,11 @@ export async function firePurchaseCapi(
     if (customerEmail) userData.em = [await sha256Hex(normEmail(customerEmail))];
     if (order.customer_phone) {
       const cleaned = String(order.customer_phone).replace(/\D/g, "");
-      if (cleaned) userData.ph = [await sha256Hex(cleaned)];
+      // v8.61.0 BAN-FIX P1-3 (mirror): prepend 91 country code for 10-digit
+      // Indian numbers — Meta hashes E.164-without-plus, so without this
+      // every server Purchase phone hash mismatched the browser-side one.
+      const e164 = cleaned.length === 10 ? `91${cleaned}` : cleaned;
+      if (e164) userData.ph = [await sha256Hex(e164)];
     }
     // external_id: prefer storefront customer id, fall back to order id.
     // v8.61.0 BAN-FIX P1-4: was `sha256Hex(normEmail(...))` which lowercases via

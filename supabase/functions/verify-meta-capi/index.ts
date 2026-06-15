@@ -86,7 +86,10 @@ Deno.serve(async (req) => {
             client_user_agent:
               req.headers.get("user-agent") ||
               "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 ShopBanao-Verify/1.0",
-            fbp: `fb.1.${Date.now()}.${Math.floor(Math.random() * 1e10)}`,
+            // v8.61.0 BAN-FIX P1-5: removed fabricated `fbp: fb.1.<now>.<rand>`.
+            // Injecting synthetic browser-cookie values into a merchant's
+            // production pixel pollutes Meta's user-graph fingerprint and can
+            // trigger fraudulent-signal flags. fbp is optional — omit it.
           },
         },
       ],
