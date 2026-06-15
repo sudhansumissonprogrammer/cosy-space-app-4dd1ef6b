@@ -1,5 +1,5 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.67.0 — Meta ban-risk hardening
+ * SHOPBANAO PRODUCTION ROUTER v8.67.0 — Meta ban-risk round 3 + P0 cache cloaking fix
  *
  * v8.67.0 — Ban-risk audit fixes (P0 + P1 batch):
  *           P0-1 Removed FacebookBot / Meta-ExternalAgent /
@@ -204,7 +204,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.67.0-ban-risk-hardening";
+const WORKER_VERSION = "8.67.0-ban-risk-r3";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -5386,7 +5386,10 @@ async function handleBot(request, slug, url, isCustom) {
   // bot-render edge function invocations + zero DB hits for repeat bot crawls.
   if (isSearchBot) {
     const domain = isCustom ? hostname : null;
-    const botCacheKey = new Request(`https://bot-cache/search/${encodeURIComponent(hostname)}${url.pathname}`, {
+    // v8.67.0 BAN-FIX P0-1: Bot cache key now versioned by WORKER_VERSION so
+    // every Worker deploy auto-invalidates the prior bot HTML. Was serving 17h
+    // old doorway-redirect HTML to facebookexternalhit even after v8.61.0 fix.
+    const botCacheKey = new Request(`https://bot-cache/search/${WORKER_VERSION}/${encodeURIComponent(hostname)}${url.pathname}`, {
       method: "GET",
     });
     const botCached = await cache.match(botCacheKey);
@@ -5426,7 +5429,8 @@ async function handleBot(request, slug, url, isCustom) {
 
   if (isSocialBot) {
     const domain = isCustom ? hostname : null;
-    const socialCacheKey = new Request(`https://bot-cache/social/${encodeURIComponent(hostname)}${url.pathname}`, {
+    // v8.67.0 BAN-FIX P0-1: Versioned by WORKER_VERSION — see search branch above.
+    const socialCacheKey = new Request(`https://bot-cache/social/${WORKER_VERSION}/${encodeURIComponent(hostname)}${url.pathname}`, {
       method: "GET",
     });
     const socialCached = await cache.match(socialCacheKey);
@@ -5480,7 +5484,34 @@ function buildOgHtml(og, finalUrl) {
   const img = escapeHtml(og.image || "");
   const siteName = escapeHtml(og.title?.split("—")[0]?.trim() || og.title || "");
   const safeUrl = escapeHtml(finalUrl);
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><meta name="description" content="${desc}"><meta property="og:title" content="${title}"><meta property="og:description" content="${desc}"><meta property="og:url" content="${safeUrl}"><meta property="og:type" content="website"><meta property="og:site_name" content="${siteName}">${img ? `<meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${title}"><meta name="twitter:description" content="${desc}">${img ? `<meta name="twitter:image" content="${img}">` : ""}<link rel="canonical" href="${safeUrl}"></head><body><h1>${title}</h1><p>${desc}</p>${img ? `<img src="${img}" alt="${title}" width="1200" height="630">` : ""}<p><a href="${safeUrl}">${siteName}</a></p></body></html>`;
+  // v8.67.0 BAN-FIX P2-1: Add Product JSON-LD (if price+currency present) so
+  // Meta's ad-quality crawler can verify ad-creative price matches the landing
+  // page. Was previously sending bot HTML with zero price signals — caused
+  // "misleading pricing" reviews on stores running price-led ad creatives.
+  let ldJson = "";
+  if (og.price != null && og.price !== "" && Number(og.price) > 0) {
+    try {
+      const ld = {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: og.title || "",
+        description: og.description || "",
+        image: og.image || undefined,
+        offers: {
+          "@type": "Offer",
+          price: String(og.price),
+          priceCurrency: og.currency || "INR",
+          availability:
+            og.availability === "out of stock"
+              ? "https://schema.org/OutOfStock"
+              : "https://schema.org/InStock",
+          url: finalUrl,
+        },
+      };
+      ldJson = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>`;
+    } catch {}
+  }
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><meta name="description" content="${desc}"><meta property="og:title" content="${title}"><meta property="og:description" content="${desc}"><meta property="og:url" content="${safeUrl}"><meta property="og:type" content="website"><meta property="og:site_name" content="${siteName}">${img ? `<meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${title}"><meta name="twitter:description" content="${desc}">${img ? `<meta name="twitter:image" content="${img}">` : ""}<link rel="canonical" href="${safeUrl}">${ldJson}</head><body><h1>${title}</h1><p>${desc}</p>${img ? `<img src="${img}" alt="${title}" width="1200" height="630">` : ""}<p><a href="${safeUrl}">${siteName}</a></p></body></html>`;
 }
 
 /* ============================================================

@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
 
     const { data: store, error: storeErr } = await supabase
       .from("stores")
-      .select("facebook_pixel_id, meta_access_token, currency")
+      .select("facebook_pixel_id, meta_access_token, currency, custom_domain, slug")
       .eq("id", store_id)
       .single();
 
@@ -140,6 +140,32 @@ Deno.serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // v8.67.0 BAN-FIX P1-3: Validate Referer/Origin domain matches the store's
+    // registered domain or *.shopbanao.in subdomain. CORS `*` + public store_id
+    // (discoverable via window.__STORE_SLUG__) previously let any attacker
+    // flood a competitor's pixel with garbage Purchase events → EMQ crash →
+    // Meta ban. Browser-fired CAPI always has Origin/Referer; server-to-server
+    // calls (firePurchaseCapi) use `verify-meta-capi` or the internal path, not
+    // this endpoint, so we can safely require the header on this entrypoint.
+    const referer = req.headers.get("referer") || req.headers.get("origin") || "";
+    if (referer) {
+      let refHost = "";
+      try { refHost = new URL(referer).hostname.toLowerCase().replace(/^www\./, ""); } catch {}
+      const allowed = [
+        store.custom_domain ? String(store.custom_domain).toLowerCase().replace(/^www\./, "") : "",
+        store.slug ? `${String(store.slug).toLowerCase()}.shopbanao.in` : "",
+        "shopbanao.in",
+      ].filter(Boolean);
+      const isLovablePreview = refHost.endsWith(".lovable.app") || refHost === "localhost";
+      if (refHost && !isLovablePreview && !allowed.includes(refHost)) {
+        return new Response(
+          JSON.stringify({ error: "origin_not_allowed" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
 
     const pixelId = store.facebook_pixel_id;
     const accessToken = store.meta_access_token;
