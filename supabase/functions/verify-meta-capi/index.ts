@@ -49,6 +49,18 @@ Deno.serve(async (req) => {
       sha256Hex(`sb-verify-${pixelId}`),
     ]);
 
+    // Use the calling site's Origin as event_source_url when available — the
+    // old hardcoded "shopbanao.in/verify" path doesn't exist and Meta logs
+    // it as a 404 in the URL hygiene check. Fall back to graph.facebook.com.
+    let sourceUrl = "https://graph.facebook.com/verify";
+    const origin = req.headers.get("origin") || req.headers.get("referer");
+    if (origin) {
+      try {
+        const u = new URL(origin);
+        sourceUrl = `${u.origin}/`;
+      } catch {}
+    }
+
     // Use the standard "PageView" event — Meta recognizes it natively, so it
     // never triggers the "confirm custom event" review flow that custom names
     // (e.g. "TestEvent") do. test_event_code routes it to the Test Events tab
@@ -60,7 +72,7 @@ Deno.serve(async (req) => {
           event_time: Math.floor(Date.now() / 1000),
           event_id: `sb-verify-${crypto.randomUUID()}`,
           action_source: "website",
-          event_source_url: "https://shopbanao.in/verify",
+          event_source_url: sourceUrl,
           user_data: {
             em: [em],
             ph: [ph],
@@ -81,7 +93,9 @@ Deno.serve(async (req) => {
       test_event_code: "TEST12345",
     };
 
-    const url = `https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${encodeURIComponent(accessToken)}`;
+    // Graph API v21.0 — v19.0 is past Meta's 2-year deprecation window and
+    // returns deprecation warnings in fbtrace responses.
+    const url = `https://graph.facebook.com/v21.0/${pixelId}/events?access_token=${encodeURIComponent(accessToken)}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
