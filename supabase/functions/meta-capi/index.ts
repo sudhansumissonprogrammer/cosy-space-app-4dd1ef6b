@@ -208,6 +208,16 @@ Deno.serve(async (req) => {
     const pixelId = store.facebook_pixel_id;
     const accessToken = store.meta_access_token;
 
+    // v8.68.0 BAN-FIX P0-NEW-1: Skip pixels currently in the breaker.
+    // Returns 200 + skipped:true so the browser pixel still fires client-side
+    // (no UX impact); we just stop torching the Graph API error budget.
+    if (breakerOpen(pixelId)) {
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, reason: "pixel_breaker_open" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // ZERO-BAN POLICY: Never attach client_ip_address from the browser-event path.
     // Routing can change (Cloudflare bypass, direct *.supabase.co call, internal retry,
     // preview slip-through) and any of those would leak a Supabase/AWS datacenter IP
@@ -218,8 +228,9 @@ Deno.serve(async (req) => {
     // checkout (see _shared/firePurchaseCapi.ts) — that path is unaffected.
     const userData: CAPIEvent["user_data"] = {
       client_user_agent: user_agent || req.headers.get("user-agent") || undefined,
-      fbc: fbc || undefined,
-      fbp: fbp || undefined,
+      // v8.68.0 BAN-FIX P1-NEW-1: validate fb cookies before sending.
+      fbc: sanitizeFb(fbc, FBC_RX),
+      fbp: sanitizeFb(fbp, FBP_RX),
     };
 
     if (user_email) {
