@@ -1,14 +1,12 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { MapPin, Clock, MessageCircle, Instagram, Facebook, Send, Mail } from "lucide-react";
+import { MapPin, Clock, MessageCircle, Instagram, Facebook, Mail } from "lucide-react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath, isCustomDomainHost } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 interface StorefrontFooterProps {
   store: StoreData;
@@ -46,7 +44,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
   const hours = store.business_hours as Record<string, string> | null;
   const hasHours = hours && Object.values(hours).some((v) => v?.trim());
   const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
-  const [email, setEmail] = useState("");
+  
 
   // Phase 3: owner_email is bundled in the storefront shell. Skip the RPC entirely
   // when the field is present (null or a string). Only fall back to the RPC for
