@@ -147,21 +147,54 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
     );
 
     const send = () => {
+      // v8.61.0 — same-origin worker endpoint. Zero DNS/TLS/CORS cost per
+      // SPA navigation. Worker reuses recordPageView() server-side (bot
+      // filter, 30-min dedup, batched flush to page_views). If the worker
+      // route is missing (older deploy), fall back to direct PostgREST so
+      // we never lose pageviews during the rollout window.
       try {
-        fetch(`${SUPA_URL}/rest/v1/page_views`, {
+        fetch("/__sf/pv", {
           method: "POST",
           keepalive: true,
-          mode: "cors",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: SUPA_ANON,
-            Authorization: `Bearer ${SUPA_ANON}`,
-            Prefer: "return=minimal",
-          },
+          headers: { "Content-Type": "application/json" },
           body: payload,
-        }).catch(() => {});
+        })
+          .then((r) => {
+            if (r.ok || r.status === 204) return;
+            // Worker not deployed yet → legacy direct write.
+            return fetch(`${SUPA_URL}/rest/v1/page_views`, {
+              method: "POST",
+              keepalive: true,
+              mode: "cors",
+              headers: {
+                "Content-Type": "application/json",
+                apikey: SUPA_ANON,
+                Authorization: `Bearer ${SUPA_ANON}`,
+                Prefer: "return=minimal",
+              },
+              body: payload,
+            }).catch(() => {});
+          })
+          .catch(() => {
+            // Network error → legacy fallback (same as above).
+            try {
+              fetch(`${SUPA_URL}/rest/v1/page_views`, {
+                method: "POST",
+                keepalive: true,
+                mode: "cors",
+                headers: {
+                  "Content-Type": "application/json",
+                  apikey: SUPA_ANON,
+                  Authorization: `Bearer ${SUPA_ANON}`,
+                  Prefer: "return=minimal",
+                },
+                body: payload,
+              }).catch(() => {});
+            } catch {}
+          });
       } catch {}
     };
+
 
     // Longer idle timeout — beacon is non-critical, never race paint.
     if (typeof (window as any).requestIdleCallback === "function") {
