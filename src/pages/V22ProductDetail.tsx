@@ -363,6 +363,15 @@ export default function V22ProductDetail() {
 
   useEffect(() => {
     if (!product) return;
+    // Same dedup as ProductDetail — see comment there. Caps ViewContent at
+    // 1 per product per 10 min per tab so back-nav / variant clicks don't
+    // inflate Meta's funnel.
+    const dedupKey = `__sf_vc__:${store.id}:${product.id}`;
+    try {
+      const last = Number(sessionStorage.getItem(dedupKey) || "0");
+      if (Date.now() - last < 10 * 60 * 1000) return;
+      sessionStorage.setItem(dedupKey, String(Date.now()));
+    } catch {}
     const eid = generateEventId();
     const eventData = {
       content_name: product.name,

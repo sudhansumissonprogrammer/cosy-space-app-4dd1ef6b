@@ -167,7 +167,10 @@ export default function CategoryDetail() {
     if (viewContentFiredRef.current === key) return;
     viewContentFiredRef.current = key;
 
-    const topIds = rawProducts.slice(0, 5).map((p: any) => String(p.id));
+    const topIds = rawProducts.slice(0, 5).map((p: any) => String(p.id)).filter(Boolean);
+    // Never fire ViewContent with empty content_ids — Meta logs it as a
+    // schema warning and the event contributes zero attribution signal.
+    if (topIds.length === 0) return;
     const eventId = generateEventId();
     const customData = {
       content_ids: topIds,
