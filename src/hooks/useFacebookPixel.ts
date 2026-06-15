@@ -1,5 +1,6 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { ensureFbpCookie, getOrCreateSfVid } from "@/lib/metaEnrichment";
+import { hasMarketingConsent } from "@/lib/marketingConsent";
 
 
 declare global {
@@ -92,9 +93,19 @@ function isNonProductionHost(): boolean {
 }
 
 export function useFacebookPixel(pixelId: string | null | undefined, storeId?: string | null) {
+  const [consentTick, setConsentTick] = useState(0);
+
+  useEffect(() => {
+    const onConsent = () => setConsentTick((v) => v + 1);
+    window.addEventListener("storefront:marketing-consent", onConsent as EventListener);
+    return () => window.removeEventListener("storefront:marketing-consent", onConsent as EventListener);
+  }, []);
+
   useEffect(() => {
     if (!pixelId) return;
     if (isNonProductionHost()) return;
+    if (!hasMarketingConsent()) return;
+    ensureFbpCookie();
 
     // Phase 1: If index.html inline script already initialized this pixel,
     // skip — avoids duplicate init + duplicate PageView.
@@ -186,11 +197,12 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     // Previously we removed it on unmount, which caused a fresh init + PageView
     // every time StorefrontShell re-mounted (Suspense fallback/resolve, layout
     // switch, dev StrictMode). The __SF_PIXEL_INITED__ flag handles dedup.
-  }, [pixelId, storeId]);
+  }, [pixelId, storeId, consentTick]);
 
   const trackEvent = useCallback(
     (eventName: string, params?: Record<string, any>, eventId?: string) => {
       if (!pixelId || typeof window.fbq !== "function") return;
+      if (!hasMarketingConsent()) return;
       if (eventId) {
         window.fbq("track", eventName, params, { eventID: eventId });
       } else {
@@ -212,6 +224,7 @@ export function generateEventId(): string {
 export function fbPixelTrack(eventName: string, params?: Record<string, any>, eventId?: string) {
   if (typeof window === "undefined") return;
   if (isNonProductionHost()) return;
+  if (!hasMarketingConsent()) return;
   if (typeof window.fbq === "function") {
     if (eventId) {
       window.fbq("track", eventName, params, { eventID: eventId });
