@@ -25,19 +25,30 @@
             sessionStorage.setItem(FLAG, '1');
             var host = location.hostname;
             var done = function(){
-              // v8.67.0 BAN-FIX P1-1: After hard-reload, strip __sh=<timestamp>
-              // from the URL via history.replaceState BEFORE React/Pixel mount.
-              // Otherwise the Pixel PageView fires with event_source_url
-              // containing __sh, but server CAPI fires the canonical URL →
-              // event_id dedup ratio anomaly → Meta flags account.
-              var cleanedNext = location.pathname + (location.search ? location.search + '&' : '?') + '__sh=' + Date.now() + location.hash;
-              location.replace(cleanedNext);
+              location.replace(location.pathname + (location.search ? location.search + '&' : '?') + '__sh=' + Date.now() + location.hash);
             };
             try {
               fetch('/api/purge-shell?domain=' + encodeURIComponent(host), { method:'POST', cache:'no-store', keepalive:true })
                 .then(done, done);
             } catch(_) { done(); }
           }, true);
+        }catch(_){}
+      })();
+    </script>
+    <!-- v8.67.0 BAN-FIX P1-1: Strip __sh=<timestamp> cache-buster from URL
+         BEFORE the Pixel/CAPI/React mounts. The shell-heal reload adds __sh
+         so CF re-fetches; once we're on the new page we no longer need it,
+         and leaving it in the URL makes browser PageView event_source_url
+         differ from server CAPI's canonical URL → event_id dedup fails →
+         Meta flags anomalous dedup ratio. Synchronous + first-thing-in-head
+         so it runs before any analytics script reads location.href. -->
+    <script>
+      (function(){
+        try{
+          if (location.search.indexOf('__sh=') === -1) return;
+          var cleaned = location.search.replace(/[?&]__sh=\d+/, '');
+          if (cleaned && cleaned[0] !== '?') cleaned = '?' + cleaned.slice(1);
+          history.replaceState(null, '', location.pathname + cleaned + location.hash);
         }catch(_){}
       })();
     </script>
