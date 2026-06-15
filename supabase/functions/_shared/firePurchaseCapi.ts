@@ -166,8 +166,14 @@ export async function firePurchaseCapi(
       if (cleaned) userData.ph = [await sha256Hex(cleaned)];
     }
     // external_id: prefer storefront customer id, fall back to order id.
+    // v8.61.0 BAN-FIX P1-4: was `sha256Hex(normEmail(...))` which lowercases via
+    // email rules. meta-capi/index.ts uses `sha256Hex(trim(...))` only. Different
+    // hashes for the same UUID → server Purchase doesn't dedupe with browser
+    // PageView/ViewContent that already sent the bare trimmed external_id →
+    // EMQ tanks + Meta flags "duplicate user across pixels". Match the spec
+    // (trim only, no case normalization for opaque IDs).
     userData.external_id = [
-      await sha256Hex(normEmail(order.storefront_customer_id || order.id)),
+      await sha256Hex(String(order.storefront_customer_id || order.id).trim()),
     ];
     if (order.customer_name) {
       const parts = String(order.customer_name).trim().split(/\s+/);
