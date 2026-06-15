@@ -6597,6 +6597,46 @@ async function _handleFetch(request, env, ctx) {
     return fontResp;
   }
 
+  // ─── /__sf/pv — same-origin pageview beacon (v8.61.0) ───
+  // Browser POSTs here instead of directly to Supabase PostgREST. Same origin
+  // means zero DNS/TLS handshake and zero CORS preflight per SPA navigation.
+  // We reuse recordPageView() so bot filter, 30-min dedup, path filter, and
+  // batched flush all stay identical. Body: { store_id, path }.
+  if (url.pathname === "/__sf/pv") {
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "content-type",
+          "Access-Control-Max-Age": "86400",
+        },
+      });
+    }
+    if (request.method !== "POST") {
+      return new Response("Method not allowed", { status: 405 });
+    }
+    ctx.waitUntil(
+      (async () => {
+        try {
+          const body = await request.json();
+          const sid = body && typeof body.store_id === "string" ? body.store_id : null;
+          const pth = body && typeof body.path === "string" ? body.path : "/";
+          if (sid) await recordPageView(env, request, sid, pth);
+        } catch (_) { /* swallow — analytics path must never throw */ }
+      })()
+    );
+    // 204 immediately — beacon is fire-and-forget.
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Cache-Control": "no-store",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+  }
+
   // ─── /cf-img — REMOVED in v8.48.0 ───
   // Route is dead code. All storefront images now go through
   // cdn.shopbanao.in (R2 direct) or Supabase render API directly
@@ -6609,6 +6649,7 @@ async function _handleFetch(request, env, ctx) {
       headers: { "Cache-Control": "public, max-age=86400" },
     });
   }
+
 
   // ─── API ROUTES (rate-limited) ───
   if (url.pathname.startsWith("/api/")) {
