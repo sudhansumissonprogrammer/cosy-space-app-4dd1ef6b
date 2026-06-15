@@ -6597,6 +6597,84 @@ async function _handleFetch(request, env, ctx) {
     return fontResp;
   }
 
+  // ─── /__sf/pv — same-origin pageview beacon (v8.61.0) ───
+  // Browser POSTs the full enriched payload here. Same origin = zero DNS/TLS
+  // handshake and zero CORS preflight per SPA navigation. We forward the
+  // body verbatim to PostgREST so referrer/utm/device/browser/os/landing
+  // dimensions are preserved exactly as today. Dedup uses the same
+  // _pvDedup map as recordPageView (30-min window per store+visitor+path).
+  if (url.pathname === "/__sf/pv") {
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "content-type",
+          "Access-Control-Max-Age": "86400",
+        },
+      });
+    }
+    if (request.method !== "POST") {
+      return new Response("Method not allowed", { status: 405 });
+    }
+    ctx.waitUntil(
+      (async () => {
+        try {
+          const body = await request.json();
+          if (!body || typeof body !== "object") return;
+          const sid = typeof body.store_id === "string" ? body.store_id : null;
+          if (!sid) return;
+          const pth = typeof body.path === "string" ? body.path : "/";
+          // Reuse path/bot filters from recordPageView.
+          if (_pvIsBot(request)) return;
+          if (
+            pth.startsWith("/api/") ||
+            pth.startsWith("/~api/") ||
+            pth.startsWith("/cf-img") ||
+            pth.startsWith("/_") ||
+            pth.startsWith("/assets/") ||
+            pth.startsWith("/rest/") ||
+            pth.startsWith("/functions/") ||
+            pth === "/robots.txt" ||
+            pth === "/sitemap.xml" ||
+            pth === "/favicon.ico" ||
+            /\.(js|css|png|jpe?g|webp|svg|ico|woff2?|map|json|xml|txt|avif|gif|ttf|otf)(\?|$)/i.test(pth)
+          ) return;
+          // 30-min dedup (same window/key as recordPageView).
+          const ip = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "0";
+          const dedupId = (typeof body.visitor_id === "string" && body.visitor_id) || _pvReadVisitorId(request) || ip;
+          const dKey = `${sid}|${dedupId}|${pth}`;
+          const now = Date.now();
+          const existing = _pvDedup.get(dKey);
+          if (existing && existing > now) return;
+          _pvDedup.set(dKey, now + PV_DEDUP_WINDOW_MS);
+          _pvPruneIfNeeded();
+          // Forward full enriched body to PostgREST.
+          await fetch(`${SUPABASE_URL}/rest/v1/page_views`, {
+            method: "POST",
+            headers: {
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+              "Content-Type": "application/json",
+              Prefer: "return=minimal",
+            },
+            body: JSON.stringify(body),
+          }).catch(() => {});
+        } catch (_) { /* never throw from analytics path */ }
+      })()
+    );
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Cache-Control": "no-store",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+  }
+
+
+
   // ─── /cf-img — REMOVED in v8.48.0 ───
   // Route is dead code. All storefront images now go through
   // cdn.shopbanao.in (R2 direct) or Supabase render API directly
@@ -6609,6 +6687,7 @@ async function _handleFetch(request, env, ctx) {
       headers: { "Cache-Control": "public, max-age=86400" },
     });
   }
+
 
   // ─── API ROUTES (rate-limited) ───
   if (url.pathname.startsWith("/api/")) {
