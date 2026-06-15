@@ -1,5 +1,26 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.62.0 — cold-POP elimination
+ * SHOPBANAO PRODUCTION ROUTER v8.67.0 — Meta ban-risk hardening
+ *
+ * v8.67.0 — Ban-risk audit fixes (P0 + P1 batch):
+ *           P0-1 Removed FacebookBot / Meta-ExternalAgent /
+ *                Meta-ExternalFetcher from BLOCKED_BOT_REGEX so Meta's
+ *                ad-policy crawler no longer receives 403 (the #1 ban
+ *                trigger). They're still classified as bots via
+ *                BOT_UA_REGEX so KV/tracker stripping still applies.
+ *           P0-3 Bots now receive the same cached SPA HTML as users
+ *                (no tracker-strip divergence on warm cache).
+ *           P1-5 Unified 3 divergent bot regexes (BOT_UA_RE,
+ *                BOT_UA_REGEX, PV_BOT_UA_REGEX) into a single
+ *                BOT_UA_REGEX so classification is deterministic
+ *                across handleBot / _isBotUA / _pvIsBot.
+ *           P1-7 recordPageView() filters bots via _pvIsBot so
+ *                Sessions/CVR aren't inflated by crawler traffic.
+ *           Paired frontend/edge-fn fixes (not in this file):
+ *           robots.txt allow Meta bots, inline fbq init carries
+ *           external_id, IN phone hashes prepend 91, num_items sums
+ *           quantity, verify-CAPI no fabricated fbp, no back-button
+ *           trap in checkout, external_id hash normalization unified.
+ *
  *
  * v8.62.0 — Cold-POP cache-miss elimination for low-traffic stores:
  *           (1) Static-asset edge TTL 1d → 30d so hashed JS/CSS chunks
