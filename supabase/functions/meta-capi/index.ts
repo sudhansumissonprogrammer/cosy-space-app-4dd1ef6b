@@ -303,12 +303,18 @@ Deno.serve(async (req) => {
     const metaResult = await metaResponse.json();
 
     if (!metaResponse.ok) {
+      // v8.68.0 BAN-FIX P0-NEW-1: record hard-config failures into per-pixel
+      // breaker so we stop spamming Graph API with the same broken pixel.
+      const code = Number(metaResult?.error?.code);
+      breakerRecord(pixelId, Number.isFinite(code) ? code : undefined);
       console.error("Meta CAPI error:", JSON.stringify(metaResult));
       return new Response(
         JSON.stringify({ error: "Meta API error", details: metaResult }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    // Success → clear any prior fail count for this pixel.
+    breakerRecord(pixelId, undefined);
 
     return new Response(
       JSON.stringify({ success: true, events_received: metaResult.events_received }),
