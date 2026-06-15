@@ -369,6 +369,16 @@ export default function ProductDetail() {
 
   useEffect(() => {
     if (!product) return;
+    // Dedup ViewContent across PDP remounts (variant tab switch, back-nav,
+    // Suspense) — fire at most once per product per 10 min per tab session.
+    // Without this, back/forward + variant clicks inflate ViewContent and
+    // skew Meta's funnel ratios (ViewContent ≫ AddToCart looks like bot traffic).
+    const dedupKey = `__sf_vc__:${store.id}:${product.id}`;
+    try {
+      const last = Number(sessionStorage.getItem(dedupKey) || "0");
+      if (Date.now() - last < 10 * 60 * 1000) return;
+      sessionStorage.setItem(dedupKey, String(Date.now()));
+    } catch {}
     const eid = generateEventId();
     const eventData = {
       content_name: product.name,
