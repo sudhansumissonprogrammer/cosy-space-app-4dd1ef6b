@@ -251,8 +251,8 @@ export default function CreateStore() {
         mobile_hero_url: mobileHeroUrl,
         theme,
         owner_email: ownerEmail.trim() || null,
-        meta_title: `${storeName} — Shop Online | Free Delivery`,
-        meta_description: `Shop the best products at ${storeName}. ✓ Cash on Delivery ✓ Easy Returns ✓ Fast Shipping`,
+        meta_title: `${storeName} — Shop Online`,
+        meta_description: `Discover products at ${storeName}. Order online today.`,
       }).select("id").single();
 
       if (error) {

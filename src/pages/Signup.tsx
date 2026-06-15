@@ -229,6 +229,13 @@ export default function Signup() {
                 Create Account
               </Button>
 
+              <p className="text-xs text-muted-foreground text-center leading-snug">
+                By creating an account, you agree to our{" "}
+                <Link to="/terms" className="underline hover:text-foreground">Terms &amp; Conditions</Link>{" "}
+                and{" "}
+                <Link to="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>.
+              </p>
+
               <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}
                 <Link to="/login" className="font-medium text-primary hover:underline">

@@ -2585,6 +2585,18 @@ export default function CheckoutPage() {
           )}
         </button>
 
+        {/* Consent disclosure — required before collecting/sharing PII (Meta CAPI, payment gateways) */}
+        <p className="mt-2 text-[11px] text-muted-foreground text-center leading-snug">
+          {t("By placing your order, you agree to our", "ऑर्डर देकर, आप हमारी")}{" "}
+          <Link to={storefrontPath(store.slug, "terms")} className="underline hover:text-foreground">
+            {t("Terms & Conditions", "नियम और शर्तें")}
+          </Link>{" "}
+          {t("and", "और")}{" "}
+          <Link to={storefrontPath(store.slug, "privacy-policy")} className="underline hover:text-foreground">
+            {t("Privacy Policy", "गोपनीयता नीति")}
+          </Link>.
+        </p>
+
         {/* Trust strip — sets buyer expectations about the payment processor brand */}
         <div className="mt-3 flex flex-col items-center gap-1.5 text-center">
           <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">

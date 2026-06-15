@@ -1,30 +1,40 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { MapPin, Clock, MessageCircle, Instagram, Facebook, Send, Mail } from "lucide-react";
+import { MapPin, Clock, MessageCircle, Instagram, Facebook, Mail } from "lucide-react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath, isCustomDomainHost } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 interface StorefrontFooterProps {
   store: StoreData;
 }
 
-function PaymentIcons() {
+function PaymentIcons({ store }: { store: StoreData }) {
+  // Read actual configured methods so we never show payment logos that don't work at checkout.
+  const { data: cfg } = useQuery({
+    queryKey: ["store-payment-config-footer", store.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("store_payment_config")
+        .select("cod_enabled, razorpay_enabled, cashfree_enabled, payu_enabled, upi_enabled")
+        .eq("store_id", store.id)
+        .maybeSingle();
+      return data as { cod_enabled?: boolean; razorpay_enabled?: boolean; cashfree_enabled?: boolean; payu_enabled?: boolean; upi_enabled?: boolean } | null;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+  const hasCard = !!(cfg?.razorpay_enabled || cfg?.cashfree_enabled || cfg?.payu_enabled);
+  const hasUpi = !!(cfg?.upi_enabled || cfg?.razorpay_enabled || cfg?.cashfree_enabled || cfg?.payu_enabled);
+  const hasCod = !!cfg?.cod_enabled;
+  if (!hasCard && !hasUpi && !hasCod) return null;
   return (
     <div className="flex items-center gap-3 flex-wrap">
-      {/* Visa */}
-      <div className="h-7 w-11 rounded bg-white/10 flex items-center justify-center text-[9px] font-bold tracking-wide opacity-60">VISA</div>
-      {/* Mastercard */}
-      <div className="h-7 w-11 rounded bg-white/10 flex items-center justify-center text-[9px] font-bold tracking-wide opacity-60">MC</div>
-      {/* UPI */}
-      <div className="h-7 w-11 rounded bg-white/10 flex items-center justify-center text-[9px] font-bold tracking-wide opacity-60">UPI</div>
-      {/* COD */}
-      <div className="h-7 w-11 rounded bg-white/10 flex items-center justify-center text-[9px] font-bold tracking-wide opacity-60">COD</div>
+      {hasCard && <div className="h-7 px-2 rounded bg-white/10 flex items-center justify-center text-[9px] font-bold tracking-wide opacity-60">CARD</div>}
+      {hasUpi && <div className="h-7 w-11 rounded bg-white/10 flex items-center justify-center text-[9px] font-bold tracking-wide opacity-60">UPI</div>}
+      {hasCod && <div className="h-7 w-11 rounded bg-white/10 flex items-center justify-center text-[9px] font-bold tracking-wide opacity-60">COD</div>}
     </div>
   );
 }
@@ -34,7 +44,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
   const hours = store.business_hours as Record<string, string> | null;
   const hasHours = hours && Object.values(hours).some((v) => v?.trim());
   const address = [store.location, store.city, store.state].filter(Boolean).join(", ");
-  const [email, setEmail] = useState("");
+  
 
   // Phase 3: owner_email is bundled in the storefront shell. Skip the RPC entirely
   // when the field is present (null or a string). Only fall back to the RPC for
@@ -51,13 +61,6 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
     initialData: shellEmail === undefined ? undefined : (shellEmail || "").trim(),
   });
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-    toast.success("Thanks for subscribing!");
-    setEmail("");
-  };
-
   return (
     <footer
       className="mt-16 border-t"
@@ -66,50 +69,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
         color: "var(--storefront-footer-text, #ffffff)",
       }}
     >
-      {/* Newsletter Bar */}
-      <div
-        className="py-8 lg:py-10"
-        style={{
-          borderBottom: "1px solid rgba(255,255,255,0.1)",
-        }}
-      >
-        <div className="mx-auto max-w-6xl lg:max-w-7xl px-4 lg:px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div>
-              <h3 className="text-base lg:text-lg font-bold" style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}>
-                Stay Updated
-              </h3>
-              <p className="text-sm opacity-70 mt-0.5">Get updates on new arrivals & exclusive offers</p>
-            </div>
-            <form onSubmit={handleNewsletterSubmit} className="flex w-full max-w-md">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-2.5 text-sm rounded-l-lg border-0 outline-none"
-                style={{
-                  backgroundColor: "rgba(255,255,255,0.12)",
-                  color: "inherit",
-                }}
-                required
-              />
-              <button
-                type="submit"
-                className="px-5 py-2.5 text-sm font-semibold rounded-r-lg transition-[transform,opacity,colors,box-shadow] hover:brightness-110 active:scale-95 flex items-center gap-1.5"
-                style={{
-                  backgroundColor: "var(--storefront-accent, rgba(255,255,255,0.2))",
-                  color: "inherit",
-                }}
-              >
-                <Send className="h-3.5 w-3.5" />
-                Subscribe
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-
+      {/* Newsletter form removed — was collecting emails without storing or consent disclosure */}
       <div className="mx-auto max-w-6xl lg:max-w-7xl px-4 lg:px-6 py-10">
         <div className={`grid gap-8 sm:grid-cols-2 ${hasHours ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
           {/* Column 1: Brand */}
@@ -263,7 +223,7 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
             <p className="text-xs opacity-60">
               © {year} {store.name}. All rights reserved.
             </p>
-            <PaymentIcons />
+            <PaymentIcons store={store} />
           </div>
           {!isCustomDomainHost() && (
             <p className="text-xs opacity-50 flex items-center justify-center gap-1">

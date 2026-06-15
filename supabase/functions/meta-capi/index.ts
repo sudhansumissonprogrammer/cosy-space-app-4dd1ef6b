@@ -166,7 +166,10 @@ Deno.serve(async (req) => {
       if (cleaned) userData.ph = [await hashSHA256(cleaned)];
     }
     if (external_id) {
-      userData.external_id = [await hashSHA256(normEmail(external_id))];
+      // external_id is an opaque visitor/customer ID (UUID), NOT an email.
+      // Meta spec: SHA-256 of the trimmed raw value. Using normEmail() here lowercases
+      // UUIDs and silently mismatches firePurchaseCapi.ts → tanks Event Match Quality.
+      userData.external_id = [await hashSHA256(String(external_id).trim())];
     }
     if (first_name) {
       const v = normName(first_name);

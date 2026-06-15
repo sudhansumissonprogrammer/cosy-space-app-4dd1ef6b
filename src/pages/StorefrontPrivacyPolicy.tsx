@@ -24,7 +24,8 @@ export default function StorefrontPrivacyPolicy() {
         <ArrowLeft className="h-4 w-4" /> Back to store
       </Link>
 
-      <h1 className="mb-6 text-2xl font-bold text-foreground">Privacy Policy</h1>
+      <h1 className="mb-2 text-2xl font-bold text-foreground">Privacy Policy</h1>
+      <p className="mb-6 text-xs text-muted-foreground">Last updated: {new Date((store as any).updated_at || (store as any).created_at || Date.now()).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" })}</p>
 
       <div className="prose prose-sm max-w-none text-muted-foreground">
         <p>
