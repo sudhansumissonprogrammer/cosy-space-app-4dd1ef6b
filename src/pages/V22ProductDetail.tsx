@@ -95,44 +95,7 @@ const socialProofCities = [
 ];
 
 /* ── Fake customer reviews ── */
-const reviewerNames = [
-  "Priya S.", "Rahul M.", "Anita K.", "Vikram R.", "Sneha D.",
-  "Arjun P.", "Meera T.", "Karthik N.", "Divya L.", "Amit B.",
-  "Pooja G.", "Rohit V.", "Swati J.", "Nikhil W.", "Kavita C.",
-];
-const reviewTexts = [
-  "Really happy with my order. Looks nice and the quality feels good for the price. Delivery was on time too. 🙌",
-  "Loved it! Exactly as shown in the pictures. Packaging was neat and it arrived quickly. Will order again.",
-  "Good experience overall. Product feels well made and the finish is clean. Worth the money. ⭐",
-  "Nice quality and fast delivery. Got lots of compliments already. Definitely recommend this store.",
-  "Very satisfied with my purchase. Looks even better in person. Smooth checkout and quick shipping. 😊",
-  "Great product for the price. Just as described and packed properly. Would happily buy from here again.",
-  "Exactly what I was looking for. Quality is solid and it arrived sooner than expected. Five stars!",
-  "Honestly better than I expected. Looks classy and feels durable. Already planning my next order. 🎁",
-];
-const reviewDaysAgo = [2, 3, 5, 7, 10, 12, 14, 18, 21, 25];
-
-function getFakeReviews(productId: string) {
-  let hash = 0;
-  for (let i = 0; i < productId.length; i++) {
-    hash = ((hash << 5) - hash) + productId.charCodeAt(i);
-    hash |= 0;
-  }
-  const abs = Math.abs(hash);
-  const idx = abs % reviewerNames.length;
-  const textIdx = abs % reviewTexts.length;
-  const daysIdx = abs % reviewDaysAgo.length;
-  return [{
-    id: `review-0`,
-    name: reviewerNames[idx],
-    rating: 5,
-    text: reviewTexts[textIdx],
-    daysAgo: reviewDaysAgo[daysIdx],
-    verified: true,
-    helpful: 4 + (abs % 12),
-    avatar: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(reviewerNames[idx])}&backgroundColor=c0aede,d1d4f9,b6e3f4,ffd5dc,ffdfbf`,
-  }];
-}
+/* Fake reviews removed for Meta/FTC compliance — only real reviews shown */
 
 export default function V22ProductDetail() {
   const store = useOutletContext<StoreData>();
@@ -483,7 +446,7 @@ export default function V22ProductDetail() {
     return imgs;
   })();
 
-  const fakeReviews = useMemo(() => product ? getFakeReviews(product.id) : [], [product?.id]);
+  const fakeReviews = useMemo(() => [], []);
 
   // Fetch real reviews
   const { data: realReviews, refetch: refetchReviews } = useQuery({
