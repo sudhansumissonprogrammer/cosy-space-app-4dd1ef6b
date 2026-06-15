@@ -1778,22 +1778,25 @@ export default function V22CheckoutPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onBlur={(e) => {
-                    const v = e.target.value.trim();
-                    // Lead event when shopper enters a valid-looking email but hasn't paid yet
-                    // — captures intent for COD-heavy India where many drop off before pay.
-                    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && (window as any).__SF_LEAD_FIRED__ !== v) {
-                      (window as any).__SF_LEAD_FIRED__ = v;
-                      const eid = generateEventId();
-                      fbPixelTrack("Lead", { content_name: "checkout_email", currency, value: subtotal }, eid);
-                      fireMetaCAPI({
-                        storeId: store.id,
-                        eventName: "Lead",
-                        eventId: eid,
-                        userEmail: v,
-                        userPhone: normalizePhone(phone) || undefined,
-                        customData: { content_name: "checkout_email", currency, value: subtotal } as any,
-                      });
-                    }
+                    const v = e.target.value.trim().toLowerCase();
+                    // Lead — same sessionStorage dedup as CheckoutPage so a
+                    // reload doesn't refire and inflate Meta's funnel.
+                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return;
+                    const ledger = `__sf_lead__:${store.id}`;
+                    let fired: string[] = [];
+                    try { fired = JSON.parse(sessionStorage.getItem(ledger) || "[]"); } catch {}
+                    if (fired.includes(v)) return;
+                    try { sessionStorage.setItem(ledger, JSON.stringify([...fired.slice(-9), v])); } catch {}
+                    const eid = generateEventId();
+                    fbPixelTrack("Lead", { content_name: "checkout_email", currency, value: subtotal }, eid);
+                    fireMetaCAPI({
+                      storeId: store.id,
+                      eventName: "Lead",
+                      eventId: eid,
+                      userEmail: v,
+                      userPhone: normalizePhone(phone) || undefined,
+                      customData: { content_name: "checkout_email", currency, value: subtotal } as any,
+                    });
                   }}
                   maxLength={200}
                 />
