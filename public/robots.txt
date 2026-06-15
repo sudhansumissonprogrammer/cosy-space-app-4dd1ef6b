@@ -112,11 +112,14 @@ Disallow: /
 User-agent: Omgili
 Disallow: /
 
+# v8.61.0 BAN-FIX P1-1: FacebookBot + Meta-ExternalFetcher were Disallow:/
+# which Meta reads as cloaking hostility (same trigger as the Worker 403s we
+# already removed). Both crawlers must be allowed to verify ad URLs.
 User-agent: FacebookBot
-Disallow: /
+Allow: /
 
 User-agent: Meta-ExternalFetcher
-Disallow: /
+Allow: /
 
 # ── Aggressive SEO scrapers (zero business value, high cost) ──
 User-agent: AhrefsBot

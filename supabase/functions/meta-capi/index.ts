@@ -163,7 +163,12 @@ Deno.serve(async (req) => {
     }
     if (user_phone) {
       const cleaned = user_phone.replace(/\D/g, "");
-      if (cleaned) userData.ph = [await hashSHA256(cleaned)];
+      // v8.61.0 BAN-FIX P1-3: Indian phones must include the 91 country code
+      // before hashing. Meta stores all phones in E.164-without-plus form, so
+      // sha256("9876543210") never matches sha256("919876543210"). Result was
+      // ~zero phone match rate across every Indian storefront → tanked EMQ.
+      const e164 = cleaned.length === 10 ? `91${cleaned}` : cleaned;
+      if (e164) userData.ph = [await hashSHA256(e164)];
     }
     if (external_id) {
       // external_id is an opaque visitor/customer ID (UUID), NOT an email.
