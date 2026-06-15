@@ -225,12 +225,15 @@ const FINGERPRINT_HEADERS = [
   "x-sb-proxy-cache",
 ];
 
-const BOT_UA_RE =
-  /facebookexternalhit|meta-externalagent|facebookbot|twitterbot|linkedinbot|slackbot|whatsapp|telegrambot|discordbot|pinterestbot|bingpreview|googlebot|googleimageproxy|adsbot-google|mediapartners-google|developers\.google\.com\/\+\/web\/snippet|embedly|quora link preview/i;
-
+// v8.61.0 BAN-FIX P1-5: Single source of truth for bot UA classification.
+// Was 3 divergent regexes (BOT_UA_RE / BOT_UA_REGEX / PV_BOT_UA_REGEX) →
+// same request could be "bot" in one path and "human" in another → non-
+// deterministic content/cache/analytics behavior that Meta's fraud system
+// reads as cloaking. All three now resolve to BOT_UA_REGEX (defined below).
+// BOT_UA_RE kept as an alias for backwards-compat with finalizeResponse().
 function _isBotUA(req) {
   try {
-    return BOT_UA_RE.test(req.headers.get("user-agent") || "");
+    return BOT_UA_REGEX.test(req.headers.get("user-agent") || "");
   } catch {
     return false;
   }
@@ -2392,13 +2395,12 @@ const PV_BATCH_MAX_AGE_MS = 60_000; // unused at size=1, kept for future tuning
 const _pvBuffer = []; // pending rows
 let _pvBufferOldestAt = 0; // timestamp of first row in current buffer
 
-const PV_BOT_UA_REGEX =
-  /bot|crawler|spider|crawling|facebookexternalhit|whatsapp|telegram|slack|discord|linkedin|pinterest|googlebot|bingbot|yandexbot|baiduspider|duckduckbot|applebot|semrush|ahrefs|mj12|petalbot|headlesschrome|phantomjs|puppeteer|playwright|lighthouse|gtmetrix|pagespeed/i;
-
+// v8.61.0 BAN-FIX P1-5: was a separate regex; now delegates to BOT_UA_REGEX so
+// pageview filtering exactly matches handleBot()/finalizeResponse() classification.
 function _pvIsBot(request) {
   const ua = request.headers.get("user-agent") || "";
   if (!ua) return true;
-  return PV_BOT_UA_REGEX.test(ua);
+  return BOT_UA_REGEX.test(ua);
 }
 
 function _pvPruneIfNeeded() {
