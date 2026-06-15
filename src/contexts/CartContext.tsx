@@ -32,37 +32,44 @@ function getStorageKey(slug: string) {
 
 /** Fire analytics asynchronously — never blocks addToCart */
 function fireAddToCartAnalytics(
-  item: { productId: string; name: string; price: number },
+  item: { productId: string; variantId?: string; name: string; price: number },
   currency: string,
   storeId?: string
 ) {
-  // Dynamic imports keep fbPixelTrack + metaCapi out of the initial bundle
-  Promise.all([
-    import("@/hooks/useFacebookPixel"),
-    import("@/lib/metaCapi"),
-  ]).then(([pixelMod, capiMod]) => {
-    const eid = pixelMod.generateEventId();
-    pixelMod.fbPixelTrack("AddToCart", {
-      content_name: item.name,
-      content_ids: [item.productId],
-      content_type: "product",
-      value: item.price,
-      currency,
-    }, eid);
-    if (storeId) {
-      capiMod.fireMetaCAPI({
-        storeId,
-        eventName: "AddToCart",
-        eventId: eid,
-        customData: {
-          content_ids: [item.productId],
-          content_name: item.name,
-          content_type: "product",
-          value: item.price,
-          currency,
-        },
-      });
-    }
+  // Anti-ban guard: rapid taps on the same product within 1.5s collapse to
+  // ONE pixel/CAPI event. Cart quantity still increments correctly — only the
+  // tracking event is throttled. Prevents Meta from seeing event inflation.
+  import("@/lib/pixelDedupe").then(({ shouldFirePixelEvent }) => {
+    if (!shouldFirePixelEvent("AddToCart", item.productId, item.variantId)) return;
+
+    // Dynamic imports keep fbPixelTrack + metaCapi out of the initial bundle
+    Promise.all([
+      import("@/hooks/useFacebookPixel"),
+      import("@/lib/metaCapi"),
+    ]).then(([pixelMod, capiMod]) => {
+      const eid = pixelMod.generateEventId();
+      pixelMod.fbPixelTrack("AddToCart", {
+        content_name: item.name,
+        content_ids: [item.productId],
+        content_type: "product",
+        value: item.price,
+        currency,
+      }, eid);
+      if (storeId) {
+        capiMod.fireMetaCAPI({
+          storeId,
+          eventName: "AddToCart",
+          eventId: eid,
+          customData: {
+            content_ids: [item.productId],
+            content_name: item.name,
+            content_type: "product",
+            value: item.price,
+            currency,
+          },
+        });
+      }
+    }).catch(() => {});
   }).catch(() => {});
 }
 

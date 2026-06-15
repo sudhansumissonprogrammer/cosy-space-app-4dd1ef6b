@@ -107,6 +107,24 @@ export function fireMetaCAPI(params: CAPIEventParams) {
   // Guard: never fire from Lovable preview/editor/dev domains.
   if (isNonProductionHost()) return;
 
+  // Anti-ban hardening: per-store hard isolation.
+  // StorefrontShell sets `__SF_STORE_ID__` to the store the page is rendering.
+  // If a stale callback (e.g. from a different tab's cart context, or a
+  // mis-wired upsell card) tries to fire CAPI for a DIFFERENT store, drop the
+  // event. This guarantees one storefront can never push events into another
+  // merchant's pixel — keeps Meta's cross-store correlation clean.
+  if (typeof window !== "undefined") {
+    const expectedStoreId = (window as any).__SF_STORE_ID__;
+    if (expectedStoreId && params.storeId && expectedStoreId !== params.storeId) {
+      console.warn("[meta-capi] store mismatch — dropping event", {
+        event: params.eventName,
+        expected: expectedStoreId,
+        got: params.storeId,
+      });
+      return;
+    }
+  }
+
   // Cost-cut: storefront shell sets this flag to false when the merchant has
   // NOT configured a Meta access token. In that case the edge function would
   // just return {skipped:true} on every probe — skip the round-trip entirely.
