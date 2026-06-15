@@ -686,29 +686,33 @@ export default function CheckoutPage() {
   const apiFiredRef = useRef<Set<string>>(new Set());
   const fireAddPaymentInfoOnce = () => {
     if (!store?.id || checkoutItems.length === 0) return;
-    let category: string;
+    let paymentMethodLabel: string;
     let value: number;
     if (paymentMethod === "cod" && !isPartialOrder) {
-      category = "cod";
+      paymentMethodLabel = "cod";
       value = total;
     } else if (isPartialOrder) {
-      category = activeGateway === "cashfree" ? "partial_cod_cashfree"
+      paymentMethodLabel = activeGateway === "cashfree" ? "partial_cod_cashfree"
         : activeGateway === "payu" ? "partial_cod_payu"
         : "partial_cod_razorpay";
       value = partialAdvanceTotal;
     } else if (paymentMethod === "razorpay") {
-      category = activeGateway === "cashfree" ? "cashfree"
+      paymentMethodLabel = activeGateway === "cashfree" ? "cashfree"
         : activeGateway === "payu" ? "payu"
         : "razorpay";
       value = total;
     } else {
       return;
     }
-    if (apiFiredRef.current.has(category)) return;
-    apiFiredRef.current.add(category);
+    if (apiFiredRef.current.has(paymentMethodLabel)) return;
+    apiFiredRef.current.add(paymentMethodLabel);
     const eid = generateEventId();
+    // NOTE: `content_category` is reserved for the *product* category in Meta's
+    // schema. Putting the payment gateway there confuses Meta's catalog
+    // matching + degrades EMQ. We expose the gateway under a custom
+    // `payment_method` field instead — Meta accepts arbitrary custom keys.
     const data = {
-      content_category: category,
+      payment_method: paymentMethodLabel,
       content_ids: checkoutItems.map((i) => i.productId),
       contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
       num_items: checkoutItems.length,
