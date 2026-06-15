@@ -645,7 +645,7 @@ export default function CheckoutPage() {
     const eventData = {
       content_ids: checkoutItems.map((i) => i.productId),
       contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
-      num_items: checkoutItems.length,
+      num_items: checkoutItems.reduce((s, i) => s + (i.quantity || 1), 0),
       value: subtotal,
       currency,
     };
@@ -715,7 +715,7 @@ export default function CheckoutPage() {
       payment_method: paymentMethodLabel,
       content_ids: checkoutItems.map((i) => i.productId),
       contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
-      num_items: checkoutItems.length,
+      num_items: checkoutItems.reduce((s, i) => s + (i.quantity || 1), 0),
       value,
       currency,
     };
@@ -1416,7 +1416,7 @@ export default function CheckoutPage() {
           content_name: checkoutItems.map((i) => i.name).join(", "),
           value: total,
           currency,
-          num_items: checkoutItems.length,
+          num_items: checkoutItems.reduce((s, i) => s + (i.quantity || 1), 0),
         },
         purchaseEventIdRef.current,
       );
@@ -1501,7 +1501,7 @@ export default function CheckoutPage() {
               content_name: checkoutItems.map((i) => i.name).join(", "),
               value: total,
               currency,
-              num_items: checkoutItems.length,
+              num_items: checkoutItems.reduce((s, i) => s + (i.quantity || 1), 0),
             },
             purchaseEventIdRef.current,
           );
