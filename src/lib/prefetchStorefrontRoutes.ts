@@ -30,7 +30,9 @@ const lazyImports: Record<string, () => Promise<unknown>> = {
 let prefetched = false;
 const interactionLoaded = new Set<string>();
 
-const PREFETCH_START_DELAY_MS = 400;
+// Delay raised 400→1500ms: keeps heavy chunk fetches off the main thread
+// during the LCP window (TBT was 219–405ms on slow connections).
+const PREFETCH_START_DELAY_MS = 1500;
 
 function shouldPrefetch() {
   const nav = navigator as Navigator & {
