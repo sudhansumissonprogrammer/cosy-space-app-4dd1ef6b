@@ -75,6 +75,44 @@ function rateLimited(ip: string): boolean {
   return entry.count > RL_MAX;
 }
 
+// v8.68.0 BAN-FIX P0-NEW-1: Per-pixel circuit breaker for HARD Meta config
+// errors (codes 100=does-not-exist, 190=invalid-token, 200=permissions,
+// 803=cannot-load). Edge function logs proved we were hammering Meta's Graph
+// API with code-100 errors for misconfigured pixels DOZENS of times per
+// minute — Meta tracks per-account 4xx rates and flags "platform abuse" →
+// ad-account ban. Once a pixel returns 2 hard errors, skip it for 1 hour;
+// merchant fixing the config will naturally re-enable after the TTL.
+const BREAKER_TTL_MS = 60 * 60_000;
+const BREAKER_THRESHOLD = 2;
+const BREAKER_HARD_CODES = new Set([100, 190, 200, 803]);
+const breakerMap = new Map<string, { fails: number; openUntil: number }>();
+function breakerOpen(pixelId: string): boolean {
+  const e = breakerMap.get(pixelId);
+  return !!e && e.openUntil > Date.now();
+}
+function breakerRecord(pixelId: string, metaErrCode: number | undefined) {
+  if (!metaErrCode || !BREAKER_HARD_CODES.has(metaErrCode)) {
+    breakerMap.delete(pixelId);
+    return;
+  }
+  const e = breakerMap.get(pixelId) || { fails: 0, openUntil: 0 };
+  e.fails++;
+  if (e.fails >= BREAKER_THRESHOLD) e.openUntil = Date.now() + BREAKER_TTL_MS;
+  breakerMap.set(pixelId, e);
+}
+
+// v8.68.0 BAN-FIX P1-NEW-1: Validate client-supplied fbc/fbp shape.
+// Spec: fbp = "fb.1.<ts_ms>.<rand_int>"; fbc = "fb.1.<ts_ms>.<fbclid>".
+// Malformed values from XSS / browser extensions / attackers crash EMQ
+// because Meta can't match them to the user graph → "Poor" event quality →
+// pixel review. Drop anything that doesn't match.
+const FBP_RX = /^fb\.[12]\.\d{10,16}\.\d+$/;
+const FBC_RX = /^fb\.[12]\.\d{10,16}\.[A-Za-z0-9_-]+$/;
+const sanitizeFb = (v: unknown, rx: RegExp): string | undefined => {
+  if (typeof v !== "string" || v.length > 256) return undefined;
+  return rx.test(v) ? v : undefined;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
