@@ -35,7 +35,13 @@ function setCookie(name: string, value: string, days: number) {
       domain = `; domain=.${parts.slice(-2).join(".")}`;
     }
   } catch {}
-  document.cookie = `${name}=${value}; expires=${d.toUTCString()}; path=/; SameSite=Lax${domain}`;
+  // Add Secure on HTTPS — Meta + browser best practice. Prevents _fbp/_fbc
+  // (and sf_vid) from leaking over plaintext and silences security audits.
+  const secure =
+    typeof window !== "undefined" && window.location?.protocol === "https:"
+      ? "; Secure"
+      : "";
+  document.cookie = `${name}=${value}; expires=${d.toUTCString()}; path=/; SameSite=Lax${secure}${domain}`;
 }
 
 function getCookie(name: string): string | null {
