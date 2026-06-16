@@ -424,8 +424,13 @@ const SOCIAL_BOT_REGEX =
 
 const INSTAGRAM_CRAWLER_REGEX = /Instagram(?!.*Mozilla\/5\.0.*AppleWebKit)/i;
 
+// NOTE: "WhatsApp" intentionally NOT included. Indian WA-commerce traffic
+// taps product links from WhatsApp; the in-app webview occasionally carries
+// "WhatsApp/x.y" in the UA. Marking those as bots silently zeroed Live
+// Visitors / Sessions for our biggest channel. Link-preview pings are
+// deduped by the 30-min visitor+path window in _pvDedup.
 const BOT_UA_REGEX =
-  /bot|crawler|spider|facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|Bingbot|YandexBot|Snapchat|Applebot|DuckDuckBot|Baiduspider|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot|curl|wget|HeadlessChrome/i;
+  /bot|crawler|spider|facebookexternalhit|Facebot|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|Bingbot|YandexBot|Snapchat|Applebot|DuckDuckBot|Baiduspider|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot|curl|wget|HeadlessChrome/i;
 
 function isSocialInAppBrowser(ua) {
   return /Instagram|Snapchat/i.test(ua) && /Mozilla\/5\.0.*AppleWebKit/i.test(ua);
