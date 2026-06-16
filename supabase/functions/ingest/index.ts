@@ -181,7 +181,7 @@ async function handleView(req: Request) {
     typeof v === "string" && v.length ? v.slice(0, max) : null;
 
   const supabase = getSupabase();
-  await supabase.from("page_views").insert({
+  const insertPayload = {
     store_id,
     path: cleanPath,
     visitor_id: str(body.visitor_id, 100),
@@ -198,7 +198,17 @@ async function handleView(req: Request) {
     browser: str(body.browser, 32),
     os: str(body.os, 32),
     landing_path: str(body.landing_path, 200),
-  });
+  };
+  const { error: insertErr } = await supabase.from("page_views").insert(insertPayload);
+  if (insertErr) {
+    console.error("[ingest/view] insert failed", insertErr.message, insertErr.code, insertErr.details);
+    return new Response(JSON.stringify({ error: insertErr.message, code: insertErr.code }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  console.log("[ingest/view] insert ok", cleanPath);
+
 
   // 204 on success so the client beacon's "status===204 = handled" check
   // passes and doesn't trigger its PostgREST fallback (double-write).
