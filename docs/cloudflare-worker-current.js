@@ -2470,12 +2470,14 @@ function _pvClientDimensions(request) {
   return { device, browser, os };
 }
 
-// v8.42.0: dual-write re-enabled. Dashboard analytics (Sessions, Conversion)
-// read from Supabase page_views; AE-only mode left the table empty so those
-// metrics flat-lined. With the 30-min per-(store,visitor,path) dedup + 100-row
-// bulk batching above, write volume stays bounded (~one INSERT per minute per
-// isolate). AE writes continue in parallel for long-term retention.
-const PV_WRITE_SUPABASE = true;
+// v8.62.0: worker-side Supabase write disabled. The browser beacon
+// (usePageviewBeacon → /functions/v1/ingest) is the single canonical writer
+// to public.page_views. Keeping the worker as a "safety net" created a
+// duplicate row per pageview because the worker dedup map and the edge
+// function dedup map are independent (different isolates), so the same
+// visit slipped through both windows and was inserted twice. AE writes
+// continue in parallel for long-term retention.
+const PV_WRITE_SUPABASE = false;
 
 /**
  * v8.30.0 — write a pageview to Cloudflare Analytics Engine.
