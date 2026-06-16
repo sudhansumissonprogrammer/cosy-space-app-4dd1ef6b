@@ -213,9 +213,13 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
     // requestIdleCallback the user is already gone and the pageview never
     // lands. keepalive=true means the request survives unload, and the
     // payload is tiny (~400 bytes) so it doesn't materially affect LCP.
+    const sentAt = Date.now();
     send();
 
     const onPageHide = () => {
+      // Only rescue instant ad bounces. If the shopper stayed longer, the
+      // initial beacon/fetch already had time to land; avoid late duplicates.
+      if (Date.now() - sentAt > 10_000) return;
       writeBeacon();
     };
     window.addEventListener("pagehide", onPageHide, { once: true });
