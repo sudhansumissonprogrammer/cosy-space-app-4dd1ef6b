@@ -16,6 +16,7 @@ import {
 const SUPA_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
 const SUPA_ANON =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
+const INGEST_URL = `${SUPA_URL}/functions/v1/ingest`;
 
 const LANDING_KEY = "__sf_landing__";
 const UTM_KEY = "__sf_utm__";
@@ -163,36 +164,38 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
       } catch {}
     };
 
-    const send = () => {
-      // v8.61.0 — same-origin worker endpoint. Worker explicitly returns 204.
-      // CRITICAL: only treat status===204 as success. On non-worker hosts
-      // (preview .lovable.app, dev server, or a zone where the worker isn't
-      // deployed yet) the SPA hosting serves index.html with status 200 for
-      // unknown paths. r.ok would be true and we'd silently drop the
-      // pageview. Status 204 is the unambiguous worker-handled signal.
+    const writeIngest = () => {
       try {
-        fetch("/__sf/pv", {
+        fetch(INGEST_URL, {
           method: "POST",
           keepalive: true,
+          mode: "cors",
           headers: { "Content-Type": "application/json" },
           body: payload,
         })
           .then((r) => {
-            if (r.status === 204) return; // worker handled it
-            writeLegacy(); // anything else (200 HTML, 404, 405, 5xx) → fallback
+            if (r.status === 204) return; // edge function inserted it
+            writeLegacy(); // anything else → direct table fallback
           })
-          .catch(() => writeLegacy()); // network error → fallback
+          .catch(() => writeLegacy());
       } catch {
         writeLegacy();
       }
     };
 
+    const send = () => {
+      // Primary browser write uses the deployed ingest function because the
+      // same-origin Worker returns 204 before its async DB write completes.
+      // If ingest is unavailable, direct PostgREST fallback still preserves data.
+      writeIngest();
+    };
+
 
     // Longer idle timeout — beacon is non-critical, never race paint.
     if (typeof (window as any).requestIdleCallback === "function") {
-      (window as any).requestIdleCallback(send, { timeout: 4000 });
+      (window as any).requestIdleCallback(send, { timeout: 1500 });
     } else {
-      setTimeout(send, 2500);
+      setTimeout(send, 1200);
     }
   }, [storeId, pathname]);
 }
