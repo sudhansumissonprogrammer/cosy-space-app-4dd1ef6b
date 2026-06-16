@@ -15,6 +15,8 @@ Supabase `page_views` table. Dashboard analytics read PG. **AE is not used** —
 
 Both paths share the same `_pvDedup` Map (30-min window per `store|visitor|path`), so a worker write and a client beacon for the same nav in the same isolate dedupe naturally.
 
+Worker safety-net rows must read the first-party `sf_vid` cookie (legacy `sb_vid` accepted only as fallback) and set `session_id` from that visitor ID so Sessions / Live Visitors count even before the browser beacon runs.
+
 ## Client fallback
 `usePageviewBeacon` calls `/__sf/pv` first; on non-2xx or network error falls back to direct PostgREST POST. Safe to deploy code before the worker.
 
