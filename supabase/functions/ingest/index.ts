@@ -100,12 +100,9 @@ async function handleError(req: Request) {
 const BOT_UA_RX = /bot|crawler|spider|crawling|facebookexternalhit|whatsapp|telegram|slack|discord|preview|fetch|curl|wget|headless|lighthouse|gtmetrix|pagespeed|pingdom|uptimerobot|monitor|axios\/|python-requests|go-http-client|java\/|okhttp/i;
 
 async function handleView(req: Request) {
-  // Reverted v8.30.0 AE no-op: dashboard analytics are computed from
-  // public.page_views, so this handler must write rows. Setting
-  // INGEST_VIEW_NOOP=true will re-enable the silent 204 (rollback escape hatch).
-  if ((Deno.env.get("INGEST_VIEW_NOOP") ?? "false") === "true") {
-    return new Response(null, { status: 204, headers: corsHeaders });
-  }
+  // Dashboard analytics are computed from public.page_views — this handler
+  // MUST write rows. (Previous INGEST_VIEW_NOOP escape hatch removed; it was
+  // silently dropping ~100% of traffic when the env var lingered as "true".)
 
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
