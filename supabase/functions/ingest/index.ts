@@ -97,7 +97,10 @@ async function handleError(req: Request) {
 // Tier-2 #A: skip bots + PWA standalone hits. Bots = ~15-25% of writes,
 // PWA repeat visitors = ~10-15%. Returning ok:true silently drops them
 // without any client retry/log noise.
-const BOT_UA_RX = /bot|crawler|spider|crawling|facebookexternalhit|whatsapp|telegram|slack|discord|preview|fetch|curl|wget|headless|lighthouse|gtmetrix|pagespeed|pingdom|uptimerobot|monitor|axios\/|python-requests|go-http-client|java\/|okhttp/i;
+// NOTE: "whatsapp" intentionally NOT included. Real shoppers often open
+// storefront links inside WhatsApp's in-app browser; treating that UA as a bot
+// drops our biggest traffic channel from Live Visitors / Sessions.
+const BOT_UA_RX = /bot|crawler|spider|crawling|facebookexternalhit|telegram|slack|discord|preview|fetch|curl|wget|headless|lighthouse|gtmetrix|pagespeed|pingdom|uptimerobot|monitor|axios\/|python-requests|go-http-client|java\/|okhttp/i;
 
 async function handleView(req: Request) {
   // Dashboard analytics are computed from public.page_views — this handler
