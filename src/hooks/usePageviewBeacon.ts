@@ -126,10 +126,9 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
       : null;
 
     // Trim payload: cap path, drop nulls so JSON is smaller on the wire.
-    // Fire pageview AFTER first paint via fetch+keepalive (sendBeacon can't
-    // set the apikey/Authorization headers PostgREST needs). keepalive=true
-    // has the same fire-and-forget semantics as sendBeacon and survives
-    // unload. requestIdleCallback ensures it never races the LCP fetch.
+    // Primary path uses navigator.sendBeacon to the ingest function because it
+    // survives instant ad-click bounces better than fetch. The ingest function
+    // accepts unauthenticated JSON, so no custom headers are needed.
     const raw: Record<string, unknown> = {
       store_id: storeId,
       path: pathname.slice(0, 200), // trimmed from 500
@@ -183,11 +182,30 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
       }
     };
 
+    const writeBeacon = () => {
+      try {
+        if (typeof navigator === "undefined" || !navigator.sendBeacon) return false;
+        // text/plain keeps this a simple CORS request (no preflight) while
+        // Request.json() in the edge function still parses the JSON body.
+        return navigator.sendBeacon(
+          INGEST_URL,
+          new Blob([payload], { type: "text/plain;charset=UTF-8" })
+        );
+      } catch {
+        return false;
+      }
+    };
+
     const send = () => {
-      // Primary browser write uses the deployed ingest function because the
-      // same-origin Worker returns 204 before its async DB write completes.
-      // If ingest is unavailable, direct PostgREST fallback still preserves data.
-      writeIngest();
+      // Try beacon first for FB/Google in-app browsers that close the page in
+      // under a second. Also schedule fetch as a same-page safety net; the
+      // edge function dedupes store+IP+path for 30s, so this won't double count.
+      const queued = writeBeacon();
+      if (!queued) {
+        writeIngest();
+        return;
+      }
+      window.setTimeout(writeIngest, 700);
     };
 
 
@@ -196,6 +214,12 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
     // lands. keepalive=true means the request survives unload, and the
     // payload is tiny (~400 bytes) so it doesn't materially affect LCP.
     send();
+
+    const onPageHide = () => {
+      writeBeacon();
+    };
+    window.addEventListener("pagehide", onPageHide, { once: true });
+    return () => window.removeEventListener("pagehide", onPageHide);
   }, [storeId, pathname]);
 }
 
