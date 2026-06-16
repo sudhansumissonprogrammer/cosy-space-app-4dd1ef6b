@@ -2462,6 +2462,14 @@ function _pvReadVisitorId(request) {
   return m ? m[1] : null;
 }
 
+function _pvClientDimensions(request) {
+  const ua = (request.headers.get("user-agent") || "").toLowerCase();
+  const device = /ipad|tablet|playbook|silk/.test(ua) ? "tablet" : /mobi|iphone|android.*mobile|phone/.test(ua) ? "mobile" : "desktop";
+  const browser = /edg\//.test(ua) ? "edge" : /chrome|crios/.test(ua) && !/edg\//.test(ua) ? "chrome" : /firefox|fxios/.test(ua) ? "firefox" : /safari/.test(ua) && !/chrome|crios/.test(ua) ? "safari" : /opr\//.test(ua) ? "opera" : "other";
+  const os = /windows/.test(ua) ? "windows" : /android/.test(ua) ? "android" : /iphone|ipad|ipod|ios/.test(ua) ? "ios" : /mac os x/.test(ua) ? "macos" : /linux/.test(ua) ? "linux" : "other";
+  return { device, browser, os };
+}
+
 // v8.42.0: dual-write re-enabled. Dashboard analytics (Sessions, Conversion)
 // read from Supabase page_views; AE-only mode left the table empty so those
 // metrics flat-lined. With the 30-min per-(store,visitor,path) dedup + 100-row
@@ -2550,6 +2558,9 @@ function recordPageView(env, request, storeId, pathname) {
     visitor_id: visitorId,
     session_id: visitorId,
     is_bot: false,
+    referrer: (request.headers.get("referer") || "").slice(0, 200) || null,
+    country: String(request.cf?.country || "") || null,
+    ..._pvClientDimensions(request),
   });
   if (_pvBufferOldestAt === 0) _pvBufferOldestAt = now;
 
