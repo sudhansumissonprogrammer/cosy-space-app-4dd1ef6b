@@ -100,11 +100,10 @@ async function handleError(req: Request) {
 const BOT_UA_RX = /bot|crawler|spider|crawling|facebookexternalhit|whatsapp|telegram|slack|discord|preview|fetch|curl|wget|headless|lighthouse|gtmetrix|pagespeed|pingdom|uptimerobot|monitor|axios\/|python-requests|go-http-client|java\/|okhttp/i;
 
 async function handleView(req: Request) {
-  // v8.30.0 (AE migration): pageview tracking moved to the Cloudflare Worker,
-  // which writes directly to Analytics Engine. The legacy SPA beacon path is
-  // kept alive only as a no-op so existing clients don't error. Set
-  // INGEST_VIEW_NOOP=false to temporarily re-enable Supabase writes for rollback.
-  if ((Deno.env.get("INGEST_VIEW_NOOP") ?? "true") === "true") {
+  // Reverted v8.30.0 AE no-op: dashboard analytics are computed from
+  // public.page_views, so this handler must write rows. Setting
+  // INGEST_VIEW_NOOP=true will re-enable the silent 204 (rollback escape hatch).
+  if ((Deno.env.get("INGEST_VIEW_NOOP") ?? "false") === "true") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
