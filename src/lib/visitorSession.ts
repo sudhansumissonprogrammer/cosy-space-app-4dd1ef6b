@@ -49,8 +49,13 @@ export function getVisitorId(): string | null {
   }
 }
 
+// NOTE: "whatsapp" intentionally NOT in this regex. Indian WhatsApp-commerce
+// traffic taps product links from WhatsApp; the in-app browser sometimes
+// carries "WhatsApp/..." in the UA. Treating those as bots silently zeroed
+// out Live Visitors / Sessions for our biggest channel. Link-preview bots
+// from WhatsApp are deduped via the 30-min visitor+path window anyway.
 const BOT_UA_RE =
-  /bot|crawler|spider|crawling|facebookexternalhit|whatsapp|telegrambot|slackbot|discordbot|headlesschrome|phantomjs|puppeteer|playwright|lighthouse|pagespeed|gtmetrix|googleimageproxy|preview|fetch|monitor|uptime|pingdom|axios|curl|wget|python-requests|go-http-client|java\/|okhttp|httpclient/i;
+  /bot|crawler|spider|crawling|facebookexternalhit|telegrambot|slackbot|discordbot|headlesschrome|phantomjs|puppeteer|playwright|lighthouse|pagespeed|gtmetrix|googleimageproxy|preview|monitor|uptime|pingdom|axios|curl|wget|python-requests|go-http-client|java\/|okhttp|httpclient/i;
 
 export function isLikelyBot(): boolean {
   if (typeof navigator === "undefined") return false;
