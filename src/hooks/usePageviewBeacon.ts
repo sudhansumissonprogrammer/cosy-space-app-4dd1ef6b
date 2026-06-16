@@ -191,12 +191,11 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
     };
 
 
-    // Longer idle timeout — beacon is non-critical, never race paint.
-    if (typeof (window as any).requestIdleCallback === "function") {
-      (window as any).requestIdleCallback(send, { timeout: 1500 });
-    } else {
-      setTimeout(send, 1200);
-    }
+    // Fire ASAP — FB/Google ad clicks bounce within 1-2s. If we wait for
+    // requestIdleCallback the user is already gone and the pageview never
+    // lands. keepalive=true means the request survives unload, and the
+    // payload is tiny (~400 bytes) so it doesn't materially affect LCP.
+    send();
   }, [storeId, pathname]);
 }
 
