@@ -132,7 +132,9 @@ async function handleView(req: Request) {
     });
   }
 
-  const { store_id, path } = await req.json();
+  let body: Record<string, unknown> = {};
+  try { body = await req.json(); } catch { body = {}; }
+  const store_id = body.store_id as string | undefined;
   if (!store_id) {
     return new Response(JSON.stringify({ error: "store_id required" }), {
       status: 400,
@@ -141,21 +143,13 @@ async function handleView(req: Request) {
   }
 
   // Rate limit per IP+store so a shared mobile/CF NAT IP visiting one store
-  // doesn't block other stores' analytics. Returns 200 (silent drop) instead
-  // of 429 so the client never retries or logs noise.
+  // doesn't block other stores' analytics. 204 = silent drop, no client retry.
   if (isRateLimited(`${ip}:${store_id}`)) {
-    return new Response(JSON.stringify({ ok: true, dropped: "rate_limited" }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   // Filter out non-page paths so analytics only counts real visitor pageviews.
-  // Drops: internal API beacons (~api/*, /api/*), image proxy (/cf-img),
-  // static assets (.js/.css/images), and worker probes. Without this, ~94%
-  // of page_views rows were beacon noise, polluting visitor graphs and
-  // inflating row counts.
-  const cleanPath = (path || "/").toString().slice(0, 500);
+  const cleanPath = ((body.path as string) || "/").toString().slice(0, 500);
   const isNonPage =
     cleanPath.startsWith("/~api/") ||
     cleanPath.startsWith("/api/") ||
@@ -164,42 +158,52 @@ async function handleView(req: Request) {
     /\.(js|css|map|png|jpe?g|gif|svg|webp|avif|ico|woff2?|ttf|otf|json|xml|txt)(\?|$)/i.test(cleanPath);
 
   if (isNonPage) {
-    return new Response(JSON.stringify({ ok: true, dropped: "non_page" }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
-  // Tier-1 #2: 30s dedupe per (store, ip, path). Same visitor refreshing or
-  // SPA-routing back to the same page within 30s is noise — same logic the
-  // existing comment above describes. In-memory per-isolate; good enough at
-  // edge scale because the same visitor's beacons tend to hit the same isolate.
+  // 30s dedupe per (store, ip, path).
   const dedupKey = `${store_id}:${ip}:${cleanPath}`;
   const nowMs = Date.now();
   const lastTs = _pvDedup.get(dedupKey);
   if (lastTs && nowMs - lastTs < PV_DEDUP_TTL_MS) {
-    return new Response(JSON.stringify({ ok: true, dropped: "dedup_30s" }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
   _pvDedup.set(dedupKey, nowMs);
-  // Cheap GC so the map can't grow unbounded.
   if (_pvDedup.size > 5000) {
     for (const [k, t] of _pvDedup) {
       if (nowMs - t > PV_DEDUP_TTL_MS) _pvDedup.delete(k);
     }
   }
 
+  // Capture full dimensions so dashboard analytics (sessions, unique visitors,
+  // referrer/UTM/device breakdowns) work end-to-end. Sanitize/trim everything
+  // the client sent — never trust raw beacon input.
+  const str = (v: unknown, max = 200) =>
+    typeof v === "string" && v.length ? v.slice(0, max) : null;
+
   const supabase = getSupabase();
   await supabase.from("page_views").insert({
     store_id,
     path: cleanPath,
+    visitor_id: str(body.visitor_id, 100),
+    session_id: str(body.session_id, 100),
+    is_bot: body.is_bot === true,
+    referrer: str(body.referrer, 500),
+    utm_source: str(body.utm_source, 100),
+    utm_medium: str(body.utm_medium, 100),
+    utm_campaign: str(body.utm_campaign, 200),
+    utm_term: str(body.utm_term, 200),
+    utm_content: str(body.utm_content, 200),
+    country: str(req.headers.get("cf-ipcountry") || (body.country as string), 4),
+    device: str(body.device, 32),
+    browser: str(body.browser, 32),
+    os: str(body.os, 32),
+    landing_path: str(body.landing_path, 200),
   });
 
-  return new Response(JSON.stringify({ success: true }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  // 204 on success so the client beacon's "status===204 = handled" check
+  // passes and doesn't trigger its PostgREST fallback (double-write).
+  return new Response(null, { status: 204, headers: corsHeaders });
 }
 
 // ── DB cleanup handler ──────────────────────────────────────────
