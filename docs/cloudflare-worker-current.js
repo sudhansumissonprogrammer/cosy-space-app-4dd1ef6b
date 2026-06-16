@@ -131,7 +131,7 @@
  *            (F) Static keys' 24h dedup acts as a once-per-isolate write
  *                cache — multiple cron passes and multi-colo fan-outs
  *                collapse to one write per isolate per day.
- *  v8.9.0 — recordPageView() now reads first-party `sb_vid` cookie and stores
+ *  v8.9.0 — recordPageView() now reads first-party `sf_vid` cookie and stores
  *           it as page_views.visitor_id. Counts unique visitors using a stable
  *           cookie ID instead of CGNAT-shared mobile IPs (15-25% accuracy lift).
  *  v8.7.0 — Storefront HTML now fetches the latest Lovable shell on every
@@ -2458,7 +2458,7 @@ function _pvFlushBuffer() {
 
 function _pvReadVisitorId(request) {
   const cookie = request.headers.get("cookie") || "";
-  const m = cookie.match(/(?:^|;\s*)sb_vid=([a-f0-9-]{8,64})/i);
+  const m = cookie.match(/(?:^|;\s*)(?:sf_vid|sb_vid)=([a-f0-9-]{8,64})/i);
   return m ? m[1] : null;
 }
 
@@ -2547,8 +2547,9 @@ function recordPageView(env, request, storeId, pathname) {
   _pvBuffer.push({
     store_id: storeId,
     path: pathname,
-    visitor_ip: ip.slice(0, 64),
     visitor_id: visitorId,
+    session_id: visitorId,
+    is_bot: false,
   });
   if (_pvBufferOldestAt === 0) _pvBufferOldestAt = now;
 
