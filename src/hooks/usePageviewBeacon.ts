@@ -146,12 +146,30 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
       Object.fromEntries(Object.entries(raw).filter(([, v]) => v != null && v !== ""))
     );
 
+    const writeLegacy = () => {
+      try {
+        fetch(`${SUPA_URL}/rest/v1/page_views`, {
+          method: "POST",
+          keepalive: true,
+          mode: "cors",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SUPA_ANON,
+            Authorization: `Bearer ${SUPA_ANON}`,
+            Prefer: "return=minimal",
+          },
+          body: payload,
+        }).catch(() => {});
+      } catch {}
+    };
+
     const send = () => {
-      // v8.61.0 — same-origin worker endpoint. Zero DNS/TLS/CORS cost per
-      // SPA navigation. Worker reuses recordPageView() server-side (bot
-      // filter, 30-min dedup, batched flush to page_views). If the worker
-      // route is missing (older deploy), fall back to direct PostgREST so
-      // we never lose pageviews during the rollout window.
+      // v8.61.0 — same-origin worker endpoint. Worker explicitly returns 204.
+      // CRITICAL: only treat status===204 as success. On non-worker hosts
+      // (preview .lovable.app, dev server, or a zone where the worker isn't
+      // deployed yet) the SPA hosting serves index.html with status 200 for
+      // unknown paths. r.ok would be true and we'd silently drop the
+      // pageview. Status 204 is the unambiguous worker-handled signal.
       try {
         fetch("/__sf/pv", {
           method: "POST",
@@ -160,39 +178,13 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
           body: payload,
         })
           .then((r) => {
-            if (r.ok || r.status === 204) return;
-            // Worker not deployed yet → legacy direct write.
-            return fetch(`${SUPA_URL}/rest/v1/page_views`, {
-              method: "POST",
-              keepalive: true,
-              mode: "cors",
-              headers: {
-                "Content-Type": "application/json",
-                apikey: SUPA_ANON,
-                Authorization: `Bearer ${SUPA_ANON}`,
-                Prefer: "return=minimal",
-              },
-              body: payload,
-            }).catch(() => {});
+            if (r.status === 204) return; // worker handled it
+            writeLegacy(); // anything else (200 HTML, 404, 405, 5xx) → fallback
           })
-          .catch(() => {
-            // Network error → legacy fallback (same as above).
-            try {
-              fetch(`${SUPA_URL}/rest/v1/page_views`, {
-                method: "POST",
-                keepalive: true,
-                mode: "cors",
-                headers: {
-                  "Content-Type": "application/json",
-                  apikey: SUPA_ANON,
-                  Authorization: `Bearer ${SUPA_ANON}`,
-                  Prefer: "return=minimal",
-                },
-                body: payload,
-              }).catch(() => {});
-            } catch {}
-          });
-      } catch {}
+          .catch(() => writeLegacy()); // network error → fallback
+      } catch {
+        writeLegacy();
+      }
     };
 
 
