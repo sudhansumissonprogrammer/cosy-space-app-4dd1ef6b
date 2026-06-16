@@ -202,13 +202,11 @@ async function handleView(req: Request) {
   };
   const { error: insertErr } = await supabase.from("page_views").insert(insertPayload);
   if (insertErr) {
-    console.error("[ingest/view] insert failed", insertErr.message, insertErr.code, insertErr.details);
-    return new Response(JSON.stringify({ error: insertErr.message, code: insertErr.code }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("[ingest/view] insert failed", insertErr.message, insertErr.code);
+    // Still 204 so the client's same-origin beacon path doesn't trigger its
+    // PostgREST fallback (which would queue retries on a failing insert).
   }
-  console.log("[ingest/view] insert ok", cleanPath);
+
 
 
   // 204 on success so the client beacon's "status===204 = handled" check
