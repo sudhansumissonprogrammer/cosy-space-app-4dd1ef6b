@@ -103,6 +103,8 @@ async function handleView(req: Request) {
   // Dashboard analytics are computed from public.page_views — this handler
   // MUST write rows. (Previous INGEST_VIEW_NOOP escape hatch removed; it was
   // silently dropping ~100% of traffic when the env var lingered as "true".)
+  console.log("[ingest/view] v2 handler invoked");
+
 
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
