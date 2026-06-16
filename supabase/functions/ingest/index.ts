@@ -103,7 +103,8 @@ async function handleView(req: Request) {
   // Dashboard analytics are computed from public.page_views — this handler
   // MUST write rows. (Previous INGEST_VIEW_NOOP escape hatch removed; it was
   // silently dropping ~100% of traffic when the env var lingered as "true".)
-  console.log("[ingest/view] v2 handler invoked");
+
+
 
 
   const ip =
@@ -181,7 +182,7 @@ async function handleView(req: Request) {
     typeof v === "string" && v.length ? v.slice(0, max) : null;
 
   const supabase = getSupabase();
-  await supabase.from("page_views").insert({
+  const insertPayload = {
     store_id,
     path: cleanPath,
     visitor_id: str(body.visitor_id, 100),
@@ -198,7 +199,15 @@ async function handleView(req: Request) {
     browser: str(body.browser, 32),
     os: str(body.os, 32),
     landing_path: str(body.landing_path, 200),
-  });
+  };
+  const { error: insertErr } = await supabase.from("page_views").insert(insertPayload);
+  if (insertErr) {
+    console.error("[ingest/view] insert failed", insertErr.message, insertErr.code);
+    // Still 204 so the client's same-origin beacon path doesn't trigger its
+    // PostgREST fallback (which would queue retries on a failing insert).
+  }
+
+
 
   // 204 on success so the client beacon's "status===204 = handled" check
   // passes and doesn't trigger its PostgREST fallback (double-write).
