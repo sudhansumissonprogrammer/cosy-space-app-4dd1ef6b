@@ -67,6 +67,9 @@ function schedulePixelSelfTest(pixelId: string) {
 
 // Run once on module load — ensures shim + _fbp exist before any event fires
 ensureFbqShim();
+// Purge stale apex-scoped `.shopbanao.in` cookies BEFORE ensureFbpCookie runs,
+// so the fresh _fbp it mints is host-only (isolated per merchant subdomain).
+purgeSharedDomainCookies();
 ensureFbpCookie();
 
 /**
