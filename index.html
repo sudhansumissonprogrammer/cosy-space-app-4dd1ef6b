@@ -264,6 +264,24 @@
         if(!isSf && window.__STORE_SLUG__)isSf=true;
         if(!isSf)return; // landing/auth — skip pixel shim entirely
 
+        /* BAN-FIX v8.62: purge stale apex .shopbanao.in-scoped tracking
+           cookies BEFORE fbevents.js can read them. On slow cold loads the
+           inline SDK loader can run before React's purgeSharedDomainCookies()
+           module-load purge — without this guard the SDK would reuse a
+           cross-store _fbp/_fbc and Meta would link unrelated merchants
+           into one audience → platform-wide ban risk. Safe on custom
+           domains too (no cookie with domain=.shopbanao.in exists there). */
+        try{
+          var _pc=['_fbp','_fbc','_ga','_gid','_gcl_au','sf_vid'];
+          var _exp='Thu, 01 Jan 1970 00:00:00 GMT';
+          for(var _i=0;_i<_pc.length;_i++){
+            document.cookie=_pc[_i]+'=; expires='+_exp+'; path=/; domain=.shopbanao.in';
+            document.cookie=_pc[_i]+'=; expires='+_exp+'; path=/; domain=shopbanao.in';
+          }
+        }catch(_){}
+
+
+
         (function initFbqEarly(){
           var w=window;
           if(!w.fbq){
