@@ -280,7 +280,11 @@
           var tries=0;
           var tryInit=function(){
             var pid=w.__STOREFRONT_DATA__&&w.__STOREFRONT_DATA__.store&&w.__STOREFRONT_DATA__.store.facebook_pixel_id;
-            if(pid&&w.__SF_PIXEL_INITED__!==pid){
+            /* BAN-FIX: also skip if the React hook already fired PageView
+               (it sets __SF_PV_EVENT_ID__ before fbq). Without this, a slow
+               __STOREFRONT_DATA__ resolve lets the hook fire PV first, then
+               this inline path fires it again → duplicate PageView per visit. */
+            if(pid&&w.__SF_PIXEL_INITED__!==pid&&!w.__SF_PV_EVENT_ID__){
               w.__SF_PIXEL_INITED__=pid;
               w.fbq('consent','grant');
               /* v8.61.0 BAN-FIX P1-2: pass external_id from sf_vid cookie so

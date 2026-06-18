@@ -41,13 +41,18 @@ export function purgeSharedDomainCookies(): void {
   if (w[RAN_FLAG]) return;
 
   const host = window.location.hostname;
-  // Only purge on real custom domains — never on the platform host itself,
-  // and never on localhost / preview / lovable.
+  // Skip only non-production hosts. We DO purge on `.shopbanao.in`
+  // subdomains: legacy visits may have left an `_fbp` scoped to the apex
+  // `.shopbanao.in`, which is then shared across every merchant subdomain →
+  // Meta links all stores into one audience → platform-wide reputation
+  // poisoning. Deleting the apex-scoped cookie lets `ensureFbpCookie()`
+  // mint a fresh host-only cookie scoped to just this subdomain, isolating
+  // each merchant. The apex host itself (`shopbanao.in` / `www.shopbanao.in`)
+  // is the marketing site — also safe to purge there.
   if (
     !host ||
     host === "localhost" ||
     host === "127.0.0.1" ||
-    host.endsWith(PLATFORM_SUFFIX) ||
     host.endsWith(".lovable.app") ||
     host.endsWith(".lovable.dev") ||
     host.endsWith(".lovableproject.com") ||
