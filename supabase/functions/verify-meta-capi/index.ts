@@ -98,10 +98,10 @@ Deno.serve(async (req) => {
 
     // Graph API v21.0 — v19.0 is past Meta's 2-year deprecation window and
     // returns deprecation warnings in fbtrace responses.
-    const url = `https://graph.facebook.com/v21.0/${pixelId}/events?access_token=${encodeURIComponent(accessToken)}`;
+    const url = `https://graph.facebook.com/v21.0/${pixelId}/events`;
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
       body: JSON.stringify(testEvent),
     });
     const data = await res.json().catch(() => ({}));
