@@ -33,6 +33,24 @@ const FBC_RX = /^fb\.[12]\.\d{10,16}\.[A-Za-z0-9_-]+$/;
 const sanitizeFb = (v: unknown, rx: RegExp): string | undefined =>
   typeof v === "string" && v.length <= 256 && rx.test(v) ? v : undefined;
 
+const _purchaseLocks = new Map<string, number>();
+const PURCHASE_LOCK_TTL_MS = 30_000;
+function acquirePurchaseLock(orderId: string): boolean {
+  const now = Date.now();
+  const lockedUntil = _purchaseLocks.get(orderId) || 0;
+  if (lockedUntil > now) return false;
+  _purchaseLocks.set(orderId, now + PURCHASE_LOCK_TTL_MS);
+  if (_purchaseLocks.size > 500) {
+    for (const [id, until] of _purchaseLocks) {
+      if (until <= now) _purchaseLocks.delete(id);
+    }
+  }
+  return true;
+}
+function releasePurchaseLock(orderId: string) {
+  _purchaseLocks.delete(orderId);
+}
+
 function isPrivateIp(ip: string | null | undefined): boolean {
   if (!ip) return true;
   const v = ip.trim().toLowerCase();
@@ -59,6 +77,9 @@ export async function firePurchaseCapi(
   orderId: string,
   opts: FirePurchaseOpts,
 ): Promise<{ ok: boolean; reason?: string }> {
+  if (!acquirePurchaseLock(orderId)) {
+    return { ok: true, reason: "in_flight" };
+  }
   try {
     // 1. Idempotency check + load order with all buyer fields.
     const { data: order, error: orderErr } = await supabase
@@ -308,5 +329,7 @@ export async function firePurchaseCapi(
   } catch (err) {
     console.error(`[capi:${opts.source}] unexpected error`, err);
     return { ok: false, reason: "exception" };
+  } finally {
+    releasePurchaseLock(orderId);
   }
 }
