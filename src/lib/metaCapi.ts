@@ -92,13 +92,14 @@ const inflightProbe = new Map<string, Promise<boolean>>();
 // PageView + Lead are mirrored to CAPI so Meta's "browser ⇄ server event
 // coverage" diagnostic stops flagging us. Both fire with shared event_ids so
 // the server event deduplicates against the pixel one — no double-counting.
+// Purchase is intentionally excluded from this public browser path; confirmed
+// orders fire Purchase only from payment/order edge functions after verification.
 const CAPI_EVENTS = new Set([
   "PageView",
   "ViewContent",
   "AddToCart",
   "InitiateCheckout",
   "AddPaymentInfo",
-  "Purchase",
   "Lead",
 ]);
 
