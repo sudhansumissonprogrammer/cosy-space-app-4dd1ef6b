@@ -28,6 +28,16 @@ const normName = (v: string) => v.trim().toLowerCase().replace(/[^a-zà-ÿ\u0080
 const normCityState = (v: string) => v.trim().toLowerCase().replace(/[^a-z]/g, "");
 const normZip = (v: string) => v.trim().toLowerCase().replace(/\s+/g, "");
 const normCountry = (v: string) => v.trim().toLowerCase().slice(0, 2);
+const FBP_RX = /^fb\.[12]\.\d{10,16}\.\d+$/;
+const FBC_RX = /^fb\.[12]\.\d{10,16}\.[A-Za-z0-9_-]+$/;
+const sanitizeFb = (v: unknown, rx: RegExp): string | undefined =>
+  typeof v === "string" && v.length <= 256 && rx.test(v) ? v : undefined;
+
+function isPrivateIp(ip: string | null | undefined): boolean {
+  if (!ip) return true;
+  const v = ip.trim().toLowerCase();
+  return /^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|::1$|fc|fd)/.test(v);
+}
 
 async function sha256Hex(value: string): Promise<string> {
   const data = new TextEncoder().encode(value);
@@ -54,7 +64,7 @@ export async function firePurchaseCapi(
     const { data: order, error: orderErr } = await supabase
       .from("orders")
       .select(
-        "id, store_id, status, total, currency, customer_phone, customer_name, city, state, pincode, " +
+        "id, created_at, store_id, status, total, currency, customer_phone, customer_name, city, state, pincode, " +
         "storefront_customer_id, buyer_ip, buyer_user_agent, buyer_fbc, buyer_fbp, " +
         "meta_event_id, meta_event_source_url, meta_purchase_fired_at",
       )
@@ -151,12 +161,12 @@ export async function firePurchaseCapi(
     // 5. Build user_data with hashed PII.
     const userData: Record<string, unknown> = {
       client_user_agent: order.buyer_user_agent || undefined,
-      fbc: order.buyer_fbc || undefined,
-      fbp: order.buyer_fbp || undefined,
+      fbc: sanitizeFb(order.buyer_fbc, FBC_RX),
+      fbp: sanitizeFb(order.buyer_fbp, FBP_RX),
     };
 
     // CRITICAL: only send IP if we have the real buyer IP. Never the edge IP.
-    if (order.buyer_ip) {
+    if (order.buyer_ip && !isPrivateIp(order.buyer_ip)) {
       userData.client_ip_address = order.buyer_ip;
     }
 
@@ -235,7 +245,7 @@ export async function firePurchaseCapi(
 
     const event = {
       event_name: "Purchase",
-      event_time: Math.floor(Date.now() / 1000),
+      event_time: Math.floor(new Date((order as any).created_at || Date.now()).getTime() / 1000),
       event_id: order.meta_event_id || order.id, // dedupe vs browser Pixel
       event_source_url: eventSourceUrl,
       action_source: "website",
@@ -257,10 +267,10 @@ export async function firePurchaseCapi(
 
     // 7. Send to Meta — with 1 retry on 5xx (transient Meta blip).
     const sendOnce = () => fetch(
-      `${META_GRAPH_URL}/${store.facebook_pixel_id}/events?access_token=${store.meta_access_token}`,
+      `${META_GRAPH_URL}/${store.facebook_pixel_id}/events`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${store.meta_access_token}` },
         body: JSON.stringify({ data: [event] }),
       },
     );

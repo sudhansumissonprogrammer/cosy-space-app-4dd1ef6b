@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, ShoppingBag, X } from "lucide-react";
 import { toast } from "sonner";
 import { fireMetaCAPI } from "@/lib/metaCapi";
+import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { cleanImageUrl, optimizeImageUrl } from "@/lib/imageOptimize";
 import { getDiscountPercent } from "@/lib/productUtils";
 
@@ -73,20 +74,22 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
       setAddedIds((prev) => new Set(prev).add(product.id));
       toast.success(`${product.name} added to your order!`);
 
-      // Fire CAPI as AddToCart (NOT Purchase) — this is an upsell add to an
-      // already-completed order, not a new purchase. Firing a second Purchase
-      // with no event_id / no PII would look like duplicate/inflated conversions
-      // to Meta's fraud models and risks ad-account quality drops.
+      // Fire as AddToCart (NOT Purchase) with shared event_id so browser Pixel
+      // and CAPI dedupe cleanly; this is not a second completed purchase.
+      const eventId = generateEventId();
+      const customData = {
+        content_ids: [product.id],
+        content_name: product.name,
+        content_type: "product",
+        value: Number(price),
+        currency,
+      };
+      fbPixelTrack("AddToCart", customData, eventId);
       fireMetaCAPI({
         storeId,
         eventName: "AddToCart",
-        customData: {
-          content_ids: [product.id],
-          content_name: product.name,
-          content_type: "product",
-          value: Number(price),
-          currency,
-        },
+        eventId,
+        customData,
       });
     } catch (err) {
       toast.error("Failed to add item");
