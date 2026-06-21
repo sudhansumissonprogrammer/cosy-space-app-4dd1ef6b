@@ -27,8 +27,10 @@ import {
 } from "lucide-react";
 
 interface Props {
+  storeId: string;
   pixelId: string;
   accessToken: string;
+  tokenLoading?: boolean;
   onAccessTokenChange: (v: string) => void;
 }
 
@@ -38,17 +40,17 @@ type VerifyState =
   | { kind: "ok"; events: number; fbtrace?: string }
   | { kind: "error"; message: string; fbtrace?: string };
 
-export function MetaCapiSetupWizard({ pixelId, accessToken, onAccessTokenChange }: Props) {
+export function MetaCapiSetupWizard({ storeId, pixelId, accessToken, tokenLoading = false, onAccessTokenChange }: Props) {
   const [verify, setVerify] = useState<VerifyState>({ kind: "idle" });
 
-  const canTest = !!pixelId && accessToken.length >= 30;
+  const canTest = !!storeId && !!pixelId && accessToken.length >= 30 && !tokenLoading;
 
   async function runTest() {
     if (!canTest) return;
     setVerify({ kind: "running" });
     try {
       const { data, error } = await supabase.functions.invoke("verify-meta-capi", {
-        body: { pixel_id: pixelId.trim(), access_token: accessToken.trim() },
+        body: { store_id: storeId, pixel_id: pixelId.trim(), access_token: accessToken.trim() },
       });
       if (error) throw new Error(error.message);
       if (data?.ok) {
@@ -136,6 +138,7 @@ export function MetaCapiSetupWizard({ pixelId, accessToken, onAccessTokenChange 
                   type="password"
                   placeholder="EAAxxxxxxxxxxxxxxxxxxxxxxxx..."
                   value={accessToken}
+                  disabled={tokenLoading}
                   onChange={(e) => {
                     onAccessTokenChange(e.target.value);
                     setVerify({ kind: "idle" });
@@ -144,7 +147,7 @@ export function MetaCapiSetupWizard({ pixelId, accessToken, onAccessTokenChange 
                   spellCheck={false}
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  Stored encrypted. Only used server-side from your store's edge function.
+                  {tokenLoading ? "Loading saved token…" : "Stored encrypted. Only used server-side from your store's edge function."}
                 </p>
               </div>
             }
