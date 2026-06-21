@@ -113,6 +113,20 @@ const sanitizeFb = (v: unknown, rx: RegExp): string | undefined => {
   return rx.test(v) ? v : undefined;
 };
 
+// Public browser endpoint allow-list. Purchase is intentionally excluded:
+// real Purchase CAPI is fired only by payment/order edge functions via
+// _shared/firePurchaseCapi.ts after the order is confirmed. Letting browsers
+// post Purchase here would allow forged revenue events against any public
+// store_id and can poison/ban a merchant pixel.
+const ALLOWED_BROWSER_EVENTS = new Set([
+  "PageView",
+  "ViewContent",
+  "AddToCart",
+  "InitiateCheckout",
+  "AddPaymentInfo",
+  "Lead",
+]);
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -158,6 +172,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (!ALLOWED_BROWSER_EVENTS.has(String(event_name))) {
+      return new Response(
+        JSON.stringify({ error: "event_not_allowed" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -187,21 +208,19 @@ Deno.serve(async (req) => {
     // calls (firePurchaseCapi) use `verify-meta-capi` or the internal path, not
     // this endpoint, so we can safely require the header on this entrypoint.
     const referer = req.headers.get("referer") || req.headers.get("origin") || "";
-    if (referer) {
-      let refHost = "";
-      try { refHost = new URL(referer).hostname.toLowerCase().replace(/^www\./, ""); } catch {}
-      const allowed = [
-        store.custom_domain ? String(store.custom_domain).toLowerCase().replace(/^www\./, "") : "",
-        store.slug ? `${String(store.slug).toLowerCase()}.shopbanao.in` : "",
-        "shopbanao.in",
-      ].filter(Boolean);
-      const isLovablePreview = refHost.endsWith(".lovable.app") || refHost === "localhost";
-      if (refHost && !isLovablePreview && !allowed.includes(refHost)) {
-        return new Response(
-          JSON.stringify({ error: "origin_not_allowed" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
+    let refHost = "";
+    try { refHost = new URL(referer).hostname.toLowerCase().replace(/^www\./, ""); } catch {}
+    const allowed = [
+      store.custom_domain ? String(store.custom_domain).toLowerCase().replace(/^www\./, "") : "",
+      store.slug ? `${String(store.slug).toLowerCase()}.shopbanao.in` : "",
+      "shopbanao.in",
+    ].filter(Boolean);
+    const isLovablePreview = refHost.endsWith(".lovable.app") || refHost === "localhost";
+    if (!refHost || (!isLovablePreview && !allowed.includes(refHost))) {
+      return new Response(
+        JSON.stringify({ error: "origin_not_allowed" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
 
