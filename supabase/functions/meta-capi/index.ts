@@ -145,7 +145,7 @@ function sanitizeCustomData(raw: unknown): CAPIEvent["custom_data"] | undefined 
   const out: CAPIEvent["custom_data"] = {};
   if (Array.isArray(r.content_ids)) out.content_ids = r.content_ids.map(String).filter(Boolean).slice(0, 100);
   if (typeof r.content_name === "string") out.content_name = r.content_name.slice(0, 300);
-  if (r.content_type === "product" || r.content_type === "product.group") out.content_type = r.content_type;
+  if (r.content_type === "product" || r.content_type === "product_group") out.content_type = r.content_type;
   if (Array.isArray(r.contents)) {
     out.contents = r.contents.slice(0, 100).map((x: any) => ({
       id: String(x?.id || ""),
