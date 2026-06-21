@@ -330,13 +330,6 @@ export async function firePurchaseCapi(
       return { ok: false, reason: `meta_${resp.status}` };
     }
 
-    // 8. Success — stamp the order. Conditional update so concurrent fires don't double-stamp.
-    await supabase
-      .from("orders")
-      .update({ meta_purchase_fired_at: new Date().toISOString() })
-      .eq("id", orderId)
-      .is("meta_purchase_fired_at", null);
-
     console.log(`[capi:${opts.source}] purchase fired`, orderId, result.events_received);
     return { ok: true };
   } catch (err) {
