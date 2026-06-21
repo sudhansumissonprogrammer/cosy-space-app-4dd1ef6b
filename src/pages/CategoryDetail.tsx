@@ -176,7 +176,7 @@ export default function CategoryDetail() {
       content_ids: topIds,
       content_name: category.name,
       content_category: category.name,
-      content_type: "product_group",
+      content_type: "product.group",
       currency: "INR",
     };
     try { fbPixelTrack("ViewContent", customData, eventId); } catch {}
@@ -186,7 +186,7 @@ export default function CategoryDetail() {
         eventName: "ViewContent",
         eventId,
         customData,
-      } as any);
+      });
     } catch {}
   }, [category, store?.id, rawProducts.length]);
 
