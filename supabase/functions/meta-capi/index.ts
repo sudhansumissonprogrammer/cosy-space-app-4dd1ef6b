@@ -113,6 +113,43 @@ const sanitizeFb = (v: unknown, rx: RegExp): string | undefined => {
   return rx.test(v) ? v : undefined;
 };
 
+function hostAllowed(host: string, allowed: string[]): boolean {
+  const clean = host.toLowerCase().replace(/^www\./, "");
+  return allowed.some((h) => clean === h || clean.endsWith(`.${h}`));
+}
+
+function sanitizeEventSourceUrl(raw: unknown, allowed: string[]): string | undefined {
+  if (typeof raw !== "string" || raw.length > 2048) return undefined;
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "https:" && u.hostname !== "localhost") return undefined;
+    if (!hostAllowed(u.hostname, allowed)) return undefined;
+    return `${u.origin}${u.pathname}`;
+  } catch {
+    return undefined;
+  }
+}
+
+function sanitizeCustomData(raw: unknown): CAPIEvent["custom_data"] | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const r = raw as Record<string, unknown>;
+  const out: CAPIEvent["custom_data"] = {};
+  if (Array.isArray(r.content_ids)) out.content_ids = r.content_ids.map(String).filter(Boolean).slice(0, 100);
+  if (typeof r.content_name === "string") out.content_name = r.content_name.slice(0, 300);
+  if (r.content_type === "product" || r.content_type === "product.group") out.content_type = r.content_type;
+  if (Array.isArray(r.contents)) {
+    out.contents = r.contents.slice(0, 100).map((x: any) => ({
+      id: String(x?.id || ""),
+      quantity: Math.max(1, Math.min(999, Number(x?.quantity) || 1)),
+      item_price: Number.isFinite(Number(x?.item_price)) ? Math.max(0, Math.min(1_000_000, Number(x.item_price))) : undefined,
+    })).filter((x) => x.id);
+  }
+  if (typeof r.currency === "string" && /^[A-Z]{3}$/.test(r.currency)) out.currency = r.currency;
+  if (Number.isFinite(Number(r.value))) out.value = Math.max(0, Math.min(1_000_000, Number(r.value)));
+  if (Number.isFinite(Number(r.num_items))) out.num_items = Math.max(0, Math.min(999, Number(r.num_items)));
+  return Object.keys(out).length ? out : undefined;
+}
+
 // Public browser endpoint allow-list. Purchase is intentionally excluded:
 // real Purchase CAPI is fired only by payment/order edge functions via
 // _shared/firePurchaseCapi.ts after the order is confirmed. Letting browsers
@@ -216,7 +253,7 @@ Deno.serve(async (req) => {
       "shopbanao.in",
     ].filter(Boolean);
     const isLovablePreview = refHost.endsWith(".lovable.app") || refHost === "localhost";
-    if (!refHost || (!isLovablePreview && !allowed.includes(refHost))) {
+    if (!refHost || (!isLovablePreview && !hostAllowed(refHost, allowed))) {
       return new Response(
         JSON.stringify({ error: "origin_not_allowed" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -299,17 +336,17 @@ Deno.serve(async (req) => {
       event_name,
       event_time: Math.floor(Date.now() / 1000),
       event_id: event_id || undefined,
-      event_source_url: event_source_url || undefined,
+      event_source_url: sanitizeEventSourceUrl(event_source_url, allowed),
       user_data: userData,
-      custom_data: custom_data || undefined,
+      custom_data: sanitizeCustomData(custom_data),
       action_source: "website",
     };
 
     const sendOnce = () => fetch(
-      `${META_GRAPH_URL}/${pixelId}/events?access_token=${accessToken}`,
+      `${META_GRAPH_URL}/${pixelId}/events`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
         body: JSON.stringify({ data: [event] }),
       }
     );
