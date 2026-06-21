@@ -32,7 +32,14 @@ Deno.serve(async (req) => {
       .from("orders")
       .select("payment_type")
       .eq("id", order_id)
+      .eq("store_id", store_id)
       .single();
+    if (!orderInfo) {
+      return new Response(JSON.stringify({ error: "Order not found for store" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const isPartialOrder = orderInfo?.payment_type === "partial";
 
     // Fetch key
@@ -57,6 +64,7 @@ Deno.serve(async (req) => {
         .from("orders")
         .select("status, notes, razorpay_order_id")
         .eq("id", order_id)
+        .eq("store_id", store_id)
         .single();
 
       // Already settled in our DB
@@ -86,7 +94,8 @@ Deno.serve(async (req) => {
                 payment_method: "razorpay",
                 notes: `Razorpay Payment ID: ${captured.id}`,
               })
-              .eq("id", order_id);
+              .eq("id", order_id)
+              .eq("store_id", store_id);
             if (captured.status === "authorized") {
               await fetch(`https://api.razorpay.com/v1/payments/${captured.id}/capture`, {
                 method: "POST",
@@ -95,7 +104,7 @@ Deno.serve(async (req) => {
               });
             }
             // Fire Meta CAPI Purchase (idempotent via meta_purchase_fired_at stamp)
-            void firePurchaseCapi(supabase, order_id, { source: "razorpay" });
+            await firePurchaseCapi(supabase, order_id, { source: "razorpay" });
             return new Response(
               JSON.stringify({ status: "captured", payment_id: captured.id }),
               { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -135,7 +144,8 @@ Deno.serve(async (req) => {
           payment_method: "razorpay",
           notes: `Razorpay Payment ID: ${razorpay_payment_id}`,
         })
-        .eq("id", order_id);
+        .eq("id", order_id)
+        .eq("store_id", store_id);
 
       // Auto-capture if only authorized
       if (status === "authorized") {
@@ -146,7 +156,7 @@ Deno.serve(async (req) => {
         });
       }
       // Fire Meta CAPI Purchase (idempotent via meta_purchase_fired_at stamp)
-      void firePurchaseCapi(supabase, order_id, { source: "razorpay" });
+      await firePurchaseCapi(supabase, order_id, { source: "razorpay" });
     }
 
     return new Response(
