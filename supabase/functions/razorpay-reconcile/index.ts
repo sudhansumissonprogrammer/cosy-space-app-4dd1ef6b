@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
           if (upd && upd.length > 0) {
             confirmed++;
             // Fire Meta CAPI Purchase (idempotent via meta_purchase_fired_at stamp)
-            void firePurchaseCapi(supabase, o.id, { source: "razorpay-reconcile" });
+            await firePurchaseCapi(supabase, o.id, { source: "razorpay-reconcile" });
           }
           continue;
         }
