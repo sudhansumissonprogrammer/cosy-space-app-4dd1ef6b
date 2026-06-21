@@ -18,8 +18,34 @@ type CheckoutItem = {
 
 const FBP_RX = /^fb\.[12]\.\d{10,16}\.\d+$/;
 const FBC_RX = /^fb\.[12]\.\d{10,16}\.[A-Za-z0-9_-]+$/;
+const META_EVENT_ID_RX = /^[A-Za-z0-9._:-]{8,120}$/;
 const sanitizeFb = (v: unknown, rx: RegExp): string | null =>
   typeof v === "string" && v.length <= 256 && rx.test(v) ? v : null;
+const sanitizeMetaEventId = (v: unknown): string | null =>
+  typeof v === "string" && META_EVENT_ID_RX.test(v) ? v : null;
+
+function normalizeHost(host: string): string {
+  return host.toLowerCase().replace(/^www\./, "");
+}
+
+function hostAllowed(host: string, store: { slug?: string | null; custom_domain?: string | null }): boolean {
+  const clean = normalizeHost(host);
+  const customDomain = store.custom_domain ? normalizeHost(String(store.custom_domain)) : "";
+  const slugHost = store.slug ? `${String(store.slug).toLowerCase()}.shopbanao.in` : "";
+  return clean === customDomain || clean.endsWith(`.${customDomain}`) || clean === slugHost || clean === "shopbanao.in";
+}
+
+function sanitizeMetaSourceUrl(raw: unknown, store: { slug?: string | null; custom_domain?: string | null }): string | null {
+  if (typeof raw !== "string" || raw.length > 2048) return null;
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "https:") return null;
+    if (!hostAllowed(u.hostname, store)) return null;
+    return `${u.origin}${u.pathname}`;
+  } catch {
+    return null;
+  }
+}
 function isPrivateIp(ip: string | null | undefined): boolean {
   if (!ip) return true;
   const v = ip.trim().toLowerCase();
@@ -128,7 +154,7 @@ Deno.serve(async (req) => {
 
     const { data: store, error: storeErr } = await supabase
       .from("stores")
-      .select("id, is_suspended, default_profit_margin")
+      .select("id, is_suspended, default_profit_margin, slug, custom_domain")
       .eq("id", store_id)
       .single();
 
@@ -311,6 +337,8 @@ Deno.serve(async (req) => {
     const buyerUa = req.headers.get("user-agent") || null;
     const buyerFbc = sanitizeFb(meta?.fbc, FBC_RX);
     const buyerFbp = sanitizeFb(meta?.fbp, FBP_RX);
+    const metaEventId = sanitizeMetaEventId(meta?.event_id);
+    const metaEventSourceUrl = sanitizeMetaSourceUrl(meta?.event_source_url, store);
 
     const { data: createdOrder, error: orderErr } = await supabase
       .from("orders")
@@ -336,8 +364,8 @@ Deno.serve(async (req) => {
         buyer_user_agent: buyerUa,
         buyer_fbc: buyerFbc,
         buyer_fbp: buyerFbp,
-        meta_event_id: meta?.event_id || null,
-        meta_event_source_url: meta?.event_source_url || null,
+        meta_event_id: metaEventId,
+        meta_event_source_url: metaEventSourceUrl,
         visitor_id: visitor_id || null,
         session_id: session_id || null,
       })
