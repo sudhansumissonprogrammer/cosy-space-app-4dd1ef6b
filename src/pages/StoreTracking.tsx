@@ -23,6 +23,7 @@ export default function StoreTracking() {
 
   const [facebookPixelId, setFacebookPixelId] = useState("");
   const [metaAccessToken, setMetaAccessToken] = useState("");
+  const [metaAccessTokenTouched, setMetaAccessTokenTouched] = useState(false);
 
   const { data: store, isLoading } = useStoreData(storeId);
 
@@ -81,19 +82,28 @@ export default function StoreTracking() {
   }, [store]);
 
   useEffect(() => {
-    if (metaTokenFromDb !== undefined) {
+    if (metaTokenFromDb !== undefined && !metaAccessTokenTouched) {
       setMetaAccessToken(metaTokenFromDb);
     }
-  }, [metaTokenFromDb]);
+  }, [metaTokenFromDb, metaAccessTokenTouched]);
+
+  const handleMetaAccessTokenChange = (value: string) => {
+    setMetaAccessTokenTouched(true);
+    setMetaAccessToken(value);
+  };
 
   const updateMutation = useMutation({
     mutationFn: async () => {
+      const updatePayload: Record<string, any> = {
+        facebook_pixel_id: facebookPixelId.trim() || null,
+      };
+      // Do not wipe a saved CAPI token if the secure token RPC has not loaded yet.
+      if (metaTokenFromDb !== undefined || metaAccessTokenTouched) {
+        updatePayload.meta_access_token = metaAccessToken.trim() || null;
+      }
       const { error } = await (supabase as any)
         .from("stores")
-        .update({
-          facebook_pixel_id: facebookPixelId.trim() || null,
-          meta_access_token: metaAccessToken.trim() || null,
-        })
+        .update(updatePayload)
         .eq("id", storeId!);
       if (error) throw error;
     },
@@ -274,7 +284,7 @@ export default function StoreTracking() {
         <MetaCapiSetupWizard
           pixelId={facebookPixelId}
           accessToken={metaAccessToken}
-          onAccessTokenChange={setMetaAccessToken}
+          onAccessTokenChange={handleMetaAccessTokenChange}
         />
 
 
