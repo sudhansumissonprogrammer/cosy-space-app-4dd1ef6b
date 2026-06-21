@@ -37,7 +37,9 @@ Deno.serve(async (req) => {
       .from("orders")
       .select("status, payment_type")
       .eq("id", order_id)
+      .eq("store_id", store_id)
       .single();
+    if (!orderInfo) return jsonRes({ error: "Order not found for store" }, 404);
 
     if (orderInfo?.status === "confirmed" || orderInfo?.status === "partially_paid") {
       await firePurchaseCapi(supabase, order_id, { source: "cashfree-status" });
@@ -83,7 +85,8 @@ Deno.serve(async (req) => {
           payment_verified: true,
           payment_verified_at: new Date().toISOString(),
         })
-        .eq("id", order_id);
+        .eq("id", order_id)
+        .eq("store_id", store_id);
       await firePurchaseCapi(supabase, order_id, { source: "cashfree-status" });
     }
 

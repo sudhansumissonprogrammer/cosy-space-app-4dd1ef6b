@@ -38,7 +38,15 @@ Deno.serve(async (req) => {
       .from("orders")
       .select("payment_type")
       .eq("id", order_id)
+      .eq("store_id", store_id)
       .single();
+
+    if (!orderData) {
+      return new Response(JSON.stringify({ error: "Order not found for store" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const isPartial = orderData?.payment_type === "partial";
 
@@ -89,7 +97,8 @@ Deno.serve(async (req) => {
         payment_verified: true,
         payment_verified_at: new Date().toISOString(),
       })
-      .eq("id", order_id);
+      .eq("id", order_id)
+      .eq("store_id", store_id);
 
     if (updateErr) {
       console.error("Order update error:", updateErr);
@@ -100,7 +109,7 @@ Deno.serve(async (req) => {
     }
 
     // Payment confirmed — fire Meta CAPI Purchase (server-to-server, idempotent).
-    void firePurchaseCapi(supabase, order_id, { source: "razorpay" });
+    await firePurchaseCapi(supabase, order_id, { source: "razorpay" });
 
     return new Response(
       JSON.stringify({ success: true, payment_id: razorpay_payment_id }),

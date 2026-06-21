@@ -52,15 +52,17 @@ Deno.serve(async (req) => {
       .from("orders")
       .select("payment_type, status, customer_phone, storefront_customer_id")
       .eq("id", order_id)
+      .eq("store_id", store_id)
       .single();
+    if (!orderInfo) return jsonRes({ error: "Order not found for store" }, 404);
 
     // Idempotent short-circuit
     if (orderInfo?.status === "confirmed" || orderInfo?.status === "partially_paid") {
       if (!orderInfo.storefront_customer_id) {
         const customerId = await findCustomerByPhone(supabase, store_id, orderInfo.customer_phone);
-        if (customerId) await supabase.from("orders").update({ storefront_customer_id: customerId }).eq("id", order_id);
+        if (customerId) await supabase.from("orders").update({ storefront_customer_id: customerId }).eq("id", order_id).eq("store_id", store_id);
       }
-      void firePurchaseCapi(supabase, order_id, { source: "payu-verify" });
+      await firePurchaseCapi(supabase, order_id, { source: "payu-verify" });
       return jsonRes({ success: true, status: "PAID", already_confirmed: true });
     }
 
@@ -104,7 +106,8 @@ Deno.serve(async (req) => {
       const { error: updateErr } = await supabase
         .from("orders")
         .update(update)
-        .eq("id", order_id);
+        .eq("id", order_id)
+        .eq("store_id", store_id);
       if (updateErr) {
         console.error("Order update error", updateErr);
         return jsonRes({ error: "Failed to update order" }, 500);

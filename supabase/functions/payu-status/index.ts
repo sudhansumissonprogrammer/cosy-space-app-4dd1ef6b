@@ -53,14 +53,16 @@ Deno.serve(async (req) => {
       .from("orders")
       .select("status, payment_type, customer_phone, storefront_customer_id")
       .eq("id", order_id)
+      .eq("store_id", store_id)
       .single();
+    if (!orderInfo) return jsonRes({ error: "Order not found for store" }, 404);
 
     if (orderInfo?.status === "confirmed" || orderInfo?.status === "partially_paid") {
       if (!orderInfo.storefront_customer_id) {
         const customerId = await findCustomerByPhone(supabase, store_id, orderInfo.customer_phone);
-        if (customerId) await supabase.from("orders").update({ storefront_customer_id: customerId }).eq("id", order_id);
+        if (customerId) await supabase.from("orders").update({ storefront_customer_id: customerId }).eq("id", order_id).eq("store_id", store_id);
       }
-      void firePurchaseCapi(supabase, order_id, { source: "payu-status" });
+      await firePurchaseCapi(supabase, order_id, { source: "payu-status" });
       return jsonRes({ status: "PAID", local: orderInfo.status });
     }
 
@@ -107,7 +109,8 @@ Deno.serve(async (req) => {
       await supabase
         .from("orders")
         .update(update)
-        .eq("id", order_id);
+        .eq("id", order_id)
+        .eq("store_id", store_id);
       await firePurchaseCapi(supabase, order_id, { source: "payu-status" });
     }
 

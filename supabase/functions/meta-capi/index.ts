@@ -113,12 +113,21 @@ const sanitizeFb = (v: unknown, rx: RegExp): string | undefined => {
   return rx.test(v) ? v : undefined;
 };
 
-function hostAllowed(host: string, allowed: string[]): boolean {
-  const clean = host.toLowerCase().replace(/^www\./, "");
-  return allowed.some((h) => clean === h || clean.endsWith(`.${h}`));
+type AllowedHost = { host: string; allowSubdomains?: boolean };
+
+function normalizeHost(host: string): string {
+  return host.toLowerCase().replace(/^www\./, "");
 }
 
-function sanitizeEventSourceUrl(raw: unknown, allowed: string[]): string | undefined {
+function hostAllowed(host: string, allowed: AllowedHost[]): boolean {
+  const clean = normalizeHost(host);
+  return allowed.some((entry) => {
+    const h = normalizeHost(entry.host);
+    return clean === h || (!!entry.allowSubdomains && clean.endsWith(`.${h}`));
+  });
+}
+
+function sanitizeEventSourceUrl(raw: unknown, allowed: AllowedHost[]): string | undefined {
   if (typeof raw !== "string" || raw.length > 2048) return undefined;
   try {
     const u = new URL(raw);
@@ -136,7 +145,7 @@ function sanitizeCustomData(raw: unknown): CAPIEvent["custom_data"] | undefined 
   const out: CAPIEvent["custom_data"] = {};
   if (Array.isArray(r.content_ids)) out.content_ids = r.content_ids.map(String).filter(Boolean).slice(0, 100);
   if (typeof r.content_name === "string") out.content_name = r.content_name.slice(0, 300);
-  if (r.content_type === "product" || r.content_type === "product.group") out.content_type = r.content_type;
+  if (r.content_type === "product" || r.content_type === "product_group") out.content_type = r.content_type;
   if (Array.isArray(r.contents)) {
     out.contents = r.contents.slice(0, 100).map((x: any) => ({
       id: String(x?.id || ""),
@@ -246,14 +255,15 @@ Deno.serve(async (req) => {
     // this endpoint, so we can safely require the header on this entrypoint.
     const referer = req.headers.get("referer") || req.headers.get("origin") || "";
     let refHost = "";
-    try { refHost = new URL(referer).hostname.toLowerCase().replace(/^www\./, ""); } catch {}
-    const allowed = [
-      store.custom_domain ? String(store.custom_domain).toLowerCase().replace(/^www\./, "") : "",
-      store.slug ? `${String(store.slug).toLowerCase()}.shopbanao.in` : "",
-      "shopbanao.in",
-    ].filter(Boolean);
-    const isLovablePreview = refHost.endsWith(".lovable.app") || refHost === "localhost";
-    if (!refHost || (!isLovablePreview && !hostAllowed(refHost, allowed))) {
+    try { refHost = normalizeHost(new URL(referer).hostname); } catch {}
+    const allowed: AllowedHost[] = [
+      ...(store.custom_domain
+        ? [{ host: String(store.custom_domain), allowSubdomains: true }]
+        : []),
+      ...(store.slug ? [{ host: `${String(store.slug).toLowerCase()}.shopbanao.in` }] : []),
+      { host: "shopbanao.in" },
+    ];
+    if (!refHost || !hostAllowed(refHost, allowed)) {
       return new Response(
         JSON.stringify({ error: "origin_not_allowed" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },

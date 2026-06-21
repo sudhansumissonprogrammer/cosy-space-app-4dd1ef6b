@@ -6,10 +6,27 @@
 // instead of flagging the event as "too broad" — the token validity is what
 // we're actually testing here.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 interface Body {
+  store_id?: string;
   pixel_id?: string;
   access_token?: string;
+}
+
+const RL_WINDOW_MS = 60_000;
+const RL_MAX = 6;
+const rlMap = new Map<string, { count: number; resetAt: number }>();
+
+function rateLimited(key: string): boolean {
+  const now = Date.now();
+  const entry = rlMap.get(key);
+  if (!entry || entry.resetAt < now) {
+    rlMap.set(key, { count: 1, resetAt: now + RL_WINDOW_MS });
+    return false;
+  }
+  entry.count++;
+  return entry.count > RL_MAX;
 }
 
 async function sha256Hex(value: string): Promise<string> {
@@ -25,8 +42,42 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json().catch(() => ({}))) as Body;
+    const storeId = (body.store_id || "").trim();
     const pixelId = (body.pixel_id || "").trim();
     const accessToken = (body.access_token || "").trim();
+
+    if (!storeId || !/^[0-9a-f-]{36}$/i.test(storeId)) {
+      return json({ ok: false, error: "Store is required." }, 400);
+    }
+
+    const authHeader = req.headers.get("authorization") || "";
+    if (!authHeader.toLowerCase().startsWith("bearer ")) {
+      return json({ ok: false, error: "Sign in required." }, 401);
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const authClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userErr } = await authClient.auth.getUser();
+    if (userErr || !userData.user) {
+      return json({ ok: false, error: "Sign in required." }, 401);
+    }
+
+    const rlKey = `${userData.user.id}:${storeId}`;
+    if (rateLimited(rlKey)) return json({ ok: false, error: "Too many tests. Please wait a minute." }, 429);
+
+    const admin = createClient(supabaseUrl, serviceKey);
+    const { data: store } = await admin
+      .from("stores")
+      .select("owner_id, slug, custom_domain")
+      .eq("id", storeId)
+      .maybeSingle();
+    if (!store || store.owner_id !== userData.user.id) {
+      return json({ ok: false, error: "Store access denied." }, 403);
+    }
 
     if (!pixelId || !/^\d{10,20}$/.test(pixelId)) {
       return json({ ok: false, error: "Invalid Pixel ID — must be 10–20 digits." }, 400);
@@ -52,14 +103,9 @@ Deno.serve(async (req) => {
     // Use the calling site's Origin as event_source_url when available — the
     // old hardcoded "shopbanao.in/verify" path doesn't exist and Meta logs
     // it as a 404 in the URL hygiene check. Fall back to graph.facebook.com.
-    let sourceUrl = "https://graph.facebook.com/verify";
-    const origin = req.headers.get("origin") || req.headers.get("referer");
-    if (origin) {
-      try {
-        const u = new URL(origin);
-        sourceUrl = `${u.origin}/`;
-      } catch {}
-    }
+    const sourceUrl = store.custom_domain
+      ? `https://${String(store.custom_domain).replace(/^www\./, "")}/`
+      : `https://${String(store.slug).toLowerCase()}.shopbanao.in/`;
 
     // Use the standard "PageView" event — Meta recognizes it natively, so it
     // never triggers the "confirm custom event" review flow that custom names
@@ -98,10 +144,10 @@ Deno.serve(async (req) => {
 
     // Graph API v21.0 — v19.0 is past Meta's 2-year deprecation window and
     // returns deprecation warnings in fbtrace responses.
-    const url = `https://graph.facebook.com/v21.0/${pixelId}/events?access_token=${encodeURIComponent(accessToken)}`;
+    const url = `https://graph.facebook.com/v21.0/${pixelId}/events`;
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
       body: JSON.stringify(testEvent),
     });
     const data = await res.json().catch(() => ({}));

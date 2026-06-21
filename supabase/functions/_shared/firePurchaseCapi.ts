@@ -33,6 +33,24 @@ const FBC_RX = /^fb\.[12]\.\d{10,16}\.[A-Za-z0-9_-]+$/;
 const sanitizeFb = (v: unknown, rx: RegExp): string | undefined =>
   typeof v === "string" && v.length <= 256 && rx.test(v) ? v : undefined;
 
+const _purchaseLocks = new Map<string, number>();
+const PURCHASE_LOCK_TTL_MS = 30_000;
+function acquirePurchaseLock(orderId: string): boolean {
+  const now = Date.now();
+  const lockedUntil = _purchaseLocks.get(orderId) || 0;
+  if (lockedUntil > now) return false;
+  _purchaseLocks.set(orderId, now + PURCHASE_LOCK_TTL_MS);
+  if (_purchaseLocks.size > 500) {
+    for (const [id, until] of _purchaseLocks) {
+      if (until <= now) _purchaseLocks.delete(id);
+    }
+  }
+  return true;
+}
+function releasePurchaseLock(orderId: string) {
+  _purchaseLocks.delete(orderId);
+}
+
 function isPrivateIp(ip: string | null | undefined): boolean {
   if (!ip) return true;
   const v = ip.trim().toLowerCase();
@@ -59,6 +77,9 @@ export async function firePurchaseCapi(
   orderId: string,
   opts: FirePurchaseOpts,
 ): Promise<{ ok: boolean; reason?: string }> {
+  if (!acquirePurchaseLock(orderId)) {
+    return { ok: true, reason: "in_flight" };
+  }
   try {
     // 1. Idempotency check + load order with all buyer fields.
     const { data: order, error: orderErr } = await supabase
@@ -100,7 +121,7 @@ export async function firePurchaseCapi(
     // sending them tanks Event Match Quality, gives no attribution, and risks
     // double-counting if the same buyer also placed online.
     const hasBrowserSignals =
-      !!order.buyer_user_agent || !!order.buyer_fbp || !!order.buyer_fbc || !!order.meta_event_id;
+      !!order.buyer_user_agent && (!!order.buyer_fbp || !!order.buyer_fbc || !!order.meta_event_id);
     if (!hasBrowserSignals) {
       // Stamp so we don't re-evaluate on every status change.
       await supabase
@@ -245,7 +266,7 @@ export async function firePurchaseCapi(
 
     const event = {
       event_name: "Purchase",
-      event_time: Math.floor(new Date((order as any).created_at || Date.now()).getTime() / 1000),
+      event_time: Math.floor(Date.now() / 1000),
       event_id: order.meta_event_id || order.id, // dedupe vs browser Pixel
       event_source_url: eventSourceUrl,
       action_source: "website",
@@ -264,6 +285,19 @@ export async function firePurchaseCapi(
         order_id: order.id,
       },
     };
+
+    // Atomic DB claim BEFORE sending to Meta. Webhook + browser verify can hit
+    // different edge isolates at the same time, so in-memory locks are not
+    // enough. Only the first caller that flips the NULL stamp may send Purchase.
+    const { data: claimed } = await supabase
+      .from("orders")
+      .update({ meta_purchase_fired_at: new Date().toISOString() })
+      .eq("id", orderId)
+      .is("meta_purchase_fired_at", null)
+      .select("id");
+    if (!claimed || claimed.length === 0) {
+      return { ok: true, reason: "already_fired" };
+    }
 
     // 7. Send to Meta — with 1 retry on 5xx (transient Meta blip).
     const sendOnce = () => fetch(
@@ -296,17 +330,12 @@ export async function firePurchaseCapi(
       return { ok: false, reason: `meta_${resp.status}` };
     }
 
-    // 8. Success — stamp the order. Conditional update so concurrent fires don't double-stamp.
-    await supabase
-      .from("orders")
-      .update({ meta_purchase_fired_at: new Date().toISOString() })
-      .eq("id", orderId)
-      .is("meta_purchase_fired_at", null);
-
     console.log(`[capi:${opts.source}] purchase fired`, orderId, result.events_received);
     return { ok: true };
   } catch (err) {
     console.error(`[capi:${opts.source}] unexpected error`, err);
     return { ok: false, reason: "exception" };
+  } finally {
+    releasePurchaseLock(orderId);
   }
 }

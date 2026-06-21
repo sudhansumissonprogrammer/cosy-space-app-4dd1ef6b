@@ -66,7 +66,7 @@ export default function StoreTracking() {
   });
 
   // Fetch meta_access_token via secure RPC (column revoked from direct SELECT)
-  const { data: metaTokenFromDb } = useQuery({
+  const { data: metaTokenFromDb, isLoading: metaTokenLoading } = useQuery({
     queryKey: ["store-meta-token", storeId],
     queryFn: async () => {
       const { data } = await supabase.rpc("get_own_store_meta_token", { _store_id: storeId! });
@@ -119,9 +119,8 @@ export default function StoreTracking() {
         // Without it the cached HTML keeps the OLD pixel id and Meta Pixel
         // Helper still shows "No Pixels found" after a save.
         const purged = await purgeStoreCache(store.slug, (store as any).custom_domain, { shell: true, force: true });
-        if (purged) {
-          await prewarmStore(store.slug, (store as any).custom_domain, { force: true });
-        }
+        await prewarmStore(store.slug, (store as any).custom_domain, { force: true });
+        if (!purged) toast.warning("Tracking saved, but cache purge was delayed. Refresh again if the old pixel appears for a few minutes.");
       }
 
       toast.success("Tracking settings saved and pixel is live on your storefront!");
@@ -282,8 +281,10 @@ export default function StoreTracking() {
 
         {/* Server-Side CAPI — Guided Setup Wizard */}
         <MetaCapiSetupWizard
+          storeId={storeId!}
           pixelId={facebookPixelId}
           accessToken={metaAccessToken}
+          tokenLoading={metaTokenLoading}
           onAccessTokenChange={handleMetaAccessTokenChange}
         />
 
