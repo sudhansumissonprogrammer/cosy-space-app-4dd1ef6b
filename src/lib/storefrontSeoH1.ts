@@ -26,7 +26,10 @@ export function buildStorefrontH1(store: any): string {
   const desc = pick(store?.description) || pick(store?.meta_description) || pick(store?.seo_about_paragraph);
   if (desc) {
     // First sentence, truncated
-    const firstSentence = desc.split(/(?<=[.!?])\s/)[0] || desc;
+    // Avoid regex lookbehind: older Android/In-App browsers can throw
+    // "Invalid regular expression: invalid group specifier name" and blank the page.
+    const match = desc.match(/[.!?]\s/);
+    const firstSentence = match?.index != null ? desc.slice(0, match.index + 1) : desc;
     return `${name} — ${truncate(firstSentence)}`;
   }
 
