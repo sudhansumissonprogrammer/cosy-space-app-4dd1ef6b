@@ -16,6 +16,16 @@ type CheckoutItem = {
   quantity: number;
 };
 
+const FBP_RX = /^fb\.[12]\.\d{10,16}\.\d+$/;
+const FBC_RX = /^fb\.[12]\.\d{10,16}\.[A-Za-z0-9_-]+$/;
+const sanitizeFb = (v: unknown, rx: RegExp): string | null =>
+  typeof v === "string" && v.length <= 256 && rx.test(v) ? v : null;
+function isPrivateIp(ip: string | null | undefined): boolean {
+  if (!ip) return true;
+  const v = ip.trim().toLowerCase();
+  return /^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|::1$|fc|fd)/.test(v);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -293,11 +303,14 @@ Deno.serve(async (req) => {
     // Capture real buyer signals for Meta CAPI (forwarded by Cloudflare/Vercel/SB edge).
     // We store these on the order row so the Purchase event sent to Meta carries the
     // visitor's real IP + UA — never the edge runtime's datacenter IP.
-    const buyerIp =
+    const rawBuyerIp =
       req.headers.get("cf-connecting-ip") ||
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       null;
+    const buyerIp = isPrivateIp(rawBuyerIp) ? null : rawBuyerIp;
     const buyerUa = req.headers.get("user-agent") || null;
+    const buyerFbc = sanitizeFb(meta?.fbc, FBC_RX);
+    const buyerFbp = sanitizeFb(meta?.fbp, FBP_RX);
 
     const { data: createdOrder, error: orderErr } = await supabase
       .from("orders")
@@ -321,8 +334,8 @@ Deno.serve(async (req) => {
         checkout_token: checkout_token || null,
         buyer_ip: buyerIp,
         buyer_user_agent: buyerUa,
-        buyer_fbc: meta?.fbc || null,
-        buyer_fbp: meta?.fbp || null,
+        buyer_fbc: buyerFbc,
+        buyer_fbp: buyerFbp,
         meta_event_id: meta?.event_id || null,
         meta_event_source_url: meta?.event_source_url || null,
         visitor_id: visitor_id || null,
@@ -441,7 +454,7 @@ Deno.serve(async (req) => {
     // get their Purchase fired from the verify/webhook step instead.
     // ⚠️ Skip Meta CAPI for manual / admin-created orders (no browser session signals).
     // Sending those tanks Event Match Quality and adds noise without attribution value.
-    const isStorefrontOrder = !!(meta?.fbp || meta?.fbc || meta?.event_id);
+    const isStorefrontOrder = !!buyerUa && !!(buyerFbp || buyerFbc || meta?.event_id);
     if (order.payment_method === "cod" && isStorefrontOrder) {
       void firePurchaseCapi(supabase, createdOrder.id, {
         source: "cod",
