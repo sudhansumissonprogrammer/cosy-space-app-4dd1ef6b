@@ -37,7 +37,9 @@ Deno.serve(async (req) => {
       .from("orders")
       .select("payment_type, status")
       .eq("id", order_id)
+      .eq("store_id", store_id)
       .single();
+    if (!orderInfo) return jsonRes({ error: "Order not found for store" }, 404);
     const isPartial = orderInfo?.payment_type === "partial";
 
     // If already confirmed, short-circuit (idempotent)
@@ -87,7 +89,8 @@ Deno.serve(async (req) => {
           payment_verified: true,
           payment_verified_at: new Date().toISOString(),
         })
-        .eq("id", order_id);
+        .eq("id", order_id)
+        .eq("store_id", store_id);
       if (updateErr) {
         console.error("Order update error", updateErr);
         return jsonRes({ error: "Failed to update order" }, 500);
