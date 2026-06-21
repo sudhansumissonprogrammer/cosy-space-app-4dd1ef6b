@@ -176,7 +176,7 @@ export default function CategoryDetail() {
       content_ids: topIds,
       content_name: category.name,
       content_category: category.name,
-      content_type: "product.group",
+      content_type: "product_group",
       currency: "INR",
     };
     try { fbPixelTrack("ViewContent", customData, eventId); } catch {}
