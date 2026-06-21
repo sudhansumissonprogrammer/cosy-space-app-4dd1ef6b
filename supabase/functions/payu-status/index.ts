@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
         const customerId = await findCustomerByPhone(supabase, store_id, orderInfo.customer_phone);
         if (customerId) await supabase.from("orders").update({ storefront_customer_id: customerId }).eq("id", order_id).eq("store_id", store_id);
       }
-      void firePurchaseCapi(supabase, order_id, { source: "payu-status" });
+      await firePurchaseCapi(supabase, order_id, { source: "payu-status" });
       return jsonRes({ status: "PAID", local: orderInfo.status });
     }
 
