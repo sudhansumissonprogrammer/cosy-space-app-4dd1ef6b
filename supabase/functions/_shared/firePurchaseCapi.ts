@@ -121,7 +121,7 @@ export async function firePurchaseCapi(
     // sending them tanks Event Match Quality, gives no attribution, and risks
     // double-counting if the same buyer also placed online.
     const hasBrowserSignals =
-      !!order.buyer_user_agent || !!order.buyer_fbp || !!order.buyer_fbc || !!order.meta_event_id;
+      !!order.buyer_user_agent && (!!order.buyer_fbp || !!order.buyer_fbc || !!order.meta_event_id);
     if (!hasBrowserSignals) {
       // Stamp so we don't re-evaluate on every status change.
       await supabase
@@ -266,7 +266,7 @@ export async function firePurchaseCapi(
 
     const event = {
       event_name: "Purchase",
-      event_time: Math.floor(new Date((order as any).created_at || Date.now()).getTime() / 1000),
+      event_time: Math.floor(Date.now() / 1000),
       event_id: order.meta_event_id || order.id, // dedupe vs browser Pixel
       event_source_url: eventSourceUrl,
       action_source: "website",
