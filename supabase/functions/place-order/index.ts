@@ -482,11 +482,11 @@ Deno.serve(async (req) => {
     // get their Purchase fired from the verify/webhook step instead.
     // ⚠️ Skip Meta CAPI for manual / admin-created orders (no browser session signals).
     // Sending those tanks Event Match Quality and adds noise without attribution value.
-    const isStorefrontOrder = !!buyerUa && !!(buyerFbp || buyerFbc || meta?.event_id);
+    const isStorefrontOrder = !!buyerUa && !!(buyerFbp || buyerFbc || metaEventId);
     if (order.payment_method === "cod" && isStorefrontOrder) {
-      void firePurchaseCapi(supabase, createdOrder.id, {
+      await firePurchaseCapi(supabase, createdOrder.id, {
         source: "cod",
-        eventSourceUrl: meta?.event_source_url,
+        eventSourceUrl: metaEventSourceUrl || undefined,
       });
     }
 
