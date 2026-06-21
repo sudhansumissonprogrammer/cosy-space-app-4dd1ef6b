@@ -286,6 +286,19 @@ export async function firePurchaseCapi(
       },
     };
 
+    // Atomic DB claim BEFORE sending to Meta. Webhook + browser verify can hit
+    // different edge isolates at the same time, so in-memory locks are not
+    // enough. Only the first caller that flips the NULL stamp may send Purchase.
+    const { data: claimed } = await supabase
+      .from("orders")
+      .update({ meta_purchase_fired_at: new Date().toISOString() })
+      .eq("id", orderId)
+      .is("meta_purchase_fired_at", null)
+      .select("id");
+    if (!claimed || claimed.length === 0) {
+      return { ok: true, reason: "already_fired" };
+    }
+
     // 7. Send to Meta — with 1 retry on 5xx (transient Meta blip).
     const sendOnce = () => fetch(
       `${META_GRAPH_URL}/${store.facebook_pixel_id}/events`,
