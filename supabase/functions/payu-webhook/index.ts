@@ -134,6 +134,7 @@ Deno.serve(async (req) => {
       .from("orders")
       .select("status, payment_type, customer_phone, storefront_customer_id")
       .eq("id", localOrderId)
+      .eq("store_id", storeId)
       .single();
     if (!orderRow) return new Response("OK (unknown order)", { status: 200 });
 
@@ -141,7 +142,7 @@ Deno.serve(async (req) => {
       if (orderRow.status === "confirmed" || orderRow.status === "partially_paid") {
         if (!orderRow.storefront_customer_id) {
           const customerId = await findCustomerByPhone(supabase, storeId, orderRow.customer_phone);
-          if (customerId) await supabase.from("orders").update({ storefront_customer_id: customerId }).eq("id", localOrderId);
+          if (customerId) await supabase.from("orders").update({ storefront_customer_id: customerId }).eq("id", localOrderId).eq("store_id", storeId);
         }
         // Already marked — still try CAPI in case the previous attempt failed (idempotent).
         await firePurchaseCapi(supabase, localOrderId, { source: "payu-webhook" });
@@ -162,7 +163,8 @@ Deno.serve(async (req) => {
       await supabase
         .from("orders")
         .update(update)
-        .eq("id", localOrderId);
+        .eq("id", localOrderId)
+        .eq("store_id", storeId);
       await firePurchaseCapi(supabase, localOrderId, { source: "payu-webhook" });
     } else if (verdict === "FAILED") {
       // Only mark fresh pending orders as cancelled — never overwrite a confirmed order.
@@ -171,6 +173,7 @@ Deno.serve(async (req) => {
           .from("orders")
           .update({ status: "cancelled" })
           .eq("id", localOrderId)
+            .eq("store_id", storeId)
           .eq("status", "pending");
       }
     }
