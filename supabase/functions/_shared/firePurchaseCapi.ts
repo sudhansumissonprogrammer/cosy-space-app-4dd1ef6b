@@ -98,11 +98,17 @@ export async function firePurchaseCapi(
     }
 
     // 🚫 Never report Purchase for orders that aren't actually paid/confirmed.
-    // pending / cancelled / refunded / failed → Meta would count phantom revenue and
-    // flag the account for inflated conversion data. Only fire on real conversions.
+    // v8.70.0: tightened to the strict "money has reached us" set per merchant
+    // request. Any other status (pending, cancelled, refunded, failed, processing,
+    // shipped) is treated as not-yet-revenue — Meta must NEVER count it.
+    // - pending / cancelled / refunded / failed → no money, would be phantom revenue
+    // - processing / shipped → ambiguous (some flows mark these pre-payment)
+    // Once an order DOES enter a paid state, we fire EXACTLY ONCE via the
+    // meta_purchase_fired_at stamp below; subsequent status changes
+    // (confirmed → shipped → delivered) never re-fire.
     const status = String(order.status || "").toLowerCase();
     const PAID_STATUSES = new Set([
-      "paid", "confirmed", "partially_paid", "processing", "shipped", "delivered", "completed",
+      "paid", "confirmed", "partially_paid", "delivered", "completed",
     ]);
     if (!PAID_STATUSES.has(status)) {
       console.log(`[capi:${opts.source}] skip — status=${status}`, orderId);
