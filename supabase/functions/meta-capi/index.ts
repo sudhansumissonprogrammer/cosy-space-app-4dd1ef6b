@@ -158,7 +158,14 @@ function sanitizeCustomData(raw: unknown): CAPIEvent["custom_data"] | undefined 
       item_price: Number.isFinite(Number(x?.item_price)) ? Math.max(0, Math.min(1_000_000, Number(x.item_price))) : undefined,
     })).filter((x) => x.id);
   }
-  if (typeof r.currency === "string" && /^[A-Z]{3}$/.test(r.currency)) out.currency = r.currency;
+  // v8.69.0: always normalize currency to upper-case 3-letter ISO and default
+  // to INR. Old behaviour dropped "inr" / "Inr" / "" silently → Meta logged
+  // "invalid currency" warning on every Purchase + InitiateCheckout, dragging
+  // the pixel's quality score and starving the algo of conversion-value signal.
+  {
+    const cur = typeof r.currency === "string" ? r.currency.trim().toUpperCase() : "";
+    out.currency = /^[A-Z]{3}$/.test(cur) ? cur : "INR";
+  }
   if (Number.isFinite(Number(r.value))) out.value = Math.max(0, Math.min(1_000_000, Number(r.value)));
   if (Number.isFinite(Number(r.num_items))) out.num_items = Math.max(0, Math.min(999, Number(r.num_items)));
   return Object.keys(out).length ? out : undefined;
