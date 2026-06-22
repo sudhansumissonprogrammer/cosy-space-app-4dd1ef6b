@@ -231,16 +231,41 @@ export function generateEventId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+/**
+ * Normalize Meta Pixel payload so Events Manager never logs
+ * "invalid currency" / "invalid value" warnings.
+ * Keep in sync with sanitizeCustomData() in supabase/functions/meta-capi/index.ts.
+ */
+function sanitizePixelParams(params?: Record<string, any>): Record<string, any> | undefined {
+  if (!params || typeof params !== "object") return params;
+  const out: Record<string, any> = { ...params };
+  if ("currency" in out || "value" in out) {
+    const raw = typeof out.currency === "string" ? out.currency.trim().toUpperCase() : "";
+    out.currency = /^[A-Z]{3}$/.test(raw) ? raw : "INR";
+  }
+  if ("value" in out) {
+    const n = Number(out.value);
+    out.value = Number.isFinite(n) && n >= 0 ? n : 0;
+  }
+  if ("num_items" in out) {
+    const n = Math.floor(Number(out.num_items));
+    if (!Number.isFinite(n) || n < 0) delete out.num_items;
+    else out.num_items = n;
+  }
+  return out;
+}
+
 /** Standalone helper — call from anywhere (e.g. CartContext) */
 export function fbPixelTrack(eventName: string, params?: Record<string, any>, eventId?: string) {
   if (typeof window === "undefined") return;
   if (isNonProductionHost()) return;
   if (!hasMarketingConsent()) return;
   if (typeof window.fbq === "function") {
+    const clean = sanitizePixelParams(params);
     if (eventId) {
-      window.fbq("track", eventName, params, { eventID: eventId });
+      window.fbq("track", eventName, clean, { eventID: eventId });
     } else {
-      window.fbq("track", eventName, params);
+      window.fbq("track", eventName, clean);
     }
   }
 }
