@@ -82,8 +82,13 @@ function rateLimited(ip: string): boolean {
 // minute — Meta tracks per-account 4xx rates and flags "platform abuse" →
 // ad-account ban. Once a pixel returns 2 hard errors, skip it for 1 hour;
 // merchant fixing the config will naturally re-enable after the TTL.
-const BREAKER_TTL_MS = 60 * 60_000;
-const BREAKER_THRESHOLD = 2;
+// v8.69.0: loosened from 2 fails / 60 min to 8 fails / 10 min. The old setting
+// blacked out a whole pixel for an hour on just 2 transient Graph API hiccups,
+// silencing every PageView/ViewContent/AddToCart CAPI mirror — exactly the EMQ
+// signal a fresh ad account needs to exit learning phase. Hard config errors
+// (100 / 190 / 200 / 803) still trip the breaker, just with more headroom.
+const BREAKER_TTL_MS = 10 * 60_000;
+const BREAKER_THRESHOLD = 8;
 const BREAKER_HARD_CODES = new Set([100, 190, 200, 803]);
 const breakerMap = new Map<string, { fails: number; openUntil: number }>();
 function breakerOpen(pixelId: string): boolean {
