@@ -82,8 +82,13 @@ function rateLimited(ip: string): boolean {
 // minute — Meta tracks per-account 4xx rates and flags "platform abuse" →
 // ad-account ban. Once a pixel returns 2 hard errors, skip it for 1 hour;
 // merchant fixing the config will naturally re-enable after the TTL.
-const BREAKER_TTL_MS = 60 * 60_000;
-const BREAKER_THRESHOLD = 2;
+// v8.69.0: loosened from 2 fails / 60 min to 8 fails / 10 min. The old setting
+// blacked out a whole pixel for an hour on just 2 transient Graph API hiccups,
+// silencing every PageView/ViewContent/AddToCart CAPI mirror — exactly the EMQ
+// signal a fresh ad account needs to exit learning phase. Hard config errors
+// (100 / 190 / 200 / 803) still trip the breaker, just with more headroom.
+const BREAKER_TTL_MS = 10 * 60_000;
+const BREAKER_THRESHOLD = 8;
 const BREAKER_HARD_CODES = new Set([100, 190, 200, 803]);
 const breakerMap = new Map<string, { fails: number; openUntil: number }>();
 function breakerOpen(pixelId: string): boolean {
@@ -153,7 +158,14 @@ function sanitizeCustomData(raw: unknown): CAPIEvent["custom_data"] | undefined 
       item_price: Number.isFinite(Number(x?.item_price)) ? Math.max(0, Math.min(1_000_000, Number(x.item_price))) : undefined,
     })).filter((x) => x.id);
   }
-  if (typeof r.currency === "string" && /^[A-Z]{3}$/.test(r.currency)) out.currency = r.currency;
+  // v8.69.0: always normalize currency to upper-case 3-letter ISO and default
+  // to INR. Old behaviour dropped "inr" / "Inr" / "" silently → Meta logged
+  // "invalid currency" warning on every Purchase + InitiateCheckout, dragging
+  // the pixel's quality score and starving the algo of conversion-value signal.
+  {
+    const cur = typeof r.currency === "string" ? r.currency.trim().toUpperCase() : "";
+    out.currency = /^[A-Z]{3}$/.test(cur) ? cur : "INR";
+  }
   if (Number.isFinite(Number(r.value))) out.value = Math.max(0, Math.min(1_000_000, Number(r.value)));
   if (Number.isFinite(Number(r.num_items))) out.num_items = Math.max(0, Math.min(999, Number(r.num_items)));
   return Object.keys(out).length ? out : undefined;
