@@ -98,11 +98,17 @@ export async function firePurchaseCapi(
     }
 
     // 🚫 Never report Purchase for orders that aren't actually paid/confirmed.
-    // pending / cancelled / refunded / failed → Meta would count phantom revenue and
-    // flag the account for inflated conversion data. Only fire on real conversions.
+    // v8.70.0: tightened to the strict "money has reached us" set per merchant
+    // request. Any other status (pending, cancelled, refunded, failed, processing,
+    // shipped) is treated as not-yet-revenue — Meta must NEVER count it.
+    // - pending / cancelled / refunded / failed → no money, would be phantom revenue
+    // - processing / shipped → ambiguous (some flows mark these pre-payment)
+    // Once an order DOES enter a paid state, we fire EXACTLY ONCE via the
+    // meta_purchase_fired_at stamp below; subsequent status changes
+    // (confirmed → shipped → delivered) never re-fire.
     const status = String(order.status || "").toLowerCase();
     const PAID_STATUSES = new Set([
-      "paid", "confirmed", "partially_paid", "processing", "shipped", "delivered", "completed",
+      "paid", "confirmed", "partially_paid", "delivered", "completed",
     ]);
     if (!PAID_STATUSES.has(status)) {
       console.log(`[capi:${opts.source}] skip — status=${status}`, orderId);
@@ -289,14 +295,19 @@ export async function firePurchaseCapi(
     // Atomic DB claim BEFORE sending to Meta. Webhook + browser verify can hit
     // different edge isolates at the same time, so in-memory locks are not
     // enough. Only the first caller that flips the NULL stamp may send Purchase.
+    // v8.70.0: also re-check the status inside the same UPDATE — if a webhook
+    // races and cancels the order in the millisecond between our SELECT (above)
+    // and this UPDATE, the row will no longer match `status IN (paid_set)` and
+    // the claim returns zero rows. Prevents the rare "fired-then-cancelled" leak.
     const { data: claimed } = await supabase
       .from("orders")
       .update({ meta_purchase_fired_at: new Date().toISOString() })
       .eq("id", orderId)
       .is("meta_purchase_fired_at", null)
+      .in("status", ["paid", "confirmed", "partially_paid", "delivered", "completed"])
       .select("id");
     if (!claimed || claimed.length === 0) {
-      return { ok: true, reason: "already_fired" };
+      return { ok: true, reason: "already_fired_or_status_changed" };
     }
 
     // 7. Send to Meta — with 1 retry on 5xx (transient Meta blip).
