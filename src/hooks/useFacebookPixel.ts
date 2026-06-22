@@ -214,10 +214,11 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     (eventName: string, params?: Record<string, any>, eventId?: string) => {
       if (!pixelId || typeof window.fbq !== "function") return;
       if (!hasMarketingConsent()) return;
+      const clean = sanitizePixelParams(params);
       if (eventId) {
-        window.fbq("track", eventName, params, { eventID: eventId });
+        window.fbq("track", eventName, clean, { eventID: eventId });
       } else {
-        window.fbq("track", eventName, params);
+        window.fbq("track", eventName, clean);
       }
     },
     [pixelId]
