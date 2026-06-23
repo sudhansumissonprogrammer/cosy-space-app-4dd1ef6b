@@ -195,6 +195,26 @@ export default function ProductDetail() {
       }).then((r: any) => r?.data).catch(() => null);
 
       const edge = await edgePromise;
+      if (edge?.product) {
+        // Edge/inline PDP cache can be older than a just-saved product video.
+        // Keep the fast edge paint, then replace it with the fresh RPC row if
+        // video fields or updated_at changed.
+        rpcPromise.then((fresh: any) => {
+          if (!fresh?.product || fresh.product.id !== edge.product.id) return;
+          const edgeProduct = edge.product as any;
+          const freshProduct = fresh.product as any;
+          const edgeVideo = edgeProduct.video_url || null;
+          const freshVideo = freshProduct.video_url || null;
+          const edgeUpdated = edgeProduct.updated_at ? Date.parse(edgeProduct.updated_at) : 0;
+          const freshUpdated = freshProduct.updated_at ? Date.parse(freshProduct.updated_at) : 0;
+          if (edgeVideo !== freshVideo || freshUpdated > edgeUpdated || !("video_url" in edgeProduct)) {
+            if (fresh.images) queryClient.setQueryData(["product-images", freshProduct.id], fresh.images);
+            if (fresh.variants) queryClient.setQueryData(["product-variants", freshProduct.id], fresh.variants);
+            if (fresh.shipping_config) queryClient.setQueryData(["storefront-shipping-config", store.id], fresh.shipping_config);
+            queryClient.setQueryData(["storefront-product", store.id, canonicalProductSlug], freshProduct);
+          }
+        }).catch(() => {});
+      }
       let rpc = edge ?? (await rpcPromise);
 
       if (!rpc?.product && productSlugPrefix && productSlugPrefix !== canonicalProductSlug) {
@@ -268,6 +288,7 @@ export default function ProductDetail() {
       return getCachedProduct();
     },
     enabled: !!store.id && !!canonicalProductSlug,
+    initialDataUpdatedAt: 0,
     staleTime: 10 * 60 * 1000,
   });
 
