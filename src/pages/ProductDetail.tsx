@@ -1615,7 +1615,7 @@ function ImageGallery({
             ref={emblaRef}
             className="overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none"
           >
-            <div className="flex touch-pan-y">
+            <div className="flex touch-pan-y items-start">
               {renderSlides.map((slide, i) => {
                 const realIdx = len === 1 ? 0 : i;
                 if (slide.kind === "video") {
