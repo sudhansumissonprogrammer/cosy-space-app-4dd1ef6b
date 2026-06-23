@@ -22,7 +22,8 @@ export const PRODUCT_CARD_FIELDS =
 export const PRODUCT_PDP_FIELDS =
   PRODUCT_CARD_FIELDS +
   ",description,sku,currency,meta_title,meta_description,og_image_url" +
-  ",partial_payment_enabled,partial_payment_type,partial_payment_value";
+  ",partial_payment_enabled,partial_payment_type,partial_payment_value" +
+  ",video_url,video_poster_url";
 
 /** Fields for product_reviews list on PDP. */
 export const PRODUCT_REVIEW_FIELDS =
