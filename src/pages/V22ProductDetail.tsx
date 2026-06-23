@@ -15,7 +15,7 @@ import {
   ArrowLeft, Package, ChevronLeft, ChevronRight, ShoppingBag, ShoppingCart,
   Share2, Copy, Facebook, Twitter, X, ZoomIn, Star, Shield, Truck, RotateCcw,
   Clock, Eye, Flame, Heart, Minus, Plus, Check, ChevronDown, CreditCard, ThumbsUp,
-  Lock, Timer, Zap, ShieldCheck, Maximize2
+  Lock, Timer, Zap, ShieldCheck, Maximize2, Play
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -189,6 +189,23 @@ export default function V22ProductDetail() {
       }).then((r: any) => r?.data).catch(() => null);
 
       const edge = await edgePromise;
+      if (edge?.product) {
+        rpcPromise.then((fresh: any) => {
+          if (!fresh?.product || fresh.product.id !== edge.product.id) return;
+          const edgeProduct = edge.product as any;
+          const freshProduct = fresh.product as any;
+          const edgeVideo = edgeProduct.video_url || null;
+          const freshVideo = freshProduct.video_url || null;
+          const edgeUpdated = edgeProduct.updated_at ? Date.parse(edgeProduct.updated_at) : 0;
+          const freshUpdated = freshProduct.updated_at ? Date.parse(freshProduct.updated_at) : 0;
+          if (edgeVideo !== freshVideo || freshUpdated > edgeUpdated || !("video_url" in edgeProduct)) {
+            if (fresh.images) queryClient.setQueryData(["product-images", freshProduct.id], fresh.images);
+            if (fresh.variants) queryClient.setQueryData(["product-variants", freshProduct.id], fresh.variants);
+            if (fresh.shipping_config) queryClient.setQueryData(["storefront-shipping-config", store.id], fresh.shipping_config);
+            queryClient.setQueryData(["storefront-product", store.id, canonicalProductSlug], freshProduct);
+          }
+        }).catch(() => {});
+      }
       let rpc = edge ?? (await rpcPromise);
 
       if (!rpc?.product && productSlugPrefix && productSlugPrefix !== canonicalProductSlug) {
@@ -262,6 +279,7 @@ export default function V22ProductDetail() {
       return getCachedProduct();
     },
     enabled: !!store.id && !!canonicalProductSlug,
+    initialDataUpdatedAt: 0,
     staleTime: 2 * 60 * 1000,
   });
 
@@ -455,6 +473,15 @@ export default function V22ProductDetail() {
     return imgs;
   })();
 
+  const productVideo = (() => {
+    const p = product as any;
+    if (!p?.video_url) return null;
+    return {
+      url: p.video_url as string,
+      poster: (p.video_poster_url as string | null) || allImages[0] || "",
+    };
+  })();
+
   const fakeReviews = useMemo(() => [], []);
 
   // Fetch real reviews
@@ -632,6 +659,7 @@ export default function V22ProductDetail() {
         <ImageGallery
           key={product.id}
           images={allImages}
+          video={productVideo}
           productName={product.name}
           hasDiscount={hasDiscount}
           discountPct={discountPct}
@@ -1428,11 +1456,36 @@ function ShareButtons({ productName, storeSlug, productSlugOrId }: { productName
 }
 
 /* ── Image Gallery with Zoom Icon + Dots Inside Image ── */
-function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }: { images: string[]; productName: string; hasDiscount: number | boolean | null; discountPct: number; onShare?: () => void }) {
+function ImageGallery({
+  images,
+  video,
+  productName,
+  hasDiscount,
+  discountPct,
+  onShare,
+}: {
+  images: string[];
+  video?: { url: string; poster: string } | null;
+  productName: string;
+  hasDiscount: number | boolean | null;
+  discountPct: number;
+  onShare?: () => void;
+}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
-  const len = images.length;
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  type Slide =
+    | { kind: "image"; url: string }
+    | { kind: "video"; url: string; poster: string };
+  const slides: Slide[] = (() => {
+    const out: Slide[] = [];
+    if (images[0]) out.push({ kind: "image", url: images[0] });
+    if (video?.url) out.push({ kind: "video", url: video.url, poster: video.poster || images[0] || "" });
+    for (let i = 1; i < images.length; i++) out.push({ kind: "image", url: images[i] });
+    return out;
+  })();
+  const len = slides.length;
   const canLoop = len > 1;
 
   const [emblaRef, embla] = useEmblaCarousel({
@@ -1446,7 +1499,11 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
   // Sync activeIndex with Embla
   useEffect(() => {
     if (!embla) return;
-    const onSelect = () => setActiveIndex(embla.selectedScrollSnap());
+    const onSelect = () => {
+      const i = embla.selectedScrollSnap();
+      setActiveIndex(i);
+      if (slides[i]?.kind !== "video") setVideoPlaying(false);
+    };
     embla.on("select", onSelect);
     embla.on("reInit", onSelect);
     onSelect();
@@ -1454,17 +1511,19 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
       embla.off("select", onSelect);
       embla.off("reInit", onSelect);
     };
-  }, [embla]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [embla, slides.length]);
 
-  // Re-init on image-list change — only reset loaded state when URLs actually change
-  const imagesKey = images.join("|");
+  // Re-init on slide-list change — only reset loaded state when URLs actually change
+  const slidesKey = slides.map((s) => (s.kind === "video" ? "v:" + s.url : "i:" + s.url)).join("|");
   useEffect(() => {
     if (embla) embla.reInit();
     setImageLoaded({});
+    setVideoPlaying(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imagesKey, embla]);
+  }, [slidesKey, embla]);
 
-  // Smart preload: only active + 2 neighbours (handles big galleries)
+  // Smart preload: only active + 2 neighbours (image slides only — videos use preload="none")
   useEffect(() => {
     if (len === 0) return;
     const want = new Set<number>([activeIndex]);
@@ -1473,12 +1532,15 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
       want.add((activeIndex - 1 + len) % len);
     }
     want.forEach((idx) => {
+      const s = slides[idx];
+      if (!s || s.kind !== "image") return;
       if (imageLoaded[idx]) return;
       const img = new Image();
       img.onload = () => setImageLoaded((prev) => (prev[idx] ? prev : { ...prev, [idx]: true }));
-      img.src = optimizeImageUrl(images[idx], 800);
+      img.src = optimizeImageUrl(s.url, 800);
     });
-  }, [activeIndex, imagesKey, len, imageLoaded]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex, slidesKey, len, imageLoaded]);
 
   const scrollTo = useCallback((i: number) => embla?.scrollTo(i), [embla]);
   const scrollPrev = useCallback(() => embla?.scrollPrev(), [embla]);
@@ -1494,8 +1556,16 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
     );
   }
 
-  // For single-image products, render a fake 2-slide loop so user can still swipe and see same image cycle
-  const renderImages = len === 1 ? [images[0], images[0]] : images;
+  // For single-slide products, render a fake 2-slide loop so user can still swipe
+  const renderSlides: Slide[] = len === 1 ? [slides[0], slides[0]] : slides;
+
+  // Lightbox only handles images — strip video slides
+  const lightboxImages = slides.filter((s): s is Extract<Slide, { kind: "image" }> => s.kind === "image").map((s) => s.url);
+  const lightboxInitial = (() => {
+    const cur = slides[activeIndex];
+    if (cur?.kind === "image") return lightboxImages.findIndex((u) => u === cur.url);
+    return 0;
+  })();
 
   return (
     <>
@@ -1527,18 +1597,39 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
             className="overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none"
           >
             <div className="flex touch-pan-y">
-              {renderImages.map((src, i) => {
+              {renderSlides.map((slide, i) => {
                 const realIdx = len === 1 ? 0 : i;
+                if (slide.kind === "video") {
+                  const isActive = realIdx === activeIndex;
+                  return (
+                    <div
+                      key={`${i}-vid-${slide.url}`}
+                      className="relative flex-[0_0_100%] min-w-0 bg-black"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <video
+                        src={slide.url}
+                        poster={slide.poster ? optimizeImageUrl(slide.poster, 800) : undefined}
+                        preload={isActive && videoPlaying ? "auto" : "none"}
+                        playsInline
+                        controls
+                        className="w-full h-auto max-h-[80vh] object-contain bg-black"
+                        onPlay={() => setVideoPlaying(true)}
+                        onPause={() => setVideoPlaying(false)}
+                      />
+                    </div>
+                  );
+                }
                 const loaded = imageLoaded[realIdx];
                 return (
                   <div
-                    key={`${i}-${src}`}
+                    key={`${i}-${slide.url}`}
                     className="relative flex-[0_0_100%] min-w-0"
                     onClick={() => setLightboxOpen(true)}
                   >
                     {!loaded && <Skeleton className="aspect-[4/5] sm:aspect-square w-full rounded-none" />}
                     <img
-                      src={optimizeImageUrl(src, 800)}
+                      src={optimizeImageUrl(slide.url, 800)}
                       alt={productName}
                       className={`w-full h-auto max-h-[80vh] object-contain bg-muted/30 transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                       decoding="async"
@@ -1582,7 +1673,7 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
           {/* Dots */}
           {len > 1 && (
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5 rounded-full bg-black/30 backdrop-blur-sm px-2.5 py-1.5">
-              {images.map((_, i) => (
+              {slides.map((_, i) => (
                 <button
                   key={i}
                   onClick={(e) => { e.stopPropagation(); scrollTo(i); }}
@@ -1617,26 +1708,39 @@ function ImageGallery({ images, productName, hasDiscount, discountPct, onShare }
         {/* Thumbnail strip — mobile + desktop */}
         {len > 1 && (
           <div className="flex gap-2 overflow-x-auto scrollbar-hide px-3 sm:px-0.5 py-2 sm:py-1">
-            {images.map((img, i) => (
-              <button
-                key={i}
-                onClick={() => scrollTo(i)}
-                className={`h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-[transform,opacity,colors,box-shadow] ${
-                  i === activeIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-muted-foreground/30"
-                }`}
-              >
-                <img src={optimizeImageUrl(img, 120)} alt="" className="h-full w-full object-cover" loading="lazy" />
-              </button>
-            ))}
+            {slides.map((slide, i) => {
+              const thumbSrc = slide.kind === "video" ? (slide.poster || "") : slide.url;
+              return (
+                <button
+                  key={i}
+                  onClick={() => scrollTo(i)}
+                  className={`relative h-14 w-14 sm:h-16 sm:w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-[transform,opacity,colors,box-shadow] ${
+                    i === activeIndex ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-muted-foreground/30"
+                  }`}
+                  aria-label={slide.kind === "video" ? "Play product video" : `View image ${i + 1}`}
+                >
+                  {thumbSrc ? (
+                    <img src={optimizeImageUrl(thumbSrc, 120)} alt="" className="h-full w-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="h-full w-full bg-muted" />
+                  )}
+                  {slide.kind === "video" && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/35">
+                      <Play className="h-4 w-4 text-white drop-shadow" fill="currentColor" />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {lightboxOpen && createPortal(
+      {lightboxOpen && lightboxImages.length > 0 && createPortal(
         <FullscreenLightbox
-          images={images}
+          images={lightboxImages}
           productName={productName}
-          initialIndex={activeIndex}
+          initialIndex={Math.max(0, lightboxInitial)}
           onClose={() => setLightboxOpen(false)}
         />,
         document.body

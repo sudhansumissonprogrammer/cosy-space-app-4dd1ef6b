@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft, Search, ShoppingCart, Clock, ChevronDown, ChevronUp,
   Zap, IndianRupee, Package, Plus, Minus, Share2, Star,
+  Play,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -148,6 +149,20 @@ export default function V19ProductDetail() {
   });
 
   const images = useMemo(() => (product ? resolveProductImages(product) : []), [product]);
+  const gallerySlides = useMemo(() => {
+    const slides: Array<{ kind: "image"; url: string } | { kind: "video"; url: string; poster: string }> = [];
+    if (images[0]) slides.push({ kind: "image", url: images[0] });
+    if ((product as any)?.video_url) {
+      slides.push({
+        kind: "video",
+        url: (product as any).video_url,
+        poster: (product as any).video_poster_url || images[0] || "",
+      });
+    }
+    for (let i = 1; i < images.length; i++) slides.push({ kind: "image", url: images[i] });
+    return slides;
+  }, [images, product]);
+  const lightboxImages = useMemo(() => gallerySlides.filter((s): s is { kind: "image"; url: string } => s.kind === "image").map((s) => s.url), [gallerySlides]);
 
   // Track recently viewed (only after product loads)
   useEffect(() => {
@@ -313,17 +328,26 @@ export default function V19ProductDetail() {
 
       {/* Image gallery — swipeable with snap */}
       <div className="relative bg-white">
-        {images.length > 0 && <ZoomHint onClick={() => setZoomOpen(true)} />}
+        {lightboxImages.length > 0 && <ZoomHint onClick={() => setZoomOpen(true)} />}
         <div
           ref={galleryRef}
           onScroll={onGalleryScroll}
           className="v19pdp-snap v19pdp-noscrollbar flex overflow-x-auto"
         >
-          {(images.length ? images : [null]).map((img, i) => (
+          {(gallerySlides.length ? gallerySlides : [null]).map((slide, i) => (
             <div key={i} className="flex-shrink-0 w-full aspect-square bg-white flex items-center justify-center">
-              {img ? (
+              {slide?.kind === "video" ? (
+                <video
+                  src={slide.url}
+                  poster={slide.poster ? optimizeImageUrl(slide.poster, 800, 90) : undefined}
+                  className="h-full w-full object-contain bg-black"
+                  controls
+                  playsInline
+                  preload="metadata"
+                />
+              ) : slide?.kind === "image" ? (
                 <img
-                  src={optimizeImageUrl(img, 800, 90)}
+                  src={optimizeImageUrl(slide.url, 800, 90)}
                   alt={`${product.name} ${i + 1}`}
                   className="max-h-full max-w-full object-contain p-6 cursor-zoom-in"
                   loading={i === 0 ? "eager" : "lazy"}
@@ -338,9 +362,9 @@ export default function V19ProductDetail() {
         </div>
 
         {/* Pagination dots */}
-        {images.length > 1 && (
+        {gallerySlides.length > 1 && (
           <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
-            {images.map((_, i) => (
+            {gallerySlides.map((_, i) => (
               <button
                 key={i}
                 onClick={() => scrollToImage(i)}
@@ -357,24 +381,36 @@ export default function V19ProductDetail() {
       </div>
 
       {/* Thumbnail strip */}
-      {images.length > 1 && (
+        {gallerySlides.length > 1 && (
         <div className="px-3 py-3 border-t border-gray-100">
           <div className="v19pdp-noscrollbar flex gap-2 overflow-x-auto">
-            {images.map((img, i) => (
+            {gallerySlides.map((slide, i) => {
+              const thumbSrc = slide.kind === "video" ? slide.poster : slide.url;
+              return (
               <button
                 key={i}
                 onClick={() => scrollToImage(i)}
-                className="flex-shrink-0 h-14 w-14 rounded-lg border-2 overflow-hidden bg-gray-50"
+                className="relative flex-shrink-0 h-14 w-14 rounded-lg border-2 overflow-hidden bg-gray-50"
                 style={{ borderColor: i === galleryIdx ? "var(--storefront-primary, #036B52)" : "#e5e7eb" }}
               >
-                <img
-                  src={optimizeImageUrl(img, 120, 80)}
-                  alt={`thumb ${i + 1}`}
-                  className="h-full w-full object-contain p-1"
-                  loading="lazy"
-                />
+                {thumbSrc ? (
+                  <img
+                    src={optimizeImageUrl(thumbSrc, 120, 80)}
+                    alt={`thumb ${i + 1}`}
+                    className="h-full w-full object-contain p-1"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="h-full w-full bg-gray-100" />
+                )}
+                {slide.kind === "video" && (
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/35">
+                    <Play className="h-4 w-4 text-white" fill="currentColor" />
+                  </span>
+                )}
               </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -683,8 +719,8 @@ export default function V19ProductDetail() {
       {zoomOpen && (
         <Suspense fallback={null}>
           <ZoomableGallery
-            images={images}
-            initialIndex={galleryIdx}
+            images={lightboxImages}
+            initialIndex={Math.max(0, Math.min(galleryIdx, lightboxImages.length - 1))}
             alt={product.name}
             open={zoomOpen}
             onClose={() => setZoomOpen(false)}
