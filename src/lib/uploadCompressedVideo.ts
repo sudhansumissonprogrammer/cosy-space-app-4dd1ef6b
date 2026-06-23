@@ -1,17 +1,18 @@
 /**
- * uploadCompressedVideo — client-side video compression + R2 upload.
+ * uploadCompressedVideo — direct R2 upload with a canvas-generated poster.
  *
- * Pipeline (lazy-loaded ffmpeg.wasm, single-threaded, no COOP/COEP needed):
- *   1. Validate (≤60s, ≤100MB, video/*)
- *   2. Transcode → H.264 720p, CRF 26, AAC 96k mono, +faststart
- *   3. Extract first-frame JPEG as poster
- *   4. Upload both to R2 via r2-upload edge function
+ * Previous implementation used ffmpeg.wasm (single-threaded, ~30MB core
+ * fetched from unpkg) which frequently hung on Loading compressor… or
+ * crashed in older mobile WebViews — videos never reached R2. Modern
+ * phone cameras already record H.264 MP4, so we now:
  *
- * The @ffmpeg/* chunks are imported dynamically so they never touch any
- * other dashboard page or the storefront bundle — only loaded when a
- * merchant actually picks a video file.
+ *   1. Validate file (≤60s by default, ≤100MB, video/*)
+ *   2. Grab a poster frame via <video> + <canvas> (instant, no WASM)
+ *   3. Upload BOTH to R2 via the r2-upload edge function
+ *
+ * Net: works on every browser, no third-party CDN dependency, and the
+ * "uploading" stage starts immediately instead of after a 30MB download.
  */
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface VideoUploadResult {
@@ -24,7 +25,7 @@ export interface VideoUploadResult {
 export interface VideoUploadOptions {
   userId: string;
   storeId: string;
-  /** Called with 0..1 during compression */
+  /** Called with 0..1 during upload */
   onProgress?: (pct: number) => void;
   /** Called with a stage label for UI */
   onStage?: (stage: "loading-ffmpeg" | "compressing" | "uploading-video" | "uploading-poster") => void;
@@ -34,42 +35,89 @@ export interface VideoUploadOptions {
   maxRawBytes?: number;
 }
 
-let _ffmpegPromise: Promise<any> | null = null;
-
-async function loadFfmpeg(onStage?: VideoUploadOptions["onStage"]) {
-  if (_ffmpegPromise) return _ffmpegPromise;
-  onStage?.("loading-ffmpeg");
-  _ffmpegPromise = (async () => {
-    const [{ FFmpeg }, { toBlobURL }] = await Promise.all([
-      import("@ffmpeg/ffmpeg"),
-      import("@ffmpeg/util"),
-    ]);
-    const ffmpeg = new FFmpeg();
-    // Single-threaded core — works without SharedArrayBuffer / COOP-COEP.
-    const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd";
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-    });
-    return ffmpeg;
-  })();
-  return _ffmpegPromise;
+interface VideoMeta {
+  duration: number;
+  width: number;
+  height: number;
 }
 
-async function getDuration(file: File): Promise<number> {
-  return new Promise((resolve) => {
+function probeVideo(file: File): Promise<VideoMeta> {
+  return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const v = document.createElement("video");
     v.preload = "metadata";
+    v.muted = true;
+    v.playsInline = true;
     v.src = url;
+    const cleanup = () => URL.revokeObjectURL(url);
     v.onloadedmetadata = () => {
-      URL.revokeObjectURL(url);
-      resolve(v.duration || 0);
+      const meta = {
+        duration: v.duration || 0,
+        width: v.videoWidth || 0,
+        height: v.videoHeight || 0,
+      };
+      cleanup();
+      resolve(meta);
     };
     v.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(0);
+      cleanup();
+      reject(new Error("Could not read video file"));
     };
+  });
+}
+
+async function generatePoster(file: File): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement("video");
+    v.preload = "auto";
+    v.muted = true;
+    v.playsInline = true;
+    v.crossOrigin = "anonymous";
+    v.src = url;
+
+    let done = false;
+    const finish = (blob: Blob | null) => {
+      if (done) return;
+      done = true;
+      URL.revokeObjectURL(url);
+      resolve(blob);
+    };
+
+    v.onloadeddata = () => {
+      try {
+        // Seek a bit in so we don't get a black first frame.
+        const target = Math.min(0.1, (v.duration || 1) / 10);
+        v.currentTime = target;
+      } catch {
+        finish(null);
+      }
+    };
+    v.onseeked = () => {
+      try {
+        const maxW = 720;
+        const ratio = v.videoWidth && v.videoHeight ? v.videoHeight / v.videoWidth : 0.5625;
+        const w = Math.min(maxW, v.videoWidth || maxW);
+        const h = Math.round(w * ratio);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return finish(null);
+        ctx.drawImage(v, 0, 0, w, h);
+        canvas.toBlob(
+          (blob) => finish(blob),
+          "image/jpeg",
+          0.82,
+        );
+      } catch {
+        finish(null);
+      }
+    };
+    v.onerror = () => finish(null);
+
+    // Hard timeout — if poster can't be made, upload video without it.
+    setTimeout(() => finish(null), 8000);
   });
 }
 
@@ -81,7 +129,7 @@ function genPath(userId: string, storeId: string, ext: string): string {
 
 async function uploadToR2(file: File | Blob, name: string, bucket: string, path: string): Promise<string> {
   const form = new FormData();
-  const f = file instanceof File ? file : new File([file], name, { type: file.type });
+  const f = file instanceof File ? file : new File([file], name, { type: file.type || "application/octet-stream" });
   form.append("file", f);
   form.append("bucket", bucket);
   form.append("path", path);
@@ -89,6 +137,15 @@ async function uploadToR2(file: File | Blob, name: string, bucket: string, path:
   if (error) throw new Error(`Upload failed: ${error.message}`);
   if (!data?.publicUrl) throw new Error("Upload failed: no URL returned");
   return data.publicUrl as string;
+}
+
+function inferExt(file: File): string {
+  const m = file.name.match(/\.([a-z0-9]+)$/i);
+  if (m) return m[1].toLowerCase();
+  const t = (file.type || "").toLowerCase();
+  if (t.includes("quicktime")) return "mov";
+  if (t.includes("webm")) return "webm";
+  return "mp4";
 }
 
 export async function uploadCompressedVideo(
@@ -99,86 +156,53 @@ export async function uploadCompressedVideo(
   const maxBytes = opts.maxRawBytes ?? 100 * 1024 * 1024;
 
   if (!file.type.startsWith("video/")) throw new Error("Please choose a video file");
-  if (file.size > maxBytes) throw new Error(`Video must be under ${Math.round(maxBytes / 1024 / 1024)}MB`);
-
-  const duration = await getDuration(file);
-  if (duration > maxDur + 1) {
-    throw new Error(`Video must be under ${maxDur} seconds (yours is ${Math.round(duration)}s)`);
+  if (file.size > maxBytes) {
+    throw new Error(`Video must be under ${Math.round(maxBytes / 1024 / 1024)}MB (yours is ${(file.size / 1024 / 1024).toFixed(1)}MB)`);
   }
 
-  const ffmpeg = await loadFfmpeg(opts.onStage);
-  const { fetchFile } = await import("@ffmpeg/util");
-
-  opts.onStage?.("compressing");
-
-  const inputName = "in" + (file.name.match(/\.[a-z0-9]+$/i)?.[0] || ".mp4");
-  const outName = "out.mp4";
-  const posterName = "poster.jpg";
-
-  // Wire progress
-  const progHandler = ({ progress }: { progress: number }) => {
-    // ffmpeg progress can briefly exceed 1; clamp
-    const p = Math.max(0, Math.min(1, progress));
-    opts.onProgress?.(p);
-  };
+  let meta: VideoMeta;
   try {
-    (ffmpeg as any).on?.("progress", progHandler);
-
-    await ffmpeg.writeFile(inputName, await fetchFile(file));
-
-    // Transcode: H.264 720p CRF 26, AAC 96k mono, +faststart, hard cap to maxDur
-    await ffmpeg.exec([
-      "-i", inputName,
-      "-t", String(maxDur),
-      "-vf", "scale='min(720,iw)':-2",
-      "-c:v", "libx264",
-      "-preset", "veryfast",
-      "-crf", "26",
-      "-pix_fmt", "yuv420p",
-      "-c:a", "aac",
-      "-b:a", "96k",
-      "-ac", "1",
-      "-movflags", "+faststart",
-      "-y", outName,
-    ]);
-
-    // Extract first-frame poster
-    await ffmpeg.exec([
-      "-i", outName,
-      "-ss", "0",
-      "-frames:v", "1",
-      "-vf", "scale='min(720,iw)':-2",
-      "-q:v", "5",
-      "-y", posterName,
-    ]);
-
-    const videoBytes = (await ffmpeg.readFile(outName)) as Uint8Array;
-    const posterBytes = (await ffmpeg.readFile(posterName)) as Uint8Array;
-
-    // Cleanup virtual FS
-    try { await ffmpeg.deleteFile(inputName); } catch {}
-    try { await ffmpeg.deleteFile(outName); } catch {}
-    try { await ffmpeg.deleteFile(posterName); } catch {}
-
-    opts.onStage?.("uploading-video");
-    const videoBuf = new Uint8Array(videoBytes).buffer;
-    const videoBlob = new Blob([videoBuf], { type: "video/mp4" });
-    const videoPath = genPath(opts.userId, opts.storeId, "mp4");
-    const videoUrl = await uploadToR2(videoBlob, "video.mp4", "product-videos", videoPath);
-
-    opts.onStage?.("uploading-poster");
-    const posterBuf = new Uint8Array(posterBytes).buffer;
-    const posterBlob = new Blob([posterBuf], { type: "image/jpeg" });
-    const posterPath = genPath(opts.userId, opts.storeId, "jpg");
-    const posterUrl = await uploadToR2(posterBlob, "poster.jpg", "product-videos", posterPath);
-
-    return {
-      videoUrl,
-      posterUrl,
-      originalBytes: file.size,
-      compressedBytes: videoBytes.byteLength,
-    };
-  } finally {
-    try { (ffmpeg as any).off?.("progress", progHandler); } catch {}
+    meta = await probeVideo(file);
+  } catch (e: any) {
+    throw new Error(e?.message || "Could not read video file");
   }
+  if (meta.duration && meta.duration > maxDur + 1) {
+    throw new Error(`Video must be under ${maxDur} seconds (yours is ${Math.round(meta.duration)}s)`);
+  }
+
+  // Poster (best effort — never blocks the upload)
+  opts.onStage?.("compressing");
+  opts.onProgress?.(0.1);
+  const posterBlob = await generatePoster(file);
+  opts.onProgress?.(0.3);
+
+  // Upload video
+  opts.onStage?.("uploading-video");
+  const ext = inferExt(file);
+  const videoPath = genPath(opts.userId, opts.storeId, ext);
+  const videoUrl = await uploadToR2(file, file.name, "product-videos", videoPath);
+  opts.onProgress?.(0.85);
+
+  // Upload poster (or fall back to video URL)
+  let posterUrl = videoUrl;
+  if (posterBlob) {
+    opts.onStage?.("uploading-poster");
+    try {
+      const posterPath = genPath(opts.userId, opts.storeId, "jpg");
+      posterUrl = await uploadToR2(posterBlob, "poster.jpg", "product-videos", posterPath);
+    } catch {
+      // non-fatal: keep video, no poster
+      posterUrl = "";
+    }
+  } else {
+    posterUrl = "";
+  }
+  opts.onProgress?.(1);
+
+  return {
+    videoUrl,
+    posterUrl,
+    originalBytes: file.size,
+    compressedBytes: file.size,
+  };
 }
