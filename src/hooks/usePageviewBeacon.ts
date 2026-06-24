@@ -173,8 +173,11 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
           body: payload,
         })
           .then((r) => {
-            if (r.status === 204) return; // edge function inserted it
-            writeLegacy(); // anything else → direct table fallback
+            // The ingest function may return 200 or 204 on success depending on
+            // runtime/deploy version. Treat any 2xx as inserted; otherwise the
+            // legacy fallback double-counts the same pageview ~700ms later.
+            if (r.ok) return;
+            writeLegacy();
           })
           .catch(() => writeLegacy());
       } catch {
