@@ -61,7 +61,7 @@ export default function ProductCardStyle10({ product, slug, store, priority = fa
 
   return (
     <div
-      className="group relative flex flex-col rounded-lg overflow-hidden cursor-pointer transition-shadow hover:shadow-lg"
+      className="group relative flex flex-col rounded-lg overflow-hidden cursor-pointer transition-[box-shadow,transform] duration-200 hover:shadow-lg hover:-translate-y-0.5"
       style={{
         backgroundColor: "var(--storefront-bg, hsl(var(--card)))",
         border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)",

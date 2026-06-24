@@ -84,14 +84,14 @@ export function TopReviewsStrip({ reviews }: { reviews: any[] }) {
   const top = (reviews || []).slice(0, 3);
   if (!top.length) return null;
   return (
-    <div className="border-t border-gray-100 pt-4 pb-2">
+    <div className="pt-4 pb-2" style={{ boxShadow: "inset 0 1px 0 rgba(0,0,0,0.06)" }}>
       <div className="px-4 mb-2 flex items-center gap-2">
         <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
         <h3 className="text-[14px] font-extrabold text-gray-900">What people say</h3>
       </div>
       <div className="flex gap-2.5 overflow-x-auto px-4 pb-2 no-scrollbar">
         {top.map((r) => (
-          <div key={r.id} className="shrink-0 w-[78%] max-w-[280px] rounded-xl border border-gray-100 bg-gray-50 p-3">
+          <div key={r.id} className="sf-card shrink-0 w-[78%] max-w-[280px] rounded-xl bg-gray-50 p-3">
             <div className="flex items-center gap-1.5 mb-1.5">
               <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold text-white bg-emerald-600">
                 {r.rating} <Star className="h-2.5 w-2.5 fill-white text-white" />
@@ -127,7 +127,7 @@ export function BundleCard({
   const saving = Math.round(bundleTotal * 0.05); // visual hint of bundle saving (5%)
 
   return (
-    <div className="mx-4 my-4 p-3 rounded-xl border border-gray-200 bg-white">
+    <div className="sf-card mx-4 my-4 p-3 rounded-xl bg-white">
       <div className="text-[13px] font-extrabold text-gray-900 mb-2">Frequently bought together</div>
       <div className="flex items-center gap-2 mb-3">
         {items.map((p, i) => (

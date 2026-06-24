@@ -47,14 +47,15 @@ export default function TwoRowCircleCarouselCategories({ categories, storeSlug }
   return (
     <div className="relative group/carousel">
       {canLeft && (
-        <button onClick={() => scroll(-1)} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover/carousel:opacity-100 transition-opacity" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", border: "1px solid var(--border)" }} aria-label="Scroll left">
+        <button onClick={() => scroll(-1)} className="sf-hit-40 absolute left-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover/carousel:opacity-100 transition-opacity" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", border: "1px solid var(--border)" }} aria-label="Scroll left">
           <ChevronLeft className="h-4 w-4" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
         </button>
       )}
       {canRight && (
-        <button onClick={() => scroll(1)} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover/carousel:opacity-100 transition-opacity" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", border: "1px solid var(--border)" }} aria-label="Scroll right">
+        <button onClick={() => scroll(1)} className="sf-hit-40 absolute right-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover/carousel:opacity-100 transition-opacity" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", border: "1px solid var(--border)" }} aria-label="Scroll right">
           <ChevronRight className="h-4 w-4" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
         </button>
+
       )}
       <div ref={scrollRef} className="overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
         <div className="flex gap-3 sm:gap-4 w-max">
