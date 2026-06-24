@@ -1004,3 +1004,201 @@
   .skeleton-shimmer::after { animation: none; opacity: 0; }
   .skeleton-shimmer { opacity: 0.7; }
 }
+
+/* ============================================================
+ * Storefront polish layer — make-interfaces-feel-better skill
+ * Scope: every storefront page (wrapped in .storefront-font).
+ * Dashboard/admin/landing are untouched.
+ * ============================================================ */
+
+/* P0.1 — Tabular numbers on every dynamic number surface.
+ * Prevents layout shift on prices, qty, badges, timers, countdowns. */
+.storefront-font .sf-num,
+.storefront-font [data-sf-num],
+.storefront-font [data-cart-count],
+.storefront-font [data-price],
+.storefront-font .tabular-nums,
+.storefront-font [class*="price-"],
+.storefront-font [class*="-price"],
+.storefront-font [class*="Price"] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* P0.2 — Text wrapping. Balance for headings, pretty for prose. */
+.storefront-font h1,
+.storefront-font h2,
+.storefront-font h3,
+.storefront-font h4 {
+  text-wrap: balance;
+}
+.storefront-font p,
+.storefront-font .product-description,
+.storefront-font [data-sf-prose] {
+  text-wrap: pretty;
+}
+
+/* P0.3 — Tactile press feedback on every storefront button.
+ * Mobile gets a subtle 0.96 squish; desktop keeps it too (no harm).
+ * Opt-out via data-no-press on the element. */
+.storefront-font button,
+.storefront-font [role="button"],
+.storefront-font .sf-press {
+  transition-property: transform, opacity, background-color, box-shadow,
+    border-color, color;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+.storefront-font button:not([data-no-press]):not(:disabled):active,
+.storefront-font [role="button"]:not([data-no-press]):active,
+.storefront-font .sf-press:active {
+  transform: scale(0.96);
+}
+
+/* P0.5 — Soft layered card shadow utility, replacing hard borders.
+ * Opt-in via .sf-card so existing theme cards keep their look unless adopted. */
+.storefront-font .sf-card {
+  border: 0;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 4px 12px -2px rgba(0, 0, 0, 0.06);
+  transition:
+    box-shadow 220ms cubic-bezier(0.2, 0, 0, 1),
+    transform 220ms cubic-bezier(0.2, 0, 0, 1);
+}
+.storefront-font .sf-card:hover {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    0 14px 32px -8px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+/* P0.6 — Subtle outline on product imagery so photos don't sit flat.
+ * Pure black/white (NOT tinted) per skill rule. Opt-in via .sf-img-outline
+ * so logos, payment icons and avatars stay clean. */
+.storefront-font .sf-img-outline,
+.storefront-font .sf-card img,
+.storefront-font [data-sf-img] {
+  outline: 1px solid rgba(0, 0, 0, 0.08);
+  outline-offset: -1px;
+}
+.dark .storefront-font .sf-img-outline,
+.dark .storefront-font .sf-card img,
+.dark .storefront-font [data-sf-img] {
+  outline-color: rgba(255, 255, 255, 0.1);
+}
+
+/* P1.8 — 40×40 minimum hit area pseudo-extender.
+ * Wrap a small icon button: <button class="sf-hit-40">…</button> */
+.storefront-font .sf-hit-40 {
+  position: relative;
+}
+.storefront-font .sf-hit-40::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 40px);
+  height: max(100%, 40px);
+  transform: translate(-50%, -50%);
+}
+
+/* P1.10 — Softer exit on Radix Sheets/Dialogs.
+ * Cuts the slide-out length in half; keeps enter intact. */
+.storefront-font [data-state="closed"][data-side="bottom"],
+.storefront-font [data-state="closed"][data-side="right"],
+.storefront-font [data-state="closed"][data-side="left"],
+.storefront-font [data-state="closed"][data-side="top"] {
+  animation-duration: 180ms !important;
+}
+
+/* P1.11 — Kill any lingering transition-all on storefront buttons.
+ * The transition-property declaration above already overrides it, but this
+ * is a belt-and-braces for class lists like "transition-all duration-300". */
+.storefront-font button.transition-all,
+.storefront-font a.transition-all {
+  transition-property: transform, opacity, background-color, box-shadow,
+    border-color, color !important;
+}
+
+/* P1.13 — Gallery thumbnail selected state: ditch hard ring, use lift. */
+.storefront-font .sf-thumb {
+  outline: 1px solid rgba(0, 0, 0, 0.08);
+  outline-offset: -1px;
+  transition:
+    box-shadow 200ms cubic-bezier(0.2, 0, 0, 1),
+    transform 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+.storefront-font .sf-thumb[aria-selected="true"],
+.storefront-font .sf-thumb.is-selected {
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.6),
+    0 4px 14px -4px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+/* P2.20 — Category chip with proper hit area and breathing room. */
+.storefront-font .sf-chip {
+  min-height: 40px;
+  padding: 0.5rem 0.875rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* P2.21 — Softer strike-through on old/compare-at prices. */
+.storefront-font del,
+.storefront-font s,
+.storefront-font .line-through {
+  color: hsl(var(--muted-foreground));
+  text-decoration-color: hsl(var(--muted-foreground) / 0.6);
+  text-decoration-thickness: 1px;
+}
+
+/* P2.22 — Toast: explicit properties, faster exit. */
+.storefront-font [data-sonner-toast],
+[data-sonner-toaster] [data-sonner-toast] {
+  transition-property: transform, opacity !important;
+}
+[data-sonner-toaster] [data-sonner-toast][data-removed="true"] {
+  animation-duration: 200ms !important;
+}
+
+/* P2.23 — Polished focus ring on form fields (replaces harsh default ring). */
+.storefront-font input:focus-visible,
+.storefront-font select:focus-visible,
+.storefront-font textarea:focus-visible,
+.storefront-font [data-radix-select-trigger]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
+  border-color: hsl(var(--primary) / 0.5);
+}
+
+/* P2.24 — will-change only on elements that genuinely need GPU promotion. */
+.storefront-font [data-sf-sticky],
+.storefront-font .sf-drawer,
+.storefront-font [role="dialog"][data-state="open"],
+.storefront-font [data-sonner-toast] {
+  will-change: transform;
+}
+
+/* P3.28 — Standardize press scale to 0.96 across all themes (V19/20/22). */
+.storefront-font .active\:scale-95:active,
+.storefront-font [class*="active:scale-9"]:active {
+  transform: scale(0.96) !important;
+}
+
+/* Respect reduced motion for everything we added. */
+@media (prefers-reduced-motion: reduce) {
+  .storefront-font button:active,
+  .storefront-font [role="button"]:active,
+  .storefront-font .sf-press:active,
+  .storefront-font .sf-card,
+  .storefront-font .sf-card:hover,
+  .storefront-font .sf-thumb {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
