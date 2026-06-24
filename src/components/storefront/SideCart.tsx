@@ -111,14 +111,14 @@ export default function SideCart({ store }: SideCartProps) {
                         <div className="flex items-center rounded-lg" style={{ border: "1px solid color-mix(in srgb, var(--storefront-text, inherit) 12%, transparent)" }}>
                           <button
                             onClick={() => updateQuantity(item.productId, item.variantId, item.quantity - 1)}
-                            className="flex h-8 w-8 items-center justify-center transition-colors active:scale-90" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 60%, transparent)" }}
+                            className="flex h-8 w-8 items-center justify-center transition-colors active:scale-[0.96]" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 60%, transparent)" }}
                           >
                             <Minus className="h-3.5 w-3.5" />
                           </button>
                           <span key={item.quantity} className="w-8 text-center text-sm font-semibold qty-bounce">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.productId, item.variantId, item.quantity + 1)}
-                            className="flex h-8 w-8 items-center justify-center transition-colors active:scale-90" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 60%, transparent)" }}
+                            className="flex h-8 w-8 items-center justify-center transition-colors active:scale-[0.96]" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 60%, transparent)" }}
                           >
                             <Plus className="h-3.5 w-3.5" />
                           </button>

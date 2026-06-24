@@ -74,7 +74,7 @@ export default function ProductCardStyle2({ product, slug, store, priority = fal
                 <Heart aria-hidden="true" className="absolute inset-0 h-4 w-4 fill-current" style={{ color: "#ef4444", opacity: wishlisted ? 1 : 0, transform: wishlisted ? "scale(1)" : "scale(0.25)", filter: wishlisted ? "blur(0)" : "blur(4px)", transition: "opacity 200ms cubic-bezier(0.2,0,0,1), transform 200ms cubic-bezier(0.2,0,0,1), filter 200ms cubic-bezier(0.2,0,0,1)" }} />
               </span>
             </button>
-            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onVariantRequired) { onVariantRequired(); return; } handleAddToCart(e); }} className="flex h-8 w-8 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] active:scale-90" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={`Add ${product.name} to cart`}>
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (onVariantRequired) { onVariantRequired(); return; } handleAddToCart(e); }} className="flex h-8 w-8 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] active:scale-[0.96]" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={`Add ${product.name} to cart`}>
               <ShoppingCart className="h-4 w-4" style={{ color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }} aria-hidden="true" />
             </button>
           </div>

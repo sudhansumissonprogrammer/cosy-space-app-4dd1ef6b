@@ -169,7 +169,7 @@ export default function ProductCardStyle4({ product, slug, store, priority = fal
             >
               <button
                 onClick={handleDecrease}
-                className="flex h-8 w-8 items-center justify-center transition-[transform,opacity,colors,box-shadow] active:scale-90"
+                className="flex h-8 w-8 items-center justify-center transition-[transform,opacity,colors,box-shadow] active:scale-[0.96]"
                 aria-label="Decrease quantity"
               >
                 <Minus className="h-3.5 w-3.5" />
@@ -179,7 +179,7 @@ export default function ProductCardStyle4({ product, slug, store, priority = fal
               </span>
               <button
                 onClick={handleIncrease}
-                className="flex h-8 w-8 items-center justify-center transition-[transform,opacity,colors,box-shadow] active:scale-90"
+                className="flex h-8 w-8 items-center justify-center transition-[transform,opacity,colors,box-shadow] active:scale-[0.96]"
                 aria-label="Increase quantity"
               >
                 <Plus className="h-3.5 w-3.5" />

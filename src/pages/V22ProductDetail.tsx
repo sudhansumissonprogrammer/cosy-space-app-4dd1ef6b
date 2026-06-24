@@ -778,7 +778,7 @@ export default function V22ProductDetail() {
                     const el = e.currentTarget.parentElement?.querySelector<HTMLSpanElement>("[data-qty-value]");
                     if (el) { el.classList.remove("qty-bounce"); void el.offsetWidth; el.classList.add("qty-bounce"); }
                   }}
-                  className={`flex items-center justify-center transition-colors active:scale-90 ${isV18 ? 'h-11 w-11 text-white hover:bg-white/10' : 'h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-accent'}`}
+                  className={`flex items-center justify-center transition-colors active:scale-[0.96] ${isV18 ? 'h-11 w-11 text-white hover:bg-white/10' : 'h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-accent'}`}
                 >
                   <Minus className={isV18 ? "h-4 w-4" : "h-3.5 w-3.5"} />
                 </button>
@@ -789,7 +789,7 @@ export default function V22ProductDetail() {
                     const el = e.currentTarget.parentElement?.querySelector<HTMLSpanElement>("[data-qty-value]");
                     if (el) { el.classList.remove("qty-bounce"); void el.offsetWidth; el.classList.add("qty-bounce"); }
                   }}
-                  className={`flex items-center justify-center transition-colors active:scale-90 ${isV18 ? 'h-11 w-11 text-white hover:bg-white/10' : 'h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-accent'}`}
+                  className={`flex items-center justify-center transition-colors active:scale-[0.96] ${isV18 ? 'h-11 w-11 text-white hover:bg-white/10' : 'h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-accent'}`}
                 >
                   <Plus className={isV18 ? "h-4 w-4" : "h-3.5 w-3.5"} />
                 </button>
@@ -1556,7 +1556,7 @@ function ImageGallery({
           {onShare && (
             <button
               onClick={(e) => { e.stopPropagation(); onShare(); }}
-              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-90"
+              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-[0.96]"
               aria-label="Share product"
             >
               <Share2 className="h-4 w-4" />
@@ -1629,7 +1629,7 @@ function ImageGallery({
           {/* Zoom/enlarge icon */}
           <button
             onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
-            className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-90"
+            className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-[0.96]"
             aria-label="Enlarge image"
           >
             <Maximize2 className="h-4 w-4" />

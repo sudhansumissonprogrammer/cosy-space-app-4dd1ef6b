@@ -140,9 +140,9 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
         </div>
         {cartQty > 0 && !isAdding && !justAdded ? (
           <div className="flex h-7 sm:h-7 w-full items-center rounded-md overflow-hidden" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "var(--storefront-button-radius, 0.375rem)" }}>
-            <button onClick={handleDecrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-90" aria-label="Decrease quantity"><Minus className="h-3 w-3" strokeWidth={2.5} /></button>
+            <button onClick={handleDecrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-[0.96]" aria-label="Decrease quantity"><Minus className="h-3 w-3" strokeWidth={2.5} /></button>
             <span key={cartQty} className="flex-1 text-center text-[10px] font-semibold whitespace-nowrap qty-bounce" style={{ fontFamily: "'Alegreya SC', serif" }} aria-live="polite">{cartQty} in cart</span>
-            <button onClick={handleIncrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-90" aria-label="Increase quantity"><Plus className="h-3 w-3" strokeWidth={2.5} /></button>
+            <button onClick={handleIncrement} className="flex h-full w-8 items-center justify-center transition-opacity hover:opacity-80 active:scale-[0.96]" aria-label="Increase quantity"><Plus className="h-3 w-3" strokeWidth={2.5} /></button>
           </div>
         ) : (
           <button
