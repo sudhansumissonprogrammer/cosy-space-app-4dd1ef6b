@@ -43,8 +43,6 @@ import PdpTrustBadges from "@/components/storefront/PdpTrustBadges";
 import BuyNowPhoneModal from "@/components/storefront/BuyNowPhoneModal";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 
-const PRODUCT_SUFFIX_RE = /-[a-z0-9]{4}$/i;
-
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
 const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
@@ -104,10 +102,6 @@ export default function ProductDetail() {
   const { productSlug } = useParams<{ productSlug: string }>();
   const navigate = useNavigate();
   const canonicalProductSlug = useMemo(() => productSlug?.trim() || "", [productSlug]);
-  const productSlugPrefix = useMemo(
-    () => (canonicalProductSlug ? canonicalProductSlug.replace(PRODUCT_SUFFIX_RE, "") : ""),
-    [canonicalProductSlug],
-  );
 
   const { addToCart, items, cartTotal, closeCart, openCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
@@ -165,7 +159,7 @@ export default function ProductDetail() {
   const getCachedProduct = () => {
     const cached = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
     if (!cached) return undefined;
-    return cached.find((p: any) => p.slug === canonicalProductSlug || p.id === canonicalProductSlug || (productSlugPrefix && p.slug?.startsWith(`${productSlugPrefix}-`))) || undefined;
+    return cached.find((p: any) => p.slug === canonicalProductSlug || p.id === canonicalProductSlug) || undefined;
   };
 
   const existingData = queryClient.getQueryData(["storefront-product", store.id, canonicalProductSlug]);
@@ -174,7 +168,7 @@ export default function ProductDetail() {
   const getInlinePdp = () => {
     try {
       const inline = (window as any).__PRODUCT_INLINE__;
-      if (inline && inline.product && (inline.product.slug === canonicalProductSlug || (productSlugPrefix && inline.product.slug?.startsWith(`${productSlugPrefix}-`)))) return inline;
+      if (inline && inline.product && inline.product.slug === canonicalProductSlug) return inline;
     } catch { /* ignore */ }
     return null;
   };
@@ -217,13 +211,6 @@ export default function ProductDetail() {
       }
       let rpc = edge ?? (await rpcPromise);
 
-      if (!rpc?.product && productSlugPrefix && productSlugPrefix !== canonicalProductSlug) {
-        rpc = (await (supabase as any).rpc("get_product_page", {
-          _store_slug: store.slug,
-          _product_slug: productSlugPrefix,
-        })).data;
-      }
-
       if (rpc?.product) {
         // Hydrate sibling queries so they don't refetch
         if (rpc.images) queryClient.setQueryData(["product-images", rpc.product.id], rpc.images);
@@ -241,20 +228,6 @@ export default function ProductDetail() {
             .eq("slug", canonicalProductSlug)
         .eq("is_active", true)
         .maybeSingle();
-
-      if (!data && !error && productSlugPrefix) {
-        const legacyResult = await supabase
-          .from("products")
-          .select(PRODUCT_PDP_FIELDS)
-          .eq("store_id", store.id)
-          .ilike("slug", `${productSlugPrefix}-%`)
-          .eq("is_active", true)
-          .order("updated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        data = legacyResult.data;
-        error = legacyResult.error;
-      }
 
       if (!data && !error) {
         if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canonicalProductSlug)) {
