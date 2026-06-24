@@ -91,7 +91,7 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
               </span>
             </div>
           )}
-          <button onClick={handleToggleWishlist} className={`heart-burst ${heartBursting ? "bursting" : ""} sf-hit-40 absolute top-2 z-10 flex items-center justify-center p-1 lg:hidden`} style={{ left: "auto", right: "0.5rem", color: "hsl(var(--destructive))", background: "transparent", border: "none", boxShadow: "none", backdropFilter: "none", WebkitBackdropFilter: "none" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
+          <button onClick={handleToggleWishlist} className={`heart-burst ${heartBursting ? "bursting" : ""} absolute top-2 z-10 flex items-center justify-center p-1 lg:hidden`} style={{ left: "auto", right: "0.5rem", color: "hsl(var(--destructive))", background: "transparent", border: "none", boxShadow: "none", backdropFilter: "none", WebkitBackdropFilter: "none" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
             {/* P1.7 — cross-fade two icons instead of toggling fill; cubic-bezier(0.2,0,0,1) */}
             <span className="relative inline-block h-[20px] w-[20px]" style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.45))" }}>
               <Heart aria-hidden="true" className="absolute inset-0 h-[20px] w-[20px] fill-transparent text-white stroke-[2.25]" style={{ opacity: wishlisted ? 0 : 1, transform: wishlisted ? "scale(0.25)" : "scale(1)", filter: wishlisted ? "blur(4px)" : "blur(0)", transition: "opacity 200ms cubic-bezier(0.2,0,0,1), transform 200ms cubic-bezier(0.2,0,0,1), filter 200ms cubic-bezier(0.2,0,0,1)" }} />

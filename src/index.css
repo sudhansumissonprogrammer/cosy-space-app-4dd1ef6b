@@ -1090,9 +1090,11 @@
 
 /* P1.8 — 40×40 minimum hit area pseudo-extender.
  * Wrap a small icon button: <button class="sf-hit-40">…</button> */
-.storefront-font .sf-hit-40 {
+.storefront-font .sf-hit-40:not(.absolute):not(.fixed):not(.sticky) {
   position: relative;
 }
+
+
 .storefront-font .sf-hit-40::before {
   content: "";
   position: absolute;
