@@ -143,6 +143,12 @@ const FONT_OPTIONS = [
   "Inter",
   "Montserrat Alternates",
   "Playfair Display",
+  "Cormorant",
+  "Bodoni Moda",
+  "DM Serif Display",
+  "Fraunces",
+  "Cinzel",
+  "Syne",
   "Lora",
   "Poppins",
   "Montserrat",
@@ -152,8 +158,81 @@ const FONT_OPTIONS = [
   "Raleway",
   "Merriweather",
   "DM Sans",
+  "Plus Jakarta Sans",
+  "Manrope",
+  "Rubik",
+  "Nunito Sans",
   "Space Grotesk",
 ];
+
+/**
+ * Big-brand-grade font pairings curated via the ui-ux-pro-max design skill.
+ * Each pairing ships a tuned (tracking/weight) heading + a high-legibility
+ * body font that handle Indian D2C / fashion / jewelry / electronics shops.
+ * Picking a pairing applies BOTH fonts in one click so spacing & weight stay
+ * coherent — the #1 reason mismatched manual picks "look odd".
+ */
+const FONT_PAIRINGS: Array<{
+  id: string;
+  name: string;
+  heading: string;
+  body: string;
+  vibe: string;
+  bestFor: string;
+}> = [
+  { id: "heritage-classic", name: "Heritage Classic", heading: "Alegreya SC", body: "Inter",
+    vibe: "Trusted · Indian · Timeless",
+    bestFor: "Jewelry, imitation, sarees, traditional wear" },
+  { id: "luxury-editorial", name: "Luxury Editorial", heading: "Playfair Display", body: "Inter",
+    vibe: "Elegant · Premium · Magazine",
+    bestFor: "Fashion boutique, beauty, hand-crafted" },
+  { id: "modern-fashion", name: "Modern Fashion", heading: "Cormorant", body: "Montserrat",
+    vibe: "High-end · Refined · Soft luxury",
+    bestFor: "Designer wear, perfume, lifestyle" },
+  { id: "bold-minimal", name: "Bold Minimal", heading: "Bodoni Moda", body: "Plus Jakarta Sans",
+    vibe: "Sharp · Confident · Premium",
+    bestFor: "Watches, leather, premium electronics" },
+  { id: "soft-serif", name: "Soft Serif", heading: "Fraunces", body: "Manrope",
+    vibe: "Warm · Modern · Crafted",
+    bestFor: "Skincare, home decor, kids, gifts" },
+  { id: "fashion-forward", name: "Fashion Forward", heading: "Syne", body: "Manrope",
+    vibe: "Trendy · Bold · Gen-Z",
+    bestFor: "Streetwear, sneakers, accessories" },
+  { id: "ecommerce-clean", name: "E-commerce Clean", heading: "Rubik", body: "Nunito Sans",
+    vibe: "Friendly · Readable · Conversion",
+    bestFor: "Mass retail, grocery, daily essentials" },
+  { id: "premium-sans", name: "Premium Sans", heading: "Space Grotesk", body: "Inter",
+    vibe: "Modern · Tech · Crisp",
+    bestFor: "Electronics, gadgets, D2C brand stores" },
+  { id: "regal-serif", name: "Regal Serif", heading: "Cinzel", body: "Plus Jakarta Sans",
+    vibe: "Stately · Heritage · Premium",
+    bestFor: "Wedding, gold jewelry, luxury invitations" },
+  { id: "editorial-bold", name: "Editorial Bold", heading: "DM Serif Display", body: "DM Sans",
+    vibe: "Magazine · Punchy · Distinct",
+    bestFor: "Lifestyle, niche brands, storytelling" },
+];
+
+// Set of fonts NOT shipped self-hosted; theme settings preview needs to load
+// these on-demand from Google Fonts so the pairing cards render in their real
+// typeface. Storefront-side loading is already handled by themeUtils.ts.
+const PREVIEW_GOOGLE_FONTS = new Set(FONT_PAIRINGS.flatMap((p) => [p.heading, p.body]).concat(FONT_OPTIONS).filter(
+  (f) => !["Inter", "Alegreya SC", "Poppins", "Outfit", "Plus Jakarta Sans", "Montserrat Alternates", "Mulish"].includes(f)
+));
+
+function ensureFontPairingPreviewLoaded() {
+  if (typeof document === "undefined") return;
+  const id = "theme-settings-pairing-fonts";
+  if (document.getElementById(id)) return;
+  const families = Array.from(PREVIEW_GOOGLE_FONTS)
+    .map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600;700`)
+    .join("&");
+  if (!families) return;
+  const link = document.createElement("link");
+  link.id = id;
+  link.rel = "stylesheet";
+  link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+  document.head.appendChild(link);
+}
 
 const BUTTON_STYLES = [
   { value: "rounded", label: "Rounded" },
