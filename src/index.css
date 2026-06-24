@@ -1093,6 +1093,13 @@
 .storefront-font .sf-hit-40 {
   position: relative;
 }
+.storefront-font .sf-hit-40.absolute,
+.storefront-font .sf-hit-40.fixed,
+.storefront-font .sf-hit-40.sticky {
+  /* Don't override existing positioning context; the ::before still extends the hit area. */
+  position: revert;
+}
+
 .storefront-font .sf-hit-40::before {
   content: "";
   position: absolute;
