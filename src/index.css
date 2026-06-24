@@ -187,6 +187,9 @@
   .storefront-font h5,
   .storefront-font h6 {
     font-family: var(--storefront-heading-font, "Alegreya SC"), serif;
+    letter-spacing: var(--storefront-heading-tracking, normal);
+    line-height: var(--storefront-heading-leading, 1.2);
+    font-weight: var(--storefront-heading-weight, 700);
   }
 
   /* Inputs and textareas always use body font */
