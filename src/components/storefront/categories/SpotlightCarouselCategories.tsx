@@ -53,9 +53,9 @@ export default function SpotlightCarouselCategories({ categories, storeSlug }: {
     <div className="relative" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       <div className="flex items-center justify-center gap-2 sm:gap-3 overflow-hidden py-2" style={{ minHeight: 220 }}>
         {len > 2 && (
-          <div className="flex-shrink-0 w-[18%] sm:w-[15%] rounded-xl overflow-hidden cursor-pointer" style={{ aspectRatio: "3/4", opacity: 0.45, transform: `scale(0.85) translateX(12px)`, filter: "blur(1.5px)", transition: "all 0.55s cubic-bezier(0.25, 1, 0.5, 1)" }} onClick={goPrev}>
+          <button type="button" aria-label="Previous category" className="flex-shrink-0 w-[18%] sm:w-[15%] rounded-xl overflow-hidden cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" style={{ aspectRatio: "3/4", opacity: 0.45, transform: `scale(0.85) translateX(12px)`, filter: "blur(1.5px)", transition: "all 0.55s cubic-bezier(0.25, 1, 0.5, 1)" }} onClick={goPrev}>
             <CategoryImage cat={categories[getIdx(-1)]} size={300} className="h-full w-full object-cover" />
-          </div>
+          </button>
         )}
         <div className="flex-shrink-0 w-[58%] sm:w-[50%] md:w-[40%] lg:max-w-[400px] relative rounded-2xl overflow-hidden shadow-2xl" style={{ aspectRatio: "3/4" }}>
           {isTransitioning && prev !== null && (
@@ -77,9 +77,9 @@ export default function SpotlightCarouselCategories({ categories, storeSlug }: {
           </Link>
         </div>
         {len > 1 && (
-          <div className="flex-shrink-0 w-[18%] sm:w-[15%] rounded-xl overflow-hidden cursor-pointer" style={{ aspectRatio: "3/4", opacity: 0.45, transform: `scale(0.85) translateX(-12px)`, filter: "blur(1.5px)", transition: "all 0.55s cubic-bezier(0.25, 1, 0.5, 1)" }} onClick={goNext}>
+          <button type="button" aria-label="Next category" className="flex-shrink-0 w-[18%] sm:w-[15%] rounded-xl overflow-hidden cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" style={{ aspectRatio: "3/4", opacity: 0.45, transform: `scale(0.85) translateX(-12px)`, filter: "blur(1.5px)", transition: "all 0.55s cubic-bezier(0.25, 1, 0.5, 1)" }} onClick={goNext}>
             <CategoryImage cat={categories[getIdx(1)]} size={300} className="h-full w-full object-cover" />
-          </div>
+          </button>
         )}
       </div>
       {len > 1 && (
@@ -87,7 +87,7 @@ export default function SpotlightCarouselCategories({ categories, storeSlug }: {
           <button onClick={goPrev} className="sf-hit-40 h-10 w-10 rounded-full border border-border flex items-center justify-center hover:bg-accent transition-[transform,opacity,colors,box-shadow] duration-200" aria-label="Previous"><ChevronLeft className="h-4 w-4" /></button>
           <div className="flex gap-1.5 items-center">
             {categories.map((_, i) => (
-              <div key={i} className="rounded-full cursor-pointer" onClick={() => go(i)} style={{ width: i === active ? 20 : 6, height: 6, backgroundColor: i === active ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--border)", transform: i === active ? "scaleY(1)" : "scaleY(0.8)", transition: "all 0.4s cubic-bezier(0.25, 1, 0.5, 1)" }} />
+              <button key={i} type="button" aria-label={`Go to slide ${i + 1}`} aria-current={i === active} className="rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => go(i)} style={{ width: i === active ? 20 : 6, height: 6, backgroundColor: i === active ? "var(--storefront-primary, hsl(var(--primary)))" : "var(--border)", transform: i === active ? "scaleY(1)" : "scaleY(0.8)", transition: "all 0.4s cubic-bezier(0.25, 1, 0.5, 1)" }} />
             ))}
           </div>
           <button onClick={goNext} className="sf-hit-40 h-10 w-10 rounded-full border border-border flex items-center justify-center hover:bg-accent transition-[transform,opacity,colors,box-shadow] duration-200" aria-label="Next"><ChevronRight className="h-4 w-4" /></button>
