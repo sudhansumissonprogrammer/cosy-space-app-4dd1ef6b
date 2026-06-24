@@ -68,7 +68,8 @@ export default function PwaInstallBanner({ storeName }: { storeName: string }) {
         </button>
         <button
           onClick={handleDismiss}
-          className="shrink-0 rounded-full p-1 transition-colors" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}
+          className="sf-hit-40 shrink-0 rounded-full p-1 transition-colors" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}
+          aria-label="Dismiss install banner"
         >
           <X className="h-4 w-4" />
         </button>

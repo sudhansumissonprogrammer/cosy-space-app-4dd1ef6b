@@ -49,7 +49,7 @@ export function ElegantHeader({ store, colors }: { store: StoreData; colors: The
             <div className="flex flex-col h-full">
               <div className="flex items-center justify-between px-5 py-3.5" style={{ backgroundColor: `var(--storefront-accent, ${colors.defaultAccent})`, color: `var(--storefront-bg, ${colors.defaultBg})` }}>
                 <span className="text-sm font-bold uppercase tracking-wider" style={{ fontFamily: `var(--storefront-heading-font, '${colors.headingFontFallback}'), serif` }}>Menu</span>
-                <button onClick={() => setMenuOpen(false)} className="flex h-8 w-8 items-center justify-center" aria-label="Close menu"><X className="h-5 w-5" aria-hidden="true" /></button>
+                <button onClick={() => setMenuOpen(false)} className="sf-hit-40 flex h-8 w-8 items-center justify-center" aria-label="Close menu"><X className="h-5 w-5" aria-hidden="true" /></button>
               </div>
               <nav className="flex-1 overflow-y-auto">
                 <div className="px-5 pt-4 pb-1"><h4 className="text-[10px] font-bold uppercase tracking-widest opacity-40" style={{ color: `var(--storefront-text, ${colors.defaultText})` }}>Pages</h4></div>
