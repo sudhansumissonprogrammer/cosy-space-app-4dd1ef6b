@@ -16,6 +16,7 @@ import ThemeStickySaveBar from "@/components/dashboard/theme/ThemeStickySaveBar"
 import ThemeMobilePreviewDrawer from "@/components/dashboard/theme/ThemeMobilePreviewDrawer";
 import ThemeCategoryStyleIcon from "@/components/dashboard/theme/ThemeCategoryStyleIcon";
 import NavIconPicker from "@/components/dashboard/theme/NavIconPicker";
+import { getHeadingTuning } from "@/lib/themeUtils";
 
 // Mini preview for each mobile bottom nav variant in the picker
 function NavStylePreview({ variant }: { variant: string }) {
@@ -143,6 +144,12 @@ const FONT_OPTIONS = [
   "Inter",
   "Montserrat Alternates",
   "Playfair Display",
+  "Cormorant",
+  "Bodoni Moda",
+  "DM Serif Display",
+  "Fraunces",
+  "Cinzel",
+  "Syne",
   "Lora",
   "Poppins",
   "Montserrat",
@@ -152,8 +159,81 @@ const FONT_OPTIONS = [
   "Raleway",
   "Merriweather",
   "DM Sans",
+  "Plus Jakarta Sans",
+  "Manrope",
+  "Rubik",
+  "Nunito Sans",
   "Space Grotesk",
 ];
+
+/**
+ * Big-brand-grade font pairings curated via the ui-ux-pro-max design skill.
+ * Each pairing ships a tuned (tracking/weight) heading + a high-legibility
+ * body font that handle Indian D2C / fashion / jewelry / electronics shops.
+ * Picking a pairing applies BOTH fonts in one click so spacing & weight stay
+ * coherent — the #1 reason mismatched manual picks "look odd".
+ */
+const FONT_PAIRINGS: Array<{
+  id: string;
+  name: string;
+  heading: string;
+  body: string;
+  vibe: string;
+  bestFor: string;
+}> = [
+  { id: "heritage-classic", name: "Heritage Classic", heading: "Alegreya SC", body: "Inter",
+    vibe: "Trusted · Indian · Timeless",
+    bestFor: "Jewelry, imitation, sarees, traditional wear" },
+  { id: "luxury-editorial", name: "Luxury Editorial", heading: "Playfair Display", body: "Inter",
+    vibe: "Elegant · Premium · Magazine",
+    bestFor: "Fashion boutique, beauty, hand-crafted" },
+  { id: "modern-fashion", name: "Modern Fashion", heading: "Cormorant", body: "Montserrat",
+    vibe: "High-end · Refined · Soft luxury",
+    bestFor: "Designer wear, perfume, lifestyle" },
+  { id: "bold-minimal", name: "Bold Minimal", heading: "Bodoni Moda", body: "Plus Jakarta Sans",
+    vibe: "Sharp · Confident · Premium",
+    bestFor: "Watches, leather, premium electronics" },
+  { id: "soft-serif", name: "Soft Serif", heading: "Fraunces", body: "Manrope",
+    vibe: "Warm · Modern · Crafted",
+    bestFor: "Skincare, home decor, kids, gifts" },
+  { id: "fashion-forward", name: "Fashion Forward", heading: "Syne", body: "Manrope",
+    vibe: "Trendy · Bold · Gen-Z",
+    bestFor: "Streetwear, sneakers, accessories" },
+  { id: "ecommerce-clean", name: "E-commerce Clean", heading: "Rubik", body: "Nunito Sans",
+    vibe: "Friendly · Readable · Conversion",
+    bestFor: "Mass retail, grocery, daily essentials" },
+  { id: "premium-sans", name: "Premium Sans", heading: "Space Grotesk", body: "Inter",
+    vibe: "Modern · Tech · Crisp",
+    bestFor: "Electronics, gadgets, D2C brand stores" },
+  { id: "regal-serif", name: "Regal Serif", heading: "Cinzel", body: "Plus Jakarta Sans",
+    vibe: "Stately · Heritage · Premium",
+    bestFor: "Wedding, gold jewelry, luxury invitations" },
+  { id: "editorial-bold", name: "Editorial Bold", heading: "DM Serif Display", body: "DM Sans",
+    vibe: "Magazine · Punchy · Distinct",
+    bestFor: "Lifestyle, niche brands, storytelling" },
+];
+
+// Set of fonts NOT shipped self-hosted; theme settings preview needs to load
+// these on-demand from Google Fonts so the pairing cards render in their real
+// typeface. Storefront-side loading is already handled by themeUtils.ts.
+const PREVIEW_GOOGLE_FONTS = new Set(FONT_PAIRINGS.flatMap((p) => [p.heading, p.body]).concat(FONT_OPTIONS).filter(
+  (f) => !["Inter", "Alegreya SC", "Poppins", "Outfit", "Plus Jakarta Sans", "Montserrat Alternates", "Mulish"].includes(f)
+));
+
+function ensureFontPairingPreviewLoaded() {
+  if (typeof document === "undefined") return;
+  const id = "theme-settings-pairing-fonts";
+  if (document.getElementById(id)) return;
+  const families = Array.from(PREVIEW_GOOGLE_FONTS)
+    .map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600;700`)
+    .join("&");
+  if (!families) return;
+  const link = document.createElement("link");
+  link.id = id;
+  link.rel = "stylesheet";
+  link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+  document.head.appendChild(link);
+}
 
 const BUTTON_STYLES = [
   { value: "rounded", label: "Rounded" },
@@ -1218,36 +1298,113 @@ export default function StoreThemeSettings() {
     </Section>
   );
 
-  const renderTypographySection = () => (
-    <Section title="Typography" hint="Heading font is used for titles & product names. Body font is used for descriptions & UI text.">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label className="text-xs">Heading Font</Label>
-          <Select value={config.heading_font} onValueChange={(v) => updateField("heading_font", v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {FONT_OPTIONS.map((f) => (
-                <SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="mt-1 text-lg font-bold" style={{ fontFamily: config.heading_font }}>The Quick Brown Fox</p>
+  const renderTypographySection = () => {
+    if (typeof window !== "undefined") ensureFontPairingPreviewLoaded();
+    const activePairingId = FONT_PAIRINGS.find(
+      (p) => p.heading === config.heading_font && p.body === config.body_font
+    )?.id;
+
+    return (
+      <Section title="Typography" hint="Pick a curated pairing — heading + body are tuned together so spacing and weight look right out of the box. Custom picks below.">
+        {/* Curated pairings (primary picker) */}
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          {FONT_PAIRINGS.map((pair) => {
+            const active = activePairingId === pair.id;
+            return (
+              <button
+                key={pair.id}
+                type="button"
+                onClick={() => {
+                  const next = { ...config, heading_font: pair.heading, body_font: pair.body };
+                  setConfig(next);
+                  setDirty(true);
+                  sendToIframe(next);
+                }}
+                className={`group relative flex flex-col gap-2 rounded-xl border-2 p-3.5 text-left transition-[transform,opacity,colors,box-shadow] active:scale-[0.98] ${
+                  active ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border hover:border-primary/40 bg-card"
+                }`}
+                aria-pressed={active}
+                aria-label={`Apply ${pair.name} font pairing`}
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{pair.name}</span>
+                  {active && <span className="text-[10px] font-bold text-primary">ACTIVE</span>}
+                </div>
+                <div>
+                  <div
+                    className="truncate text-[22px] leading-tight"
+                    style={{
+                      fontFamily: `'${pair.heading}', serif`,
+                      letterSpacing: getHeadingTuning(pair.heading).tracking,
+                      fontWeight: getHeadingTuning(pair.heading).weight,
+                      lineHeight: getHeadingTuning(pair.heading).leading,
+                    }}
+                  >
+                    Imitation World
+                  </div>
+                  <div
+                    className="mt-1 text-[12px] text-muted-foreground line-clamp-2"
+                    style={{ fontFamily: `'${pair.body}', sans-serif` }}
+                  >
+                    Hand-crafted pieces, delivered across India with love.
+                  </div>
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+                  <span className="font-medium text-foreground/70">{pair.heading}</span>
+                  <span>+</span>
+                  <span className="font-medium text-foreground/70">{pair.body}</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground/80">{pair.vibe}</div>
+              </button>
+            );
+          })}
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Body Font</Label>
-          <Select value={config.body_font} onValueChange={(v) => updateField("body_font", v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {FONT_OPTIONS.map((f) => (
-                <SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="mt-1 text-sm text-muted-foreground" style={{ fontFamily: config.body_font }}>Beautifully crafted for your shoppers.</p>
-        </div>
-      </div>
-    </Section>
-  );
+
+        {/* Custom (advanced) — keeps original behaviour */}
+        <details className="mt-4 rounded-lg border border-dashed border-border bg-muted/20 p-3">
+          <summary className="cursor-pointer text-xs font-semibold text-muted-foreground select-none">
+            Advanced — pick fonts individually
+          </summary>
+          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Heading Font</Label>
+              <Select value={config.heading_font} onValueChange={(v) => updateField("heading_font", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {FONT_OPTIONS.map((f) => (
+                    <SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p
+                className="mt-1 text-lg"
+                style={{
+                  fontFamily: config.heading_font,
+                  letterSpacing: getHeadingTuning(config.heading_font).tracking,
+                  fontWeight: getHeadingTuning(config.heading_font).weight,
+                  lineHeight: getHeadingTuning(config.heading_font).leading,
+                }}
+              >
+                The Quick Brown Fox
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Body Font</Label>
+              <Select value={config.body_font} onValueChange={(v) => updateField("body_font", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {FONT_OPTIONS.map((f) => (
+                    <SelectItem key={f} value={f} style={{ fontFamily: f }}>{f}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="mt-1 text-sm text-muted-foreground" style={{ fontFamily: config.body_font }}>Beautifully crafted for your shoppers.</p>
+            </div>
+          </div>
+        </details>
+      </Section>
+    );
+  };
 
   const renderLayoutSection = () => (
     <Section title="Button Style" hint="Affects all primary buttons (Add to cart, Buy now, etc).">

@@ -53,6 +53,41 @@ function normalizeGoogleFontName(font: string): string {
   return font.trim().replace(/^['"]|['"]$/g, "").replace(/\s+/g, " ");
 }
 
+/**
+ * Per-font tuning so different headings don't look "odd". Big-brand sites
+ * carefully tune tracking/weight per typeface — same setting that's right for
+ * Inter is wrong for Cormorant. Keyed by exact font family name.
+ */
+const HEADING_TUNING: Record<string, { tracking: string; weight: number; leading: number }> = {
+  "Alegreya SC":       { tracking: "0.02em",   weight: 700, leading: 1.2 },
+  "Playfair Display":  { tracking: "-0.01em",  weight: 700, leading: 1.15 },
+  "Cormorant":         { tracking: "0em",      weight: 600, leading: 1.15 },
+  "Bodoni Moda":       { tracking: "-0.005em", weight: 700, leading: 1.1 },
+  "DM Serif Display":  { tracking: "-0.01em",  weight: 400, leading: 1.1 },
+  "Fraunces":          { tracking: "-0.02em",  weight: 600, leading: 1.1 },
+  "Cinzel":            { tracking: "0.04em",   weight: 600, leading: 1.2 },
+  "Syne":              { tracking: "-0.02em",  weight: 700, leading: 1.05 },
+  "Space Grotesk":     { tracking: "-0.02em",  weight: 600, leading: 1.1 },
+  "DM Sans":           { tracking: "-0.02em",  weight: 700, leading: 1.15 },
+  "Plus Jakarta Sans": { tracking: "-0.02em",  weight: 700, leading: 1.15 },
+  "Inter":             { tracking: "-0.02em",  weight: 700, leading: 1.15 },
+  "Poppins":           { tracking: "-0.01em",  weight: 700, leading: 1.2 },
+  "Montserrat":        { tracking: "-0.01em",  weight: 700, leading: 1.2 },
+  "Montserrat Alternates": { tracking: "-0.01em", weight: 700, leading: 1.2 },
+  "Rubik":             { tracking: "-0.01em",  weight: 600, leading: 1.2 },
+  "Outfit":            { tracking: "-0.02em",  weight: 700, leading: 1.15 },
+  "Lora":              { tracking: "0em",      weight: 600, leading: 1.2 },
+  "Merriweather":      { tracking: "0em",      weight: 700, leading: 1.25 },
+  "Oswald":            { tracking: "0.01em",   weight: 600, leading: 1.1 },
+  "Raleway":           { tracking: "-0.01em",  weight: 700, leading: 1.15 },
+  "Open Sans":         { tracking: "-0.005em", weight: 700, leading: 1.2 },
+  "Roboto":            { tracking: "-0.01em",  weight: 700, leading: 1.2 },
+};
+
+export function getHeadingTuning(font: string) {
+  return HEADING_TUNING[normalizeGoogleFontName(font)] ?? { tracking: "-0.01em", weight: 700, leading: 1.2 };
+}
+
 export function getResolvedThemeFonts(themeConfig: Record<string, any> | null): {
   headingFont: string;
   bodyFont: string;
@@ -251,6 +286,8 @@ export function buildThemeStyle(
   // Footer text color: contrasts against primary (used as footer bg)
   const footerTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
 
+  const headingTune = getHeadingTuning(headingFont);
+
   const defaultThemeStyle: React.CSSProperties = {
     "--storefront-primary": primaryColor,
     "--storefront-primary-light": primaryLight,
@@ -259,6 +296,9 @@ export function buildThemeStyle(
     "--storefront-bg": backgroundColor,
     "--storefront-heading-font": `'${headingFont}'`,
     "--storefront-body-font": `'${bodyFont}'`,
+    "--storefront-heading-tracking": headingTune.tracking,
+    "--storefront-heading-weight": String(headingTune.weight),
+    "--storefront-heading-leading": String(headingTune.leading),
     "--storefront-button-radius": getButtonRadius(buttonStyle, defaultButtonRadius),
     "--storefront-marquee-gradient": marqueeGradient,
     "--storefront-btn-text": btnTextColor,
