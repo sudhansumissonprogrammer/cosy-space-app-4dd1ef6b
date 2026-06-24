@@ -40,8 +40,6 @@ import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrust
 import BuyNowPhoneModal from "@/components/storefront/BuyNowPhoneModal";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 
-const PRODUCT_SUFFIX_RE = /-[a-z0-9]{4}$/i;
-
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
 const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
