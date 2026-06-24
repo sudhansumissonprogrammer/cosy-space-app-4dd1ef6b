@@ -124,14 +124,14 @@ export default function V20ProductCard({ product, slug, store, priority = false,
             </button>
           ) : cartQty > 0 ? (
             <div className="v20-stepper">
-              <button onClick={onDec} aria-label="Decrease" className="active:scale-90 transition-transform"><Minus className="h-3.5 w-3.5" strokeWidth={3} /></button>
+              <button onClick={onDec} aria-label="Decrease" className="active:scale-[0.96] transition-transform"><Minus className="h-3.5 w-3.5" strokeWidth={3} /></button>
               <span key={cartQty} className="qty-flip px-2 min-w-[20px] text-center">{cartQty}</span>
-              <button onClick={onInc} aria-label="Increase" className="active:scale-90 transition-transform"><Plus className="h-3.5 w-3.5" strokeWidth={3} /></button>
+              <button onClick={onInc} aria-label="Increase" className="active:scale-[0.96] transition-transform"><Plus className="h-3.5 w-3.5" strokeWidth={3} /></button>
             </div>
           ) : (
             <button
               onClick={onAdd}
-              className={`v20-add-btn-outline transition-[transform,opacity,colors,box-shadow] duration-200 active:scale-90 ${justAdded ? "v20-add-success" : ""}`}
+              className={`v20-add-btn-outline transition-[transform,opacity,colors,box-shadow] duration-200 active:scale-[0.96] ${justAdded ? "v20-add-success" : ""}`}
               aria-label={justAdded ? "Added to cart" : "Add to cart"}
             >
               {justAdded ? <Check className="h-3.5 w-3.5" strokeWidth={3.5} /> : "ADD"}

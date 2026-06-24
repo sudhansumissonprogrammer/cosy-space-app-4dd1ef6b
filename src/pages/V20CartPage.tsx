@@ -164,11 +164,11 @@ export default function V20CartPage() {
                       )}
                     </div>
                     <div className="inline-flex items-center text-white font-extrabold rounded-md overflow-hidden" style={{ background: PRIMARY, height: 32 }}>
-                      <button onClick={() => updateQuantity(item.productId, item.variantId, item.quantity - 1)} className="w-8 h-full flex items-center justify-center active:bg-black/10" aria-label="Decrease">
+                      <button onClick={() => updateQuantity(item.productId, item.variantId, item.quantity - 1)} className="w-11 min-w-11 h-full flex items-center justify-center active:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Decrease">
                         {item.quantity === 1 ? <Trash2 className="h-3.5 w-3.5" strokeWidth={2.5} /> : <Minus className="h-3.5 w-3.5" strokeWidth={3} />}
                       </button>
                       <span className="px-2.5 min-w-[26px] text-center text-[13px]">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.productId, item.variantId, item.quantity + 1)} className="w-8 h-full flex items-center justify-center active:bg-black/10" aria-label="Increase">
+                      <button onClick={() => updateQuantity(item.productId, item.variantId, item.quantity + 1)} className="w-11 min-w-11 h-full flex items-center justify-center active:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Increase">
                         <Plus className="h-3.5 w-3.5" strokeWidth={3} />
                       </button>
                     </div>

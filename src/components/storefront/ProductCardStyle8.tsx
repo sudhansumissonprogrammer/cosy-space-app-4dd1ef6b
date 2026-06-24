@@ -101,7 +101,7 @@ export default function ProductCardStyle8({ product, slug, store, priority = fal
 
           <button
             onClick={handleToggleWishlist}
-            className={`heart-burst ${heartBursting ? "bursting" : ""} absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm transition-transform hh:hover-scale-110 active:scale-90`}
+            className={`heart-burst ${heartBursting ? "bursting" : ""} absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm transition-transform hh:hover-scale-110 active:scale-[0.96]`}
             aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
           >
             <Heart className={`h-3 w-3 ${wishlisted ? "fill-destructive text-destructive" : "fill-transparent text-foreground stroke-[2]"}`} />
@@ -143,9 +143,9 @@ export default function ProductCardStyle8({ product, slug, store, priority = fal
 
         {cartQty > 0 ? (
           <div className="flex h-8 items-center rounded-md overflow-hidden shadow-sm" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))" }}>
-            <button onClick={handleDecrement} className="flex h-full w-7 items-center justify-center hover:opacity-80 active:scale-90" aria-label="Decrease"><Minus className="h-3 w-3" strokeWidth={3} /></button>
+            <button onClick={handleDecrement} className="flex h-full w-7 items-center justify-center hover:opacity-80 active:scale-[0.96]" aria-label="Decrease"><Minus className="h-3 w-3" strokeWidth={3} /></button>
             <span className="px-1 text-[12px] font-bold qty-bounce min-w-[18px] text-center" aria-live="polite">{cartQty}</span>
-            <button onClick={handleIncrement} className="flex h-full w-7 items-center justify-center hover:opacity-80 active:scale-90" aria-label="Increase"><Plus className="h-3 w-3" strokeWidth={3} /></button>
+            <button onClick={handleIncrement} className="flex h-full w-7 items-center justify-center hover:opacity-80 active:scale-[0.96]" aria-label="Increase"><Plus className="h-3 w-3" strokeWidth={3} /></button>
           </div>
         ) : (
           <button
