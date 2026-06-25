@@ -63,33 +63,24 @@ export default function CustomHtmlRenderer({ html, className = "" }: CustomHtmlR
     return buildSrcDoc(sanitized);
   }, [html]);
 
-  const onMessage = useCallback((e: MessageEvent) => {
-    // Origin check — sandboxed iframe posts with origin "null"; reject everything else
-    if (e.origin !== "null") return;
-    if (e.data?.type === "customHtmlHeight" && iframeRef.current) {
+  // Scoped, cleaned-up message listener — only this component's iframe is resized.
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      // Sandboxed iframe (no allow-same-origin) posts with origin "null".
+      if (e.origin !== "null") return;
+      if (!iframeRef.current) return;
+      // Verify the message came from our own iframe's contentWindow, not any other
+      // sandboxed iframe on the page.
+      if (e.source !== iframeRef.current.contentWindow) return;
+      if (e.data?.type !== "customHtmlHeight") return;
       const h = Number(e.data.height);
-      if (Number.isFinite(h) && h > 0 && h < 20000) {
-        iframeRef.current.style.height = `${h}px`;
-      }
-    }
+      if (!Number.isFinite(h) || h <= 0 || h >= 20000) return;
+      iframeRef.current.style.height = `${h}px`;
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
   }, []);
 
-  // Attach listener once
-  const listenerAttached = useRef(false);
-  if (!listenerAttached.current && typeof window !== "undefined") {
-    window.addEventListener("message", (e: MessageEvent) => {
-      if (e.origin !== "null") return;
-      if (e.data?.type === "customHtmlHeight") {
-        const h = Number(e.data.height);
-        if (!Number.isFinite(h) || h <= 0 || h >= 20000) return;
-        const iframe = document.querySelector<HTMLIFrameElement>(
-          'iframe[title="Custom HTML content"]'
-        );
-        if (iframe) iframe.style.height = `${h}px`;
-      }
-    });
-    listenerAttached.current = true;
-  }
 
   const isFullWidth = !className;
   return (
