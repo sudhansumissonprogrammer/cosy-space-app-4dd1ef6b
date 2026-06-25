@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
+import { timingSafeEqual } from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,7 +37,7 @@ Deno.serve(async (req) => {
     // Fetch order to determine payment_type
     const { data: orderData } = await supabase
       .from("orders")
-      .select("payment_type")
+      .select("payment_type, status")
       .eq("id", order_id)
       .eq("store_id", store_id)
       .single();
@@ -80,14 +81,31 @@ Deno.serve(async (req) => {
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
 
-    if (expectedSignature !== razorpay_signature) {
+    if (!timingSafeEqual(expectedSignature, String(razorpay_signature).toLowerCase())) {
       return new Response(JSON.stringify({ error: "Invalid payment signature" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Update order status
+    // Idempotency: insert into webhook_events. Duplicate => already processed,
+    // return success without re-marking the order.
+    const eventId = `${razorpay_order_id}:${razorpay_payment_id}`;
+    const { error: dupErr } = await supabase
+      .from("webhook_events")
+      .insert({ provider: "razorpay", event_id: eventId, payload: { razorpay_order_id, razorpay_payment_id, order_id, store_id } });
+    if (dupErr) {
+      const msg = String(dupErr.message || "").toLowerCase();
+      if (msg.includes("duplicate") || msg.includes("unique")) {
+        return new Response(
+          JSON.stringify({ success: true, payment_id: razorpay_payment_id, idempotent: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      console.warn("razorpay-verify dedup insert failed", dupErr.message);
+    }
+
+    // Update order status — only transition from pending to avoid clobbering refund states.
     const { error: updateErr } = await supabase
       .from("orders")
       .update({
