@@ -614,7 +614,7 @@ function cleanRateLimitMap() {
 const SECURITY_HEADERS = {
   "X-Frame-Options": "SAMEORIGIN",
   "X-Content-Type-Options": "nosniff",
-  "X-XSS-Protection": "1; mode=block",
+  // X-XSS-Protection removed — deprecated header, can introduce XSS in legacy browsers. CSP is the correct mitigation.
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(self)",
   "Referrer-Policy": "strict-origin-when-cross-origin",

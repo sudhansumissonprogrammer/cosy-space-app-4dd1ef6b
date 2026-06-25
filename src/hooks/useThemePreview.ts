@@ -31,8 +31,15 @@ export function useThemePreview(storeId?: string) {
       const b = parseInt(hex.slice(5, 7), 16);
       return (r * 299 + g * 587 + b * 114) / 1000 > 160;
     };
+    const ALLOWED_PREVIEW_ORIGINS = new Set([
+      window.location.origin,
+      "https://shopbanao.in",
+      "https://www.shopbanao.in",
+    ]);
     const handler = (e: MessageEvent) => {
       try {
+        // Origin check — only accept preview messages from the dashboard origin
+        if (!ALLOWED_PREVIEW_ORIGINS.has(e.origin)) return;
         if (e.data?.type === "theme-preview" && e.data.config) {
           const c = e.data.config;
           loadGoogleFonts(c);
