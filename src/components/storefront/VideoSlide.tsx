@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Play } from "lucide-react";
+import { Pause, Play } from "lucide-react";
 
 interface VideoSlideProps {
   url: string;
@@ -28,6 +28,16 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
     });
   };
 
+  const handleToggle = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (videoPlaying) {
+      v.pause();
+      return;
+    }
+    handlePlay();
+  };
+
   return (
     <div
       className="relative flex-[0_0_100%] min-w-0 bg-black"
@@ -39,15 +49,18 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         poster={poster}
         preload={isActive && (hasStarted || videoPlaying) ? "auto" : "none"}
         playsInline
-        controls={hasStarted && videoPlaying}
-        controlsList="nodownload noremoteplayback"
         disablePictureInPicture
         className="w-full h-auto max-h-[80vh] object-contain bg-black"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleToggle();
+        }}
         onPlay={() => {
           setHasStarted(true);
           setVideoPlaying(true);
         }}
         onPause={() => setVideoPlaying(false)}
+        onEnded={() => setVideoPlaying(false)}
       />
 
 
@@ -66,6 +79,20 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
             {/* Optical alignment: triangle is visually centered with a ~2px nudge right */}
             <Play className="h-7 w-7 text-black translate-x-[2px]" fill="currentColor" strokeWidth={0} />
           </span>
+        </button>
+      )}
+
+      {videoPlaying && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            videoRef.current?.pause();
+          }}
+          aria-label="Pause video"
+          className="absolute bottom-3 left-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur-sm transition-transform duration-150 active:scale-[0.96]"
+        >
+          <Pause className="h-5 w-5" fill="currentColor" strokeWidth={0} />
         </button>
       )}
     </div>
