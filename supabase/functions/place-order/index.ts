@@ -285,6 +285,19 @@ Deno.serve(async (req) => {
       }
     }
 
+    // C5: Atomically claim the coupon BEFORE inserting the order.
+    // Prevents two concurrent checkouts from both consuming the last allowed use.
+    if (validCouponId) {
+      const { data: claimed, error: claimErr } = await supabase
+        .rpc("claim_coupon", { _coupon_id: validCouponId, _store_id: store_id });
+      if (claimErr || claimed !== true) {
+        return new Response(
+          JSON.stringify({ error: "Coupon no longer available. Please remove it and try again." }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const serverTotal = Math.max(0, Math.round((serverSubtotal - serverDiscount + serverShipping) * 100) / 100);
     // Replace client-supplied total + coupon_id with server-verified values.
     order.total = serverTotal;
