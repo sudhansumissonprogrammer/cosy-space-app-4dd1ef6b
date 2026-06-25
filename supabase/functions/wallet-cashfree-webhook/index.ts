@@ -1,8 +1,10 @@
 // Cashfree webhook for wallet recharges. Public endpoint — verifies HMAC with platform secret.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { timingSafeEqual } from "../_shared/security.ts";
 
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" };
 const PLATFORM_SECRET = Deno.env.get("CASHFREE_SECRET_KEY")!;
+const MAX_SKEW_MS = 5 * 60 * 1000;
 
 async function computeSig(secret: string, data: string): Promise<string> {
   const key = await crypto.subtle.importKey(
@@ -25,8 +27,15 @@ Deno.serve(async (req) => {
     const receivedSig = req.headers.get("x-webhook-signature") || "";
     const data = `${timestamp}${rawBody}`;
 
+    // Reject stale timestamps (replay window > 5 min).
+    const tsNum = Number(timestamp);
+    if (!Number.isFinite(tsNum) || Math.abs(Date.now() - tsNum) > MAX_SKEW_MS) {
+      console.warn("wallet webhook stale timestamp", { timestamp });
+      return new Response("Stale", { status: 401 });
+    }
+
     const expected = await computeSig(PLATFORM_SECRET, data);
-    if (expected !== receivedSig) return new Response("Invalid signature", { status: 401 });
+    if (!timingSafeEqual(expected, receivedSig)) return new Response("Invalid signature", { status: 401 });
 
     const event = JSON.parse(rawBody);
     const cfOrderId: string | undefined = event?.data?.order?.order_id;

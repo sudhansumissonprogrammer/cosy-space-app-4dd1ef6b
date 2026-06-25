@@ -9,6 +9,7 @@
 // This is a public endpoint (verify_jwt = false) — security comes from HMAC verification.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
+import { timingSafeEqual } from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,6 +17,7 @@ const corsHeaders = {
 };
 
 const PLATFORM_CASHFREE_SECRET_KEY = Deno.env.get("CASHFREE_SECRET_KEY")!;
+const MAX_SKEW_MS = 5 * 60 * 1000;
 
 function getAnchorDay(notes: string | null | undefined): number | null {
   if (!notes) return null;
@@ -56,6 +58,13 @@ Deno.serve(async (req) => {
     const receivedSig = req.headers.get("x-webhook-signature") || "";
     const data = `${timestamp}${rawBody}`;
 
+    // Reject stale timestamps (replay window > 5 min).
+    const tsNum = Number(timestamp);
+    if (!Number.isFinite(tsNum) || Math.abs(Date.now() - tsNum) > MAX_SKEW_MS) {
+      console.warn("cashfree webhook stale timestamp", { timestamp });
+      return new Response("Stale", { status: 401 });
+    }
+
     const event = JSON.parse(rawBody);
     const eventType = event.type;
     const cfOrderId: string | undefined = event?.data?.order?.order_id;
@@ -69,35 +78,25 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Idempotency: short-circuit if we've already processed this exact webhook event.
-    // Cashfree provides a unique event id; fall back to a deterministic composite key.
-    const eventId: string =
-      String(event?.event_id ?? event?.data?.event_id ?? "") ||
-      `${eventType ?? "unknown"}:${cfOrderId}:${event?.data?.payment?.cf_payment_id ?? ""}`;
-    const { error: dupErr } = await supabase
-      .from("webhook_events")
-      .insert({ provider: "cashfree", event_id: eventId, payload: event });
-    if (dupErr) {
-      // Primary-key violation = already processed — ack so Cashfree stops retrying.
-      const msg = String(dupErr.message || "").toLowerCase();
-      if (msg.includes("duplicate") || msg.includes("unique")) {
-        return new Response("OK (duplicate)", { status: 200 });
-      }
-      // Other errors: log and continue (don't block payment processing).
-      console.warn("webhook_events insert failed", dupErr.message);
-    }
-
     // ---------- Branch 1: per-store storefront order (ord_ prefix) ----------
     if (cfOrderId.startsWith("ord_")) {
-      // Recover store_id from order_tags (set by store-cashfree-create-order)
-      const tags = event?.data?.order?.order_tags || {};
-      const storeId: string | undefined = tags.store_id;
-      const localOrderId: string | undefined = tags.store_order_id;
+      // Resolve store_id from our DB (NOT attacker-supplied order_tags). The
+      // cf_order_id was minted by store-cashfree-create-order and stored on
+      // the order row, so it uniquely identifies one store.
+      const { data: orderLookup } = await supabase
+        .from("orders")
+        .select("id, store_id, status, payment_type")
+        .eq("cf_order_id", cfOrderId)
+        .single();
 
-      if (!storeId || !localOrderId) {
-        console.warn("Storefront webhook missing tags", { cfOrderId, tags });
-        return new Response("OK (missing tags)", { status: 200 });
+      if (!orderLookup) {
+        // Fall back to tags only as a hint for logging — never trust for signing key.
+        console.warn("Storefront webhook unknown cf_order_id", { cfOrderId });
+        return new Response("OK (unknown order)", { status: 200 });
       }
+
+      const storeId = orderLookup.store_id;
+      const localOrderId = orderLookup.id;
 
       // Fetch merchant's cashfree secret to verify signature
       const { data: config } = await supabase
@@ -112,29 +111,34 @@ Deno.serve(async (req) => {
       }
 
       const computedSig = await computeSig(config.cashfree_secret_key, data);
-      if (computedSig !== receivedSig) {
+      if (!timingSafeEqual(computedSig, receivedSig)) {
         console.warn("Storefront webhook signature mismatch", { cfOrderId, storeId });
         return new Response("Invalid signature", { status: 401 });
       }
 
-      // Idempotency — fetch order
-      const { data: orderRow } = await supabase
-        .from("orders")
-        .select("status, payment_type")
-        .eq("id", localOrderId)
-        .single();
-
-      if (!orderRow) return new Response("OK (unknown order)", { status: 200 });
+      // Idempotency AFTER signature verification, so unauthenticated callers
+      // can't pre-poison the dedup table for a legitimate cf_order_id.
+      const eventId: string =
+        String(event?.event_id ?? event?.data?.event_id ?? "") ||
+        `${eventType ?? "unknown"}:${cfOrderId}:${event?.data?.payment?.cf_payment_id ?? ""}`;
+      const { error: dupErr } = await supabase
+        .from("webhook_events")
+        .insert({ provider: "cashfree", event_id: eventId, payload: event });
+      if (dupErr) {
+        const msg = String(dupErr.message || "").toLowerCase();
+        if (msg.includes("duplicate") || msg.includes("unique")) {
+          return new Response("OK (duplicate)", { status: 200 });
+        }
+        console.warn("webhook_events insert failed", dupErr.message);
+      }
 
       if (eventType === "PAYMENT_SUCCESS_WEBHOOK") {
-        if (orderRow.status === "confirmed" || orderRow.status === "partially_paid") {
-          // Already marked paid, but still try CAPI in case the previous attempt failed —
-          // helper is idempotent (DB stamp on orders.meta_purchase_fired_at).
+        if (orderLookup.status === "confirmed" || orderLookup.status === "partially_paid") {
           const capiResult = await firePurchaseCapi(supabase, localOrderId, { source: "cashfree" });
           console.log("Cashfree CAPI retry result", { localOrderId, capiResult });
           return new Response("OK (already paid)", { status: 200 });
         }
-        const isPartial = orderRow.payment_type === "partial";
+        const isPartial = orderLookup.payment_type === "partial";
         await supabase
           .from("orders")
           .update({
@@ -145,13 +149,10 @@ Deno.serve(async (req) => {
             payment_verified_at: new Date().toISOString(),
           })
           .eq("id", localOrderId);
-        // Payment confirmed — fire Meta CAPI Purchase before returning to Cashfree.
-        // Edge runtimes can cancel fire-and-forget work once the response returns.
         const capiResult = await firePurchaseCapi(supabase, localOrderId, { source: "cashfree" });
         console.log("Cashfree CAPI result", { localOrderId, capiResult });
       } else if (eventType === "PAYMENT_FAILED_WEBHOOK" || eventType === "PAYMENT_USER_DROPPED_WEBHOOK") {
-        // Don't overwrite a confirmed order — only mark fresh failures
-        if (orderRow.status === "pending") {
+        if (orderLookup.status === "pending") {
           await supabase
             .from("orders")
             .update({ status: "cancelled" })
@@ -166,9 +167,24 @@ Deno.serve(async (req) => {
     // ---------- Branch 2: SaaS billing (sub_ prefix or unknown) ----------
     // Verify with platform secret
     const platformSig = await computeSig(PLATFORM_CASHFREE_SECRET_KEY, data);
-    if (platformSig !== receivedSig) {
+    if (!timingSafeEqual(platformSig, receivedSig)) {
       console.warn("SaaS webhook signature mismatch");
       return new Response("Invalid signature", { status: 401 });
+    }
+
+    // Idempotency after signature verify
+    const billingEventId: string =
+      String(event?.event_id ?? event?.data?.event_id ?? "") ||
+      `${eventType ?? "unknown"}:${cfOrderId}:${event?.data?.payment?.cf_payment_id ?? ""}`;
+    const { error: bdupErr } = await supabase
+      .from("webhook_events")
+      .insert({ provider: "cashfree", event_id: billingEventId, payload: event });
+    if (bdupErr) {
+      const msg = String(bdupErr.message || "").toLowerCase();
+      if (msg.includes("duplicate") || msg.includes("unique")) {
+        return new Response("OK (duplicate)", { status: 200 });
+      }
+      console.warn("webhook_events insert failed", bdupErr.message);
     }
 
     const { data: payment } = await supabase

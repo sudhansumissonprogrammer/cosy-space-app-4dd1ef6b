@@ -1,9 +1,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { verifyMetaSignature } from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-hub-signature-256, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -12,9 +13,6 @@ Deno.serve(async (req) => {
   }
 
   // Meta webhook verification (GET).
-  // Verify token is read from secret WHATSAPP_WEBHOOK_VERIFY_TOKEN.
-  // No fallback — if the secret is missing we refuse to verify so an attacker
-  // can't subscribe a rogue webhook using a publicly-known literal.
   if (req.method === "GET") {
     const url = new URL(req.url);
     const mode = url.searchParams.get("hub.mode");
@@ -34,7 +32,24 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
+    // Read the raw body once for HMAC verification, then parse.
+    const rawBody = await req.text();
+    const appSecret = Deno.env.get("META_APP_SECRET") || Deno.env.get("WHATSAPP_APP_SECRET") || "";
+    const sigHeader = req.headers.get("x-hub-signature-256");
+    if (appSecret) {
+      const valid = await verifyMetaSignature(rawBody, sigHeader, appSecret);
+      if (!valid) {
+        console.warn("whatsapp-webhook signature invalid");
+        return new Response(JSON.stringify({ error: "Invalid signature" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      console.warn("META_APP_SECRET not set — accepting webhook without signature verification");
+    }
+
+    const body = JSON.parse(rawBody);
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!

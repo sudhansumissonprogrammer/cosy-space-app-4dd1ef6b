@@ -62,6 +62,28 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Ownership check — caller must own the store OR be an admin.
+    const { data: storeRow, error: storeErr } = await adminClient
+      .from("stores")
+      .select("owner_id")
+      .eq("id", store_id)
+      .maybeSingle();
+    if (storeErr || !storeRow) {
+      return new Response(JSON.stringify({ error: "Store not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (storeRow.owner_id !== user.id) {
+      const { data: isAdmin } = await adminClient.rpc("has_role", { _user_id: user.id, _role: "admin" });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden: not store owner" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // Get store's WhatsApp config
     const { data: config, error: configErr } = await adminClient
       .from("whatsapp_config")
