@@ -23,28 +23,24 @@ interface Row {
 
 export default function LiveVisitors({ storeId }: Props) {
   const queryClient = useQueryClient();
-  const [tick, setTick] = useState(0);
-
-  const sinceIso = useMemo(() => {
-    void tick; // re-derive on tick so window slides forward
-    return new Date(Date.now() - LIVE_WINDOW_MS).toISOString();
-  }, [tick]);
+  const [, setTick] = useState(0);
 
   const { data } = useQuery({
-    queryKey: ["live-visitors", storeId, sinceIso],
+    // sinceIso intentionally NOT in the key — otherwise every 30s tick spawned
+    // a brand new cache entry (500-row payload each) and a 1-hour open tab
+    // leaked ~60k row objects. Compute inside queryFn instead; invalidate to refetch.
+    queryKey: ["live-visitors", storeId],
     enabled: !!storeId,
-    // No polling: realtime INSERT subscription below nudges a refetch the
-    // moment a pageview lands, and the 30s window-slide tick re-derives
-    // sinceIso so stale sessions drop out. Polling on top was duplicate work.
     refetchOnWindowFocus: true,
     staleTime: 30_000,
     queryFn: async () => {
+      const since = new Date(Date.now() - LIVE_WINDOW_MS).toISOString();
       const { data, error } = await supabase
         .from("page_views")
         .select("session_id, visitor_id, path, device, created_at")
         .eq("store_id", storeId)
         .eq("is_bot", false)
-        .gte("created_at", sinceIso)
+        .gte("created_at", since)
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
@@ -52,12 +48,14 @@ export default function LiveVisitors({ storeId }: Props) {
     },
   });
 
-  // Slide the 5-min window every 30s so stale sessions drop out
-  // even when no new inserts arrive.
+  // Slide the 5-min window every 30s: invalidate to trigger a fresh query.
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 30_000);
+    const id = setInterval(() => {
+      setTick((t) => t + 1);
+      queryClient.invalidateQueries({ queryKey: ["live-visitors", storeId] });
+    }, 30_000);
     return () => clearInterval(id);
-  }, []);
+  }, [queryClient, storeId]);
 
   // Realtime: nudge a refetch the moment a new pageview lands.
   useEffect(() => {
