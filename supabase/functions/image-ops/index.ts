@@ -41,11 +41,33 @@ async function r2Put(key: string, body: ArrayBuffer | Uint8Array, contentType: s
 
 // ── Shared URL validation ───────────────────────────────────────
 
+// SSRF protection: block private / link-local / loopback / metadata hosts.
+// Image fetches must target public HTTP(S) endpoints only.
+const PRIVATE_HOST_PATTERNS: RegExp[] = [
+  /^localhost$/i,
+  /\.local$/i,
+  /\.internal$/i,
+  /^127\./,
+  /^10\./,
+  /^192\.168\./,
+  /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+  /^169\.254\./,        // link-local incl. AWS/GCP metadata 169.254.169.254
+  /^0\./,
+  /^::1$/,
+  /^fc00:/i, /^fd00:/i, // IPv6 ULA
+  /^fe80:/i,            // IPv6 link-local
+];
+
 function validateImageUrl(imageUrl: string): string | null {
   try {
     const parsed = new URL(imageUrl);
     if (!["http:", "https:"].includes(parsed.protocol)) {
       return "Invalid URL protocol";
+    }
+    const host = parsed.hostname.replace(/^\[|\]$/g, "");
+    if (!host) return "Invalid host";
+    if (PRIVATE_HOST_PATTERNS.some((re) => re.test(host))) {
+      return "Host not allowed";
     }
     return null;
   } catch {
