@@ -72,19 +72,29 @@ export default function StoreCustomers() {
     queryKey: ["customer-orders", storeId, selectedCustomer?.id],
     queryFn: async () => {
       if (!selectedCustomer) return [];
-      const phone = selectedCustomer.phone;
-      const email = selectedCustomer.email;
-      
-      // Query website orders matching by phone or email
-      let query = (supabase as any).from("orders").select("*, order_items(*)").eq("store_id", storeId!);
-      
-      if (phone && email && !email.endsWith("@whatsapp")) {
-        // Match by phone OR email
-        query = query.or(`customer_phone.eq.${phone},customer_name.eq.${selectedCustomer.name}`);
-      } else if (phone) {
+      const phone: string | undefined = selectedCustomer.phone;
+      const email: string | undefined = selectedCustomer.email;
+
+      // Always match strictly by phone (unique-enough identifier scoped to this store).
+      // Previously we also matched by `customer_name`, which leaked orders from any
+      // shopper with an identical name. If there is no phone, fall back to email —
+      // but only a real email, never the synthetic "@whatsapp" placeholder.
+      // We also avoid PostgREST `.or()` with interpolated user input (filter injection risk);
+      // use the typed `.eq()` builder instead so values are properly escaped.
+      let query = (supabase as any)
+        .from("orders")
+        .select("*, order_items(*)")
+        .eq("store_id", storeId!);
+
+      if (phone) {
         query = query.eq("customer_phone", phone);
+      } else if (email && !email.endsWith("@whatsapp")) {
+        query = query.eq("customer_email", email);
+      } else {
+        // No safe identifier — don't return anything rather than leak by name.
+        return [];
       }
-      
+
       const { data, error } = await query.order("created_at", { ascending: false }).limit(50);
       if (error) throw error;
       return data as any[];
