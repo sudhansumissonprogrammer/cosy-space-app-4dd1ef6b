@@ -109,12 +109,14 @@ export default function StorefrontOrderDetail() {
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
-      const noteAppend = `\n[Cancelled by customer] Reason: ${cancelReason}`;
-      const newNotes = (order?.notes || "") + noteAppend;
-      const { error } = await supabase
-        .from("orders")
-        .update({ status: "cancelled", notes: newNotes })
-        .eq("id", orderId!);
+      // Cancel via SECURITY DEFINER RPC: server only flips `status` (and appends
+      // reason to notes). Direct UPDATE is no longer allowed by RLS — this stops
+      // a malicious client from zeroing `total` / rewriting customer fields while
+      // cancelling.
+      const { error } = await supabase.rpc("cancel_own_order", {
+        _order_id: orderId!,
+        _reason: cancelReason || null,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
