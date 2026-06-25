@@ -96,18 +96,16 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         </button>
       )}
 
-      {hasStarted && (
-        <VideoControlBar
-          playing={videoPlaying}
-          currentTime={currentTime}
-          duration={duration}
-          onToggle={(e) => {
-            e.stopPropagation();
-            handleToggle();
-          }}
-          onSeek={handleSeek}
-        />
-      )}
+      <VideoControlBar
+        playing={videoPlaying}
+        currentTime={currentTime}
+        duration={duration}
+        onToggle={(e) => {
+          e.stopPropagation();
+          handleToggle();
+        }}
+        onSeek={handleSeek}
+      />
     </div>
   );
 }
