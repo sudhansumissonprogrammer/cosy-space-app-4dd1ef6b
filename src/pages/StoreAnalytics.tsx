@@ -104,7 +104,11 @@ export default function StoreAnalytics() {
         .from("orders")
         .select("created_at, total, status, payment_method, customer_name, order_items(product_name, quantity, total)")
         .in("store_id", storeIds)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: true })
+        // Hard cap defends against OOM on stores with massive histories
+        // (a year-1 store with 50k orders × ~5 items would have OOM'd the browser).
+        // 5000 covers ~6 months of heavy stores; range filter does the real bounding.
+        .limit(5000);
       if (ordersGte) q = q.gte("created_at", ordersGte);
       const { data, error } = await q;
       if (error) throw error;
