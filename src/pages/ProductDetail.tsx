@@ -1643,14 +1643,16 @@ function ImageGallery({
             </div>
           </div>
 
-          {/* Zoom/enlarge icon */}
-          <button
-            onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
-            className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-[0.96]"
-            aria-label="Enlarge image"
-          >
-            <Maximize2 className="h-4 w-4" />
-          </button>
+          {/* Zoom/enlarge icon — hide on video slides so it doesn't overlap the play button */}
+          {slides[activeIndex]?.kind !== "video" && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
+              className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-[0.96]"
+              aria-label="Enlarge image"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </button>
+          )}
 
           {/* Counter (mobile) */}
           {len > 1 && (
