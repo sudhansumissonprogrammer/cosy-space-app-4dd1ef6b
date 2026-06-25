@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
 
     for (const o of group) {
       try {
-        const r = await fetch(
+        const r = await fetchWithTimeout(
           `https://api.razorpay.com/v1/orders/${o.razorpay_order_id}/payments`,
           { headers: { Authorization: auth } },
         );
