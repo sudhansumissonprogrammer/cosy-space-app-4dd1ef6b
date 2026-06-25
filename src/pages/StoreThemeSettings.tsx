@@ -1832,7 +1832,8 @@ export default function StoreThemeSettings() {
           </AccordionItem>
         )}
 
-        {store?.slug === "imitationworld" && (
+        {(
+
           <AccordionItem value="warranty" className="rounded-xl border border-border bg-card px-4">
             <AccordionTrigger className="hover:no-underline">
               <div className="flex flex-col items-start text-left">
@@ -1854,7 +1855,7 @@ export default function StoreThemeSettings() {
           </AccordionItem>
         )}
 
-        {store?.slug === "imitationworld" && (
+        {(
           <AccordionItem value="trust-badges" className="rounded-xl border border-border bg-card px-4">
             <AccordionTrigger className="hover:no-underline">
               <div className="flex flex-col items-start text-left">
