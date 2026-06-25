@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { Pause, Play } from "lucide-react";
+import { Play } from "lucide-react";
+import { VideoControlBar } from "./VideoControlBar";
 
 interface Props {
   url: string;
@@ -16,6 +17,8 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
   const ref = useRef<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [started, setStarted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   const handlePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -39,6 +42,13 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
 
   const showOverlay = !started || !playing;
 
+  const handleSeek = (value: number) => {
+    const v = ref.current;
+    if (!v) return;
+    v.currentTime = value;
+    setCurrentTime(value);
+  };
+
   return (
     <div className="relative h-full w-full bg-black" onClick={(e) => e.stopPropagation()}>
       <video
@@ -53,6 +63,9 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
         onPlay={() => { setStarted(true); setPlaying(true); }}
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
+        onLoadedMetadata={() => setDuration(ref.current?.duration || 0)}
+        onDurationChange={() => setDuration(ref.current?.duration || 0)}
+        onTimeUpdate={() => setCurrentTime(ref.current?.currentTime || 0)}
       />
 
 
@@ -69,18 +82,14 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
         </button>
       )}
 
-      {playing && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            ref.current?.pause();
-          }}
-          aria-label="Pause video"
-          className="absolute bottom-3 left-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur-sm transition-transform duration-150 active:scale-[0.96]"
-        >
-          <Pause className="h-5 w-5" fill="currentColor" strokeWidth={0} />
-        </button>
+      {started && (
+        <VideoControlBar
+          playing={playing}
+          currentTime={currentTime}
+          duration={duration}
+          onToggle={handleToggle}
+          onSeek={handleSeek}
+        />
       )}
     </div>
   );

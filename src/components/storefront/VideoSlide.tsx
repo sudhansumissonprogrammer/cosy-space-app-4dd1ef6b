@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { Pause, Play } from "lucide-react";
+import { Play } from "lucide-react";
+import { VideoControlBar } from "./VideoControlBar";
 
 interface VideoSlideProps {
   url: string;
@@ -16,6 +17,8 @@ interface VideoSlideProps {
 export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlaying }: VideoSlideProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   const showOverlay = !hasStarted || !videoPlaying;
 
@@ -36,6 +39,13 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
       return;
     }
     handlePlay();
+  };
+
+  const handleSeek = (value: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.currentTime = value;
+    setCurrentTime(value);
   };
 
   return (
@@ -61,6 +71,9 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         }}
         onPause={() => setVideoPlaying(false)}
         onEnded={() => setVideoPlaying(false)}
+        onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
+        onDurationChange={() => setDuration(videoRef.current?.duration || 0)}
+        onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime || 0)}
       />
 
 
@@ -82,18 +95,17 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         </button>
       )}
 
-      {videoPlaying && (
-        <button
-          type="button"
-          onClick={(e) => {
+      {hasStarted && (
+        <VideoControlBar
+          playing={videoPlaying}
+          currentTime={currentTime}
+          duration={duration}
+          onToggle={(e) => {
             e.stopPropagation();
-            videoRef.current?.pause();
+            handleToggle();
           }}
-          aria-label="Pause video"
-          className="absolute bottom-3 left-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white shadow-lg backdrop-blur-sm transition-transform duration-150 active:scale-[0.96]"
-        >
-          <Pause className="h-5 w-5" fill="currentColor" strokeWidth={0} />
-        </button>
+          onSeek={handleSeek}
+        />
       )}
     </div>
   );

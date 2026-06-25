@@ -1662,7 +1662,7 @@ function ImageGallery({
           )}
 
           {/* Dots */}
-          {len > 1 && (
+          {len > 1 && slides[activeIndex]?.kind !== "video" && (
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5 rounded-full bg-black/30 backdrop-blur-sm px-2.5 py-1.5">
               {slides.map((_, i) => (
                 <button
