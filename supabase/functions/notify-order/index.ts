@@ -8,6 +8,15 @@ const corsHeaders = {
 
 const EMAIL_SENDER_DOMAIN = "notify.shopbanao.in";
 
+// L4: PII redaction for logs. Keep enough signal to debug (first char + domain)
+// without persisting full addresses in log storage.
+function maskEmail(e?: string | null): string {
+  if (!e) return "—";
+  const [u, d] = String(e).split("@");
+  if (!u || !d) return "***";
+  return `${u[0]}***@${d}`;
+}
+
 function getEmailFrom(storeName: string) {
   // Sanitize store name for email FROM field (remove special chars)
   const safeName = storeName.replace(/[<>"]/g, "").trim() || "Store";
@@ -218,10 +227,10 @@ async function enqueueEmail(supabase: any, queueName: string, messageId: string,
     payload: payload,
   });
   if (error) {
-    console.error(`enqueue_email error for ${recipientEmail}:`, JSON.stringify(error));
+    console.error(`enqueue_email error for ${maskEmail(recipientEmail)}:`, JSON.stringify(error));
     throw error;
   }
-  console.log(`Email enqueued for ${recipientEmail}, msg_id: ${data}`);
+  console.log(`Email enqueued for ${maskEmail(recipientEmail)}, msg_id: ${data}`);
   return data;
 }
 
@@ -284,7 +293,7 @@ Deno.serve(async (req) => {
     const storeName = storeData?.name || "Store";
     const ownerEmail = storeData?.owner_email?.trim().toLowerCase() || "";
     
-    console.log(`Store data: name=${storeName}, logo_url=${storeData?.logo_url || 'NONE'}, owner_email=${ownerEmail || 'NONE'}`);
+    console.log(`Store data: name=${storeName}, logo_url=${storeData?.logo_url ? 'SET' : 'NONE'}, owner_email=${maskEmail(ownerEmail)}`);
 
     // Try queue first, fall back to direct Resend
     let queueWorked = false;
@@ -365,7 +374,7 @@ Deno.serve(async (req) => {
       console.error("Push notification trigger error:", (e as Error).message);
     }
 
-    console.log(`notify-order completed for ${order_id}, push_only: ${push_only}, customer: ${normalizedEmail}, owner: ${ownerEmail}, queue: ${queueWorked}`);
+    console.log(`notify-order completed for ${order_id}, push_only: ${push_only}, customer: ${maskEmail(normalizedEmail)}, owner: ${maskEmail(ownerEmail)}, queue: ${queueWorked}`);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -403,8 +412,8 @@ async function sendEmailDirect(to: string, subject: string, html: string) {
 
   if (!res.ok) {
     const err = await res.text();
-    console.error(`Resend error for ${to}:`, err);
+    console.error(`Resend error for ${maskEmail(to)}:`, err);
   } else {
-    console.log(`Email sent directly to ${to}`);
+    console.log(`Email sent directly to ${maskEmail(to)}`);
   }
 }

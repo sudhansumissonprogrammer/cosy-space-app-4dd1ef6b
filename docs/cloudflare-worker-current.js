@@ -283,6 +283,42 @@ async function _stripTrackersForBot(response) {
   return response;
 }
 
+// L6/L7 security headers (always applied; cheap & non-breaking).
+const _SECURITY_BASE_HEADERS = {
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "strict-origin-when-cross-origin",
+};
+// CSP in Report-Only first — collects violations in browser devtools without
+// blocking anything. Promote to enforced CSP once owners report no breakage.
+const _CSP_REPORT_ONLY =
+  "default-src 'self' https: data: blob:; " +
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; " +
+  "style-src 'self' 'unsafe-inline' https:; " +
+  "img-src 'self' data: blob: https:; " +
+  "font-src 'self' data: https:; " +
+  "connect-src 'self' https: wss:; " +
+  "frame-src 'self' https:; " +
+  "object-src 'none'; " +
+  "base-uri 'self'; " +
+  "form-action 'self' https:; " +
+  "frame-ancestors 'self';";
+
+function _applySecurityHeaders(response) {
+  try {
+    const h = new Headers(response.headers);
+    for (const [k, v] of Object.entries(_SECURITY_BASE_HEADERS)) {
+      if (!h.has(k)) h.set(k, v);
+    }
+    const ct = (h.get("content-type") || "").toLowerCase();
+    if (ct.includes("text/html") && !h.has("content-security-policy-report-only") && !h.has("content-security-policy")) {
+      h.set("content-security-policy-report-only", _CSP_REPORT_ONLY);
+    }
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers: h });
+  } catch {
+    return response;
+  }
+}
+
 async function finalizeResponse(request, response) {
   try {
     // P0: bot UA → strip trackers from HTML
@@ -315,7 +351,8 @@ async function finalizeResponse(request, response) {
   } catch {
     // Fail open — never break a response over fingerprint scrubbing
   }
-  return response;
+  // L6/L7: apply security headers as the final step on every response.
+  return _applySecurityHeaders(response);
 }
 
 /* ============================================================
