@@ -1616,9 +1616,9 @@ function ImageGallery({
           {/* Embla viewport */}
           <div
             ref={emblaRef}
-            className={`overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none transition-[max-height,border-radius] duration-300 ease-out ${
+            className={`overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none transition-[height,border-radius] duration-300 ease-out ${
               pinned
-                ? "max-h-[34vh] lg:max-h-none rounded-2xl lg:rounded-2xl [&_img]:!max-h-[34vh] [&_video]:!max-h-[34vh] [&_img]:!object-contain"
+                ? "!h-[34vh] lg:!h-auto rounded-2xl lg:rounded-2xl [&_img]:!h-[34vh] [&_video]:!h-[34vh] [&_img]:!object-contain [&_video]:!object-contain"
                 : ""
             }`}
           >
