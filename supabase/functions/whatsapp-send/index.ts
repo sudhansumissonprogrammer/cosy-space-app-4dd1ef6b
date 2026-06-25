@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { fetchWithTimeout } from "../_shared/http.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -165,7 +166,7 @@ Deno.serve(async (req) => {
     }
 
     // Call Meta WhatsApp Cloud API
-    const metaResponse = await fetch(
+    const metaResponse = await fetchWithTimeout(
       `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
       {
         method: "POST",

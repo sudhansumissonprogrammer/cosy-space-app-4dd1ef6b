@@ -1,6 +1,7 @@
 // Verifies a Cashfree payment after redirect/return from checkout.
 // Called by frontend with order_id; we re-fetch from Cashfree (source of truth).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { fetchWithTimeout } from "../_shared/http.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,7 +52,7 @@ Deno.serve(async (req) => {
     }
 
     // Fetch from Cashfree (source of truth)
-    const cfRes = await fetch(`${CF_BASE}/orders/${order_id}`, {
+    const cfRes = await fetchWithTimeout(`${CF_BASE}/orders/${order_id}`, {
       headers: {
         "x-api-version": "2023-08-01",
         "x-client-id": CASHFREE_APP_ID,
@@ -110,7 +111,7 @@ function nextAnchoredPeriodEnd(from: Date, anchorDay: number): Date {
 }
 
 async function getSuccessfulPayment(orderId: string): Promise<any | null> {
-  const res = await fetch(`${CF_BASE}/orders/${orderId}/payments`, {
+  const res = await fetchWithTimeout(`${CF_BASE}/orders/${orderId}/payments`, {
     headers: {
       "x-api-version": "2023-08-01",
       "x-client-id": CASHFREE_APP_ID,
