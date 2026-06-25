@@ -12,6 +12,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 import { computePayuReverseHash, mapPayuStatus } from "../_shared/payuHelpers.ts";
+import { timingSafeEqual } from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -110,13 +111,14 @@ Deno.serve(async (req) => {
       additionalCharges: additionalCharges || undefined,
     });
 
-    if (computed.toLowerCase() !== String(receivedHash).toLowerCase()) {
+    if (!timingSafeEqual(computed.toLowerCase(), String(receivedHash).toLowerCase())) {
       console.warn("payu-webhook signature mismatch", { txnid, storeId });
       return new Response("Invalid signature", { status: 401 });
     }
 
-    // Idempotency via webhook_events
-    const eventId = `payu:${txnid}:${status}:${mihpayid || amount}`;
+    // Idempotency via webhook_events — scope event_id by storeId so two stores
+    // can never collide on a shared txnid.
+    const eventId = `payu:${storeId}:${txnid}:${status}:${mihpayid || amount}`;
     const { error: dupErr } = await supabase
       .from("webhook_events")
       .insert({ provider: "payu", event_id: eventId, payload: body });
