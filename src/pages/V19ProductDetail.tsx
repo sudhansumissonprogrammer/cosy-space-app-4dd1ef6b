@@ -23,6 +23,7 @@ import V19ProductCard from "@/components/storefront/v19/V19ProductCard";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { ZoomHint } from "@/components/storefront/ZoomableGallery";
+import { SnapVideoSlide } from "@/components/storefront/SnapVideoSlide";
 import {
   DeliveryEtaPill, CouponTeaser, TopReviewsStrip, BundleCard, StockUrgencyStrip, StickyAddInfo,
 } from "@/components/storefront/PdpEnhancements";
@@ -337,14 +338,8 @@ export default function V19ProductDetail() {
           {(gallerySlides.length ? gallerySlides : [null]).map((slide, i) => (
             <div key={i} className="flex-shrink-0 w-full aspect-square bg-white flex items-center justify-center">
               {slide?.kind === "video" ? (
-                <video
-                  src={slide.url}
-                  poster={slide.poster ? optimizeImageUrl(slide.poster, 800, 90) : undefined}
-                  className="h-full w-full object-contain bg-black"
-                  controls
-                  playsInline
-                  preload="metadata"
-                />
+                <SnapVideoSlide url={slide.url} poster={slide.poster ? optimizeImageUrl(slide.poster, 800, 90) : undefined} />
+
               ) : slide?.kind === "image" ? (
                 <img
                   src={optimizeImageUrl(slide.url, 800, 90)}
