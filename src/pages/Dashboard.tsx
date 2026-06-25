@@ -130,7 +130,7 @@ export default function Dashboard() {
         .select("created_at, total, status, order_items(product_name, quantity, total)")
         .eq("store_id", storeId!)
         .in("status", REVENUE_STATUSES)
-        .order("created_at", { ascending: true })
+        .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
       return data as any[];
@@ -153,6 +153,7 @@ export default function Dashboard() {
 
   const ordersByMonth = (() => {
     if (!ordersData) return [];
+    // ordersData is newest-first (DESC limit 200) — sort ascending for chart display
     const map: Record<string, { month: string; orders: number; revenue: number }> = {};
     ordersData.forEach((o: any) => {
       const month = o.created_at.slice(0, 7);

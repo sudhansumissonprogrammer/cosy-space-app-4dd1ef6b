@@ -196,18 +196,24 @@ export default function StorePayments() {
 
         // Persist all sets of credentials so the merchant can flip between gateways
         // without re-typing — but only the active gateway is in `payment_methods`.
+        //
+        // SAFETY: NEVER overwrite an existing secret with null/empty. If the secret
+        // RPC failed transiently (network blip / permissions edge case), state will be ""
+        // even though the DB has a real secret. Sending null here would silently wipe
+        // the gateway and break every checkout. Only include a secret field when the
+        // user actually typed a non-empty value.
         const payload: Record<string, any> = {
           store_id: storeId!,
           payment_methods: methods,
           razorpay_key_id: razorpayKeyId.trim() || null,
-          razorpay_key_secret: razorpayKeySecret.trim() || null,
           cashfree_app_id: cashfreeAppId.trim() || null,
-          cashfree_secret_key: cashfreeSecretKey.trim() || null,
           cashfree_env: cashfreeEnv,
           payu_merchant_key: payuMerchantKey.trim() || null,
-          payu_merchant_salt: payuMerchantSalt.trim() || null,
           payu_env: payuEnv,
         };
+        if (razorpayKeySecret.trim()) payload.razorpay_key_secret = razorpayKeySecret.trim();
+        if (cashfreeSecretKey.trim()) payload.cashfree_secret_key = cashfreeSecretKey.trim();
+        if (payuMerchantSalt.trim()) payload.payu_merchant_salt = payuMerchantSalt.trim();
 
         if (paymentConfig) {
           const { error } = await (supabase as any)
