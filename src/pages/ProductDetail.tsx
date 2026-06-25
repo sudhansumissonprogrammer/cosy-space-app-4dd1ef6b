@@ -1664,11 +1664,7 @@ function ImageGallery({
           {/* Embla viewport */}
           <div
             ref={emblaRef}
-            className={`overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none transition-[height,border-radius] duration-300 ease-out ${
-              pinned
-                ? "!h-[34vh] lg:!h-auto rounded-2xl lg:rounded-2xl [&_img]:!h-[34vh] [&_video]:!h-[34vh] [&_img]:!object-contain [&_video]:!object-contain"
-                : ""
-            }`}
+            className="overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none"
           >
             <div className="flex touch-pan-y items-start transition-[height] duration-200">
               {renderSlides.map((slide, i) => {
