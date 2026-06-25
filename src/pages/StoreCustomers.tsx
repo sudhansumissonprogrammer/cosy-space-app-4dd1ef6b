@@ -102,7 +102,9 @@ export default function StoreCustomers() {
     enabled: !!selectedCustomer && !!storeId,
   });
 
-  const totalSpent = customerOrders?.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) || 0;
+  // LTV excludes cancelled/refunded/pending — only realized revenue counts.
+  const REVENUE_STATUSES = new Set(["confirmed", "shipped", "delivered", "partially_paid"]);
+  const totalSpent = customerOrders?.reduce((sum: number, o: any) => REVENUE_STATUSES.has(o.status) ? sum + Number(o.total || 0) : sum, 0) || 0;
 
   const currencySymbol = store?.currency === "INR" ? "₹" : store?.currency === "USD" ? "$" : (store?.currency || "$");
 
