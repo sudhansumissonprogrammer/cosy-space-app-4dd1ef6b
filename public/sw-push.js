@@ -80,7 +80,19 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   if (event.action === "dismiss") return;
 
-  const url = event.notification.data?.url || "/dashboard";
+  // SECURITY: only allow navigation to same-origin URLs to prevent
+  // open-redirect / phishing from a tampered push payload.
+  const rawUrl = event.notification.data?.url || "/dashboard";
+  let safeUrl = "/dashboard";
+  try {
+    const parsed = new URL(rawUrl, self.location.origin);
+    if (parsed.origin === self.location.origin) {
+      safeUrl = parsed.pathname + parsed.search + parsed.hash;
+    }
+  } catch {
+    safeUrl = "/dashboard";
+  }
+
   event.waitUntil(
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
@@ -90,14 +102,14 @@ self.addEventListener("notificationclick", (event) => {
             const cu = new URL(c.url);
             if (cu.origin === self.location.origin && "focus" in c) {
               c.focus();
-              if ("navigate" in c) c.navigate(url).catch(() => {});
+              if ("navigate" in c) c.navigate(safeUrl).catch(() => {});
               return;
             }
           } catch {
             /* noop */
           }
         }
-        if (self.clients.openWindow) return self.clients.openWindow(url);
+        if (self.clients.openWindow) return self.clients.openWindow(safeUrl);
       }),
   );
 });
