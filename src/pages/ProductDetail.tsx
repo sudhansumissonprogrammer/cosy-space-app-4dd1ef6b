@@ -1483,6 +1483,39 @@ function ImageGallery({
     [AutoHeight()]
   );
 
+  // ── Premium PDP: scroll-driven sticky-shrink for mobile gallery ──
+  // Once user scrolls past ~140px, the gallery pins to top and shrinks to a
+  // compact card while title/price/description scroll underneath.
+  const [pinned, setPinned] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    // Respect prefers-reduced-motion — keep static layout for accessibility.
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (mq.matches) return;
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const next = window.scrollY > 140;
+        setPinned((prev) => (prev === next ? prev : next));
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  // Let Embla AutoHeight recompute after the max-height transition completes.
+  useEffect(() => {
+    if (!embla) return;
+    const t = setTimeout(() => embla.reInit(), 320);
+    return () => clearTimeout(t);
+  }, [pinned, embla]);
+
   // Sync activeIndex with Embla — pause video when sliding away.
   useEffect(() => {
     if (!embla) return;
@@ -1559,7 +1592,11 @@ function ImageGallery({
 
   return (
     <>
-      <div className="space-y-1 sm:space-y-2 lg:sticky lg:top-4">
+      <div
+        className={`space-y-1 sm:space-y-2 lg:sticky lg:top-4 sticky top-0 z-30 lg:z-auto transition-[box-shadow,background-color,backdrop-filter] duration-300 ${
+          pinned ? "lg:!shadow-none shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)] bg-background/85 backdrop-blur-md lg:bg-transparent lg:backdrop-blur-none" : "bg-transparent"
+        }`}
+      >
         <div className="relative -mx-4 sm:mx-0 px-2 pt-2 pb-1 sm:p-0">
           {/* Discount badge */}
           {hasDiscount && discountPct > 0 && (
@@ -1591,7 +1628,11 @@ function ImageGallery({
           {/* Embla viewport */}
           <div
             ref={emblaRef}
-            className="overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none"
+            className={`overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none transition-[max-height,border-radius] duration-300 ease-out ${
+              pinned
+                ? "max-h-[34vh] lg:max-h-none rounded-2xl lg:rounded-2xl [&_img]:!max-h-[34vh] [&_video]:!max-h-[34vh] [&_img]:!object-contain"
+                : ""
+            }`}
           >
             <div className="flex touch-pan-y items-start transition-[height] duration-200">
               {renderSlides.map((slide, i) => {
@@ -1694,9 +1735,13 @@ function ImageGallery({
           )}
         </div>
 
-        {/* Thumbnail strip — mobile + desktop */}
+        {/* Thumbnail strip — mobile + desktop, collapsed when pinned */}
         {len > 1 && (
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide px-3 sm:px-0.5 py-2 sm:py-1">
+          <div
+            className={`flex gap-2 overflow-x-auto scrollbar-hide px-3 sm:px-0.5 transition-all duration-300 ease-out ${
+              pinned ? "max-h-0 py-0 opacity-0 pointer-events-none lg:max-h-20 lg:py-1 lg:opacity-100 lg:pointer-events-auto" : "max-h-20 py-2 sm:py-1 opacity-100"
+            }`}
+          >
             {slides.map((slide, i) => {
               const thumbSrc = slide.kind === "video" ? (slide.poster || "") : slide.url;
               return (
