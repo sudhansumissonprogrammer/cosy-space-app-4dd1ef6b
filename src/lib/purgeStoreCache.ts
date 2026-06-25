@@ -36,23 +36,18 @@ const recentPurges = new Map<string, { ts: number; result: boolean }>();
 const trailingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 async function _doPurge(slug: string, customDomain: string | null | undefined, opts: PurgeOptions): Promise<boolean> {
-  const cleanDomain = customDomain?.replace(/^www\./, "").toLowerCase().trim();
-  const bases = [`https://${slug}.shopbanao.in`, ...(cleanDomain ? [`https://${cleanDomain}`] : [])];
-  const params = new URLSearchParams({ slug });
-  if (cleanDomain) params.set("domain", cleanDomain);
-
-  const calls: Promise<Response | null>[] = bases.map((base) =>
-    fetch(`${base}/api/purge-store?${params.toString()}`, { method: "POST", cache: "no-store" }).catch(() => null),
-  );
-  if (opts.shell) {
-    calls.push(...bases.map((base) =>
-      fetch(`${base}/api/purge-shell?${params.toString()}`, { method: "POST", cache: "no-store" }).catch(() => null),
-    ));
-  }
-
+  // SECURITY: worker /api/purge-* endpoints are now secret-gated (fail-closed) to
+  // prevent anonymous cache-DoS. Route purges through the authenticated
+  // `purge-cache` edge function — it verifies store ownership and holds the
+  // shared secret server-side.
   try {
-    const results = await Promise.allSettled(calls);
-    return results.every((r) => r.status === "fulfilled" && !!r.value?.ok);
+    const { supabase } = await import("@/integrations/supabase/client");
+    const cleanDomain = customDomain?.replace(/^www\./, "").toLowerCase().trim() || null;
+    const { data, error } = await supabase.functions.invoke("purge-cache", {
+      body: { slug, customDomain: cleanDomain, shell: !!opts.shell },
+    });
+    if (error) return false;
+    return !!(data as { ok?: boolean } | null)?.ok;
   } catch {
     return false;
   }
