@@ -5159,6 +5159,21 @@ async function _fallbackProducts(domain, filters, version, env) {
   );
 }
 
+// Timing-safe shared-secret check for /api/purge-* endpoints.
+// Accepts secret via `x-purge-secret` header or `?secret=` query param (legacy callers).
+// Set env.PURGE_SECRET via `wrangler secret put PURGE_SECRET` (or Cloudflare dashboard).
+// Without a secret configured, refuses ALL purge requests (fail-closed).
+function _isPurgeAuthorized(request, env) {
+  const expected = env && env.PURGE_SECRET;
+  if (!expected || typeof expected !== "string") return false;
+  const url = new URL(request.url);
+  const provided = request.headers.get("x-purge-secret") || url.searchParams.get("secret") || "";
+  if (!provided || provided.length !== expected.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ provided.charCodeAt(i);
+  return diff === 0;
+}
+
 async function handlePurgeProducts(request, url, ctx, env) {
   const domain = (request.headers.get("host") || url.hostname)
     .replace(/^www\./, "")
