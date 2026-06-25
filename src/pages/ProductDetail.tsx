@@ -1767,13 +1767,9 @@ function ImageGallery({
           )}
         </div>
 
-        {/* Thumbnail strip — mobile + desktop, collapsed when pinned */}
+        {/* Thumbnail strip — mobile + desktop */}
         {len > 1 && (
-          <div
-            className={`flex gap-2 overflow-x-auto scrollbar-hide px-3 sm:px-0.5 transition-all duration-300 ease-out ${
-              pinned ? "max-h-0 py-0 opacity-0 pointer-events-none lg:max-h-20 lg:py-1 lg:opacity-100 lg:pointer-events-auto" : "max-h-20 py-2 sm:py-1 opacity-100"
-            }`}
-          >
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide px-3 sm:px-0.5 py-2 sm:py-1">
             {slides.map((slide, i) => {
               const thumbSrc = slide.kind === "video" ? (slide.poster || "") : slide.url;
               return (
