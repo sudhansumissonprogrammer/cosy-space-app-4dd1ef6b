@@ -98,10 +98,7 @@ export default function BulkEditDialog({ products, storeId }: BulkEditDialogProp
     mutationFn: async () => {
       const ids = Array.from(selected);
       if (ids.length === 0) throw new Error("No products selected");
-      const { error: imgErr } = await supabase.from("product_images").delete().in("product_id", ids);
-      if (imgErr) throw imgErr;
-      const { error: varErr } = await supabase.from("product_variants").delete().in("product_id", ids);
-      if (varErr) throw varErr;
+      // FK ON DELETE CASCADE handles product_images & product_variants atomically
       const { error } = await supabase.from("products").delete().in("id", ids);
       if (error) throw error;
     },
