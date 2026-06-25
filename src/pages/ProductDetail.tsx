@@ -1487,16 +1487,24 @@ function ImageGallery({
   // Once user scrolls past ~140px, the gallery pins to top and shrinks to a
   // compact card while title/price/description scroll underneath.
   const [pinned, setPinned] = useState(false);
+  const galleryWrapRef = useRef<HTMLDivElement | null>(null);
+  const [naturalH, setNaturalH] = useState(0);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    // Respect prefers-reduced-motion — keep static layout for accessibility.
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (mq.matches) return;
+    // Disable on desktop — desktop already uses lg:sticky in a 2-col grid.
+    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+    if (isDesktop) return;
     let raf = 0;
     const onScroll = () => {
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
+        // Capture natural height once, before we pin.
+        if (!pinned && galleryWrapRef.current && naturalH === 0) {
+          setNaturalH(galleryWrapRef.current.offsetHeight);
+        }
         const next = window.scrollY > 140;
         setPinned((prev) => (prev === next ? prev : next));
       });
@@ -1507,7 +1515,7 @@ function ImageGallery({
       window.removeEventListener("scroll", onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [pinned, naturalH]);
 
   // Let Embla AutoHeight recompute after the max-height transition completes.
   useEffect(() => {
