@@ -374,7 +374,7 @@ Deno.serve(async (req) => {
       console.error("Push notification trigger error:", (e as Error).message);
     }
 
-    console.log(`notify-order completed for ${order_id}, push_only: ${push_only}, customer: ${normalizedEmail}, owner: ${ownerEmail}, queue: ${queueWorked}`);
+    console.log(`notify-order completed for ${order_id}, push_only: ${push_only}, customer: ${maskEmail(normalizedEmail)}, owner: ${maskEmail(ownerEmail)}, queue: ${queueWorked}`);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
