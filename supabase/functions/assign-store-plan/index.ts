@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
 
     const { data: plan, error: planError } = await adminClient
       .from("plans")
-      .select("id")
+      .select("id, price")
       .eq("id", planId)
       .eq("is_active", true)
       .maybeSingle();
@@ -91,6 +91,22 @@ Deno.serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // SECURITY: paid plans can NEVER be self-assigned. They must be granted
+    // by an admin (after payment verification) to prevent free upgrades.
+    const planPrice = Number(plan.price ?? 0);
+    if (planPrice > 0) {
+      const { data: isAdmin } = await adminClient.rpc("has_role", {
+        _user_id: user.id,
+        _role: "admin",
+      });
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: "Paid plans must be assigned by an administrator after payment" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     const { data: existingAssignment, error: existingError } = await adminClient
