@@ -94,10 +94,19 @@ export default function StoreOrders() {
   const [orderCount, setOrderCount] = useState<number>(0);
   const pagination = usePagination(orderCount);
 
+  // Sanitize free-text search for PostgREST: strip the chars that have meaning
+  // in `.or()` (commas, parens, dots, asterisks). What's left is matched with ilike.
+  const safeSearch = search.trim().replace(/[,()*.\\%]/g, "").slice(0, 50);
+
+  // Push search + date range to the SERVER so it works across all pages,
+  // not just the current 20 rows. (Previously: silent data loss — customer calls
+  // about old orders returned "no results" if the order wasn't on page 1.)
   const { data: allOrders, isLoading } = useQuery({
-    queryKey: ["website-orders-all", storeId, statusFilter, pagination.from, pagination.to],
-    // 30s cache: realtime subscription invalidates on new orders, so
-    // staleTime:0 was double-fetching on every focus/mount.
+    queryKey: [
+      "website-orders-all", storeId, statusFilter,
+      safeSearch, dateFrom?.toISOString() ?? null, dateTo?.toISOString() ?? null,
+      pagination.from, pagination.to,
+    ],
     staleTime: 30_000,
     refetchOnWindowFocus: false,
     queryFn: async () => {
@@ -111,6 +120,26 @@ export default function StoreOrders() {
         .order("created_at", { ascending: false })
         .range(pagination.from, pagination.to);
       if (statusFilter) query = query.eq("status", statusFilter);
+      if (safeSearch) {
+        // Match phone (substring), name (substring), or order number.
+        const orParts = [
+          `customer_phone.ilike.%${safeSearch}%`,
+          `customer_name.ilike.%${safeSearch}%`,
+        ];
+        const asNumber = Number(safeSearch.replace(/^#?/, ""));
+        if (Number.isFinite(asNumber) && asNumber >= 1000) {
+          orParts.push(`order_number.eq.${asNumber - 1000}`);
+        }
+        query = query.or(orParts.join(","));
+      }
+      if (dateFrom) {
+        const fromStart = new Date(dateFrom); fromStart.setHours(0, 0, 0, 0);
+        query = query.gte("created_at", fromStart.toISOString());
+      }
+      if (dateTo) {
+        const toEnd = new Date(dateTo); toEnd.setHours(23, 59, 59, 999);
+        query = query.lte("created_at", toEnd.toISOString());
+      }
       const { data, error, count } = await query;
       if (error) throw error;
       if (typeof count === "number") setOrderCount(count);
@@ -120,32 +149,8 @@ export default function StoreOrders() {
   });
 
 
-  const filteredOrders = useMemo(() => {
-    if (!allOrders) return [];
-    let result = [...allOrders];
-    // Search is client-side on current page
-    if (search.trim()) {
-      const q = search.toLowerCase().trim();
-      result = result.filter(o => {
-        const displayId = o.order_number ? `#${1000 + o.order_number}` : o.id.slice(0, 8);
-        return displayId.toLowerCase().includes(q) ||
-          (o.customer_name && o.customer_name.toLowerCase().includes(q)) ||
-          (o.customer_phone && o.customer_phone.includes(q));
-      });
-    }
-    // Date filters are client-side on current page
-    if (dateFrom) {
-      const fromStart = new Date(dateFrom);
-      fromStart.setHours(0, 0, 0, 0);
-      result = result.filter(o => new Date(o.created_at) >= fromStart);
-    }
-    if (dateTo) {
-      const toEnd = new Date(dateTo);
-      toEnd.setHours(23, 59, 59, 999);
-      result = result.filter(o => new Date(o.created_at) <= toEnd);
-    }
-    return result;
-  }, [allOrders, search, dateFrom, dateTo]);
+  // Server already filtered by search + date range; no further client-side filtering needed.
+  const filteredOrders = useMemo(() => allOrders ?? [], [allOrders]);
 
   const paginatedOrders = filteredOrders;
 
@@ -262,12 +267,12 @@ export default function StoreOrders() {
 
   const bulkUpdateStatus = useMutation({
     mutationFn: async ({ orderIds, status }: { orderIds: string[]; status: string }) => {
-      const promises = orderIds.map(id =>
-        (supabase as any).from("orders").update({ status }).eq("id", id)
-      );
-      const results = await Promise.all(promises);
-      const failed = results.filter((r: any) => r.error);
-      if (failed.length > 0) throw new Error(`${failed.length} orders failed to update`);
+      // Single atomic round-trip via `.in('id', ids)` — no partial-failure state.
+      const { error } = await (supabase as any)
+        .from("orders")
+        .update({ status })
+        .in("id", orderIds);
+      if (error) throw error;
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });
@@ -281,11 +286,11 @@ export default function StoreOrders() {
 
   const bulkDeleteOrders = useMutation({
     mutationFn: async (orderIds: string[]) => {
-      for (const id of orderIds) {
-        await (supabase as any).from("order_items").delete().eq("order_id", id);
-        const { error } = await (supabase as any).from("orders").delete().eq("id", id);
-        if (error) throw error;
-      }
+      // Two atomic round-trips: items first (FK), then orders.
+      const itemsRes = await (supabase as any).from("order_items").delete().in("order_id", orderIds);
+      if (itemsRes.error) throw itemsRes.error;
+      const ordersRes = await (supabase as any).from("orders").delete().in("id", orderIds);
+      if (ordersRes.error) throw ordersRes.error;
     },
     onSuccess: (_, orderIds) => {
       queryClient.invalidateQueries({ queryKey: ["website-orders-all", storeId] });

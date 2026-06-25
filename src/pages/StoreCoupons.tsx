@@ -49,17 +49,49 @@ export default function StoreCoupons() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      // Validate before hitting the DB so owners can't save nonsensical coupons
+      // (e.g. 9999% discount, negative min order, expiry before start).
+      const trimmedCode = code.trim().toUpperCase();
+      if (!/^[A-Z0-9_-]{2,20}$/.test(trimmedCode)) {
+        throw new Error("Code must be 2-20 letters, numbers, _ or -");
+      }
+      const value = Number(discountValue);
+      if (!Number.isFinite(value) || value <= 0) {
+        throw new Error("Discount value must be greater than 0");
+      }
+      if (discountType === "percentage" && value > 100) {
+        throw new Error("Percentage discount cannot exceed 100%");
+      }
+      if (discountType === "flat" && value > 1_000_000) {
+        throw new Error("Flat discount looks too large");
+      }
+      const minOrder = Number(minOrderAmount) || 0;
+      if (minOrder < 0) throw new Error("Minimum order cannot be negative");
+      const maxUsesNum = maxUses ? Number(maxUses) : null;
+      if (maxUsesNum !== null && (!Number.isInteger(maxUsesNum) || maxUsesNum < 1)) {
+        throw new Error("Max uses must be a positive whole number");
+      }
+      const startsAtDate = new Date(startsAt);
+      const expiresAtDate = expiresAt ? new Date(expiresAt) : null;
+      if (expiresAtDate && expiresAtDate <= startsAtDate) {
+        throw new Error("Expiry must be after the start date");
+      }
+
       const { error } = await supabase.from("coupons").insert({
         store_id: storeId!,
-        code: code.toUpperCase().trim(),
+        code: trimmedCode,
         discount_type: discountType,
-        discount_value: Number(discountValue),
-        min_order_amount: Number(minOrderAmount) || 0,
-        max_uses: maxUses ? Number(maxUses) : null,
-        starts_at: new Date(startsAt).toISOString(),
-        expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+        discount_value: value,
+        min_order_amount: minOrder,
+        max_uses: maxUsesNum,
+        starts_at: startsAtDate.toISOString(),
+        expires_at: expiresAtDate ? expiresAtDate.toISOString() : null,
       });
-      if (error) throw error;
+      if (error) {
+        // Map duplicate-code constraint to a friendly message; otherwise show generic.
+        if ((error as any).code === "23505") throw new Error("A coupon with this code already exists");
+        throw new Error("Could not create coupon. Please try again.");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["coupons", storeId] });
