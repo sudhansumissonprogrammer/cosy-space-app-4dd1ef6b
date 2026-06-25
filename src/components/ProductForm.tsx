@@ -631,8 +631,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={async () => {
                       try {
-                        await supabase.from("product_images").delete().eq("product_id", productId);
-                        await supabase.from("product_variants").delete().eq("product_id", productId);
+                        // FK ON DELETE CASCADE handles product_images & product_variants atomically
                         const { error } = await supabase.from("products").delete().eq("id", productId);
                         if (error) throw error;
                         queryClient.invalidateQueries({ queryKey: ["products", storeId] });
