@@ -113,19 +113,16 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-  // Page views — raw is kept for 30 days only. For older periods we read
-  // from page_views_daily (rollup, kept forever). We always cap the raw
-  // query at the last 30 days so the dashboard never pulls millions of rows.
+  // Page views — RAW is only used for TODAY (the bucket not yet rolled up by
+  // the nightly cron). All historical days come from page_views_daily below.
+  // Previously this pulled 30 days of raw rows (up to 50k) which gets expensive
+  // at scale; narrowing to today keeps the dashboard fast at 100M+ rows.
   const { data: pageViews } = useQuery({
-    queryKey: ["analytics-views", storeIds],
+    queryKey: ["analytics-views-today", storeIds],
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
     queryFn: async () => {
-      const since = subDays(new Date(), 30).toISOString();
-      // NOTE: Supabase caps queries at 1000 rows by default. Stores with high
-      // traffic blow past that within 30 days, and ascending order made today's
-      // rows the ones cut off → "Today" tab showed 0 sessions. Fix: order
-      // descending (today first) and lift the row cap explicitly.
+      const since = startOfDay(new Date()).toISOString();
       const { data, error } = await supabase
         .from("page_views")
         .select("created_at, path, visitor_id, session_id, is_bot")
@@ -133,7 +130,7 @@ export default function StoreAnalytics() {
         .eq("is_bot", false)
         .gte("created_at", since)
         .order("created_at", { ascending: false })
-        .limit(50000);
+        .limit(20000);
       if (error) throw error;
       return data as any[];
     },
