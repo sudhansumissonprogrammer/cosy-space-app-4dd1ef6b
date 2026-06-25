@@ -11,6 +11,7 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { timingSafeEqual } from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -54,7 +55,7 @@ Deno.serve(async (req) => {
   // cron secret (what pg_cron sends, verified via SECURITY DEFINER RPC).
   const provided = req.headers.get("x-cron-secret") || "";
   const envSecret = Deno.env.get("PREWARM_CRON_SECRET") || "";
-  let ok = !!provided && provided === envSecret;
+  let ok = !!provided && !!envSecret && timingSafeEqual(provided, envSecret);
   if (!ok && provided) {
     const { data } = await supabase.rpc("verify_cron_secret", { _secret: provided });
     ok = data === true;
