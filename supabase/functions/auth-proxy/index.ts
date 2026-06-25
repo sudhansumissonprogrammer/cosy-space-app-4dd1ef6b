@@ -1,10 +1,4 @@
-
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { buildCors, matchAllowedOrigin } from "../_shared/security.ts";
 
 type AuthProxyAction = "login" | "signup";
 
@@ -54,8 +48,17 @@ function getErrorMessage(payload: unknown): string {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = buildCors(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  // Refuse requests from unknown origins — auth-proxy returns raw tokens.
+  if (!matchAllowedOrigin(req.headers.get("Origin"))) {
+    return new Response(JSON.stringify({ error: "Origin not allowed" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   try {
