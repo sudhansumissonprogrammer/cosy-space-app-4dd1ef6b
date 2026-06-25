@@ -285,9 +285,7 @@ export default function StoreOrders() {
 
   const bulkDeleteOrders = useMutation({
     mutationFn: async (orderIds: string[]) => {
-      // Two atomic round-trips: items first (FK), then orders.
-      const itemsRes = await (supabase as any).from("order_items").delete().in("order_id", orderIds);
-      if (itemsRes.error) throw itemsRes.error;
+      // order_items cascades via FK ON DELETE CASCADE — single atomic delete.
       const ordersRes = await (supabase as any).from("orders").delete().in("id", orderIds);
       if (ordersRes.error) throw ordersRes.error;
     },
