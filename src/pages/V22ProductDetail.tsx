@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import useEmblaCarousel from "embla-carousel-react";
+import AutoHeight from "embla-carousel-auto-height";
 import { createPortal } from "react-dom";
 import { useParams, Link, useOutletContext, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1460,13 +1461,16 @@ function ImageGallery({
   const len = slides.length;
   const canLoop = len > 1;
 
-  const [emblaRef, embla] = useEmblaCarousel({
-    loop: canLoop,
-    align: "center",
-    skipSnaps: false,
-    dragFree: false,
-    duration: 22,
-  });
+  const [emblaRef, embla] = useEmblaCarousel(
+    {
+      loop: canLoop,
+      align: "center",
+      skipSnaps: false,
+      dragFree: false,
+      duration: 22,
+    },
+    [AutoHeight()]
+  );
 
   // Sync activeIndex with Embla
   useEffect(() => {
@@ -1568,7 +1572,7 @@ function ImageGallery({
             ref={emblaRef}
             className="overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none"
           >
-            <div className="flex touch-pan-y">
+            <div className="flex touch-pan-y items-start transition-[height] duration-200">
               {renderSlides.map((slide, i) => {
                 const realIdx = len === 1 ? 0 : i;
                 if (slide.kind === "video") {
