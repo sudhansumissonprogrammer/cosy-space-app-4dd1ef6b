@@ -1,6 +1,7 @@
 // Daily billing cron — runs trial expirations, grace periods, and suspensions.
 // Should be invoked by a scheduled cron (pg_cron).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { timingSafeEqual } from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,9 +18,10 @@ Deno.serve(async (req) => {
 
   // Auth: accept either the dedicated env secret (manual runs) or a DB-issued
   // cron secret (what pg_cron sends, verified via SECURITY DEFINER RPC).
+  // Constant-time compare to prevent timing-oracle leak of the env secret.
   const provided = req.headers.get("x-cron-secret") || "";
   const envSecret = Deno.env.get("BILLING_CRON_SECRET") || "";
-  let ok = !!provided && provided === envSecret;
+  let ok = !!provided && !!envSecret && timingSafeEqual(provided, envSecret);
   if (!ok && provided) {
     const { data } = await supabase.rpc("verify_cron_secret", { _secret: provided });
     ok = data === true;
