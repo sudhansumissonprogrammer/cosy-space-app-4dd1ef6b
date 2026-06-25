@@ -20,6 +20,7 @@ import V20ProductCard from "@/components/storefront/v20/V20ProductCard";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { ZoomHint } from "@/components/storefront/ZoomableGallery";
+import { SnapVideoSlide } from "@/components/storefront/SnapVideoSlide";
 import {
   DeliveryEtaPill, CouponTeaser, TopReviewsStrip, BundleCard, StockUrgencyStrip, StickyAddInfo,
 } from "@/components/storefront/PdpEnhancements";
@@ -288,7 +289,8 @@ export default function V20ProductDetail() {
           {(gallerySlides.length ? gallerySlides : [null]).map((slide, i) => (
             <div key={i} className="flex-shrink-0 w-full aspect-square bg-white flex items-center justify-center">
               {slide?.kind === "video" ? (
-                <video src={slide.url} poster={slide.poster ? optimizeImageUrl(slide.poster, 800, 90) : undefined} className="h-full w-full object-contain bg-black" controls playsInline preload="metadata" />
+                <SnapVideoSlide url={slide.url} poster={slide.poster ? optimizeImageUrl(slide.poster, 800, 90) : undefined} />
+
               ) : slide?.kind === "image" ? (
                 <img src={optimizeImageUrl(slide.url, 800, 90)} alt={`${product.name} ${i + 1}`} className="max-h-full max-w-full object-contain p-6 cursor-zoom-in"
                   loading={i === 0 ? "eager" : "lazy"} fetchPriority={i === 0 ? "high" : "auto"} onClick={() => setZoomOpen(true)} />
