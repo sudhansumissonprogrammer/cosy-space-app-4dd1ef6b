@@ -1598,25 +1598,14 @@ function ImageGallery({
                 if (slide.kind === "video") {
                   const isActive = realIdx === activeIndex;
                   return (
-                    <div
+                    <VideoSlide
                       key={`${i}-vid-${slide.url}`}
-                      className="relative flex-[0_0_100%] min-w-0 bg-black"
-                      onClick={(e) => {
-                        // Don't open lightbox for video slide
-                        e.stopPropagation();
-                      }}
-                    >
-                      <video
-                        src={slide.url}
-                        poster={slide.poster ? optimizeImageUrl(slide.poster, 800) : undefined}
-                        preload={isActive && videoPlaying ? "auto" : "none"}
-                        playsInline
-                        controls
-                        className="w-full h-auto max-h-[80vh] object-contain bg-black"
-                        onPlay={() => setVideoPlaying(true)}
-                        onPause={() => setVideoPlaying(false)}
-                      />
-                    </div>
+                      url={slide.url}
+                      poster={slide.poster ? optimizeImageUrl(slide.poster, 800) : undefined}
+                      isActive={isActive}
+                      videoPlaying={videoPlaying}
+                      setVideoPlaying={setVideoPlaying}
+                    />
                   );
                 }
                 const loaded = imageLoaded[realIdx];
