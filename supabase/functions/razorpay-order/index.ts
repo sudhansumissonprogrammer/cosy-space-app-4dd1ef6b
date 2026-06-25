@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { fetchWithTimeout } from "../_shared/http.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -116,7 +117,7 @@ Deno.serve(async (req) => {
 
     // Create Razorpay order with DB-authoritative amount
     const amountInPaise = Math.round(chargeAmount * 100);
-    const rzpRes = await fetch("https://api.razorpay.com/v1/orders", {
+    const rzpRes = await fetchWithTimeout("https://api.razorpay.com/v1/orders", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

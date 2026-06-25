@@ -1,6 +1,7 @@
 // Creates a Cashfree payment order for a store's monthly subscription.
 // Idempotent: returns existing pending order if one exists for the same period.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { fetchWithTimeout } from "../_shared/http.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -112,7 +113,7 @@ Deno.serve(async (req) => {
       order_tags: { store_id: storeId, plan_id: state.plan_id },
     };
 
-    const cfRes = await fetch(`${CF_BASE}/orders`, {
+    const cfRes = await fetchWithTimeout(`${CF_BASE}/orders`, {
       method: "POST",
       headers: {
         "x-api-version": "2023-08-01",

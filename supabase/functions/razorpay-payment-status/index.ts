@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { fetchWithTimeout } from "../_shared/http.ts";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 
 const corsHeaders = {
@@ -77,7 +78,7 @@ Deno.serve(async (req) => {
 
       // Ask Razorpay if any payment was captured for this rzp order
       if (order?.razorpay_order_id) {
-        const rzpRes = await fetch(
+        const rzpRes = await fetchWithTimeout(
           `https://api.razorpay.com/v1/orders/${order.razorpay_order_id}/payments`,
           { headers: { Authorization: authHeader } }
         );
@@ -97,7 +98,7 @@ Deno.serve(async (req) => {
               .eq("id", order_id)
               .eq("store_id", store_id);
             if (captured.status === "authorized") {
-              await fetch(`https://api.razorpay.com/v1/payments/${captured.id}/capture`, {
+              await fetchWithTimeout(`https://api.razorpay.com/v1/payments/${captured.id}/capture`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: authHeader },
                 body: JSON.stringify({ amount: captured.amount, currency: captured.currency }),
@@ -120,7 +121,7 @@ Deno.serve(async (req) => {
     }
 
     // Fetch payment status from Razorpay
-    const payRes = await fetch(`https://api.razorpay.com/v1/payments/${razorpay_payment_id}`, {
+    const payRes = await fetchWithTimeout(`https://api.razorpay.com/v1/payments/${razorpay_payment_id}`, {
       headers: { Authorization: authHeader },
     });
 
@@ -149,7 +150,7 @@ Deno.serve(async (req) => {
 
       // Auto-capture if only authorized
       if (status === "authorized") {
-        await fetch(`https://api.razorpay.com/v1/payments/${razorpay_payment_id}/capture`, {
+        await fetchWithTimeout(`https://api.razorpay.com/v1/payments/${razorpay_payment_id}/capture`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: authHeader },
           body: JSON.stringify({ amount: payment.amount, currency: payment.currency }),
