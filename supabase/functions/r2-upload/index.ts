@@ -21,6 +21,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import encodeWebp from "npm:@jsquash/webp@1.4.0/encode.js";
 import decodeJpeg from "npm:@jsquash/jpeg@1.5.0/decode.js";
 import decodePng from "npm:@jsquash/png@3.1.0/decode.js";
+import { sniffImageMime } from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -83,12 +84,13 @@ Deno.serve(async (req) => {
     );
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
-    if (claimsErr || !claimsData?.claims) {
+    if (claimsErr || !claimsData?.claims?.sub) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const userId = claimsData.claims.sub as string;
 
     const form = await req.formData();
     const file = form.get("file");
@@ -107,6 +109,29 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Path-traversal + tenant-isolation guard.
+    // Every upload key MUST begin with the caller's own user id segment
+    // (matches how clients currently build paths: "<userId>/<storeId>/...").
+    // This blocks "../" tricks AND cross-user overwrites.
+    if (rawPath.includes("..") || rawPath.includes("\\")) {
+      return new Response(JSON.stringify({ error: "Invalid path" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const firstSegment = rawPath.split("/")[0];
+    if (firstSegment !== userId) {
+      // Allow admins to upload anywhere.
+      const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden: path must start with your user id" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const isVideo = (file.type || "").startsWith("video/") || bucket === "product-videos";
     const sizeLimit = isVideo ? 100 * 1024 * 1024 : 15 * 1024 * 1024;
     if (file.size > sizeLimit) {
