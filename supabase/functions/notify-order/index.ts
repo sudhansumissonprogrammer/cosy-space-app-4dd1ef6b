@@ -412,8 +412,8 @@ async function sendEmailDirect(to: string, subject: string, html: string) {
 
   if (!res.ok) {
     const err = await res.text();
-    console.error(`Resend error for ${to}:`, err);
+    console.error(`Resend error for ${maskEmail(to)}:`, err);
   } else {
-    console.log(`Email sent directly to ${to}`);
+    console.log(`Email sent directly to ${maskEmail(to)}`);
   }
 }
