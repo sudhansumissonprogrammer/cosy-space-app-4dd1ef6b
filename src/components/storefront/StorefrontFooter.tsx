@@ -19,17 +19,19 @@ function PaymentIcons({ store }: { store: StoreData }) {
     queryFn: async () => {
       const { data } = await supabase
         .from("store_payment_config")
-        .select("cod_enabled, razorpay_enabled, cashfree_enabled, payu_enabled, upi_enabled")
+        .select("payment_methods")
         .eq("store_id", store.id)
         .maybeSingle();
-      return data as { cod_enabled?: boolean; razorpay_enabled?: boolean; cashfree_enabled?: boolean; payu_enabled?: boolean; upi_enabled?: boolean } | null;
+      return data as { payment_methods?: string[] | null } | null;
     },
     staleTime: 10 * 60 * 1000,
   });
-  const hasCard = !!(cfg?.razorpay_enabled || cfg?.cashfree_enabled || cfg?.payu_enabled);
-  const hasUpi = !!(cfg?.upi_enabled || cfg?.razorpay_enabled || cfg?.cashfree_enabled || cfg?.payu_enabled);
-  const hasCod = !!cfg?.cod_enabled;
+  const methods = new Set((cfg?.payment_methods || []).map((m) => String(m).toLowerCase()));
+  const hasCard = methods.has("razorpay") || methods.has("cashfree") || methods.has("payu");
+  const hasUpi = hasCard || methods.has("upi");
+  const hasCod = methods.has("cod");
   if (!hasCard && !hasUpi && !hasCod) return null;
+
   return (
     <div className="flex items-center gap-3 flex-wrap">
       {hasCard && <div className="h-7 px-2 rounded bg-white/10 flex items-center justify-center text-[9px] font-bold tracking-wide opacity-60">CARD</div>}
