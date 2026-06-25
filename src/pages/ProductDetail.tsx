@@ -1598,19 +1598,40 @@ function ImageGallery({
   })();
 
 
+  // Pinned mini-bar (mobile only) — portaled to body to escape PageTransition transform.
+  const activeSlide = slides[activeIndex] || slides[0];
+  const miniSrc = activeSlide
+    ? (activeSlide.kind === "video" ? (activeSlide.poster || "") : activeSlide.url)
+    : "";
+
   return (
     <>
-      {/* Spacer reserves layout space while gallery is fixed-pinned on mobile */}
-      {pinned && naturalH > 0 && (
-        <div aria-hidden className="lg:hidden" style={{ height: naturalH }} />
+      {pinned && miniSrc && typeof document !== "undefined" && createPortal(
+        <div
+          aria-hidden
+          className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-background/92 backdrop-blur-md shadow-[0_8px_24px_-16px_rgba(0,0,0,0.35)] px-3 py-2 animate-in fade-in slide-in-from-top-2 duration-200"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        >
+          <div className="relative h-[28vh] max-h-[240px] w-full overflow-hidden rounded-2xl bg-muted">
+            <img
+              src={optimizeImageUrl(miniSrc, 800)}
+              alt={productName}
+              className="h-full w-full object-contain"
+              decoding="async"
+              draggable={false}
+            />
+            {activeSlide?.kind === "video" && (
+              <span className="absolute inset-0 flex items-center justify-center bg-black/30">
+                <Play className="h-8 w-8 text-white drop-shadow" fill="currentColor" />
+              </span>
+            )}
+          </div>
+        </div>,
+        document.body
       )}
       <div
         ref={galleryWrapRef}
-        className={`space-y-1 sm:space-y-2 lg:sticky lg:top-4 lg:!static-none transition-[box-shadow,background-color,backdrop-filter] duration-300 ${
-          pinned
-            ? "fixed top-0 left-0 right-0 z-30 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)] bg-background/92 backdrop-blur-md lg:!relative lg:!shadow-none lg:bg-transparent lg:backdrop-blur-none"
-            : "relative bg-transparent"
-        }`}
+        className="space-y-1 sm:space-y-2 lg:sticky lg:top-4"
       >
         <div className="relative -mx-4 sm:mx-0 px-2 pt-2 pb-1 sm:p-0">
           {/* Discount badge */}
