@@ -1475,15 +1475,22 @@ function ImageGallery({
 
   // Premium PDP: scroll-driven sticky-shrink for mobile gallery.
   const [pinned, setPinned] = useState(false);
+  const galleryWrapRef = useRef<HTMLDivElement | null>(null);
+  const [naturalH, setNaturalH] = useState(0);
   useEffect(() => {
     if (typeof window === "undefined") return;
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (mq.matches) return;
+    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+    if (isDesktop) return;
     let raf = 0;
     const onScroll = () => {
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
+        if (!pinned && galleryWrapRef.current && naturalH === 0) {
+          setNaturalH(galleryWrapRef.current.offsetHeight);
+        }
         const next = window.scrollY > 140;
         setPinned((prev) => (prev === next ? prev : next));
       });
@@ -1494,7 +1501,7 @@ function ImageGallery({
       window.removeEventListener("scroll", onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [pinned, naturalH]);
   useEffect(() => {
     if (!embla) return;
     const t = setTimeout(() => embla.reInit(), 320);
@@ -1574,9 +1581,15 @@ function ImageGallery({
 
   return (
     <>
+      {pinned && naturalH > 0 && (
+        <div aria-hidden className="lg:hidden" style={{ height: naturalH }} />
+      )}
       <div
-        className={`space-y-1 sm:space-y-2 lg:sticky lg:top-4 sticky top-0 z-30 lg:z-auto transition-[box-shadow,background-color,backdrop-filter] duration-300 ${
-          pinned ? "lg:!shadow-none shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)] bg-background/85 backdrop-blur-md lg:bg-transparent lg:backdrop-blur-none" : "bg-transparent"
+        ref={galleryWrapRef}
+        className={`space-y-1 sm:space-y-2 lg:sticky lg:top-4 transition-[box-shadow,background-color,backdrop-filter] duration-300 ${
+          pinned
+            ? "fixed top-0 left-0 right-0 z-30 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)] bg-background/92 backdrop-blur-md lg:!relative lg:!shadow-none lg:bg-transparent lg:backdrop-blur-none"
+            : "relative bg-transparent"
         }`}
       >
         <div className="relative -mx-4 sm:mx-0 px-2 pt-2 pb-1 sm:p-0">
@@ -1603,9 +1616,9 @@ function ImageGallery({
           {/* Embla viewport */}
           <div
             ref={emblaRef}
-            className={`overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none transition-[max-height,border-radius] duration-300 ease-out ${
+            className={`overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none transition-[height,border-radius] duration-300 ease-out ${
               pinned
-                ? "max-h-[34vh] lg:max-h-none rounded-2xl lg:rounded-2xl [&_img]:!max-h-[34vh] [&_video]:!max-h-[34vh] [&_img]:!object-contain"
+                ? "!h-[34vh] lg:!h-auto rounded-2xl lg:rounded-2xl [&_img]:!h-[34vh] [&_video]:!h-[34vh] [&_img]:!object-contain [&_video]:!object-contain"
                 : ""
             }`}
           >
