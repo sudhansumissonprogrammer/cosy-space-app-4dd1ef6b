@@ -148,10 +148,14 @@ export default function StoreAnalytics() {
     refetchOnWindowFocus: true,
     refetchOnMount: "always",
     queryFn: async () => {
+      // Cap to last 365 days — nothing in the UI plots older than 1 year and the
+      // table grows unbounded. Defends against multi-MB pulls on long-lived stores.
+      const since = startOfDay(subDays(new Date(), 365)).toISOString().slice(0, 10);
       const { data, error } = await supabase
         .from("page_views_daily")
         .select("date, pageviews, sessions, visitors")
         .in("store_id", storeIds)
+        .gte("date", since)
         .order("date", { ascending: true });
       if (error) throw error;
       return (data || []) as any[];
