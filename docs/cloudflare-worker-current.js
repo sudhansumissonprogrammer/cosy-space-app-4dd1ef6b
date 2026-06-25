@@ -6725,12 +6725,18 @@ async function _handleFetch(request, env, ctx) {
     if (url.pathname === "/api/products" && request.method === "GET") return handleProductsApi(request, url, ctx, env);
     if (url.pathname === "/api/pdp" && request.method === "GET") return handlePdpApi(request, url, ctx, env);
     if (url.pathname === "/api/category" && request.method === "GET") return handleCategoryApi(request, url, ctx, env);
-    if (url.pathname === "/api/purge-store" && request.method === "POST")
+    if (url.pathname === "/api/purge-store" && request.method === "POST") {
+      if (!_isPurgeAuthorized(request, env)) return new Response("Forbidden", { status: 403 });
       return handlePurgeStore(request, url, ctx, env, hostname);
-    if (url.pathname === "/api/purge-products" && request.method === "POST")
+    }
+    if (url.pathname === "/api/purge-products" && request.method === "POST") {
+      if (!_isPurgeAuthorized(request, env)) return new Response("Forbidden", { status: 403 });
       return handlePurgeProducts(request, url, ctx, env);
-    if (url.pathname === "/api/purge-shell" && (request.method === "POST" || request.method === "GET"))
+    }
+    if (url.pathname === "/api/purge-shell" && request.method === "POST") {
+      if (!_isPurgeAuthorized(request, env)) return new Response("Forbidden", { status: 403 });
       return handlePurgeShell(request, url, ctx, env, hostname);
+    }
     if (url.pathname === "/api/prewarm") {
       if (request.method === "OPTIONS") return addCorsHeaders(new Response(null, { status: 204 }), "preflight");
       if (request.method === "POST") return handlePrewarm(request, url, ctx, env);
