@@ -39,8 +39,8 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         poster={poster}
         preload={isActive && (hasStarted || videoPlaying) ? "auto" : "none"}
         playsInline
-        controls={hasStarted}
-        controlsList="nofullscreen nodownload noremoteplayback"
+        controls={hasStarted && videoPlaying}
+        controlsList="nodownload noremoteplayback"
         disablePictureInPicture
         className="w-full h-auto max-h-[80vh] object-contain bg-black"
         onPlay={() => {
@@ -49,6 +49,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         }}
         onPause={() => setVideoPlaying(false)}
       />
+
 
 
       {showOverlay && (

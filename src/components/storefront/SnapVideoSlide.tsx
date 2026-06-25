@@ -34,14 +34,15 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
         src={url}
         poster={poster}
         className={className}
-        controls={started}
-        controlsList="nofullscreen nodownload noremoteplayback"
+        controls={started && playing}
+        controlsList="nodownload noremoteplayback"
         disablePictureInPicture
         playsInline
         preload="metadata"
         onPlay={() => { setStarted(true); setPlaying(true); }}
         onPause={() => setPlaying(false)}
       />
+
 
       {showOverlay && (
         <button
