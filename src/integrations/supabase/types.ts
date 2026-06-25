@@ -3459,6 +3459,30 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_config_public: {
+        Row: {
+          default_currency: string | null
+          id: string | null
+          platform_name: string | null
+          updated_at: string | null
+          wa_business_phone: string | null
+        }
+        Insert: {
+          default_currency?: string | null
+          id?: string | null
+          platform_name?: string | null
+          updated_at?: string | null
+          wa_business_phone?: string | null
+        }
+        Update: {
+          default_currency?: string | null
+          id?: string | null
+          platform_name?: string | null
+          updated_at?: string | null
+          wa_business_phone?: string | null
+        }
+        Relationships: []
+      }
       store_payment_config_public: {
         Row: {
           created_at: string | null
@@ -3627,6 +3651,10 @@ export type Database = {
       }
       can_create_website_order_item: {
         Args: { _order_id: string }
+        Returns: boolean
+      }
+      cancel_own_order: {
+        Args: { _order_id: string; _reason?: string }
         Returns: boolean
       }
       canonicalize_indian_phone: { Args: { raw: string }; Returns: string }
