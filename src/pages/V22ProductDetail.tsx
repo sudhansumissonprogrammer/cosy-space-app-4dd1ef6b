@@ -1475,15 +1475,22 @@ function ImageGallery({
 
   // Premium PDP: scroll-driven sticky-shrink for mobile gallery.
   const [pinned, setPinned] = useState(false);
+  const galleryWrapRef = useRef<HTMLDivElement | null>(null);
+  const [naturalH, setNaturalH] = useState(0);
   useEffect(() => {
     if (typeof window === "undefined") return;
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (mq.matches) return;
+    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+    if (isDesktop) return;
     let raf = 0;
     const onScroll = () => {
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
+        if (!pinned && galleryWrapRef.current && naturalH === 0) {
+          setNaturalH(galleryWrapRef.current.offsetHeight);
+        }
         const next = window.scrollY > 140;
         setPinned((prev) => (prev === next ? prev : next));
       });
@@ -1494,7 +1501,7 @@ function ImageGallery({
       window.removeEventListener("scroll", onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [pinned, naturalH]);
   useEffect(() => {
     if (!embla) return;
     const t = setTimeout(() => embla.reInit(), 320);
