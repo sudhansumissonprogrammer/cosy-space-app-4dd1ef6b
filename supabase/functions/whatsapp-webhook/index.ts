@@ -146,8 +146,24 @@ Deno.serve(async (req) => {
           }
 
           if (storeId && from) {
+            // Idempotency: Meta retries the same webhook on any non-2xx and
+            // sometimes even on 2xx network blips. Use webhook_events
+            // (UNIQUE(provider, event_id)) as a dedupe gate so a retried
+            // delivery doesn't insert the message twice or send a second
+            // auto-reply. msg.id is Meta's stable per-message identifier.
+            let alreadyProcessed = false;
+            if (msg?.id) {
+              const { error: dedupeErr } = await adminClient
+                .from("webhook_events")
+                .insert({ provider: "whatsapp", event_id: msg.id });
+              if (dedupeErr) {
+                // Unique-violation -> duplicate delivery, skip side effects.
+                alreadyProcessed = true;
+              }
+            }
+
             // Save incoming message to DB
-            if (finalBody || mediaUrl) {
+            if (!alreadyProcessed && (finalBody || mediaUrl)) {
               await adminClient.from("whatsapp_messages").insert({
                 store_id: storeId,
                 message_type: "incoming",
@@ -162,8 +178,8 @@ Deno.serve(async (req) => {
               });
             }
 
-            // Handle opt-out
-            if (isOptOut) {
+            // Handle opt-out (only on first delivery)
+            if (!alreadyProcessed && isOptOut) {
               await adminClient
                 .from("whatsapp_optouts")
                 .upsert(
