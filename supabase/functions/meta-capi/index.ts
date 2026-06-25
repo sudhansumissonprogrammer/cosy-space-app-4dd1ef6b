@@ -365,12 +365,13 @@ Deno.serve(async (req) => {
       action_source: "website",
     };
 
-    const sendOnce = () => fetch(
+    const sendOnce = () => fetchWithTimeout(
       `${META_GRAPH_URL}/${pixelId}/events`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
         body: JSON.stringify({ data: [event] }),
+        timeoutMs: 8000,
       }
     );
     let metaResponse = await sendOnce();
