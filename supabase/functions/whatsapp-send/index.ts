@@ -91,38 +91,29 @@ Deno.serve(async (req) => {
       .eq("store_id", store_id)
       .maybeSingle();
 
-    // Determine marketing mode and credentials
-    const marketingMode = config?.marketing_mode || "shopbanao";
-    let phoneNumberId: string;
-    let accessToken: string;
-
-    if (marketingMode === "own") {
-      // Use store's own credentials
-      if (!config?.is_active || !config?.access_token || !config?.phone_number_id) {
-        return new Response(
-          JSON.stringify({ error: "WhatsApp not configured for this store" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      phoneNumberId = config.phone_number_id;
-      accessToken = config.access_token;
-    } else {
-      // ShopBanao mode: use platform credentials
-      const { data: platformConfig } = await adminClient
-        .from("platform_config")
-        .select("wa_phone_number_id, wa_access_token")
-        .limit(1)
-        .single();
-
-      if (!platformConfig?.wa_phone_number_id || !platformConfig?.wa_access_token) {
-        return new Response(
-          JSON.stringify({ error: "Platform WhatsApp not configured" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      phoneNumberId = platformConfig.wa_phone_number_id;
-      accessToken = platformConfig.wa_access_token;
+    // SECURITY / POLICY: WhatsApp messaging is GATED until the store has
+    // configured and verified its OWN Meta WhatsApp Cloud credentials.
+    // The shared "shopbanao" platform fallback is disabled to prevent
+    // unintended marketing/automation traffic and credential reuse.
+    if (
+      configErr ||
+      !config ||
+      !config.is_active ||
+      !config.access_token ||
+      !config.phone_number_id
+    ) {
+      return new Response(
+        JSON.stringify({
+          error: "WhatsApp is not configured for this store",
+          code: "whatsapp_disabled",
+          hint: "Add your Meta WhatsApp Cloud Phone Number ID + Access Token in Store Settings → WhatsApp, then mark it active.",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    const phoneNumberId: string = config.phone_number_id;
+    const accessToken: string = config.access_token;
 
     // Format phone number (remove + and spaces)
     const phone = recipient_phone.replace(/[\s+\-()]/g, "");
