@@ -8,6 +8,15 @@ const corsHeaders = {
 
 const EMAIL_SENDER_DOMAIN = "notify.shopbanao.in";
 
+// L4: PII redaction for logs. Keep enough signal to debug (first char + domain)
+// without persisting full addresses in log storage.
+function maskEmail(e?: string | null): string {
+  if (!e) return "—";
+  const [u, d] = String(e).split("@");
+  if (!u || !d) return "***";
+  return `${u[0]}***@${d}`;
+}
+
 function getEmailFrom(storeName: string) {
   // Sanitize store name for email FROM field (remove special chars)
   const safeName = storeName.replace(/[<>"]/g, "").trim() || "Store";
