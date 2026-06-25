@@ -1483,47 +1483,6 @@ function ImageGallery({
     [AutoHeight()]
   );
 
-  // ── Premium PDP: scroll-driven sticky-shrink for mobile gallery ──
-  // Once user scrolls past ~140px, the gallery pins to top and shrinks to a
-  // compact card while title/price/description scroll underneath.
-  const [pinned, setPinned] = useState(false);
-  const galleryWrapRef = useRef<HTMLDivElement | null>(null);
-  const [naturalH, setNaturalH] = useState(0);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) return;
-    // Disable on desktop — desktop already uses lg:sticky in a 2-col grid.
-    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
-    if (isDesktop) return;
-    let raf = 0;
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        // Capture natural height once, before we pin.
-        if (!pinned && galleryWrapRef.current && naturalH === 0) {
-          setNaturalH(galleryWrapRef.current.offsetHeight);
-        }
-        const next = window.scrollY > 140;
-        setPinned((prev) => (prev === next ? prev : next));
-      });
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, [pinned, naturalH]);
-
-  // Let Embla AutoHeight recompute after the max-height transition completes.
-  useEffect(() => {
-    if (!embla) return;
-    const t = setTimeout(() => embla.reInit(), 320);
-    return () => clearTimeout(t);
-  }, [pinned, embla]);
-
   // Sync activeIndex with Embla — pause video when sliding away.
   useEffect(() => {
     if (!embla) return;
@@ -1598,41 +1557,9 @@ function ImageGallery({
   })();
 
 
-  // Pinned mini-bar (mobile only) — portaled to body to escape PageTransition transform.
-  const activeSlide = slides[activeIndex] || slides[0];
-  const miniSrc = activeSlide
-    ? (activeSlide.kind === "video" ? (activeSlide.poster || "") : activeSlide.url)
-    : "";
-
   return (
     <>
-      {pinned && miniSrc && typeof document !== "undefined" && createPortal(
-        <div
-          aria-hidden
-          className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-background/92 backdrop-blur-md shadow-[0_8px_24px_-16px_rgba(0,0,0,0.35)] px-3 py-2 animate-in fade-in slide-in-from-top-2 duration-200"
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        >
-          <div className="relative h-[28vh] max-h-[240px] w-full overflow-hidden rounded-2xl bg-muted">
-            <img
-              src={optimizeImageUrl(miniSrc, 800)}
-              alt={productName}
-              className="h-full w-full object-contain"
-              decoding="async"
-              draggable={false}
-            />
-            {activeSlide?.kind === "video" && (
-              <span className="absolute inset-0 flex items-center justify-center bg-black/30">
-                <Play className="h-8 w-8 text-white drop-shadow" fill="currentColor" />
-              </span>
-            )}
-          </div>
-        </div>,
-        document.body
-      )}
-      <div
-        ref={galleryWrapRef}
-        className="space-y-1 sm:space-y-2 lg:sticky lg:top-4"
-      >
+      <div className="space-y-1 sm:space-y-2 lg:sticky lg:top-4">
         <div className="relative -mx-4 sm:mx-0 px-2 pt-2 pb-1 sm:p-0">
           {/* Discount badge */}
           {hasDiscount && discountPct > 0 && (

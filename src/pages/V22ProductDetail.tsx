@@ -1473,41 +1473,6 @@ function ImageGallery({
     [AutoHeight()]
   );
 
-  // Premium PDP: scroll-driven sticky-shrink for mobile gallery.
-  const [pinned, setPinned] = useState(false);
-  const galleryWrapRef = useRef<HTMLDivElement | null>(null);
-  const [naturalH, setNaturalH] = useState(0);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) return;
-    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
-    if (isDesktop) return;
-    let raf = 0;
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        if (!pinned && galleryWrapRef.current && naturalH === 0) {
-          setNaturalH(galleryWrapRef.current.offsetHeight);
-        }
-        const next = window.scrollY > 140;
-        setPinned((prev) => (prev === next ? prev : next));
-      });
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, [pinned, naturalH]);
-  useEffect(() => {
-    if (!embla) return;
-    const t = setTimeout(() => embla.reInit(), 320);
-    return () => clearTimeout(t);
-  }, [pinned, embla]);
-
   // Sync activeIndex with Embla
   useEffect(() => {
     if (!embla) return;
@@ -1581,17 +1546,7 @@ function ImageGallery({
 
   return (
     <>
-      {pinned && naturalH > 0 && (
-        <div aria-hidden className="lg:hidden" style={{ height: naturalH }} />
-      )}
-      <div
-        ref={galleryWrapRef}
-        className={`space-y-1 sm:space-y-2 lg:sticky lg:top-4 transition-[box-shadow,background-color,backdrop-filter] duration-300 ${
-          pinned
-            ? "fixed top-0 left-0 right-0 z-30 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)] bg-background/92 backdrop-blur-md lg:!relative lg:!shadow-none lg:bg-transparent lg:backdrop-blur-none"
-            : "relative bg-transparent"
-        }`}
-      >
+      <div className="space-y-1 sm:space-y-2 lg:sticky lg:top-4">
         <div className="relative -mx-4 sm:mx-0 px-2 pt-2 pb-1 sm:p-0">
           {/* Discount badge */}
           {hasDiscount && discountPct > 0 && (
@@ -1616,11 +1571,7 @@ function ImageGallery({
           {/* Embla viewport */}
           <div
             ref={emblaRef}
-            className={`overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none transition-[height,border-radius] duration-300 ease-out ${
-              pinned
-                ? "!h-[34vh] lg:!h-auto rounded-2xl lg:rounded-2xl [&_img]:!h-[34vh] [&_video]:!h-[34vh] [&_img]:!object-contain [&_video]:!object-contain"
-                : ""
-            }`}
+            className="overflow-hidden rounded-none sm:rounded-2xl bg-background cursor-zoom-in select-none"
           >
             <div className="flex touch-pan-y items-start transition-[height] duration-200">
               {renderSlides.map((slide, i) => {
@@ -1723,13 +1674,9 @@ function ImageGallery({
           )}
         </div>
 
-        {/* Thumbnail strip — mobile + desktop, collapsed when pinned */}
+        {/* Thumbnail strip — mobile + desktop */}
         {len > 1 && (
-          <div
-            className={`flex gap-2 overflow-x-auto scrollbar-hide px-3 sm:px-0.5 transition-all duration-300 ease-out ${
-              pinned ? "max-h-0 py-0 opacity-0 pointer-events-none lg:max-h-20 lg:py-1 lg:opacity-100 lg:pointer-events-auto" : "max-h-20 py-2 sm:py-1 opacity-100"
-            }`}
-          >
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide px-3 sm:px-0.5 py-2 sm:py-1">
             {slides.map((slide, i) => {
               const thumbSrc = slide.kind === "video" ? (slide.poster || "") : slide.url;
               return (
