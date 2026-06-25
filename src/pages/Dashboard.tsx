@@ -127,7 +127,7 @@ export default function Dashboard() {
       const REVENUE_STATUSES = ["confirmed", "shipped", "delivered", "partially_paid"];
       const { data, error } = await supabase
         .from("orders")
-        .select("created_at, total, status, order_items(product_name, quantity, total)")
+        .select("created_at, total, status")
         .eq("store_id", storeId!)
         .in("status", REVENUE_STATUSES)
         .order("created_at", { ascending: false })
