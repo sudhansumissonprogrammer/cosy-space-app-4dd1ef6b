@@ -82,13 +82,15 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
         </button>
       )}
 
-      <VideoControlBar
-        playing={playing}
-        currentTime={currentTime}
-        duration={duration}
-        onToggle={handleToggle}
-        onSeek={handleSeek}
-      />
+      {started && (
+        <VideoControlBar
+          playing={playing}
+          currentTime={currentTime}
+          duration={duration}
+          onToggle={handleToggle}
+          onSeek={handleSeek}
+        />
+      )}
     </div>
   );
 }
