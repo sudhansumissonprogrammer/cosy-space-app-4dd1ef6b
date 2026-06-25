@@ -57,9 +57,10 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         ref={videoRef}
         src={url}
         poster={poster}
-        preload={isActive && (hasStarted || videoPlaying) ? "auto" : "none"}
+        preload="metadata"
         playsInline
         disablePictureInPicture
+        style={{ aspectRatio: duration ? undefined : "4 / 5" }}
         className="w-full h-auto max-h-[80vh] object-contain bg-black"
         onClick={(e) => {
           e.stopPropagation();
