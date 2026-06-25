@@ -15,6 +15,7 @@
 //
 // Idempotent: skips orders already confirmed; firePurchaseCapi has its own stamp.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { fetchWithTimeout } from "../_shared/http.ts";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 import { timingSafeEqual } from "../_shared/security.ts";
 
@@ -124,7 +125,7 @@ Deno.serve(async (req) => {
         if (captured) {
           // Auto-capture if only authorized
           if (captured.status === "authorized") {
-            await fetch(`https://api.razorpay.com/v1/payments/${captured.id}/capture`, {
+            await fetchWithTimeout(`https://api.razorpay.com/v1/payments/${captured.id}/capture`, {
               method: "POST",
               headers: { "Content-Type": "application/json", Authorization: auth },
               body: JSON.stringify({ amount: captured.amount, currency: captured.currency }),
