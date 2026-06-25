@@ -23,17 +23,16 @@ export async function sendOrderWhatsApp(
   try {
     if (!orderData.customer_phone) return;
 
-    // Check if store has any whatsapp config (shopbanao or own)
+    // SECURITY/POLICY: WhatsApp automation is GATED behind store-owned,
+    // verified Meta Cloud credentials. No platform fallback is performed.
     const { data: config } = await supabase
       .from("whatsapp_config")
-      .select("id, is_active, marketing_mode" as any)
+      .select("id, is_active, access_token, phone_number_id" as any)
       .eq("store_id", storeId)
       .maybeSingle();
 
-    const marketingMode = (config as any)?.marketing_mode || "shopbanao";
-
-    // For 'own' mode, require active config
-    if (marketingMode === "own" && (!config || !(config as any).is_active)) return;
+    const c = config as any;
+    if (!c || !c.is_active || !c.access_token || !c.phone_number_id) return;
 
     // Get the template for this message type
     const { data: template } = await supabase
