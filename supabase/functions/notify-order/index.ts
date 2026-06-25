@@ -293,7 +293,7 @@ Deno.serve(async (req) => {
     const storeName = storeData?.name || "Store";
     const ownerEmail = storeData?.owner_email?.trim().toLowerCase() || "";
     
-    console.log(`Store data: name=${storeName}, logo_url=${storeData?.logo_url || 'NONE'}, owner_email=${ownerEmail || 'NONE'}`);
+    console.log(`Store data: name=${storeName}, logo_url=${storeData?.logo_url ? 'SET' : 'NONE'}, owner_email=${maskEmail(ownerEmail)}`);
 
     // Try queue first, fall back to direct Resend
     let queueWorked = false;
