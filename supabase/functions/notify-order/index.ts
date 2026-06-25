@@ -227,10 +227,10 @@ async function enqueueEmail(supabase: any, queueName: string, messageId: string,
     payload: payload,
   });
   if (error) {
-    console.error(`enqueue_email error for ${recipientEmail}:`, JSON.stringify(error));
+    console.error(`enqueue_email error for ${maskEmail(recipientEmail)}:`, JSON.stringify(error));
     throw error;
   }
-  console.log(`Email enqueued for ${recipientEmail}, msg_id: ${data}`);
+  console.log(`Email enqueued for ${maskEmail(recipientEmail)}, msg_id: ${data}`);
   return data;
 }
 
