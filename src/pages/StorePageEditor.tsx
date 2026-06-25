@@ -467,7 +467,7 @@ export default function StorePageEditor() {
               srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;padding:16px;font-family:system-ui,-apple-system,sans-serif;color:#1a1a1a;}</style></head><body>${customHtml}</body></html>`}
               className="w-full min-h-[400px] border-0"
               title="HTML Preview"
-              sandbox="allow-same-origin"
+              sandbox=""
             />
           </div>
         </DialogContent>

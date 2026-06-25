@@ -253,6 +253,18 @@ Deno.serve(async (req) => {
       .eq("id", order_id)
       .single();
 
+    // Anti-abuse: only notify for recently-created orders (≤ 30 min old).
+    // Stops anyone from looping over old order_ids to spam owners/customers.
+    if (order?.created_at) {
+      const ageMs = Date.now() - new Date(order.created_at).getTime();
+      if (ageMs > 30 * 60 * 1000) {
+        return new Response(JSON.stringify({ error: "Order too old to notify" }), {
+          status: 410,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     if (orderErr || !order) {
       console.error("Order not found:", orderErr);
       return new Response(JSON.stringify({ error: "Order not found" }), {

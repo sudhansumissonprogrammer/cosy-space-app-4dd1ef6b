@@ -614,7 +614,7 @@ function cleanRateLimitMap() {
 const SECURITY_HEADERS = {
   "X-Frame-Options": "SAMEORIGIN",
   "X-Content-Type-Options": "nosniff",
-  "X-XSS-Protection": "1; mode=block",
+  // X-XSS-Protection removed — deprecated header, can introduce XSS in legacy browsers. CSP is the correct mitigation.
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(self)",
   "Referrer-Policy": "strict-origin-when-cross-origin",
@@ -5159,6 +5159,21 @@ async function _fallbackProducts(domain, filters, version, env) {
   );
 }
 
+// Timing-safe shared-secret check for /api/purge-* endpoints.
+// Accepts secret via `x-purge-secret` header or `?secret=` query param (legacy callers).
+// Set env.PURGE_SECRET via `wrangler secret put PURGE_SECRET` (or Cloudflare dashboard).
+// Without a secret configured, refuses ALL purge requests (fail-closed).
+function _isPurgeAuthorized(request, env) {
+  const expected = env && env.PURGE_SECRET;
+  if (!expected || typeof expected !== "string") return false;
+  const url = new URL(request.url);
+  const provided = request.headers.get("x-purge-secret") || url.searchParams.get("secret") || "";
+  if (!provided || provided.length !== expected.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ provided.charCodeAt(i);
+  return diff === 0;
+}
+
 async function handlePurgeProducts(request, url, ctx, env) {
   const domain = (request.headers.get("host") || url.hostname)
     .replace(/^www\./, "")
@@ -6725,12 +6740,18 @@ async function _handleFetch(request, env, ctx) {
     if (url.pathname === "/api/products" && request.method === "GET") return handleProductsApi(request, url, ctx, env);
     if (url.pathname === "/api/pdp" && request.method === "GET") return handlePdpApi(request, url, ctx, env);
     if (url.pathname === "/api/category" && request.method === "GET") return handleCategoryApi(request, url, ctx, env);
-    if (url.pathname === "/api/purge-store" && request.method === "POST")
+    if (url.pathname === "/api/purge-store" && request.method === "POST") {
+      if (!_isPurgeAuthorized(request, env)) return new Response("Forbidden", { status: 403 });
       return handlePurgeStore(request, url, ctx, env, hostname);
-    if (url.pathname === "/api/purge-products" && request.method === "POST")
+    }
+    if (url.pathname === "/api/purge-products" && request.method === "POST") {
+      if (!_isPurgeAuthorized(request, env)) return new Response("Forbidden", { status: 403 });
       return handlePurgeProducts(request, url, ctx, env);
-    if (url.pathname === "/api/purge-shell" && (request.method === "POST" || request.method === "GET"))
+    }
+    if (url.pathname === "/api/purge-shell" && request.method === "POST") {
+      if (!_isPurgeAuthorized(request, env)) return new Response("Forbidden", { status: 403 });
       return handlePurgeShell(request, url, ctx, env, hostname);
+    }
     if (url.pathname === "/api/prewarm") {
       if (request.method === "OPTIONS") return addCorsHeaders(new Response(null, { status: 204 }), "preflight");
       if (request.method === "POST") return handlePrewarm(request, url, ctx, env);

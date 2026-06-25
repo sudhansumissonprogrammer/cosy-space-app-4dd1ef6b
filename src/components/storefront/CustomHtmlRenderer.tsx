@@ -64,8 +64,13 @@ export default function CustomHtmlRenderer({ html, className = "" }: CustomHtmlR
   }, [html]);
 
   const onMessage = useCallback((e: MessageEvent) => {
+    // Origin check — sandboxed iframe posts with origin "null"; reject everything else
+    if (e.origin !== "null") return;
     if (e.data?.type === "customHtmlHeight" && iframeRef.current) {
-      iframeRef.current.style.height = `${e.data.height}px`;
+      const h = Number(e.data.height);
+      if (Number.isFinite(h) && h > 0 && h < 20000) {
+        iframeRef.current.style.height = `${h}px`;
+      }
     }
   }, []);
 
@@ -73,11 +78,14 @@ export default function CustomHtmlRenderer({ html, className = "" }: CustomHtmlR
   const listenerAttached = useRef(false);
   if (!listenerAttached.current && typeof window !== "undefined") {
     window.addEventListener("message", (e: MessageEvent) => {
+      if (e.origin !== "null") return;
       if (e.data?.type === "customHtmlHeight") {
+        const h = Number(e.data.height);
+        if (!Number.isFinite(h) || h <= 0 || h >= 20000) return;
         const iframe = document.querySelector<HTMLIFrameElement>(
           'iframe[title="Custom HTML content"]'
         );
-        if (iframe) iframe.style.height = `${e.data.height}px`;
+        if (iframe) iframe.style.height = `${h}px`;
       }
     });
     listenerAttached.current = true;

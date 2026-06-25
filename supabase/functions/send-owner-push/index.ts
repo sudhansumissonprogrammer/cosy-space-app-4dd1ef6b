@@ -37,6 +37,19 @@ Deno.serve(async (req) => {
       );
     }
 
+    const SUPABASE_URL_ENV = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    // ── AUTH GATE ────────────────────────────────────────────────────────────
+    // Accept either:
+    //   (a) service-role bearer (used by sibling edge fns like notify-order), or
+    //   (b) a valid end-user JWT whose `sub` equals the body's user_id.
+    // No anonymous calls — prevents push-spam to any victim user.
+    const authHeader = req.headers.get("Authorization") || "";
+    const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    const isServiceRole = bearer && bearer === SERVICE_ROLE;
+
     const body = await req.json();
     const {
       user_id,
@@ -55,6 +68,26 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "user_id and title are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    if (!isServiceRole) {
+      // User JWT path — validate and verify ownership
+      if (!bearer) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      const authClient = createClient(SUPABASE_URL_ENV, ANON_KEY, {
+        global: { headers: { Authorization: `Bearer ${bearer}` } },
+      });
+      const { data: claims, error: claimsErr } = await authClient.auth.getClaims(bearer);
+      if (claimsErr || !claims?.claims?.sub || claims.claims.sub !== user_id) {
+        return new Response(
+          JSON.stringify({ error: "Forbidden" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
     }
 
     const supabase = createClient(

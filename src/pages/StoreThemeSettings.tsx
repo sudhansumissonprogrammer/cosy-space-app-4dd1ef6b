@@ -748,8 +748,10 @@ export default function StoreThemeSettings() {
   // Send config to iframe for live preview
   const sendToIframe = useCallback((cfg: ThemeConfig) => {
     const msg = { type: "theme-preview", config: cfg };
-    iframeRef.current?.contentWindow?.postMessage(msg, "*");
-    iframeDesktopRef.current?.contentWindow?.postMessage(msg, "*");
+    // Send only to our own origin — preview iframes are same-origin storefront pages.
+    const targetOrigin = window.location.origin;
+    iframeRef.current?.contentWindow?.postMessage(msg, targetOrigin);
+    iframeDesktopRef.current?.contentWindow?.postMessage(msg, targetOrigin);
   }, []);
 
   const setupPreviewIframe = useCallback((iframe: HTMLIFrameElement | null) => {
