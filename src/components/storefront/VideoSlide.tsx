@@ -60,7 +60,6 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         preload="metadata"
         playsInline
         disablePictureInPicture
-        style={{ aspectRatio: duration ? undefined : "4 / 5" }}
         className="w-full h-auto max-h-[80vh] object-contain bg-black"
         onClick={(e) => {
           e.stopPropagation();
