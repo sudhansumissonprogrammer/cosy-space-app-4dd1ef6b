@@ -86,15 +86,15 @@ export async function sendAbandonedCartWhatsApp(
   }
 ) {
   try {
+    // SECURITY/POLICY: cart recovery is gated behind verified store-owned credentials.
     const { data: config } = await supabase
       .from("whatsapp_config")
-      .select("id, is_active, marketing_mode" as any)
+      .select("id, is_active, access_token, phone_number_id" as any)
       .eq("store_id", storeId)
       .maybeSingle();
 
-    const marketingMode = (config as any)?.marketing_mode || "shopbanao";
-
-    if (marketingMode === "own" && (!config || !(config as any).is_active)) return;
+    const c = config as any;
+    if (!c || !c.is_active || !c.access_token || !c.phone_number_id) return;
 
     const { data: template } = await supabase
       .from("whatsapp_templates")
@@ -104,14 +104,9 @@ export async function sendAbandonedCartWhatsApp(
       .eq("is_active", true)
       .maybeSingle();
 
-    let body = "";
-    if (template) {
-      body = (template as any).body_text || "";
-    } else if (marketingMode === "shopbanao") {
-      body = "Hi {{name}}! 👋 You left {{product_names}} in your cart. Complete your purchase now! Total: {{cart_total}}. Shop at {{store_name}}";
-    } else {
-      return;
-    }
+    if (!template) return;
+    let body = (template as any).body_text || "";
+    if (!body) return;
 
     body = body.replace(/\{\{name\}\}/g, customerName || "Customer");
     body = body.replace(/\{\{product_names\}\}/g, cartData?.product_names || "your items");
