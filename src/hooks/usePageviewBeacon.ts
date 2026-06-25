@@ -200,15 +200,12 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
     };
 
     const send = () => {
-      // Try beacon first for FB/Google in-app browsers that close the page in
-      // under a second. Also schedule fetch as a same-page safety net; the
-      // edge function dedupes store+IP+path for 30s, so this won't double count.
+      // Beacon first (survives FB/Google in-app bounces). Only fall back to
+      // fetch when the browser refused to queue the beacon — otherwise the
+      // 700ms safety-net fetch was doubling every pageview in normal browsers
+      // (edge dedupe is best-effort and lets some duplicates through).
       const queued = writeBeacon();
-      if (!queued) {
-        writeIngest();
-        return;
-      }
-      window.setTimeout(writeIngest, 700);
+      if (!queued) writeIngest();
     };
 
 

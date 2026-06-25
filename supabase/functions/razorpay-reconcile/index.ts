@@ -16,19 +16,38 @@
 // Idempotent: skips orders already confirmed; firePurchaseCapi has its own stamp.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
+import { timingSafeEqual } from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  // AUTH — reject anonymous callers. Accept either:
+  //   1) x-cron-secret matching CRON_SECRET / PREWARM_CRON_SECRET (pg_cron, manual ops)
+  //   2) Authorization: Bearer <service-role-key> (internal callers)
+  // Without this, any anon POST {order_id} could flip an order to confirmed
+  // and fire Meta CAPI.
+  const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const cronSecret =
+    Deno.env.get("CRON_SECRET") || Deno.env.get("PREWARM_CRON_SECRET") || "";
+  const providedCron = req.headers.get("x-cron-secret") || "";
+  const authHeader = req.headers.get("Authorization") || "";
+  const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+
+  const cronOk = !!cronSecret && !!providedCron && timingSafeEqual(providedCron, cronSecret);
+  const bearerOk = !!bearer && timingSafeEqual(bearer, serviceRole);
+  if (!cronOk && !bearerOk) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "content-type": "application/json" },
+    });
+  }
+
+  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, serviceRole);
 
   // Optional payload: { order_id?: string } to reconcile one order on demand.
   let onlyOrderId: string | null = null;
