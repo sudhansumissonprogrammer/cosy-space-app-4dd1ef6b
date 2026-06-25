@@ -1473,6 +1473,34 @@ function ImageGallery({
     [AutoHeight()]
   );
 
+  // Premium PDP: scroll-driven sticky-shrink for mobile gallery.
+  const [pinned, setPinned] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (mq.matches) return;
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const next = window.scrollY > 140;
+        setPinned((prev) => (prev === next ? prev : next));
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+  useEffect(() => {
+    if (!embla) return;
+    const t = setTimeout(() => embla.reInit(), 320);
+    return () => clearTimeout(t);
+  }, [pinned, embla]);
+
   // Sync activeIndex with Embla
   useEffect(() => {
     if (!embla) return;
