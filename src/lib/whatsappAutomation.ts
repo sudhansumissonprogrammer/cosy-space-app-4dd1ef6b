@@ -43,20 +43,12 @@ export async function sendOrderWhatsApp(
       .eq("is_active", true)
       .maybeSingle();
 
-    // For shopbanao mode without a template, use a default message
+    // Require an active per-store template (no platform defaults).
     let body = "";
     if (template) {
       body = (template as any).body_text || "";
-    } else if (marketingMode === "shopbanao") {
-      // Default templates for shopbanao mode
-      const defaults: Record<string, string> = {
-        order_confirmation: "Hi {{name}}! 🎉 Your order #{{order_id}} for {{product_names}} has been confirmed. Total: {{total}}. Thank you for shopping with {{store_name}}!",
-        shipping_update: "Hi {{name}}! 📦 Your order #{{order_id}} has been shipped. Track here: {{tracking_url}}",
-        delivery_confirmation: "Hi {{name}}! ✅ Your order #{{order_id}} has been delivered. Thank you for shopping with {{store_name}}!",
-      };
-      body = defaults[messageType] || "";
     } else {
-      return; // No template and not shopbanao mode
+      return; // No template configured for this store
     }
 
     // Replace template variables
