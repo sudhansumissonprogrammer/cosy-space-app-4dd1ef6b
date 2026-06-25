@@ -3659,6 +3659,10 @@ export type Database = {
       }
       canonicalize_indian_phone: { Args: { raw: string }; Returns: string }
       check_product_limit: { Args: { _user_id: string }; Returns: Json }
+      claim_coupon: {
+        Args: { _coupon_id: string; _store_id: string }
+        Returns: boolean
+      }
       cleanup_app_logs: { Args: never; Returns: Json }
       cleanup_old_analytics: { Args: never; Returns: Json }
       cleanup_orphan_media_library: { Args: never; Returns: Json }
