@@ -147,6 +147,20 @@ Deno.serve(async (req) => {
     let body = new Uint8Array(await file.arrayBuffer());
     let converted = false;
 
+    // Magic-byte sniff: reject files whose actual content doesn't match an
+    // allowed image/video type. Defeats browsers that lie about MIME.
+    const sniffed = sniffImageMime(body);
+    if (!sniffed) {
+      return new Response(JSON.stringify({ error: "Unsupported file type (magic-byte check failed)" }), {
+        status: 415,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // If browser-declared type disagrees with magic bytes, trust the magic bytes.
+    if (sniffed !== contentType) {
+      contentType = sniffed;
+    }
+
     // WebP guarantee: convert JPEG/PNG → WebP server-side when browser couldn't.
     // Pipeline files only (those matching `*-NNNw.<ext>`) — leaves raw
     // assets/originals untouched. Errors are non-fatal: fall back to original.
