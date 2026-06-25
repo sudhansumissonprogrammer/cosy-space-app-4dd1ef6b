@@ -1581,9 +1581,15 @@ function ImageGallery({
 
   return (
     <>
+      {pinned && naturalH > 0 && (
+        <div aria-hidden className="lg:hidden" style={{ height: naturalH }} />
+      )}
       <div
-        className={`space-y-1 sm:space-y-2 lg:sticky lg:top-4 sticky top-0 z-30 lg:z-auto transition-[box-shadow,background-color,backdrop-filter] duration-300 ${
-          pinned ? "lg:!shadow-none shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)] bg-background/85 backdrop-blur-md lg:bg-transparent lg:backdrop-blur-none" : "bg-transparent"
+        ref={galleryWrapRef}
+        className={`space-y-1 sm:space-y-2 lg:sticky lg:top-4 transition-[box-shadow,background-color,backdrop-filter] duration-300 ${
+          pinned
+            ? "fixed top-0 left-0 right-0 z-30 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)] bg-background/92 backdrop-blur-md lg:!relative lg:!shadow-none lg:bg-transparent lg:backdrop-blur-none"
+            : "relative bg-transparent"
         }`}
       >
         <div className="relative -mx-4 sm:mx-0 px-2 pt-2 pb-1 sm:p-0">
