@@ -1483,6 +1483,39 @@ function ImageGallery({
     [AutoHeight()]
   );
 
+  // ── Premium PDP: scroll-driven sticky-shrink for mobile gallery ──
+  // Once user scrolls past ~140px, the gallery pins to top and shrinks to a
+  // compact card while title/price/description scroll underneath.
+  const [pinned, setPinned] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    // Respect prefers-reduced-motion — keep static layout for accessibility.
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (mq.matches) return;
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const next = window.scrollY > 140;
+        setPinned((prev) => (prev === next ? prev : next));
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  // Let Embla AutoHeight recompute after the max-height transition completes.
+  useEffect(() => {
+    if (!embla) return;
+    const t = setTimeout(() => embla.reInit(), 320);
+    return () => clearTimeout(t);
+  }, [pinned, embla]);
+
   // Sync activeIndex with Embla — pause video when sliding away.
   useEffect(() => {
     if (!embla) return;
