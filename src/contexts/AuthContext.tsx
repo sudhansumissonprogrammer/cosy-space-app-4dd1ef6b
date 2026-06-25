@@ -109,8 +109,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    // scope: 'local' → only signs out THIS device.
-    await supabase.auth.signOut({ scope: 'local' });
+    // scope: 'global' → revokes refresh tokens server-side so a stolen
+    // refresh token can't keep minting access tokens after sign-out.
+    await supabase.auth.signOut({ scope: 'global' });
   };
 
   return (

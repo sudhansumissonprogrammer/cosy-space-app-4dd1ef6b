@@ -23,17 +23,16 @@ export async function sendOrderWhatsApp(
   try {
     if (!orderData.customer_phone) return;
 
-    // Check if store has any whatsapp config (shopbanao or own)
+    // SECURITY/POLICY: WhatsApp automation is GATED behind store-owned,
+    // verified Meta Cloud credentials. No platform fallback is performed.
     const { data: config } = await supabase
       .from("whatsapp_config")
-      .select("id, is_active, marketing_mode" as any)
+      .select("id, is_active, access_token, phone_number_id" as any)
       .eq("store_id", storeId)
       .maybeSingle();
 
-    const marketingMode = (config as any)?.marketing_mode || "shopbanao";
-
-    // For 'own' mode, require active config
-    if (marketingMode === "own" && (!config || !(config as any).is_active)) return;
+    const c = config as any;
+    if (!c || !c.is_active || !c.access_token || !c.phone_number_id) return;
 
     // Get the template for this message type
     const { data: template } = await supabase
@@ -44,20 +43,12 @@ export async function sendOrderWhatsApp(
       .eq("is_active", true)
       .maybeSingle();
 
-    // For shopbanao mode without a template, use a default message
+    // Require an active per-store template (no platform defaults).
     let body = "";
     if (template) {
       body = (template as any).body_text || "";
-    } else if (marketingMode === "shopbanao") {
-      // Default templates for shopbanao mode
-      const defaults: Record<string, string> = {
-        order_confirmation: "Hi {{name}}! 🎉 Your order #{{order_id}} for {{product_names}} has been confirmed. Total: {{total}}. Thank you for shopping with {{store_name}}!",
-        shipping_update: "Hi {{name}}! 📦 Your order #{{order_id}} has been shipped. Track here: {{tracking_url}}",
-        delivery_confirmation: "Hi {{name}}! ✅ Your order #{{order_id}} has been delivered. Thank you for shopping with {{store_name}}!",
-      };
-      body = defaults[messageType] || "";
     } else {
-      return; // No template and not shopbanao mode
+      return; // No template configured for this store
     }
 
     // Replace template variables
@@ -95,15 +86,15 @@ export async function sendAbandonedCartWhatsApp(
   }
 ) {
   try {
+    // SECURITY/POLICY: cart recovery is gated behind verified store-owned credentials.
     const { data: config } = await supabase
       .from("whatsapp_config")
-      .select("id, is_active, marketing_mode" as any)
+      .select("id, is_active, access_token, phone_number_id" as any)
       .eq("store_id", storeId)
       .maybeSingle();
 
-    const marketingMode = (config as any)?.marketing_mode || "shopbanao";
-
-    if (marketingMode === "own" && (!config || !(config as any).is_active)) return;
+    const c = config as any;
+    if (!c || !c.is_active || !c.access_token || !c.phone_number_id) return;
 
     const { data: template } = await supabase
       .from("whatsapp_templates")
@@ -113,14 +104,9 @@ export async function sendAbandonedCartWhatsApp(
       .eq("is_active", true)
       .maybeSingle();
 
-    let body = "";
-    if (template) {
-      body = (template as any).body_text || "";
-    } else if (marketingMode === "shopbanao") {
-      body = "Hi {{name}}! 👋 You left {{product_names}} in your cart. Complete your purchase now! Total: {{cart_total}}. Shop at {{store_name}}";
-    } else {
-      return;
-    }
+    if (!template) return;
+    let body = (template as any).body_text || "";
+    if (!body) return;
 
     body = body.replace(/\{\{name\}\}/g, customerName || "Customer");
     body = body.replace(/\{\{product_names\}\}/g, cartData?.product_names || "your items");
