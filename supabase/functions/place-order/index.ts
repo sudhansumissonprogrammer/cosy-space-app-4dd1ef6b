@@ -445,23 +445,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (coupon_id) {
-      postInsertOps.push(
-        supabase
-          .from("coupons")
-          .select("used_count")
-          .eq("id", coupon_id)
-          .maybeSingle()
-          .then(({ data: coupon }) => {
-            if (coupon) {
-              return supabase
-                .from("coupons")
-                .update({ used_count: (coupon.used_count || 0) + 1 })
-                .eq("id", coupon_id);
-            }
-          })
-      );
-    }
+    // Coupon usage was already atomically incremented above via claim_coupon RPC.
+
 
     if (abandoned_cart_id) {
       postInsertOps.push(
