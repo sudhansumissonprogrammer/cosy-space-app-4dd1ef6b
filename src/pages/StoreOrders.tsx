@@ -251,8 +251,7 @@ export default function StoreOrders() {
 
   const deleteOrder = useMutation({
     mutationFn: async (orderId: string) => {
-      // Delete order items first, then the order
-      await (supabase as any).from("order_items").delete().eq("order_id", orderId);
+      // order_items has ON DELETE CASCADE on order_id — single atomic delete.
       const { error } = await (supabase as any).from("orders").delete().eq("id", orderId);
       if (error) throw error;
     },
