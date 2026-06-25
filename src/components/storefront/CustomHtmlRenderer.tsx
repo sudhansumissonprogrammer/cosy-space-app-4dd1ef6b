@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import DOMPurify from "dompurify";
 
 interface CustomHtmlRendererProps {
