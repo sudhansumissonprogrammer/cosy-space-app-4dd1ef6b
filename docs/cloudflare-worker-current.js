@@ -204,7 +204,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.67.0-ban-risk-r3";
+const WORKER_VERSION = "8.68.0-security-audit";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -936,7 +936,7 @@ async function mirrorToCfCache(ctx, request, response, slug = null, env = null) 
     if (/no-store|no-cache|max-age=0/i.test(response.headers.get("Cache-Control") || "")) return;
     // Skip authenticated paths to avoid leaking user-specific HTML
     const cookie = request.headers.get("cookie") || "";
-    if (cookie.includes("auth") || cookie.includes("sb-")) return;
+    if (/\b(sb-[a-z0-9_-]+-auth-token|sb[-_](access|refresh)[-_]token|auth[-_]token|session)\b/i.test(cookie)) return;
     const url = new URL(request.url);
     if (
       url.pathname.startsWith("/api/") ||
@@ -5201,14 +5201,14 @@ async function _fallbackProducts(domain, filters, version, env) {
 }
 
 // Timing-safe shared-secret check for /api/purge-* endpoints.
-// Accepts secret via `x-purge-secret` header or `?secret=` query param (legacy callers).
+// Secret MUST be passed via `x-purge-secret` header. Query-string fallback
+// removed in audit v8.62.0 — query params leak into access logs and Referer.
 // Set env.PURGE_SECRET via `wrangler secret put PURGE_SECRET` (or Cloudflare dashboard).
 // Without a secret configured, refuses ALL purge requests (fail-closed).
 function _isPurgeAuthorized(request, env) {
   const expected = env && env.PURGE_SECRET;
   if (!expected || typeof expected !== "string") return false;
-  const url = new URL(request.url);
-  const provided = request.headers.get("x-purge-secret") || url.searchParams.get("secret") || "";
+  const provided = request.headers.get("x-purge-secret") || "";
   if (!provided || provided.length !== expected.length) return false;
   let diff = 0;
   for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ provided.charCodeAt(i);
@@ -6698,8 +6698,8 @@ async function _handleFetch(request, env, ctx) {
         try {
           const body = await request.json();
           if (!body || typeof body !== "object") return;
-          const sid = typeof body.store_id === "string" ? body.store_id : null;
-          if (!sid) return;
+          const claimedSid = typeof body.store_id === "string" ? body.store_id : null;
+          if (!claimedSid) return;
           const pth = typeof body.path === "string" ? body.path : "/";
           // Reuse path/bot filters from recordPageView.
           if (_pvIsBot(request)) return;
@@ -6716,16 +6716,47 @@ async function _handleFetch(request, env, ctx) {
             pth === "/favicon.ico" ||
             /\.(js|css|png|jpe?g|webp|svg|ico|woff2?|map|json|xml|txt|avif|gif|ttf|otf)(\?|$)/i.test(pth)
           ) return;
+          // SECURITY (audit v8.62.0): derive the authoritative store_id from
+          // the request hostname, never trust body.store_id. Without this any
+          // visitor could POST a competitor's store_id and inflate their PV
+          // counts / pollute analytics dimensions.
+          const cleanHost = hostname.replace(/^www\./, "");
+          const resolvedSlug = cleanHost.endsWith(`.${ROOT_DOMAIN}`)
+            ? cleanHost.slice(0, -1 - ROOT_DOMAIN.length)
+            : await resolveDomain(cleanHost, env).catch(() => null);
+          if (!resolvedSlug) return;
+          const info = await _resolveStoreInfo(resolvedSlug, hostname, env).catch(() => null);
+          const trustedSid = info && info.storeId;
+          if (!trustedSid || trustedSid !== claimedSid) return;
           // 30-min dedup (same window/key as recordPageView).
           const ip = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "0";
           const dedupId = (typeof body.visitor_id === "string" && body.visitor_id) || _pvReadVisitorId(request) || ip;
-          const dKey = `${sid}|${dedupId}|${pth}`;
+          const dKey = `${trustedSid}|${dedupId}|${pth}`;
           const now = Date.now();
           const existing = _pvDedup.get(dKey);
           if (existing && existing > now) return;
           _pvDedup.set(dKey, now + PV_DEDUP_WINDOW_MS);
           _pvPruneIfNeeded();
-          // Forward full enriched body to PostgREST.
+          // Whitelist forwarded fields so a malicious caller cannot inject
+          // arbitrary PostgREST columns (is_bot, country override, etc.).
+          const safeRow = {
+            store_id: trustedSid,
+            path: pth,
+            visitor_id: typeof body.visitor_id === "string" ? body.visitor_id.slice(0, 128) : null,
+            session_id: typeof body.session_id === "string" ? body.session_id.slice(0, 128) : null,
+            referrer: typeof body.referrer === "string" ? body.referrer.slice(0, 1024) : null,
+            utm_source: typeof body.utm_source === "string" ? body.utm_source.slice(0, 128) : null,
+            utm_medium: typeof body.utm_medium === "string" ? body.utm_medium.slice(0, 128) : null,
+            utm_campaign: typeof body.utm_campaign === "string" ? body.utm_campaign.slice(0, 128) : null,
+            utm_term: typeof body.utm_term === "string" ? body.utm_term.slice(0, 128) : null,
+            utm_content: typeof body.utm_content === "string" ? body.utm_content.slice(0, 128) : null,
+            device: typeof body.device === "string" ? body.device.slice(0, 32) : null,
+            browser: typeof body.browser === "string" ? body.browser.slice(0, 64) : null,
+            os: typeof body.os === "string" ? body.os.slice(0, 64) : null,
+            landing_page: typeof body.landing_page === "string" ? body.landing_page.slice(0, 512) : null,
+            country: typeof body.country === "string" ? body.country.slice(0, 8) : null,
+          };
+          // Forward sanitised row to PostgREST.
           await fetch(`${SUPABASE_URL}/rest/v1/page_views`, {
             method: "POST",
             headers: {
@@ -6734,7 +6765,7 @@ async function _handleFetch(request, env, ctx) {
               "Content-Type": "application/json",
               Prefer: "return=minimal",
             },
-            body: JSON.stringify(body),
+            body: JSON.stringify(safeRow),
           }).catch(() => {});
         } catch (_) { /* never throw from analytics path */ }
       })()
@@ -6795,7 +6826,13 @@ async function _handleFetch(request, env, ctx) {
     }
     if (url.pathname === "/api/prewarm") {
       if (request.method === "OPTIONS") return addCorsHeaders(new Response(null, { status: 204 }), "preflight");
-      if (request.method === "POST") return handlePrewarm(request, url, ctx, env);
+      if (request.method === "POST") {
+        // SECURITY (audit v8.62.0): prewarm writes domain→slug into KV/Cache
+        // for 24h. Without auth, anyone could remap a victim's custom domain
+        // to an attacker-controlled storefront. Gate behind PURGE_SECRET.
+        if (!_isPurgeAuthorized(request, env)) return new Response("Forbidden", { status: 403 });
+        return handlePrewarm(request, url, ctx, env);
+      }
       return addCorsHeaders(
         new Response(JSON.stringify({ error: "Method not allowed" }), {
           status: 405,
@@ -6832,18 +6869,46 @@ async function _handleFetch(request, env, ctx) {
       headers.set("Authorization", `Bearer ${SUPABASE_ANON_KEY}`);
     }
 
+    // SECURITY (audit v8.62.0): restrict CORS to known storefront/platform
+    // origins instead of wildcard. Wildcard combined with forwarded user JWTs
+    // means any web origin could fire cross-site authenticated mutations.
+    const reqOrigin = request.headers.get("Origin") || "";
+    let corsOrigin = `https://${ROOT_DOMAIN}`;
+    if (reqOrigin) {
+      try {
+        const oHost = new URL(reqOrigin).hostname.toLowerCase();
+        if (
+          oHost === ROOT_DOMAIN ||
+          oHost.endsWith(`.${ROOT_DOMAIN}`) ||
+          // Allow any resolved custom domain (storefront).
+          (await resolveDomain(oHost.replace(/^www\./, ""), env).catch(() => null))
+        ) {
+          corsOrigin = reqOrigin;
+        }
+      } catch {}
+    }
+    const setCors = (r) => {
+      r.headers.set("Access-Control-Allow-Origin", corsOrigin);
+      r.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+      r.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, apikey, x-client-info");
+      r.headers.append("Vary", "Origin");
+    };
+
     const isCacheable = request.method === "GET" && url.pathname.startsWith("/rest/v1/") && !hasUserJwt;
+
+    // SECURITY (audit v8.62.0): include hostname in cache key. Without this,
+    // two tenants hitting the same RPC path/query collide and may receive
+    // each other's cached response for the 30s TTL.
+    const cacheKeyUrl = `https://__sb-proxy/${hostname}${url.pathname}${url.search}`;
 
     // Try edge cache first for cacheable requests
     if (isCacheable) {
-      const cacheKey = new Request(`https://__sb-proxy/${url.pathname}${url.search}`, { method: "GET" });
+      const cacheKey = new Request(cacheKeyUrl, { method: "GET" });
       try {
         const hit = await cache.match(cacheKey);
         if (hit) {
           const cachedRes = new Response(hit.body, hit);
-          cachedRes.headers.set("Access-Control-Allow-Origin", "*");
-          cachedRes.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-          cachedRes.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, apikey, x-client-info");
+          setCors(cachedRes);
           cachedRes.headers.set("X-Sb-Proxy-Cache", "HIT");
           return cachedRes;
         }
@@ -6861,14 +6926,12 @@ async function _handleFetch(request, env, ctx) {
       });
       clearTimeout(timeout);
       const proxyRes = new Response(res.body, res);
-      proxyRes.headers.set("Access-Control-Allow-Origin", "*");
-      proxyRes.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-      proxyRes.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, apikey, x-client-info");
+      setCors(proxyRes);
 
       // Store cacheable 200s in edge cache for 30s
       if (isCacheable && res.status === 200) {
         try {
-          const cacheKey = new Request(`https://__sb-proxy/${url.pathname}${url.search}`, { method: "GET" });
+          const cacheKey = new Request(cacheKeyUrl, { method: "GET" });
           const toCache = proxyRes.clone();
           // Override Cache-Control so cache.put respects our TTL
           toCache.headers.set("Cache-Control", "public, max-age=30");
