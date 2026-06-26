@@ -5,30 +5,24 @@ import LazyMount from "@/components/landing/LazyMount";
 
 const LandingJsonLd = lazy(() => import("@/components/landing/LandingJsonLd"));
 
-// Below-fold lazy chunks — each wrapped in LazyMount so its chunk only
-// downloads when the user scrolls near it.
-const PaymentTrustStrip = lazy(() => import("@/components/landing/PaymentTrustStrip"));
-const StatsBar = lazy(() => import("@/components/landing/StatsBar"));
-const ProblemAwareness = lazy(() => import("@/components/landing/ProblemAwareness"));
-const CommissionCalculator = lazy(() => import("@/components/landing/CommissionCalculator"));
-const WhoUses = lazy(() => import("@/components/landing/WhoUses"));
-const SolutionFlow = lazy(() => import("@/components/landing/SolutionFlow"));
-const StoreLookShowcase = lazy(() => import("@/components/landing/StoreLookShowcase"));
-const Testimonials = lazy(() => import("@/components/landing/Testimonials"));
-const ComparisonTable = lazy(() => import("@/components/landing/ComparisonTable"));
+// V2 sections — agentic-commerce / 3%-on-delivered positioning.
+const TrustLogos = lazy(() => import("@/components/landing/v2/TrustLogos"));
+const ProblemVsUs = lazy(() => import("@/components/landing/v2/ProblemVsUs"));
+const CoreFeatures = lazy(() => import("@/components/landing/v2/CoreFeatures"));
+const HowItWorks = lazy(() => import("@/components/landing/v2/HowItWorks"));
+const PricingV2 = lazy(() => import("@/components/landing/v2/PricingV2"));
+const SavingsCalculator = lazy(() => import("@/components/landing/v2/SavingsCalculator"));
+const AgenticStrip = lazy(() => import("@/components/landing/v2/AgenticStrip"));
+const FeaturedOn = lazy(() => import("@/components/landing/v2/FeaturedOn"));
+const FinalCtaV2 = lazy(() => import("@/components/landing/v2/FinalCtaV2"));
 
+const Testimonials = lazy(() => import("@/components/landing/Testimonials"));
 const FAQ = lazy(() => import("@/components/landing/FAQ"));
-const FinalCTA = lazy(() => import("@/components/landing/FinalCTA"));
 const Footer = lazy(() => import("@/components/landing/Footer"));
 const LandingWhatsApp = lazy(() => import("@/components/landing/LandingWhatsApp"));
 const ExitIntentPopup = lazy(() => import("@/components/landing/ExitIntentPopup"));
 
-
 const Index = () => {
-  // Mount JSON-LD quickly. AI crawlers (Perplexity, ChatGPT-User) often only
-  // execute JS for 2–3 seconds — a long idle deadline meant the marketing
-  // homepage's structured data was missed. Keep it off the critical path
-  // (microtask) but make sure it lands inside any reasonable crawler budget.
   const [seoReady, setSeoReady] = useState(false);
   useEffect(() => {
     let cancelled = false;
@@ -47,21 +41,20 @@ const Index = () => {
       <main>
         <Hero />
         <Suspense fallback={null}>
-          <LazyMount minHeight={80}><PaymentTrustStrip /></LazyMount>
-          <LazyMount minHeight={300}><StatsBar /></LazyMount>
-          <LazyMount minHeight={500}><ProblemAwareness /></LazyMount>
-          <LazyMount minHeight={600}><CommissionCalculator /></LazyMount>
-          <LazyMount minHeight={500}><WhoUses /></LazyMount>
-          <LazyMount minHeight={500}><SolutionFlow /></LazyMount>
-          <LazyMount minHeight={700}><StoreLookShowcase showOverlays={false} /></LazyMount>
+          <LazyMount minHeight={140}><TrustLogos /></LazyMount>
+          <LazyMount minHeight={500}><ProblemVsUs /></LazyMount>
+          <LazyMount minHeight={600}><CoreFeatures /></LazyMount>
+          <LazyMount minHeight={500}><HowItWorks /></LazyMount>
+          <LazyMount minHeight={600}><PricingV2 /></LazyMount>
+          <LazyMount minHeight={700}><SavingsCalculator /></LazyMount>
+          <LazyMount minHeight={500}><AgenticStrip /></LazyMount>
           <LazyMount minHeight={500}><Testimonials /></LazyMount>
-          
-          
+          <LazyMount minHeight={120}><FeaturedOn /></LazyMount>
           <LazyMount minHeight={500}><FAQ /></LazyMount>
-          <LazyMount minHeight={400}><FinalCTA /></LazyMount>
+          <LazyMount minHeight={400}><FinalCtaV2 /></LazyMount>
           <LazyMount minHeight={0}><LandingWhatsApp /></LazyMount>
           <LazyMount minHeight={0}><ExitIntentPopup /></LazyMount>
-          
+
           {seoReady && <LandingJsonLd />}
         </Suspense>
       </main>

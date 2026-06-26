@@ -2,14 +2,14 @@ import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 
 const faqs = [
-  { q: "How quickly can I set up my store?", a: "You can have your store live in under 10 minutes. Just sign up, add your products, choose a theme, and you're ready to sell." },
-  { q: "Do I need any technical knowledge?", a: "Not at all! ShopBanao is designed for non-technical users. If you can use WhatsApp, you can run a store on ShopBanao." },
-  { q: "What payment methods are supported?", a: "We support UPI, credit/debit cards, net banking, wallets, and Cash on Delivery. Payments go directly to your bank account." },
-  { q: "Is there any commission on sales?", a: "Zero commission, ever. You keep 100% of your sales revenue. We only charge a flat monthly subscription fee." },
-  { q: "Can I use my own domain name?", a: "Yes! You can connect your own domain (like yourstore.com) or use a free shopbanao.in subdomain." },
-  { q: "What happens after the free trial?", a: "After 7 days, you can choose a plan that fits your needs. Your store and data remain intact. No surprise charges." },
-  { q: "Do you provide delivery/shipping support?", a: "Yes, we integrate with Shiprocket, Delhivery, and other logistics partners. You can also set up local delivery zones." },
-  { q: "Can I migrate from another platform?", a: "Absolutely. We offer free migration support. Our team will help you move your products, customers, and orders seamlessly." },
+  { q: "What does ShopBanao actually cost?", a: "₹0 subscription, ₹0 setup, ₹0 marketing fee. You pay a flat 3% only on orders that are actually delivered. If an order RTOs, you pay nothing on it." },
+  { q: "Why 3% on delivered — and not a subscription?", a: "Because we win only when you win. A subscription charges you in slow months too. Our 3% is success-based: no delivered order, no fee. It keeps us obsessed with your conversion, RTO and retention." },
+  { q: "How is ShopBanao different from Shopify or WooCommerce?", a: "Shopify gives you a storefront. ShopBanao is the full agentic commerce OS — storefront + WhatsApp + ads attribution + logistics + AI calling + checkout — built for the Indian buyer. One platform, one bill, one team to call." },
+  { q: "What does the 'agentic' part mean in practice?", a: "Independent AI agents run inside your store: a calling agent confirms COD and recovers abandons in Hindi/English, an ads agent watches creative-level ROAS, and a recovery agent re-engages on the right channel — all without you babysitting a dashboard." },
+  { q: "How quickly can I be live?", a: "Most brands go live in under a day. Pick a theme, import your catalogue, plug UPI / Shiprocket / WhatsApp, and you're shipping. Our team helps free of charge." },
+  { q: "Can I migrate from Shopify, Dukaan or WooCommerce?", a: "Yes — and we do it for you. Free migration of products, customers, orders and domain. Zero downtime." },
+  { q: "Which payment methods are supported?", a: "UPI, Razorpay, Cashfree, PayU, credit/debit, net banking, wallets and Cash on Delivery. Money settles directly into your bank account." },
+  { q: "Is there a contract or lock-in?", a: "No contract, no lock-in. Cancel any time and walk out with all your data — products, customers, orders, designs." },
 ];
 
 const FAQ_SCRIPT_ID = "faq-jsonld";

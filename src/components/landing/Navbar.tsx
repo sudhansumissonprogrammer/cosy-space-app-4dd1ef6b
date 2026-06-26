@@ -22,21 +22,23 @@ const Navbar = () => {
         </a>
 
         <div className="hidden md:flex items-center gap-8">
-          <a href="/#features" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">Features</a>
-          
-          <a href="/#sellers" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">For Sellers</a>
-          <a href="/partners" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">Partners</a>
+          <a href="/#features" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">Platform</a>
+          <a href="/#pricing" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">Pricing</a>
+          <a href="/#savings" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">Savings</a>
           <a href="/#faq" className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200">FAQ</a>
           <a
             href="/login"
             {...onAuthCtaIntent}
             className="font-bold uppercase tracking-wider text-sm text-foreground hover:text-bauhaus-red transition-colors duration-200"
           >
-            Store Owner Login
+            Login
           </a>
         </div>
 
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden md:flex items-center gap-3">
+          <a href="/#demo" className="font-bold uppercase tracking-wider text-xs text-foreground border-2 border-foreground px-4 py-2 hover:bg-muted transition-colors">
+            Book a Demo
+          </a>
           <a
             href="/signup"
             {...onAuthCtaIntent}

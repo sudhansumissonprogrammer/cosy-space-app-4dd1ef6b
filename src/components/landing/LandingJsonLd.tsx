@@ -21,7 +21,7 @@ const LandingJsonLd = () => {
           availableLanguage: ["English", "Hindi"],
         },
         description:
-          "ShopBanao is India's easiest platform to create your own online store — zero commission, WhatsApp ordering, and UPI payments built in.",
+          "ShopBanao is India's agentic commerce OS — store, WhatsApp, ads, logistics, AI calling and checkout in one platform. ₹0 subscription, 3% only on delivered orders.",
       },
       {
         "@context": "https://schema.org",
@@ -45,7 +45,7 @@ const LandingJsonLd = () => {
           "@type": "Offer",
           price: "0",
           priceCurrency: "INR",
-          description: "Free plan available — launch your store at zero cost",
+          description: "₹0 subscription. 3% success fee only on delivered orders.",
         },
         aggregateRating: {
           "@type": "AggregateRating",
@@ -55,7 +55,7 @@ const LandingJsonLd = () => {
           worstRating: "1",
         },
         description:
-          "Create your online store in 10 minutes. Manage products, accept UPI payments, and take orders via WhatsApp — zero commission.",
+          "Agentic commerce OS for Indian D2C brands. Storefront, WhatsApp, ads attribution, logistics, AI calling and checkout — one platform, 3% only when orders deliver.",
       },
     ];
 
