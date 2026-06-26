@@ -131,12 +131,16 @@ export default function PushNotificationManager({ storeId }: Props) {
   }
 
   async function toggleDevice(id: string, enabled: boolean) {
-    await supabase.from("push_subscriptions").update({ enabled }).eq("id", id);
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return;
+    await supabase.from("push_subscriptions").update({ enabled }).eq("id", id).eq("user_id", auth.user.id);
     await refreshDevices();
   }
 
   async function removeDevice(id: string) {
-    await supabase.from("push_subscriptions").delete().eq("id", id);
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return;
+    await supabase.from("push_subscriptions").delete().eq("id", id).eq("user_id", auth.user.id);
     await refreshDevices();
     // If this was the current device, also unsubscribe locally
     const dev = devices.find((d) => d.id === id);

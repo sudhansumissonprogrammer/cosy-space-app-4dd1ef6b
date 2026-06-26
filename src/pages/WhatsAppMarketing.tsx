@@ -50,15 +50,17 @@ function SetupTab({ storeId }: { storeId: string }) {
   const { data: config, isLoading } = useQuery({
     queryKey: ["whatsapp-config", storeId],
     queryFn: async () => {
+      // access_token is column-revoked; fetch via secure RPC separately.
       const { data, error } = await supabase
         .from("whatsapp_config")
-        .select("*")
+        .select("id, store_id, phone_number_id, waba_id, business_phone, marketing_mode, is_active, created_at, updated_at")
         .eq("store_id", storeId)
         .maybeSingle();
       if (error) throw error;
       if (data) {
+        const { data: tok } = await supabase.rpc("get_own_whatsapp_token", { _store_id: storeId! });
         setForm({
-          access_token: (data as any).access_token || "",
+          access_token: (tok as string) || "",
           phone_number_id: (data as any).phone_number_id || "",
           waba_id: (data as any).waba_id || "",
           business_phone: (data as any).business_phone || "",
@@ -71,15 +73,20 @@ function SetupTab({ storeId }: { storeId: string }) {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (config) {
+        // Only include access_token when user actually typed a new value — never wipe with empty.
+        const updatePayload: Record<string, any> = {
+          phone_number_id: form.phone_number_id,
+          waba_id: form.waba_id,
+          business_phone: form.business_phone,
+        };
+        if (form.access_token && form.access_token.trim()) {
+          updatePayload.access_token = form.access_token.trim();
+        }
         const { error } = await supabase
           .from("whatsapp_config")
-          .update({
-            access_token: form.access_token,
-            phone_number_id: form.phone_number_id,
-            waba_id: form.waba_id,
-            business_phone: form.business_phone,
-          })
-          .eq("id", (config as any).id);
+          .update(updatePayload)
+          .eq("id", (config as any).id)
+          .eq("store_id", storeId!);
         if (error) throw error;
       } else {
         const { error } = await (supabase as any).from("whatsapp_config").insert({
@@ -1100,7 +1107,8 @@ function AutomationsTab({ storeId }: { storeId: string }) {
           await supabase
             .from("whatsapp_templates")
             .update({ body_text: config.body, is_active: config.enabled })
-            .eq("id", (existing as any).id);
+            .eq("id", (existing as any).id)
+            .eq("store_id", storeId!);
         } else {
           await supabase.from("whatsapp_templates").insert({
             store_id: storeId,
@@ -1481,7 +1489,8 @@ function BulkMessagingTab({ storeId, initialNumbers }: { storeId: string; initia
       await (supabase as any)
         .from("whatsapp_bulk_campaigns")
         .update({ sent_count: sent, failed_count: failed, status: "completed", completed_at: new Date().toISOString() })
-        .eq("id", campaignId);
+        .eq("id", campaignId)
+        .eq("store_id", storeId);
     }
 
     setSending(false);
@@ -2744,7 +2753,8 @@ function ModeSelectionScreen({ storeId, onSelect }: { storeId: string; onSelect:
         const { error } = await (supabase as any)
           .from("whatsapp_config")
           .update({ marketing_mode: mode })
-          .eq("id", (existing as any).id);
+          .eq("id", (existing as any).id)
+          .eq("store_id", storeId);
         if (error) throw error;
       } else {
         const { error } = await (supabase as any).from("whatsapp_config").insert({
