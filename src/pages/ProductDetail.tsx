@@ -1610,17 +1610,24 @@ function ImageGallery({
                   );
                 }
                 const loaded = imageLoaded[realIdx];
+                const optimizedUrl = optimizeImageUrl(slide.url, 800);
                 return (
                   <div
                     key={`${i}-${slide.url}`}
-                    className="relative flex-[0_0_100%] min-w-0"
+                    className="relative flex-[0_0_100%] min-w-0 overflow-hidden"
                     onClick={() => setLightboxOpen(true)}
                   >
                     {!loaded && <Skeleton className="aspect-[4/5] sm:aspect-square w-full rounded-none" />}
+                    {/* Blurred fill behind portrait images so gutters disappear on desktop */}
+                    <div
+                      aria-hidden
+                      className="absolute inset-0 bg-center bg-cover scale-110 blur-2xl opacity-60"
+                      style={{ backgroundImage: `url(${optimizedUrl})` }}
+                    />
                     <img
-                      src={optimizeImageUrl(slide.url, 800)}
+                      src={optimizedUrl}
                       alt={productName}
-                      className={`w-full h-auto max-h-[80vh] sm:w-auto sm:max-w-full sm:mx-auto object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+                      className={`relative z-[1] w-full h-auto max-h-[80vh] sm:w-auto sm:max-w-full sm:mx-auto object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}
