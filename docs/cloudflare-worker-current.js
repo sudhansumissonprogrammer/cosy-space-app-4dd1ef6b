@@ -1364,7 +1364,7 @@ function _buildPrebuiltHead(html) {
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
   if (cssMatch) {
-    head += `<link rel="preload" href="${cssMatch[1]}" as="style" />`;
+    head += `<link rel="preload" href="${cssMatch[1]}" as="style" crossorigin />`;
   }
 
   const DASHBOARD_CHUNK_PATTERN =
