@@ -106,21 +106,29 @@ export default function StorefrontShop() {
       <nav className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground" aria-label="Breadcrumb">
         <Link to={storefrontPath(slug!, "")} className="hover:text-foreground transition-colors">Home</Link>
         <span>/</span>
-        <span className="text-foreground font-medium">Shop All</span>
+        {categoryParam ? (
+          <>
+            <Link to={storefrontPath(slug!, "shop")} className="hover:text-foreground transition-colors">Shop All</Link>
+            <span>/</span>
+            <span className="text-foreground font-medium capitalize">{heading}</span>
+          </>
+        ) : (
+          <span className="text-foreground font-medium">Shop All</span>
+        )}
       </nav>
 
       <div className="mb-4 flex items-center gap-3">
         <Link
-          to={storefrontPath(slug!, "")}
+          to={categoryParam ? storefrontPath(slug!, "shop") : storefrontPath(slug!, "")}
           className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card hover:bg-accent transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <h1 className="text-xl sm:text-2xl font-bold text-foreground">Shop All</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground capitalize">{heading}</h1>
       </div>
 
       {/* Category quick-jump strip */}
-      <CategoryQuickJump storeId={store.id} slug={slug!} />
+      <CategoryQuickJump storeId={store.id} slug={slug!} activeCategory={categoryParam} />
 
       {/* Sticky filter/sort bar */}
       <ShopFilterBar
