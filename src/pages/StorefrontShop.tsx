@@ -31,6 +31,8 @@ function ProductCardSkeleton() {
 export default function StorefrontShop() {
   const store = useOutletContext<StoreData>();
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
+  const categoryParam = searchParams.get("category") || undefined;
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
   const isMenuStyle = cardStyle === "style-4";
@@ -51,12 +53,17 @@ export default function StorefrontShop() {
     isFetchingNextPage,
   } = useInfiniteProducts({
     storeId: store.id,
+    category: categoryParam,
     queryKeyPrefix: "shop-all-v3",
   });
 
   const rawProducts = data?.pages.flatMap((p) => p.products) || [];
   const products = useMemo(() => applySort(rawProducts, sort), [rawProducts, sort]);
   const totalEstimate = hasNextPage ? `${rawProducts.length}+` : rawProducts.length;
+
+  const heading = categoryParam
+    ? categoryParam.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    : "Shop All";
 
   const signalled = useRef(false);
   useEffect(() => {
