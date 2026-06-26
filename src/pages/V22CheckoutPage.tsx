@@ -415,14 +415,9 @@ export default function V22CheckoutPage() {
   const { data: hasActiveCoupons } = useQuery({
     queryKey: ["store-has-coupons", store.id],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from("coupons")
-        .select("id", { count: "exact", head: true })
-        .eq("store_id", store.id)
-        .eq("is_active", true)
-        .limit(1);
+      const { data, error } = await (supabase as any).rpc("store_has_active_coupons", { _store_id: store.id });
       if (error) throw error;
-      return (count ?? 0) > 0;
+      return !!data;
     },
     staleTime: 5 * 60 * 1000,
   });
