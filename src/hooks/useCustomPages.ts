@@ -46,12 +46,7 @@ export function useCustomPages(storeId: string | undefined) {
       if (fromShell) return fromShell;
 
       const { data, error } = await supabase
-        .from("store_pages")
-        .select("id, title, slug, content, image_url")
-        .eq("store_id", storeId!)
-        .eq("page_type", "custom")
-        .eq("is_active", true)
-        .order("display_order", { ascending: true });
+      const { data, error } = await (supabase as any).rpc("get_store_custom_pages", { _store_id: storeId! });
       if (error) throw error;
       return (data ?? []) as CustomPage[];
     },
