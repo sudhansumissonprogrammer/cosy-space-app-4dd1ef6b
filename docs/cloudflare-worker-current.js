@@ -204,7 +204,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.68.0-security-audit";
+const WORKER_VERSION = "8.68.1-css-preload-crossorigin";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
