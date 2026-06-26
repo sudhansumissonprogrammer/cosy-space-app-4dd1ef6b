@@ -1822,6 +1822,8 @@ export default function CheckoutPage() {
         furl: payuData.furl,
         curl: payuData.furl,
         notifyurl: payuData.notify_url || "",
+        boltEnabled: "true",
+        icp_source: "newBolt",
       };
 
       // Live PayU sometimes returns a browser "content blocked" page when its
