@@ -6869,18 +6869,46 @@ async function _handleFetch(request, env, ctx) {
       headers.set("Authorization", `Bearer ${SUPABASE_ANON_KEY}`);
     }
 
+    // SECURITY (audit v8.62.0): restrict CORS to known storefront/platform
+    // origins instead of wildcard. Wildcard combined with forwarded user JWTs
+    // means any web origin could fire cross-site authenticated mutations.
+    const reqOrigin = request.headers.get("Origin") || "";
+    let corsOrigin = `https://${ROOT_DOMAIN}`;
+    if (reqOrigin) {
+      try {
+        const oHost = new URL(reqOrigin).hostname.toLowerCase();
+        if (
+          oHost === ROOT_DOMAIN ||
+          oHost.endsWith(`.${ROOT_DOMAIN}`) ||
+          // Allow any resolved custom domain (storefront).
+          (await resolveDomain(oHost.replace(/^www\./, ""), env).catch(() => null))
+        ) {
+          corsOrigin = reqOrigin;
+        }
+      } catch {}
+    }
+    const setCors = (r) => {
+      r.headers.set("Access-Control-Allow-Origin", corsOrigin);
+      r.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+      r.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, apikey, x-client-info");
+      r.headers.append("Vary", "Origin");
+    };
+
     const isCacheable = request.method === "GET" && url.pathname.startsWith("/rest/v1/") && !hasUserJwt;
+
+    // SECURITY (audit v8.62.0): include hostname in cache key. Without this,
+    // two tenants hitting the same RPC path/query collide and may receive
+    // each other's cached response for the 30s TTL.
+    const cacheKeyUrl = `https://__sb-proxy/${hostname}${url.pathname}${url.search}`;
 
     // Try edge cache first for cacheable requests
     if (isCacheable) {
-      const cacheKey = new Request(`https://__sb-proxy/${url.pathname}${url.search}`, { method: "GET" });
+      const cacheKey = new Request(cacheKeyUrl, { method: "GET" });
       try {
         const hit = await cache.match(cacheKey);
         if (hit) {
           const cachedRes = new Response(hit.body, hit);
-          cachedRes.headers.set("Access-Control-Allow-Origin", "*");
-          cachedRes.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-          cachedRes.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, apikey, x-client-info");
+          setCors(cachedRes);
           cachedRes.headers.set("X-Sb-Proxy-Cache", "HIT");
           return cachedRes;
         }
@@ -6898,14 +6926,12 @@ async function _handleFetch(request, env, ctx) {
       });
       clearTimeout(timeout);
       const proxyRes = new Response(res.body, res);
-      proxyRes.headers.set("Access-Control-Allow-Origin", "*");
-      proxyRes.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-      proxyRes.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, apikey, x-client-info");
+      setCors(proxyRes);
 
       // Store cacheable 200s in edge cache for 30s
       if (isCacheable && res.status === 200) {
         try {
-          const cacheKey = new Request(`https://__sb-proxy/${url.pathname}${url.search}`, { method: "GET" });
+          const cacheKey = new Request(cacheKeyUrl, { method: "GET" });
           const toCache = proxyRes.clone();
           // Override Cache-Control so cache.put respects our TTL
           toCache.headers.set("Cache-Control", "public, max-age=30");
