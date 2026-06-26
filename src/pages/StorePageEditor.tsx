@@ -69,17 +69,18 @@ export default function StorePageEditor() {
   const purgeStore = useStorePurge(storeId);
 
   const { data: page, isLoading } = useQuery({
-    queryKey: ["store-page", pageId],
+    queryKey: ["store-page", storeId, pageId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("store_pages")
         .select("*")
         .eq("id", pageId!)
+        .eq("store_id", storeId!)
         .single();
       if (error) throw error;
       return data;
     },
-    enabled: !!pageId,
+    enabled: !!pageId && !!storeId,
   });
 
   const pageType = (page as any)?.page_type;
