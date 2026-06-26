@@ -62,7 +62,7 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
         name: product.name,
         price: product.price as any,
         salePrice: (product.sale_price as any) ?? null,
-        currency: (store as any).currency || "₹",
+        currency: (store as any).currency || "INR",
       });
     } catch {}
   };
