@@ -52,8 +52,8 @@ const PhoneMockup = ({ img, label, url, className = "", priority = false }: { im
 // Removed `Math.random()` at render time which was wasteful and would block any
 // future SSR/edge-prerender step with a hydration mismatch.
 const HERO = {
-  headline: <>Launch Your Own Store in 5 Minutes —<br />No Commission, No Coding with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
-  sub: "Keep 100% of your revenue. Your branded store with custom domain & UPI payments — live in 10 minutes.",
+  headline: <>Run your D2C brand.<br />Pay only <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>3%</span> on delivered orders.</>,
+  sub: "The agentic commerce OS for India — store, ads, WhatsApp, logistics, AI calling and checkout in one platform. ₹0 subscription. You pay only when an order is delivered.",
 };
 
 const Hero = () => {
@@ -74,7 +74,7 @@ const Hero = () => {
         <div className="grid lg:grid-cols-2 gap-0 max-w-7xl mx-auto w-full">
           <div className="flex flex-col justify-center lg:py-20 xl:py-24">
             <div className="inline-flex items-center gap-2 border-2 border-foreground px-3 py-1.5 mb-6 sm:mb-7 shadow-bauhaus-sm bg-bauhaus-yellow w-fit">
-              <span className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-foreground">7-Day Free Trial</span>
+              <span className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-foreground">₹0 Subscription · Pay only when delivered</span>
             </div>
 
             <h1 className="font-black text-[28px] sm:text-4xl lg:text-5xl xl:text-6xl tracking-tight leading-[1.1] text-foreground mb-4 sm:mb-5">
@@ -87,25 +87,25 @@ const Hero = () => {
 
             <div className="flex flex-row gap-3 mb-6 sm:mb-7">
               <a href="/signup" {...onAuthCtaIntent} className="inline-flex items-center justify-center gap-2 bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-xs sm:text-sm px-5 sm:px-8 py-3 sm:py-3.5 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-[transform,opacity,colors,box-shadow] duration-200">
-                Start Free Trial <ArrowRight className="h-4 w-4" />
+                Start Free <ArrowRight className="h-4 w-4" />
               </a>
-              <a href="/theme" className="inline-flex items-center justify-center gap-2 bg-bauhaus-white text-foreground font-bold uppercase tracking-wider text-xs sm:text-sm px-5 sm:px-8 py-3 sm:py-3.5 border-2 border-foreground shadow-bauhaus hover:bg-muted active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-[transform,opacity,colors,box-shadow] duration-200">
-                View Themes
+              <a href="#demo" className="inline-flex items-center justify-center gap-2 bg-bauhaus-white text-foreground font-bold uppercase tracking-wider text-xs sm:text-sm px-5 sm:px-8 py-3 sm:py-3.5 border-2 border-foreground shadow-bauhaus hover:bg-muted active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-[transform,opacity,colors,box-shadow] duration-200">
+                Book a Demo
               </a>
             </div>
 
             <div className="flex items-center gap-3 sm:gap-5">
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-bauhaus-blue flex-shrink-0" />
-                <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">Zero Commission</span>
+                <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">3% on delivered</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <CreditCard className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-bauhaus-blue flex-shrink-0" />
-                <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">UPI Payments</span>
+                <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">₹0 on RTO</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-bauhaus-blue flex-shrink-0" />
-                <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">Custom Domain</span>
+                <span className="font-medium text-[11px] sm:text-xs text-muted-foreground whitespace-nowrap">One platform</span>
               </div>
             </div>
           </div>
