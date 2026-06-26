@@ -78,7 +78,7 @@ export default function BulkEditDialog({ products, storeId }: BulkEditDialogProp
         }
 
         if (Object.keys(updates).length > 0) {
-          const { error } = await supabase.from("products").update(updates).eq("id", id);
+          const { error } = await supabase.from("products").update(updates).eq("id", id).eq("store_id", storeId);
           if (error) throw error;
         }
       }
