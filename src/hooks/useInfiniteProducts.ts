@@ -25,33 +25,7 @@ interface FetchOpts {
   sort?: string;
 }
 
-async function fetchPage({ storeId, category, page, sort }: FetchOpts): Promise<any[]> {
-  if (isProductionHost()) {
-    // ── Production: use Worker /api/products (cached, KV-backed) ──
-    const params = new URLSearchParams();
-    if (category) params.set("category", category);
-    if (page > 0) params.set("page", String(page));
-    if (sort) params.set("sort", sort);
-    const qs = params.toString();
-    const url = `${window.location.origin}/api/products${qs ? `?${qs}` : ""}`;
-
-    // Never reuse products embedded in cached HTML or sessionStorage here.
-    // On refresh after a dashboard add/delete, the versioned Worker endpoint
-    // is the freshness source; `no-store` prevents browser HTTP cache replay.
-    const res = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
-    if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
-    const json = await res.json();
-    // Defensive fallback: a stale/broken Worker deploy can return [] even
-    // when the store clearly has products (e.g. PostgREST column-permission
-    // regression). For the FIRST page only, fall back to direct Supabase so
-    // the storefront keeps working until the Worker is redeployed.
-    if (page === 0 && Array.isArray(json) && json.length === 0 && storeId) {
-      return await fetchPageFromSupabase({ storeId, category, page, sort });
-    }
-    return json;
-  }
-
-  // ── Preview / localhost: direct Supabase ──
+async function fetchPageFromSupabase({ storeId, category, page, sort: _sort }: FetchOpts): Promise<any[]> {
   const from = page * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
@@ -79,6 +53,35 @@ async function fetchPage({ storeId, category, page, sort }: FetchOpts): Promise<
   const { data, error } = await q;
   if (error) throw error;
   return data || [];
+}
+
+async function fetchPage({ storeId, category, page, sort }: FetchOpts): Promise<any[]> {
+  if (isProductionHost()) {
+    // ── Production: use Worker /api/products (cached, KV-backed) ──
+    const params = new URLSearchParams();
+    if (category) params.set("category", category);
+    if (page > 0) params.set("page", String(page));
+    if (sort) params.set("sort", sort);
+    const qs = params.toString();
+    const url = `${window.location.origin}/api/products${qs ? `?${qs}` : ""}`;
+
+    // Never reuse products embedded in cached HTML or sessionStorage here.
+    // On refresh after a dashboard add/delete, the versioned Worker endpoint
+    // is the freshness source; `no-store` prevents browser HTTP cache replay.
+    const res = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
+    if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
+    const json = await res.json();
+    // Defensive fallback: a stale/broken Worker deploy can return [] even
+    // when the store clearly has products (e.g. PostgREST column-permission
+    // regression). For the FIRST page only, fall back to direct Supabase so
+    // the storefront keeps working until the Worker is redeployed.
+    if (page === 0 && Array.isArray(json) && json.length === 0 && storeId) {
+      return await fetchPageFromSupabase({ storeId, category, page, sort });
+    }
+    return json;
+  }
+
+  return await fetchPageFromSupabase({ storeId, category, page, sort });
 }
 
 /**
