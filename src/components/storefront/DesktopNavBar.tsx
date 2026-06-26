@@ -129,7 +129,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
                     {categories.map((cat: any) => (
                       <Link
                         key={cat.id}
-                        to={storefrontPath(store.slug, `shop?category=${cat.slug}`)}
+                        to={storefrontPath(store.slug, `category/${cat.slug}`)}
                         onClick={() => setCatalogOpen(false)}
                         className="block px-4 py-2 text-[13px] font-medium transition-colors hover:opacity-70"
                         style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
