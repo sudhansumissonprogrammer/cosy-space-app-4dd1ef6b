@@ -204,7 +204,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.68.0-security-audit";
+const WORKER_VERSION = "8.68.1-css-preload-crossorigin";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -1364,7 +1364,7 @@ function _buildPrebuiltHead(html) {
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
   if (cssMatch) {
-    head += `<link rel="preload" href="${cssMatch[1]}" as="style" />`;
+    head += `<link rel="preload" href="${cssMatch[1]}" as="style" crossorigin />`;
   }
 
   const DASHBOARD_CHUNK_PATTERN =
@@ -3789,7 +3789,7 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
   }
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
-  let cssPreload = cssMatch ? `<link rel="preload" href="${cssMatch[1]}" as="style" />\n` : "";
+  let cssPreload = cssMatch ? `<link rel="preload" href="${cssMatch[1]}" as="style" crossorigin />\n` : "";
 
   const DASHBOARD_CHUNK_PATTERN =
     /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages)-/;
