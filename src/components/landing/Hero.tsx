@@ -52,8 +52,8 @@ const PhoneMockup = ({ img, label, url, className = "", priority = false }: { im
 // Removed `Math.random()` at render time which was wasteful and would block any
 // future SSR/edge-prerender step with a hydration mismatch.
 const HERO = {
-  headline: <>Launch Your Own Store in 5 Minutes —<br />No Commission, No Coding with <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>ShopBanao</span></>,
-  sub: "Keep 100% of your revenue. Your branded store with custom domain & UPI payments — live in 10 minutes.",
+  headline: <>Run your D2C brand.<br />Pay only <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>3%</span> on delivered orders.</>,
+  sub: "The agentic commerce OS for India — store, ads, WhatsApp, logistics, AI calling and checkout in one platform. ₹0 subscription. You pay only when an order is delivered.",
 };
 
 const Hero = () => {
