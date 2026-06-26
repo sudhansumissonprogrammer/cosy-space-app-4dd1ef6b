@@ -270,7 +270,8 @@ export default function StoreOrders() {
       const { error } = await (supabase as any)
         .from("orders")
         .update({ status })
-        .in("id", orderIds);
+        .in("id", orderIds)
+        .eq("store_id", storeId!);
       if (error) throw error;
     },
     onSuccess: (_, vars) => {
