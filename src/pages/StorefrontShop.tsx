@@ -78,10 +78,10 @@ export default function StorefrontShop() {
   useProductListJsonLd({
     products: rawProducts,
     storeSlug: slug || store.slug,
-    listName: "Shop All",
+    listName: heading,
     customDomain: (store as any)?.custom_domain,
   });
-  useCanonical(`${getStoreBaseUrl(slug || store.slug, (store as any)?.custom_domain)}/shop`);
+  useCanonical(`${getStoreBaseUrl(slug || store.slug, (store as any)?.custom_domain)}/shop${categoryParam ? `?category=${categoryParam}` : ""}`);
 
   const sentinelElRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
