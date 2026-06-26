@@ -1620,7 +1620,7 @@ function ImageGallery({
                     <img
                       src={optimizeImageUrl(slide.url, 800)}
                       alt={productName}
-                      className={`w-full h-auto max-h-[80vh] object-contain bg-muted/30 transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
+                      className={`w-full h-auto max-h-[80vh] sm:w-auto sm:max-w-full sm:mx-auto object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}
                       decoding="async"
                       fetchPriority={realIdx === 0 ? "high" : "auto"}
                       draggable={false}
