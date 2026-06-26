@@ -1833,6 +1833,23 @@ export default function CheckoutPage() {
       // Posting the same signed payload as a top-level navigation avoids iframe
       // blocking and our return/polling handlers below already complete the order.
       if (payuData.env !== "sandbox") {
+        const checkoutUrlBeforeRedirect = window.location.href;
+        let leftPage = false;
+        const markLeftPage = () => { leftPage = true; };
+        window.addEventListener("pagehide", markLeftPage, { once: true });
+        window.setTimeout(() => {
+          if (leftPage) return;
+          if (document.visibilityState !== "visible") return;
+          if (window.location.href !== checkoutUrlBeforeRedirect) return;
+          window.removeEventListener("pagehide", markLeftPage);
+          console.error("[PayU] Hosted checkout redirect did not leave the page");
+          window.dispatchEvent(new CustomEvent("payment-ended"));
+          setPlacingStep(0);
+          setPendingOrder(order);
+          setPaymentFailed(true);
+          setPlacing(false);
+          toast.error("Payment gateway did not open. Please retry.");
+        }, 12000);
         submitPayuRedirect(payuData.action, boltParams);
         return;
       }
