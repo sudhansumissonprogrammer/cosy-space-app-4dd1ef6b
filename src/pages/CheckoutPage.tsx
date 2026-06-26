@@ -50,6 +50,23 @@ function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
+function submitPayuRedirect(action: string, params: Record<string, any>) {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = action;
+  form.style.display = "none";
+  Object.entries(params).forEach(([name, value]) => {
+    if (value === undefined || value === null) return;
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = String(value);
+    form.appendChild(input);
+  });
+  document.body.appendChild(form);
+  form.submit();
+}
+
 const SUPABASE_FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
@@ -473,7 +490,9 @@ export default function CheckoutPage() {
       prewarmEdgeFunction("store-cashfree-status");
     }
     if (hasPayu) {
-      loadPayuBolt(((paymentConfig?.payu_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
+      if ((paymentConfig?.payu_env as any) === "sandbox") {
+        loadPayuBolt("sandbox").catch(() => {});
+      }
       prewarmEdgeFunction("payu-create-txn");
       prewarmEdgeFunction("payu-verify-payment");
       prewarmEdgeFunction("payu-status");
@@ -1787,7 +1806,6 @@ export default function CheckoutPage() {
     };
 
     try {
-      const bolt = await loadPayuBolt((payuData.env === "sandbox" ? "sandbox" : "production"));
       const boltParams = {
         key: payuData.key,
         txnid: payuData.txnid,
@@ -1806,7 +1824,20 @@ export default function CheckoutPage() {
         furl: payuData.furl,
         curl: payuData.furl,
         notifyurl: payuData.notify_url || "",
+        boltEnabled: "true",
+        icp_source: "newBolt",
       };
+
+      // Live PayU sometimes returns a browser "content blocked" page when its
+      // checkout is embedded by Bolt iframe, even with valid key/salt/domain.
+      // Posting the same signed payload as a top-level navigation avoids iframe
+      // blocking and our return/polling handlers below already complete the order.
+      if (payuData.env !== "sandbox") {
+        submitPayuRedirect(payuData.action, boltParams);
+        return;
+      }
+
+      const bolt = await loadPayuBolt("sandbox");
       await new Promise<void>((resolve) => {
         let settled = false;
         let timeoutId: number | null = null;
