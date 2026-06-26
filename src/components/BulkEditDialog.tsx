@@ -84,7 +84,7 @@ export default function BulkEditDialog({ products, storeId }: BulkEditDialogProp
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       toast.success(`${selected.size} products updated`);
       setOpen(false);
       setSelected(new Set());
