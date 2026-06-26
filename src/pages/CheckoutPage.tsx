@@ -490,7 +490,9 @@ export default function CheckoutPage() {
       prewarmEdgeFunction("store-cashfree-status");
     }
     if (hasPayu) {
-      loadPayuBolt(((paymentConfig?.payu_env as any) === "sandbox" ? "sandbox" : "production")).catch(() => {});
+      if ((paymentConfig?.payu_env as any) === "sandbox") {
+        loadPayuBolt("sandbox").catch(() => {});
+      }
       prewarmEdgeFunction("payu-create-txn");
       prewarmEdgeFunction("payu-verify-payment");
       prewarmEdgeFunction("payu-status");
