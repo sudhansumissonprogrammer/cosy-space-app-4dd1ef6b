@@ -1828,33 +1828,11 @@ export default function CheckoutPage() {
         icp_source: "newBolt",
       };
 
-      // Live PayU sometimes returns a browser "content blocked" page when its
-      // checkout is embedded by Bolt iframe, even with valid key/salt/domain.
-      // Posting the same signed payload as a top-level navigation avoids iframe
-      // blocking and our return/polling handlers below already complete the order.
-      if (payuData.env !== "sandbox") {
-        const checkoutUrlBeforeRedirect = window.location.href;
-        let leftPage = false;
-        const markLeftPage = () => { leftPage = true; };
-        window.addEventListener("pagehide", markLeftPage, { once: true });
-        window.setTimeout(() => {
-          if (leftPage) return;
-          if (document.visibilityState !== "visible") return;
-          if (window.location.href !== checkoutUrlBeforeRedirect) return;
-          window.removeEventListener("pagehide", markLeftPage);
-          console.error("[PayU] Hosted checkout redirect did not leave the page");
-          window.dispatchEvent(new CustomEvent("payment-ended"));
-          setPlacingStep(0);
-          setPendingOrder(order);
-          setPaymentFailed(true);
-          setPlacing(false);
-          toast.error("Payment gateway did not open. Please retry.");
-        }, 12000);
-        submitPayuRedirect(payuData.action, boltParams);
-        return;
-      }
+      // Restored previous behavior: use Bolt overlay in all environments.
+      // Worker CSP now allows api.payu.in / secure.payu.in / jssdk.payu.in,
+      // so the iframe loads correctly and we don't need the top-level redirect.
+      const bolt = await loadPayuBolt(payuData.env === "sandbox" ? "sandbox" : "production");
 
-      const bolt = await loadPayuBolt("sandbox");
       await new Promise<void>((resolve) => {
         let settled = false;
         let timeoutId: number | null = null;
