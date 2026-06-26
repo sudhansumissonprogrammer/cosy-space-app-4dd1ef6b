@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "code-reviewer": {
+      "source": "shubhamsaboo/awesome-llm-apps",
+      "sourceType": "github",
+      "skillPath": "awesome_agent_skills/code-reviewer/SKILL.md",
+      "computedHash": "4d3963ea9b091e75be5c66a52cf14ad36ba20a8bc52832fd8278349887224072"
+    }
+  }
+}
