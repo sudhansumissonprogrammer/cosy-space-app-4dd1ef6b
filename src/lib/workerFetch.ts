@@ -22,6 +22,13 @@ export interface WorkerFetchOpts<T> {
   sessionTtlMs?: number;
   fallback: () => Promise<T>;
   transform?: (json: any) => T;
+  /**
+   * When true, an empty array from the Worker is treated as a cache/schema
+   * miss and the Supabase fallback is invoked instead. Use for endpoints
+   * where empty is almost always a Worker bug (e.g. /api/products for a
+   * store that obviously has products). Defaults to false.
+   */
+  emptyArrayAsFailure?: boolean;
 }
 
 export async function fetchViaWorker<T>({
