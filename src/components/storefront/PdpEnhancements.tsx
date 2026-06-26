@@ -34,18 +34,8 @@ export function CouponTeaser({ storeId, orderTotal = 0 }: { storeId: string; ord
     enabled: !!storeId,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const nowIso = new Date().toISOString();
-      const { data } = await (supabase as any)
-        .from("coupons")
-        .select("code, discount_type, discount_value, min_order_amount, expires_at, is_active, starts_at")
-        .eq("store_id", storeId)
-        .eq("is_active", true)
-        .lte("starts_at", nowIso)
-        .or(`expires_at.is.null,expires_at.gte.${nowIso}`)
-        .order("discount_value", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data;
+      const { data } = await (supabase as any).rpc("get_store_coupon_teaser", { _store_id: storeId });
+      return Array.isArray(data) ? data[0] ?? null : data ?? null;
     },
   });
 
