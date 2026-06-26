@@ -70,10 +70,8 @@ export default function CategoryManagement() {
     try {
       const a = categories[index];
       const b = categories[newIndex];
-      await Promise.all([
-        supabase.from("categories").update({ display_order: newIndex } as any).eq("id", a.id),
-        supabase.from("categories").update({ display_order: index } as any).eq("id", b.id),
-      ]);
+      const { error } = await (supabase as any).rpc("swap_category_order", { _a: a.id, _b: b.id });
+      if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
       purgeStore();
     } catch {
@@ -82,6 +80,7 @@ export default function CategoryManagement() {
       setReordering(false);
     }
   }, [categories, reordering, storeId, queryClient, purgeStore]);
+
 
   const openCreate = () => {
     setEditingId(null);
@@ -138,8 +137,18 @@ export default function CategoryManagement() {
     if (!name.trim()) { toast.error("Category name is required"); return; }
     setSaving(true);
     try {
-      const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const baseSlug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      // Ensure slug uniqueness within the store (skip self when editing)
+      const existing = (categories || [])
+        .filter((c: any) => c.id !== editingId)
+        .map((c: any) => (c.slug || "").toLowerCase());
+      let slug = baseSlug;
+      let n = 2;
+      while (existing.includes(slug)) {
+        slug = `${baseSlug}-${n++}`;
+      }
       let image_url: string | null = imagePreview;
+
 
       if (imageFile) {
         // Crop to square first so it looks perfect in circles
