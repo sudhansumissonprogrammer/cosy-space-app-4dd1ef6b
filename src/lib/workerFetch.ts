@@ -37,6 +37,7 @@ export async function fetchViaWorker<T>({
   sessionTtlMs = 15 * 60 * 1000,
   fallback,
   transform,
+  emptyArrayAsFailure = false,
 }: WorkerFetchOpts<T>): Promise<T> {
   if (!isWorkerEnvironment()) return fallback();
 
@@ -62,6 +63,10 @@ export async function fetchViaWorker<T>({
     if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
     const json = await res.json();
     const value = transform ? transform(json) : (json as T);
+    if (emptyArrayAsFailure && Array.isArray(value) && value.length === 0) {
+      // Treat empty as cache/schema miss — defer to Supabase fallback.
+      return fallback();
+    }
     if (useSessionCache) {
       try {
         sessionStorage.setItem(sessionKey, JSON.stringify({ ts: Date.now(), data: value }));
