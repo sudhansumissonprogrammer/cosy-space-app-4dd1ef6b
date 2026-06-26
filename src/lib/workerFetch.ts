@@ -22,6 +22,13 @@ export interface WorkerFetchOpts<T> {
   sessionTtlMs?: number;
   fallback: () => Promise<T>;
   transform?: (json: any) => T;
+  /**
+   * When true, an empty array from the Worker is treated as a cache/schema
+   * miss and the Supabase fallback is invoked instead. Use for endpoints
+   * where empty is almost always a Worker bug (e.g. /api/products for a
+   * store that obviously has products). Defaults to false.
+   */
+  emptyArrayAsFailure?: boolean;
 }
 
 export async function fetchViaWorker<T>({
@@ -30,6 +37,7 @@ export async function fetchViaWorker<T>({
   sessionTtlMs = 15 * 60 * 1000,
   fallback,
   transform,
+  emptyArrayAsFailure = false,
 }: WorkerFetchOpts<T>): Promise<T> {
   if (!isWorkerEnvironment()) return fallback();
 
@@ -55,6 +63,10 @@ export async function fetchViaWorker<T>({
     if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
     const json = await res.json();
     const value = transform ? transform(json) : (json as T);
+    if (emptyArrayAsFailure && Array.isArray(value) && value.length === 0) {
+      // Treat empty as cache/schema miss — defer to Supabase fallback.
+      return fallback();
+    }
     if (useSessionCache) {
       try {
         sessionStorage.setItem(sessionKey, JSON.stringify({ ts: Date.now(), data: value }));

@@ -2385,7 +2385,11 @@ const PRODUCTS_KV_TTL = 86400; // v8.1.0 cost-cut: 2h → 24h (purge bumps versi
 // on this constant being identical on client + worker.
 const PRODUCTS_PAGE_SIZE = 20;
 const PRODUCT_COLUMNS =
-  "id,category,cost_price,created_at,currency,description,image_url,is_active,is_best_selling,is_category_pinned,category_pinned_at,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
+  // v8.62.0 — removed `cost_price` (anon SELECT revoked by security hardening;
+  // including it caused PostgREST to 401 the whole row, so /api/products
+  // silently returned []). cost_price is private/merchant-only data and must
+  // never be served to anonymous storefront visitors anyway.
+  "id,category,created_at,currency,description,image_url,is_active,is_best_selling,is_category_pinned,category_pinned_at,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
 
 async function _getInlineProductsOrNull(hostname, slug, env, ctx) {
   try {

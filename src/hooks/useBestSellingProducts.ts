@@ -81,6 +81,7 @@ export function useBestSellingProducts(storeId: string | undefined) {
           sessionTtlMs: 0,
           fallback: fetchFromSupabase,
           transform: (json) => (Array.isArray(json) ? json : []),
+          emptyArrayAsFailure: true,
         });
         return { products, page: 0 };
       }

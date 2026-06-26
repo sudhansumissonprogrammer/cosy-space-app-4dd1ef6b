@@ -88,6 +88,7 @@ function BestSellersSection({ storeId, slug, store, cardStyle, isCarousel }: {
           sessionTtlMs: 0,
           fallback: fetchFromSupabase,
           transform: (json) => (Array.isArray(json) ? json : []),
+          emptyArrayAsFailure: true,
         });
         return { products, page: 0 };
       }
