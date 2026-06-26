@@ -221,7 +221,7 @@ export default function ProductsList() { // v2
           updates.stock_quantity = bulkStockMode === "set" ? val : Math.max(0, product.stock_quantity + val);
         }
         if (Object.keys(updates).length > 0) {
-          const { error } = await supabase.from("products").update(updates).eq("id", id);
+          const { error } = await supabase.from("products").update(updates).eq("id", id).eq("store_id", storeId!);
           if (error) throw error;
         }
       }
