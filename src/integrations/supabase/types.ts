@@ -22,6 +22,7 @@ export type Database = {
           customer_phone: string | null
           id: string
           recovered: boolean
+          recovery_sent_at: string | null
           session_token: string | null
           store_id: string
         }
@@ -32,6 +33,7 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           recovered?: boolean
+          recovery_sent_at?: string | null
           session_token?: string | null
           store_id: string
         }
@@ -42,6 +44,7 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           recovered?: boolean
+          recovery_sent_at?: string | null
           session_token?: string | null
           store_id?: string
         }
@@ -3726,6 +3729,15 @@ export type Database = {
       get_store_payment_config: { Args: { _store_id: string }; Returns: Json }
       get_store_public: { Args: { _slug: string }; Returns: Json }
       get_store_public_email: { Args: { _store_id: string }; Returns: string }
+      get_store_recovery_coupon: {
+        Args: { _store_id: string }
+        Returns: {
+          code: string
+          discount_type: string
+          discount_value: number
+          min_order_amount: number
+        }[]
+      }
       get_store_usage_stats: { Args: never; Returns: Json }
       get_store_views: {
         Args: { _store_ids: string[] }
@@ -3816,6 +3828,10 @@ export type Database = {
       rollup_storefront_events_daily: {
         Args: { target_date?: string }
         Returns: number
+      }
+      swap_category_order: {
+        Args: { _a: string; _b: string }
+        Returns: undefined
       }
       verify_cron_secret: { Args: { _secret: string }; Returns: boolean }
       verify_phone_account_integrity: { Args: never; Returns: undefined }
