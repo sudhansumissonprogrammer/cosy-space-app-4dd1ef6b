@@ -45,7 +45,7 @@ export default function CategoryQuickJump({ storeId, slug, activeCategory }: Pro
           return (
             <Link
               key={c.id}
-              to={storefrontPath(slug, `shop?category=${c.slug}`)}
+              to={storefrontPath(slug, `category/${c.slug}`)}
               className={`shrink-0 inline-flex items-center gap-2 pl-1 pr-3 h-8 rounded-full text-[12px] font-semibold transition-colors ${
                 active
                   ? "bg-foreground text-background"

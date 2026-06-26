@@ -1,4 +1,4 @@
-import { useOutletContext, useParams, Link, useSearchParams } from "react-router-dom";
+import { useOutletContext, useParams, Link, useSearchParams, Navigate } from "react-router-dom";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,6 +33,12 @@ export default function StorefrontShop() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const categoryParam = searchParams.get("category") || undefined;
+
+  // Canonical category URL is /category/{slug}. Redirect any legacy
+  // ?category= links so SEO / sharing / analytics all consolidate there.
+  if (categoryParam) {
+    return <Navigate to={storefrontPath(slug!, `category/${categoryParam}`)} replace />;
+  }
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
   const isMenuStyle = cardStyle === "style-4";
