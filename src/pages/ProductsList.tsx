@@ -221,7 +221,7 @@ export default function ProductsList() { // v2
           updates.stock_quantity = bulkStockMode === "set" ? val : Math.max(0, product.stock_quantity + val);
         }
         if (Object.keys(updates).length > 0) {
-          const { error } = await supabase.from("products").update(updates).eq("id", id);
+          const { error } = await supabase.from("products").update(updates).eq("id", id).eq("store_id", storeId!);
           if (error) throw error;
         }
       }
@@ -240,7 +240,7 @@ export default function ProductsList() { // v2
       const ids = Array.from(bulkSelected);
       if (ids.length === 0) throw new Error("No products selected");
       // FK ON DELETE CASCADE handles product_images & product_variants atomically
-      const { error } = await supabase.from("products").delete().in("id", ids);
+      const { error } = await supabase.from("products").delete().in("id", ids).eq("store_id", storeId!);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -257,7 +257,7 @@ export default function ProductsList() { // v2
     mutationFn: async (value: boolean) => {
       const ids = Array.from(bulkSelected);
       if (ids.length === 0) throw new Error("No products selected");
-      const { error } = await supabase.from("products").update({ is_best_selling: value }).in("id", ids);
+      const { error } = await supabase.from("products").update({ is_best_selling: value }).in("id", ids).eq("store_id", storeId!);
       if (error) throw error;
     },
     onSuccess: (_, value) => {
@@ -374,7 +374,7 @@ export default function ProductsList() { // v2
   // Pull-to-refresh — re-fetch products on mobile pull-down
   const { pull, refreshing } = usePullToRefresh({
     onRefresh: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["products", storeId] });
+      await queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
     },
   });
 

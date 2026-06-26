@@ -78,13 +78,13 @@ export default function BulkEditDialog({ products, storeId }: BulkEditDialogProp
         }
 
         if (Object.keys(updates).length > 0) {
-          const { error } = await supabase.from("products").update(updates).eq("id", id);
+          const { error } = await supabase.from("products").update(updates).eq("id", id).eq("store_id", storeId);
           if (error) throw error;
         }
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       toast.success(`${selected.size} products updated`);
       setOpen(false);
       setSelected(new Set());
@@ -99,11 +99,11 @@ export default function BulkEditDialog({ products, storeId }: BulkEditDialogProp
       const ids = Array.from(selected);
       if (ids.length === 0) throw new Error("No products selected");
       // FK ON DELETE CASCADE handles product_images & product_variants atomically
-      const { error } = await supabase.from("products").delete().in("id", ids);
+      const { error } = await supabase.from("products").delete().in("id", ids).eq("store_id", storeId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       queryClient.invalidateQueries({ queryKey: ["product-limit"] });
       toast.success(`${selected.size} products deleted`);
       setOpen(false);
