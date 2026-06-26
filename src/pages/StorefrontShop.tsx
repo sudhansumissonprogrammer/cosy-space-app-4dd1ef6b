@@ -1,4 +1,4 @@
-import { useOutletContext, useParams, Link } from "react-router-dom";
+import { useOutletContext, useParams, Link, useSearchParams } from "react-router-dom";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
