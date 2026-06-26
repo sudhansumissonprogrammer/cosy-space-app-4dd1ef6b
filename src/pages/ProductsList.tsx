@@ -257,7 +257,7 @@ export default function ProductsList() { // v2
     mutationFn: async (value: boolean) => {
       const ids = Array.from(bulkSelected);
       if (ids.length === 0) throw new Error("No products selected");
-      const { error } = await supabase.from("products").update({ is_best_selling: value }).in("id", ids);
+      const { error } = await supabase.from("products").update({ is_best_selling: value }).in("id", ids).eq("store_id", storeId!);
       if (error) throw error;
     },
     onSuccess: (_, value) => {
