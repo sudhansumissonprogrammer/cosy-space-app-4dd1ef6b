@@ -566,13 +566,11 @@ export default function CheckoutPage() {
     if (!code) return;
     setCouponLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("coupons")
-        .select("*")
-        .eq("store_id", store.id)
-        .eq("code", code.toUpperCase())
-        .eq("is_active", true)
-        .maybeSingle();
+      const { data: rows, error } = await (supabase as any).rpc("validate_store_coupon", {
+        _store_id: store.id,
+        _code: code,
+      });
+      const data: any = Array.isArray(rows) ? rows[0] ?? null : rows ?? null;
 
       if (error) throw error;
       if (!data) {
