@@ -651,7 +651,7 @@ export default function V22ProductDetail() {
         />
 
         {/* Product Info */}
-        <div className="flex flex-col gap-0 px-4 sm:px-0 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:scrollbar-hide">
+        <div className="flex flex-col gap-0 px-4 sm:px-0">
 
           {/* Product Title — right under image */}
           <h1 className="text-xl font-semibold leading-snug sm:text-2xl lg:text-[1.7rem]" style={{ fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif", ...(isV18 ? { color: "#ffffff", fontWeight: 400, letterSpacing: "0.01em" } : { color: undefined }) }}>
