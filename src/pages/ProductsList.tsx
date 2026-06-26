@@ -374,7 +374,7 @@ export default function ProductsList() { // v2
   // Pull-to-refresh — re-fetch products on mobile pull-down
   const { pull, refreshing } = usePullToRefresh({
     onRefresh: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["products", storeId] });
+      await queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
     },
   });
 
