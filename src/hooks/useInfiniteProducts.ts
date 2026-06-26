@@ -40,7 +40,15 @@ async function fetchPage({ storeId, category, page, sort }: FetchOpts): Promise<
     // is the freshness source; `no-store` prevents browser HTTP cache replay.
     const res = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
     if (!res.ok) throw new Error(`Worker API error: ${res.status}`);
-    return await res.json();
+    const json = await res.json();
+    // Defensive fallback: a stale/broken Worker deploy can return [] even
+    // when the store clearly has products (e.g. PostgREST column-permission
+    // regression). For the FIRST page only, fall back to direct Supabase so
+    // the storefront keeps working until the Worker is redeployed.
+    if (page === 0 && Array.isArray(json) && json.length === 0 && storeId) {
+      return await fetchPageFromSupabase({ storeId, category, page, sort });
+    }
+    return json;
   }
 
   // ── Preview / localhost: direct Supabase ──
