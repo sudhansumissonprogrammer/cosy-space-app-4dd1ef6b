@@ -45,7 +45,6 @@ export function useCustomPages(storeId: string | undefined) {
       const fromShell = readShellCustomPages();
       if (fromShell) return fromShell;
 
-      const { data, error } = await supabase
       const { data, error } = await (supabase as any).rpc("get_store_custom_pages", { _store_id: storeId! });
       if (error) throw error;
       return (data ?? []) as CustomPage[];
