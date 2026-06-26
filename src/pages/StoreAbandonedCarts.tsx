@@ -143,24 +143,48 @@ export default function StoreAbandonedCarts() {
   const sendBulkRecovery = async (targets: any[]) => {
     if (!storeId || targets.length === 0) return;
     setSending(true);
-    setBulkProgress({ sent: 0, failed: 0, total: targets.length });
+    // Skip carts already sent (resumability across tab closes)
+    const queue = targets.filter((c: any) => !c.recovery_sent_at);
+    setBulkProgress({ sent: 0, failed: 0, total: queue.length });
 
     let sent = 0, failed = 0;
-    for (const cart of targets) {
+    for (const cart of queue) {
       try {
         await sendAbandonedCartWhatsApp(storeId, cart.id, cart.customer_phone, cart.customer_name, getCartData(cart));
+        // Mark per-cart immediately so a tab close mid-batch doesn't re-send
+        await (supabase as any)
+          .from("abandoned_carts")
+          .update({ recovery_sent_at: new Date().toISOString() })
+          .eq("id", cart.id);
         sent++;
       } catch {
         failed++;
       }
-      setBulkProgress({ sent, failed, total: targets.length });
+      setBulkProgress({ sent, failed, total: queue.length });
       await new Promise((r) => setTimeout(r, 500));
     }
 
     setSending(false);
-    setSelected(new Set());
+    // Only clear successfully-sent ids from selection
+    setSelected((prev) => {
+      const next = new Set(prev);
+      queue.slice(0, sent).forEach((c: any) => next.delete(c.id));
+      return next;
+    });
     toast.success(`Recovery messages sent! ✅ ${sent} sent, ❌ ${failed} failed`);
   };
+
+  // "Today" stats in IST (store timezone) so dashboard matches analytics
+  const istTodayKey = useMemo(() => {
+    const fmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric", month: "2-digit", day: "2-digit",
+    });
+    return fmt.format(new Date());
+  }, []);
+  const istKey = (d: Date) => new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(d);
 
   const stats = useMemo(() => {
     if (!carts) return { total: 0, recovered: 0, withPhone: 0, today: 0 };
@@ -168,9 +192,10 @@ export default function StoreAbandonedCarts() {
       total: carts.length,
       recovered: carts.filter((c: any) => c.recovered).length,
       withPhone: carts.filter((c: any) => c.customer_phone && !c.recovered).length,
-      today: carts.filter((c: any) => isToday(new Date(c.created_at))).length,
+      today: carts.filter((c: any) => istKey(new Date(c.created_at)) === istTodayKey).length,
     };
-  }, [carts]);
+  }, [carts, istTodayKey]);
+
 
   const hasFilters = !!dateFrom || !!dateTo || showRecovered;
   const progressPercent = bulkProgress.total > 0

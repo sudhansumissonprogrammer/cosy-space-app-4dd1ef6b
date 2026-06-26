@@ -85,6 +85,7 @@ export default function MediaLibrary() {
           toast.error(`${file.name} exceeds 6MB limit`);
           continue;
         }
+        const originalSize = file.size;
         const basePath = generateUploadPath(user.id, storeId) + `/library`;
         const result = await uploadOptimizedImage(file, "product-images", basePath);
         if (result.compressionMessage) toast.success(result.compressionMessage);
@@ -93,11 +94,12 @@ export default function MediaLibrary() {
           store_id: storeId,
           file_url: result.mainUrl,
           file_name: file.name,
-          file_size: 0, // multi-variant, size is distributed
+          file_size: originalSize,
         });
         if (dbErr) { toast.error(`Failed to save ${file.name}`); continue; }
         successCount++;
       }
+
       if (successCount > 0) {
         queryClient.invalidateQueries({ queryKey: ["media-library", storeId] });
         toast.success(`${successCount} image${successCount > 1 ? "s" : ""} uploaded`);

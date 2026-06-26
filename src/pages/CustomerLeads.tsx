@@ -32,7 +32,8 @@ export default function CustomerLeads() {
         .from("customer_leads")
         .select("*")
         .eq("store_id", storeId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(2000);
       if (error) throw error;
       return data as {
         id: string;
@@ -47,18 +48,31 @@ export default function CustomerLeads() {
     enabled: !!storeId,
   });
 
-  // Fetch all phone numbers that have already placed an order (excluding cancelled)
-  // — these leads are converted and should be hidden by default.
+  // Build normalized lead-phone list — used to scope the orders lookup.
+  const leadPhones = useMemo(() => {
+    const set = new Set<string>();
+    (leads ?? []).forEach((l) => {
+      const norm = normalizePhone(l.phone).replace(/\D/g, "").slice(-10);
+      if (norm.length === 10) set.add(norm);
+    });
+    return Array.from(set);
+  }, [leads]);
+
+  // Fetch only the orders whose phone matches a lead — bounded, no full-table scan.
   const { data: orderedPhonesSet } = useQuery({
-    queryKey: ["leads-ordered-phones", storeId],
+    queryKey: ["leads-ordered-phones", storeId, leadPhones.join(",")],
     queryFn: async () => {
+      const set = new Set<string>();
+      if (leadPhones.length === 0) return set;
+      // Match on the last-10-digit suffix (numbers may have +91 prefix variants)
+      const orFilter = leadPhones.map((p) => `customer_phone.ilike.%${p}`).join(",");
       const { data, error } = await supabase
         .from("orders")
         .select("customer_phone, status")
         .eq("store_id", storeId)
-        .not("customer_phone", "is", null);
+        .or(orFilter)
+        .limit(5000);
       if (error) throw error;
-      const set = new Set<string>();
       (data ?? []).forEach((o: any) => {
         if (o.status === "cancelled") return;
         const norm = normalizePhone(o.customer_phone).replace(/\D/g, "");
@@ -66,9 +80,10 @@ export default function CustomerLeads() {
       });
       return set;
     },
-    enabled: !!storeId,
+    enabled: !!storeId && leadPhones.length > 0,
     staleTime: 60 * 1000,
   });
+
 
   // Annotate each lead with `hasOrdered`, then filter based on toggle
   const enrichedLeads = useMemo(() => {
@@ -118,6 +133,20 @@ export default function CustomerLeads() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Pull this store's actual recovery coupon (highest-discount active coupon).
+  // If none exists, the recovery message omits the coupon line.
+  const { data: recoveryCoupon } = useQuery({
+    queryKey: ["lead-recovery-coupon", storeId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .rpc("get_store_recovery_coupon", { _store_id: storeId });
+      if (error) throw error;
+      return Array.isArray(data) && data.length > 0 ? data[0] : null;
+    },
+    enabled: !!storeId,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const buildRecoveryMessage = (lead: {
     name: string | null;
     product_name: string | null;
@@ -129,8 +158,8 @@ export default function CustomerLeads() {
       ? getStoreBaseUrl(myStore.slug, myStore?.custom_domain)
       : "";
     const productSlug = lead.product_id ? productSlugMap?.[lead.product_id] : null;
-    const COUPON = "SAVE100";
-    const couponQuery = `?coupon=${COUPON}`;
+    const couponCode: string | null = recoveryCoupon?.code ?? null;
+    const couponQuery = couponCode ? `?coupon=${encodeURIComponent(couponCode)}` : "";
     const productUrl =
       storeBase && productSlug ? `${storeBase}/product/${productSlug}${couponQuery}` : "";
     const storeUrlWithCoupon = storeBase ? `${storeBase}${couponQuery}` : "";
@@ -143,11 +172,17 @@ export default function CustomerLeads() {
     const link = productUrl || storeUrlWithCoupon;
     const ctaLine = link ? `👉 ${link}` : "";
 
+    const couponLine = couponCode
+      ? (recoveryCoupon?.discount_type === "percentage"
+          ? `🎁 Flat *${recoveryCoupon.discount_value}% OFF* — coupon *${couponCode}* auto-applied ⏳`
+          : `🎁 Flat *₹${recoveryCoupon.discount_value} OFF* — coupon *${couponCode}* auto-applied ⏳`)
+      : "";
+
     return [
       greeting,
       hook,
       "",
-      `🎁 Flat *₹100 OFF* — coupon *${COUPON}* auto-applied (valid 2 hrs ⏳)`,
+      couponLine,
       ctaLine,
       "",
       `— ${storeName}`,
@@ -155,6 +190,7 @@ export default function CustomerLeads() {
       .filter(Boolean)
       .join("\n");
   };
+
 
   const deleteMutation = useMutation({
     mutationFn: async (leadId: string) => {
