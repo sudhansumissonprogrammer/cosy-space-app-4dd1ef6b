@@ -3726,6 +3726,39 @@ export type Database = {
       }
       get_store_as_admin: { Args: { _slug: string }; Returns: Json }
       get_store_billing_state: { Args: { _store_id: string }; Returns: Json }
+      get_store_coupon_teaser: {
+        Args: { _store_id: string }
+        Returns: {
+          code: string
+          discount_type: string
+          discount_value: number
+          expires_at: string
+          is_active: boolean
+          min_order_amount: number
+          starts_at: string
+        }[]
+      }
+      get_store_custom_page: {
+        Args: { _page_slug: string; _store_slug: string }
+        Returns: {
+          content: string
+          id: string
+          image_url: string
+          slug: string
+          store_id: string
+          title: string
+        }[]
+      }
+      get_store_custom_pages: {
+        Args: { _store_id: string }
+        Returns: {
+          content: string
+          id: string
+          image_url: string
+          slug: string
+          title: string
+        }[]
+      }
       get_store_payment_config: { Args: { _store_id: string }; Returns: Json }
       get_store_public: { Args: { _slug: string }; Returns: Json }
       get_store_public_email: { Args: { _store_id: string }; Returns: string }
@@ -3829,9 +3862,28 @@ export type Database = {
         Args: { target_date?: string }
         Returns: number
       }
+      store_has_active_coupons: {
+        Args: { _store_id: string }
+        Returns: boolean
+      }
       swap_category_order: {
         Args: { _a: string; _b: string }
         Returns: undefined
+      }
+      validate_store_coupon: {
+        Args: { _code: string; _store_id: string }
+        Returns: {
+          code: string
+          discount_type: string
+          discount_value: number
+          expires_at: string
+          id: string
+          is_active: boolean
+          max_uses: number
+          min_order_amount: number
+          starts_at: string
+          used_count: number
+        }[]
       }
       verify_cron_secret: { Args: { _secret: string }; Returns: boolean }
       verify_phone_account_integrity: { Args: never; Returns: undefined }

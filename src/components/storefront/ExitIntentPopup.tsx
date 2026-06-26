@@ -23,16 +23,9 @@ export default function ExitIntentPopup({ storeId, storeName }: ExitIntentPopupP
   const { data: coupon } = useQuery({
     queryKey: ["exit-intent-coupon", storeId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("coupons")
-        .select("*")
-        .eq("store_id", storeId)
-        .eq("is_active", true)
-        .order("discount_value", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data, error } = await (supabase as any).rpc("get_store_coupon_teaser", { _store_id: storeId });
       if (error) throw error;
-      return data;
+      return Array.isArray(data) ? data[0] ?? null : data ?? null;
     },
     staleTime: 10 * 60 * 1000,
     enabled: activated, // Only fetch when exit intent system activates
