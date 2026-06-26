@@ -58,7 +58,7 @@ export default function StoreTaxSettings() {
         is_active: isActive,
       };
       if (config?.id) {
-        const { error } = await (supabase as any).from("store_tax_config").update(payload).eq("id", config.id);
+        const { error } = await (supabase as any).from("store_tax_config").update(payload).eq("id", config.id).eq("store_id", storeId!);
         if (error) throw error;
       } else {
         const { error } = await (supabase as any).from("store_tax_config").insert(payload);

@@ -849,7 +849,8 @@ export default function StoreThemeSettings() {
         await supabase
           .from("store_theme_config")
           .update(newConfig)
-          .eq("id", themeConfig.id);
+          .eq("id", themeConfig.id)
+          .eq("store_id", storeId!);
       } else {
         await supabase
           .from("store_theme_config")
@@ -921,7 +922,8 @@ export default function StoreThemeSettings() {
         const { error } = await supabase
           .from("store_theme_config")
           .update(config)
-          .eq("id", themeConfig.id);
+          .eq("id", themeConfig.id)
+          .eq("store_id", storeId!);
         if (error) throw error;
       } else {
         const { error } = await supabase
@@ -988,7 +990,8 @@ export default function StoreThemeSettings() {
       const { error } = await supabase
         .from("categories")
         .update({ show_on_home: show })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("store_id", storeId!);
       if (error) throw error;
     },
     onMutate: async ({ id, show }) => {

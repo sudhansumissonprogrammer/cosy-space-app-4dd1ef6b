@@ -435,7 +435,8 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         const { error } = await supabase
           .from("products")
           .update(updateData)
-          .eq("id", productId);
+          .eq("id", productId)
+          .eq("store_id", storeId!);
         if (error) throw error;
       } else {
         const { data, error } = await supabase.from("products").insert(productData).select("id").single();
@@ -632,7 +633,7 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                     onClick={async () => {
                       try {
                         // FK ON DELETE CASCADE handles product_images & product_variants atomically
-                        const { error } = await supabase.from("products").delete().eq("id", productId);
+                        const { error } = await supabase.from("products").delete().eq("id", productId).eq("store_id", storeId!);
                         if (error) throw error;
                         queryClient.invalidateQueries({ queryKey: ["products", storeId] });
                         toast.success("Product deleted");

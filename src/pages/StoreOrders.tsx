@@ -185,7 +185,7 @@ export default function StoreOrders() {
       const update: any = { status };
       if (tracking_number !== undefined) update.tracking_number = tracking_number;
       if (tracking_url !== undefined) update.tracking_url = tracking_url;
-      const { error } = await (supabase as any).from("orders").update(update).eq("id", orderId);
+      const { error } = await (supabase as any).from("orders").update(update).eq("id", orderId).eq("store_id", storeId!);
       if (error) throw error;
       return { orderId, status, tracking_number, tracking_url };
     },
@@ -252,7 +252,7 @@ export default function StoreOrders() {
   const deleteOrder = useMutation({
     mutationFn: async (orderId: string) => {
       // order_items has ON DELETE CASCADE on order_id — single atomic delete.
-      const { error } = await (supabase as any).from("orders").delete().eq("id", orderId);
+      const { error } = await (supabase as any).from("orders").delete().eq("id", orderId).eq("store_id", storeId!);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -1050,12 +1050,16 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
             <Button
               variant="outline"
               className="w-full h-10 text-sm font-medium border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-400 dark:hover:bg-purple-950/30"
-              onClick={async () => {
+              onClick={async (e) => {
+                const btn = e.currentTarget as HTMLButtonElement;
+                if (btn.disabled) return;
+                btn.disabled = true;
                 const { error } = await (supabase as any)
                   .from("orders")
                   .update({ balance_due: 0, status: "delivered" })
-                  .eq("id", order.id);
-                if (error) { toast.error(error.message); return; }
+                  .eq("id", order.id)
+                  .eq("store_id", order.store_id);
+                if (error) { btn.disabled = false; toast.error(error.message); return; }
                 toast.success("Order marked as fully paid");
                 onStatusChange("delivered");
               }}
