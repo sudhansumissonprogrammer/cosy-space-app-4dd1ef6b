@@ -204,7 +204,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.68.2-payu-csp-fix";
+const WORKER_VERSION = "8.68.3-payu-form-action-fix";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -664,7 +664,7 @@ const SECURITY_HEADERS = {
     "connect-src 'self' https://*.supabase.co https://connect.facebook.net https://graph.facebook.com https://api.razorpay.com https://lumberjack.razorpay.com https://api.cashfree.com https://sandbox.cashfree.com https://sdk.cashfree.com https://payments.cashfree.com https://payments-test.cashfree.com https://api.cashfree.com/pg https://sandbox.cashfree.com/pg https://secure.payu.in https://test.payu.in https://info.payu.in https://api.payu.in https://jssdk.payu.in https://jssdk-uat.payu.in https://lrcpkt0a.api.lc https://www.google-analytics.com https://www.googletagmanager.com https://embed.tawk.to https://client.crisp.chat; " +
     "frame-src https://api.razorpay.com https://checkout.razorpay.com https://api.cashfree.com https://sandbox.cashfree.com https://sdk.cashfree.com https://payments.cashfree.com https://payments-test.cashfree.com https://api.cashfree.com/pg https://sandbox.cashfree.com/pg https://secure.payu.in https://test.payu.in https://api.payu.in https://jssdk.payu.in https://jssdk-uat.payu.in https://embed.tawk.to; " +
     "worker-src 'self' blob:; " +
-    "object-src 'none'; base-uri 'self'; form-action 'self' https://api.cashfree.com https://sandbox.cashfree.com https://api.cashfree.com/pg https://sandbox.cashfree.com/pg https://payments.cashfree.com https://payments-test.cashfree.com https://secure.payu.in https://test.payu.in https://info.payu.in;",
+    "object-src 'none'; base-uri 'self'; form-action 'self' https://api.cashfree.com https://sandbox.cashfree.com https://api.cashfree.com/pg https://sandbox.cashfree.com/pg https://payments.cashfree.com https://payments-test.cashfree.com https://secure.payu.in https://test.payu.in https://api.payu.in https://info.payu.in;",
 };
 
 /* ============================================================
