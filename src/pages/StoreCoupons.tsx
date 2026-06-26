@@ -105,7 +105,7 @@ export default function StoreCoupons() {
 
   const toggleMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase.from("coupons").update({ is_active }).eq("id", id);
+      const { error } = await supabase.from("coupons").update({ is_active }).eq("id", id).eq("store_id", storeId!);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -117,7 +117,7 @@ export default function StoreCoupons() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("coupons").delete().eq("id", id);
+      const { error } = await supabase.from("coupons").delete().eq("id", id).eq("store_id", storeId!);
       if (error) throw error;
     },
     onSuccess: () => {

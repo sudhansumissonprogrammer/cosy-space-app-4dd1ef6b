@@ -1846,7 +1846,7 @@ function OptOutTab({ storeId }: { storeId: string }) {
   };
 
   const removeOptout = async (id: string) => {
-    await (supabase as any).from("whatsapp_optouts").delete().eq("id", id);
+    await (supabase as any).from("whatsapp_optouts").delete().eq("id", id).eq("store_id", storeId);
     queryClient.invalidateQueries({ queryKey: ["whatsapp-optouts", storeId] });
     toast({ title: "Number removed from opt-out list" });
   };
@@ -2281,7 +2281,7 @@ function ScheduleTab({ storeId }: { storeId: string }) {
   };
 
   const cancelSchedule = async (id: string) => {
-    await (supabase as any).from("whatsapp_scheduled").update({ status: "cancelled" }).eq("id", id);
+    await (supabase as any).from("whatsapp_scheduled").update({ status: "cancelled" }).eq("id", id).eq("store_id", storeId);
     queryClient.invalidateQueries({ queryKey: ["whatsapp-scheduled", storeId] });
     toast({ title: "Schedule cancelled" });
   };
@@ -2299,7 +2299,7 @@ function ScheduleTab({ storeId }: { storeId: string }) {
     if (!phoneList.length) return;
 
     // Update status to sending
-    await (supabase as any).from("whatsapp_scheduled").update({ status: "sending" }).eq("id", item.id);
+    await (supabase as any).from("whatsapp_scheduled").update({ status: "sending" }).eq("id", item.id).eq("store_id", storeId);
     queryClient.invalidateQueries({ queryKey: ["whatsapp-scheduled", storeId] });
 
     let sent = 0, failed = 0;

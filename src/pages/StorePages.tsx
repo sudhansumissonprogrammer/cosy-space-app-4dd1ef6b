@@ -92,7 +92,8 @@ export default function StorePages() {
       const { error } = await supabase
         .from("store_pages")
         .update({ is_active } as any)
-        .eq("id", id);
+        .eq("id", id)
+        .eq("store_id", storeId!);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -105,7 +106,7 @@ export default function StorePages() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("store_pages").delete().eq("id", id);
+      const { error } = await supabase.from("store_pages").delete().eq("id", id).eq("store_id", storeId!);
       if (error) throw error;
     },
     onSuccess: () => {
