@@ -99,11 +99,11 @@ export default function BulkEditDialog({ products, storeId }: BulkEditDialogProp
       const ids = Array.from(selected);
       if (ids.length === 0) throw new Error("No products selected");
       // FK ON DELETE CASCADE handles product_images & product_variants atomically
-      const { error } = await supabase.from("products").delete().in("id", ids);
+      const { error } = await supabase.from("products").delete().in("id", ids).eq("store_id", storeId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["products-all", storeId] });
       queryClient.invalidateQueries({ queryKey: ["product-limit"] });
       toast.success(`${selected.size} products deleted`);
       setOpen(false);
