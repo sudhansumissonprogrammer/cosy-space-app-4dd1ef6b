@@ -174,9 +174,24 @@ export function setCapiUser(user: CapiUser | null): void {
     if (merged.city) am.ct = merged.city.trim().toLowerCase().replace(/\s+/g, "");
     if (merged.state) am.st = merged.state.trim().toLowerCase().replace(/\s+/g, "");
     if (merged.zipCode) am.zp = merged.zipCode.trim().toLowerCase().replace(/\s+/g, "");
-    if (Object.keys(am).length > 0) {
-      (window as any).fbq("init", pixelId, am);
+    if (Object.keys(am).length === 0) return;
+    // Dedup re-init: bootstrap already called fbq('init', pid, {external_id}).
+    // If the new AM payload matches what we last sent (or is just the same
+    // external_id), skip — re-init triggers Meta's "Duplicate Pixel ID" warn
+    // and adds no signal. Only re-init when AM materially changes (user typed
+    // email/phone in checkout, or logged in with new fields).
+    const fp = JSON.stringify(am);
+    const lastFp = (window as any).__SF_AM_FP__;
+    const bootstrapOnlyExternalId =
+      Object.keys(am).length === 1 && am.external_id;
+    if (lastFp === fp) return;
+    if (!lastFp && bootstrapOnlyExternalId) {
+      // Bootstrap already passed external_id; record + skip.
+      (window as any).__SF_AM_FP__ = fp;
+      return;
     }
+    (window as any).__SF_AM_FP__ = fp;
+    (window as any).fbq("init", pixelId, am);
   } catch {
     /* noop */
   }
