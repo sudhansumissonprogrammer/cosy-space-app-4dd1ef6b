@@ -936,7 +936,7 @@ async function mirrorToCfCache(ctx, request, response, slug = null, env = null) 
     if (/no-store|no-cache|max-age=0/i.test(response.headers.get("Cache-Control") || "")) return;
     // Skip authenticated paths to avoid leaking user-specific HTML
     const cookie = request.headers.get("cookie") || "";
-    if (cookie.includes("auth") || cookie.includes("sb-")) return;
+    if (/\b(sb-[a-z0-9_-]+-auth-token|sb[-_](access|refresh)[-_]token|auth[-_]token|session)\b/i.test(cookie)) return;
     const url = new URL(request.url);
     if (
       url.pathname.startsWith("/api/") ||
