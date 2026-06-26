@@ -219,7 +219,8 @@ export default function StorePayments() {
           const { error } = await (supabase as any)
             .from("store_payment_config")
             .update(payload)
-            .eq("id", paymentConfig.id);
+            .eq("id", paymentConfig.id)
+            .eq("store_id", storeId!);
           if (error) throw error;
         } else {
           const { error } = await (supabase as any)

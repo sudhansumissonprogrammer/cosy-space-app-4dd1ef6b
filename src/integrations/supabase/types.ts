@@ -3712,6 +3712,7 @@ export type Database = {
         Args: { _store_id: string }
         Returns: Json
       }
+      get_own_whatsapp_token: { Args: { _store_id: string }; Returns: string }
       get_platform_config_public: {
         Args: never
         Returns: {
