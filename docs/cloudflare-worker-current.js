@@ -6826,7 +6826,13 @@ async function _handleFetch(request, env, ctx) {
     }
     if (url.pathname === "/api/prewarm") {
       if (request.method === "OPTIONS") return addCorsHeaders(new Response(null, { status: 204 }), "preflight");
-      if (request.method === "POST") return handlePrewarm(request, url, ctx, env);
+      if (request.method === "POST") {
+        // SECURITY (audit v8.62.0): prewarm writes domain→slug into KV/Cache
+        // for 24h. Without auth, anyone could remap a victim's custom domain
+        // to an attacker-controlled storefront. Gate behind PURGE_SECRET.
+        if (!_isPurgeAuthorized(request, env)) return new Response("Forbidden", { status: 403 });
+        return handlePrewarm(request, url, ctx, env);
+      }
       return addCorsHeaders(
         new Response(JSON.stringify({ error: "Method not allowed" }), {
           status: 405,
