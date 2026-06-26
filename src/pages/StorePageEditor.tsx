@@ -178,7 +178,8 @@ export default function StorePageEditor() {
         const { error } = await supabase
           .from("store_pages")
           .update(payload)
-          .eq("id", pageId!);
+          .eq("id", pageId!)
+          .eq("store_id", storeId!);
         if (error) throw error;
 
         // Sync back to stores table for backward compatibility
