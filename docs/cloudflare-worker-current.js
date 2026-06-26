@@ -6698,8 +6698,8 @@ async function _handleFetch(request, env, ctx) {
         try {
           const body = await request.json();
           if (!body || typeof body !== "object") return;
-          const sid = typeof body.store_id === "string" ? body.store_id : null;
-          if (!sid) return;
+          const claimedSid = typeof body.store_id === "string" ? body.store_id : null;
+          if (!claimedSid) return;
           const pth = typeof body.path === "string" ? body.path : "/";
           // Reuse path/bot filters from recordPageView.
           if (_pvIsBot(request)) return;
@@ -6716,16 +6716,47 @@ async function _handleFetch(request, env, ctx) {
             pth === "/favicon.ico" ||
             /\.(js|css|png|jpe?g|webp|svg|ico|woff2?|map|json|xml|txt|avif|gif|ttf|otf)(\?|$)/i.test(pth)
           ) return;
+          // SECURITY (audit v8.62.0): derive the authoritative store_id from
+          // the request hostname, never trust body.store_id. Without this any
+          // visitor could POST a competitor's store_id and inflate their PV
+          // counts / pollute analytics dimensions.
+          const cleanHost = hostname.replace(/^www\./, "");
+          const resolvedSlug = cleanHost.endsWith(`.${ROOT_DOMAIN}`)
+            ? cleanHost.slice(0, -1 - ROOT_DOMAIN.length)
+            : await resolveDomain(cleanHost, env).catch(() => null);
+          if (!resolvedSlug) return;
+          const info = await _resolveStoreInfo(resolvedSlug, hostname, env).catch(() => null);
+          const trustedSid = info && info.storeId;
+          if (!trustedSid || trustedSid !== claimedSid) return;
           // 30-min dedup (same window/key as recordPageView).
           const ip = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "0";
           const dedupId = (typeof body.visitor_id === "string" && body.visitor_id) || _pvReadVisitorId(request) || ip;
-          const dKey = `${sid}|${dedupId}|${pth}`;
+          const dKey = `${trustedSid}|${dedupId}|${pth}`;
           const now = Date.now();
           const existing = _pvDedup.get(dKey);
           if (existing && existing > now) return;
           _pvDedup.set(dKey, now + PV_DEDUP_WINDOW_MS);
           _pvPruneIfNeeded();
-          // Forward full enriched body to PostgREST.
+          // Whitelist forwarded fields so a malicious caller cannot inject
+          // arbitrary PostgREST columns (is_bot, country override, etc.).
+          const safeRow = {
+            store_id: trustedSid,
+            path: pth,
+            visitor_id: typeof body.visitor_id === "string" ? body.visitor_id.slice(0, 128) : null,
+            session_id: typeof body.session_id === "string" ? body.session_id.slice(0, 128) : null,
+            referrer: typeof body.referrer === "string" ? body.referrer.slice(0, 1024) : null,
+            utm_source: typeof body.utm_source === "string" ? body.utm_source.slice(0, 128) : null,
+            utm_medium: typeof body.utm_medium === "string" ? body.utm_medium.slice(0, 128) : null,
+            utm_campaign: typeof body.utm_campaign === "string" ? body.utm_campaign.slice(0, 128) : null,
+            utm_term: typeof body.utm_term === "string" ? body.utm_term.slice(0, 128) : null,
+            utm_content: typeof body.utm_content === "string" ? body.utm_content.slice(0, 128) : null,
+            device: typeof body.device === "string" ? body.device.slice(0, 32) : null,
+            browser: typeof body.browser === "string" ? body.browser.slice(0, 64) : null,
+            os: typeof body.os === "string" ? body.os.slice(0, 64) : null,
+            landing_page: typeof body.landing_page === "string" ? body.landing_page.slice(0, 512) : null,
+            country: typeof body.country === "string" ? body.country.slice(0, 8) : null,
+          };
+          // Forward sanitised row to PostgREST.
           await fetch(`${SUPABASE_URL}/rest/v1/page_views`, {
             method: "POST",
             headers: {
@@ -6734,7 +6765,7 @@ async function _handleFetch(request, env, ctx) {
               "Content-Type": "application/json",
               Prefer: "return=minimal",
             },
-            body: JSON.stringify(body),
+            body: JSON.stringify(safeRow),
           }).catch(() => {});
         } catch (_) { /* never throw from analytics path */ }
       })()
