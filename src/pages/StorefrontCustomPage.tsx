@@ -13,24 +13,13 @@ export default function StorefrontCustomPage() {
   const { data: page, isLoading } = useQuery({
     queryKey: ["storefront-custom-page", storeSlug, pageSlug],
     queryFn: async () => {
-      // First get store id from slug
-      const { data: store } = await supabase
-        .from("stores")
-        .select("id")
-        .eq("slug", storeSlug)
-        .single();
-      if (!store) return null;
-
-      const { data, error } = await supabase
-        .from("store_pages")
-        .select("*")
-        .eq("store_id", store.id)
-        .eq("slug", pageSlug!)
-        .eq("page_type", "custom")
-        .eq("is_active", true)
-        .single();
+      const { data, error } = await (supabase as any).rpc("get_store_custom_page", {
+        _store_slug: storeSlug,
+        _page_slug: pageSlug!,
+      });
       if (error) return null;
-      return data;
+      const row = Array.isArray(data) ? data[0] ?? null : data ?? null;
+      return row;
     },
     enabled: !!pageSlug && !!storeSlug,
   });
