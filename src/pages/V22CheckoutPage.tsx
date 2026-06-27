@@ -127,6 +127,7 @@ export default function V22CheckoutPage() {
   // Meta dedupes Pixel ↔ CAPI Purchase events using this id.
   const purchaseEventIdRef = useRef<string>(generateEventId());
   const metaCookiesRef = useRef<{ fbc: string; fbp: string }>(getMetaCookies());
+  const finalizedOrderIdsRef = useRef<Set<string>>(new Set());
   const CF_PENDING_KEY = `cf_pending_${store.id}`;
   const persistCfPending = (cfId: string | null, order: { id: string; number: string | null; profit: number | null } | null) => {
     try {
@@ -1058,6 +1059,8 @@ export default function V22CheckoutPage() {
   };
 
   const finalizeOrder = (newOrderId: string, newOrderNumber: string | null, profit?: number | null) => {
+    if (finalizedOrderIdsRef.current.has(newOrderId)) return;
+    finalizedOrderIdsRef.current.add(newOrderId);
     setOrderId(newOrderId);
     setOrderNumber(newOrderNumber);
     if (isPartialOrder) {

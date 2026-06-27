@@ -9,6 +9,8 @@
 //   Production: https://secure.payu.in   (checkout)   |  https://info.payu.in   (verify API)
 //   Sandbox   : https://test.payu.in     (checkout)   |  https://test.payu.in   (verify API)
 
+import { fetchWithTimeout } from "./http.ts";
+
 export type PayuEnv = "production" | "sandbox";
 
 export function payuCheckoutHost(env: PayuEnv): string {
@@ -118,10 +120,12 @@ export async function verifyPayuTxn(opts: {
     hash,
   });
   const url = `${payuApiHost(opts.env)}/merchant/postservice?form=2`;
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: body.toString(),
+    timeoutMs: 10_000,
+    retryOnNetworkError: true,
   });
   if (!res.ok) {
     const t = await res.text();
