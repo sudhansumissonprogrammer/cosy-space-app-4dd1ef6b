@@ -27,10 +27,27 @@ export function fireStorefrontEvent(args: FireEventArgs): void {
   try {
     const sid = getOrCreateSessionId();
     const vid = getVisitorId();
-    const dedupKey = `${args.eventName}:${args.productId || ""}:${sid}`;
+    const purchaseOrderId = args.eventName === "purchase" ? String(args.metadata?.order_id || "") : "";
+    const persistentPurchaseKey = purchaseOrderId
+      ? `storefront_purchase_fired_${args.storeId}_${purchaseOrderId}`
+      : "";
+    if (persistentPurchaseKey) {
+      try {
+        if (
+          sessionStorage.getItem(persistentPurchaseKey) === "1" ||
+          localStorage.getItem(persistentPurchaseKey) === "1"
+        ) return;
+        sessionStorage.setItem(persistentPurchaseKey, "1");
+        localStorage.setItem(persistentPurchaseKey, "1");
+      } catch {}
+    }
+
+    const dedupKey = purchaseOrderId
+      ? `${args.eventName}:order:${purchaseOrderId}`
+      : `${args.eventName}:${args.productId || ""}:${sid}`;
     const now = Date.now();
     const last = recentEvents.get(dedupKey);
-    if (last && now - last < DEDUP_MS && args.eventName !== "purchase") return;
+    if (last && now - last < DEDUP_MS) return;
     recentEvents.set(dedupKey, now);
     if (recentEvents.size > 200) {
       for (const [k, t] of recentEvents) {
