@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, serviceRole);
+  const supabase = createClient<any>(Deno.env.get("SUPABASE_URL")!, serviceRole);
 
   // AUTH — accept either:
   //  1) Authorization: Bearer <service-role-key> for manual/internal runs
@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
   }
 
   if (!onlyOrderId && (!orders || orders.length === 0)) {
-    const capiBackfilled = await capiBackfill(supabase, null);
+    const capiBackfilled = await capiBackfill(supabase as any, null);
     return json({ ok: true, scanned: 0, skipped: "no_recent_payu_orders", capi_backfilled: capiBackfilled });
   }
 
@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
     for (const o of group) {
       try {
         if (PAID_STATUSES.includes(String(o.status || "").toLowerCase())) {
-          await firePurchaseCapi(supabase, o.id, { source: "payu-reconcile-paid-backfill" });
+          await firePurchaseCapi(supabase as any, o.id, { source: "payu-reconcile-paid-backfill" });
           continue;
         }
 
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
         if (verdict === "PAID") {
           const newStatus = o.payment_type === "partial" ? "partially_paid" : "confirmed";
           const customerId = !o.storefront_customer_id
-            ? await findCustomerByPhone(supabase, storeId, o.customer_phone)
+            ? await findCustomerByPhone(supabase as any, storeId, o.customer_phone)
             : null;
           const update: Record<string, unknown> = {
             status: newStatus,
@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
 
           if (upd && upd.length > 0) {
             confirmed++;
-            await firePurchaseCapi(supabase, o.id, { source: "payu-reconcile" });
+            await firePurchaseCapi(supabase as any, o.id, { source: "payu-reconcile" });
           }
           continue;
         }
@@ -189,7 +189,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  const capiBackfilled = await capiBackfill(supabase, onlyOrderId);
+  const capiBackfilled = await capiBackfill(supabase as any, onlyOrderId);
 
   return json({
     ok: true,
@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
   });
 });
 
-async function capiBackfill(supabase: ReturnType<typeof createClient>, onlyOrderId: string | null): Promise<number> {
+async function capiBackfill(supabase: any, onlyOrderId: string | null): Promise<number> {
   let q = supabase
     .from("orders")
     .select("id, created_at, status, payment_method, meta_purchase_fired_at")
@@ -216,7 +216,7 @@ async function capiBackfill(supabase: ReturnType<typeof createClient>, onlyOrder
   const { data: rows } = await q;
   let fired = 0;
   for (const o of rows || []) {
-    const res = await firePurchaseCapi(supabase, o.id, { source: "payu-reconcile-backfill" });
+    const res = await firePurchaseCapi(supabase as any, o.id, { source: "payu-reconcile-backfill" });
     if (res.ok && res.reason !== "already_fired" && res.reason !== "manual_order") fired++;
   }
   return fired;
