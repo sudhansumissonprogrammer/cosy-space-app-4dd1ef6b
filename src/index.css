@@ -627,6 +627,17 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Storefront pages: prevent white overscroll strip under fixed mobile bottom nav.
+   Paints html/body background with the storefront theme color so any rubber-band
+   bounce reveals the theme bg instead of the default white app background. */
+html:has(.storefront-font),
+body:has(.storefront-font) {
+  background-color: var(--storefront-bg, hsl(var(--background)));
+}
+body:has(.storefront-font) {
+  overscroll-behavior-y: none;
+}
+
 /* Theme V3: push WhatsApp button above bottom nav + sticky cart bar on mobile */
 @media (max-width: 639px) {
   .theme-v3-wa-fix a[aria-label="Chat on WhatsApp"] {
