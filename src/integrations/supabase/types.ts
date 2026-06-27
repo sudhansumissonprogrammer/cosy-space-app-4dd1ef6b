@@ -3644,6 +3644,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      _store_accepts_public_writes: {
+        Args: { _store_id: string }
+        Returns: boolean
+      }
       admin_set_billing_mode: {
         Args: { _mode: string; _store_id: string }
         Returns: undefined
