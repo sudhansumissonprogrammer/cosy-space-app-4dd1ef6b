@@ -172,12 +172,18 @@ export default function CategoryDetail() {
     // schema warning and the event contributes zero attribution signal.
     if (topIds.length === 0) return;
     const eventId = generateEventId();
+    const categoryValue = rawProducts
+      .slice(0, 5)
+      .reduce((sum: number, p: any) => {
+        const price = Number(p.sale_price && p.sale_price < p.price ? p.sale_price : p.price);
+        return Number.isFinite(price) && price > 0 ? sum + price : sum;
+      }, 0);
     const customData = {
       content_ids: topIds,
       content_name: category.name,
       content_category: category.name,
       content_type: "product_group",
-      currency: "INR",
+      ...(categoryValue > 0 ? { value: categoryValue, currency: "INR" } : {}),
     };
     try { fbPixelTrack("ViewContent", customData, eventId); } catch {}
     try {
