@@ -33,7 +33,7 @@ export default function BackToTop() {
   return (
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      className={`${visible ? "back-to-top-enter" : "back-to-top-exit"} fixed bottom-20 right-4 z-40 flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-[box-shadow,transform] duration-200 hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.96] sm:bottom-6 sm:right-6`}
+      className={`${visible ? "back-to-top-enter" : "back-to-top-exit"} fixed bottom-[10.5rem] right-[1.75rem] z-40 flex h-10 w-10 items-center justify-center rounded-full shadow-lg transition-[box-shadow,transform] duration-200 hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.96] sm:bottom-[5.5rem] sm:right-[1.75rem]`}
       style={{
         color: "var(--storefront-text, hsl(var(--foreground)))",
         backgroundColor: "var(--storefront-bg, hsl(var(--card)))",
