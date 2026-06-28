@@ -553,6 +553,7 @@ export default function DashboardLayout() {
         isCommissionMode={isCommissionMode}
       />
     </div>
+    {showLowBalance && <LowBalanceDialog open={true} balance={walletBalance} storeSlug={storeSlug || ""} />}
     </DashboardStoreProvider>
     </AdminViewProvider>
   );
