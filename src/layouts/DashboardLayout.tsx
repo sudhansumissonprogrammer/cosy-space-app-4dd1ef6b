@@ -392,6 +392,7 @@ export default function DashboardLayout() {
             </div>
           </div>
         </SidebarProvider>
+        {showLowBalance && <LowBalanceDialog open={true} balance={walletBalance} storeSlug={storeSlug || ""} />}
         </DashboardStoreProvider>
       </AdminViewProvider>
     );
