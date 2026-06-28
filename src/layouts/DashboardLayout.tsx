@@ -261,6 +261,19 @@ export default function DashboardLayout() {
     billingState?.requires_payment === true;
   const showPaywall = billingBlocked && !isProfileRoute;
 
+  // Commission wallet lock — block ALL dashboard pages except the wallet page itself
+  // when balance is low (< ₹100) or negative. Modal AlertDialog prevents nav clicks
+  // until the owner recharges. Admin-view sessions bypass the lock.
+  const walletBalance = Number((walletSummary as any)?.wallet?.balance ?? 0);
+  const isWalletRoute = location.pathname.includes("/wallet");
+  const showLowBalance =
+    !isAdminView &&
+    isCommissionMode &&
+    !!walletSummary &&
+    walletBalance < 100 &&
+    !isWalletRoute &&
+    !showPaywall;
+
   // Pending orders count — shared with PendingActions via React Query
   const { data: pendingCount } = useQuery({
     queryKey: ["pending-actions", storeId],
