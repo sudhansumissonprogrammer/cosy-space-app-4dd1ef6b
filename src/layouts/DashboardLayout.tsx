@@ -15,6 +15,7 @@ import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import SmartInstallPrompt from "@/components/SmartInstallPrompt";
 import BillingBanner from "@/components/billing/BillingBanner";
 import BillingPaywall from "@/components/BillingPaywall";
+import LowBalanceDialog from "@/components/billing/LowBalanceDialog";
 import { useBillingState } from "@/hooks/useBillingState";
 import {
   LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
@@ -260,6 +261,19 @@ export default function DashboardLayout() {
     billingState?.requires_payment === true;
   const showPaywall = billingBlocked && !isProfileRoute;
 
+  // Commission wallet lock — block ALL dashboard pages except the wallet page itself
+  // when balance is low (< ₹100) or negative. Modal AlertDialog prevents nav clicks
+  // until the owner recharges. Admin-view sessions bypass the lock.
+  const walletBalance = Number((walletSummary as any)?.wallet?.balance ?? 0);
+  const isWalletRoute = location.pathname.includes("/wallet");
+  const showLowBalance =
+    !isAdminView &&
+    isCommissionMode &&
+    !!walletSummary &&
+    walletBalance < 100 &&
+    !isWalletRoute &&
+    !showPaywall;
+
   // Pending orders count — shared with PendingActions via React Query
   const { data: pendingCount } = useQuery({
     queryKey: ["pending-actions", storeId],
@@ -378,6 +392,7 @@ export default function DashboardLayout() {
             </div>
           </div>
         </SidebarProvider>
+        {showLowBalance && <LowBalanceDialog open={true} balance={walletBalance} storeSlug={storeSlug || ""} />}
         </DashboardStoreProvider>
       </AdminViewProvider>
     );
@@ -538,6 +553,7 @@ export default function DashboardLayout() {
         isCommissionMode={isCommissionMode}
       />
     </div>
+    {showLowBalance && <LowBalanceDialog open={true} balance={walletBalance} storeSlug={storeSlug || ""} />}
     </DashboardStoreProvider>
     </AdminViewProvider>
   );

@@ -23,7 +23,7 @@ import StoreChecklist from "@/components/dashboard/StoreChecklist";
 import QueryErrorState from "@/components/QueryErrorState";
 import ShareStoreDialog from "@/components/ShareStoreDialog";
 import WalletAccountCard from "@/components/billing/WalletAccountCard";
-import LowBalanceDialog from "@/components/billing/LowBalanceDialog";
+
 import { useCountUp } from "@/hooks/useCountUp";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 
@@ -166,8 +166,6 @@ export default function Dashboard() {
 
   const totalRevenue = ordersData?.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) || 0;
   const isCommissionMode = (store as any)?.billing_mode === "commission" || (walletSummary as any)?.billing_mode === "commission";
-  const walletBalance = Number((walletSummary as any)?.wallet?.balance ?? 0);
-  const showLowBalanceDialog = isCommissionMode && !!walletSummary && walletBalance < 100;
 
   if (storeLoading) return <DashboardSkeleton />;
 
@@ -202,9 +200,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-4">
-      {showLowBalanceDialog && (
-        <LowBalanceDialog open={true} balance={walletBalance} storeSlug={storeSlug || ""} />
-      )}
+      {/* LowBalanceDialog now rendered by DashboardLayout so it locks every page (except /wallet) */}
       {storeId && (
         <OnboardingWalkthrough
           storeId={storeId}
