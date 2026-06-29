@@ -33,10 +33,25 @@ export function AdminPlatformCampaignsTab() {
     setName(""); setTemplate(""); load();
   };
 
-  const run = async (id: string) => {
-    const { error } = await supabase.functions.invoke("wa-campaign-runner", { body: { campaign_id: id } });
-    if (error) toast.error(error.message); else { toast.success("Campaign queued"); load(); }
+  const precheck = async (id: string) => {
+    const { data, error } = await supabase.rpc("wa_campaign_precheck" as any, { _campaign_id: id });
+    if (error) return toast.error(error.message);
+    const d: any = data || {};
+    const msg = `Audience ${d.audience} · remaining today ${d.remaining_today}/${d.tier_limit} · errors: ${(d.errors||[]).join(",") || "none"} · warnings: ${(d.warnings||[]).join(",") || "none"}`;
+    if (!d.can_send) toast.error(msg);
+    else toast.success(msg);
   };
+
+  const run = async (id: string, force = false) => {
+    const { data, error } = await supabase.functions.invoke("wa-campaign-runner", { body: { campaign_id: id, force } });
+    if (error) {
+      const ctx: any = (error as any).context;
+      if (ctx?.precheck && !force && confirm("Pre-check blocked this send. Force run anyway?")) return run(id, true);
+      return toast.error(error.message);
+    }
+    toast.success(`Campaign queued${(data as any)?.enqueued ? `: ${(data as any).enqueued}` : ""}`); load();
+  };
+
 
   return (
     <div className="space-y-4">
