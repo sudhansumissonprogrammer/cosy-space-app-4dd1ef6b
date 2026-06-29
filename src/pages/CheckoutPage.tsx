@@ -770,7 +770,7 @@ export default function CheckoutPage() {
           customer_email: email || null,
           customer_phone: normalizePhone(phone) || null,
           cart_items: checkoutItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity, productId: i.productId })),
-          wa_marketing_consent: true,
+          wa_marketing_consent: waConsent,
         }).select("id").single();
         if (data?.id) {
           setAbandonedCartId(data.id);
