@@ -144,9 +144,13 @@ Deno.serve(async (req) => {
       loadStore(admin, body.store_id || null),
     ]);
     const tplStatus = (tpl as any)?.meta_status as string | null | undefined;
+    if ((tpl as any)?.paused === true) {
+      return json({ error: `template_paused:${(tpl as any)?.pause_reason || "manual"}`, error_class: "permanent" }, 400);
+    }
     if (tplStatus && tplStatus.toLowerCase() !== "approved") {
       return json({ error: `template_not_approved:${tplStatus}`, error_class: "permanent" }, 400);
     }
+
     let finalParams: string[] = body.template_params || [];
     if (body.template_vars || body.store_id) {
       const extras = { ...(body.template_vars || {}) } as Record<string, string>;
