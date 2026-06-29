@@ -83,7 +83,9 @@ export function AdminPlatformCampaignsTab() {
                   </p>
                 </div>
                 <Badge variant={r.status === "completed" ? "default" : "secondary"}>{r.status}</Badge>
+                <Button size="sm" variant="ghost" onClick={() => precheck(r.id)}>Pre-check</Button>
                 <Button size="sm" variant="outline" onClick={() => run(r.id)} disabled={r.status === "running"}>Run</Button>
+
               </div>
             ))}
             {!rows.length && <div className="p-6 text-sm text-muted-foreground">No campaigns.</div>}
