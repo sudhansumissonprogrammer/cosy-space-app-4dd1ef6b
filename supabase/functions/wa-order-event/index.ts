@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
 
   const { data: order } = await admin
     .from("orders")
-    .select("id, store_id, customer_phone, customer_name, total, currency, tracking_url, order_number")
+    .select("id, store_id, customer_phone, customer_name, total, currency, tracking_url, order_number, stores:store_id(name, slug, custom_domain)")
     .eq("id", body.order_id).maybeSingle();
   if (!order) return json({ error: "order_not_found" }, 404);
 
@@ -38,9 +38,13 @@ Deno.serve(async (req) => {
 
   const o = order as any;
   const orderNum = o.order_number || String(o.id).slice(0, 8).toUpperCase();
-  const orderTotal = `${o.currency || "₹"}${o.total || 0}`;
+  const orderTotal = `${o.currency === "INR" || !o.currency ? "₹" : o.currency + " "}${Number(o.total || 0).toFixed(0)}`;
   const customerName = o.customer_name || "there";
-  const trackingUrl = o.tracking_url || "";
+  const s = o.stores || {};
+  const base = s.custom_domain ? `https://${s.custom_domain}` : (s.slug ? `https://${s.slug}.shopbanao.in` : "https://shopbanao.in");
+  const orderLink = `${base}/account/orders/${o.id}`;
+  const trackingUrl = o.tracking_url || orderLink;
+  const reviewUrl = `${base}/account/orders/${o.id}#review`;
 
   const { error: qErr } = await admin.from("wa_send_queue").insert({
     store_id: o.store_id,
@@ -54,7 +58,9 @@ Deno.serve(async (req) => {
       customer_name: customerName,
       order_number: orderNum,
       order_total: orderTotal,
+      order_link: orderLink,
       tracking_url: trackingUrl,
+      review_url: reviewUrl,
     },
     priority: body.event === "order_confirmation" ? 1 : 3,
     scheduled_at: new Date().toISOString(),

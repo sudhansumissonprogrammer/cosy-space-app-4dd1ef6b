@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
 
   const { data: carts, error } = await admin
     .from("abandoned_carts")
-    .select("id, store_id, customer_phone, cart_items, created_at")
+    .select("id, store_id, customer_phone, cart_items, created_at, stores:store_id(slug, custom_domain)")
     .eq("recovered", false)
     .is("recovery_sent_at", null)
     .not("customer_phone", "is", null)
@@ -43,6 +43,9 @@ Deno.serve(async (req) => {
     const items = Array.isArray((c as any).cart_items) ? (c as any).cart_items : [];
     const total = items.reduce((s: number, it: any) => s + (Number(it?.price ?? 0) * Number(it?.quantity ?? 1)), 0);
     const customerName = (items[0]?.customer_name as string) || "there";
+    const s = (c as any).stores || {};
+    const base = s.custom_domain ? `https://${s.custom_domain}` : (s.slug ? `https://${s.slug}.shopbanao.in` : "https://shopbanao.in");
+    const checkoutUrl = `${base}/cart`;
 
     const { error: qErr } = await admin.from("wa_send_queue").insert({
       store_id: (c as any).store_id,
@@ -52,7 +55,7 @@ Deno.serve(async (req) => {
       message_type: "abandoned_cart",
       abandoned_cart_id: (c as any).id,
       params: [],
-      template_vars: { customer_name: customerName, cart_total: `₹${total}` },
+      template_vars: { customer_name: customerName, cart_total: `₹${total}`, checkout_url: checkoutUrl },
       priority: 5,
       scheduled_at: new Date().toISOString(),
     } as any);
