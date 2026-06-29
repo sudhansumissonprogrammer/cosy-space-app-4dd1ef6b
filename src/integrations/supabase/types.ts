@@ -22,7 +22,10 @@ export type Database = {
           customer_phone: string | null
           id: string
           recovered: boolean
+          recovery_error: string | null
+          recovery_message_id: string | null
           recovery_sent_at: string | null
+          recovery_status: string | null
           session_token: string | null
           store_id: string
         }
@@ -33,7 +36,10 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           recovered?: boolean
+          recovery_error?: string | null
+          recovery_message_id?: string | null
           recovery_sent_at?: string | null
+          recovery_status?: string | null
           session_token?: string | null
           store_id: string
         }
@@ -44,7 +50,10 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           recovered?: boolean
+          recovery_error?: string | null
+          recovery_message_id?: string | null
           recovery_sent_at?: string | null
+          recovery_status?: string | null
           session_token?: string | null
           store_id?: string
         }
@@ -1484,8 +1493,16 @@ export type Database = {
           platform_name: string
           updated_at: string
           wa_access_token: string | null
+          wa_app_secret: string | null
           wa_business_phone: string | null
+          wa_daily_cap_per_phone: number
+          wa_default_lang: string
+          wa_enabled: boolean
+          wa_max_cart_age_hours: number
+          wa_min_cart_age_minutes: number
           wa_phone_number_id: string | null
+          wa_waba_id: string | null
+          whatsapp_mode: string
         }
         Insert: {
           created_at?: string
@@ -1494,8 +1511,16 @@ export type Database = {
           platform_name?: string
           updated_at?: string
           wa_access_token?: string | null
+          wa_app_secret?: string | null
           wa_business_phone?: string | null
+          wa_daily_cap_per_phone?: number
+          wa_default_lang?: string
+          wa_enabled?: boolean
+          wa_max_cart_age_hours?: number
+          wa_min_cart_age_minutes?: number
           wa_phone_number_id?: string | null
+          wa_waba_id?: string | null
+          whatsapp_mode?: string
         }
         Update: {
           created_at?: string
@@ -1504,8 +1529,99 @@ export type Database = {
           platform_name?: string
           updated_at?: string
           wa_access_token?: string | null
+          wa_app_secret?: string | null
           wa_business_phone?: string | null
+          wa_daily_cap_per_phone?: number
+          wa_default_lang?: string
+          wa_enabled?: boolean
+          wa_max_cart_age_hours?: number
+          wa_min_cart_age_minutes?: number
           wa_phone_number_id?: string | null
+          wa_waba_id?: string | null
+          whatsapp_mode?: string
+        }
+        Relationships: []
+      }
+      platform_wa_campaigns: {
+        Row: {
+          audience_filter: Json
+          created_at: string
+          created_by: string | null
+          failed_count: number
+          id: string
+          name: string
+          scheduled_at: string | null
+          sent_count: number
+          status: string
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          audience_filter?: Json
+          created_at?: string
+          created_by?: string | null
+          failed_count?: number
+          id?: string
+          name: string
+          scheduled_at?: string | null
+          sent_count?: number
+          status?: string
+          template_name: string
+          updated_at?: string
+        }
+        Update: {
+          audience_filter?: Json
+          created_at?: string
+          created_by?: string | null
+          failed_count?: number
+          id?: string
+          name?: string
+          scheduled_at?: string | null
+          sent_count?: number
+          status?: string
+          template_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_wa_campaigns_template_name_fkey"
+            columns: ["template_name"]
+            isOneToOne: false
+            referencedRelation: "platform_wa_templates"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
+      platform_wa_templates: {
+        Row: {
+          body_preview: string | null
+          created_at: string
+          is_active: boolean
+          language: string
+          name: string
+          purpose: string
+          updated_at: string
+          variables: string[]
+        }
+        Insert: {
+          body_preview?: string | null
+          created_at?: string
+          is_active?: boolean
+          language?: string
+          name: string
+          purpose: string
+          updated_at?: string
+          variables?: string[]
+        }
+        Update: {
+          body_preview?: string | null
+          created_at?: string
+          is_active?: boolean
+          language?: string
+          name?: string
+          purpose?: string
+          updated_at?: string
+          variables?: string[]
         }
         Relationships: []
       }
@@ -2861,6 +2977,42 @@ export type Database = {
         }
         Relationships: []
       }
+      stores_wa_settings: {
+        Row: {
+          created_at: string
+          platform_marketing_enabled: boolean
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          platform_marketing_enabled?: boolean
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          platform_marketing_enabled?: boolean
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stores_wa_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stores_wa_settings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_payments: {
         Row: {
           amount: number
@@ -3152,8 +3304,10 @@ export type Database = {
           recipient_name: string | null
           recipient_phone: string
           sender_phone: string | null
+          sent_via: string
           status: string
-          store_id: string
+          store_id: string | null
+          template_name: string | null
           updated_at: string
         }
         Insert: {
@@ -3171,8 +3325,10 @@ export type Database = {
           recipient_name?: string | null
           recipient_phone: string
           sender_phone?: string | null
+          sent_via?: string
           status?: string
-          store_id: string
+          store_id?: string | null
+          template_name?: string | null
           updated_at?: string
         }
         Update: {
@@ -3190,8 +3346,10 @@ export type Database = {
           recipient_name?: string | null
           recipient_phone?: string
           sender_phone?: string | null
+          sent_via?: string
           status?: string
-          store_id?: string
+          store_id?: string | null
+          template_name?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -3231,21 +3389,21 @@ export type Database = {
           opted_out_at: string
           phone: string
           reason: string | null
-          store_id: string
+          store_id: string | null
         }
         Insert: {
           id?: string
           opted_out_at?: string
           phone: string
           reason?: string | null
-          store_id: string
+          store_id?: string | null
         }
         Update: {
           id?: string
           opted_out_at?: string
           phone?: string
           reason?: string | null
-          store_id?: string
+          store_id?: string | null
         }
         Relationships: [
           {
@@ -3648,10 +3806,12 @@ export type Database = {
         Args: { _store_id: string }
         Returns: boolean
       }
+      admin_get_platform_wa_config: { Args: never; Returns: Json }
       admin_set_billing_mode: {
         Args: { _mode: string; _store_id: string }
         Returns: undefined
       }
+      admin_update_platform_wa_config: { Args: { _patch: Json }; Returns: Json }
       can_create_website_order: {
         Args: { _store_id: string }
         Returns: boolean
@@ -3765,6 +3925,10 @@ export type Database = {
         }[]
       }
       get_store_payment_config: { Args: { _store_id: string }; Returns: Json }
+      get_store_platform_marketing: {
+        Args: { _store_id: string }
+        Returns: boolean
+      }
       get_store_public: { Args: { _slug: string }; Returns: Json }
       get_store_public_email: { Args: { _store_id: string }; Returns: string }
       get_store_recovery_coupon: {
@@ -3801,6 +3965,7 @@ export type Database = {
         Returns: Json
       }
       get_today_analytics: { Args: { _store_id: string }; Returns: Json }
+      get_whatsapp_mode: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -3866,6 +4031,10 @@ export type Database = {
       rollup_storefront_events_daily: {
         Args: { target_date?: string }
         Returns: number
+      }
+      set_store_platform_marketing: {
+        Args: { _enabled: boolean; _store_id: string }
+        Returns: boolean
       }
       store_has_active_coupons: {
         Args: { _store_id: string }

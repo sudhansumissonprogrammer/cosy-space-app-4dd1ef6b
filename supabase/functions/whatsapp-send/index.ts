@@ -85,6 +85,19 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Phase 1 gate: if platform_only, merchant per-store sender is disabled.
+    // The merchant code path below is preserved for Phase 2 (dual_mode / merchant_only).
+    const { data: pcfg } = await adminClient
+      .from("platform_config")
+      .select("whatsapp_mode")
+      .maybeSingle();
+    if ((pcfg as any)?.whatsapp_mode === "platform_only") {
+      return new Response(
+        JSON.stringify({ error: "Merchant WhatsApp is disabled in Phase 1", code: "merchant_wa_disabled" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Get store's WhatsApp config
     const { data: config, error: configErr } = await adminClient
       .from("whatsapp_config")
