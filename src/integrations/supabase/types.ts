@@ -28,6 +28,7 @@ export type Database = {
           recovery_status: string | null
           session_token: string | null
           store_id: string
+          wa_marketing_consent: boolean
         }
         Insert: {
           cart_items?: Json
@@ -42,6 +43,7 @@ export type Database = {
           recovery_status?: string | null
           session_token?: string | null
           store_id: string
+          wa_marketing_consent?: boolean
         }
         Update: {
           cart_items?: Json
@@ -56,6 +58,7 @@ export type Database = {
           recovery_status?: string | null
           session_token?: string | null
           store_id?: string
+          wa_marketing_consent?: boolean
         }
         Relationships: [
           {
@@ -1573,6 +1576,7 @@ export type Database = {
           wa_pilot_cohort: string[]
           wa_pilot_mode: boolean
           wa_queue_batch_size: number
+          wa_require_marketing_consent: boolean
           wa_waba_id: string | null
           whatsapp_mode: string
         }
@@ -1594,6 +1598,7 @@ export type Database = {
           wa_pilot_cohort?: string[]
           wa_pilot_mode?: boolean
           wa_queue_batch_size?: number
+          wa_require_marketing_consent?: boolean
           wa_waba_id?: string | null
           whatsapp_mode?: string
         }
@@ -1615,6 +1620,7 @@ export type Database = {
           wa_pilot_cohort?: string[]
           wa_pilot_mode?: boolean
           wa_queue_batch_size?: number
+          wa_require_marketing_consent?: boolean
           wa_waba_id?: string | null
           whatsapp_mode?: string
         }
