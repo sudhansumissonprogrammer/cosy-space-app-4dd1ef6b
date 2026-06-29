@@ -7,17 +7,19 @@ import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, 
 import { loadStore, loadTemplate, resolveTemplateParams } from "../_shared/wa-branding.ts";
 
 type Body = {
-  mode?: "automation" | "test";
+  mode?: "automation" | "test" | "text";
   store_id?: string | null;
   recipient_phone: string;
   recipient_name?: string | null;
-  template_name: string;
+  template_name?: string;
   template_params?: string[];                // legacy positional
   template_vars?: Record<string, string>;    // preferred — keyed by variable name
   language?: string;
   message_type?: string;
   order_id?: string | null;
   abandoned_cart_id?: string | null;
+  // Session-window text reply (admin inbox). Only allowed within 24h of last inbound.
+  message_body?: string;
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -41,7 +43,8 @@ Deno.serve(async (req) => {
 
   const phone = normalizePhone(body.recipient_phone);
   if (!phone) return json({ error: "invalid phone", error_class: "permanent" }, 400);
-  if (!body.template_name) return json({ error: "template_name required", error_class: "permanent" }, 400);
+  const isTextReply = body.mode === "text";
+  if (!isTextReply && !body.template_name) return json({ error: "template_name required", error_class: "permanent" }, 400);
 
   if (!isInternal) {
     if (!authHeader.startsWith("Bearer ")) return json({ error: "unauthorized", error_class: "permanent" }, 401);
@@ -87,29 +90,49 @@ Deno.serve(async (req) => {
     if ((sentToday ?? 0) >= cfg!.wa_daily_cap_per_phone) return json({ skipped: true, reason: "daily_cap" });
   }
 
-  // Resolve params (template_vars wins over positional)
-  let finalParams: string[] = body.template_params || [];
-  if (body.template_vars || body.store_id) {
-    const [tpl, store] = await Promise.all([
-      loadTemplate(admin, body.template_name),
-      loadStore(admin, body.store_id || null),
-    ]);
-    const extras = { ...(body.template_vars || {}) } as Record<string, string>;
-    if (body.recipient_name && !extras.customer_name) extras.customer_name = body.recipient_name;
-    if (tpl) finalParams = resolveTemplateParams(tpl, store, extras);
+  let metaPayload: any;
+  if (isTextReply) {
+    // 24h session window check — Meta only accepts free-form text within 24h of last user message.
+    const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: lastIn } = await admin
+      .from("whatsapp_messages")
+      .select("id")
+      .eq("direction", "incoming")
+      .or(`sender_phone.eq.${phone},recipient_phone.eq.${phone}`)
+      .gte("created_at", windowStart)
+      .limit(1).maybeSingle();
+    if (!lastIn) return json({ error: "outside_24h_session", error_class: "permanent" }, 400);
+    if (!body.message_body) return json({ error: "message_body required", error_class: "permanent" }, 400);
+    metaPayload = {
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "text",
+      text: { body: body.message_body.slice(0, 4096) },
+    };
+  } else {
+    // Resolve params (template_vars wins over positional)
+    let finalParams: string[] = body.template_params || [];
+    if (body.template_vars || body.store_id) {
+      const [tpl, store] = await Promise.all([
+        loadTemplate(admin, body.template_name!),
+        loadStore(admin, body.store_id || null),
+      ]);
+      const extras = { ...(body.template_vars || {}) } as Record<string, string>;
+      if (body.recipient_name && !extras.customer_name) extras.customer_name = body.recipient_name;
+      if (tpl) finalParams = resolveTemplateParams(tpl, store, extras);
+    }
+    const params = finalParams.map((t) => ({ type: "text", text: String(t ?? "") }));
+    metaPayload = {
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "template",
+      template: {
+        name: body.template_name,
+        language: { code: body.language || cfg!.wa_default_lang || "en" },
+        components: params.length ? [{ type: "body", parameters: params }] : [],
+      },
+    };
   }
-
-  const params = finalParams.map((t) => ({ type: "text", text: String(t ?? "") }));
-  const metaPayload = {
-    messaging_product: "whatsapp",
-    to: phone,
-    type: "template",
-    template: {
-      name: body.template_name,
-      language: { code: body.language || cfg!.wa_default_lang || "en" },
-      components: params.length ? [{ type: "body", parameters: params }] : [],
-    },
-  };
 
   let status = "failed";
   let metaId: string | null = null;
@@ -138,11 +161,11 @@ Deno.serve(async (req) => {
 
   await admin.from("whatsapp_messages").insert({
     store_id: body.store_id ?? null,
-    message_type: body.message_type || "platform",
+    message_type: body.message_type || (isTextReply ? "text_reply" : "platform"),
     recipient_phone: phone,
     recipient_name: body.recipient_name ?? null,
-    message_body: `[template:${body.template_name}]`,
-    template_name: body.template_name,
+    message_body: isTextReply ? (body.message_body || "").slice(0, 4096) : `[template:${body.template_name}]`,
+    template_name: isTextReply ? null : body.template_name,
     meta_message_id: metaId,
     status,
     error_message: errMsg,

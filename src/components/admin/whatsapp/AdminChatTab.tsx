@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useWhatsAppMode } from "@/hooks/useWhatsAppMode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +15,7 @@ import {
 
 export function AdminChatTab() {
   const queryClient = useQueryClient();
+  const { isPlatformOnly } = useWhatsAppMode();
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -83,21 +85,44 @@ export function AdminChatTab() {
   React.useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [selectedConversation]);
 
   const sendMessage = async () => {
-    if (!selectedPhone || !selectedStoreId || !message.trim()) return;
+    if (!selectedPhone || !message.trim()) return;
     setSending(true);
     try {
-      const res = await supabase.functions.invoke("whatsapp-send", {
-        body: { store_id: selectedStoreId, recipient_phone: selectedPhone, message_body: message.trim(), message_type: "manual" },
-      });
-      if (res.error) throw res.error;
-      if ((res.data as any)?.error) throw new Error((res.data as any).error);
+      if (isPlatformOnly) {
+        // Platform shared number — free-form text reply within the 24h session window.
+        const res = await supabase.functions.invoke("wa-platform-send", {
+          body: {
+            mode: "text",
+            store_id: selectedStoreId,
+            recipient_phone: selectedPhone,
+            message_body: message.trim(),
+            message_type: "text_reply",
+          },
+        });
+        if (res.error) throw res.error;
+        if ((res.data as any)?.error) throw new Error((res.data as any).error);
+      } else {
+        if (!selectedStoreId) return;
+        const res = await supabase.functions.invoke("whatsapp-send", {
+          body: { store_id: selectedStoreId, recipient_phone: selectedPhone, message_body: message.trim(), message_type: "manual" },
+        });
+        if (res.error) throw res.error;
+        if ((res.data as any)?.error) throw new Error((res.data as any).error);
+      }
       setMessage("");
       queryClient.invalidateQueries({ queryKey: ["admin-whatsapp-all-messages"] });
       inputRef.current?.focus();
     } catch (e: any) {
-      toast({ title: "Failed to send", description: e.message, variant: "destructive" });
+      toast({ title: "Failed to send", description: e.message || "Outside 24h reply window — use a template instead.", variant: "destructive" });
     } finally { setSending(false); }
   };
+
+  const markThreadRead = async () => {
+    if (!selectedPhone) return;
+    await supabase.rpc("admin_wa_mark_thread_read" as any, { _phone: selectedPhone, _store_id: selectedStoreId });
+    queryClient.invalidateQueries({ queryKey: ["admin-whatsapp-all-messages"] });
+  };
+
 
   const formatTime = (s: string) => new Date(s).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const formatListDate = (s: string) => {
@@ -202,8 +227,14 @@ export function AdminChatTab() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] font-medium truncate">{currentConv?.name || selectedPhone}</p>
-                  <p className="text-[11px] text-muted-foreground">Store: <span className="font-medium">{currentConv?.storeName}</span></p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Store: <span className="font-medium">{currentConv?.storeName}</span>
+                    {isPlatformOnly && <span className="ml-2 text-[10px] uppercase tracking-wide text-emerald-700">· shared #</span>}
+                  </p>
                 </div>
+                {(currentConv?.unread ?? 0) > 0 && (
+                  <Button size="sm" variant="outline" onClick={markThreadRead}>Mark read</Button>
+                )}
               </div>
               <div className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5 bg-muted/20">
                 {selectedConversation.map((msg: any, idx: number) => {
