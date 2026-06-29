@@ -421,9 +421,16 @@ export default function StoreAbandonedCarts() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={c.recovered ? "default" : "secondary"} className="text-[10px]">
-                            {c.recovered ? "Recovered" : "Abandoned"}
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge variant={c.recovered ? "default" : "secondary"} className="text-[10px] w-fit">
+                              {c.recovered ? "Recovered" : "Abandoned"}
+                            </Badge>
+                            {c.recovery_sent_at && (
+                              <Badge variant="outline" className="text-[10px] w-fit">
+                                {c.recovery_status === "sent" ? "WA sent by ShopBanao" : c.recovery_status === "skipped" ? "WA skipped" : c.recovery_status === "failed" ? "WA failed" : "WA queued"}
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           {canSend && storeId && (
