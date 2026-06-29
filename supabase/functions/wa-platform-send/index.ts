@@ -75,12 +75,17 @@ Deno.serve(async (req) => {
     if (s && (s as any).platform_marketing_enabled === false) return json({ skipped: true, reason: "store_disabled" });
   }
 
-  // Daily cap
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { count: sentToday } = await admin
-    .from("whatsapp_messages").select("id", { count: "exact", head: true })
-    .eq("recipient_phone", phone).eq("sent_via", "platform").gte("created_at", since);
-  if ((sentToday ?? 0) >= cfg!.wa_daily_cap_per_phone) return json({ skipped: true, reason: "daily_cap" });
+  // Daily cap — applies to MARKETING only. Transactional events (order/payment/shipping)
+  // must always reach the customer and are excluded from the cap.
+  const TRANSACTIONAL = new Set(["order_confirmation", "payment_received", "payment_success", "order_shipped", "order_delivered"]);
+  const isTransactional = TRANSACTIONAL.has(body.message_type || "");
+  if (!isTransactional) {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count: sentToday } = await admin
+      .from("whatsapp_messages").select("id", { count: "exact", head: true })
+      .eq("recipient_phone", phone).eq("sent_via", "platform").gte("created_at", since);
+    if ((sentToday ?? 0) >= cfg!.wa_daily_cap_per_phone) return json({ skipped: true, reason: "daily_cap" });
+  }
 
   // Resolve params (template_vars wins over positional)
   let finalParams: string[] = body.template_params || [];
