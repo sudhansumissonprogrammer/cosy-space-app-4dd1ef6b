@@ -21,12 +21,20 @@ Deno.serve(async (req) => {
   const { data: isAdmin } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
   if (!isAdmin) return json({ error: "forbidden" }, 403);
 
-  let body: { campaign_id: string };
+  let body: { campaign_id: string; force?: boolean };
   try { body = await req.json(); } catch { return json({ error: "bad json" }, 400); }
 
   const { data: camp } = await admin.from("platform_wa_campaigns").select("*").eq("id", body.campaign_id).maybeSingle();
   if (!camp) return json({ error: "not_found" }, 404);
   if ((camp as any).status === "running") return json({ error: "already_running" }, 409);
+
+  // Mandatory pre-flight unless explicitly forced by admin.
+  const { data: pre, error: preErr } = await admin.rpc("wa_campaign_precheck" as any, { _campaign_id: body.campaign_id });
+  if (preErr) return json({ error: "precheck_failed", details: preErr.message }, 500);
+  if (!body.force && !(pre as any)?.can_send) {
+    return json({ error: "precheck_blocked", precheck: pre }, 412);
+  }
+
 
   await admin.from("platform_wa_campaigns").update({ status: "running", started_at: new Date().toISOString() } as any).eq("id", body.campaign_id);
 
