@@ -48,9 +48,16 @@ Deno.serve(async (req) => {
 
   let enqueued = 0, skipped = 0;
   const rows = (audience as any[]) || [];
+  const campaignVars = ((camp as any).template_vars as Record<string, string>) || {};
+  const scheduledAt = (camp as any).scheduled_at || new Date().toISOString();
   for (const c of rows) {
     const phone = normalizePhone(c.phone);
     if (!phone) { skipped++; continue; }
+    const perRecipient = {
+      customer_name: c.name || "there",
+      store_name: c.store_name || "our store",
+      ...campaignVars,
+    };
     const { error } = await admin.from("wa_send_queue").insert({
       store_id: c.store_id,
       recipient_phone: phone,
@@ -58,9 +65,9 @@ Deno.serve(async (req) => {
       template_name: (camp as any).template_name,
       message_type: "campaign",
       params: [],
-      template_vars: { customer_name: c.name || "there" },
+      template_vars: perRecipient,
       priority: 7,
-      scheduled_at: new Date().toISOString(),
+      scheduled_at: scheduledAt,
       campaign_id: (camp as any).id,
     } as any);
     if (error) skipped++; else enqueued++;
