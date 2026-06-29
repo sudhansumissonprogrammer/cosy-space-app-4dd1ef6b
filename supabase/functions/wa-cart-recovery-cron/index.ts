@@ -22,15 +22,18 @@ Deno.serve(async (req) => {
   const beforeIso = new Date(now - minAgeMs).toISOString();
   const afterIso = new Date(now - maxAgeMs).toISOString();
 
-  const { data: carts, error } = await admin
+  const requireConsent = (cfg as any)?.wa_require_marketing_consent !== false;
+  let q = admin
     .from("abandoned_carts")
-    .select("id, store_id, customer_phone, cart_items, created_at, stores:store_id(slug, custom_domain)")
+    .select("id, store_id, customer_phone, cart_items, created_at, wa_marketing_consent, stores:store_id(slug, custom_domain)")
     .eq("recovered", false)
     .is("recovery_sent_at", null)
     .not("customer_phone", "is", null)
     .lte("created_at", beforeIso)
     .gte("created_at", afterIso)
     .limit(200);
+  if (requireConsent) q = q.eq("wa_marketing_consent", true);
+  const { data: carts, error } = await q;
 
   if (error) return json({ error: error.message }, 500);
   if (!carts?.length) return json({ processed: 0 });
