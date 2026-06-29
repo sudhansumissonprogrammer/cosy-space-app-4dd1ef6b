@@ -10,6 +10,9 @@ const VAR_DEFAULTS: Record<string, (s: any) => string> = {
   store_website: (s) => storeUrl(s),
   shop_url: (s) => storeUrl(s),
   customer_name: () => "there",
+  tracking_number: () => "",
+  courier_name: () => "",
+  tracking_url: (s) => storeUrl(s),
 };
 
 function storeUrl(s: any): string {
