@@ -80,11 +80,11 @@ Deno.serve(async (req) => {
       store_id: (c as any).store_id,
       recipient_phone: phone,
       recipient_name: customerName,
-      template_name: "abandoned_cart_v1",
+      template_name: "abandoned_cart_v2",
       message_type: "abandoned_cart",
       abandoned_cart_id: (c as any).id,
       params: [],
-      template_vars: { customer_name: customerName, cart_total: `₹${total}`, checkout_url: checkoutUrl },
+      template_vars: { customer_name: customerName, cart_total: `₹${total}`, store_name: (s as any).name || "our store", checkout_url: checkoutUrl },
       priority: 5,
       scheduled_at: new Date().toISOString(),
     } as any);
