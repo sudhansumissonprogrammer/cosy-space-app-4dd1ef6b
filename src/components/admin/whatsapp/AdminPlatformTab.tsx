@@ -236,6 +236,8 @@ export function AdminPlatformTab() {
       </Card>
 
       <PlatformHealthCard />
+      <PlatformCostCard />
+
     </div>
   );
 }
