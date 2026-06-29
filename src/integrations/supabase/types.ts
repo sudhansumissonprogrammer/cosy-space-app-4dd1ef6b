@@ -1691,8 +1691,12 @@ export type Database = {
           headline: string | null
           is_active: boolean
           language: string
+          last_synced_at: string | null
+          meta_status: string | null
+          meta_template_id: string | null
           name: string
           purpose: string
+          quality_score: string | null
           updated_at: string
           variables: string[]
         }
@@ -1704,8 +1708,12 @@ export type Database = {
           headline?: string | null
           is_active?: boolean
           language?: string
+          last_synced_at?: string | null
+          meta_status?: string | null
+          meta_template_id?: string | null
           name: string
           purpose: string
+          quality_score?: string | null
           updated_at?: string
           variables?: string[]
         }
@@ -1717,8 +1725,12 @@ export type Database = {
           headline?: string | null
           is_active?: boolean
           language?: string
+          last_synced_at?: string | null
+          meta_status?: string | null
+          meta_template_id?: string | null
           name?: string
           purpose?: string
+          quality_score?: string | null
           updated_at?: string
           variables?: string[]
         }
@@ -3255,6 +3267,106 @@ export type Database = {
         }
         Relationships: []
       }
+      wa_health_log: {
+        Row: {
+          alert_sent: boolean
+          checked_at: string
+          id: string
+          messaging_limit_tier: string | null
+          name_status: string | null
+          phone_number_id: string | null
+          quality_rating: string | null
+          raw: Json | null
+          token_expires_at: string | null
+          token_valid: boolean | null
+        }
+        Insert: {
+          alert_sent?: boolean
+          checked_at?: string
+          id?: string
+          messaging_limit_tier?: string | null
+          name_status?: string | null
+          phone_number_id?: string | null
+          quality_rating?: string | null
+          raw?: Json | null
+          token_expires_at?: string | null
+          token_valid?: boolean | null
+        }
+        Update: {
+          alert_sent?: boolean
+          checked_at?: string
+          id?: string
+          messaging_limit_tier?: string | null
+          name_status?: string | null
+          phone_number_id?: string | null
+          quality_rating?: string | null
+          raw?: Json | null
+          token_expires_at?: string | null
+          token_valid?: boolean | null
+        }
+        Relationships: []
+      }
+      wa_link_clicks: {
+        Row: {
+          campaign_id: string | null
+          clicked_at: string
+          id: string
+          ip_hash: string | null
+          message_id: string | null
+          recipient_phone: string | null
+          short_id: string
+          store_id: string | null
+          target_url: string
+          user_agent: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          clicked_at?: string
+          id?: string
+          ip_hash?: string | null
+          message_id?: string | null
+          recipient_phone?: string | null
+          short_id: string
+          store_id?: string | null
+          target_url: string
+          user_agent?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          clicked_at?: string
+          id?: string
+          ip_hash?: string | null
+          message_id?: string | null
+          recipient_phone?: string | null
+          short_id?: string
+          store_id?: string | null
+          target_url?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_link_clicks_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wa_link_clicks_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wa_link_clicks_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wa_send_queue: {
         Row: {
           abandoned_cart_id: string | null
@@ -3488,6 +3600,7 @@ export type Database = {
           direction: string
           error_message: string | null
           id: string
+          inferred_store_id: string | null
           media_type: string | null
           media_url: string | null
           message_body: string
@@ -3504,6 +3617,7 @@ export type Database = {
           status: string
           store_id: string | null
           template_name: string | null
+          thread_read_at: string | null
           updated_at: string
         }
         Insert: {
@@ -3513,6 +3627,7 @@ export type Database = {
           direction?: string
           error_message?: string | null
           id?: string
+          inferred_store_id?: string | null
           media_type?: string | null
           media_url?: string | null
           message_body: string
@@ -3529,6 +3644,7 @@ export type Database = {
           status?: string
           store_id?: string | null
           template_name?: string | null
+          thread_read_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -3538,6 +3654,7 @@ export type Database = {
           direction?: string
           error_message?: string | null
           id?: string
+          inferred_store_id?: string | null
           media_type?: string | null
           media_url?: string | null
           message_body?: string
@@ -3554,6 +3671,7 @@ export type Database = {
           status?: string
           store_id?: string | null
           template_name?: string | null
+          thread_read_at?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -3562,6 +3680,20 @@ export type Database = {
             columns: ["abandoned_cart_id"]
             isOneToOne: false
             referencedRelation: "abandoned_carts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_inferred_store_id_fkey"
+            columns: ["inferred_store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_inferred_store_id_fkey"
+            columns: ["inferred_store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
           {
@@ -4051,6 +4183,26 @@ export type Database = {
         Returns: undefined
       }
       admin_update_platform_wa_config: { Args: { _patch: Json }; Returns: Json }
+      admin_wa_health_snapshot: {
+        Args: never
+        Returns: {
+          checked_at: string
+          messaging_limit_tier: string
+          name_status: string
+          quality_rating: string
+          token_expires_at: string
+          token_valid: boolean
+        }[]
+      }
+      admin_wa_mark_thread_read: {
+        Args: { _phone: string; _store_id?: string }
+        Returns: number
+      }
+      admin_wa_purge_marketing: { Args: never; Returns: number }
+      admin_wa_requeue_failed: {
+        Args: { _since?: string; _template?: string }
+        Returns: number
+      }
       attribute_wa_recovery: { Args: never; Returns: number }
       can_create_website_order: {
         Args: { _store_id: string }
@@ -4311,6 +4463,7 @@ export type Database = {
       }
       verify_cron_secret: { Args: { _secret: string }; Returns: boolean }
       verify_phone_account_integrity: { Args: never; Returns: undefined }
+      wa_resolve_inbound_store: { Args: { _phone: string }; Returns: string }
       wallet_adjust: {
         Args: {
           _amount: number

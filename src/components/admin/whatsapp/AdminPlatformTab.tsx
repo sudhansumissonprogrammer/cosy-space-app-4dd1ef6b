@@ -221,6 +221,74 @@ export function AdminPlatformTab() {
           </div>
         </CardContent>
       </Card>
+
+      <PlatformHealthCard />
+    </div>
+  );
+}
+
+function PlatformHealthCard() {
+  const [snap, setSnap] = useState<any>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    const { data } = await supabase.rpc("admin_wa_health_snapshot" as any);
+    setSnap(Array.isArray(data) ? data[0] : data);
+  };
+  useEffect(() => { load(); }, []);
+
+  const runHealth = async () => {
+    setBusy(true);
+    const { error } = await supabase.functions.invoke("wa-health-check");
+    setBusy(false);
+    if (error) toast.error(error.message); else { toast.success("Health snapshot updated"); load(); }
+  };
+
+  const syncTemplates = async () => {
+    setBusy(true);
+    const { error, data } = await supabase.functions.invoke("wa-template-sync");
+    setBusy(false);
+    if (error) toast.error(error.message);
+    else toast.success(`Synced ${(data as any)?.updated ?? 0} templates from Meta`);
+  };
+
+  const qualityColor =
+    snap?.quality_rating === "GREEN" ? "text-emerald-600" :
+    snap?.quality_rating === "YELLOW" ? "text-amber-600" :
+    snap?.quality_rating === "RED" ? "text-destructive" : "text-muted-foreground";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Platform health</CardTitle>
+        <CardDescription>Refreshed automatically every 6 hours. Sync templates pulls Meta approval status.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {snap ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+            <Stat label="Quality" value={snap.quality_rating || "—"} valueClass={qualityColor} />
+            <Stat label="Tier" value={snap.messaging_limit_tier || "—"} />
+            <Stat label="Name status" value={snap.name_status || "—"} />
+            <Stat label="Token" value={snap.token_valid ? "Valid" : "Invalid"} valueClass={snap.token_valid ? "text-emerald-600" : "text-destructive"} />
+            <p className="col-span-2 sm:col-span-4 text-[11px] text-muted-foreground">Checked {snap.checked_at ? new Date(snap.checked_at).toLocaleString() : "—"}</p>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No health snapshot yet — run one now.</p>
+        )}
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" disabled={busy} onClick={runHealth}>Run health check</Button>
+          <Button size="sm" variant="outline" disabled={busy} onClick={syncTemplates}>Sync templates from Meta</Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Stat({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
+  return (
+    <div className="rounded-md border bg-muted/30 px-3 py-2">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={`text-base font-semibold ${valueClass ?? ""}`}>{value}</p>
     </div>
   );
 }

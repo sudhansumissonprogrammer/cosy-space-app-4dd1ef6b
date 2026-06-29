@@ -40,6 +40,19 @@ export function AdminQueueTab() {
     if (error) toast.error(error.message); else load();
   };
 
+  const bulkRequeue = async () => {
+    if (!confirm("Requeue all failed sends from the last 24h?")) return;
+    const { data, error } = await supabase.rpc("admin_wa_requeue_failed" as any, {});
+    if (error) toast.error(error.message); else { toast.success(`Requeued ${data ?? 0}`); load(); }
+  };
+
+  const purgeMarketing = async () => {
+    if (!confirm("Purge ALL pending marketing sends? Transactional messages are preserved.")) return;
+    const { data, error } = await supabase.rpc("admin_wa_purge_marketing" as any);
+    if (error) toast.error(error.message); else { toast.warning(`Purged ${data ?? 0} pending marketing rows`); load(); }
+  };
+
+
   return (
     <div className="space-y-4">
       <Card>
@@ -55,6 +68,8 @@ export function AdminQueueTab() {
               </Button>
             ))}
             <div className="flex-1" />
+            <Button size="sm" variant="outline" onClick={bulkRequeue}>Requeue failed (24h)</Button>
+            <Button size="sm" variant="outline" onClick={purgeMarketing}>Purge marketing</Button>
             <Button size="sm" variant="secondary" onClick={runNow}>Run worker now</Button>
           </div>
         </CardContent>

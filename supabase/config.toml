@@ -38,3 +38,13 @@ verify_jwt = false
 
 [functions.wa-recovery-attribution]
 verify_jwt = false
+
+[functions.wa-template-sync]
+verify_jwt = false
+
+[functions.wa-health-check]
+verify_jwt = false
+
+[functions.wa-link-redirect]
+verify_jwt = false
+
