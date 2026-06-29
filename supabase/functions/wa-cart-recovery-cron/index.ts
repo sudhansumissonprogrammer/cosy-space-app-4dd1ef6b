@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
   const requireConsent = (cfg as any)?.wa_require_marketing_consent !== false;
   let q = admin
     .from("abandoned_carts")
-    .select("id, store_id, customer_phone, cart_items, created_at, wa_marketing_consent, stores:store_id(slug, custom_domain)")
+    .select("id, store_id, customer_phone, cart_items, created_at, wa_marketing_consent, stores:store_id(name, slug, custom_domain)")
     .eq("recovered", false)
     .is("recovery_sent_at", null)
     .not("customer_phone", "is", null)
