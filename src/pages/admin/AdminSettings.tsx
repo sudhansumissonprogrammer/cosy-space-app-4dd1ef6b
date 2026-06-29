@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Settings, Save, MessageSquare, Eye, EyeOff, Cloud, Loader2 } from "lucide-react";
+import { Settings, Save, MessageSquare, Cloud, Loader2, ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
@@ -17,21 +18,19 @@ export default function AdminSettings() {
   const queryClient = useQueryClient();
   const [platformName, setPlatformName] = useState("");
   const [defaultCurrency, setDefaultCurrency] = useState("INR");
-  const [waPhoneNumberId, setWaPhoneNumberId] = useState("");
-  const [waAccessToken, setWaAccessToken] = useState("");
-  const [waBusinessPhone, setWaBusinessPhone] = useState("");
-  const [showToken, setShowToken] = useState(false);
 
   const { data: config, isLoading } = useQuery({
     queryKey: ["platform-config"],
     queryFn: async () => {
+      // ⚠️ Never select the WhatsApp access token from the client.
+      // That lives behind a secure RPC inside Admin → WhatsApp → Platform.
       const { data, error } = await (supabase as any)
         .from("platform_config")
-        .select("id, platform_name, default_currency, wa_phone_number_id, wa_access_token, wa_business_phone")
+        .select("id, platform_name, default_currency")
         .limit(1)
         .single();
       if (error) throw error;
-      return data as { id: string; platform_name: string; default_currency: string; wa_phone_number_id: string | null; wa_access_token: string | null; wa_business_phone: string | null };
+      return data as { id: string; platform_name: string; default_currency: string };
     },
   });
 
@@ -39,9 +38,6 @@ export default function AdminSettings() {
     if (config) {
       setPlatformName(config.platform_name);
       setDefaultCurrency(config.default_currency);
-      setWaPhoneNumberId(config.wa_phone_number_id || "");
-      setWaAccessToken(config.wa_access_token || "");
-      setWaBusinessPhone(config.wa_business_phone || "");
     }
   }, [config]);
 
@@ -62,28 +58,6 @@ export default function AdminSettings() {
       queryClient.invalidateQueries({ queryKey: ["platform-config"] });
       queryClient.invalidateQueries({ queryKey: ["platform-config-currency"] });
       toast.success("General settings saved");
-    },
-    onError: (err: any) => toast.error(err.message),
-  });
-
-  const saveWhatsApp = useMutation({
-    mutationFn: async () => {
-      if (!config?.id) throw new Error("No config found");
-      const updatePayload: Record<string, string | null> = {
-        wa_phone_number_id: waPhoneNumberId || null,
-        wa_business_phone: waBusinessPhone || null,
-        updated_at: new Date().toISOString(),
-      };
-      if (waAccessToken.trim()) updatePayload.wa_access_token = waAccessToken.trim();
-      const { error } = await (supabase as any)
-        .from("platform_config")
-        .update(updatePayload)
-        .eq("id", config.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["platform-config"] });
-      toast.success("WhatsApp credentials saved");
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -131,57 +105,24 @@ export default function AdminSettings() {
         </CardContent>
       </Card>
 
+      {/* WhatsApp credentials moved to Admin → WhatsApp → Platform tab.
+          Keeping a single source of truth: secure RPC, masked token, app secret,
+          pilot cohort, tier limits, health log — all in one place. */}
       <Card className="max-w-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <MessageSquare className="h-4 w-4 text-green-600" /> Platform WhatsApp (ShopBanao Marketing)
+            <MessageSquare className="h-4 w-4 text-green-600" /> Platform WhatsApp
           </CardTitle>
           <CardDescription>
-            These credentials are used for stores using ShopBanao Marketing mode. All automated messages will be sent from this number.
+            WhatsApp credentials, templates, queue, health and the master kill switch
+            are managed in a single secure panel.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Phone Number ID</Label>
-            <Input
-              value={waPhoneNumberId}
-              onChange={(e) => setWaPhoneNumberId(e.target.value)}
-              placeholder="1234567890"
-              disabled={isLoading}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Access Token</Label>
-            <div className="relative">
-              <Input
-                type={showToken ? "text" : "password"}
-                value={waAccessToken}
-                onChange={(e) => setWaAccessToken(e.target.value)}
-                placeholder="EAAxxxxxxx..."
-                disabled={isLoading}
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9"
-                onClick={() => setShowToken(!showToken)}
-              >
-                {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Business Phone Display</Label>
-            <Input
-              value={waBusinessPhone}
-              onChange={(e) => setWaBusinessPhone(e.target.value)}
-              placeholder="+91 98765 43210"
-              disabled={isLoading}
-            />
-          </div>
-          <Button onClick={() => saveWhatsApp.mutate()} disabled={saveWhatsApp.isPending || isLoading} size="sm">
-            <Save className="mr-2 h-4 w-4" />
-            {saveWhatsApp.isPending ? "Saving..." : "Save WhatsApp"}
+        <CardContent>
+          <Button asChild size="sm" variant="default">
+            <Link to="/admin/whatsapp">
+              Open WhatsApp Admin <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
           </Button>
         </CardContent>
       </Card>
