@@ -74,6 +74,54 @@ export type Database = {
           },
         ]
       }
+      back_in_stock_waitlist: {
+        Row: {
+          created_at: string
+          customer_name: string | null
+          customer_phone: string
+          id: string
+          notified_at: string | null
+          product_id: string
+          store_id: string
+          variant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_name?: string | null
+          customer_phone: string
+          id?: string
+          notified_at?: string | null
+          product_id: string
+          store_id: string
+          variant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string | null
+          customer_phone?: string
+          id?: string
+          notified_at?: string | null
+          product_id?: string
+          store_id?: string
+          variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "back_in_stock_waitlist_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "back_in_stock_waitlist_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -254,6 +302,13 @@ export type Database = {
             foreignKeyName: "customer_addresses_storefront_customer_id_fkey"
             columns: ["storefront_customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_segments_v1"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_addresses_storefront_customer_id_fkey"
+            columns: ["storefront_customer_id"]
+            isOneToOne: false
             referencedRelation: "storefront_customers"
             referencedColumns: ["id"]
           },
@@ -370,6 +425,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_wishlists_storefront_customer_id_fkey"
+            columns: ["storefront_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_segments_v1"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "customer_wishlists_storefront_customer_id_fkey"
@@ -864,6 +926,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stores_public"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_storefront_customer_id_fkey"
+            columns: ["storefront_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_segments_v1"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "orders_storefront_customer_id_fkey"
@@ -1501,6 +1570,9 @@ export type Database = {
           wa_max_cart_age_hours: number
           wa_min_cart_age_minutes: number
           wa_phone_number_id: string | null
+          wa_pilot_cohort: string[]
+          wa_pilot_mode: boolean
+          wa_queue_batch_size: number
           wa_waba_id: string | null
           whatsapp_mode: string
         }
@@ -1519,6 +1591,9 @@ export type Database = {
           wa_max_cart_age_hours?: number
           wa_min_cart_age_minutes?: number
           wa_phone_number_id?: string | null
+          wa_pilot_cohort?: string[]
+          wa_pilot_mode?: boolean
+          wa_queue_batch_size?: number
           wa_waba_id?: string | null
           whatsapp_mode?: string
         }
@@ -1537,6 +1612,9 @@ export type Database = {
           wa_max_cart_age_hours?: number
           wa_min_cart_age_minutes?: number
           wa_phone_number_id?: string | null
+          wa_pilot_cohort?: string[]
+          wa_pilot_mode?: boolean
+          wa_queue_batch_size?: number
           wa_waba_id?: string | null
           whatsapp_mode?: string
         }
@@ -1545,39 +1623,51 @@ export type Database = {
       platform_wa_campaigns: {
         Row: {
           audience_filter: Json
+          audience_size: number
           created_at: string
           created_by: string | null
           failed_count: number
+          failed_reason: string | null
           id: string
           name: string
+          queued_count: number
           scheduled_at: string | null
           sent_count: number
+          started_at: string | null
           status: string
           template_name: string
           updated_at: string
         }
         Insert: {
           audience_filter?: Json
+          audience_size?: number
           created_at?: string
           created_by?: string | null
           failed_count?: number
+          failed_reason?: string | null
           id?: string
           name: string
+          queued_count?: number
           scheduled_at?: string | null
           sent_count?: number
+          started_at?: string | null
           status?: string
           template_name: string
           updated_at?: string
         }
         Update: {
           audience_filter?: Json
+          audience_size?: number
           created_at?: string
           created_by?: string | null
           failed_count?: number
+          failed_reason?: string | null
           id?: string
           name?: string
+          queued_count?: number
           scheduled_at?: string | null
           sent_count?: number
+          started_at?: string | null
           status?: string
           template_name?: string
           updated_at?: string
@@ -1595,7 +1685,10 @@ export type Database = {
       platform_wa_templates: {
         Row: {
           body_preview: string | null
+          button_label: string | null
+          category: string | null
           created_at: string
+          headline: string | null
           is_active: boolean
           language: string
           name: string
@@ -1605,7 +1698,10 @@ export type Database = {
         }
         Insert: {
           body_preview?: string | null
+          button_label?: string | null
+          category?: string | null
           created_at?: string
+          headline?: string | null
           is_active?: boolean
           language?: string
           name: string
@@ -1615,7 +1711,10 @@ export type Database = {
         }
         Update: {
           body_preview?: string | null
+          button_label?: string | null
+          category?: string | null
           created_at?: string
+          headline?: string | null
           is_active?: boolean
           language?: string
           name?: string
@@ -2980,18 +3079,21 @@ export type Database = {
       stores_wa_settings: {
         Row: {
           created_at: string
+          pilot_cohort: boolean
           platform_marketing_enabled: boolean
           store_id: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          pilot_cohort?: boolean
           platform_marketing_enabled?: boolean
           store_id: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          pilot_cohort?: boolean
           platform_marketing_enabled?: boolean
           store_id?: string
           updated_at?: string
@@ -3153,6 +3255,96 @@ export type Database = {
         }
         Relationships: []
       }
+      wa_send_queue: {
+        Row: {
+          abandoned_cart_id: string | null
+          attempts: number
+          campaign_id: string | null
+          created_at: string
+          id: string
+          last_error: string | null
+          last_error_class: string | null
+          locked_until: string | null
+          max_attempts: number
+          message_type: string | null
+          order_id: string | null
+          params: Json
+          priority: number
+          recipient_name: string | null
+          recipient_phone: string
+          scheduled_at: string
+          sent_message_id: string | null
+          status: string
+          store_id: string | null
+          template_name: string
+          template_vars: Json
+          updated_at: string
+        }
+        Insert: {
+          abandoned_cart_id?: string | null
+          attempts?: number
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_error_class?: string | null
+          locked_until?: string | null
+          max_attempts?: number
+          message_type?: string | null
+          order_id?: string | null
+          params?: Json
+          priority?: number
+          recipient_name?: string | null
+          recipient_phone: string
+          scheduled_at?: string
+          sent_message_id?: string | null
+          status?: string
+          store_id?: string | null
+          template_name: string
+          template_vars?: Json
+          updated_at?: string
+        }
+        Update: {
+          abandoned_cart_id?: string | null
+          attempts?: number
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          last_error_class?: string | null
+          locked_until?: string | null
+          max_attempts?: number
+          message_type?: string | null
+          order_id?: string | null
+          params?: Json
+          priority?: number
+          recipient_name?: string | null
+          recipient_phone?: string
+          scheduled_at?: string
+          sent_message_id?: string | null
+          status?: string
+          store_id?: string | null
+          template_name?: string
+          template_vars?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_send_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wa_send_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_events: {
         Row: {
           event_id: string
@@ -3292,6 +3484,7 @@ export type Database = {
         Row: {
           abandoned_cart_id: string | null
           created_at: string
+          delivered_at: string | null
           direction: string
           error_message: string | null
           id: string
@@ -3301,8 +3494,11 @@ export type Database = {
           message_type: string
           meta_message_id: string | null
           order_id: string | null
+          read_at: string | null
           recipient_name: string | null
           recipient_phone: string
+          recovered_order_id: string | null
+          replied_at: string | null
           sender_phone: string | null
           sent_via: string
           status: string
@@ -3313,6 +3509,7 @@ export type Database = {
         Insert: {
           abandoned_cart_id?: string | null
           created_at?: string
+          delivered_at?: string | null
           direction?: string
           error_message?: string | null
           id?: string
@@ -3322,8 +3519,11 @@ export type Database = {
           message_type?: string
           meta_message_id?: string | null
           order_id?: string | null
+          read_at?: string | null
           recipient_name?: string | null
           recipient_phone: string
+          recovered_order_id?: string | null
+          replied_at?: string | null
           sender_phone?: string | null
           sent_via?: string
           status?: string
@@ -3334,6 +3534,7 @@ export type Database = {
         Update: {
           abandoned_cart_id?: string | null
           created_at?: string
+          delivered_at?: string | null
           direction?: string
           error_message?: string | null
           id?: string
@@ -3343,8 +3544,11 @@ export type Database = {
           message_type?: string
           meta_message_id?: string | null
           order_id?: string | null
+          read_at?: string | null
           recipient_name?: string | null
           recipient_phone?: string
+          recovered_order_id?: string | null
+          replied_at?: string | null
           sender_phone?: string | null
           sent_via?: string
           status?: string
@@ -3363,6 +3567,13 @@ export type Database = {
           {
             foreignKeyName: "whatsapp_messages_order_id_fkey"
             columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_recovered_order_id_fkey"
+            columns: ["recovered_order_id"]
             isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
@@ -3605,6 +3816,34 @@ export type Database = {
       }
     }
     Views: {
+      customer_segments_v1: {
+        Row: {
+          customer_id: string | null
+          has_abandoned_cart: boolean | null
+          last_order_at: string | null
+          name: string | null
+          phone: string | null
+          store_id: string | null
+          total_orders: number | null
+          total_spent: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storefront_customers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storefront_customers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_customers_v: {
         Row: {
           created_at: string | null
@@ -3812,6 +4051,7 @@ export type Database = {
         Returns: undefined
       }
       admin_update_platform_wa_config: { Args: { _patch: Json }; Returns: Json }
+      attribute_wa_recovery: { Args: never; Returns: number }
       can_create_website_order: {
         Args: { _store_id: string }
         Returns: boolean
@@ -3842,6 +4082,15 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      expand_campaign_audience: {
+        Args: { _filter: Json; _limit?: number; _offset?: number }
+        Returns: {
+          customer_id: string
+          name: string
+          phone: string
+          store_id: string
+        }[]
       }
       generate_partner_code: { Args: never; Returns: string }
       get_admin_analytics: { Args: never; Returns: Json }
@@ -3965,6 +4214,7 @@ export type Database = {
         Returns: Json
       }
       get_today_analytics: { Args: { _store_id: string }; Returns: Json }
+      get_wa_platform_kpis: { Args: { _days?: number }; Returns: Json }
       get_whatsapp_mode: { Args: never; Returns: string }
       has_role: {
         Args: {

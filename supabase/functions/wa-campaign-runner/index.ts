@@ -1,9 +1,8 @@
-// Admin-triggered platform campaign runner.
-// Reads platform_wa_campaigns row, expands audience (very basic in Phase 1:
-// storefront_customers across all stores OR a single store_id filter),
-// sends in chunks via wa-platform-send.
+// Admin-triggered campaign runner.
+// Expands the audience via the expand_campaign_audience RPC (segments) and
+// enqueues sends into wa_send_queue. The queue worker handles delivery.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, normalizePhone, getCronSecret } from "../_shared/wa-platform.ts";
+import { corsHeaders, normalizePhone } from "../_shared/wa-platform.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -27,50 +26,45 @@ Deno.serve(async (req) => {
 
   const { data: camp } = await admin.from("platform_wa_campaigns").select("*").eq("id", body.campaign_id).maybeSingle();
   if (!camp) return json({ error: "not_found" }, 404);
+  if ((camp as any).status === "running") return json({ error: "already_running" }, 409);
 
-  await admin.from("platform_wa_campaigns").update({ status: "running" } as any).eq("id", body.campaign_id);
+  await admin.from("platform_wa_campaigns").update({ status: "running", started_at: new Date().toISOString() } as any).eq("id", body.campaign_id);
 
-  const filter = ((camp as any).audience_filter || {}) as { store_id?: string; all_stores?: boolean };
-  let q = admin.from("storefront_customers").select("phone, name, store_id").not("phone", "is", null);
-  if (filter.store_id) q = q.eq("store_id", filter.store_id);
-  const { data: customers } = await q.limit(5000);
-
-  let sent = 0, failed = 0;
-  for (const c of customers ?? []) {
-    const phone = normalizePhone((c as any).phone);
-    if (!phone) { failed++; continue; }
-    const resp = await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-cron-secret": (await getCronSecret(admin)) || "",
-        Authorization: `Bearer ${SERVICE_KEY}`,
-        apikey: SERVICE_KEY,
-      },
-      body: JSON.stringify({
-        mode: "automation",
-        store_id: (c as any).store_id,
-        recipient_phone: phone,
-        recipient_name: (c as any).name,
-        template_name: (camp as any).template_name,
-        template_params: [(c as any).name || "there"],
-        message_type: "campaign",
-      }),
-    });
-    if (resp.ok) sent++; else failed++;
+  const { data: audience, error: audErr } = await admin.rpc("expand_campaign_audience" as any, {
+    _filter: (camp as any).audience_filter || {},
+  });
+  if (audErr) {
+    await admin.from("platform_wa_campaigns").update({ status: "failed", failed_reason: audErr.message } as any).eq("id", body.campaign_id);
+    return json({ error: audErr.message }, 500);
   }
 
-  await admin
-    .from("platform_wa_campaigns")
-    .update({ status: "completed", sent_count: sent, failed_count: failed } as any)
+  let enqueued = 0, skipped = 0;
+  const rows = (audience as any[]) || [];
+  for (const c of rows) {
+    const phone = normalizePhone(c.phone);
+    if (!phone) { skipped++; continue; }
+    const { error } = await admin.from("wa_send_queue").insert({
+      store_id: c.store_id,
+      recipient_phone: phone,
+      recipient_name: c.name || null,
+      template_name: (camp as any).template_name,
+      message_type: "campaign",
+      params: [],
+      template_vars: { customer_name: c.name || "there" },
+      priority: 7,
+      scheduled_at: new Date().toISOString(),
+      campaign_id: (camp as any).id,
+    } as any);
+    if (error) skipped++; else enqueued++;
+  }
+
+  await admin.from("platform_wa_campaigns")
+    .update({ status: "queued", audience_size: rows.length, queued_count: enqueued } as any)
     .eq("id", body.campaign_id);
 
-  return json({ ok: true, sent, failed });
+  return json({ ok: true, audience: rows.length, enqueued, skipped });
 });
 
 function json(b: unknown, s = 200) {
-  return new Response(JSON.stringify(b), {
-    status: s,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }

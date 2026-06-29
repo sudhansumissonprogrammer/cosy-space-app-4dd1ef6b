@@ -21,6 +21,9 @@ type Cfg = {
   wa_daily_cap_per_phone: number;
   wa_access_token_present: boolean;
   wa_app_secret_present: boolean;
+  wa_queue_batch_size?: number;
+  wa_pilot_mode?: boolean;
+  wa_pilot_cohort?: string[];
 };
 
 export function AdminPlatformTab() {
@@ -163,6 +166,34 @@ export function AdminPlatformTab() {
               wa_max_cart_age_hours: cfg.wa_max_cart_age_hours,
               wa_daily_cap_per_phone: cfg.wa_daily_cap_per_phone,
             })}>Save window</Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Queue & pilot rollout</CardTitle>
+          <CardDescription>Limit sends to a small cohort while you validate, then disable pilot mode to enable everyone.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <Label>Queue batch size (per worker run)</Label>
+            <Input type="number" value={cfg.wa_queue_batch_size ?? 50} onChange={(e) => setCfg({ ...cfg, wa_queue_batch_size: Number(e.target.value) })} />
+          </div>
+          <div className="flex items-center gap-3 pt-6">
+            <Switch checked={!!cfg.wa_pilot_mode} onCheckedChange={(v) => setCfg({ ...cfg, wa_pilot_mode: v })} />
+            <Label className="text-sm">Pilot mode (only allow cohort stores)</Label>
+          </div>
+          <div className="sm:col-span-2">
+            <Label>Pilot store IDs (comma-separated UUIDs)</Label>
+            <Input value={(cfg.wa_pilot_cohort || []).join(",")} onChange={(e) => setCfg({ ...cfg, wa_pilot_cohort: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })} placeholder="store-uuid-1, store-uuid-2" />
+          </div>
+          <div className="sm:col-span-2">
+            <Button disabled={saving} onClick={update({
+              wa_queue_batch_size: cfg.wa_queue_batch_size ?? 50,
+              wa_pilot_mode: !!cfg.wa_pilot_mode,
+              wa_pilot_cohort: cfg.wa_pilot_cohort || [],
+            } as any)}>Save pilot config</Button>
           </div>
         </CardContent>
       </Card>

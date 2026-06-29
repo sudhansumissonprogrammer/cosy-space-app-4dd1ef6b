@@ -1,0 +1,12 @@
+
+ALTER TABLE public.wa_send_queue
+  ADD COLUMN IF NOT EXISTS template_vars JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+ALTER TABLE public.platform_wa_campaigns
+  ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS audience_size INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS queued_count INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS failed_reason TEXT;
+
+ALTER TABLE public.platform_config
+  ADD COLUMN IF NOT EXISTS wa_pilot_cohort UUID[] NOT NULL DEFAULT ARRAY[]::UUID[];

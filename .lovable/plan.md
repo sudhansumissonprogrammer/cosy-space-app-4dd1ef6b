@@ -1,254 +1,196 @@
+# Phase 1.5 — Production Hardening Before Merchant Onboarding
 
-# Phase 1 — Shared ShopBanao WhatsApp Platform
-
-Strict rule for this phase: **nothing is deleted**. Every existing per-store WhatsApp file, route, table, edge function, and UI block stays in the repo. We add a feature flag and a thin "platform mode" layer on top. Flipping the flag in Phase 2 brings the existing merchant system back online without code changes.
-
----
-
-## 1. The single feature flag
-
-Source of truth: `platform_config.whatsapp_mode` (text, one of `platform_only` | `dual_mode` | `merchant_only`). Default `platform_only`.
-
-- Server reads it inside edge functions directly from `platform_config`.
-- Client reads it via a new public RPC `get_whatsapp_mode()` (returns just the string, no secrets), cached in React Query for 10 min. Exposed through a tiny hook `useWhatsAppMode()`.
-- Convenience helper `isPlatformOnly()` used by every gate.
-
-No env var, no rebuild needed to flip — admin toggles it from the new admin page.
+Build on the Phase 1 shared platform without removing anything. Eight focused upgrades, then a controlled 5–10 store pilot.
 
 ---
 
-## 2. Database changes (one migration)
+## 1. Merchant Branding in Every Template
 
-Add columns to `platform_config` (table already holds `wa_phone_number_id`, `wa_access_token`, `wa_business_phone`):
+Every platform send must carry the store's identity, not "ShopBanao".
 
-- `whatsapp_mode text not null default 'platform_only'` (CHECK in trigger, not constraint)
-- `wa_enabled boolean not null default false` (global kill switch)
-- `wa_default_lang text default 'en'`
-- `wa_min_cart_age_minutes int default 30`
-- `wa_max_cart_age_hours int default 24`
-- `wa_daily_cap_per_phone int default 1`
+- Extend `wa-platform-send` to accept `store_id` and auto-resolve branding vars from `stores`: `{{store_name}}`, `{{store_phone}}`, `{{store_website}}` (full URL from slug/custom domain), `{{order_link}}`, `{{customer_name}}`.
+- New helper `_shared/wa-branding.ts` → `resolveBrandingVars(admin, store_id, extra)` returns the ordered `template_params` array based on the template's `variables[]` definition.
+- `platform_wa_templates.variables` becomes the contract; each template declares the variable order it expects. `wa-cart-recovery-cron`, `wa-order-event`, `wa-campaign-runner` all go through the resolver — no hand-built param arrays.
+- Admin UI: show a "Branding preview" panel in `AdminPlatformTemplatesTab` rendering the body with a sample store's values.
 
-New table `platform_wa_templates` (admin-managed, one library for all stores):
+## 2. Seed the Full Template Library
 
-- `name text primary key` (e.g. `abandoned_cart_v1`)
-- `purpose text` — one of `abandoned_cart | order_confirmation | payment_received | order_shipped | order_delivered | review_request | marketing`
-- `language text default 'en'`
-- `body_preview text` (admin-only documentation of the approved Meta body)
-- `variables text[]` (ordered: `{{1}}`,`{{2}}`,...)
-- `is_active boolean default true`
-- `created_at`, `updated_at`
+Seed all 10 templates as inactive rows in `platform_wa_templates` with documented body previews and variable lists. Admin activates each one as the matching Meta template is approved.
 
-New table `platform_wa_campaigns` (admin-only bulk sends):
+```
+abandoned_cart_v1, order_confirmation_v1, payment_success_v1,
+order_shipped_v1, order_delivered_v1, review_request_v1,
+coupon_offer_v1, festival_sale_v1, welcome_customer_v1, back_in_stock_v1
+```
 
-- `id`, `name`, `template_name`, `audience_filter jsonb`, `status`, `scheduled_at`, `sent_count`, `failed_count`, `created_by`, timestamps.
+Hook points wired now (fire only if the template is `is_active=true`):
+- `welcome_customer_v1` → first storefront signup (storefront-auth side effect).
+- `payment_success_v1` → existing payment webhooks (already calling `wa-order-event`).
+- `back_in_stock_v1` → new `wa-back-in-stock-cron` reading a small `back_in_stock_waitlist` table (added now, populated by a "Notify me" button later).
+- `review_request_v1` → cron 5 days after `order_delivered`.
 
-New table `stores_wa_settings` (one row per store, **only field**: a single toggle):
+## 3. Campaign Audience Segments
 
-- `store_id uuid pk references stores(id) on delete cascade`
-- `platform_marketing_enabled boolean not null default true`
-- `created_at`, `updated_at`
+Replace the current "all customers" filter with a typed segment selector.
 
-(Existing `whatsapp_config`, `whatsapp_templates`, `whatsapp_bulk_campaigns`, `whatsapp_scheduled`, `whatsapp_messages`, `whatsapp_optouts`, `whatsapp_orders` stay untouched. We only ADD.)
-
-Make `whatsapp_messages.store_id` nullable (platform sends with no store).
-Add `whatsapp_messages.sent_via text default 'merchant'` (`platform` | `merchant`) so Phase 2 can split reporting.
-Add `whatsapp_messages.template_name text` and `abandoned_cart_id` already exists.
-
-New RPCs (security definer, admin-only where noted):
-
-- `get_whatsapp_mode()` — public, returns text.
-- `admin_get_platform_wa_config()` — admin, returns config without exposing token raw (masked).
-- `admin_update_platform_wa_config(jsonb)` — admin only.
-- `admin_upsert_platform_template(...)` / `admin_list_platform_templates()` — admin only.
-- `set_store_platform_marketing(_store_id uuid, _enabled boolean)` — owner-of-store OR admin.
-- `get_store_platform_marketing(_store_id uuid)` — owner OR admin.
-
-All new tables get the standard GRANT + RLS block from the project rules.
-
----
-
-## 3. Edge functions
-
-**Add (new):**
-
-- `wa-platform-send` — single sender used by automation + admin test. Always reads `platform_config.wa_*`. Enforces:
-  - `wa_enabled = true`
-  - target phone not in `whatsapp_optouts`
-  - if call originates from automation, the source store has `stores_wa_settings.platform_marketing_enabled = true`
-  - daily-per-phone cap
-  - logs to `whatsapp_messages` with `sent_via='platform'`
-- `wa-cart-recovery-cron` — every 10 min. Selects unrecovered carts in the window, sends `abandoned_cart_v1` via `wa-platform-send`. Marks `recovery_sent_at`. Skips stores that flipped their toggle off, skips opt-outs, idempotent.
-- `wa-order-event` — invoked by `place-order`, payment webhooks, and shipping update points. Switches template by event type (`order_confirmation_v1`, `payment_received_v1`, `order_shipped_v1`, `order_delivered_v1`). Re-uses `wa-platform-send`. Single entry point so Phase 2 only swaps the sender.
-- `wa-campaign-runner` — admin-triggered batch. Reads `platform_wa_campaigns`, expands audience, calls `wa-platform-send` in chunks of 100 with backoff.
-
-**Modify (additive, no deletes):**
-
-- `whatsapp-send` (existing, per-store) — at the top, read `whatsapp_mode`. If `platform_only`, return `403 {code:"merchant_wa_disabled"}` immediately. Existing code path preserved for `dual_mode`/`merchant_only`.
-- `whatsapp-templates` (existing) — same gate. In `platform_only` returns "disabled in Phase 1".
-- `whatsapp-webhook` (existing) — keep handling delivery receipts for merchant sends. ADD: if inbound is for the platform number (`phone_number_id` matches `platform_config.wa_phone_number_id`), insert into `whatsapp_optouts` with `store_id=null` for STOP/UNSUBSCRIBE, and update platform message statuses. Verify `X-Hub-Signature-256` (already on roadmap from .lovable/plan.md Phase 2 #10).
-- `place-order`, `cashfree-webhook`, `payu-webhook`, `razorpay-verify`, shipping update flows — add a single fire-and-forget call to `wa-order-event`. Wrapped in try/catch so payment flow never fails because of WA.
-
-`supabase/config.toml`: append `verify_jwt = false` for `wa-cart-recovery-cron` and `wa-platform-send` when called internally (use a `CRON_SECRET` header check inside instead).
-
----
-
-## 4. Frontend — gating, not deletion
-
-### 4a. Hook + helper
-
-- `src/hooks/useWhatsAppMode.ts` (new) — React Query around `get_whatsapp_mode`, returns `{ mode, isPlatformOnly, isMerchantUiHidden }`.
-
-### 4b. Sidebar (`src/components/AppSidebar.tsx`)
-
-- Keep the existing "WhatsApp Marketing" entry import. Wrap the item so when `isPlatformOnly`, label changes to **"WhatsApp Marketing"** and links to a NEW lightweight page `StoreWhatsAppSimple.tsx`. In other modes, original route is used.
-
-### 4c. New store page `src/pages/StoreWhatsAppSimple.tsx`
-
-- Only UI element: a single toggle "Enable ShopBanao Marketing" backed by `set_store_platform_marketing`. Plus a small read-only panel listing what's automated (cart recovery, order confirmation, etc.) and a link to "View message history" → reuses the existing read-only message list component filtered to this store's `whatsapp_messages` rows.
-- Existing `WhatsAppMarketing.tsx` is NOT removed and NOT routed in `platform_only`. Route handled via conditional in `AuthRoutes.tsx`:
-
-  ```tsx
-  <Route path="stores/:storeSlug/whatsapp" element={
-    <WhatsAppGate
-      platform={<StoreWhatsAppSimple/>}
-      merchant={<WhatsAppMarketing/>}
-    />
-  }/>
+- New SQL view `customer_segments_v1` aggregating per `storefront_customer`: total_orders, total_spent, last_order_at, has_abandoned_cart, last_active_at.
+- `platform_wa_campaigns.audience_filter jsonb` schema:
+  ```json
+  { "segment": "vip" | "with_orders" | "no_orders" | "high_value" | "abandoned_cart" | "recent_30d" | "inactive_90d" | "all", "store_ids": ["..."] | null, "min_spent": 0, "max_spent": null }
   ```
+- `wa-campaign-runner` translates segment → SQL using a security-definer RPC `expand_campaign_audience(filter jsonb, limit int, offset int)`.
+- Admin UI: segment dropdown + live "estimated recipients" count before send.
 
-  `WhatsAppGate` reads the mode and renders one child. Both imports stay (lazy), so Phase 2 just flips the flag.
+## 4. Send Queue (no direct sends from campaigns/cron)
 
-### 4d. Abandoned Carts page (`src/pages/StoreAbandonedCarts.tsx`)
+- New table `wa_send_queue (id, store_id, recipient_phone, template_name, params jsonb, priority int, scheduled_at, attempts int default 0, max_attempts int default 4, status text default 'pending', last_error text, locked_until timestamptz, created_at)`.
+- Producers: `wa-cart-recovery-cron`, `wa-campaign-runner`, `wa-order-event` insert rows instead of calling Meta directly. (Test-send from admin still calls `wa-platform-send` directly.)
+- New worker `wa-queue-worker` invoked every 1 min by pg_cron:
+  - Claims up to N rows with `SELECT … FOR UPDATE SKIP LOCKED` + `locked_until = now()+2min`.
+  - Calls `wa-platform-send` with `x-cron-secret`.
+  - Marks `sent` / schedules retry on failure.
+- Throughput cap: configurable in `platform_config` (`wa_queue_batch_size`, default 50/min).
 
-- Keep all existing UI. Add a read-only status column showing `recovery_status` ("Sent by ShopBanao" / "—"). The "Send WhatsApp" buttons (currently commented out) stay commented; in `platform_only`, surface a tiny note: "Automatic recovery is on — managed by ShopBanao."
+## 5. Retry with Backoff
 
-### 4e. Store Settings
+- Backoff schedule: 1m → 5m → 30m → 2h → `failed` (4 attempts).
+- Classify Meta errors in `wa-platform-send` response so the queue worker can decide:
+  - Transient (rate limit, 5xx, network) → retry.
+  - Permanent (invalid number, template paused, opted-out) → mark `failed` immediately, log reason.
+- Surface `last_error` + attempt count in the admin queue view.
 
-- Hide any WhatsApp-credentials sub-tab when `isPlatformOnly`. Code stays in file; just `{!isPlatformOnly && <WhatsAppCredentialsTab/>}`.
+## 6. Analytics Tab
 
-### 4f. Admin page (`src/pages/admin/AdminWhatsApp.tsx`)
+New `AdminPlatformAnalyticsTab` driven by SQL views/RPCs:
 
-- Keep the existing 4 tabs (`AdminChatTab`, `AdminBulkTab`, `AdminTemplatesTab`, `AdminStatsTab`) — they stay in the repo.
-- Add a NEW first tab **"Platform"** containing:
-  - Mode selector (`platform_only` / `dual_mode` / `merchant_only`) with confirmation.
-  - Global kill switch (`wa_enabled`).
-  - Credentials form (phone number id, access token masked, business phone, app secret, default lang).
-  - Cart-recovery window inputs (min minutes, max hours, daily cap per phone).
-  - Test-send box (phone + template + vars).
-  - Health: webhook last-seen, last cron run, balance/quality (if available).
-- Add a NEW second tab **"Platform Templates"** — CRUD over `platform_wa_templates`.
-- Add a NEW third tab **"Platform Campaigns"** — CRUD over `platform_wa_campaigns` + "Run now".
-- Add a NEW fourth tab **"Opt-outs"** — list of `whatsapp_optouts`, manual add/remove.
-- Existing Chat / Bulk / Templates / Stats tabs are **hidden** (`{!isPlatformOnly && ...}`) but remain in code.
+- `wa_platform_metrics_daily` view: sent, delivered, read, replied, failed, opt-outs.
+- `wa_cart_recovery_metrics` RPC: carts targeted, messages delivered, carts recovered (orders within 48h with same phone), recovered revenue, recovery %.
+- `wa_campaign_metrics` per `platform_wa_campaigns.id`: sent, delivered, read, CTR (link clicks if we add click tracking later), replies, attributed orders, attributed revenue.
+- KPIs on top: Recovered Revenue (₹), Recovered Orders, Recovery %, Delivery %, Read %, Reply %, Failed %.
+- Required wiring: `whatsapp-webhook` already updates statuses; add `replied_at` timestamp on inbound and a `recovered_order_id` linker job that runs hourly to match orders ↔ recent abandoned-cart messages.
 
-### 4g. `src/lib/whatsappAutomation.ts`
+## 7. AI Campaign Writer (no chatbot)
 
-- Keep file. Wrap each function with: if `isPlatformOnly`, call `wa-order-event` edge function instead of the merchant-cred path. Both branches preserved.
+New tab `AdminAICampaignWriterTab`. Merchant/admin enters a brief: "Diwali offer, 15% off, jewellery store".
+
+- Edge fn `wa-ai-template-draft` calls the Lovable AI Gateway (`google/gemini-2.5-flash`) with a strict JSON schema response:
+  ```json
+  { "template_name": "diwali_15_off_v1", "headline": "...", "body": "...", "button_label": "Shop Now", "emoji_set": ["🪔","✨"], "coupon_code": "DIWALI15", "variables": ["{{1}}","{{2}}","{{3}}"], "category": "marketing" }
+  ```
+- "Save as draft template" inserts into `platform_wa_templates` with `is_active=false` so admin reviews → submits to Meta → activates.
+- No chatbot, no streaming, no per-customer AI — strictly a template drafting helper.
+
+## 8. Pilot Rollout (5–10 stores)
+
+- Add `stores_wa_settings.pilot_cohort boolean default false`.
+- `wa_enabled` global stays ON, but every producer (`wa-cart-recovery-cron`, `wa-order-event`, `wa-campaign-runner`) checks: if `platform_config.wa_pilot_mode = true`, only enqueue for stores where `pilot_cohort = true`.
+- Admin tab toggle: "Pilot mode" + multi-select to mark cohort stores.
+- After 7 days of clean metrics, flip `wa_pilot_mode = false` → all stores live.
 
 ---
 
-## 5. Files touched (no deletions)
+## Technical section
 
-```text
-NEW   src/hooks/useWhatsAppMode.ts
-NEW   src/components/whatsapp/WhatsAppGate.tsx
-NEW   src/pages/StoreWhatsAppSimple.tsx
-NEW   src/components/admin/whatsapp/AdminPlatformTab.tsx
-NEW   src/components/admin/whatsapp/AdminPlatformTemplatesTab.tsx
-NEW   src/components/admin/whatsapp/AdminPlatformCampaignsTab.tsx
-NEW   src/components/admin/whatsapp/AdminOptOutsTab.tsx
-NEW   supabase/functions/wa-platform-send/index.ts
-NEW   supabase/functions/wa-cart-recovery-cron/index.ts
-NEW   supabase/functions/wa-order-event/index.ts
-NEW   supabase/functions/wa-campaign-runner/index.ts
-NEW   migration: platform_config cols + stores_wa_settings + platform_wa_templates
-                + platform_wa_campaigns + RPCs + grants + RLS
+### Migration (single file)
 
-EDIT  src/routes/AuthRoutes.tsx                      (wrap /whatsapp route in WhatsAppGate)
-EDIT  src/components/AppSidebar.tsx                  (label/icon stays, gate target)
-EDIT  src/pages/admin/AdminWhatsApp.tsx              (prepend Platform tabs, hide old ones in platform_only)
-EDIT  src/pages/StoreAbandonedCarts.tsx              (read-only recovery status badge + banner)
-EDIT  src/pages/StoreSettings.tsx                    (hide WA credentials section)
-EDIT  src/lib/whatsappAutomation.ts                  (dispatch to platform sender in platform_only)
-EDIT  supabase/functions/whatsapp-send/index.ts      (early return if platform_only)
-EDIT  supabase/functions/whatsapp-templates/index.ts (early return if platform_only)
-EDIT  supabase/functions/whatsapp-webhook/index.ts   (handle platform number inbound)
-EDIT  supabase/functions/place-order/index.ts        (fire wa-order-event)
-EDIT  supabase/functions/cashfree-webhook/index.ts   (fire wa-order-event on paid)
-EDIT  supabase/functions/payu-webhook/index.ts       (fire wa-order-event on paid)
-EDIT  supabase/functions/razorpay-verify/index.ts    (fire wa-order-event on paid)
-EDIT  supabase/config.toml                           (verify_jwt entries for new fns)
-INSERT pg_cron schedule for wa-cart-recovery-cron every 10 min
+```sql
+-- Branding + queue + analytics support
+ALTER TABLE platform_config
+  ADD COLUMN wa_queue_batch_size int NOT NULL DEFAULT 50,
+  ADD COLUMN wa_pilot_mode boolean NOT NULL DEFAULT true;
 
-UNTOUCHED (Phase 2 assets, kept in repo):
-  src/pages/WhatsAppMarketing.tsx
-  src/components/admin/whatsapp/AdminChatTab.tsx
-  src/components/admin/whatsapp/AdminBulkTab.tsx
-  src/components/admin/whatsapp/AdminTemplatesTab.tsx
-  src/components/admin/whatsapp/AdminStatsTab.tsx
-  Tables: whatsapp_config, whatsapp_templates, whatsapp_bulk_campaigns,
-          whatsapp_scheduled, whatsapp_orders
-  Edge fns: whatsapp-send, whatsapp-templates (gated, not deleted)
+ALTER TABLE stores_wa_settings
+  ADD COLUMN pilot_cohort boolean NOT NULL DEFAULT false;
+
+ALTER TABLE platform_wa_templates
+  ADD COLUMN category text DEFAULT 'transactional',
+  ADD COLUMN button_label text,
+  ADD COLUMN headline text;
+
+ALTER TABLE whatsapp_messages
+  ADD COLUMN replied_at timestamptz,
+  ADD COLUMN delivered_at timestamptz,
+  ADD COLUMN read_at timestamptz,
+  ADD COLUMN recovered_order_id uuid REFERENCES orders(id);
+
+-- Queue
+CREATE TABLE wa_send_queue (...);
+GRANT SELECT, INSERT, UPDATE, DELETE ON wa_send_queue TO service_role;
+ALTER TABLE wa_send_queue ENABLE ROW LEVEL SECURITY;
+CREATE POLICY admin_all ON wa_send_queue FOR ALL TO authenticated
+  USING (has_role(auth.uid(),'admin')) WITH CHECK (has_role(auth.uid(),'admin'));
+
+-- Back-in-stock waitlist
+CREATE TABLE back_in_stock_waitlist (...);
+
+-- Segments view
+CREATE VIEW customer_segments_v1 AS (...);
+
+-- RPCs: expand_campaign_audience, get_wa_platform_kpis, get_wa_recovery_metrics
 ```
 
----
+### New edge functions
 
-## 6. Automation routing diagram
-
-```text
-checkout / payment / shipping event
-            │
-            ▼
-   whatsappAutomation.ts ──► wa-order-event ──► wa-platform-send ──► Meta Cloud API
-            │                                          ▲
-            │                                          │ (Phase 2: branch on whatsapp_mode)
-            └──► (Phase 2 path) whatsapp-send (merchant creds)
-
-pg_cron every 10 min ──► wa-cart-recovery-cron ──► wa-platform-send
-
-admin → AdminPlatformTab → wa-platform-send (test)
-admin → Campaigns → wa-campaign-runner → wa-platform-send
+```
+supabase/functions/wa-queue-worker/index.ts        (cron, 1 min)
+supabase/functions/wa-back-in-stock-cron/index.ts  (cron, hourly)
+supabase/functions/wa-recovery-attribution/index.ts (cron, hourly — link orders → cart msgs)
+supabase/functions/wa-ai-template-draft/index.ts   (admin auth)
+supabase/functions/_shared/wa-branding.ts          (resolveBrandingVars)
 ```
 
-Only `wa-platform-send` talks to Meta. Phase 2 adds the merchant branch inside that one file.
+### Edited edge functions
+
+- `wa-platform-send`: accept `store_id`, auto-resolve branding vars when `template_params` omitted; return structured error class (`transient` | `permanent`).
+- `wa-cart-recovery-cron`, `wa-campaign-runner`, `wa-order-event`: enqueue instead of direct send; honor `wa_pilot_mode` + `pilot_cohort`.
+- `whatsapp-webhook`: stamp `delivered_at`, `read_at`, `replied_at`.
+
+### New / edited frontend
+
+```
+NEW  src/components/admin/whatsapp/AdminPlatformAnalyticsTab.tsx
+NEW  src/components/admin/whatsapp/AdminQueueTab.tsx
+NEW  src/components/admin/whatsapp/AdminAICampaignWriterTab.tsx
+NEW  src/components/admin/whatsapp/AudienceSegmentPicker.tsx
+NEW  src/components/admin/whatsapp/TemplateBrandingPreview.tsx
+EDIT src/pages/admin/AdminWhatsApp.tsx               (add 3 tabs + pilot toggle)
+EDIT src/components/admin/whatsapp/AdminPlatformTab.tsx
+       (pilot mode toggle, queue batch size, cohort multi-select)
+EDIT src/components/admin/whatsapp/AdminPlatformTemplatesTab.tsx
+       (seed all 10, branding preview, AI-draft import)
+EDIT src/components/admin/whatsapp/AdminPlatformCampaignsTab.tsx
+       (segment picker, estimated audience count, queue-based runner)
+```
+
+### Cron schedule
+
+```
+*/1  *  *  *  *  wa-queue-worker
+*/10 *  *  *  *  wa-cart-recovery-cron       (already)
+0    *  *  *  *  wa-back-in-stock-cron
+0    *  *  *  *  wa-recovery-attribution
+```
+
+### Secrets
+
+No new secrets needed; reuses `CRON_SECRET`, existing platform WA creds, and `LOVABLE_API_KEY` for the AI writer.
 
 ---
 
-## 7. Secrets required
+## Build order (incremental, safe)
 
-- `PLATFORM_WA_PHONE_NUMBER_ID`, `PLATFORM_WA_ACCESS_TOKEN`, `PLATFORM_WA_BUSINESS_PHONE`, `META_APP_SECRET`, `CRON_SECRET`.
-- Stored via secrets tool (token never in DB plaintext; `platform_config.wa_access_token` becomes nullable cache only for display masking — actual send uses the secret).
+1. Migration + queue table + queue worker + retry classification.
+2. Switch all three producers to enqueue. Verify deliveries unchanged.
+3. Branding helper + reseed all 10 templates (inactive).
+4. Segments view + RPC + segment picker.
+5. Analytics views + RPCs + attribution cron + Analytics tab.
+6. AI Campaign Writer edge function + tab.
+7. Pilot mode flag + cohort selector. Enable for 5–10 stores.
+8. After 7 days clean: flip `wa_pilot_mode = false`.
 
----
+## Open questions
 
-## 8. Testing plan
-
-1. **Migration** dry-run on dev DB. Confirm RLS + GRANT.
-2. **Mode flag**: flip `whatsapp_mode='merchant_only'` → existing `WhatsAppMarketing.tsx` loads, sidebar shows old item. Flip back to `platform_only` → simple toggle page loads. Proves nothing is deleted.
-3. **Admin Platform tab**: save credentials, send a test message to a real phone, verify delivery + row in `whatsapp_messages` with `sent_via='platform'`.
-4. **Templates**: create `abandoned_cart_v1`. Trigger a fake abandoned cart (`abandoned_carts` insert with phone). Wait for cron OR call cron function manually. Verify message received, `recovery_sent_at` set, idempotent on second run.
-5. **Order events**: place a COD order on a test store with the store toggle ON → expect `order_confirmation_v1` delivered. Toggle OFF on the store → next order produces no message but order still succeeds.
-6. **Opt-out**: reply STOP → row appears in `whatsapp_optouts(store_id=null)`. Re-trigger automation for same phone → skipped.
-7. **Kill switch**: set `wa_enabled=false` → every channel (cron, orders, campaigns, test send) returns "disabled".
-8. **Failure isolation**: break Meta token → payment + checkout still succeed; failed rows logged.
-9. **Daily cap**: send twice to same phone within 24h via cron → second is skipped.
-10. **Webhook signature**: send forged webhook → rejected 401.
-
----
-
-## 9. Rollout
-
-1. Ship migration + new edge functions with `wa_enabled=false`.
-2. Add secrets, save platform credentials, create one template, flip kill switch ON for a single pilot store (toggle their `stores_wa_settings.platform_marketing_enabled=true`, everyone else OFF).
-3. Watch logs for 24 h.
-4. Enable for all stores by default (`stores_wa_settings.platform_marketing_enabled` is already `true` by default).
-5. Phase 2 work begins by setting `whatsapp_mode='dual_mode'` — no rewrites needed.
-
----
-
-## Open questions before build
-
-1. **Default per-store state**: `platform_marketing_enabled` defaults to `true` so every existing store opts in immediately, or `false` so each merchant must opt in? (Recommend `true`, with a one-time email/notification.)
-2. **Template names**: confirm the 6 names listed (`abandoned_cart_v1`, `order_confirmation_v1`, `payment_received_v1`, `order_shipped_v1`, `order_delivered_v1`, `review_request_v1`) — we'll seed them as inactive rows; you fill the approved Meta names later.
-3. **Branding in template body**: do we hard-code "Sent by ShopBanao on behalf of {{store_name}}" footer, or pure `{{store_name}}` only? Affects how the templates are submitted to Meta.
-4. **Phase-1 message history for merchants**: show the merchant their own platform-sent messages (read-only) inside `StoreWhatsAppSimple`, or hide entirely? (Recommend show read-only — useful for support.)
+1. Pilot cohort — pick stores yourself or want me to suggest top 10 by recent abandoned-cart volume?
+2. AI writer model — `google/gemini-2.5-flash` (fast, free during promo) or `google/gemini-2.5-pro` (higher quality)?
+3. Recovery attribution window — 48h after message default, or 24h / 72h?
+4. Click tracking — add a `wa.shopbanao.in/r/{token}` redirector now (for CTR) or defer to Phase 2?
