@@ -1,0 +1,2 @@
+UPDATE public.platform_wa_templates SET category = 'utility' WHERE name IN ('order_confirmation_v1','order_shipped_v1','payment_success_v1','order_delivered_v1');
+UPDATE public.platform_wa_templates SET category = 'marketing' WHERE name IN ('abandoned_cart_v1','coupon_offer_v1','festival_sale_v1','back_in_stock_v1','review_request_v1','welcome_customer_v1');
