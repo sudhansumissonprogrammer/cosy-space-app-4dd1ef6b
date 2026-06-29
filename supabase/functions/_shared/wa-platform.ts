@@ -7,10 +7,16 @@ export const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
+// Normalize to E.164 digits-only (no '+'). Bare 10-digit Indian numbers get '91' prefix.
+// Reject anything that can't be coerced to a plausible international number.
 export function normalizePhone(raw: string | null | undefined): string | null {
   if (!raw) return null;
-  const digits = String(raw).replace(/[^\d]/g, "");
-  if (digits.length < 8 || digits.length > 15) return null;
+  let digits = String(raw).replace(/[^\d]/g, "");
+  // Strip Indian trunk prefix '0' if 11 digits like 0XXXXXXXXXX
+  if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
+  // Default to India country code when caller passed a bare 10-digit mobile
+  if (digits.length === 10 && /^[6-9]/.test(digits)) digits = "91" + digits;
+  if (digits.length < 11 || digits.length > 15) return null;
   return digits;
 }
 
