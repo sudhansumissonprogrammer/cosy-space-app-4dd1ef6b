@@ -13,6 +13,7 @@ const jewelryHome = _img("showcase-jewelry-home.webp");
 const jewelryProduct = _img("showcase-jewelry-product.webp");
 const jewelryCart = _img("showcase-jewelry-cart.webp");
 const jewelryShop = _img("showcase-jewelry-shop.webp");
+const jewelryCheckout = _img("showcase-jewelry-checkout.webp");
 const fashionHome = _img("showcase-fashion-home.webp");
 const fashionCategory = _img("showcase-fashion-category.webp");
 const fashionAllCategories = _img("showcase-fashion-allcategories.webp");
@@ -20,12 +21,17 @@ const fashionSearch = _img("showcase-fashion-search.webp");
 const overlaysHome = _img("showcase-overlays-home.webp");
 const overlaysProduct = _img("showcase-overlays-product.webp");
 const overlaysWishlist = _img("showcase-overlays-wishlist.webp");
+const overlaysCart = _img("showcase-overlays-cart.webp");
 const arrokHome = _img("showcase-arrok-home.webp");
 const arrokShop = _img("showcase-arrok-shop.webp");
 const arrokCategories = _img("showcase-arrok-categories.webp");
+const arrokProduct = _img("showcase-arrok-product.webp");
+const arrokCart = _img("showcase-arrok-cart.webp");
 const medivaHome = _img("showcase-mediva-home.webp");
 const medivaShop = _img("showcase-mediva-shop.webp");
 const medivaCategories = _img("showcase-mediva-categories.webp");
+const medivaProduct = _img("showcase-mediva-product.webp");
+const medivaCheckout = _img("showcase-mediva-checkout.webp");
 
 const stores = [
   {
@@ -37,6 +43,7 @@ const stores = [
       { label: "Shop Page", img: jewelryShop },
       { label: "Product Page", img: jewelryProduct },
       { label: "Cart Page", img: jewelryCart },
+      { label: "Checkout", img: jewelryCheckout },
     ],
   },
   {
@@ -47,6 +54,8 @@ const stores = [
       { label: "Home Page", img: arrokHome },
       { label: "Shop All", img: arrokShop },
       { label: "Categories", img: arrokCategories },
+      { label: "Product Page", img: arrokProduct },
+      { label: "Cart Page", img: arrokCart },
     ],
   },
   {
@@ -57,6 +66,8 @@ const stores = [
       { label: "Home Page", img: medivaHome },
       { label: "Shop All", img: medivaShop },
       { label: "Categories", img: medivaCategories },
+      { label: "Product Page", img: medivaProduct },
+      { label: "Checkout", img: medivaCheckout },
     ],
   },
   {
@@ -77,6 +88,7 @@ const stores = [
     screens: [
       { label: "Home Page", img: overlaysHome },
       { label: "Product Page", img: overlaysProduct },
+      { label: "Cart Page", img: overlaysCart },
       { label: "Wishlist", img: overlaysWishlist },
     ],
   },
