@@ -19,6 +19,7 @@ type Cfg = {
   wa_min_cart_age_minutes: number;
   wa_max_cart_age_hours: number;
   wa_daily_cap_per_phone: number;
+  wa_tier_limit?: number;
   wa_access_token_present: boolean;
   wa_app_secret_present: boolean;
   wa_queue_batch_size?: number;
