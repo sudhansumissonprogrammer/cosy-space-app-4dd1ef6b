@@ -154,6 +154,7 @@ export default function V22CheckoutPage() {
   const [city, setCity] = useState(buyNowAddress?.city || savedInfo.city || "");
   const [state, setState] = useState(buyNowAddress?.state || savedInfo.state || "");
   const [pincode, setPincode] = useState(buyNowAddress?.pincode || savedInfo.pincode || "");
+  const [waConsent, setWaConsent] = useState<boolean>(savedInfo.waConsent !== false);
 
   // Re-check localStorage for late-arriving address data (Theme-16 geocode race condition).
   // Event-driven: writers dispatch "checkout_address_ready" on the window after setItem.
@@ -706,7 +707,7 @@ export default function V22CheckoutPage() {
           customer_email: email || null,
           customer_phone: normalizePhone(phone) || null,
           cart_items: checkoutItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity, productId: i.productId })),
-          wa_marketing_consent: true,
+          wa_marketing_consent: waConsent,
         }).select("id").single();
         if (data?.id) {
           setAbandonedCartId(data.id);
@@ -1959,6 +1960,15 @@ export default function V22CheckoutPage() {
             </button>
           </div>
         )}
+        <label className="mb-3 flex items-start gap-2 text-xs text-muted-foreground select-none cursor-pointer">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 accent-primary cursor-pointer"
+            checked={waConsent}
+            onChange={(e) => setWaConsent(e.target.checked)}
+          />
+          <span>Send me order updates &amp; offers on WhatsApp</span>
+        </label>
         <button
           className="group relative flex h-14 w-full items-center justify-center gap-2 overflow-hidden text-base font-bold btn-gold shadow-lg shadow-primary/20 transition-[transform,opacity,colors,box-shadow] hover:shadow-xl hover:shadow-primary/30 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           style={{ borderRadius: "var(--storefront-button-radius, 0.75rem)" }}

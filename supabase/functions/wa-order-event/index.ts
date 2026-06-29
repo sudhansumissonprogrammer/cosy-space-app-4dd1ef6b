@@ -30,6 +30,13 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch { return json({ error: "bad json" }, 400); }
   if (!body.event || !body.order_id) return json({ error: "event + order_id required" }, 400);
 
+  // Only these two events are enabled platform-wide right now.
+  // Abandoned cart is handled by a separate cron. Everything else is disabled.
+  const ALLOWED: Event[] = ["order_confirmation", "order_shipped"];
+  if (!ALLOWED.includes(body.event)) {
+    return json({ skipped: true, reason: "event_disabled" });
+  }
+
   const { data: order } = await admin
     .from("orders")
     .select("id, store_id, customer_phone, customer_name, total, currency, tracking_url, tracking_number, order_number, stores:store_id(name, slug, custom_domain)")
