@@ -19,6 +19,7 @@ type Cfg = {
   wa_min_cart_age_minutes: number;
   wa_max_cart_age_hours: number;
   wa_daily_cap_per_phone: number;
+  wa_tier_limit?: number;
   wa_access_token_present: boolean;
   wa_app_secret_present: boolean;
   wa_queue_batch_size?: number;
@@ -180,6 +181,17 @@ export function AdminPlatformTab() {
             <Label>Queue batch size (per worker run)</Label>
             <Input type="number" value={cfg.wa_queue_batch_size ?? 50} onChange={(e) => setCfg({ ...cfg, wa_queue_batch_size: Number(e.target.value) })} />
           </div>
+          <div>
+            <Label>Daily tier limit (sender)</Label>
+            <Input
+              type="number"
+              value={cfg.wa_tier_limit ?? 250}
+              onChange={(e) => setCfg({ ...cfg, wa_tier_limit: Number(e.target.value) })}
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Hard cap on outgoing platform sends per 24h. New WABA = 250. Increase as Meta upgrades your tier (1k → 10k → 100k → unlimited).
+            </p>
+          </div>
           <div className="flex items-center gap-3 pt-6">
             <Switch checked={!!cfg.wa_pilot_mode} onCheckedChange={(v) => setCfg({ ...cfg, wa_pilot_mode: v })} />
             <Label className="text-sm">Pilot mode (only allow cohort stores)</Label>
@@ -191,6 +203,7 @@ export function AdminPlatformTab() {
           <div className="sm:col-span-2">
             <Button disabled={saving} onClick={update({
               wa_queue_batch_size: cfg.wa_queue_batch_size ?? 50,
+              wa_tier_limit: cfg.wa_tier_limit ?? 250,
               wa_pilot_mode: !!cfg.wa_pilot_mode,
               wa_pilot_cohort: cfg.wa_pilot_cohort || [],
             } as any)}>Save pilot config</Button>
