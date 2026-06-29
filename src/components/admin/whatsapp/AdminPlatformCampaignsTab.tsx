@@ -4,32 +4,33 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { AudienceSegmentPicker, type AudienceFilter } from "./AudienceSegmentPicker";
 
 export function AdminPlatformCampaignsTab() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [template, setTemplate] = useState("");
-  const [audience, setAudience] = useState('{"all_stores": true}');
+  const [audience, setAudience] = useState<AudienceFilter>({ segment: "all", store_id: null });
 
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase.from("platform_wa_campaigns" as any).select("*").order("created_at", { ascending: false }).limit(50);
-    if (error) toast.error(error.message);
-    else setRows((data as any) || []);
+    if (error) toast.error(error.message); else setRows((data as any) || []);
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
 
   const create = async () => {
-    let audJson: any = {};
-    try { audJson = JSON.parse(audience); } catch { toast.error("Audience must be valid JSON"); return; }
-    const { error } = await supabase.from("platform_wa_campaigns" as any).insert({ name, template_name: template, audience_filter: audJson, status: "draft" } as any);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Created"); setName(""); setTemplate(""); load();
+    if (!name || !template) return toast.error("Name and template required");
+    const { error } = await supabase.from("platform_wa_campaigns" as any).insert({
+      name, template_name: template, audience_filter: audience as any, status: "draft",
+    } as any);
+    if (error) return toast.error(error.message);
+    toast.success("Created");
+    setName(""); setTemplate(""); load();
   };
 
   const run = async (id: string) => {
@@ -40,12 +41,18 @@ export function AdminPlatformCampaignsTab() {
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader><CardTitle className="text-base">New campaign</CardTitle><CardDescription>Admin-only marketing send via the platform number.</CardDescription></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base">New campaign</CardTitle>
+          <CardDescription>Admin-only marketing send via the platform number. Audience is expanded to the queue at run time.</CardDescription>
+        </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <div><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
-          <div><Label>Template name</Label><Input value={template} onChange={(e) => setTemplate(e.target.value)} /></div>
-          <div className="sm:col-span-2"><Label>Audience filter (JSON)</Label><Textarea rows={3} value={audience} onChange={(e) => setAudience(e.target.value)} /></div>
-          <div className="sm:col-span-2"><Button onClick={create}>Create</Button></div>
+          <div><Label>Template name</Label><Input value={template} onChange={(e) => setTemplate(e.target.value)} placeholder="festival_sale_v1" /></div>
+          <div className="sm:col-span-2">
+            <Label className="mb-2 block">Audience</Label>
+            <AudienceSegmentPicker value={audience} onChange={setAudience} />
+          </div>
+          <div className="sm:col-span-2"><Button onClick={create}>Create draft</Button></div>
         </CardContent>
       </Card>
 
@@ -54,12 +61,14 @@ export function AdminPlatformCampaignsTab() {
           <CardContent className="p-0 divide-y">
             {rows.map((r) => (
               <div key={r.id} className="flex items-center gap-3 p-3">
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{r.name}</p>
-                  <p className="text-xs text-muted-foreground">{r.template_name} · sent {r.sent_count} · failed {r.failed_count}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{r.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {r.template_name} · audience {r.audience_size || 0} · queued {r.queued_count || 0} · sent {r.sent_count} · failed {r.failed_count}
+                  </p>
                 </div>
                 <Badge variant={r.status === "completed" ? "default" : "secondary"}>{r.status}</Badge>
-                <Button size="sm" variant="outline" onClick={() => run(r.id)}>Run</Button>
+                <Button size="sm" variant="outline" onClick={() => run(r.id)} disabled={r.status === "running"}>Run</Button>
               </div>
             ))}
             {!rows.length && <div className="p-6 text-sm text-muted-foreground">No campaigns.</div>}
