@@ -1709,15 +1709,21 @@ export type Database = {
       platform_wa_templates: {
         Row: {
           body_preview: string | null
+          body_text: string | null
           button_label: string | null
           button_url_pattern: string | null
+          buttons: Json
           category: string | null
           created_at: string
+          created_by: string | null
           footer_text: string | null
+          header_text: string | null
+          header_type: string | null
           headline: string | null
           is_active: boolean
           language: string
           last_synced_at: string | null
+          meta_rejected_reason: string | null
           meta_status: string | null
           meta_template_id: string | null
           name: string
@@ -1725,20 +1731,27 @@ export type Database = {
           paused: boolean | null
           purpose: string
           quality_score: string | null
+          submitted_at: string | null
           updated_at: string
           variables: string[]
         }
         Insert: {
           body_preview?: string | null
+          body_text?: string | null
           button_label?: string | null
           button_url_pattern?: string | null
+          buttons?: Json
           category?: string | null
           created_at?: string
+          created_by?: string | null
           footer_text?: string | null
+          header_text?: string | null
+          header_type?: string | null
           headline?: string | null
           is_active?: boolean
           language?: string
           last_synced_at?: string | null
+          meta_rejected_reason?: string | null
           meta_status?: string | null
           meta_template_id?: string | null
           name: string
@@ -1746,20 +1759,27 @@ export type Database = {
           paused?: boolean | null
           purpose: string
           quality_score?: string | null
+          submitted_at?: string | null
           updated_at?: string
           variables?: string[]
         }
         Update: {
           body_preview?: string | null
+          body_text?: string | null
           button_label?: string | null
           button_url_pattern?: string | null
+          buttons?: Json
           category?: string | null
           created_at?: string
+          created_by?: string | null
           footer_text?: string | null
+          header_text?: string | null
+          header_type?: string | null
           headline?: string | null
           is_active?: boolean
           language?: string
           last_synced_at?: string | null
+          meta_rejected_reason?: string | null
           meta_status?: string | null
           meta_template_id?: string | null
           name?: string
@@ -1767,6 +1787,7 @@ export type Database = {
           paused?: boolean | null
           purpose?: string
           quality_score?: string | null
+          submitted_at?: string | null
           updated_at?: string
           variables?: string[]
         }
@@ -3582,6 +3603,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wa_template_audit: {
+        Row: {
+          action: string
+          actor: string | null
+          created_at: string
+          detail: Json | null
+          id: string
+          meta_status: string | null
+          template_name: string
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          created_at?: string
+          detail?: Json | null
+          id?: string
+          meta_status?: string | null
+          template_name: string
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          created_at?: string
+          detail?: Json | null
+          id?: string
+          meta_status?: string | null
+          template_name?: string
+        }
+        Relationships: []
       }
       webhook_events: {
         Row: {
