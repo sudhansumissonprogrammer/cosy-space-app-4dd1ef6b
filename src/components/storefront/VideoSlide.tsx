@@ -50,9 +50,21 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
 
   return (
     <div
-      className="relative flex-[0_0_100%] min-w-0 bg-black"
+      className="relative flex-[0_0_100%] min-w-0 bg-black aspect-[4/5] sm:aspect-square overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
+      {/* Poster fallback — guarantees the slide is never blank even if the
+          <video> element fails to load (CSP media-src block, slow network,
+          decoder error in Instagram/FB in-app browser). */}
+      {poster && (
+        <img
+          src={poster}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 w-full h-full object-contain bg-black"
+          draggable={false}
+        />
+      )}
       <video
         ref={videoRef}
         src={url}
@@ -60,7 +72,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         preload="metadata"
         playsInline
         disablePictureInPicture
-        className="w-full h-auto max-h-[80vh] object-contain bg-black"
+        className="relative z-[1] w-full h-full object-contain bg-black"
         onClick={(e) => {
           e.stopPropagation();
           handleToggle();
