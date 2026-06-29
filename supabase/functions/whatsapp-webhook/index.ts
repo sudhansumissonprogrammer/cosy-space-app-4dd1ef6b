@@ -191,14 +191,18 @@ Deno.serve(async (req) => {
           const caption = msg[msgType]?.caption || "";
           const finalBody = msgBody || caption || (mediaType ? `[${mediaType}]` : "");
 
-          // Opt-out keywords — contains-match across English + common Hindi/Hinglish.
-          const optOutPatterns = [
-            "stop", "unsubscribe", "opt out", "optout", "cancel", "remove me",
-            "do not message", "dont message", "don't message", "no more",
-            "बंद", "बंद करो", "रोको", "मत भेजो", "हटाओ",
-          ];
-          const lowered = finalBody.toLowerCase();
-          const isOptOut = optOutPatterns.some((kw) => lowered.includes(kw.toLowerCase()));
+          // Opt-out keywords — exact whole-word match (avoids false positives like
+          // "cancel my order"). Short message + exact keyword = opt-out intent.
+          const STOP_WORDS = new Set([
+            "stop", "unsubscribe", "optout",
+            "remove", "बंद", "रोको", "हटाओ",
+          ]);
+          const STOP_PHRASES = ["opt out", "remove me", "do not message", "dont message", "don't message", "no more", "बंद करो", "मत भेजो"];
+          const lowered = finalBody.toLowerCase().trim();
+          const tokens = lowered.split(/\s+/);
+          const isOptOut = (tokens.length <= 4 && tokens.some((t) => STOP_WORDS.has(t)))
+            || STOP_PHRASES.some((p) => lowered.includes(p));
+
 
 
           if (!from) continue;
