@@ -44,13 +44,12 @@ export default function StoreWhatsAppSimple() {
     toast.success(value ? "ShopBanao marketing enabled" : "ShopBanao marketing disabled");
   };
 
+  // Only these three automations are live today. Don't list features we don't
+  // actually fire — it sets wrong expectations with merchants.
   const automations = [
-    { icon: ShoppingCart, label: "Abandoned cart recovery", desc: "Customers who left items get a friendly nudge automatically." },
-    { icon: CheckCircle2, label: "Order confirmation", desc: "Instant WhatsApp confirmation after every order." },
-    { icon: Sparkles, label: "Payment received", desc: "Customer sees a thank-you the moment payment clears." },
-    { icon: Truck, label: "Shipping update", desc: "Tracking link goes out as soon as you ship." },
-    { icon: PackageCheck, label: "Delivery update", desc: "Confirmation message when the order is delivered." },
-    { icon: Star, label: "Review request", desc: "Polite review ask a few days after delivery." },
+    { icon: CheckCircle2, label: "Order confirmation", desc: "Instant WhatsApp confirmation the moment an order is placed." },
+    { icon: Truck, label: "Shipping update", desc: "Tracking link goes out automatically when you mark the order shipped with a tracking number." },
+    { icon: ShoppingCart, label: "Abandoned cart recovery", desc: "Customers who left items in their cart get one friendly reminder." },
   ];
 
   return (

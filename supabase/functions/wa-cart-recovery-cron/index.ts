@@ -38,8 +38,22 @@ Deno.serve(async (req) => {
   if (error) return json({ error: error.message }, 500);
   if (!carts?.length) return json({ processed: 0 });
 
-  let enqueued = 0, skipped = 0;
+  // 🔒 Honor each store's master WhatsApp toggle. Default = true (column default),
+  // so a store row only blocks if the merchant explicitly turned it OFF.
+  const storeIds = Array.from(new Set(carts.map((c: any) => c.store_id).filter(Boolean)));
+  const { data: settings } = await admin
+    .from("stores_wa_settings")
+    .select("store_id, platform_marketing_enabled")
+    .in("store_id", storeIds);
+  const disabled = new Set(
+    (settings || [])
+      .filter((s: any) => s.platform_marketing_enabled === false)
+      .map((s: any) => s.store_id),
+  );
+
+  let enqueued = 0, skipped = 0, storeOff = 0;
   for (const c of carts) {
+    if (disabled.has((c as any).store_id)) { storeOff++; continue; }
     const phone = normalizePhone((c as any).customer_phone);
     if (!phone) { skipped++; continue; }
 
@@ -71,7 +85,7 @@ Deno.serve(async (req) => {
       .eq("id", (c as any).id);
   }
 
-  return json({ processed: carts.length, enqueued, skipped });
+  return json({ processed: carts.length, enqueued, skipped, store_off: storeOff });
 });
 
 function json(b: unknown, s = 200) {
