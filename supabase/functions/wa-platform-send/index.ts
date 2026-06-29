@@ -98,6 +98,19 @@ Deno.serve(async (req) => {
     if ((sentToday ?? 0) >= cfg!.wa_daily_cap_per_phone) return json({ skipped: true, reason: "daily_cap" });
   }
 
+  // Per-sender (whole platform number) daily tier limit — protects Meta messaging tier.
+  // New WABA = 250 unique users / 24h. Burst past this triggers throttling / tier downgrade.
+  const tierLimit = Number((cfg as any)?.wa_tier_limit ?? 250);
+  if (tierLimit > 0) {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count: senderToday } = await admin
+      .from("whatsapp_messages").select("id", { count: "exact", head: true })
+      .eq("sent_via", "platform").eq("direction", "outgoing").eq("status", "sent").gte("created_at", since);
+    if ((senderToday ?? 0) >= tierLimit) {
+      return json({ skipped: true, reason: "tier_limit", error_class: "transient" });
+    }
+  }
+
   let metaPayload: any;
   if (isTextReply) {
     // 24h session window check — Meta only accepts free-form text within 24h of last user message.
@@ -118,16 +131,21 @@ Deno.serve(async (req) => {
       text: { body: body.message_body.slice(0, 4096) },
     };
   } else {
-    // Resolve params (template_vars wins over positional)
+    // Resolve template + branding. Also enforce that template is APPROVED at Meta
+    // (once template-sync has populated meta_status). Pre-sync (meta_status NULL) is allowed.
+    const [tpl, store] = await Promise.all([
+      loadTemplate(admin, body.template_name!),
+      loadStore(admin, body.store_id || null),
+    ]);
+    const tplStatus = (tpl as any)?.meta_status as string | null | undefined;
+    if (tplStatus && tplStatus.toLowerCase() !== "approved") {
+      return json({ error: `template_not_approved:${tplStatus}`, error_class: "permanent" }, 400);
+    }
     let finalParams: string[] = body.template_params || [];
     if (body.template_vars || body.store_id) {
-      const [tpl, store] = await Promise.all([
-        loadTemplate(admin, body.template_name!),
-        loadStore(admin, body.store_id || null),
-      ]);
       const extras = { ...(body.template_vars || {}) } as Record<string, string>;
       if (body.recipient_name && !extras.customer_name) extras.customer_name = body.recipient_name;
-      if (tpl) finalParams = resolveTemplateParams(tpl, store, extras);
+      if (tpl) finalParams = resolveTemplateParams(tpl as any, store, extras);
     }
     const params = finalParams.map((t) => ({ type: "text", text: String(t ?? "") }));
     metaPayload = {
