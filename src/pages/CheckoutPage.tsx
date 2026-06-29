@@ -2564,6 +2564,15 @@ export default function CheckoutPage() {
             </button>
           </div>
         )}
+        <label className="mb-3 flex items-start gap-2 text-xs text-muted-foreground select-none cursor-pointer">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 accent-primary cursor-pointer"
+            checked={waConsent}
+            onChange={(e) => setWaConsent(e.target.checked)}
+          />
+          <span>{t("Send me order updates & offers on WhatsApp", "WhatsApp पर ऑर्डर अपडेट और ऑफ़र भेजें")}</span>
+        </label>
         <button
           className="group relative flex h-14 w-full items-center justify-center gap-2 overflow-hidden text-base font-bold btn-gold shadow-lg shadow-primary/20 transition-[transform,opacity,colors,box-shadow] hover:shadow-xl hover:shadow-primary/30 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
           style={{ borderRadius: "var(--storefront-button-radius, 0.75rem)" }}
