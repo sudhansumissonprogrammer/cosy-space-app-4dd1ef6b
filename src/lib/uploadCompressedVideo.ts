@@ -14,6 +14,7 @@
  * "uploading" stage starts immediately instead of after a 30MB download.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { compressVideo, isWebCodecsSupported } from "./compressVideoWebCodecs";
 
 export interface VideoUploadResult {
   videoUrl: string;
@@ -172,30 +173,55 @@ export async function uploadCompressedVideo(
 
   // Poster (best effort — never blocks the upload)
   opts.onStage?.("compressing");
-  opts.onProgress?.(0.1);
+  opts.onProgress?.(0.05);
   const posterBlob = await generatePoster(file);
-  opts.onProgress?.(0.3);
+  opts.onProgress?.(0.1);
+
+  // Try WebCodecs compression (1080p cap, 3.5 Mbps H.264). Falls back to raw on any error.
+  let uploadBlob: File | Blob = file;
+  let uploadName = file.name;
+  let uploadExt = inferExt(file);
+  let compressedBytes = file.size;
+
+  if (isWebCodecsSupported()) {
+    try {
+      const result = await compressVideo(file, {
+        maxDimension: 1080,
+        videoBitrate: 3_500_000,
+        audioBitrate: 96_000,
+        keepAudio: true,
+        onProgress: (p) => opts.onProgress?.(0.1 + p * 0.6),
+      });
+      // Only use compressed if it actually saved bytes
+      if (result.blob.size > 0 && result.blob.size < file.size) {
+        uploadBlob = result.blob;
+        uploadName = file.name.replace(/\.[^.]+$/, "") + ".mp4";
+        uploadExt = "mp4";
+        compressedBytes = result.blob.size;
+      }
+    } catch (e) {
+      // Compression failed — fall back to raw upload
+      console.warn("[video] compression failed, uploading raw", e);
+    }
+  }
 
   // Upload video
   opts.onStage?.("uploading-video");
-  const ext = inferExt(file);
-  const videoPath = genPath(opts.userId, opts.storeId, ext);
-  const videoUrl = await uploadToR2(file, file.name, "product-videos", videoPath);
-  opts.onProgress?.(0.85);
+  opts.onProgress?.(0.75);
+  const videoPath = genPath(opts.userId, opts.storeId, uploadExt);
+  const videoUrl = await uploadToR2(uploadBlob, uploadName, "product-videos", videoPath);
+  opts.onProgress?.(0.9);
 
   // Upload poster (or fall back to video URL)
-  let posterUrl = videoUrl;
+  let posterUrl = "";
   if (posterBlob) {
     opts.onStage?.("uploading-poster");
     try {
       const posterPath = genPath(opts.userId, opts.storeId, "jpg");
       posterUrl = await uploadToR2(posterBlob, "poster.jpg", "product-videos", posterPath);
     } catch {
-      // non-fatal: keep video, no poster
       posterUrl = "";
     }
-  } else {
-    posterUrl = "";
   }
   opts.onProgress?.(1);
 
@@ -203,6 +229,6 @@ export async function uploadCompressedVideo(
     videoUrl,
     posterUrl,
     originalBytes: file.size,
-    compressedBytes: file.size,
+    compressedBytes,
   };
 }
