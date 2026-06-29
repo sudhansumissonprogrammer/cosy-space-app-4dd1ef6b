@@ -1,7 +1,7 @@
 // Single entry point for order-related WhatsApp events.
 // Enqueues into wa_send_queue. Branding is resolved at send-time.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, normalizePhone, isValidCronHeader } from "../_shared/wa-platform.ts";
+import { corsHeaders, normalizePhone, isValidCronHeader, loadPlatformConfig, platformConfigUsable } from "../_shared/wa-platform.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -22,6 +22,9 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
   const cronHeader = req.headers.get("x-cron-secret") || "";
   if (!(await isValidCronHeader(admin, cronHeader))) return json({ error: "unauthorized" }, 401);
+
+  const cfg = await loadPlatformConfig(admin);
+  if (!platformConfigUsable(cfg)) return json({ skipped: true, reason: "wa_disabled" });
 
   let body: { event: Event; order_id: string };
   try { body = await req.json(); } catch { return json({ error: "bad json" }, 400); }
