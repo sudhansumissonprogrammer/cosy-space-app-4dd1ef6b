@@ -25,8 +25,16 @@ type Body = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Meta error codes that should NOT be retried (invalid phone, opt-out, etc.)
-const PERMANENT_META_CODES = new Set([131026, 131047, 131048, 131049, 131051, 132000, 132001, 132005, 132007, 132012, 132015, 132016, 132068, 132069, 100, 190, 200, 4]);
+// Meta error codes that should NOT be retried (invalid phone, opt-out, template missing,
+// re-engagement window, business locked, account paused, etc.). Treating them as permanent
+// stops retry storms that hurt the quality rating.
+const PERMANENT_META_CODES = new Set([
+  100, 190, 200, 4,                                  // auth / param / permission
+  131026, 131047, 131048, 131049, 131051, 131056,    // delivery / re-engagement / unsupported
+  132000, 132001, 132005, 132007, 132012, 132015, 132016, 132068, 132069, // template errors
+  130429, 130472,                                    // user in experiment / spend cap
+  368,                                               // temporarily blocked for policy violation
+]);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
