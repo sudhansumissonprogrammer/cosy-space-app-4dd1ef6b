@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
 
   const { data: order } = await admin
     .from("orders")
-    .select("id, store_id, customer_phone, customer_name, total, currency, tracking_url, order_number, stores:store_id(name, slug, custom_domain)")
+    .select("id, store_id, customer_phone, customer_name, total, currency, tracking_url, tracking_number, order_number, stores:store_id(name, slug, custom_domain)")
     .eq("id", body.order_id).maybeSingle();
   if (!order) return json({ error: "order_not_found" }, 404);
 
@@ -40,6 +40,12 @@ Deno.serve(async (req) => {
   if (!phone) return json({ skipped: true, reason: "no_phone" });
 
   const o = order as any;
+
+  // Gate: "shipped" must have a tracking number, otherwise customer gets a useless message.
+  if (body.event === "order_shipped" && (!o.tracking_number || String(o.tracking_number).trim() === "")) {
+    return json({ skipped: true, reason: "no_tracking_number" });
+  }
+
   const orderNum = o.order_number || String(o.id).slice(0, 8).toUpperCase();
   const orderTotal = `${o.currency === "INR" || !o.currency ? "₹" : o.currency + " "}${Number(o.total || 0).toFixed(0)}`;
   const customerName = o.customer_name || "there";
@@ -63,6 +69,7 @@ Deno.serve(async (req) => {
       order_total: orderTotal,
       order_link: orderLink,
       tracking_url: trackingUrl,
+      tracking_number: o.tracking_number || "",
       review_url: reviewUrl,
     },
     priority: body.event === "order_confirmation" ? 1 : 3,
