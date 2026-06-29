@@ -1,0 +1,1 @@
+ALTER TABLE public.platform_wa_campaigns ADD COLUMN IF NOT EXISTS template_vars jsonb NOT NULL DEFAULT '{}'::jsonb;

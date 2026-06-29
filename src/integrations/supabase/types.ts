@@ -1660,6 +1660,7 @@ export type Database = {
           started_at: string | null
           status: string
           template_name: string
+          template_vars: Json
           updated_at: string
         }
         Insert: {
@@ -1677,6 +1678,7 @@ export type Database = {
           started_at?: string | null
           status?: string
           template_name: string
+          template_vars?: Json
           updated_at?: string
         }
         Update: {
@@ -1694,6 +1696,7 @@ export type Database = {
           started_at?: string | null
           status?: string
           template_name?: string
+          template_vars?: Json
           updated_at?: string
         }
         Relationships: [
