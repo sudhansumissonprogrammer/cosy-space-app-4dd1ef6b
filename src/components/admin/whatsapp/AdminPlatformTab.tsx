@@ -237,8 +237,78 @@ export function AdminPlatformTab() {
 
       <PlatformHealthCard />
       <PlatformCostCard />
+      <QualityThrottleCard />
+      <WebhookReplayCard />
 
     </div>
+  );
+}
+
+function QualityThrottleCard() {
+  const [row, setRow] = useState<any>(null);
+  const [busy, setBusy] = useState(false);
+  const load = async () => {
+    const { data } = await (supabase.from("platform_config" as any) as any)
+      .select("wa_quality_rating,wa_messaging_tier,wa_throttle_marketing,wa_quality_updated_at")
+      .limit(1).maybeSingle();
+    setRow(data);
+  };
+  useEffect(() => { load(); }, []);
+  const toggle = async (v: boolean) => {
+    setBusy(true);
+    const { error } = await supabase.rpc("admin_update_platform_wa_config" as any, { _patch: { wa_throttle_marketing: v } });
+    setBusy(false);
+    if (error) toast.error(error.message); else { toast.success(v ? "Marketing throttled" : "Throttle cleared"); load(); }
+  };
+  const q = row?.wa_quality_rating || "UNKNOWN";
+  const qClass = q === "GREEN" || q === "HIGH" ? "text-emerald-600" : q === "YELLOW" || q === "MEDIUM" ? "text-amber-600" : q === "RED" || q === "LOW" ? "text-destructive" : "text-muted-foreground";
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Quality & auto-throttle</CardTitle>
+        <CardDescription>Auto-set by Meta webhook. When YELLOW or RED, marketing sends are paused — utility/transactional keeps flowing.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+          <Stat label="Quality" value={q} valueClass={qClass} />
+          <Stat label="Messaging tier" value={row?.wa_messaging_tier || "—"} />
+          <Stat label="Marketing throttled" value={row?.wa_throttle_marketing ? "YES" : "no"} valueClass={row?.wa_throttle_marketing ? "text-destructive" : "text-emerald-600"} />
+        </div>
+        <div className="flex items-center gap-3">
+          <Switch checked={!!row?.wa_throttle_marketing} onCheckedChange={toggle} disabled={busy} />
+          <Label className="text-sm">Manually pause all marketing</Label>
+        </div>
+        <p className="text-[11px] text-muted-foreground">Last update: {row?.wa_quality_updated_at ? new Date(row.wa_quality_updated_at).toLocaleString() : "—"}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function WebhookReplayCard() {
+  const [eventId, setEventId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const replay = async () => {
+    if (!eventId.trim()) return;
+    setBusy(true);
+    const { data, error } = await supabase.rpc("wa_replay_webhook_event" as any, { _event_id: eventId.trim() });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    const res = data as any;
+    if (res?.error === "not_found") toast.error("Event not found");
+    else toast.success(`Cleared ${res?.cleared} — Meta will redeliver`);
+    setEventId("");
+  };
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Replay webhook event</CardTitle>
+        <CardDescription>Clears the dedupe row so Meta's next redelivery is processed. Paste the WAMID (message id) from logs.</CardDescription>
+      </CardHeader>
+      <CardContent className="flex gap-2">
+        <Input value={eventId} onChange={(e) => setEventId(e.target.value)} placeholder="wamid.HBgM…" />
+        <Button onClick={replay} disabled={busy}>Replay</Button>
+      </CardContent>
+    </Card>
   );
 }
 
