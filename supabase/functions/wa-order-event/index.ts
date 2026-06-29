@@ -2,6 +2,7 @@
 // Enqueues into wa_send_queue. Branding is resolved at send-time.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, normalizePhone, isValidCronHeader, loadPlatformConfig, platformConfigUsable } from "../_shared/wa-platform.ts";
+import { formatExpectedDelivery, formatPaymentStatusLine, inferCourierName } from "../_shared/wa-content.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -9,9 +10,9 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 type Event = "order_confirmation" | "payment_received" | "order_shipped" | "order_delivered" | "review_request";
 
 const TEMPLATE_BY_EVENT: Record<Event, string> = {
-  order_confirmation: "order_confirmation_v1",
+  order_confirmation: "order_confirmation_v2",
   payment_received: "payment_success_v1",
-  order_shipped: "order_shipped_v1",
+  order_shipped: "order_shipped_v2",
   order_delivered: "order_delivered_v1",
   review_request: "review_request_v1",
 };
