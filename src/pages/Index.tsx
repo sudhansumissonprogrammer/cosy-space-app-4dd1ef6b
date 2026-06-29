@@ -47,6 +47,8 @@ const Index = () => {
           <LazyMount minHeight={500}><ProblemVsUs /></LazyMount>
           <LazyMount minHeight={600}><CoreFeatures /></LazyMount>
           <LazyMount minHeight={500}><HowItWorks /></LazyMount>
+          <LazyMount minHeight={700}><LiveStorePreview /></LazyMount>
+          <LazyMount minHeight={900}><StoreLookShowcase /></LazyMount>
           <LazyMount minHeight={600}><PricingV2 /></LazyMount>
           <LazyMount minHeight={700}><SavingsCalculator /></LazyMount>
           <LazyMount minHeight={500}><AgenticStrip /></LazyMount>
