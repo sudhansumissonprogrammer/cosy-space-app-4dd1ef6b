@@ -33,3 +33,8 @@ verify_jwt = false
 [functions.wa-order-event]
 verify_jwt = false
 
+[functions.wa-queue-worker]
+verify_jwt = false
+
+[functions.wa-recovery-attribution]
+verify_jwt = false

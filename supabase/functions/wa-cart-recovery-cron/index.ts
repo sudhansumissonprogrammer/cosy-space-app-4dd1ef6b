@@ -1,7 +1,7 @@
-// pg_cron calls this every 10 minutes. Picks abandoned carts in the recovery
-// window, fires platform send via wa-platform-send, marks recovery_sent_at.
+// pg_cron calls this every 10 minutes. Enqueues abandoned-cart recovery
+// sends into wa_send_queue (the queue worker handles retries + dispatch).
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader, getCronSecret } from "../_shared/wa-platform.ts";
+import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader } from "../_shared/wa-platform.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -11,10 +11,8 @@ Deno.serve(async (req) => {
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
   const cronHeader = req.headers.get("x-cron-secret") || "";
-  if (!(await isValidCronHeader(admin, cronHeader))) {
-    return json({ error: "unauthorized" }, 401);
-  }
-  const downstreamSecret = (await getCronSecret(admin)) || "";
+  if (!(await isValidCronHeader(admin, cronHeader))) return json({ error: "unauthorized" }, 401);
+
   const cfg = await loadPlatformConfig(admin);
   if (!platformConfigUsable(cfg)) return json({ skipped: true, reason: "wa_disabled" });
 
@@ -26,7 +24,7 @@ Deno.serve(async (req) => {
 
   const { data: carts, error } = await admin
     .from("abandoned_carts")
-    .select("id, store_id, customer_phone, customer_email, cart_items, created_at")
+    .select("id, store_id, customer_phone, cart_items, created_at")
     .eq("recovered", false)
     .is("recovery_sent_at", null)
     .not("customer_phone", "is", null)
@@ -37,69 +35,39 @@ Deno.serve(async (req) => {
   if (error) return json({ error: error.message }, 500);
   if (!carts?.length) return json({ processed: 0 });
 
-  let sent = 0, skipped = 0, failed = 0;
+  let enqueued = 0, skipped = 0;
   for (const c of carts) {
     const phone = normalizePhone((c as any).customer_phone);
     if (!phone) { skipped++; continue; }
 
-    // store name + toggle
-    const { data: storeRow } = await admin
-      .from("stores")
-      .select("name, slug")
-      .eq("id", (c as any).store_id)
-      .maybeSingle();
-    const storeName = (storeRow as any)?.name || "Our store";
-    const storeSlug = (storeRow as any)?.slug || "";
-
     const items = Array.isArray((c as any).cart_items) ? (c as any).cart_items : [];
     const total = items.reduce((s: number, it: any) => s + (Number(it?.price ?? 0) * Number(it?.quantity ?? 1)), 0);
-    const checkoutUrl = storeSlug ? `https://${storeSlug}.shopbanao.in/cart` : "https://shopbanao.in";
     const customerName = (items[0]?.customer_name as string) || "there";
 
-    // call wa-platform-send via HTTP with the cron secret
-    const resp = await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-cron-secret": downstreamSecret,
-        Authorization: `Bearer ${SERVICE_KEY}`, // verify_jwt is false but Supabase routing wants a key
-        apikey: SERVICE_KEY,
-      },
-      body: JSON.stringify({
-        mode: "automation",
-        store_id: (c as any).store_id,
-        recipient_phone: phone,
-        recipient_name: customerName,
-        template_name: "abandoned_cart_v1",
-        template_params: [customerName, storeName, `₹${total}`, checkoutUrl],
-        message_type: "abandoned_cart",
-        abandoned_cart_id: (c as any).id,
-      }),
-    });
-    const j = await resp.json().catch(() => ({}));
+    const { error: qErr } = await admin.from("wa_send_queue").insert({
+      store_id: (c as any).store_id,
+      recipient_phone: phone,
+      recipient_name: customerName,
+      template_name: "abandoned_cart_v1",
+      message_type: "abandoned_cart",
+      abandoned_cart_id: (c as any).id,
+      params: [],
+      template_vars: { customer_name: customerName, cart_total: `₹${total}` },
+      priority: 5,
+      scheduled_at: new Date().toISOString(),
+    } as any);
 
-    const status = resp.ok && !j?.skipped ? "sent" : (j?.skipped ? "skipped" : "failed");
-    if (status === "sent") sent++;
-    else if (status === "skipped") skipped++;
-    else failed++;
+    if (qErr) { skipped++; continue; }
+    enqueued++;
 
-    await admin
-      .from("abandoned_carts")
-      .update({
-        recovery_sent_at: new Date().toISOString(),
-        recovery_status: status,
-        recovery_message_id: j?.message_id ?? null,
-        recovery_error: status === "failed" ? JSON.stringify(j) : null,
-      })
+    await admin.from("abandoned_carts")
+      .update({ recovery_sent_at: new Date().toISOString(), recovery_status: "queued" })
       .eq("id", (c as any).id);
   }
 
-  return json({ processed: carts.length, sent, skipped, failed });
+  return json({ processed: carts.length, enqueued, skipped });
 });
 
 function json(b: unknown, s = 200) {
-  return new Response(JSON.stringify(b), {
-    status: s,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
