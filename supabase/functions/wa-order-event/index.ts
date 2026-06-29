@@ -53,6 +53,18 @@ Deno.serve(async (req) => {
     return json({ skipped: true, reason: "no_tracking_number" });
   }
 
+  // 🔒 Idempotency: at most one active row per (order_id, message_type).
+  // Stops double-sends from double-clicks, retries, race between notify-order
+  // and any other caller. The DB also enforces this via a partial unique index.
+  const { data: existing } = await admin
+    .from("wa_send_queue")
+    .select("id, status")
+    .eq("order_id", o.id)
+    .eq("message_type", body.event)
+    .in("status", ["pending", "sending", "sent", "skipped"])
+    .limit(1).maybeSingle();
+  if (existing) return json({ ok: true, queued: false, reason: "already_enqueued" });
+
   const orderNum = o.order_number || String(o.id).slice(0, 8).toUpperCase();
   const orderTotal = `${o.currency === "INR" || !o.currency ? "₹" : o.currency + " "}${Number(o.total || 0).toFixed(0)}`;
   const customerName = o.customer_name || "there";
@@ -83,7 +95,11 @@ Deno.serve(async (req) => {
     scheduled_at: new Date().toISOString(),
   } as any);
 
-  if (qErr) return json({ error: qErr.message }, 500);
+  // 23505 = unique_violation from the partial unique index → treat as dedup, not error.
+  if (qErr) {
+    if ((qErr as any).code === "23505") return json({ ok: true, queued: false, reason: "already_enqueued" });
+    return json({ error: qErr.message }, 500);
+  }
   return json({ ok: true, queued: true });
 });
 
