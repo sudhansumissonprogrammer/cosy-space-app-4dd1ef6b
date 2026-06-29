@@ -21,6 +21,9 @@ type Cfg = {
   wa_daily_cap_per_phone: number;
   wa_access_token_present: boolean;
   wa_app_secret_present: boolean;
+  wa_queue_batch_size?: number;
+  wa_pilot_mode?: boolean;
+  wa_pilot_cohort?: string[];
 };
 
 export function AdminPlatformTab() {
