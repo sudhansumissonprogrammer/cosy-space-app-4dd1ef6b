@@ -98,6 +98,11 @@ Deno.serve(async (req) => {
     if ((sentToday ?? 0) >= cfg!.wa_daily_cap_per_phone) return json({ skipped: true, reason: "daily_cap" });
   }
 
+  // Quality auto-throttle — pause MARKETING when Meta drops quality to YELLOW/RED.
+  if (!isTransactional && (cfg as any)?.wa_throttle_marketing === true) {
+    return json({ skipped: true, reason: "quality_throttle", error_class: "transient" });
+  }
+
   // Per-sender (whole platform number) daily tier limit — protects Meta messaging tier.
   // New WABA = 250 unique users / 24h. Burst past this triggers throttling / tier downgrade.
   const tierLimit = Number((cfg as any)?.wa_tier_limit ?? 250);
@@ -110,6 +115,7 @@ Deno.serve(async (req) => {
       return json({ skipped: true, reason: "tier_limit", error_class: "transient" });
     }
   }
+
 
   let metaPayload: any;
   if (isTextReply) {
@@ -138,9 +144,13 @@ Deno.serve(async (req) => {
       loadStore(admin, body.store_id || null),
     ]);
     const tplStatus = (tpl as any)?.meta_status as string | null | undefined;
+    if ((tpl as any)?.paused === true) {
+      return json({ error: `template_paused:${(tpl as any)?.pause_reason || "manual"}`, error_class: "permanent" }, 400);
+    }
     if (tplStatus && tplStatus.toLowerCase() !== "approved") {
       return json({ error: `template_not_approved:${tplStatus}`, error_class: "permanent" }, 400);
     }
+
     let finalParams: string[] = body.template_params || [];
     if (body.template_vars || body.store_id) {
       const extras = { ...(body.template_vars || {}) } as Record<string, string>;

@@ -451,6 +451,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          last_marketing_sent_at: string | null
           name: string | null
           order_count: number
           phone: string | null
@@ -462,6 +463,7 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          last_marketing_sent_at?: string | null
           name?: string | null
           order_count?: number
           phone?: string | null
@@ -473,6 +475,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          last_marketing_sent_at?: string | null
           name?: string | null
           order_count?: number
           phone?: string | null
@@ -1571,12 +1574,16 @@ export type Database = {
           wa_default_lang: string
           wa_enabled: boolean
           wa_max_cart_age_hours: number
+          wa_messaging_tier: string | null
           wa_min_cart_age_minutes: number
           wa_phone_number_id: string | null
           wa_pilot_cohort: string[]
           wa_pilot_mode: boolean
+          wa_quality_rating: string | null
+          wa_quality_updated_at: string | null
           wa_queue_batch_size: number
           wa_require_marketing_consent: boolean
+          wa_throttle_marketing: boolean | null
           wa_tier_limit: number
           wa_waba_id: string | null
           whatsapp_mode: string
@@ -1594,12 +1601,16 @@ export type Database = {
           wa_default_lang?: string
           wa_enabled?: boolean
           wa_max_cart_age_hours?: number
+          wa_messaging_tier?: string | null
           wa_min_cart_age_minutes?: number
           wa_phone_number_id?: string | null
           wa_pilot_cohort?: string[]
           wa_pilot_mode?: boolean
+          wa_quality_rating?: string | null
+          wa_quality_updated_at?: string | null
           wa_queue_batch_size?: number
           wa_require_marketing_consent?: boolean
+          wa_throttle_marketing?: boolean | null
           wa_tier_limit?: number
           wa_waba_id?: string | null
           whatsapp_mode?: string
@@ -1617,12 +1628,16 @@ export type Database = {
           wa_default_lang?: string
           wa_enabled?: boolean
           wa_max_cart_age_hours?: number
+          wa_messaging_tier?: string | null
           wa_min_cart_age_minutes?: number
           wa_phone_number_id?: string | null
           wa_pilot_cohort?: string[]
           wa_pilot_mode?: boolean
+          wa_quality_rating?: string | null
+          wa_quality_updated_at?: string | null
           wa_queue_batch_size?: number
           wa_require_marketing_consent?: boolean
+          wa_throttle_marketing?: boolean | null
           wa_tier_limit?: number
           wa_waba_id?: string | null
           whatsapp_mode?: string
@@ -1704,6 +1719,8 @@ export type Database = {
           meta_status: string | null
           meta_template_id: string | null
           name: string
+          pause_reason: string | null
+          paused: boolean | null
           purpose: string
           quality_score: string | null
           updated_at: string
@@ -1721,6 +1738,8 @@ export type Database = {
           meta_status?: string | null
           meta_template_id?: string | null
           name: string
+          pause_reason?: string | null
+          paused?: boolean | null
           purpose: string
           quality_score?: string | null
           updated_at?: string
@@ -1738,6 +1757,8 @@ export type Database = {
           meta_status?: string | null
           meta_template_id?: string | null
           name?: string
+          pause_reason?: string | null
+          paused?: boolean | null
           purpose?: string
           quality_score?: string | null
           updated_at?: string
@@ -3276,6 +3297,33 @@ export type Database = {
         }
         Relationships: []
       }
+      wa_active_conversations: {
+        Row: {
+          category: string
+          cost: number | null
+          expires_at: string
+          last_conversation_id: string | null
+          opened_at: string
+          recipient_phone: string
+        }
+        Insert: {
+          category: string
+          cost?: number | null
+          expires_at: string
+          last_conversation_id?: string | null
+          opened_at?: string
+          recipient_phone: string
+        }
+        Update: {
+          category?: string
+          cost?: number | null
+          expires_at?: string
+          last_conversation_id?: string | null
+          opened_at?: string
+          recipient_phone?: string
+        }
+        Relationships: []
+      }
       wa_conversation_costs: {
         Row: {
           billable: boolean | null
@@ -4537,6 +4585,11 @@ export type Database = {
       verify_cron_secret: { Args: { _secret: string }; Returns: boolean }
       verify_phone_account_integrity: { Args: never; Returns: undefined }
       wa_campaign_precheck: { Args: { _campaign_id: string }; Returns: Json }
+      wa_estimate_campaign_cost: {
+        Args: { _category?: string; _phones: string[] }
+        Returns: Json
+      }
+      wa_replay_webhook_event: { Args: { _event_id: string }; Returns: Json }
       wa_resolve_inbound_store: { Args: { _phone: string }; Returns: string }
       wallet_adjust: {
         Args: {
