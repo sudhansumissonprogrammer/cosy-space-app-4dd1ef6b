@@ -134,8 +134,53 @@ Deno.serve(async (req) => {
               origin_type: conv?.origin?.type || null,
               raw: { pricing, conversation: conv },
             } as any, { onConflict: "conversation_id" });
+
+            // Track the 24h conversation window so we can estimate next campaign cost.
+            const expiration = status?.conversation?.expiration_timestamp
+              ? new Date(Number(status.conversation.expiration_timestamp) * 1000).toISOString()
+              : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+            await adminClient.from("wa_active_conversations").upsert({
+              recipient_phone: status?.recipient_id || "",
+              category,
+              opened_at: new Date().toISOString(),
+              expires_at: expiration,
+              last_conversation_id: conv.id,
+              cost,
+            } as any, { onConflict: "recipient_phone,category" });
           }
         }
+
+        // ── account_update: Meta quality rating + messaging tier changes ──
+        const accountUpdate = value?.event === "FLOW_STATUS_CHANGE" ? null : value;
+        if (value?.event && (value.event === "PHONE_NUMBER_QUALITY_UPDATE" || value.event === "PHONE_NUMBER_NAME_UPDATE" || value.event === "ACCOUNT_UPDATE")) {
+          const quality = String(value?.current_limit || value?.quality_update?.current_quality || value?.quality_rating || "").toUpperCase();
+          const tier = String(value?.messaging_limit_tier || value?.current_tier || "").toUpperCase();
+          const update: Record<string, any> = { wa_quality_updated_at: new Date().toISOString() };
+          if (quality) update.wa_quality_rating = quality;
+          if (tier) update.wa_messaging_tier = tier;
+          // Auto-throttle marketing when quality drops to YELLOW or RED.
+          if (quality === "YELLOW" || quality === "RED") update.wa_throttle_marketing = true;
+          if (quality === "GREEN" || quality === "HIGH") update.wa_throttle_marketing = false;
+          await adminClient.from("platform_config").update(update).not("id", "is", null);
+        }
+
+        // ── message_template_status_update: auto-pause rejected/paused templates ──
+        if (value?.event === "TEMPLATE_STATUS_UPDATE" || change?.field === "message_template_status_update") {
+          const tplName = value?.message_template_name || value?.template_name;
+          const newStatus = String(value?.event_type || value?.new_status || value?.status || "").toUpperCase();
+          const reason = value?.reason || value?.disable_info?.disable_date || null;
+          if (tplName && newStatus) {
+            const paused = ["REJECTED", "PAUSED", "DISABLED", "FLAGGED", "APPEAL_REQUESTED"].includes(newStatus);
+            await adminClient.from("platform_wa_templates").update({
+              meta_status: newStatus,
+              paused,
+              pause_reason: paused ? (reason || newStatus) : null,
+              last_synced_at: new Date().toISOString(),
+            }).eq("name", tplName);
+          }
+        }
+
+
 
 
         // ── Inbound messages from customers ──
