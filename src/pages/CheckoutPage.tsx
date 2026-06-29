@@ -184,6 +184,9 @@ export default function CheckoutPage() {
   const [city, setCity] = useState(savedInfo.city || "");
   const [state, setState] = useState(savedInfo.state || "");
   const [pincode, setPincode] = useState(savedInfo.pincode || "");
+  // Explicit WhatsApp marketing consent (used for abandoned-cart recovery).
+  // Default ON because the checkbox is visible to the customer; they can untick.
+  const [waConsent, setWaConsent] = useState<boolean>(savedInfo.waConsent !== false);
 
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
