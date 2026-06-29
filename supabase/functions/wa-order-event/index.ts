@@ -23,6 +23,9 @@ Deno.serve(async (req) => {
   const cronHeader = req.headers.get("x-cron-secret") || "";
   if (!(await isValidCronHeader(admin, cronHeader))) return json({ error: "unauthorized" }, 401);
 
+  const cfg = await loadPlatformConfig(admin);
+  if (!platformConfigUsable(cfg)) return json({ skipped: true, reason: "wa_disabled" });
+
   let body: { event: Event; order_id: string };
   try { body = await req.json(); } catch { return json({ error: "bad json" }, 400); }
   if (!body.event || !body.order_id) return json({ error: "event + order_id required" }, 400);
