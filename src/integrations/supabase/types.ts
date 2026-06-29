@@ -1710,8 +1710,10 @@ export type Database = {
         Row: {
           body_preview: string | null
           button_label: string | null
+          button_url_pattern: string | null
           category: string | null
           created_at: string
+          footer_text: string | null
           headline: string | null
           is_active: boolean
           language: string
@@ -1729,8 +1731,10 @@ export type Database = {
         Insert: {
           body_preview?: string | null
           button_label?: string | null
+          button_url_pattern?: string | null
           category?: string | null
           created_at?: string
+          footer_text?: string | null
           headline?: string | null
           is_active?: boolean
           language?: string
@@ -1748,8 +1752,10 @@ export type Database = {
         Update: {
           body_preview?: string | null
           button_label?: string | null
+          button_url_pattern?: string | null
           category?: string | null
           created_at?: string
+          footer_text?: string | null
           headline?: string | null
           is_active?: boolean
           language?: string

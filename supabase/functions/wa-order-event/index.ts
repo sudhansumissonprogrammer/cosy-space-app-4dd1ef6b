@@ -2,6 +2,7 @@
 // Enqueues into wa_send_queue. Branding is resolved at send-time.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, normalizePhone, isValidCronHeader, loadPlatformConfig, platformConfigUsable } from "../_shared/wa-platform.ts";
+import { formatExpectedDelivery, formatPaymentStatusLine, inferCourierName } from "../_shared/wa-content.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -9,9 +10,9 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 type Event = "order_confirmation" | "payment_received" | "order_shipped" | "order_delivered" | "review_request";
 
 const TEMPLATE_BY_EVENT: Record<Event, string> = {
-  order_confirmation: "order_confirmation_v1",
+  order_confirmation: "order_confirmation_v2",
   payment_received: "payment_success_v1",
-  order_shipped: "order_shipped_v1",
+  order_shipped: "order_shipped_v2",
   order_delivered: "order_delivered_v1",
   review_request: "review_request_v1",
 };
@@ -39,7 +40,7 @@ Deno.serve(async (req) => {
 
   const { data: order } = await admin
     .from("orders")
-    .select("id, store_id, customer_phone, customer_name, total, currency, tracking_url, tracking_number, order_number, stores:store_id(name, slug, custom_domain)")
+    .select("id, store_id, customer_phone, customer_name, total, currency, tracking_url, tracking_number, order_number, payment_method, payment_type, advance_paid, balance_due, created_at, stores:store_id(name, slug, custom_domain)")
     .eq("id", body.order_id).maybeSingle();
   if (!order) return json({ error: "order_not_found" }, 404);
 
@@ -66,8 +67,6 @@ Deno.serve(async (req) => {
   }
 
   // 🔒 Idempotency: at most one active row per (order_id, message_type).
-  // Stops double-sends from double-clicks, retries, race between notify-order
-  // and any other caller. The DB also enforces this via a partial unique index.
   const { data: existing } = await admin
     .from("wa_send_queue")
     .select("id, status")
@@ -78,13 +77,23 @@ Deno.serve(async (req) => {
   if (existing) return json({ ok: true, queued: false, reason: "already_enqueued" });
 
   const orderNum = o.order_number || String(o.id).slice(0, 8).toUpperCase();
-  const orderTotal = `${o.currency === "INR" || !o.currency ? "₹" : o.currency + " "}${Number(o.total || 0).toFixed(0)}`;
+  const sym = o.currency === "INR" || !o.currency ? "₹" : `${o.currency} `;
+  const orderTotal = `${sym}${Number(o.total || 0).toFixed(0)}`;
   const customerName = o.customer_name || "there";
   const s = o.stores || {};
+  const storeName = s.name || "our store";
   const base = s.custom_domain ? `https://${s.custom_domain}` : (s.slug ? `https://${s.slug}.shopbanao.in` : "https://shopbanao.in");
   const orderLink = `${base}/account/orders/${o.id}`;
   const trackingUrl = o.tracking_url || orderLink;
   const reviewUrl = `${base}/account/orders/${o.id}#review`;
+
+  // Delivery ETA: confirmation = 6 days from order date; shipped = 4 days from ship time.
+  const etaFrom = body.event === "order_shipped" ? new Date() : new Date(o.created_at || Date.now());
+  const etaDays = body.event === "order_shipped" ? 4 : 6;
+  const expectedDelivery = formatExpectedDelivery(etaFrom, etaDays);
+
+  const paymentStatusLine = formatPaymentStatusLine(o);
+  const courierName = inferCourierName(o.tracking_url, "Courier partner");
 
   const { error: qErr } = await admin.from("wa_send_queue").insert({
     store_id: o.store_id,
@@ -96,11 +105,15 @@ Deno.serve(async (req) => {
     params: [],
     template_vars: {
       customer_name: customerName,
+      store_name: storeName,
       order_number: orderNum,
       order_total: orderTotal,
+      payment_status_line: paymentStatusLine,
+      expected_delivery: expectedDelivery,
       order_link: orderLink,
       tracking_url: trackingUrl,
       tracking_number: o.tracking_number || "",
+      courier_name: courierName,
       review_url: reviewUrl,
     },
     priority: body.event === "order_confirmation" ? 1 : 3,
