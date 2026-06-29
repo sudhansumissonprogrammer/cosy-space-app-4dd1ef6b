@@ -3276,6 +3276,69 @@ export type Database = {
         }
         Relationships: []
       }
+      wa_conversation_costs: {
+        Row: {
+          billable: boolean | null
+          category: string | null
+          conversation_id: string | null
+          cost: number | null
+          created_at: string
+          currency: string | null
+          id: string
+          message_id: string | null
+          origin_type: string | null
+          pricing_model: string | null
+          raw: Json | null
+          recipient_phone: string
+          store_id: string | null
+        }
+        Insert: {
+          billable?: boolean | null
+          category?: string | null
+          conversation_id?: string | null
+          cost?: number | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          message_id?: string | null
+          origin_type?: string | null
+          pricing_model?: string | null
+          raw?: Json | null
+          recipient_phone: string
+          store_id?: string | null
+        }
+        Update: {
+          billable?: boolean | null
+          category?: string | null
+          conversation_id?: string | null
+          cost?: number | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          message_id?: string | null
+          origin_type?: string | null
+          pricing_model?: string | null
+          raw?: Json | null
+          recipient_phone?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_conversation_costs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wa_conversation_costs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wa_health_log: {
         Row: {
           alert_sent: boolean
@@ -4375,6 +4438,7 @@ export type Database = {
         Returns: Json
       }
       get_today_analytics: { Args: { _store_id: string }; Returns: Json }
+      get_wa_cost_summary: { Args: never; Returns: Json }
       get_wa_platform_kpis: { Args: { _days?: number }; Returns: Json }
       get_whatsapp_mode: { Args: never; Returns: string }
       has_role: {
@@ -4472,6 +4536,7 @@ export type Database = {
       }
       verify_cron_secret: { Args: { _secret: string }; Returns: boolean }
       verify_phone_account_integrity: { Args: never; Returns: undefined }
+      wa_campaign_precheck: { Args: { _campaign_id: string }; Returns: Json }
       wa_resolve_inbound_store: { Args: { _phone: string }; Returns: string }
       wallet_adjust: {
         Args: {
