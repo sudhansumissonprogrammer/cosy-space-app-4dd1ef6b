@@ -73,8 +73,14 @@ Deno.serve(async (req) => {
     const total = items.reduce((s: number, it: any) => s + (Number(it?.price ?? 0) * Number(it?.quantity ?? 1)), 0);
     const customerName = (items[0]?.customer_name as string) || "there";
     const s = (c as any).stores || {};
-    const base = s.custom_domain ? `https://${s.custom_domain}` : (s.slug ? `https://${s.slug}.shopbanao.in` : "https://shopbanao.in");
-    const checkoutUrl = `${base}/cart`;
+    // Pretty multi-line cart list shown inside the WhatsApp body.
+    const cartItemsText = items.slice(0, 4).map((it: any) => {
+      const name = String(it?.name || it?.title || "Item").slice(0, 40);
+      const qty = Number(it?.quantity ?? 1);
+      const price = Number(it?.price ?? 0);
+      return `🛍 ${name}${qty > 1 ? ` × ${qty}` : ""} — ₹${(price * qty).toFixed(0)}`;
+    }).join("\n") + (items.length > 4 ? `\n…and ${items.length - 4} more` : "");
+    const cartToken = (c as any).session_token || (c as any).id;
 
     const { error: qErr } = await admin.from("wa_send_queue").insert({
       store_id: (c as any).store_id,
@@ -84,7 +90,13 @@ Deno.serve(async (req) => {
       message_type: "abandoned_cart",
       abandoned_cart_id: (c as any).id,
       params: [],
-      template_vars: { customer_name: customerName, cart_total: `₹${total}`, store_name: (s as any).name || "our store", checkout_url: checkoutUrl },
+      template_vars: {
+        customer_name: customerName,
+        store_name: (s as any).name || "our store",
+        cart_items: cartItemsText,
+        cart_total: `₹${total.toFixed(0)}`,
+        cart_token: cartToken,
+      },
       priority: 5,
       scheduled_at: new Date().toISOString(),
     } as any);

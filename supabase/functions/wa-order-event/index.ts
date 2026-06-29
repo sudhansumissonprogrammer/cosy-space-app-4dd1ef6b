@@ -108,6 +108,7 @@ Deno.serve(async (req) => {
       store_name: storeName,
       order_number: orderNum,
       order_total: orderTotal,
+      item_count: String(Array.isArray((o as any).items) ? (o as any).items.length : ((o as any).item_count ?? 1)),
       payment_status_line: paymentStatusLine,
       expected_delivery: expectedDelivery,
       order_link: orderLink,
