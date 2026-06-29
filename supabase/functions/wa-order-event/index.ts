@@ -48,6 +48,18 @@ Deno.serve(async (req) => {
 
   const o = order as any;
 
+  // 🔒 Per-store master switch. If the merchant toggled WhatsApp marketing OFF
+  // in their dashboard, do not even enqueue. (wa-platform-send also blocks at
+  // dispatch time, but stopping here avoids junk rows + false "queued" stats.)
+  const { data: storeSettings } = await admin
+    .from("stores_wa_settings")
+    .select("platform_marketing_enabled")
+    .eq("store_id", o.store_id)
+    .maybeSingle();
+  if (storeSettings && (storeSettings as any).platform_marketing_enabled === false) {
+    return json({ skipped: true, reason: "store_disabled" });
+  }
+
   // Gate: "shipped" must have a tracking number, otherwise customer gets a useless message.
   if (body.event === "order_shipped" && (!o.tracking_number || String(o.tracking_number).trim() === "")) {
     return json({ skipped: true, reason: "no_tracking_number" });
