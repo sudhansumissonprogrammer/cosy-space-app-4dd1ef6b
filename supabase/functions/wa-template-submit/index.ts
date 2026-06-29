@@ -1,0 +1,249 @@
+// Admin-only edge function: create / edit / delete / refresh WhatsApp templates on Meta
+// from inside /admin/whatsapp. Reads access token from platform_config, writes status back
+// to platform_wa_templates, and audits every action.
+
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const GRAPH = "https://graph.facebook.com/v21.0";
+
+type Btn =
+  | { type: "URL"; text: string; url: string }
+  | { type: "QUICK_REPLY"; text: string }
+  | { type: "PHONE_NUMBER"; text: string; phone_number: string };
+
+type Draft = {
+  name: string;
+  language: string;
+  category: "UTILITY" | "MARKETING" | "AUTHENTICATION";
+  header_type: "NONE" | "TEXT";
+  header_text?: string | null;
+  body_text: string;
+  footer_text?: string | null;
+  buttons?: Btn[];
+};
+
+function extractVars(text: string): number[] {
+  const found = new Set<number>();
+  const re = /\{\{\s*(\d+)\s*\}\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) found.add(Number(m[1]));
+  return Array.from(found).sort((a, b) => a - b);
+}
+
+function draftToComponents(d: Draft): any[] {
+  const components: any[] = [];
+  if (d.header_type === "TEXT" && d.header_text) {
+    const comp: any = { type: "HEADER", format: "TEXT", text: d.header_text };
+    if (extractVars(d.header_text).length === 1) comp.example = { header_text: ["Sample"] };
+    components.push(comp);
+  }
+  const bodyVars = extractVars(d.body_text);
+  const body: any = { type: "BODY", text: d.body_text };
+  if (bodyVars.length) body.example = { body_text: [bodyVars.map((_, i) => `Sample${i + 1}`)] };
+  components.push(body);
+  if (d.footer_text) components.push({ type: "FOOTER", text: d.footer_text });
+  const btns = (d.buttons || []).map((b) => {
+    if (b.type === "URL") {
+      const out: any = { type: "URL", text: b.text, url: b.url };
+      if (extractVars(b.url).length === 1) out.example = ["sample-id"];
+      return out;
+    }
+    if (b.type === "PHONE_NUMBER") return { type: "PHONE_NUMBER", text: b.text, phone_number: b.phone_number };
+    return { type: "QUICK_REPLY", text: b.text };
+  });
+  if (btns.length) components.push({ type: "BUTTONS", buttons: btns });
+  return components;
+}
+
+function sanitizeError(s: any): string {
+  const msg = typeof s === "string" ? s : s?.error?.message || s?.message || JSON.stringify(s);
+  // never echo any tokens that might leak
+  return String(msg).slice(0, 500);
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const j = (status: number, body: any) =>
+    new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+  try {
+    const authHeader = req.headers.get("Authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) return j(401, { error: "Unauthorized" });
+
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(authHeader.replace("Bearer ", ""));
+    if (claimsErr || !claimsData?.claims) return j(401, { error: "Unauthorized" });
+    const userId = claimsData.claims.sub as string;
+
+    const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
+    if (!isAdmin) return j(403, { error: "Forbidden — admin only" });
+
+    const body = await req.json();
+    const action = String(body?.action || "");
+    const templateName = String(body?.template_name || body?.name || "");
+
+    // Rate limit: ≤ 20 template ops / hour / admin (Meta throttles aggressive submitters).
+    const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count: recent } = await admin
+      .from("wa_template_audit")
+      .select("id", { count: "exact", head: true })
+      .eq("actor", userId)
+      .gte("created_at", since);
+    if ((recent || 0) >= 20) return j(429, { error: "Rate limit: 20 template ops per hour. Try again later." });
+
+    const WABA_ID = Deno.env.get("META_WABA_ID");
+    const { data: cfg } = await admin
+      .from("platform_config")
+      .select("wa_access_token")
+      .limit(1)
+      .maybeSingle();
+    const TOKEN = (cfg as any)?.wa_access_token || Deno.env.get("META_WHATSAPP_TOKEN");
+
+    if (!WABA_ID) return j(400, { error: "META_WABA_ID secret not set. Add it in admin secrets first." });
+    if (!TOKEN) return j(400, { error: "WhatsApp access token not configured. Add it in /admin/whatsapp → Platform." });
+
+    const audit = async (act: string, status: string | null, detail: any) =>
+      admin.from("wa_template_audit").insert({ template_name: templateName || "(unknown)", action: act, actor: userId, meta_status: status, detail } as any);
+
+    // -------- CREATE --------
+    if (action === "create") {
+      const draft = body as Draft;
+      if (!draft.name || !draft.body_text || !draft.category || !draft.language) {
+        return j(400, { error: "Missing required fields (name, body_text, category, language)" });
+      }
+      const components = draftToComponents(draft);
+      const resp = await fetch(`${GRAPH}/${WABA_ID}/message_templates`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: draft.name,
+          language: draft.language,
+          category: draft.category,
+          components,
+        }),
+      });
+      const out = await resp.json();
+      if (!resp.ok) {
+        await audit("create", "error", { error: sanitizeError(out) });
+        return j(resp.status, { error: sanitizeError(out) });
+      }
+      const status = (out?.status as string) || "PENDING";
+      await admin.from("platform_wa_templates").update({
+        meta_template_id: out?.id || null,
+        meta_status: status,
+        meta_rejected_reason: null,
+        submitted_at: new Date().toISOString(),
+        paused: false,
+        pause_reason: null,
+      }).eq("name", draft.name);
+      await audit("create", status, { id: out?.id });
+      return j(200, { ok: true, meta_id: out?.id, meta_status: status });
+    }
+
+    // -------- EDIT --------
+    if (action === "edit") {
+      const draft = body as Draft;
+      const { data: row } = await admin
+        .from("platform_wa_templates")
+        .select("meta_template_id")
+        .eq("name", templateName)
+        .maybeSingle();
+      const id = (row as any)?.meta_template_id;
+      if (!id) return j(400, { error: "Template has not been submitted to Meta yet. Use 'Submit' first." });
+
+      const components = draftToComponents(draft);
+      const resp = await fetch(`${GRAPH}/${id}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ components, category: draft.category }),
+      });
+      const out = await resp.json();
+      if (!resp.ok) {
+        await audit("edit", "error", { error: sanitizeError(out) });
+        return j(resp.status, { error: sanitizeError(out) });
+      }
+      await admin.from("platform_wa_templates").update({
+        meta_status: "PENDING",
+        meta_rejected_reason: null,
+        submitted_at: new Date().toISOString(),
+      }).eq("name", templateName);
+      await audit("edit", "PENDING", { id });
+      return j(200, { ok: true });
+    }
+
+    // -------- DELETE --------
+    if (action === "delete") {
+      const params = new URLSearchParams({ name: templateName });
+      const { data: row } = await admin
+        .from("platform_wa_templates")
+        .select("meta_template_id")
+        .eq("name", templateName)
+        .maybeSingle();
+      const id = (row as any)?.meta_template_id;
+      if (id) params.set("hsm_id", id);
+
+      const resp = await fetch(`${GRAPH}/${WABA_ID}/message_templates?${params}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${TOKEN}` },
+      });
+      const out = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        await audit("delete", "error", { error: sanitizeError(out) });
+        return j(resp.status, { error: sanitizeError(out) });
+      }
+      await admin.from("platform_wa_templates").update({
+        is_active: false,
+        meta_status: "DELETED",
+      }).eq("name", templateName);
+      await audit("delete", "DELETED", {});
+      return j(200, { ok: true });
+    }
+
+    // -------- REFRESH (single template status) --------
+    if (action === "refresh") {
+      // Fetch by name filter
+      const url = `${GRAPH}/${WABA_ID}/message_templates?name=${encodeURIComponent(templateName)}&fields=name,status,id,category,language,quality_score,rejected_reason`;
+      const resp = await fetch(url, { headers: { Authorization: `Bearer ${TOKEN}` } });
+      const out = await resp.json();
+      if (!resp.ok) {
+        await audit("refresh", "error", { error: sanitizeError(out) });
+        return j(resp.status, { error: sanitizeError(out) });
+      }
+      const row = (out?.data || []).find((r: any) => r?.name === templateName) || out?.data?.[0];
+      if (!row) return j(404, { error: "Template not found on Meta" });
+      const status = row.status || null;
+      await admin.from("platform_wa_templates").update({
+        meta_template_id: row.id || null,
+        meta_status: status,
+        meta_rejected_reason: row.rejected_reason || null,
+        quality_score: row.quality_score?.score || row.quality_score || null,
+        last_synced_at: new Date().toISOString(),
+        paused: status === "REJECTED" || status === "PAUSED",
+        pause_reason: status === "REJECTED" ? (row.rejected_reason || "rejected by meta") : null,
+      }).eq("name", templateName);
+      await audit("refresh", status, { id: row.id, rejected_reason: row.rejected_reason || null });
+      return j(200, { ok: true, meta_status: status, meta_id: row.id, rejected_reason: row.rejected_reason || null });
+    }
+
+    return j(400, { error: `Unknown action: ${action}` });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: sanitizeError(e) }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
