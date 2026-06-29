@@ -51,11 +51,23 @@ Deno.serve(async (req) => {
       .map((s: any) => s.store_id),
   );
 
-  let enqueued = 0, skipped = 0, storeOff = 0;
+  // Per-phone 24h marketing cooldown — prevents same number getting multiple
+  // marketing pings across stores or repeated carts.
+  const phones = Array.from(new Set(carts.map((c: any) => c.customer_phone).filter(Boolean)));
+  const cooldownSince = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+  const { data: recent } = await admin
+    .from("customers")
+    .select("phone, last_marketing_sent_at")
+    .in("phone", phones)
+    .gte("last_marketing_sent_at", cooldownSince);
+  const onCooldown = new Set((recent || []).map((r: any) => r.phone));
+
+  let enqueued = 0, skipped = 0, storeOff = 0, cooldown = 0;
   for (const c of carts) {
     if (disabled.has((c as any).store_id)) { storeOff++; continue; }
     const phone = normalizePhone((c as any).customer_phone);
     if (!phone) { skipped++; continue; }
+    if (onCooldown.has((c as any).customer_phone)) { cooldown++; continue; }
 
     const items = Array.isArray((c as any).cart_items) ? (c as any).cart_items : [];
     const total = items.reduce((s: number, it: any) => s + (Number(it?.price ?? 0) * Number(it?.quantity ?? 1)), 0);
@@ -83,10 +95,15 @@ Deno.serve(async (req) => {
     await admin.from("abandoned_carts")
       .update({ recovery_sent_at: new Date().toISOString(), recovery_status: "queued" })
       .eq("id", (c as any).id);
+    // Stamp cooldown on customers row (no-op if customer row doesn't exist yet).
+    await admin.from("customers")
+      .update({ last_marketing_sent_at: new Date().toISOString() })
+      .eq("phone", (c as any).customer_phone);
   }
 
-  return json({ processed: carts.length, enqueued, skipped, store_off: storeOff });
+  return json({ processed: carts.length, enqueued, skipped, store_off: storeOff, cooldown });
 });
+
 
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
