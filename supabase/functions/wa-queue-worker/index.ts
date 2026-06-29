@@ -60,6 +60,7 @@ Deno.serve(async (req) => {
         recipient_name: row.recipient_name,
         template_name: row.template_name,
         template_params: row.params,
+        template_vars: row.template_vars || undefined,
         message_type: row.message_type,
         order_id: row.order_id,
         abandoned_cart_id: row.abandoned_cart_id,
