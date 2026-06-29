@@ -154,6 +154,7 @@ export default function V22CheckoutPage() {
   const [city, setCity] = useState(buyNowAddress?.city || savedInfo.city || "");
   const [state, setState] = useState(buyNowAddress?.state || savedInfo.state || "");
   const [pincode, setPincode] = useState(buyNowAddress?.pincode || savedInfo.pincode || "");
+  const [waConsent, setWaConsent] = useState<boolean>(savedInfo.waConsent !== false);
 
   // Re-check localStorage for late-arriving address data (Theme-16 geocode race condition).
   // Event-driven: writers dispatch "checkout_address_ready" on the window after setItem.
