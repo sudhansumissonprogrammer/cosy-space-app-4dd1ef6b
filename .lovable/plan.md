@@ -1,196 +1,160 @@
-# Phase 1.5 — Production Hardening Before Merchant Onboarding
+# WhatsApp Template Studio — Submit to Meta + Custom Builder
 
-Build on the Phase 1 shared platform without removing anything. Eight focused upgrades, then a controlled 5–10 store pilot.
-
----
-
-## 1. Merchant Branding in Every Template
-
-Every platform send must carry the store's identity, not "ShopBanao".
-
-- Extend `wa-platform-send` to accept `store_id` and auto-resolve branding vars from `stores`: `{{store_name}}`, `{{store_phone}}`, `{{store_website}}` (full URL from slug/custom domain), `{{order_link}}`, `{{customer_name}}`.
-- New helper `_shared/wa-branding.ts` → `resolveBrandingVars(admin, store_id, extra)` returns the ordered `template_params` array based on the template's `variables[]` definition.
-- `platform_wa_templates.variables` becomes the contract; each template declares the variable order it expects. `wa-cart-recovery-cron`, `wa-order-event`, `wa-campaign-runner` all go through the resolver — no hand-built param arrays.
-- Admin UI: show a "Branding preview" panel in `AdminPlatformTemplatesTab` rendering the body with a sample store's values.
-
-## 2. Seed the Full Template Library
-
-Seed all 10 templates as inactive rows in `platform_wa_templates` with documented body previews and variable lists. Admin activates each one as the matching Meta template is approved.
-
-```
-abandoned_cart_v1, order_confirmation_v1, payment_success_v1,
-order_shipped_v1, order_delivered_v1, review_request_v1,
-coupon_offer_v1, festival_sale_v1, welcome_customer_v1, back_in_stock_v1
-```
-
-Hook points wired now (fire only if the template is `is_active=true`):
-- `welcome_customer_v1` → first storefront signup (storefront-auth side effect).
-- `payment_success_v1` → existing payment webhooks (already calling `wa-order-event`).
-- `back_in_stock_v1` → new `wa-back-in-stock-cron` reading a small `back_in_stock_waitlist` table (added now, populated by a "Notify me" button later).
-- `review_request_v1` → cron 5 days after `order_delivered`.
-
-## 3. Campaign Audience Segments
-
-Replace the current "all customers" filter with a typed segment selector.
-
-- New SQL view `customer_segments_v1` aggregating per `storefront_customer`: total_orders, total_spent, last_order_at, has_abandoned_cart, last_active_at.
-- `platform_wa_campaigns.audience_filter jsonb` schema:
-  ```json
-  { "segment": "vip" | "with_orders" | "no_orders" | "high_value" | "abandoned_cart" | "recent_30d" | "inactive_90d" | "all", "store_ids": ["..."] | null, "min_spent": 0, "max_spent": null }
-  ```
-- `wa-campaign-runner` translates segment → SQL using a security-definer RPC `expand_campaign_audience(filter jsonb, limit int, offset int)`.
-- Admin UI: segment dropdown + live "estimated recipients" count before send.
-
-## 4. Send Queue (no direct sends from campaigns/cron)
-
-- New table `wa_send_queue (id, store_id, recipient_phone, template_name, params jsonb, priority int, scheduled_at, attempts int default 0, max_attempts int default 4, status text default 'pending', last_error text, locked_until timestamptz, created_at)`.
-- Producers: `wa-cart-recovery-cron`, `wa-campaign-runner`, `wa-order-event` insert rows instead of calling Meta directly. (Test-send from admin still calls `wa-platform-send` directly.)
-- New worker `wa-queue-worker` invoked every 1 min by pg_cron:
-  - Claims up to N rows with `SELECT … FOR UPDATE SKIP LOCKED` + `locked_until = now()+2min`.
-  - Calls `wa-platform-send` with `x-cron-secret`.
-  - Marks `sent` / schedules retry on failure.
-- Throughput cap: configurable in `platform_config` (`wa_queue_batch_size`, default 50/min).
-
-## 5. Retry with Backoff
-
-- Backoff schedule: 1m → 5m → 30m → 2h → `failed` (4 attempts).
-- Classify Meta errors in `wa-platform-send` response so the queue worker can decide:
-  - Transient (rate limit, 5xx, network) → retry.
-  - Permanent (invalid number, template paused, opted-out) → mark `failed` immediately, log reason.
-- Surface `last_error` + attempt count in the admin queue view.
-
-## 6. Analytics Tab
-
-New `AdminPlatformAnalyticsTab` driven by SQL views/RPCs:
-
-- `wa_platform_metrics_daily` view: sent, delivered, read, replied, failed, opt-outs.
-- `wa_cart_recovery_metrics` RPC: carts targeted, messages delivered, carts recovered (orders within 48h with same phone), recovered revenue, recovery %.
-- `wa_campaign_metrics` per `platform_wa_campaigns.id`: sent, delivered, read, CTR (link clicks if we add click tracking later), replies, attributed orders, attributed revenue.
-- KPIs on top: Recovered Revenue (₹), Recovered Orders, Recovery %, Delivery %, Read %, Reply %, Failed %.
-- Required wiring: `whatsapp-webhook` already updates statuses; add `replied_at` timestamp on inbound and a `recovered_order_id` linker job that runs hourly to match orders ↔ recent abandoned-cart messages.
-
-## 7. AI Campaign Writer (no chatbot)
-
-New tab `AdminAICampaignWriterTab`. Merchant/admin enters a brief: "Diwali offer, 15% off, jewellery store".
-
-- Edge fn `wa-ai-template-draft` calls the Lovable AI Gateway (`google/gemini-2.5-flash`) with a strict JSON schema response:
-  ```json
-  { "template_name": "diwali_15_off_v1", "headline": "...", "body": "...", "button_label": "Shop Now", "emoji_set": ["🪔","✨"], "coupon_code": "DIWALI15", "variables": ["{{1}}","{{2}}","{{3}}"], "category": "marketing" }
-  ```
-- "Save as draft template" inserts into `platform_wa_templates` with `is_active=false` so admin reviews → submits to Meta → activates.
-- No chatbot, no streaming, no per-customer AI — strictly a template drafting helper.
-
-## 8. Pilot Rollout (5–10 stores)
-
-- Add `stores_wa_settings.pilot_cohort boolean default false`.
-- `wa_enabled` global stays ON, but every producer (`wa-cart-recovery-cron`, `wa-order-event`, `wa-campaign-runner`) checks: if `platform_config.wa_pilot_mode = true`, only enqueue for stores where `pilot_cohort = true`.
-- Admin tab toggle: "Pilot mode" + multi-select to mark cohort stores.
-- After 7 days of clean metrics, flip `wa_pilot_mode = false` → all stores live.
+Goal: stop pasting templates into Meta by hand. Build (a) a one-click **Submit to Meta** action for every template row, and (b) a **Template Builder** so you can author new templates (any language, any category) from inside `/admin/whatsapp` and ship them with one click.
 
 ---
 
-## Technical section
+## 1. What this gives you
 
-### Migration (single file)
-
-```sql
--- Branding + queue + analytics support
-ALTER TABLE platform_config
-  ADD COLUMN wa_queue_batch_size int NOT NULL DEFAULT 50,
-  ADD COLUMN wa_pilot_mode boolean NOT NULL DEFAULT true;
-
-ALTER TABLE stores_wa_settings
-  ADD COLUMN pilot_cohort boolean NOT NULL DEFAULT false;
-
-ALTER TABLE platform_wa_templates
-  ADD COLUMN category text DEFAULT 'transactional',
-  ADD COLUMN button_label text,
-  ADD COLUMN headline text;
-
-ALTER TABLE whatsapp_messages
-  ADD COLUMN replied_at timestamptz,
-  ADD COLUMN delivered_at timestamptz,
-  ADD COLUMN read_at timestamptz,
-  ADD COLUMN recovered_order_id uuid REFERENCES orders(id);
-
--- Queue
-CREATE TABLE wa_send_queue (...);
-GRANT SELECT, INSERT, UPDATE, DELETE ON wa_send_queue TO service_role;
-ALTER TABLE wa_send_queue ENABLE ROW LEVEL SECURITY;
-CREATE POLICY admin_all ON wa_send_queue FOR ALL TO authenticated
-  USING (has_role(auth.uid(),'admin')) WITH CHECK (has_role(auth.uid(),'admin'));
-
--- Back-in-stock waitlist
-CREATE TABLE back_in_stock_waitlist (...);
-
--- Segments view
-CREATE VIEW customer_segments_v1 AS (...);
-
--- RPCs: expand_campaign_audience, get_wa_platform_kpis, get_wa_recovery_metrics
-```
-
-### New edge functions
-
-```
-supabase/functions/wa-queue-worker/index.ts        (cron, 1 min)
-supabase/functions/wa-back-in-stock-cron/index.ts  (cron, hourly)
-supabase/functions/wa-recovery-attribution/index.ts (cron, hourly — link orders → cart msgs)
-supabase/functions/wa-ai-template-draft/index.ts   (admin auth)
-supabase/functions/_shared/wa-branding.ts          (resolveBrandingVars)
-```
-
-### Edited edge functions
-
-- `wa-platform-send`: accept `store_id`, auto-resolve branding vars when `template_params` omitted; return structured error class (`transient` | `permanent`).
-- `wa-cart-recovery-cron`, `wa-campaign-runner`, `wa-order-event`: enqueue instead of direct send; honor `wa_pilot_mode` + `pilot_cohort`.
-- `whatsapp-webhook`: stamp `delivered_at`, `read_at`, `replied_at`.
-
-### New / edited frontend
-
-```
-NEW  src/components/admin/whatsapp/AdminPlatformAnalyticsTab.tsx
-NEW  src/components/admin/whatsapp/AdminQueueTab.tsx
-NEW  src/components/admin/whatsapp/AdminAICampaignWriterTab.tsx
-NEW  src/components/admin/whatsapp/AudienceSegmentPicker.tsx
-NEW  src/components/admin/whatsapp/TemplateBrandingPreview.tsx
-EDIT src/pages/admin/AdminWhatsApp.tsx               (add 3 tabs + pilot toggle)
-EDIT src/components/admin/whatsapp/AdminPlatformTab.tsx
-       (pilot mode toggle, queue batch size, cohort multi-select)
-EDIT src/components/admin/whatsapp/AdminPlatformTemplatesTab.tsx
-       (seed all 10, branding preview, AI-draft import)
-EDIT src/components/admin/whatsapp/AdminPlatformCampaignsTab.tsx
-       (segment picker, estimated audience count, queue-based runner)
-```
-
-### Cron schedule
-
-```
-*/1  *  *  *  *  wa-queue-worker
-*/10 *  *  *  *  wa-cart-recovery-cron       (already)
-0    *  *  *  *  wa-back-in-stock-cron
-0    *  *  *  *  wa-recovery-attribution
-```
-
-### Secrets
-
-No new secrets needed; reuses `CRON_SECRET`, existing platform WA creds, and `LOVABLE_API_KEY` for the AI writer.
+- One **"Submit to Meta"** button per template → posts to Graph API with your saved token, stores `meta_template_id`, flips `meta_status` automatically.
+- A **"+ New template"** dialog → guided builder (category, language, header, body with `{{1}} {{2}}` variables, footer, up to 2 buttons). Live WhatsApp-style preview. Validates Meta rules before submit so you don't get rejected for trivial reasons.
+- A **"Resubmit"** action for rejected/edited templates (Meta requires a new name or `edit` call; we handle both).
+- Hourly sync already exists (`wa-template-sync-hourly`) — it will pick up approval status without you doing anything.
+- **No more JSON copy-paste, no more Meta UI for routine work.** You still log into Meta only for first-time WABA setup.
 
 ---
 
-## Build order (incremental, safe)
+## 2. Database changes (1 migration)
 
-1. Migration + queue table + queue worker + retry classification.
-2. Switch all three producers to enqueue. Verify deliveries unchanged.
-3. Branding helper + reseed all 10 templates (inactive).
-4. Segments view + RPC + segment picker.
-5. Analytics views + RPCs + attribution cron + Analytics tab.
-6. AI Campaign Writer edge function + tab.
-7. Pilot mode flag + cohort selector. Enable for 5–10 stores.
-8. After 7 days clean: flip `wa_pilot_mode = false`.
+Extend `platform_wa_templates` with the fields the builder/submitter need:
 
-## Open questions
+| New column | Purpose |
+|---|---|
+| `category` | UTILITY / MARKETING / AUTHENTICATION |
+| `header_type` | NONE / TEXT / IMAGE |
+| `header_text` | header copy when type=TEXT |
+| `body_text` | the actual template body with `{{1}}…{{n}}` |
+| `buttons` (jsonb) | `[{type:'URL', text:'View Order', url:'https://{{1}}'}]` |
+| `meta_template_id` | id returned by Graph API |
+| `meta_rejected_reason` | last rejection reason from Meta |
+| `submitted_at` | last submit timestamp |
+| `created_by` | admin user id |
 
-1. Pilot cohort — pick stores yourself or want me to suggest top 10 by recent abandoned-cart volume?
-2. AI writer model — `google/gemini-2.5-flash` (fast, free during promo) or `google/gemini-2.5-pro` (higher quality)?
-3. Recovery attribution window — 48h after message default, or 24h / 72h?
-4. Click tracking — add a `wa.shopbanao.in/r/{token}` redirector now (for CTR) or defer to Phase 2?
+Existing columns kept: `name`, `language`, `variables`, `footer_text`, `button_url_pattern`, `meta_status`, `paused`, `pause_reason`, `is_active`.
+
+Backfill `body_text` / `category` / `buttons` for the 3 live templates (`order_confirmation_v2`, `order_shipped_v2`, `abandoned_cart_v2`) so the new UI shows them correctly.
+
+---
+
+## 3. New edge function — `wa-template-submit`
+
+Single endpoint that does all 4 lifecycle actions:
+
+- `action: 'create'` → `POST graph.facebook.com/v21.0/{WABA_ID}/message_templates`
+- `action: 'edit'` → `POST graph.facebook.com/v21.0/{TEMPLATE_ID}` (only body/footer/buttons; name+category are immutable per Meta)
+- `action: 'delete'` → `DELETE graph.facebook.com/v21.0/{WABA_ID}/message_templates?name=...`
+- `action: 'refresh'` → fetches current status for one template (instant feedback after Submit, doesn't wait for the hourly cron)
+
+Auth: admin-only (existing `has_role(user_id,'admin')` gate, same pattern as `wa-platform-send`).
+
+Inputs validated with Zod. Builds the Meta `components[]` array from our DB row (HEADER + BODY + FOOTER + BUTTONS). Stores `meta_template_id`, `meta_status`, `meta_rejected_reason`, `submitted_at` back on the row.
+
+Needs one new secret: `META_WABA_ID` (WhatsApp Business Account ID — different from phone-number-id). Token reuses existing `wa_access_token` from `platform_config`.
+
+---
+
+## 4. UI — `/admin/whatsapp` → Templates tab
+
+Rebuild `AdminPlatformTemplatesTab.tsx` with three surfaces:
+
+**a. List view** (table)
+- Columns: name · category · language · meta_status (color chip) · last submitted · actions
+- Row actions: Edit · Submit to Meta · Refresh status · Pause/Resume · Delete (Meta + DB)
+- Status chips: PENDING (amber), APPROVED (green), REJECTED (red, click → shows reason), PAUSED (gray)
+
+**b. Builder dialog** (`+ New template`)
+
+```text
+┌─────────────────────────────┬──────────────────────────┐
+│ FORM                        │ LIVE PREVIEW             │
+│ ─ Name (snake_case)         │  ┌────────────────────┐  │
+│ ─ Language (en/hi/…)        │  │  📱 WhatsApp       │  │
+│ ─ Category (UTIL/MKT/AUTH)  │  │  ─────────────     │  │
+│ ─ Header (none/text/image)  │  │  Header line       │  │
+│ ─ Body  [textarea]          │  │  Body with         │  │
+│   helper: insert {{var}}    │  │  resolved {{1}}    │  │
+│ ─ Footer (≤60 chars)        │  │  Footer            │  │
+│ ─ Buttons (0–2)             │  │  [ View Order ]    │  │
+│   • URL  • Quick reply      │  └────────────────────┘  │
+│ ─ Sample values for vars    │                          │
+│   (used in preview + Meta)  │  ⚠ Validation hints     │
+└─────────────────────────────┴──────────────────────────┘
+     [ Save draft ]   [ Save & Submit to Meta ]
+```
+
+Client-side validation before submit (catches 90% of Meta rejections):
+- Body ≤ 1024 chars, header ≤ 60, footer ≤ 60, button text ≤ 25
+- Variables must be sequential `{{1}}, {{2}}, …`
+- No URL/phone in body unless it's a variable inside a button
+- Marketing templates must include opt-out language in footer (we auto-append "Reply STOP to opt out" if missing)
+- Snake_case + lowercase name (Meta requirement)
+
+**c. Detail drawer** — clicking a template opens history: submit timestamps, Meta status transitions, rejection reasons, last 20 sends using this template, click-through rate from `wa_link_clicks`.
+
+---
+
+## 5. Lifecycle wiring (so nothing is half-done)
+
+- After **Submit** → call `refresh` once after 5s for instant feedback; rely on hourly sync after that.
+- On **Approved** → row becomes selectable in `wa-order-event` / campaigns (already gated by `meta_status==='approved'` in `wa-platform-send`).
+- On **Rejected** → row auto-pauses (`paused=true`), reason shown in UI, Edit becomes the only enabled action.
+- On **Paused by Meta** (via webhook `message_template_status_update` → already handled in `whatsapp-webhook`) → same UI treatment; `wa-platform-send` already refuses to send.
+- On **Delete** → soft-delete locally (`is_active=false`) + hard delete on Meta. Prevents accidental data loss in our analytics tables.
+
+---
+
+## 6. Safety / guardrails
+
+- Admin role gate on every action (already enforced via `has_role`).
+- Rate-limit submits: max 10 template ops / hour / admin (Meta throttles aggressive submitters and can flag the WABA).
+- Master kill switch (`wa_enabled`) still respected — Submit works even when sender is off, since approval is independent of sending.
+- Never log the access token. Errors from Meta are sanitized before storing in `meta_rejected_reason`.
+- Audit row written to `wa_health_log` for every create/edit/delete.
+
+---
+
+## 7. Files touched
+
+**New**
+- `supabase/functions/wa-template-submit/index.ts`
+- `src/components/admin/whatsapp/TemplateBuilderDialog.tsx`
+- `src/components/admin/whatsapp/TemplatePreview.tsx`
+- `src/components/admin/whatsapp/TemplateDetailDrawer.tsx`
+- `src/lib/wa-template-validate.ts` (shared validator: client + edge)
+
+**Edited**
+- `src/components/admin/whatsapp/AdminPlatformTemplatesTab.tsx` (rebuild)
+- 1 migration (schema + backfill)
+
+**Untouched**
+- `wa-platform-send`, `wa-order-event`, `wa-cart-recovery-cron`, `whatsapp-webhook`, all triggers — the sending pipeline doesn't change.
+
+---
+
+## 8. Secrets to add (one-time, after plan approval)
+
+- `META_WABA_ID` — find it in Meta Business Manager → WhatsApp Accounts → your WABA → top of page. Same place you got `META_WHATSAPP_TOKEN`.
+
+That's the only new secret. Token, phone-number-id, and verify-token are already saved.
+
+---
+
+## 9. Out of scope (call it out so we don't sprawl)
+
+- Media header uploads (image/video templates) → phase 2; current 3 templates are text-only.
+- Carousel / catalog templates → phase 2.
+- Multi-language auto-translation → phase 2 (you'll create Hindi versions manually in the builder for now; 2 minutes per template).
+- Per-merchant custom templates → still later, after single-shared sender is fully proven.
+
+---
+
+## 10. Acceptance test
+
+After build, you should be able to:
+1. Open `/admin/whatsapp` → Templates → see 3 existing templates with full body/footer/buttons.
+2. Click **Submit to Meta** on `order_confirmation_v2` → status flips to PENDING within 2s → APPROVED within ~5 min (Meta side).
+3. Click **+ New template**, fill the builder for a Hindi `order_confirmation_hi` → preview matches what WhatsApp will render → **Save & Submit** → row appears with PENDING.
+4. Pause / resume / delete each works and is reflected in Meta within 30s.
+5. Send a test order → `wa-platform-send` only picks templates where `meta_status='approved'` and `paused=false` (already true today; verified end-to-end after a real approval lands).
+
+Ready to build on approval.
