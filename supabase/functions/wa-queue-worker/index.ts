@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
   }
 
   const cfg = await loadPlatformConfig(admin);
+  if (!platformConfigUsable(cfg)) return json({ skipped: true, reason: "wa_disabled" });
   const batchSize = (cfg as any)?.wa_queue_batch_size || 50;
   const downstreamSecret = (await getCronSecret(admin)) || "";
 
