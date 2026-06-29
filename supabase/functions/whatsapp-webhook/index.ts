@@ -82,6 +82,14 @@ Deno.serve(async (req) => {
         const isPlatformDelivery = !!phoneNumberId && phoneNumberId === platformPhoneId;
 
         // ── Outbound status updates (sent / delivered / read / failed) ──
+        // Also capture conversation pricing for the cost ledger.
+        // Meta INR rates per conversation (India), Nov-2024 published rates.
+        const META_INR_RATES: Record<string, number> = {
+          marketing: 0.7846,
+          utility: 0.115,
+          authentication: 0.115,
+          service: 0,
+        };
         const statuses = value?.statuses || [];
         for (const status of statuses) {
           const metaMessageId = status?.id;
@@ -101,7 +109,34 @@ Deno.serve(async (req) => {
             .from("whatsapp_messages")
             .update(update)
             .eq("meta_message_id", metaMessageId);
+
+          // Conversation cost ledger — unique per conversation id (Meta only bills
+          // once per 24h window per category).
+          const conv = status?.conversation;
+          const pricing = status?.pricing;
+          if (conv?.id && pricing) {
+            const category = String(pricing?.category || conv?.origin?.type || "service").toLowerCase();
+            const billable = pricing?.billable !== false && category !== "service";
+            const cost = billable ? (META_INR_RATES[category] ?? 0) : 0;
+            // Resolve store_id from the outgoing message row
+            const { data: msgRow } = await adminClient
+              .from("whatsapp_messages").select("store_id").eq("meta_message_id", metaMessageId).maybeSingle();
+            await adminClient.from("wa_conversation_costs").upsert({
+              conversation_id: conv.id,
+              recipient_phone: status?.recipient_id || "",
+              message_id: metaMessageId,
+              store_id: (msgRow as any)?.store_id || null,
+              category,
+              pricing_model: pricing?.pricing_model || null,
+              billable,
+              cost,
+              currency: "INR",
+              origin_type: conv?.origin?.type || null,
+              raw: { pricing, conversation: conv },
+            } as any, { onConflict: "conversation_id" });
+          }
         }
+
 
         // ── Inbound messages from customers ──
         const messages = value?.messages || [];
@@ -156,9 +191,19 @@ Deno.serve(async (req) => {
           const caption = msg[msgType]?.caption || "";
           const finalBody = msgBody || caption || (mediaType ? `[${mediaType}]` : "");
 
-          // Opt-out keywords
-          const optOutKeywords = ["stop", "unsubscribe", "opt out", "optout", "cancel"];
-          const isOptOut = optOutKeywords.some((kw) => finalBody.toLowerCase() === kw);
+          // Opt-out keywords — exact whole-word match (avoids false positives like
+          // "cancel my order"). Short message + exact keyword = opt-out intent.
+          const STOP_WORDS = new Set([
+            "stop", "unsubscribe", "optout",
+            "remove", "बंद", "रोको", "हटाओ",
+          ]);
+          const STOP_PHRASES = ["opt out", "remove me", "do not message", "dont message", "don't message", "no more", "बंद करो", "मत भेजो"];
+          const lowered = finalBody.toLowerCase().trim();
+          const tokens = lowered.split(/\s+/);
+          const isOptOut = (tokens.length <= 4 && tokens.some((t) => STOP_WORDS.has(t)))
+            || STOP_PHRASES.some((p) => lowered.includes(p));
+
+
 
           if (!from) continue;
 

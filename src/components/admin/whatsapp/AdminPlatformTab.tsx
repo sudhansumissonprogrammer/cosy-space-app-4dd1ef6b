@@ -236,6 +236,8 @@ export function AdminPlatformTab() {
       </Card>
 
       <PlatformHealthCard />
+      <PlatformCostCard />
+
     </div>
   );
 }
@@ -296,6 +298,42 @@ function PlatformHealthCard() {
     </Card>
   );
 }
+
+function PlatformCostCard() {
+  const [data, setData] = useState<any>(null);
+  useEffect(() => {
+    supabase.rpc("get_wa_cost_summary" as any).then(({ data }) => setData(data));
+  }, []);
+  if (!data) return null;
+  const fmt = (n: number) => `₹${Number(n || 0).toFixed(2)}`;
+  const cats = (data.by_category_mtd || {}) as Record<string, { conversations: number; cost: number }>;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Meta conversation cost</CardTitle>
+        <CardDescription>India rates applied per conversation (24h window). Service replies are free.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+          <Stat label="Today" value={`${fmt(data.today?.cost)} · ${data.today?.conversations ?? 0}`} />
+          <Stat label="Last 7 days" value={`${fmt(data.last_7d?.cost)} · ${data.last_7d?.conversations ?? 0}`} />
+          <Stat label="Month to date" value={`${fmt(data.mtd?.cost)} · ${data.mtd?.conversations ?? 0}`} />
+        </div>
+        {Object.keys(cats).length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            {Object.entries(cats).map(([cat, v]) => (
+              <div key={cat} className="rounded border bg-muted/20 px-2 py-1">
+                <div className="uppercase text-[10px] text-muted-foreground">{cat}</div>
+                <div className="font-medium">{fmt(v.cost)} · {v.conversations}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 
 function Stat({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
   return (
