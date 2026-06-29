@@ -82,6 +82,14 @@ Deno.serve(async (req) => {
         const isPlatformDelivery = !!phoneNumberId && phoneNumberId === platformPhoneId;
 
         // ── Outbound status updates (sent / delivered / read / failed) ──
+        // Also capture conversation pricing for the cost ledger.
+        // Meta INR rates per conversation (India), Nov-2024 published rates.
+        const META_INR_RATES: Record<string, number> = {
+          marketing: 0.7846,
+          utility: 0.115,
+          authentication: 0.115,
+          service: 0,
+        };
         const statuses = value?.statuses || [];
         for (const status of statuses) {
           const metaMessageId = status?.id;
@@ -101,7 +109,34 @@ Deno.serve(async (req) => {
             .from("whatsapp_messages")
             .update(update)
             .eq("meta_message_id", metaMessageId);
+
+          // Conversation cost ledger — unique per conversation id (Meta only bills
+          // once per 24h window per category).
+          const conv = status?.conversation;
+          const pricing = status?.pricing;
+          if (conv?.id && pricing) {
+            const category = String(pricing?.category || conv?.origin?.type || "service").toLowerCase();
+            const billable = pricing?.billable !== false && category !== "service";
+            const cost = billable ? (META_INR_RATES[category] ?? 0) : 0;
+            // Resolve store_id from the outgoing message row
+            const { data: msgRow } = await adminClient
+              .from("whatsapp_messages").select("store_id").eq("meta_message_id", metaMessageId).maybeSingle();
+            await adminClient.from("wa_conversation_costs").upsert({
+              conversation_id: conv.id,
+              recipient_phone: status?.recipient_id || "",
+              message_id: metaMessageId,
+              store_id: (msgRow as any)?.store_id || null,
+              category,
+              pricing_model: pricing?.pricing_model || null,
+              billable,
+              cost,
+              currency: "INR",
+              origin_type: conv?.origin?.type || null,
+              raw: { pricing, conversation: conv },
+            } as any, { onConflict: "conversation_id" });
+          }
         }
+
 
         // ── Inbound messages from customers ──
         const messages = value?.messages || [];
