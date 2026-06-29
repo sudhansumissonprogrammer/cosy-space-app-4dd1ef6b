@@ -1577,6 +1577,7 @@ export type Database = {
           wa_pilot_mode: boolean
           wa_queue_batch_size: number
           wa_require_marketing_consent: boolean
+          wa_tier_limit: number
           wa_waba_id: string | null
           whatsapp_mode: string
         }
@@ -1599,6 +1600,7 @@ export type Database = {
           wa_pilot_mode?: boolean
           wa_queue_batch_size?: number
           wa_require_marketing_consent?: boolean
+          wa_tier_limit?: number
           wa_waba_id?: string | null
           whatsapp_mode?: string
         }
@@ -1621,6 +1623,7 @@ export type Database = {
           wa_pilot_mode?: boolean
           wa_queue_batch_size?: number
           wa_require_marketing_consent?: boolean
+          wa_tier_limit?: number
           wa_waba_id?: string | null
           whatsapp_mode?: string
         }
