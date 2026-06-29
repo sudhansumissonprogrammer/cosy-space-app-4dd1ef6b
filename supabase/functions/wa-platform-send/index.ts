@@ -98,6 +98,11 @@ Deno.serve(async (req) => {
     if ((sentToday ?? 0) >= cfg!.wa_daily_cap_per_phone) return json({ skipped: true, reason: "daily_cap" });
   }
 
+  // Quality auto-throttle — pause MARKETING when Meta drops quality to YELLOW/RED.
+  if (!isTransactional && (cfg as any)?.wa_throttle_marketing === true) {
+    return json({ skipped: true, reason: "quality_throttle", error_class: "transient" });
+  }
+
   // Per-sender (whole platform number) daily tier limit — protects Meta messaging tier.
   // New WABA = 250 unique users / 24h. Burst past this triggers throttling / tier downgrade.
   const tierLimit = Number((cfg as any)?.wa_tier_limit ?? 250);
@@ -110,6 +115,7 @@ Deno.serve(async (req) => {
       return json({ skipped: true, reason: "tier_limit", error_class: "transient" });
     }
   }
+
 
   let metaPayload: any;
   if (isTextReply) {
