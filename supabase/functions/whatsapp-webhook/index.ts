@@ -191,9 +191,15 @@ Deno.serve(async (req) => {
           const caption = msg[msgType]?.caption || "";
           const finalBody = msgBody || caption || (mediaType ? `[${mediaType}]` : "");
 
-          // Opt-out keywords
-          const optOutKeywords = ["stop", "unsubscribe", "opt out", "optout", "cancel"];
-          const isOptOut = optOutKeywords.some((kw) => finalBody.toLowerCase() === kw);
+          // Opt-out keywords — contains-match across English + common Hindi/Hinglish.
+          const optOutPatterns = [
+            "stop", "unsubscribe", "opt out", "optout", "cancel", "remove me",
+            "do not message", "dont message", "don't message", "no more",
+            "बंद", "बंद करो", "रोको", "मत भेजो", "हटाओ",
+          ];
+          const lowered = finalBody.toLowerCase();
+          const isOptOut = optOutPatterns.some((kw) => lowered.includes(kw.toLowerCase()));
+
 
           if (!from) continue;
 
