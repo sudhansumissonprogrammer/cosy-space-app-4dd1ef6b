@@ -374,6 +374,32 @@ Deno.serve(async (req) => {
       console.error("Push notification trigger error:", (e as Error).message);
     }
 
+    // 📲 Enqueue WhatsApp order_confirmation via shared platform pipeline.
+    // Best-effort, never blocks the email/push path. wa-order-event handles
+    // platform mode, kill switch, pilot cohort, opt-out, and templating.
+    try {
+      const { data: cronRow } = await supabase.from("cron_auth").select("secret").eq("id", true).maybeSingle();
+      const cronSecret = (cronRow as any)?.secret || Deno.env.get("CRON_SECRET") || "";
+      if (cronSecret) {
+        const r = await fetch(`${supabaseUrl}/functions/v1/wa-order-event`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-cron-secret": cronSecret,
+            Authorization: `Bearer ${serviceRoleKey}`,
+            apikey: serviceRoleKey,
+          },
+          body: JSON.stringify({ event: "order_confirmation", order_id }),
+        });
+        const txt = await r.text().catch(() => "");
+        console.log("wa-order-event result", r.status, txt);
+      } else {
+        console.warn("wa-order-event skipped — cron_auth secret missing");
+      }
+    } catch (e) {
+      console.error("wa-order-event trigger error:", (e as Error).message);
+    }
+
     console.log(`notify-order completed for ${order_id}, push_only: ${push_only}, customer: ${maskEmail(normalizedEmail)}, owner: ${maskEmail(ownerEmail)}, queue: ${queueWorked}`);
 
     return new Response(JSON.stringify({ success: true }), {
