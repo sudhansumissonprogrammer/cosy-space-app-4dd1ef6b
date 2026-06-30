@@ -465,7 +465,7 @@ function CommissionConfigPanel({ storeId, config, onSaved }: any) {
 
 /* ── Wallet Panel ────────────────────────────────────────── */
 
-function WalletPanel({ storeId, wallet, ledger, recharges, onSaved }: any) {
+function WalletPanel({ storeId, store, wallet, ledger, recharges, onSaved }: any) {
   const balance = Number(wallet?.balance ?? 0);
   const totalRecharged = Number(wallet?.total_recharged ?? 0);
   const totalCharged = Number(wallet?.total_charged ?? 0);
