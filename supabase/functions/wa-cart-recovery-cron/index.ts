@@ -52,25 +52,37 @@ Deno.serve(async (req) => {
   );
 
   // Per-phone 24h marketing cooldown — prevents same number getting multiple
-  // marketing pings across stores or repeated carts.
-  const phones = Array.from(new Set(carts.map((c: any) => c.customer_phone).filter(Boolean)));
+  // marketing pings across stores or repeated carts. Compare on NORMALIZED phone
+  // because customers.phone and abandoned_carts.customer_phone aren't guaranteed
+  // to share the same format (e.g. "+91..." vs "91..." vs "98...").
+  const normPhones = Array.from(new Set(
+    carts.map((c: any) => normalizePhone(c.customer_phone)).filter(Boolean) as string[],
+  ));
   const cooldownSince = new Date(now - 24 * 60 * 60 * 1000).toISOString();
-  const { data: recent } = await admin
-    .from("customers")
-    .select("phone, last_marketing_sent_at")
-    .in("phone", phones)
-    .gte("last_marketing_sent_at", cooldownSince);
-  const onCooldown = new Set((recent || []).map((r: any) => r.phone));
+  const onCooldown = new Set<string>();
+  if (normPhones.length) {
+    const { data: recent } = await admin
+      .from("whatsapp_messages")
+      .select("recipient_phone")
+      .in("recipient_phone", normPhones)
+      .eq("sent_via", "platform").eq("direction", "outgoing")
+      .gte("created_at", cooldownSince)
+      .limit(5000);
+    for (const r of (recent as any[]) ?? []) if (r?.recipient_phone) onCooldown.add(String(r.recipient_phone));
+  }
 
-  let enqueued = 0, skipped = 0, storeOff = 0, cooldown = 0;
+  let enqueued = 0, skipped = 0, storeOff = 0, cooldown = 0, emptyCart = 0;
   for (const c of carts) {
     if (disabled.has((c as any).store_id)) { storeOff++; continue; }
     const phone = normalizePhone((c as any).customer_phone);
     if (!phone) { skipped++; continue; }
-    if (onCooldown.has((c as any).customer_phone)) { cooldown++; continue; }
+    if (onCooldown.has(phone)) { cooldown++; continue; }
 
     const items = Array.isArray((c as any).cart_items) ? (c as any).cart_items : [];
     const total = items.reduce((s: number, it: any) => s + (Number(it?.price ?? 0) * Number(it?.quantity ?? 1)), 0);
+    // Skip empty / zero-value carts — sending "₹0 · 0 items" looks broken and
+    // is a marketing-policy red flag (low-quality messaging → quality drop).
+    if (!items.length || total <= 0) { emptyCart++; continue; }
     const customerName = (items[0]?.customer_name as string) || "there";
     const s = (c as any).stores || {};
     const itemCount = items.reduce((n: number, it: any) => n + Number(it?.quantity ?? 1), 0) || items.length || 1;
