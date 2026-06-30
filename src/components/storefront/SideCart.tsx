@@ -1,12 +1,11 @@
 import { Link } from "react-router-dom";
-import { formatPrice } from "@/lib/productUtils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
-import { Minus, Plus, Trash2, ShoppingCart, ShoppingBag, MessageCircle, Package, X, Truck, Check } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingCart, ShoppingBag, Package, X, Truck, Check } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import CartUpsell from "@/components/storefront/CartUpsell";
@@ -18,9 +17,6 @@ interface SideCartProps {
 export default function SideCart({ store }: SideCartProps) {
   const { items, updateQuantity, removeFromCart, clearCart, cartTotal, cartCount, isCartOpen, closeCart } = useCart();
   const currency = store.currency || "USD";
-  // Commission-only model: every order must go through website checkout so
-  // wallet commission, invoice, abandoned-cart and order automations stay linked.
-  const showWhatsApp = false;
   // TEMP DISABLED: phone-lead modal + map autofill — go straight to /checkout.
   // To re-enable, restore: (store as any).theme === "theme-16" || "theme-21" || "theme-22"
   const isTheme16 = false;
@@ -44,15 +40,7 @@ export default function SideCart({ store }: SideCartProps) {
   const shippingProgress = freeShippingThreshold ? Math.min(100, (cartTotal / freeShippingThreshold) * 100) : null;
   const shippingRemaining = freeShippingThreshold ? Math.max(0, freeShippingThreshold - cartTotal) : null;
 
-  const handleWhatsAppOrder = () => {
-    if (!store.whatsapp_number) return;
-    const phone = store.whatsapp_number.replace(/[^0-9+]/g, "");
-    const itemLines = items
-      .map((i, idx) => `${idx + 1}. ${i.name}${i.variantName ? ` (${i.variantName})` : ""} x${i.quantity} — ${formatPrice((i.price * i.quantity), currency)}`)
-      .join("\n");
-    const text = `Hello, I want to order from ${store.name}:\n\n${itemLines}\n\nTotal: ${formatPrice(cartTotal, currency)}`;
-    window.open(`https://wa.me/${encodeURIComponent(phone)}?text=${encodeURIComponent(text)}`, "_blank");
-  };
+
 
   return (
     <>
