@@ -154,17 +154,14 @@ export default function CreateStore() {
   };
 
   const goNext = () => {
-    if (step === 1 && !selectedPlanId) {
-      toast.error("Please select a plan to continue");
-      return;
-    }
-    if (step === 2 && (!name.trim() || !slug.trim())) {
+    if (step === 1 && (!name.trim() || !slug.trim())) {
       toast.error("Store name and slug are required");
       return;
     }
     setDirection("forward");
     setStep((s) => Math.min(s + 1, STEPS.length));
   };
+
 
   const goBack = () => {
     setDirection("back");
