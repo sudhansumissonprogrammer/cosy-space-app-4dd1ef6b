@@ -973,22 +973,6 @@ export default function CreateStore() {
                   </p>
                 </div>
 
-                {/* Plan summary before launching */}
-                {selectedPlan && (
-                  <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-4">
-                    <div className="flex items-start gap-3">
-                      <CreditCard className="mt-0.5 h-5 w-5 text-primary shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          Launching with <span className="text-primary font-bold">{selectedPlan.name}</span> plan
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          ₹{selectedPlan.price}/month • {selectedPlan.product_limit ? `${selectedPlan.product_limit} products` : "Unlimited products"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 <div className="rounded-xl border bg-accent/30 p-4">
                   <div className="flex items-start gap-3">
