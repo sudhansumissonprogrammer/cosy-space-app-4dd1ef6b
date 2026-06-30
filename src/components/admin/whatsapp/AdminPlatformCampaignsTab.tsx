@@ -4,9 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Eye, Play, ShieldCheck } from "lucide-react";
+import { Plus, Eye, Play, ShieldCheck, Pause, X, RotateCw } from "lucide-react";
 import { CampaignWizard } from "./CampaignWizard";
 import { CampaignDetailDrawer } from "./CampaignDetailDrawer";
+
 
 export function AdminPlatformCampaignsTab() {
   const [rows, setRows] = useState<any[]>([]);
