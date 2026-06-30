@@ -47,7 +47,11 @@ export function validateDraft(d: TplDraft): ValidationIssue[] {
     if (!d.header_text?.trim()) issues.push({ field: "header_text", message: "Header text is required when header type is TEXT", level: "error" });
     else if (d.header_text.length > 60) issues.push({ field: "header_text", message: "Header must be ≤ 60 chars", level: "error" });
     else if (extractVars(d.header_text).length > 1) issues.push({ field: "header_text", message: "Header supports at most 1 variable", level: "error" });
+  } else if (d.header_type === "IMAGE" || d.header_type === "VIDEO" || d.header_type === "DOCUMENT") {
+    if (!d.header_media_url?.trim()) issues.push({ field: "header_media_url", message: `${d.header_type} header needs a sample media URL (used by Meta for review)`, level: "error" });
+    else if (!/^https?:\/\//i.test(d.header_media_url)) issues.push({ field: "header_media_url", message: "Media URL must start with http(s)://", level: "error" });
   }
+
 
   if (!d.body_text?.trim()) issues.push({ field: "body_text", message: "Body is required", level: "error" });
   else {
