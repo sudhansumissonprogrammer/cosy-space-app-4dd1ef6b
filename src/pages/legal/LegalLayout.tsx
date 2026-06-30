@@ -8,7 +8,7 @@ interface LegalLayoutProps {
   children: ReactNode;
 }
 
-const LegalLayout = ({ title, updatedOn = "20 April 2026", children }: LegalLayoutProps) => {
+const LegalLayout = ({ title, updatedOn = "30 June 2026", children }: LegalLayoutProps) => {
   useEffect(() => {
     document.title = `${title} | ShopBanao`;
     window.scrollTo(0, 0);
