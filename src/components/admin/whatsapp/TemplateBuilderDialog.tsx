@@ -8,9 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Trash2, Plus, AlertTriangle, Loader2 } from "lucide-react";
+import { Trash2, Plus, AlertTriangle, Loader2, Info } from "lucide-react";
 import { extractVars, validateDraft, type TplDraft, type TplButton } from "@/lib/wa-template-validate";
+import { WA_SYSTEM_VARIABLES, getSystemVar } from "@/lib/wa-system-variables";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TemplatePreview } from "./TemplatePreview";
+
 
 type Props = {
   open: boolean;
