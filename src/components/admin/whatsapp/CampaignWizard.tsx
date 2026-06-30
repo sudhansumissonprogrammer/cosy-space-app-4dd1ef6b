@@ -116,8 +116,15 @@ export function CampaignWizard({ open, onOpenChange, onCreated }: { open: boolea
   const sampleArr = varIndexes.map((i) => vars[String(i)] || `Sample${i}`);
 
   const canNext1 = name.trim().length >= 2 && templateName;
-  const canNext2 = varIndexes.every((i) => (vars[String(i)] || "").trim().length > 0);
+  // Each {{n}} either has a campaign value OR is bound to a system variable
+  // that the sender auto-resolves per recipient (template.variables[i-1]).
+  const canNext2 = varIndexes.every((i) => {
+    if ((vars[String(i)] || "").trim().length > 0) return true;
+    const bound = (tpl?.variables || [])[i - 1];
+    return !!(bound && bound.trim().length > 0);
+  });
   const canCreate = step === 4 && (audienceCount ?? 0) > 0 && !!scheduledAtISO && !submitting;
+
 
   const create = async () => {
     if (!tpl) return;
