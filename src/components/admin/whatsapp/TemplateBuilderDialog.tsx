@@ -254,18 +254,78 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
               </div>
             </div>
 
-            {allVars.length > 0 && (
-              <div>
-                <Label>Sample values (preview only — Meta requires examples)</Label>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  {allVars.map((n, i) => (
-                    <Input key={n} className="h-8 text-sm" value={samples[i] || ""}
-                      placeholder={`{{${n}}}`}
-                      onChange={(e) => { const s = [...samples]; s[i] = e.target.value; setSamples(s); }} />
+            {/* Variable mapping — every {{n}} in body / header / button URL
+                must be bound to a system variable key so the sender can resolve
+                it per recipient (template_vars[key]). */}
+            <div>
+              <div className="flex items-center justify-between">
+                <Label>Variable mapping</Label>
+                <span className="text-[11px] text-muted-foreground">{allVars.length} placeholder(s)</span>
+              </div>
+              {allVars.length === 0 ? (
+                <div className="text-[11px] text-muted-foreground mt-1">
+                  No variables yet. Click a chip below to insert one into the body.
+                </div>
+              ) : (
+                <div className="space-y-2 mt-2">
+                  {allVars.map((n, i) => {
+                    const sys = varKeys[i] ? getSystemVar(varKeys[i]) : undefined;
+                    return (
+                      <div key={n} className="grid grid-cols-[60px,1fr,auto] gap-2 items-center">
+                        <Badge variant="outline" className="font-mono justify-center">{`{{${n}}}`}</Badge>
+                        <Select value={varKeys[i] || ""} onValueChange={(v) => {
+                          const next = [...varKeys]; next[i] = v; setVarKeys(next);
+                        }}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select system variable…"/></SelectTrigger>
+                          <SelectContent>
+                            {(["branding","order","cart","all"] as const).map((scope) => (
+                              <div key={scope}>
+                                <div className="px-2 py-1 text-[10px] uppercase text-muted-foreground">{scope}</div>
+                                {WA_SYSTEM_VARIABLES.filter(v => v.scope === scope).map(v => (
+                                  <SelectItem key={v.key} value={v.key}>{v.label} · <span className="font-mono text-[10px] text-muted-foreground">{v.key}</span></SelectItem>
+                                ))}
+                              </div>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {sys && (
+                          <TooltipProvider><Tooltip>
+                            <TooltipTrigger asChild><Info className="h-3.5 w-3.5 text-muted-foreground"/></TooltipTrigger>
+                            <TooltipContent className="max-w-xs text-xs">
+                              <div className="font-medium">{sys.label}</div>
+                              <div className="text-muted-foreground">{sys.description}</div>
+                              <div className="mt-1">e.g. <span className="font-mono">{sys.example}</span></div>
+                            </TooltipContent>
+                          </Tooltip></TooltipProvider>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="mt-3">
+                <div className="text-[11px] text-muted-foreground mb-1">Quick insert — appends {`{{n}}`} to body and binds it:</div>
+                <div className="flex flex-wrap gap-1">
+                  {WA_SYSTEM_VARIABLES.map(v => (
+                    <Button
+                      key={v.key}
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-[11px] font-normal"
+                      onClick={() => {
+                        const nextN = (extractVars(draft.body_text).at(-1) || 0) + 1;
+                        setDraft(d => ({ ...d, body_text: (d.body_text || "") + `{{${nextN}}}` }));
+                        setVarKeys(prev => { const c = [...prev]; c[nextN - 1] = v.key; return c; });
+                      }}
+                    >
+                      + {v.label}
+                    </Button>
                   ))}
                 </div>
               </div>
-            )}
+            </div>
+
           </div>
 
           {/* RIGHT — preview + validation */}
