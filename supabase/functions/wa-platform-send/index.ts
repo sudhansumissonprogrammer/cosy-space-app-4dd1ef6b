@@ -4,7 +4,7 @@
 // When called with store_id and a known template, auto-resolves branding vars.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader } from "../_shared/wa-platform.ts";
-import { loadStore, loadTemplate, resolveTemplateParams, pickLocaleVariant } from "../_shared/wa-branding.ts";
+import { loadStore, loadTemplate, resolveTemplateParams, pickLocaleVariant, sanitizeWaParam } from "../_shared/wa-branding.ts";
 
 type Body = {
   mode?: "automation" | "test" | "text";
@@ -104,14 +104,20 @@ Deno.serve(async (req) => {
   }
 
   // Per-sender (whole platform number) daily tier limit — protects Meta messaging tier.
-  // New WABA = 250 unique users / 24h. Burst past this triggers throttling / tier downgrade.
+  // Meta meters DISTINCT recipients in 24h, not total messages. Counting messages
+  // would over-throttle legitimate transactional retries / multi-template flows.
   const tierLimit = Number((cfg as any)?.wa_tier_limit ?? 250);
   if (tierLimit > 0) {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { count: senderToday } = await admin
-      .from("whatsapp_messages").select("id", { count: "exact", head: true })
-      .eq("sent_via", "platform").eq("direction", "outgoing").eq("status", "sent").gte("created_at", since);
-    if ((senderToday ?? 0) >= tierLimit) {
+    const { data: recents } = await admin
+      .from("whatsapp_messages")
+      .select("recipient_phone")
+      .eq("sent_via", "platform").eq("direction", "outgoing").eq("status", "sent")
+      .gte("created_at", since)
+      .limit(20000);
+    const uniq = new Set<string>();
+    for (const r of (recents as any[]) ?? []) if (r?.recipient_phone) uniq.add(String(r.recipient_phone));
+    if (!uniq.has(phone) && uniq.size >= tierLimit) {
       return json({ skipped: true, reason: "tier_limit", error_class: "transient" });
     }
   }
@@ -172,12 +178,12 @@ Deno.serve(async (req) => {
     const tplButtons = ((tpl as any)?.buttons || []) as Array<{ type: string; url?: string; text?: string }>;
     tplButtons.forEach((b, i) => {
       if (b?.type === "URL" && typeof b.url === "string" && b.url.includes("{{")) {
-        const tok = extras.cta_token || extras.cta || "";
+        const tok = sanitizeWaParam(extras.cta_token || extras.cta || "x", 64);
         buttonComponents.push({
           type: "button",
           sub_type: "url",
           index: String(i),
-          parameters: [{ type: "text", text: String(tok || "x") }],
+          parameters: [{ type: "text", text: tok }],
         });
       }
     });
