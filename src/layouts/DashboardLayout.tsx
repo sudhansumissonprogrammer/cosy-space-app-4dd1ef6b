@@ -231,12 +231,9 @@ export default function DashboardLayout() {
     isLoading: storeLoading,
   }), [store, storeId, storeSlug, storeLoading]);
 
-  // Billing paywall — block dashboard when trial ended OR grace period expired and unpaid.
-  // User can still access /dashboard/settings (Profile) to pay.
-  // Storefront is NEVER suspended for billing reasons.
+  // Commission-only model: no subscription paywall. Wallet low-balance lock only.
   const ownStoreId = !isAdminView ? ownStore?.id : undefined;
-  const { data: billingState } = useBillingState(ownStoreId);
-  const isProfileRoute = location.pathname.startsWith("/dashboard/settings");
+  const showPaywall = false;
   const { data: walletSummary } = useQuery({
     queryKey: ["store-wallet", storeId],
     enabled: !!storeId,
@@ -249,27 +246,14 @@ export default function DashboardLayout() {
       return data as any;
     },
   });
-  const isCommissionMode = (store as any)?.billing_mode === "commission" || (walletSummary as any)?.billing_mode === "commission";
-  const billingBlocked =
-    !isAdminView &&
-    !!ownStoreId &&
-    !isCommissionMode &&
-    (billingState?.billing_status === "past_due" || billingState?.billing_status === "suspended") &&
-    billingState?.requires_payment === true;
-  const showPaywall = billingBlocked && !isProfileRoute;
-
-  // Commission wallet lock — block ALL dashboard pages except the wallet page itself
-  // when balance is low (< ₹100) or negative. Modal AlertDialog prevents nav clicks
-  // until the owner recharges. Admin-view sessions bypass the lock.
   const walletBalance = Number((walletSummary as any)?.wallet?.balance ?? 0);
   const isWalletRoute = location.pathname.includes("/wallet");
   const showLowBalance =
     !isAdminView &&
-    isCommissionMode &&
     !!walletSummary &&
     walletBalance < 100 &&
-    !isWalletRoute &&
-    !showPaywall;
+    !isWalletRoute;
+
 
   // Pending orders count — shared with PendingActions via React Query
   const { data: pendingCount } = useQuery({
