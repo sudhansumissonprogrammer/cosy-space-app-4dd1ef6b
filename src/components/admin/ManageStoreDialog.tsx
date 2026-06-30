@@ -175,6 +175,7 @@ export default function ManageStoreDialog({ storeId, open, onOpenChange, default
                 {isCommission ? (
                   <WalletPanel
                     storeId={storeId!}
+                    store={store}
                     wallet={wallet}
                     ledger={ledger}
                     recharges={recharges}
