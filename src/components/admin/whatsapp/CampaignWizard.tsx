@@ -22,7 +22,9 @@ type Tpl = {
   header_type: string | null; header_text: string | null;
   body_text: string | null; footer_text: string | null;
   buttons: TplButton[] | null;
+  variables: string[] | null;
 };
+
 
 function extractVars(s: string | null | undefined): number[] {
   const set = new Set<number>();
