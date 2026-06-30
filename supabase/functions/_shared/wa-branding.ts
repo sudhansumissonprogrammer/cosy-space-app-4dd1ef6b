@@ -35,12 +35,32 @@ export async function loadStore(admin: any, storeId: string | null | undefined) 
 export async function loadTemplate(admin: any, name: string) {
   const { data } = await admin
     .from("platform_wa_templates")
-    .select("name, language, variables, buttons, is_active, meta_status, paused, pause_reason, header_type, header_media_url")
+    .select("name, language, variables, buttons, is_active, meta_status, paused, pause_reason, header_type, header_media_url, template_group")
     .eq("name", name)
     .maybeSingle();
 
   return data;
 }
+
+// Within a template_group, swap to the sibling matching the requested locale.
+// Falls back to the original template when no approved sibling exists.
+export async function pickLocaleVariant(admin: any, tpl: any, locale: string | null | undefined) {
+  if (!tpl || !locale) return tpl;
+  const group = tpl.template_group || tpl.name;
+  const lang = String(locale).toLowerCase().split(/[-_]/)[0];
+  if (tpl.language && tpl.language.toLowerCase().startsWith(lang)) return tpl;
+  const { data: sibs } = await admin
+    .from("platform_wa_templates")
+    .select("name, language, variables, buttons, is_active, meta_status, paused, pause_reason, header_type, header_media_url, template_group")
+    .eq("template_group", group)
+    .eq("is_active", true);
+  const match = (sibs || []).find((s: any) =>
+    s.language && s.language.toLowerCase().startsWith(lang) &&
+    (s.meta_status || "").toLowerCase() === "approved" && !s.paused
+  );
+  return match || tpl;
+}
+
 
 
 export function resolveTemplateParams(
