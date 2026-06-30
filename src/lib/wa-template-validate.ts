@@ -5,16 +5,20 @@ export type TplButton =
   | { type: "QUICK_REPLY"; text: string }
   | { type: "PHONE_NUMBER"; text: string; phone_number: string };
 
+export type TplHeaderType = "NONE" | "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT";
+
 export type TplDraft = {
   name: string;
   language: string;
   category: "UTILITY" | "MARKETING" | "AUTHENTICATION";
-  header_type: "NONE" | "TEXT";
+  header_type: TplHeaderType;
   header_text?: string | null;
+  header_media_url?: string | null;
   body_text: string;
   footer_text?: string | null;
   buttons?: TplButton[];
 };
+
 
 export type ValidationIssue = { field: string; message: string; level: "error" | "warn" };
 
