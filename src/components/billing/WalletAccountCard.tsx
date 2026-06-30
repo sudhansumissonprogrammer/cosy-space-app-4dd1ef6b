@@ -50,7 +50,7 @@ interface Props {
 export default function WalletAccountCard({ storeId, storeSlug, variant = "compact" }: Props) {
   const qc = useQueryClient();
   const [rechargeOpen, setRechargeOpen] = useState(false);
-  const [amount, setAmount] = useState<string>("700");
+  const [amount, setAmount] = useState<string>("500");
   const [busy, setBusy] = useState(false);
 
   const { data, isLoading } = useQuery({
@@ -99,7 +99,7 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
   const config =
     (data as any)?.config ?? {
       commission_percentage: 3,
-      min_recharge: 700,
+      min_recharge: 500,
       low_balance_threshold: 100,
     };
   const balanceNum = Number(wallet.balance);
@@ -203,7 +203,7 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
               Minimum ₹{config.min_recharge}. Payment via Cashfree (UPI / cards / netbanking).
             </p>
             <div className="flex gap-2">
-              {[700, 1500, 3000, 5000].map((v) => (
+              {[500, 1500, 3000, 5000].map((v) => (
                 <Button
                   key={v}
                   variant="outline"

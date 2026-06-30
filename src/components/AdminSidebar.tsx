@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Settings, LogOut, Users, ShoppingBag,
-  CreditCard, BarChart3, MessageSquare, Shield, Activity, AlertTriangle, Menu, Handshake, Wallet,
+  BarChart3, MessageSquare, Shield, Activity, AlertTriangle, Menu, Handshake, Wallet,
   ChevronDown,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -39,7 +39,6 @@ export function AdminSidebar() {
   const managementItems = [
     { title: "Users & Stores", url: "/admin/users-stores", icon: Users },
     { title: "Orders", url: "/admin/orders", icon: ShoppingBag },
-    { title: "Subscriptions", url: "/admin/subscriptions", icon: CreditCard },
     { title: "Commission Wallets", url: "/admin/wallets", icon: Wallet },
   ];
 

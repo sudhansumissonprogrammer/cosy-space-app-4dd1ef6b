@@ -15,11 +15,10 @@ export default function CartPage() {
   const navigate = useNavigate();
   const { items, updateQuantity, removeFromCart, clearCart, cartTotal, cartCount } = useCart();
   const currency = store.currency || "USD";
-  const orderMode = (store as any).order_mode || "whatsapp";
-  const isSubscriptionStore = (store as any)?.billing_mode === "subscription";
-  // Subscription stores: always show WA button if number exists. Commission stores: never.
-  const showWhatsApp = isSubscriptionStore && !!(store as any)?.whatsapp_number;
-  const showCheckout = orderMode === "website" || orderMode === "both";
+  // Commission-only model: every order must go through website checkout so
+  // wallet commission, invoice, abandoned-cart and order automations stay linked.
+  const showWhatsApp = false;
+  const showCheckout = true;
 
   const { data: shippingConfig } = useQuery({
     queryKey: ["storefront-shipping-config", store.id],

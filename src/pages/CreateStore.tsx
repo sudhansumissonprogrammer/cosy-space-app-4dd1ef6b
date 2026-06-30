@@ -15,11 +15,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from "@/components/ui/progress";
 import {
   Loader2, Upload, X, ArrowRight, ArrowLeft, Store, MapPin, Phone,
-  Instagram, Facebook, Check, Sparkles, Globe, MessageCircle, Zap,
+  Instagram, Facebook, Check, Sparkles, Globe,
   Rocket, Crown, ShoppingBag, CreditCard, ExternalLink, Copy,
 } from "lucide-react";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
@@ -50,7 +49,8 @@ const STEPS = [
   { id: 4, title: "Social", icon: Instagram, desc: "Your presence", motivation: "Final step — you're a star! ⭐" },
 ];
 
-// Features are fully dynamic — pulled from plans table in admin panel
+// Commission-only stores use website checkout so platform commission,
+// abandoned-cart recovery, order confirmations and wallet invoices stay linked.
 
 export default function CreateStore() {
   const { user } = useAuth();
@@ -90,7 +90,7 @@ export default function CreateStore() {
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [currency, setCurrency] = useState("INR");
-  const [orderMode, setOrderMode] = useState<"whatsapp" | "website" | "both">("website");
+  const orderMode: "website" = "website";
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [heroFile, setHeroFile] = useState<File | null>(null);
@@ -201,7 +201,7 @@ export default function CreateStore() {
         description: description.trim() || null,
         whatsapp_number: whatsappNumber.trim() || null,
         currency,
-        order_mode: orderMode,
+        order_mode: "website",
         city: city.trim() || null,
         state: state.trim() || null,
         location: location.trim() || null,
@@ -729,40 +729,14 @@ export default function CreateStore() {
 
                 {/* Order Mode */}
                 <div className="space-y-2">
-                  <Label>How do you want to take orders?</Label>
-                  <RadioGroup
-                    value={orderMode}
-                    onValueChange={(v) => setOrderMode(v as "whatsapp" | "website" | "both")}
-                    className="grid gap-3"
-                  >
-                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-[transform,opacity,colors,box-shadow] duration-200 ${orderMode === "whatsapp" ? "border-primary bg-primary/5 shadow-sm" : "border-input hover:border-primary/30"}`}>
-                      <RadioGroupItem value="whatsapp" className="mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                          <MessageCircle className="h-4 w-4 text-success" /> WhatsApp Orders
-                        </p>
-                        <p className="text-xs text-muted-foreground">Customers order via WhatsApp messages</p>
-                      </div>
-                    </label>
-                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-[transform,opacity,colors,box-shadow] duration-200 ${orderMode === "website" ? "border-primary bg-primary/5 shadow-sm" : "border-input hover:border-primary/30"}`}>
-                      <RadioGroupItem value="website" className="mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                          <Globe className="h-4 w-4 text-accent-foreground" /> Website Orders
-                        </p>
-                        <p className="text-xs text-muted-foreground">Customers checkout directly on your site</p>
-                      </div>
-                    </label>
-                    <label className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-[transform,opacity,colors,box-shadow] duration-200 ${orderMode === "both" ? "border-primary bg-primary/5 shadow-sm" : "border-input hover:border-primary/30"}`}>
-                      <RadioGroupItem value="both" className="mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                          <Zap className="h-4 w-4 text-warning" /> Both WhatsApp & Website
-                        </p>
-                        <p className="text-xs text-muted-foreground">Let customers choose their preferred way</p>
-                      </div>
-                    </label>
-                  </RadioGroup>
+                  <Label>Order mode</Label>
+                  <div className="flex items-start gap-3 rounded-xl border-2 border-primary bg-primary/5 p-4 shadow-sm">
+                    <Globe className="mt-0.5 h-4 w-4 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Website Checkout</p>
+                      <p className="text-xs text-muted-foreground">Enabled by default for commission tracking, wallet billing, invoices, abandoned-cart recovery and order automations.</p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Logo + Banner */}
@@ -875,20 +849,16 @@ export default function CreateStore() {
                 </div>
 
                 <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-3 text-center">
-                  <p className="text-xs text-muted-foreground">📞 Only email is required — WhatsApp is optional unless you chose WhatsApp orders</p>
+                  <p className="text-xs text-muted-foreground">📞 Email is required — WhatsApp is optional for customer support.</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="whatsapp">WhatsApp Number {(orderMode === "whatsapp" || orderMode === "both") ? "*" : "(optional)"}</Label>
+                  <Label htmlFor="whatsapp">WhatsApp Number (optional)</Label>
                   <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
                     <span className="flex-shrink-0 px-3 text-muted-foreground"><Phone className="h-4 w-4" /></span>
                     <Input id="whatsapp" placeholder="+91 98765 43210" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} maxLength={20} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {(orderMode === "whatsapp" || orderMode === "both")
-                      ? "Customers will use this to place orders via WhatsApp"
-                      : "Optional — for customer support"}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Optional — shown as a customer support contact, not as a checkout bypass.</p>
                 </div>
 
                 <div className="space-y-2">
@@ -902,22 +872,10 @@ export default function CreateStore() {
 
                 <div className="rounded-xl border bg-accent/30 p-4">
                   <div className="flex items-start gap-3">
-                    {(orderMode === "whatsapp" || orderMode === "both") ? (
-                      <Phone className="mt-0.5 h-5 w-5 text-primary" />
-                    ) : (
-                      <Globe className="mt-0.5 h-5 w-5 text-primary" />
-                    )}
+                    <Globe className="mt-0.5 h-5 w-5 text-primary" />
                     <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {orderMode === "both" ? "Dual ordering mode" : orderMode === "whatsapp" ? "WhatsApp ordering" : "Website ordering"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {orderMode === "both"
-                          ? "Customers can choose to checkout on your website or order via WhatsApp — best of both worlds!"
-                          : orderMode === "whatsapp"
-                          ? 'When customers click "Order on WhatsApp", a pre-filled message with product details will open in WhatsApp.'
-                          : 'Customers will see a "Buy Now" button and checkout directly on your website.'}
-                      </p>
+                      <p className="text-sm font-medium text-foreground">Website ordering</p>
+                      <p className="text-xs text-muted-foreground">Customers will see a “Buy Now” button and checkout directly on your website.</p>
                     </div>
                   </div>
                 </div>

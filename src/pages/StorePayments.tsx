@@ -27,7 +27,7 @@ export default function StorePayments() {
   const queryClient = useQueryClient();
   const purgeStore = useStorePurge(storeId);
 
-  const [orderMode, setOrderMode] = useState<OrderMode>("whatsapp");
+  const [orderMode, setOrderMode] = useState<OrderMode>("website");
   const [codEnabled, setCodEnabled] = useState(true);
 
   // Mutually-exclusive online gateway selection
@@ -150,7 +150,7 @@ export default function StorePayments() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const partialUpdate: Record<string, any> = {
-        order_mode: orderMode,
+        order_mode: "website",
         partial_payment_enabled: partialEnabled && onlineEnabled,
         partial_payment_type: partialType,
         partial_payment_value: partialEnabled && partialValue ? Number(partialValue) : null,

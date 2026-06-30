@@ -7,7 +7,7 @@ import {
   CommandItem, CommandList, CommandSeparator, CommandShortcut,
 } from "@/components/ui/command";
 import {
-  LayoutDashboard, Users, ShoppingBag, CreditCard, BarChart3,
+  LayoutDashboard, Users, ShoppingBag, BarChart3,
   MessageSquare, Settings, Wallet, Handshake, Activity, AlertTriangle,
   Menu, Store, User as UserIcon, Receipt,
 } from "lucide-react";
@@ -16,7 +16,6 @@ const navItems = [
   { label: "Overview", path: "/admin", icon: LayoutDashboard, keywords: "home dashboard" },
   { label: "Users & Stores", path: "/admin/users-stores", icon: Users, keywords: "owners merchants" },
   { label: "Orders", path: "/admin/orders", icon: ShoppingBag, keywords: "sales" },
-  { label: "Subscriptions", path: "/admin/subscriptions", icon: CreditCard, keywords: "billing plans" },
   { label: "Commission Wallets", path: "/admin/wallets", icon: Wallet, keywords: "balance" },
   { label: "Referral Partners", path: "/admin/partners", icon: Handshake, keywords: "affiliate" },
   { label: "Partner Payouts", path: "/admin/partners/payouts", icon: Handshake, keywords: "withdrawals" },

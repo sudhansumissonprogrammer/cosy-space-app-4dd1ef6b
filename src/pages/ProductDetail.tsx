@@ -510,12 +510,10 @@ export default function ProductDetail() {
   const currency = product.currency || "USD";
   const basePrice = hasDiscount ? product.sale_price! : product.price;
   const variantPrice = basePrice; // variants no longer override price
-  const orderMode = (store as any).order_mode || "whatsapp";
-  const isSubscriptionStore = (store as any)?.billing_mode === "subscription";
-  // Subscription stores: always show WA button (regardless of order_mode) if number exists.
-  // Commission stores: never show WA button.
-  const showWhatsApp = isSubscriptionStore && !!(store as any)?.whatsapp_number;
-  const showBuyNow = orderMode === "website" || orderMode === "both";
+  // Commission-only model: checkout is always enabled and direct WhatsApp
+  // ordering is disabled to prevent commission bypass.
+  const showWhatsApp = false;
+  const showBuyNow = true;
   const stats = getProductStats(product.id);
   const wishlisted = isWishlisted(product.id);
   const isUnlimitedStock = product.stock_quantity >= 999999;

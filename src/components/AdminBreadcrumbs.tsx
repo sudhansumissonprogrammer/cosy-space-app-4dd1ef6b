@@ -12,7 +12,6 @@ const LABELS: Record<string, string> = {
   admin: "Admin",
   "users-stores": "Users & Stores",
   orders: "Orders",
-  subscriptions: "Subscriptions",
   wallets: "Commission Wallets",
   partners: "Partners",
   payouts: "Payouts",

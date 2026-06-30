@@ -72,7 +72,7 @@ export default function Dashboard() {
   useRealtimeStore(storeId, "dashboard");
 
   const customDomain = store?.custom_domain;
-  const isWhatsAppOnly = store?.order_mode === "whatsapp";
+  const isWhatsAppOnly = false;
   const currency = store?.currency || "USD";
   const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 

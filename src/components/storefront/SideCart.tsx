@@ -18,14 +18,13 @@ interface SideCartProps {
 export default function SideCart({ store }: SideCartProps) {
   const { items, updateQuantity, removeFromCart, clearCart, cartTotal, cartCount, isCartOpen, closeCart } = useCart();
   const currency = store.currency || "USD";
-  const orderMode = (store as any).order_mode || "whatsapp";
-  const isSubscriptionStore = (store as any)?.billing_mode === "subscription";
-  // Subscription stores: always show WA button if number exists. Commission stores: never.
-  const showWhatsApp = isSubscriptionStore && !!(store as any)?.whatsapp_number;
+  // Commission-only model: every order must go through website checkout so
+  // wallet commission, invoice, abandoned-cart and order automations stay linked.
+  const showWhatsApp = false;
   // TEMP DISABLED: phone-lead modal + map autofill — go straight to /checkout.
   // To re-enable, restore: (store as any).theme === "theme-16" || "theme-21" || "theme-22"
   const isTheme16 = false;
-  const showCheckout = orderMode === "website" || orderMode === "both";
+  const showCheckout = true;
 
   const { data: shippingConfig } = useQuery({
     queryKey: ["storefront-shipping-config", store.id],
