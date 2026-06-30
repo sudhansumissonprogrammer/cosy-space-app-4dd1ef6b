@@ -538,7 +538,7 @@ export default function CreateStore() {
     );
   }
 
-  const selectedPlan = plans?.find(p => p.id === selectedPlanId);
+  
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 pb-8 relative">
