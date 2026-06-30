@@ -526,7 +526,7 @@ export default function DashboardLayout() {
         storeSlug={storeSlug}
         pendingOrders={pendingOrders}
         isWhatsAppOnly={isWhatsAppOnly}
-        isCommissionMode={isCommissionMode}
+        isCommissionMode={true}
       />
     </div>
     {showLowBalance && <LowBalanceDialog open={true} balance={walletBalance} storeSlug={storeSlug || ""} />}
