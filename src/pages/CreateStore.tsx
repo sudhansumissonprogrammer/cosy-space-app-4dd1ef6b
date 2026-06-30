@@ -44,11 +44,10 @@ const CURRENCIES = [
 ];
 
 const STEPS = [
-  { id: 1, title: "Plan", icon: CreditCard, desc: "Choose your plan", motivation: "Pick the perfect plan for your business! 🎯" },
-  { id: 2, title: "Store Info", icon: Store, desc: "Name & branding", motivation: "Let's build something amazing! 🚀" },
-  { id: 3, title: "Location", icon: MapPin, desc: "Where you are", motivation: "Great start! Keep going 💪" },
-  { id: 4, title: "Contact", icon: Phone, desc: "How to reach you", motivation: "Almost there! 🎯" },
-  { id: 5, title: "Social", icon: Instagram, desc: "Your presence", motivation: "Final step — you're a star! ⭐" },
+  { id: 1, title: "Store Info", icon: Store, desc: "Name & branding", motivation: "Let's build something amazing! 🚀" },
+  { id: 2, title: "Location", icon: MapPin, desc: "Where you are", motivation: "Great start! Keep going 💪" },
+  { id: 3, title: "Contact", icon: Phone, desc: "How to reach you", motivation: "Almost there! 🎯" },
+  { id: 4, title: "Social", icon: Instagram, desc: "Your presence", motivation: "Final step — you're a star! ⭐" },
 ];
 
 // Features are fully dynamic — pulled from plans table in admin panel
