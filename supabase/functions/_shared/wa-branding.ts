@@ -35,12 +35,13 @@ export async function loadStore(admin: any, storeId: string | null | undefined) 
 export async function loadTemplate(admin: any, name: string) {
   const { data } = await admin
     .from("platform_wa_templates")
-    .select("name, language, variables, is_active, meta_status, paused, pause_reason")
+    .select("name, language, variables, buttons, is_active, meta_status, paused, pause_reason")
     .eq("name", name)
     .maybeSingle();
 
   return data;
 }
+
 
 export function resolveTemplateParams(
   template: { variables: string[] | null } | null,
