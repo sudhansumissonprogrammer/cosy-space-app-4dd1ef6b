@@ -104,14 +104,20 @@ Deno.serve(async (req) => {
   }
 
   // Per-sender (whole platform number) daily tier limit — protects Meta messaging tier.
-  // New WABA = 250 unique users / 24h. Burst past this triggers throttling / tier downgrade.
+  // Meta meters DISTINCT recipients in 24h, not total messages. Counting messages
+  // would over-throttle legitimate transactional retries / multi-template flows.
   const tierLimit = Number((cfg as any)?.wa_tier_limit ?? 250);
   if (tierLimit > 0) {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { count: senderToday } = await admin
-      .from("whatsapp_messages").select("id", { count: "exact", head: true })
-      .eq("sent_via", "platform").eq("direction", "outgoing").eq("status", "sent").gte("created_at", since);
-    if ((senderToday ?? 0) >= tierLimit) {
+    const { data: recents } = await admin
+      .from("whatsapp_messages")
+      .select("recipient_phone")
+      .eq("sent_via", "platform").eq("direction", "outgoing").eq("status", "sent")
+      .gte("created_at", since)
+      .limit(20000);
+    const uniq = new Set<string>();
+    for (const r of (recents as any[]) ?? []) if (r?.recipient_phone) uniq.add(String(r.recipient_phone));
+    if (!uniq.has(phone) && uniq.size >= tierLimit) {
       return json({ skipped: true, reason: "tier_limit", error_class: "transient" });
     }
   }
