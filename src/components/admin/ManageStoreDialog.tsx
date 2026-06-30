@@ -548,10 +548,15 @@ function WalletPanel({ storeId, store, wallet, ledger, recharges, onSaved }: any
                   <TableHead className="text-right">Amount</TableHead>
                   <TableHead className="text-right">Balance after</TableHead>
                   <TableHead>Notes</TableHead>
+                  <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {ledger.map((l: any) => (
+                {ledger.map((l: any) => {
+                  const hasInvoice =
+                    (l.kind === "recharge" && l.recharge_id) ||
+                    (l.kind === "admin_adjustment" && l.direction === "credit");
+                  return (
                   <TableRow key={l.id}>
                     <TableCell className="text-xs">{format(new Date(l.created_at), "MMM d, HH:mm")}</TableCell>
                     <TableCell className="text-xs">{l.kind}</TableCell>
@@ -559,8 +564,35 @@ function WalletPanel({ storeId, store, wallet, ledger, recharges, onSaved }: any
                     <TableCell className="text-right tabular-nums">₹{Number(l.amount).toFixed(2)}</TableCell>
                     <TableCell className="text-right tabular-nums">₹{Number(l.balance_after ?? 0).toFixed(2)}</TableCell>
                     <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground">{l.notes}</TableCell>
+                    <TableCell>
+                      {hasInvoice && (
+                        <Button size="icon" variant="ghost" className="h-7 w-7" title="Download invoice"
+                          onClick={() => {
+                            if (l.kind === "recharge") {
+                              const r = recharges.find((x: any) => x.id === l.recharge_id);
+                              if (!r) return;
+                              downloadWalletInvoice({
+                                kind: "recharge", id: r.id,
+                                createdAt: r.paid_at || r.created_at,
+                                amount: Number(r.amount),
+                                paymentMethod: r.payment_method,
+                                paymentRef: r.cashfree_payment_id || r.cashfree_order_id,
+                                store,
+                              });
+                            } else {
+                              downloadWalletInvoice({
+                                kind: "credit_note", id: l.id,
+                                createdAt: l.created_at, amount: Number(l.amount),
+                                notes: l.notes, store,
+                              });
+                            }
+                          }}>
+                          <Download className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
-                ))}
+                );})}
               </TableBody>
             </Table>
           )}
@@ -580,6 +612,7 @@ function WalletPanel({ storeId, store, wallet, ledger, recharges, onSaved }: any
                   <TableHead className="text-right">Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Order ID</TableHead>
+                  <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -589,6 +622,21 @@ function WalletPanel({ storeId, store, wallet, ledger, recharges, onSaved }: any
                     <TableCell className="text-right tabular-nums">₹{Number(r.amount).toFixed(2)}</TableCell>
                     <TableCell><Badge variant={r.status === "paid" ? "default" : "secondary"}>{r.status}</Badge></TableCell>
                     <TableCell className="text-xs text-muted-foreground">{r.cashfree_order_id ?? "—"}</TableCell>
+                    <TableCell>
+                      {r.status === "paid" && (
+                        <Button size="icon" variant="ghost" className="h-7 w-7" title="Download invoice"
+                          onClick={() => downloadWalletInvoice({
+                            kind: "recharge", id: r.id,
+                            createdAt: r.paid_at || r.created_at,
+                            amount: Number(r.amount),
+                            paymentMethod: r.payment_method,
+                            paymentRef: r.cashfree_payment_id || r.cashfree_order_id,
+                            store,
+                          })}>
+                          <Download className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
