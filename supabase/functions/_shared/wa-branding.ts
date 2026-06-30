@@ -63,6 +63,24 @@ export async function pickLocaleVariant(admin: any, tpl: any, locale: string | n
 
 
 
+// Meta rejects template body parameters that contain newlines, tabs, or more
+// than 4 consecutive spaces (errors #132000 / #132012). Empty strings also
+// fail validation. We normalize all params here so a merchant store name like
+// "Hridaya\nJewellers" or a pasted customer name doesn't burn our quality
+// rating with hard rejects.
+export function sanitizeWaParam(v: unknown, maxLen = 200): string {
+  let s = v == null ? "" : String(v);
+  // Strip ALL control chars (incl. \n \r \t \v \f and U+0000–U+001F / U+007F).
+  s = s.replace(/[\u0000-\u001F\u007F]+/g, " ");
+  // Collapse 5+ spaces (Meta cap is 4 consecutive).
+  s = s.replace(/ {5,}/g, "    ");
+  s = s.trim();
+  if (s.length > maxLen) s = s.slice(0, maxLen).trim();
+  // Meta forbids empty body params. Fall back to a single space (rendered invisibly).
+  if (!s) s = " ";
+  return s;
+}
+
 export function resolveTemplateParams(
   template: { variables: string[] | null } | null,
   store: any,
@@ -71,9 +89,12 @@ export function resolveTemplateParams(
   const vars = template?.variables ?? [];
   return vars.map((key) => {
     const k = (key || "").replace(/^\{\{|\}\}$/g, "").trim();
-    if (k in extras && extras[k] != null) return String(extras[k]);
-    const def = VAR_DEFAULTS[k];
-    if (def) return def(store);
-    return "";
+    let raw: unknown = "";
+    if (k in extras && extras[k] != null) raw = extras[k];
+    else {
+      const def = VAR_DEFAULTS[k];
+      if (def) raw = def(store);
+    }
+    return sanitizeWaParam(raw);
   });
 }
