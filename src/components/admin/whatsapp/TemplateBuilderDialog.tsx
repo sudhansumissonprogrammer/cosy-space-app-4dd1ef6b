@@ -8,9 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Trash2, Plus, AlertTriangle, Loader2 } from "lucide-react";
+import { Trash2, Plus, AlertTriangle, Loader2, Info } from "lucide-react";
 import { extractVars, validateDraft, type TplDraft, type TplButton } from "@/lib/wa-template-validate";
+import { WA_SYSTEM_VARIABLES, getSystemVar } from "@/lib/wa-system-variables";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TemplatePreview } from "./TemplatePreview";
+
 
 type Props = {
   open: boolean;
@@ -35,8 +38,16 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
   const [draft, setDraft] = useState<TplDraft>({ ...EMPTY, ...initial } as TplDraft);
   const [submitting, setSubmitting] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+  // Ordered mapping: position index (1-based) → system variable key.
+  // Persisted to platform_wa_templates.variables[] so the sender resolves
+  // {{n}} → template_vars[key] per recipient.
+  const [varKeys, setVarKeys] = useState<string[]>([]);
 
-  useEffect(() => { if (open) setDraft({ ...EMPTY, ...initial } as TplDraft); }, [open, initial]);
+  useEffect(() => {
+    if (!open) return;
+    setDraft({ ...EMPTY, ...initial } as TplDraft);
+    setVarKeys(Array.isArray((initial as any)?.variables) ? (initial as any).variables : []);
+  }, [open, initial]);
 
   const issues = useMemo(() => validateDraft(draft), [draft]);
   const errors = issues.filter(i => i.level === "error");
@@ -50,10 +61,19 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
     return Array.from(set).sort((a, b) => a - b);
   }, [draft]);
 
-  const [samples, setSamples] = useState<string[]>([]);
+  // Keep varKeys aligned with allVars length.
   useEffect(() => {
-    setSamples(prev => allVars.map((_, i) => prev[i] ?? ["John", "Storivo", "ORD-1234", "₹1,299", "3 items", "Paid", "Mon, 6 Sep"][i] ?? `Sample${i+1}`));
+    setVarKeys(prev => allVars.map((_, i) => prev[i] || ""));
   }, [allVars.length]);
+
+  const samples = useMemo(
+    () => allVars.map((_, i) => {
+      const k = varKeys[i];
+      const sys = k ? getSystemVar(k) : undefined;
+      return sys?.example || `Sample${i + 1}`;
+    }),
+    [allVars, varKeys],
+  );
 
   const persistRow = async () => {
     const payload: any = {
@@ -66,7 +86,9 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
       footer_text: draft.footer_text || null,
       buttons: draft.buttons || [],
       purpose: draft.category?.toLowerCase() || "utility",
-      variables: allVars.map(n => `var_${n}`),
+      // Real keys (e.g. ["customer_name","store_name","product_name"]) — the
+      // sender resolves each {{n}} via template_vars[ variables[n-1] ].
+      variables: varKeys.map(k => (k || "").trim()),
       headline: draft.header_text || null,
       footer: draft.footer_text || null,
       is_active: true,
@@ -78,11 +100,13 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
 
   const saveDraft = async () => {
     if (errors.length) { toast.error("Fix validation errors first"); return; }
+    if (allVars.length && varKeys.some(k => !k)) { toast.error("Assign a system variable to every {{n}} position"); return; }
     setSavingDraft(true);
     try { await persistRow(); toast.success("Draft saved"); onSaved(); onClose(); }
     catch (e: any) { toast.error(e.message); }
     finally { setSavingDraft(false); }
   };
+
 
   const submitToMeta = async () => {
     if (errors.length) { toast.error("Fix validation errors first"); return; }
@@ -230,18 +254,78 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
               </div>
             </div>
 
-            {allVars.length > 0 && (
-              <div>
-                <Label>Sample values (preview only — Meta requires examples)</Label>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  {allVars.map((n, i) => (
-                    <Input key={n} className="h-8 text-sm" value={samples[i] || ""}
-                      placeholder={`{{${n}}}`}
-                      onChange={(e) => { const s = [...samples]; s[i] = e.target.value; setSamples(s); }} />
+            {/* Variable mapping — every {{n}} in body / header / button URL
+                must be bound to a system variable key so the sender can resolve
+                it per recipient (template_vars[key]). */}
+            <div>
+              <div className="flex items-center justify-between">
+                <Label>Variable mapping</Label>
+                <span className="text-[11px] text-muted-foreground">{allVars.length} placeholder(s)</span>
+              </div>
+              {allVars.length === 0 ? (
+                <div className="text-[11px] text-muted-foreground mt-1">
+                  No variables yet. Click a chip below to insert one into the body.
+                </div>
+              ) : (
+                <div className="space-y-2 mt-2">
+                  {allVars.map((n, i) => {
+                    const sys = varKeys[i] ? getSystemVar(varKeys[i]) : undefined;
+                    return (
+                      <div key={n} className="grid grid-cols-[60px,1fr,auto] gap-2 items-center">
+                        <Badge variant="outline" className="font-mono justify-center">{`{{${n}}}`}</Badge>
+                        <Select value={varKeys[i] || ""} onValueChange={(v) => {
+                          const next = [...varKeys]; next[i] = v; setVarKeys(next);
+                        }}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select system variable…"/></SelectTrigger>
+                          <SelectContent>
+                            {(["branding","order","cart","all"] as const).map((scope) => (
+                              <div key={scope}>
+                                <div className="px-2 py-1 text-[10px] uppercase text-muted-foreground">{scope}</div>
+                                {WA_SYSTEM_VARIABLES.filter(v => v.scope === scope).map(v => (
+                                  <SelectItem key={v.key} value={v.key}>{v.label} · <span className="font-mono text-[10px] text-muted-foreground">{v.key}</span></SelectItem>
+                                ))}
+                              </div>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {sys && (
+                          <TooltipProvider><Tooltip>
+                            <TooltipTrigger asChild><Info className="h-3.5 w-3.5 text-muted-foreground"/></TooltipTrigger>
+                            <TooltipContent className="max-w-xs text-xs">
+                              <div className="font-medium">{sys.label}</div>
+                              <div className="text-muted-foreground">{sys.description}</div>
+                              <div className="mt-1">e.g. <span className="font-mono">{sys.example}</span></div>
+                            </TooltipContent>
+                          </Tooltip></TooltipProvider>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="mt-3">
+                <div className="text-[11px] text-muted-foreground mb-1">Quick insert — appends {`{{n}}`} to body and binds it:</div>
+                <div className="flex flex-wrap gap-1">
+                  {WA_SYSTEM_VARIABLES.map(v => (
+                    <Button
+                      key={v.key}
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-[11px] font-normal"
+                      onClick={() => {
+                        const nextN = (extractVars(draft.body_text).at(-1) || 0) + 1;
+                        setDraft(d => ({ ...d, body_text: (d.body_text || "") + `{{${nextN}}}` }));
+                        setVarKeys(prev => { const c = [...prev]; c[nextN - 1] = v.key; return c; });
+                      }}
+                    >
+                      + {v.label}
+                    </Button>
                   ))}
                 </div>
               </div>
-            )}
+            </div>
+
           </div>
 
           {/* RIGHT — preview + validation */}

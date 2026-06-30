@@ -22,7 +22,9 @@ type Tpl = {
   header_type: string | null; header_text: string | null;
   body_text: string | null; footer_text: string | null;
   buttons: TplButton[] | null;
+  variables: string[] | null;
 };
+
 
 function extractVars(s: string | null | undefined): number[] {
   const set = new Set<number>();
@@ -58,7 +60,7 @@ export function CampaignWizard({ open, onOpenChange, onCreated }: { open: boolea
     setStep(1); setName(""); setTemplateName(""); setVars({});
     setAudience({ segment: "all", store_id: null }); setAudienceCount(null);
     setScheduleNow(true); setScheduleDate(undefined); setScheduleTime("10:00");
-    supabase.from("platform_wa_templates" as any).select("name,language,category,header_type,header_text,body_text,footer_text,buttons,meta_status,paused,is_active")
+    supabase.from("platform_wa_templates" as any).select("name,language,category,header_type,header_text,body_text,footer_text,buttons,variables,meta_status,paused,is_active")
       .eq("meta_status", "APPROVED").eq("is_active", true)
       .then(({ data }) => {
         const all = ((data as any[]) || []).filter((t) => !t.paused && (t.category || "").toUpperCase() === "MARKETING");
@@ -183,15 +185,30 @@ export function CampaignWizard({ open, onOpenChange, onCreated }: { open: boolea
         {/* Step 2 — variables */}
         {step === 2 && tpl && (
           <div className="space-y-4">
-            <div className="text-xs text-muted-foreground">Provide a value (or token like <code>{`{{customer_name}}`}</code>) for each variable in the template. These resolve per recipient at send time.</div>
+            <div className="text-xs text-muted-foreground">
+              Each placeholder is bound to a system variable in the template. Leave blank to let the sender auto-resolve it per recipient (e.g. <code>customer_name</code>, <code>store_name</code>), or type a literal value to override for this campaign.
+            </div>
             {varIndexes.length === 0 && <div className="text-sm text-muted-foreground">This template has no variables.</div>}
             <div className="grid sm:grid-cols-2 gap-3">
-              {varIndexes.map((i) => (
-                <div key={i}>
-                  <Label>Variable {`{{${i}}}`}</Label>
-                  <Input value={vars[String(i)] || ""} onChange={(e) => setVars({ ...vars, [String(i)]: e.target.value })} placeholder={`Value for {{${i}}}`}/>
-                </div>
-              ))}
+              {varIndexes.map((i) => {
+                const boundKey = (tpl.variables || [])[i - 1] || "";
+                const placeholder = boundKey ? `auto: {{${boundKey}}}` : `Value for {{${i}}}`;
+                return (
+                  <div key={i}>
+                    <Label className="flex items-center gap-2">
+                      <span className="font-mono text-xs">{`{{${i}}}`}</span>
+                      {boundKey
+                        ? <Badge variant="secondary" className="text-[10px] font-mono">{boundKey}</Badge>
+                        : <Badge variant="outline" className="text-[10px]">unbound</Badge>}
+                    </Label>
+                    <Input
+                      value={vars[String(i)] || ""}
+                      onChange={(e) => setVars({ ...vars, [String(i)]: e.target.value })}
+                      placeholder={placeholder}
+                    />
+                  </div>
+                );
+              })}
             </div>
             <Card><CardContent className="p-3">
               <div className="text-xs text-muted-foreground mb-2">Live preview</div>
@@ -199,6 +216,7 @@ export function CampaignWizard({ open, onOpenChange, onCreated }: { open: boolea
             </CardContent></Card>
           </div>
         )}
+
 
         {/* Step 3 — audience */}
         {step === 3 && (
