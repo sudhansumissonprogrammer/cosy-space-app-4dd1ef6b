@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ processed: (claimed as any[])?.length ?? 0, sent, retried, failed });
+  return json({ processed: (claimed as any[])?.length ?? 0, sent, retried, failed, skipped_paused: skippedPaused });
 });
 
 function json(b: unknown, s = 200) {
