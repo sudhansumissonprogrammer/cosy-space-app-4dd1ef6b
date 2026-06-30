@@ -29,10 +29,12 @@ const EMPTY: TplDraft = {
   category: "UTILITY",
   header_type: "TEXT",
   header_text: "",
+  header_media_url: "",
   body_text: "",
   footer_text: "Powered by shopbanao.in",
   buttons: [],
 };
+
 
 export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved }: Props) {
   const [draft, setDraft] = useState<TplDraft>({ ...EMPTY, ...initial } as TplDraft);
