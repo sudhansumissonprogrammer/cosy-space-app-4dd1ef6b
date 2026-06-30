@@ -67,8 +67,9 @@ Deno.serve(async (req) => {
     const earnings_series = Array.from(byDay.entries()).sort((a, b) => a[0].localeCompare(b[0]))
       .map(([date, amount]) => ({ date, amount }));
 
-    // referred stores subscriptions
-    const refStoresQ: any = filter(admin.from("partner_referrals").select("store_id"));
+    // Subscription billing is retired. Treat referred stores as commission stores
+    // and compute partner health without touching deleted plan tables.
+    const refStoresQ: any = filter(admin.from("partner_referrals").select("store_id,status"));
     const { data: refStores } = await refStoresQ;
     const storeIds = (refStores ?? []).map((r: any) => r.store_id).filter(Boolean);
 
@@ -76,32 +77,19 @@ Deno.serve(async (req) => {
     const planMix = new Map<string, number>();
 
     if (storeIds.length) {
-      const { data: assigns } = await admin.from("store_plan_assignments")
-        .select("store_id,billing_status,custom_price,plan_id").in("store_id", storeIds);
-      const planIds = Array.from(new Set((assigns ?? []).map((a: any) => a.plan_id))).filter(Boolean);
-      const { data: plans } = planIds.length
-        ? await admin.from("plans").select("id,name,price").in("id", planIds)
-        : { data: [] as any[] };
-      const planMap = new Map((plans ?? []).map((p: any) => [p.id, p]));
-
-      (assigns ?? []).forEach((a: any) => {
-        const plan = planMap.get(a.plan_id);
-        const price = Number(a.custom_price ?? plan?.price ?? 0);
-        if (a.billing_status === "trialing") trialing++;
-        if (["active", "trialing"].includes(a.billing_status)) {
-          active++;
-          mrr += price;
-          const name = plan?.name ?? "Unknown";
-          planMix.set(name, (planMix.get(name) ?? 0) + 1);
-        } else if (["cancelled", "suspended"].includes(a.billing_status)) {
-          churned++;
-        }
+      const { data: stores } = await admin.from("stores")
+        .select("id,is_suspended,billing_mode")
+        .in("id", storeIds);
+      (stores ?? []).forEach((st: any) => {
+        if (st.is_suspended) churned++;
+        else active++;
+        planMix.set("Commission", (planMix.get("Commission") ?? 0) + 1);
       });
     }
 
     const total_subs = active + churned;
     const churn_rate = total_subs ? +((churned / total_subs) * 100).toFixed(1) : 0;
-    const arpu = active ? +((mrr / active).toFixed(2)) : 0;
+    const arpu = 0;
 
     return j({
       scope: isAdmin ? "global" : "partner",
@@ -115,7 +103,7 @@ Deno.serve(async (req) => {
         click_to_signup: clicks30 ? +((sign30 / clicks30) * 100).toFixed(1) : 0,
         signup_to_paid: sign30 ? +((paid30 / sign30) * 100).toFixed(1) : 0,
       },
-      subscriptions: { active, churned, trialing, mrr, arr: +(mrr * 12).toFixed(2), churn_rate, arpu },
+      stores: { active, churned, trialing, mrr, arr: +(mrr * 12).toFixed(2), churn_rate, arpu },
       plan_mix: Array.from(planMix.entries()).map(([name, count]) => ({ name, count })),
       earnings_series,
     }, 200, { "Cache-Control": "private, max-age=15" });
