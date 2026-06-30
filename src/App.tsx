@@ -14,17 +14,26 @@ const DashboardProviders = lazy(() =>
     import("@/components/ui/tooltip"),
     import("@/contexts/AuthContext"),
     import("@/components/ui/sonner"),
-  ]).then(([tooltipMod, authMod, sonnerMod]) => ({
-    default: ({ children }: { children: React.ReactNode }) => (
-      <authMod.AuthProvider>
-        <tooltipMod.TooltipProvider delayDuration={300} skipDelayDuration={100}>
-          <sonnerMod.Toaster />
-          {children}
-        </tooltipMod.TooltipProvider>
-      </authMod.AuthProvider>
-    ),
-  }))
+  ]).then(([tooltipMod, authMod, sonnerMod]) => {
+    // Guard against CDN deploy races where a stale chunk resolves without
+    // the expected named exports. Throwing a ChunkLoadError-shaped message
+    // lets chunkLoadRecovery reload the page instead of white-screening.
+    if (!authMod?.AuthProvider || !tooltipMod?.TooltipProvider || !sonnerMod?.Toaster) {
+      throw new Error("Failed to fetch dynamically imported module: dashboard-providers");
+    }
+    return {
+      default: ({ children }: { children: React.ReactNode }) => (
+        <authMod.AuthProvider>
+          <tooltipMod.TooltipProvider delayDuration={300} skipDelayDuration={100}>
+            <sonnerMod.Toaster />
+            {children}
+          </tooltipMod.TooltipProvider>
+        </authMod.AuthProvider>
+      ),
+    };
+  })
 );
+
 
 // Storefront layouts — ALL lazy loaded for clean chunk isolation
 const StorefrontLayout = lazy(() => import("./layouts/StorefrontLayout"));
