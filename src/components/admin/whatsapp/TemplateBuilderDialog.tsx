@@ -83,7 +83,8 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
       language: draft.language,
       category: draft.category,
       header_type: draft.header_type,
-      header_text: draft.header_text || null,
+      header_text: draft.header_type === "TEXT" ? (draft.header_text || null) : null,
+      header_media_url: (draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT") ? (draft.header_media_url || null) : null,
       body_text: draft.body_text,
       footer_text: draft.footer_text || null,
       buttons: draft.buttons || [],
@@ -99,6 +100,7 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
     const { error } = await supabase.from("platform_wa_templates" as any).upsert(payload, { onConflict: "name" } as any);
     if (error) throw error;
   };
+
 
   const saveDraft = async () => {
     if (errors.length) { toast.error("Fix validation errors first"); return; }
