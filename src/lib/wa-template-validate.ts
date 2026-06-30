@@ -104,7 +104,14 @@ export function draftToMetaComponents(d: TplDraft): any[] {
       comp.example = { header_text: ["Sample"] };
     }
     components.push(comp);
+  } else if ((d.header_type === "IMAGE" || d.header_type === "VIDEO" || d.header_type === "DOCUMENT") && d.header_media_url) {
+    components.push({
+      type: "HEADER",
+      format: d.header_type,
+      example: { header_handle: [d.header_media_url] },
+    });
   }
+
 
   const bodyVars = extractVars(d.body_text);
   const body: any = { type: "BODY", text: d.body_text };
