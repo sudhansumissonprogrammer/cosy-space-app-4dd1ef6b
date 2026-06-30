@@ -38,8 +38,16 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
   const [draft, setDraft] = useState<TplDraft>({ ...EMPTY, ...initial } as TplDraft);
   const [submitting, setSubmitting] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+  // Ordered mapping: position index (1-based) → system variable key.
+  // Persisted to platform_wa_templates.variables[] so the sender resolves
+  // {{n}} → template_vars[key] per recipient.
+  const [varKeys, setVarKeys] = useState<string[]>([]);
 
-  useEffect(() => { if (open) setDraft({ ...EMPTY, ...initial } as TplDraft); }, [open, initial]);
+  useEffect(() => {
+    if (!open) return;
+    setDraft({ ...EMPTY, ...initial } as TplDraft);
+    setVarKeys(Array.isArray((initial as any)?.variables) ? (initial as any).variables : []);
+  }, [open, initial]);
 
   const issues = useMemo(() => validateDraft(draft), [draft]);
   const errors = issues.filter(i => i.level === "error");
@@ -53,10 +61,19 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
     return Array.from(set).sort((a, b) => a - b);
   }, [draft]);
 
-  const [samples, setSamples] = useState<string[]>([]);
+  // Keep varKeys aligned with allVars length.
   useEffect(() => {
-    setSamples(prev => allVars.map((_, i) => prev[i] ?? ["John", "Storivo", "ORD-1234", "₹1,299", "3 items", "Paid", "Mon, 6 Sep"][i] ?? `Sample${i+1}`));
+    setVarKeys(prev => allVars.map((_, i) => prev[i] || ""));
   }, [allVars.length]);
+
+  const samples = useMemo(
+    () => allVars.map((_, i) => {
+      const k = varKeys[i];
+      const sys = k ? getSystemVar(k) : undefined;
+      return sys?.example || `Sample${i + 1}`;
+    }),
+    [allVars, varKeys],
+  );
 
   const persistRow = async () => {
     const payload: any = {
@@ -69,7 +86,9 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
       footer_text: draft.footer_text || null,
       buttons: draft.buttons || [],
       purpose: draft.category?.toLowerCase() || "utility",
-      variables: allVars.map(n => `var_${n}`),
+      // Real keys (e.g. ["customer_name","store_name","product_name"]) — the
+      // sender resolves each {{n}} via template_vars[ variables[n-1] ].
+      variables: varKeys.map(k => (k || "").trim()),
       headline: draft.header_text || null,
       footer: draft.footer_text || null,
       is_active: true,
@@ -81,11 +100,13 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
 
   const saveDraft = async () => {
     if (errors.length) { toast.error("Fix validation errors first"); return; }
+    if (allVars.length && varKeys.some(k => !k)) { toast.error("Assign a system variable to every {{n}} position"); return; }
     setSavingDraft(true);
     try { await persistRow(); toast.success("Draft saved"); onSaved(); onClose(); }
     catch (e: any) { toast.error(e.message); }
     finally { setSavingDraft(false); }
   };
+
 
   const submitToMeta = async () => {
     if (errors.length) { toast.error("Fix validation errors first"); return; }
