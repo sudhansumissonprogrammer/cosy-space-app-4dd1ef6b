@@ -108,39 +108,7 @@ export default function UserSettings() {
     enabled: !!user,
   });
 
-  const isCommissionMode = (userStore as any)?.billing_mode === "commission";
 
-  // Get effective plan from store_plan_assignments (includes admin overrides)
-  const { data: storePlanAssignment } = useQuery({
-    queryKey: ["my-store-plan", userStore?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("store_plan_assignments")
-        .select("*, plans:plan_id(name, price, product_limit)")
-        .eq("store_id", userStore!.id)
-        .eq("status", "active")
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!userStore?.id,
-  });
-
-  // Fallback to subscriptions if no store plan assignment
-  const { data: subscription } = useQuery({
-    queryKey: ["my-subscription", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subscriptions")
-        .select("*, plans:plan_id(name, price, product_limit)")
-        .eq("user_id", user!.id)
-        .eq("status", "active")
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user && !storePlanAssignment,
-  });
 
   useEffect(() => {
     if (profile) {
