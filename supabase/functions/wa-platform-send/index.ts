@@ -152,12 +152,37 @@ Deno.serve(async (req) => {
     }
 
     let finalParams: string[] = body.template_params || [];
+    let extras: Record<string, string> = {};
     if (body.template_vars || body.store_id) {
-      const extras = { ...(body.template_vars || {}) } as Record<string, string>;
+      extras = { ...(body.template_vars || {}) } as Record<string, string>;
       if (body.recipient_name && !extras.customer_name) extras.customer_name = body.recipient_name;
       if (tpl) finalParams = resolveTemplateParams(tpl as any, store, extras);
     }
     const params = finalParams.map((t) => ({ type: "text", text: String(t ?? "") }));
+
+    // 🔘 Button URL parameters. Meta scopes button {{n}} separately from body.
+    // For every URL button whose URL contains a variable we must add a button
+    // component or Meta returns (#132000) param-count-mismatch. We use cta_token
+    // (set by producers; resolves to /r/<token>) for the single param all our
+    // current templates have.
+    const buttonComponents: any[] = [];
+    const tplButtons = ((tpl as any)?.buttons || []) as Array<{ type: string; url?: string; text?: string }>;
+    tplButtons.forEach((b, i) => {
+      if (b?.type === "URL" && typeof b.url === "string" && b.url.includes("{{")) {
+        const tok = extras.cta_token || extras.cta || "";
+        buttonComponents.push({
+          type: "button",
+          sub_type: "url",
+          index: String(i),
+          parameters: [{ type: "text", text: String(tok || "x") }],
+        });
+      }
+    });
+
+    const components: any[] = [];
+    if (params.length) components.push({ type: "body", parameters: params });
+    components.push(...buttonComponents);
+
     metaPayload = {
       messaging_product: "whatsapp",
       to: phone,
@@ -165,9 +190,10 @@ Deno.serve(async (req) => {
       template: {
         name: body.template_name,
         language: { code: body.language || cfg!.wa_default_lang || "en" },
-        components: params.length ? [{ type: "body", parameters: params }] : [],
+        components,
       },
     };
+
   }
 
   let status = "failed";
