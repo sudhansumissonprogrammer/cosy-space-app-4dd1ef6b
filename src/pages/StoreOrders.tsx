@@ -243,8 +243,19 @@ export default function StoreOrders() {
               store_name: (store as any)?.name,
             });
           }
+
+          // 📲 Shared ShopBanao platform — fire order_shipped via wa-order-event
+          // (handles correct v2 template + full variable set + idempotency).
+          // Order confirmation is sent from notify-order at placement time, so
+          // we only invoke this on the shipped transition (with tracking).
+          if (result.status === "shipped" && (result.tracking_number || (order as any).tracking_number)) {
+            supabase.functions.invoke("wa-order-event", {
+              body: { event: "order_shipped", order_id: result.orderId },
+            }).catch(() => { /* best-effort */ });
+          }
         }
       }
+
     },
   });
 
