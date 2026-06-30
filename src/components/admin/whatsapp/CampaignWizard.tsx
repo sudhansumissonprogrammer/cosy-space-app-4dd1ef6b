@@ -60,7 +60,7 @@ export function CampaignWizard({ open, onOpenChange, onCreated }: { open: boolea
     setStep(1); setName(""); setTemplateName(""); setVars({});
     setAudience({ segment: "all", store_id: null }); setAudienceCount(null);
     setScheduleNow(true); setScheduleDate(undefined); setScheduleTime("10:00");
-    supabase.from("platform_wa_templates" as any).select("name,language,category,header_type,header_text,body_text,footer_text,buttons,meta_status,paused,is_active")
+    supabase.from("platform_wa_templates" as any).select("name,language,category,header_type,header_text,body_text,footer_text,buttons,variables,meta_status,paused,is_active")
       .eq("meta_status", "APPROVED").eq("is_active", true)
       .then(({ data }) => {
         const all = ((data as any[]) || []).filter((t) => !t.paused && (t.category || "").toUpperCase() === "MARKETING");
