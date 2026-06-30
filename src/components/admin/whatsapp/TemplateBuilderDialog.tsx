@@ -192,7 +192,7 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
               </Select>
             </div>
 
-            <div className="grid grid-cols-[120px,1fr] gap-3 items-end">
+            <div className="grid grid-cols-[140px,1fr] gap-3 items-end">
               <div>
                 <Label>Header</Label>
                 <Select value={draft.header_type} onValueChange={(v: any) => setDraft({ ...draft, header_type: v })}>
@@ -200,6 +200,9 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
                   <SelectContent>
                     <SelectItem value="NONE">None</SelectItem>
                     <SelectItem value="TEXT">Text</SelectItem>
+                    <SelectItem value="IMAGE">Image</SelectItem>
+                    <SelectItem value="VIDEO">Video</SelectItem>
+                    <SelectItem value="DOCUMENT">Document</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -208,7 +211,13 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
                   onChange={(e) => setDraft({ ...draft, header_text: e.target.value })}
                   placeholder="✅ Order Confirmed" />
               )}
+              {(draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT") && (
+                <Input value={draft.header_media_url || ""}
+                  onChange={(e) => setDraft({ ...draft, header_media_url: e.target.value })}
+                  placeholder={draft.header_type === "IMAGE" ? "https://…/banner.jpg" : draft.header_type === "VIDEO" ? "https://…/clip.mp4" : "https://…/invoice.pdf"} />
+              )}
             </div>
+
 
             <div>
               <div className="flex items-center justify-between">
