@@ -4,7 +4,7 @@
 // When called with store_id and a known template, auto-resolves branding vars.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader } from "../_shared/wa-platform.ts";
-import { loadStore, loadTemplate, resolveTemplateParams, pickLocaleVariant } from "../_shared/wa-branding.ts";
+import { loadStore, loadTemplate, resolveTemplateParams, pickLocaleVariant, sanitizeWaParam } from "../_shared/wa-branding.ts";
 
 type Body = {
   mode?: "automation" | "test" | "text";
