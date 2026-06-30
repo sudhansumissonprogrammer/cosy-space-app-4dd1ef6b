@@ -1527,39 +1527,6 @@ export type Database = {
         }
         Relationships: []
       }
-      plans: {
-        Row: {
-          created_at: string
-          currency: string
-          id: string
-          is_active: boolean
-          name: string
-          price: number
-          product_limit: number | null
-          slug: string
-        }
-        Insert: {
-          created_at?: string
-          currency?: string
-          id?: string
-          is_active?: boolean
-          name: string
-          price?: number
-          product_limit?: number | null
-          slug: string
-        }
-        Update: {
-          created_at?: string
-          currency?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          price?: number
-          product_limit?: number | null
-          slug?: string
-        }
-        Relationships: []
-      }
       platform_config: {
         Row: {
           created_at: string
@@ -2443,91 +2410,6 @@ export type Database = {
         }
         Relationships: []
       }
-      store_plan_assignments: {
-        Row: {
-          billing_status: string
-          created_at: string
-          current_period_end: string | null
-          custom_plan_name: string | null
-          custom_price: number | null
-          custom_product_limit: number | null
-          grace_period_ends_at: string | null
-          id: string
-          is_free_lifetime: boolean
-          is_one_time: boolean
-          last_payment_at: string | null
-          next_billing_amount: number | null
-          notes: string | null
-          plan_id: string
-          status: string
-          store_id: string
-          trial_ends_at: string | null
-          updated_at: string
-        }
-        Insert: {
-          billing_status?: string
-          created_at?: string
-          current_period_end?: string | null
-          custom_plan_name?: string | null
-          custom_price?: number | null
-          custom_product_limit?: number | null
-          grace_period_ends_at?: string | null
-          id?: string
-          is_free_lifetime?: boolean
-          is_one_time?: boolean
-          last_payment_at?: string | null
-          next_billing_amount?: number | null
-          notes?: string | null
-          plan_id: string
-          status?: string
-          store_id: string
-          trial_ends_at?: string | null
-          updated_at?: string
-        }
-        Update: {
-          billing_status?: string
-          created_at?: string
-          current_period_end?: string | null
-          custom_plan_name?: string | null
-          custom_price?: number | null
-          custom_product_limit?: number | null
-          grace_period_ends_at?: string | null
-          id?: string
-          is_free_lifetime?: boolean
-          is_one_time?: boolean
-          last_payment_at?: string | null
-          next_billing_amount?: number | null
-          notes?: string | null
-          plan_id?: string
-          status?: string
-          store_id?: string
-          trial_ends_at?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "store_plan_assignments_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "plans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "store_plan_assignments_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: true
-            referencedRelation: "stores"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "store_plan_assignments_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: true
-            referencedRelation: "stores_public"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       store_shipping_config: {
         Row: {
           created_at: string
@@ -3213,104 +3095,6 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: true
             referencedRelation: "stores_public"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      subscription_payments: {
-        Row: {
-          amount: number
-          cashfree_order_id: string
-          cashfree_payment_id: string | null
-          created_at: string
-          currency: string
-          failure_reason: string | null
-          id: string
-          paid_at: string | null
-          payment_method: string | null
-          period_end: string | null
-          period_start: string | null
-          plan_id: string | null
-          raw_payload: Json | null
-          status: string
-          store_id: string
-          updated_at: string
-        }
-        Insert: {
-          amount: number
-          cashfree_order_id: string
-          cashfree_payment_id?: string | null
-          created_at?: string
-          currency?: string
-          failure_reason?: string | null
-          id?: string
-          paid_at?: string | null
-          payment_method?: string | null
-          period_end?: string | null
-          period_start?: string | null
-          plan_id?: string | null
-          raw_payload?: Json | null
-          status?: string
-          store_id: string
-          updated_at?: string
-        }
-        Update: {
-          amount?: number
-          cashfree_order_id?: string
-          cashfree_payment_id?: string | null
-          created_at?: string
-          currency?: string
-          failure_reason?: string | null
-          id?: string
-          paid_at?: string | null
-          payment_method?: string | null
-          period_end?: string | null
-          period_start?: string | null
-          plan_id?: string | null
-          raw_payload?: Json | null
-          status?: string
-          store_id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      subscriptions: {
-        Row: {
-          created_at: string
-          expires_at: string | null
-          id: string
-          plan_id: string
-          started_at: string
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          plan_id: string
-          started_at?: string
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          plan_id?: string
-          started_at?: string
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "subscriptions_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "plans"
             referencedColumns: ["id"]
           },
         ]
@@ -4397,10 +4181,6 @@ export type Database = {
         Returns: boolean
       }
       admin_get_platform_wa_config: { Args: never; Returns: Json }
-      admin_set_billing_mode: {
-        Args: { _mode: string; _store_id: string }
-        Returns: undefined
-      }
       admin_update_platform_wa_config: { Args: { _patch: Json }; Returns: Json }
       admin_wa_health_snapshot: {
         Args: never
@@ -4510,7 +4290,6 @@ export type Database = {
         Returns: Json
       }
       get_store_as_admin: { Args: { _slug: string }; Returns: Json }
-      get_store_billing_state: { Args: { _store_id: string }; Returns: Json }
       get_store_coupon_teaser: {
         Args: { _store_id: string }
         Returns: {

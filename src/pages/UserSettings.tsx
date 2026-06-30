@@ -12,7 +12,6 @@ import { Loader2, Upload, X, Crown, LogOut, Sparkles, CheckCircle2 } from "lucid
 import { useNavigate } from "react-router-dom";
 import { processImage, getCompressionMessage } from "@/lib/imageCompression";
 import { uploadOptimizedImage, generateUploadPath } from "@/lib/uploadOptimizedImage";
-import BillingSection from "@/components/billing/BillingSection";
 import WalletAccountCard from "@/components/billing/WalletAccountCard";
 
 const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6MB
@@ -109,39 +108,7 @@ export default function UserSettings() {
     enabled: !!user,
   });
 
-  const isCommissionMode = (userStore as any)?.billing_mode === "commission";
 
-  // Get effective plan from store_plan_assignments (includes admin overrides)
-  const { data: storePlanAssignment } = useQuery({
-    queryKey: ["my-store-plan", userStore?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("store_plan_assignments")
-        .select("*, plans:plan_id(name, price, product_limit)")
-        .eq("store_id", userStore!.id)
-        .eq("status", "active")
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!userStore?.id,
-  });
-
-  // Fallback to subscriptions if no store plan assignment
-  const { data: subscription } = useQuery({
-    queryKey: ["my-subscription", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subscriptions")
-        .select("*, plans:plan_id(name, price, product_limit)")
-        .eq("user_id", user!.id)
-        .eq("status", "active")
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user && !storePlanAssignment,
-  });
 
   useEffect(() => {
     if (profile) {
@@ -202,75 +169,15 @@ export default function UserSettings() {
     <div className="mx-auto max-w-2xl space-y-6">
       <h1 className="text-2xl font-semibold text-foreground">Account Settings</h1>
 
-      {/* Commission-mode stores: show wallet card instead of subscription UI */}
-      {isCommissionMode && userStore?.id ? (
+      {/* Commission wallet */}
+      {userStore?.id && (
         <WalletAccountCard
           storeId={userStore.id}
           storeSlug={(userStore as any).slug}
           variant="compact"
         />
-      ) : (
-        <>
-          {/* Billing & Subscription */}
-          <BillingSection storeId={userStore?.id || null} />
-
-          {/* Current Plan */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Current Plan</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {(() => {
-                const spa = storePlanAssignment as any;
-                const plan = spa?.plans as any;
-                const effectiveName = spa?.custom_plan_name || plan?.name;
-                const isFreeLifetime = spa?.is_free_lifetime;
-                const isOneTime = spa?.is_one_time;
-                const effectivePrice = isFreeLifetime ? 0 : (spa?.custom_price ?? plan?.price ?? 0);
-                const effectiveLimit = isFreeLifetime ? null : (spa?.custom_product_limit ?? plan?.product_limit);
-
-                if (effectiveName) {
-                  return (
-                    <div className="flex items-center gap-3">
-                      <Crown className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="font-medium text-foreground">{effectiveName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {isFreeLifetime
-                            ? "Free Lifetime — Unlimited products"
-                            : `₹${Number(effectivePrice).toFixed(0)}${isOneTime ? " one-time" : "/mo"} — ${effectiveLimit ? `${effectiveLimit} products` : "Unlimited products"}`}
-                        </p>
-                      </div>
-                      <Badge variant="default" className="ml-auto">
-                        {isFreeLifetime ? "Lifetime" : "Active"}
-                      </Badge>
-                    </div>
-                  );
-                }
-
-                if (subscription) {
-                  const subPlan = subscription.plans as any;
-                  return (
-                    <div className="flex items-center gap-3">
-                      <Crown className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="font-medium text-foreground">{subPlan?.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          ₹{Number(subPlan?.price || 0).toFixed(0)}/mo —{" "}
-                          {subPlan?.product_limit ? `${subPlan.product_limit} products` : "Unlimited products"}
-                        </p>
-                      </div>
-                      <Badge variant="default" className="ml-auto">Active</Badge>
-                    </div>
-                  );
-                }
-
-                return <p className="text-sm text-muted-foreground">Free plan</p>;
-              })()}
-            </CardContent>
-          </Card>
-        </>
       )}
+
 
       {/* Partner / Referral code */}
       <Card>

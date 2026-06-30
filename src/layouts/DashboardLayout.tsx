@@ -13,10 +13,7 @@ import { toast } from "sonner";
 
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import SmartInstallPrompt from "@/components/SmartInstallPrompt";
-import BillingBanner from "@/components/billing/BillingBanner";
-import BillingPaywall from "@/components/BillingPaywall";
 import LowBalanceDialog from "@/components/billing/LowBalanceDialog";
-import { useBillingState } from "@/hooks/useBillingState";
 import {
   LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
@@ -234,12 +231,9 @@ export default function DashboardLayout() {
     isLoading: storeLoading,
   }), [store, storeId, storeSlug, storeLoading]);
 
-  // Billing paywall — block dashboard when trial ended OR grace period expired and unpaid.
-  // User can still access /dashboard/settings (Profile) to pay.
-  // Storefront is NEVER suspended for billing reasons.
+  // Commission-only model: no subscription paywall. Wallet low-balance lock only.
   const ownStoreId = !isAdminView ? ownStore?.id : undefined;
-  const { data: billingState } = useBillingState(ownStoreId);
-  const isProfileRoute = location.pathname.startsWith("/dashboard/settings");
+  const showPaywall = false;
   const { data: walletSummary } = useQuery({
     queryKey: ["store-wallet", storeId],
     enabled: !!storeId,
@@ -252,27 +246,14 @@ export default function DashboardLayout() {
       return data as any;
     },
   });
-  const isCommissionMode = (store as any)?.billing_mode === "commission" || (walletSummary as any)?.billing_mode === "commission";
-  const billingBlocked =
-    !isAdminView &&
-    !!ownStoreId &&
-    !isCommissionMode &&
-    (billingState?.billing_status === "past_due" || billingState?.billing_status === "suspended") &&
-    billingState?.requires_payment === true;
-  const showPaywall = billingBlocked && !isProfileRoute;
-
-  // Commission wallet lock — block ALL dashboard pages except the wallet page itself
-  // when balance is low (< ₹100) or negative. Modal AlertDialog prevents nav clicks
-  // until the owner recharges. Admin-view sessions bypass the lock.
   const walletBalance = Number((walletSummary as any)?.wallet?.balance ?? 0);
   const isWalletRoute = location.pathname.includes("/wallet");
   const showLowBalance =
     !isAdminView &&
-    isCommissionMode &&
     !!walletSummary &&
     walletBalance < 100 &&
-    !isWalletRoute &&
-    !showPaywall;
+    !isWalletRoute;
+
 
   // Pending orders count — shared with PendingActions via React Query
   const { data: pendingCount } = useQuery({
@@ -381,14 +362,12 @@ export default function DashboardLayout() {
                   {store?.slug && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />}
                 </div>
               </header>
-              <BillingBanner />
               <main className="flex-1 overflow-auto p-6">
                 <Suspense fallback={<ContentSkeleton />}>
-                  {showPaywall && ownStoreId
-                    ? <BillingPaywall state={billingState!} storeId={ownStoreId} />
-                    : <Outlet />}
+                  <Outlet />
                 </Suspense>
               </main>
+
             </div>
           </div>
         </SidebarProvider>
@@ -480,15 +459,12 @@ export default function DashboardLayout() {
         </div>
       </header>
 
-      <BillingBanner />
-
       <main className="flex-1 overflow-auto px-3 py-4 pb-24">
         <Suspense fallback={<ContentSkeleton />}>
-          {showPaywall && ownStoreId
-            ? <BillingPaywall state={billingState!} storeId={ownStoreId} />
-            : <Outlet />}
+          <Outlet />
         </Suspense>
       </main>
+
 
       {/* Shopify-style bottom nav */}
       <nav className="fixed bottom-0 inset-x-0 z-30 bg-card border-t safe-area-pb">
@@ -550,7 +526,7 @@ export default function DashboardLayout() {
         storeSlug={storeSlug}
         pendingOrders={pendingOrders}
         isWhatsAppOnly={isWhatsAppOnly}
-        isCommissionMode={isCommissionMode}
+        isCommissionMode={true}
       />
     </div>
     {showLowBalance && <LowBalanceDialog open={true} balance={walletBalance} storeSlug={storeSlug || ""} />}

@@ -1,160 +1,67 @@
-# WhatsApp Template Studio — Submit to Meta + Custom Builder
 
-Goal: stop pasting templates into Meta by hand. Build (a) a one-click **Submit to Meta** action for every template row, and (b) a **Template Builder** so you can author new templates (any language, any category) from inside `/admin/whatsapp` and ship them with one click.
+# Remove Subscription Model — Switch Fully to 3% Commission
 
----
+## Audit Summary (what exists today)
 
-## 1. What this gives you
+**Two billing modes in `stores.billing_mode`:** `subscription` and `commission`. The commission engine is fully built and live:
 
-- One **"Submit to Meta"** button per template → posts to Graph API with your saved token, stores `meta_template_id`, flips `meta_status` automatically.
-- A **"+ New template"** dialog → guided builder (category, language, header, body with `{{1}} {{2}}` variables, footer, up to 2 buttons). Live WhatsApp-style preview. Validates Meta rules before submit so you don't get rejected for trivial reasons.
-- A **"Resubmit"** action for rejected/edited templates (Meta requires a new name or `edit` call; we handle both).
-- Hourly sync already exists (`wa-template-sync-hourly`) — it will pick up approval status without you doing anything.
-- **No more JSON copy-paste, no more Meta UI for routine work.** You still log into Meta only for first-time WABA setup.
+- `store_commission_config` (per-store %, min recharge, low balance threshold)
+- `store_wallets`, `store_wallet_ledger`, `store_wallet_recharges`
+- `store_order_commissions` + triggers (`tg_order_commission_handler`, `tg_after_commission_insert`, `wallet_*` RPCs)
+- `is_store_commission_mode()` gate
 
----
+**Subscription stack (to retire):**
+- Tables: `plans`, `subscriptions` (0 rows), `subscription_payments`, `store_plan_assignments` (17 rows — legacy)
+- RPCs: `get_store_billing_state`, `validate_billing_status`, `validate_subscription_payment_status`, `tg_subscription_payment_refund`, `auto_assign_new_plan_to_stores`, `auto_assign_plan_to_new_store`, `admin_set_billing_mode`
+- Edge fns: `assign-store-plan`, `billing-cron`, `cashfree-create-order` + `cashfree-verify-payment` + `cashfree-webhook` (subscription checkout flow)
+- Frontend: `useBillingState`, `BillingPaywall`, `BillingBanner`, `BillingSection`, `AdminSubscriptions` page, sidebar entries, dashboard banners, paywall gating on Cart/PDP/SideCart
 
-## 2. Database changes (1 migration)
+## Plan
 
-Extend `platform_wa_templates` with the fields the builder/submitter need:
+### 1. Database migration (single migration)
+- Backfill: `UPDATE stores SET billing_mode='commission'` for all stores.
+- Insert `store_commission_config` rows for every store missing one, default `commission_percentage=3.00`, `min_recharge=500`, `low_balance_threshold=100`, `is_active=true`.
+- Drop triggers/functions tied to subscriptions: `tg_subscription_payment_refund`, `validate_subscription_payment_status`, `validate_billing_status`, `get_store_billing_state`, `auto_assign_new_plan_to_stores`, `auto_assign_plan_to_new_store`, `admin_set_billing_mode`.
+- Drop tables (now unused): `subscription_payments`, `subscriptions`, `store_plan_assignments`, `plans`.
+- Update `is_store_commission_mode()` to always return `true` (kept for backward compatibility with existing call sites — easier than ripping out all references).
+- Change `stores.billing_mode` default to `'commission'`; add CHECK constraint allowing only `'commission'`.
+- Update `handle_new_store` trigger / store creation defaults to auto-insert a 3% commission config row.
 
-| New column | Purpose |
-|---|---|
-| `category` | UTILITY / MARKETING / AUTHENTICATION |
-| `header_type` | NONE / TEXT / IMAGE |
-| `header_text` | header copy when type=TEXT |
-| `body_text` | the actual template body with `{{1}}…{{n}}` |
-| `buttons` (jsonb) | `[{type:'URL', text:'View Order', url:'https://{{1}}'}]` |
-| `meta_template_id` | id returned by Graph API |
-| `meta_rejected_reason` | last rejection reason from Meta |
-| `submitted_at` | last submit timestamp |
-| `created_by` | admin user id |
+### 2. Edge functions
+- Delete: `assign-store-plan`, `billing-cron`, `cashfree-create-order`, `cashfree-verify-payment`, `cashfree-webhook` (these are subscription-only; the *storefront* `store-cashfree-create-order` and `wallet-cashfree-create-order` stay).
+- Unschedule any `billing-cron` pg_cron job.
 
-Existing columns kept: `name`, `language`, `variables`, `footer_text`, `button_url_pattern`, `meta_status`, `paused`, `pause_reason`, `is_active`.
+### 3. Frontend removal
+- **Delete files:** `src/hooks/useBillingState.ts`, `src/components/BillingPaywall.tsx`, `src/components/billing/BillingBanner.tsx`, `src/components/billing/BillingSection.tsx`, `src/pages/admin/AdminSubscriptions.tsx`.
+- **Edit to strip subscription references:**
+  - `src/layouts/DashboardLayout.tsx`, `src/pages/Dashboard.tsx`, `src/pages/CartPage.tsx`, `src/pages/V22CartPage.tsx`, `src/pages/ProductDetail.tsx`, `src/pages/V22ProductDetail.tsx`, `src/components/storefront/SideCart.tsx`, `src/pages/UserSettings.tsx`, `src/pages/StorePayments.tsx` — remove `BillingPaywall`, `useBillingState`, suspended-state gating.
+  - `src/components/AppSidebar.tsx`, `src/components/AdminSidebar.tsx`, `src/components/AdminBreadcrumbs.tsx`, `src/components/AdminCommandPalette.tsx`, `src/layouts/AdminLayout.tsx`, `src/routes/AuthRoutes.tsx` — remove Subscriptions/Billing nav and routes.
+  - `src/components/admin/ManageStoreDialog.tsx`, `src/pages/admin/AdminUsersStores.tsx`, `src/pages/admin/AdminWallets.tsx`, `src/pages/admin/AdminPartners.tsx` — remove plan-assignment UI; keep commission % editor.
+  - `src/pages/CreateStore.tsx` — drop plan selection; commission row auto-created via trigger.
+  - `src/hooks/useMyStore.ts`, `src/hooks/useStoreData.ts`, `src/hooks/useRealtimeStore.ts` — drop subscription joins/fields.
+- **Landing & legal copy:** Strip pricing/plan/trial messaging from `landing/Pricing.tsx`, `landing/Hero.tsx`, `landing/FAQ.tsx`, `landing/StickyMobileCTA.tsx`, `landing/StartRiskFree.tsx`, `landing/SolutionFlow.tsx`, `landing/FinalCTA.tsx`, `landing/AfterYouStart.tsx`, `landing/ExitIntentPopup.tsx`, `landing/LandingJsonLd.tsx`, `landing/v2/*` (`PricingV2`, `ProblemVsUs`, `SavingsCalculator`). Replace with "Free to start • 3% commission per order" messaging. (No specific ₹ prices per project memory.)
+  - Legal pages (`TermsAndConditions`, `RefundPolicy`, `PrivacyPolicy`, `ShippingPolicy`, `ContactUs`, `StorefrontPrivacyPolicy`, `defaultPageContent`) — rewrite subscription/refund clauses to commission terms.
+- **Guides/content:** Update `src/content/guides.ts`.
 
-Backfill `body_text` / `category` / `buttons` for the 3 live templates (`order_confirmation_v2`, `order_shipped_v2`, `abandoned_cart_v2`) so the new UI shows them correctly.
+### 4. Super-admin commission management (kept & polished)
+- `AdminWallets` already lists wallets + ledger — keep.
+- Add a small "Set commission %" inline editor on `AdminUsersStores` / `ManageStoreDialog` that writes to `store_commission_config` (default 3%).
+- Replace the Subscriptions sidebar entry with "Commissions" pointing to the existing wallets/commissions view.
 
----
+### 5. Verification
+- Run typecheck (auto). Smoke: load `/dashboard`, `/admin/wallets`, storefront cart — no `BillingPaywall` mounts, no `useBillingState` calls, no broken imports.
+- DB: confirm no row remains in `plans`/`subscriptions`/`store_plan_assignments`; every store has a `store_commission_config` row at 3%.
 
-## 3. New edge function — `wa-template-submit`
+## Notes / Risks
+- Migration drops 4 tables — irreversible. `subscriptions` is already empty; `store_plan_assignments` (17 rows) and `subscription_payments` are legacy. Confirming this is OK before I run the migration.
+- Cashfree subscription functions removed do **not** touch storefront order payments.
+- `is_store_commission_mode()` kept as `RETURN true` to avoid touching every call site in one pass.
 
-Single endpoint that does all 4 lifecycle actions:
+## Technical sequence
+1. Supabase migration (data backfill + drops + new defaults).
+2. Delete edge functions.
+3. Delete + edit frontend files in parallel batches.
+4. Landing/legal copy rewrite.
+5. Final typecheck and dashboard smoke.
 
-- `action: 'create'` → `POST graph.facebook.com/v21.0/{WABA_ID}/message_templates`
-- `action: 'edit'` → `POST graph.facebook.com/v21.0/{TEMPLATE_ID}` (only body/footer/buttons; name+category are immutable per Meta)
-- `action: 'delete'` → `DELETE graph.facebook.com/v21.0/{WABA_ID}/message_templates?name=...`
-- `action: 'refresh'` → fetches current status for one template (instant feedback after Submit, doesn't wait for the hourly cron)
-
-Auth: admin-only (existing `has_role(user_id,'admin')` gate, same pattern as `wa-platform-send`).
-
-Inputs validated with Zod. Builds the Meta `components[]` array from our DB row (HEADER + BODY + FOOTER + BUTTONS). Stores `meta_template_id`, `meta_status`, `meta_rejected_reason`, `submitted_at` back on the row.
-
-Needs one new secret: `META_WABA_ID` (WhatsApp Business Account ID — different from phone-number-id). Token reuses existing `wa_access_token` from `platform_config`.
-
----
-
-## 4. UI — `/admin/whatsapp` → Templates tab
-
-Rebuild `AdminPlatformTemplatesTab.tsx` with three surfaces:
-
-**a. List view** (table)
-- Columns: name · category · language · meta_status (color chip) · last submitted · actions
-- Row actions: Edit · Submit to Meta · Refresh status · Pause/Resume · Delete (Meta + DB)
-- Status chips: PENDING (amber), APPROVED (green), REJECTED (red, click → shows reason), PAUSED (gray)
-
-**b. Builder dialog** (`+ New template`)
-
-```text
-┌─────────────────────────────┬──────────────────────────┐
-│ FORM                        │ LIVE PREVIEW             │
-│ ─ Name (snake_case)         │  ┌────────────────────┐  │
-│ ─ Language (en/hi/…)        │  │  📱 WhatsApp       │  │
-│ ─ Category (UTIL/MKT/AUTH)  │  │  ─────────────     │  │
-│ ─ Header (none/text/image)  │  │  Header line       │  │
-│ ─ Body  [textarea]          │  │  Body with         │  │
-│   helper: insert {{var}}    │  │  resolved {{1}}    │  │
-│ ─ Footer (≤60 chars)        │  │  Footer            │  │
-│ ─ Buttons (0–2)             │  │  [ View Order ]    │  │
-│   • URL  • Quick reply      │  └────────────────────┘  │
-│ ─ Sample values for vars    │                          │
-│   (used in preview + Meta)  │  ⚠ Validation hints     │
-└─────────────────────────────┴──────────────────────────┘
-     [ Save draft ]   [ Save & Submit to Meta ]
-```
-
-Client-side validation before submit (catches 90% of Meta rejections):
-- Body ≤ 1024 chars, header ≤ 60, footer ≤ 60, button text ≤ 25
-- Variables must be sequential `{{1}}, {{2}}, …`
-- No URL/phone in body unless it's a variable inside a button
-- Marketing templates must include opt-out language in footer (we auto-append "Reply STOP to opt out" if missing)
-- Snake_case + lowercase name (Meta requirement)
-
-**c. Detail drawer** — clicking a template opens history: submit timestamps, Meta status transitions, rejection reasons, last 20 sends using this template, click-through rate from `wa_link_clicks`.
-
----
-
-## 5. Lifecycle wiring (so nothing is half-done)
-
-- After **Submit** → call `refresh` once after 5s for instant feedback; rely on hourly sync after that.
-- On **Approved** → row becomes selectable in `wa-order-event` / campaigns (already gated by `meta_status==='approved'` in `wa-platform-send`).
-- On **Rejected** → row auto-pauses (`paused=true`), reason shown in UI, Edit becomes the only enabled action.
-- On **Paused by Meta** (via webhook `message_template_status_update` → already handled in `whatsapp-webhook`) → same UI treatment; `wa-platform-send` already refuses to send.
-- On **Delete** → soft-delete locally (`is_active=false`) + hard delete on Meta. Prevents accidental data loss in our analytics tables.
-
----
-
-## 6. Safety / guardrails
-
-- Admin role gate on every action (already enforced via `has_role`).
-- Rate-limit submits: max 10 template ops / hour / admin (Meta throttles aggressive submitters and can flag the WABA).
-- Master kill switch (`wa_enabled`) still respected — Submit works even when sender is off, since approval is independent of sending.
-- Never log the access token. Errors from Meta are sanitized before storing in `meta_rejected_reason`.
-- Audit row written to `wa_health_log` for every create/edit/delete.
-
----
-
-## 7. Files touched
-
-**New**
-- `supabase/functions/wa-template-submit/index.ts`
-- `src/components/admin/whatsapp/TemplateBuilderDialog.tsx`
-- `src/components/admin/whatsapp/TemplatePreview.tsx`
-- `src/components/admin/whatsapp/TemplateDetailDrawer.tsx`
-- `src/lib/wa-template-validate.ts` (shared validator: client + edge)
-
-**Edited**
-- `src/components/admin/whatsapp/AdminPlatformTemplatesTab.tsx` (rebuild)
-- 1 migration (schema + backfill)
-
-**Untouched**
-- `wa-platform-send`, `wa-order-event`, `wa-cart-recovery-cron`, `whatsapp-webhook`, all triggers — the sending pipeline doesn't change.
-
----
-
-## 8. Secrets to add (one-time, after plan approval)
-
-- `META_WABA_ID` — find it in Meta Business Manager → WhatsApp Accounts → your WABA → top of page. Same place you got `META_WHATSAPP_TOKEN`.
-
-That's the only new secret. Token, phone-number-id, and verify-token are already saved.
-
----
-
-## 9. Out of scope (call it out so we don't sprawl)
-
-- Media header uploads (image/video templates) → phase 2; current 3 templates are text-only.
-- Carousel / catalog templates → phase 2.
-- Multi-language auto-translation → phase 2 (you'll create Hindi versions manually in the builder for now; 2 minutes per template).
-- Per-merchant custom templates → still later, after single-shared sender is fully proven.
-
----
-
-## 10. Acceptance test
-
-After build, you should be able to:
-1. Open `/admin/whatsapp` → Templates → see 3 existing templates with full body/footer/buttons.
-2. Click **Submit to Meta** on `order_confirmation_v2` → status flips to PENDING within 2s → APPROVED within ~5 min (Meta side).
-3. Click **+ New template**, fill the builder for a Hindi `order_confirmation_hi` → preview matches what WhatsApp will render → **Save & Submit** → row appears with PENDING.
-4. Pause / resume / delete each works and is reflected in Meta within 30s.
-5. Send a test order → `wa-platform-send` only picks templates where `meta_status='approved'` and `paused=false` (already true today; verified end-to-end after a real approval lands).
-
-Ready to build on approval.
+Confirm and I'll execute — especially: OK to drop `plans`, `subscriptions`, `subscription_payments`, `store_plan_assignments` permanently?

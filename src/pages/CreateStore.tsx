@@ -44,11 +44,10 @@ const CURRENCIES = [
 ];
 
 const STEPS = [
-  { id: 1, title: "Plan", icon: CreditCard, desc: "Choose your plan", motivation: "Pick the perfect plan for your business! 🎯" },
-  { id: 2, title: "Store Info", icon: Store, desc: "Name & branding", motivation: "Let's build something amazing! 🚀" },
-  { id: 3, title: "Location", icon: MapPin, desc: "Where you are", motivation: "Great start! Keep going 💪" },
-  { id: 4, title: "Contact", icon: Phone, desc: "How to reach you", motivation: "Almost there! 🎯" },
-  { id: 5, title: "Social", icon: Instagram, desc: "Your presence", motivation: "Final step — you're a star! ⭐" },
+  { id: 1, title: "Store Info", icon: Store, desc: "Name & branding", motivation: "Let's build something amazing! 🚀" },
+  { id: 2, title: "Location", icon: MapPin, desc: "Where you are", motivation: "Great start! Keep going 💪" },
+  { id: 3, title: "Contact", icon: Phone, desc: "How to reach you", motivation: "Almost there! 🎯" },
+  { id: 4, title: "Social", icon: Instagram, desc: "Your presence", motivation: "Final step — you're a star! ⭐" },
 ];
 
 // Features are fully dynamic — pulled from plans table in admin panel
@@ -68,19 +67,7 @@ export default function CreateStore() {
   const [storeCreated, setStoreCreated] = useState(false);
   const [createdSlug, setCreatedSlug] = useState<string>("");
 
-  // Fetch available plans
-  const { data: plans } = useQuery({
-    queryKey: ["available-plans"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("plans")
-        .select("id, name, slug, price, product_limit, currency")
-        .eq("is_active", true)
-        .order("price", { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-  });
+
 
   useEffect(() => {
     if (!user) return;
@@ -98,10 +85,7 @@ export default function CreateStore() {
       });
   }, [user, navigate]);
 
-  // Step 1 - Plan
-  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
-
-  // Step 2
+  // Step 1
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
@@ -114,42 +98,22 @@ export default function CreateStore() {
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [heroPreview, setHeroPreview] = useState<string | null>(null);
 
-  // Step 3
+  // Step 2
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [location, setLocation] = useState("");
 
-  // Step 4
+  // Step 3
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
 
-  // Step 5
+  // Step 4
   const [instagramUrl, setInstagramUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
   const [partnerCode, setPartnerCode] = useState("");
 
   const theme = "theme-1";
 
-  // Auto-select first plan when plans load
-  useEffect(() => {
-    if (plans && plans.length > 0 && !selectedPlanId) {
-      setSelectedPlanId(plans[0].id);
-    }
-  }, [plans, selectedPlanId]);
-
-  const assignPlanToStore = async (storeId: string) => {
-    const { data, error } = await supabase.functions.invoke("assign-store-plan", {
-      body: {
-        storeId,
-        planId: selectedPlanId,
-      },
-    });
-
-    const payload = data as { error?: string } | null;
-    if (error || payload?.error) {
-      throw new Error(payload?.error || error?.message || "Failed to apply selected plan");
-    }
-  };
 
   const generateSlug = (value: string) =>
     value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -190,17 +154,14 @@ export default function CreateStore() {
   };
 
   const goNext = () => {
-    if (step === 1 && !selectedPlanId) {
-      toast.error("Please select a plan to continue");
-      return;
-    }
-    if (step === 2 && (!name.trim() || !slug.trim())) {
+    if (step === 1 && (!name.trim() || !slug.trim())) {
       toast.error("Store name and slug are required");
       return;
     }
     setDirection("forward");
     setStep((s) => Math.min(s + 1, STEPS.length));
   };
+
 
   const goBack = () => {
     setDirection("back");
@@ -266,21 +227,7 @@ export default function CreateStore() {
       }
 
       if (newStore?.id) {
-        try {
-          await assignPlanToStore(newStore.id);
-        } catch (planError: any) {
-          await (supabase as any)
-            .from("stores")
-            .delete()
-            .eq("id", newStore.id)
-            .then(({ error: cleanupError }: any) => {
-              if (cleanupError) {
-                console.warn("Store cleanup after plan assignment failure failed:", cleanupError.message);
-              }
-            });
 
-          throw new Error(planError?.message || "Failed to apply selected plan");
-        }
 
         // Create default theme config
         await (supabase as any).from("store_theme_config").insert({
@@ -591,7 +538,7 @@ export default function CreateStore() {
     );
   }
 
-  const selectedPlan = plans?.find(p => p.id === selectedPlanId);
+  
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 pb-8 relative">
@@ -722,72 +669,6 @@ export default function CreateStore() {
             className="animate-fade-in"
             style={{ animationDuration: "0.35s" }}
           >
-            {/* Step 1: Choose Plan */}
-            {step === 1 && (
-              <div className="space-y-5">
-                <div className="mb-4">
-                  <h2 className="text-xl font-semibold text-foreground">Choose Your Plan</h2>
-                  <p className="text-sm text-muted-foreground">Start with a 7-day free trial • No card required</p>
-                </div>
-
-                {plans && plans.length > 0 ? (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {plans.map((plan, idx) => {
-                      const isSelected = selectedPlanId === plan.id;
-                      const isPopular = plans.length > 1 && idx === plans.length - 1;
-                      return (
-                        <button
-                          key={plan.id}
-                          type="button"
-                          onClick={() => setSelectedPlanId(plan.id)}
-                          className={`relative text-left rounded-2xl border-2 p-5 transition-[transform,opacity,colors,box-shadow] duration-200 ${
-                            isSelected
-                              ? "border-primary bg-primary/5 shadow-lg ring-2 ring-primary/20"
-                              : "border-input hover:border-primary/40 hover:shadow-md"
-                          }`}
-                        >
-                          {isPopular && (
-                            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
-                              Most Popular
-                            </span>
-                          )}
-
-                          <div className={`absolute top-4 right-4 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-[transform,opacity,colors,box-shadow] ${
-                            isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
-                          }`}>
-                            {isSelected && <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />}
-                          </div>
-
-                          <h3 className="text-lg font-bold text-foreground">{plan.name}</h3>
-                          <div className="mt-1 flex items-baseline gap-1">
-                            <span className="text-3xl font-black text-foreground">₹{plan.price}</span>
-                            <span className="text-sm text-muted-foreground">/month</span>
-                          </div>
-                          <p className="mt-2 text-sm font-medium text-primary">
-                            {plan.product_limit ? `${plan.product_limit} Products` : "Unlimited Products"}
-                          </p>
-                          <p className="mt-1 text-xs font-medium text-green-600">7-day free trial included</p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  </div>
-                )}
-
-                <div className="rounded-xl border bg-accent/30 p-4">
-                  <div className="flex items-start gap-3">
-                    <Sparkles className="mt-0.5 h-5 w-5 text-primary shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">7-day free trial on all plans!</p>
-                      <p className="text-xs text-muted-foreground">Try any plan free for 7 days. Upgrade or cancel anytime — no data loss.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Step 2: Store Info */}
             {step === 2 && (
@@ -1092,22 +973,6 @@ export default function CreateStore() {
                   </p>
                 </div>
 
-                {/* Plan summary before launching */}
-                {selectedPlan && (
-                  <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-4">
-                    <div className="flex items-start gap-3">
-                      <CreditCard className="mt-0.5 h-5 w-5 text-primary shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          Launching with <span className="text-primary font-bold">{selectedPlan.name}</span> plan
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          ₹{selectedPlan.price}/month • {selectedPlan.product_limit ? `${selectedPlan.product_limit} products` : "Unlimited products"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 <div className="rounded-xl border bg-accent/30 p-4">
                   <div className="flex items-start gap-3">

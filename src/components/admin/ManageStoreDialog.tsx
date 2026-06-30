@@ -50,22 +50,13 @@ export default function ManageStoreDialog({ storeId, open, onOpenChange, default
     staleTime: 0,
     queryFn: async () => {
       const summary = await callControl({ action: "get_summary", store_id: storeId });
-      const [{ data: assignment }, { data: plans }, { data: payments }, { data: owner }] = await Promise.all([
-        supabase.from("store_plan_assignments" as any)
-          .select("*, plans:plan_id(id, name, slug, price, product_limit)")
-          .eq("store_id", storeId).maybeSingle(),
-        supabase.from("plans").select("*").eq("is_active", true).order("price"),
-        supabase.from("subscription_payments" as any)
-          .select("id, amount, status, created_at, provider, payment_id")
-          .eq("store_id", storeId).order("created_at", { ascending: false }).limit(10),
-        supabase.from("stores").select("owner_id").eq("id", storeId).maybeSingle(),
-      ]);
+      const { data: owner } = await supabase.from("stores").select("owner_id").eq("id", storeId).maybeSingle();
       let ownerProfile: any = null;
       if (owner?.owner_id) {
         const { data: p } = await supabase.from("profiles").select("full_name, is_blocked, user_id").eq("user_id", owner.owner_id).maybeSingle();
         ownerProfile = p;
       }
-      return { ...summary, assignment, plans: plans ?? [], payments: payments ?? [], ownerProfile };
+      return { ...summary, assignment: null, plans: [], payments: [], ownerProfile };
     },
   });
 
