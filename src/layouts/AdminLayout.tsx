@@ -15,7 +15,7 @@ import { AdminBreadcrumbs } from "@/components/AdminBreadcrumbs";
 import { AdminCommandPalette } from "@/components/AdminCommandPalette";
 import { cn } from "@/lib/utils";
 import {
-  Shield, LayoutDashboard, Users, ShoppingBag, CreditCard,
+  Shield, LayoutDashboard, Users, ShoppingBag,
   BarChart3, MessageSquare, Settings, Menu, X, LogOut, User,
   Wallet, Handshake, Activity, AlertTriangle, Search,
 } from "lucide-react";
@@ -39,7 +39,6 @@ function AdminMobileMenu({
       items: [
         { label: "Users & Stores", icon: Users, path: "/admin/users-stores" },
         { label: "Orders", icon: ShoppingBag, path: "/admin/orders" },
-        { label: "Subscriptions", icon: CreditCard, path: "/admin/subscriptions" },
         { label: "Commission Wallets", icon: Wallet, path: "/admin/wallets" },
       ],
     },
@@ -215,14 +214,12 @@ export default function AdminLayout() {
   }
 
 
-  // Mobile layout — matches store owner mobile pattern
-  // Replaced duplicate "Settings" with "Subscriptions" (higher-frequency screen);
-  // Settings is still reachable via the top-right avatar and the More sheet.
+  // Mobile layout — matches store owner mobile pattern.
   const bottomNav = [
     { label: "Home", icon: LayoutDashboard, path: "/admin", exact: true },
     { label: "Users", icon: Users, path: "/admin/users-stores" },
     { label: "Orders", icon: ShoppingBag, path: "/admin/orders" },
-    { label: "Subs", icon: CreditCard, path: "/admin/subscriptions" },
+    { label: "Wallets", icon: Wallet, path: "/admin/wallets" },
     { label: "More", icon: Menu, path: "__menu__" },
   ];
 

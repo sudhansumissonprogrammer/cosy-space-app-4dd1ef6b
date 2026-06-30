@@ -35,7 +35,7 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
       ]);
 
       const store = storeRes.data;
-      const isWhatsAppOnly = store?.order_mode === "whatsapp";
+      const isWhatsAppOnly = false;
 
       const items: CheckItem[] = [
         {

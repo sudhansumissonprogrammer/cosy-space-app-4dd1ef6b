@@ -7,22 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
-  Store, Wallet, Crown, Settings2, Plus, Minus, Ban, CheckCircle, BadgeCheck, ExternalLink, Download,
+  Store, Wallet, Plus, Minus, Ban, CheckCircle, BadgeCheck, ExternalLink, Download,
 } from "lucide-react";
 import { downloadWalletInvoice } from "@/lib/walletInvoice";
 
-type Mode = "subscription" | "commission";
 type Tab = "overview" | "billing" | "wallet" | "danger";
 
 interface Props {
@@ -57,7 +52,7 @@ export default function ManageStoreDialog({ storeId, open, onOpenChange, default
         const { data: p } = await supabase.from("profiles").select("full_name, is_blocked, user_id").eq("user_id", owner.owner_id).maybeSingle();
         ownerProfile = p;
       }
-      return { ...summary, assignment: null, plans: [], payments: [], ownerProfile };
+      return { ...summary, ownerProfile };
     },
   });
 
@@ -66,32 +61,14 @@ export default function ManageStoreDialog({ storeId, open, onOpenChange, default
   const config = data?.config as any;
   const ledger = (data?.ledger ?? []) as any[];
   const recharges = (data?.recharges ?? []) as any[];
-  const assignment = (data as any)?.assignment;
-  const plans = ((data as any)?.plans ?? []) as any[];
-  const payments = ((data as any)?.payments ?? []) as any[];
   const ownerProfile = (data as any)?.ownerProfile;
-
-  const mode: Mode = (store?.billing_mode ?? "subscription") as Mode;
-  const isCommission = mode === "commission";
-
-  // If dialog opened on Wallet tab but store is in subscription mode, swap to Billing.
-  useEffect(() => {
-    if (open && tab === "wallet" && store && !isCommission) setTab("billing");
-  }, [open, tab, store, isCommission]);
 
   const invalidateAll = () => {
     refetch();
     qc.invalidateQueries({ queryKey: ["admin-wallets"] });
-    qc.invalidateQueries({ queryKey: ["admin-store-billing-modes"] });
-    qc.invalidateQueries({ queryKey: ["admin-store-plan-assignments"] });
     qc.invalidateQueries({ queryKey: ["admin-users-stores"] });
   };
 
-  const switchMode = useMutation({
-    mutationFn: async (next: Mode) => callControl({ action: "set_billing_mode", store_id: storeId, mode: next }),
-    onSuccess: () => { toast.success("Billing mode updated"); invalidateAll(); },
-    onError: (e: any) => toast.error(e.message),
-  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -108,28 +85,15 @@ export default function ManageStoreDialog({ storeId, open, onOpenChange, default
           <div className="py-12 text-center text-muted-foreground">Loading…</div>
         ) : (
           <div className="space-y-4">
-            {/* Mode switch bar */}
+            {/* Commission model summary */}
             <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
               <div className="flex items-center gap-3">
-                <Label className="text-sm font-medium">Billing Mode</Label>
-                <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    variant={!isCommission ? "default" : "outline"}
-                    onClick={() => !isCommission || switchMode.mutate("subscription")}
-                    disabled={!isCommission || switchMode.isPending}
-                  >
-                    <Crown className="mr-1 h-3 w-3" /> Subscription
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={isCommission ? "default" : "outline"}
-                    onClick={() => isCommission || switchMode.mutate("commission")}
-                    disabled={isCommission || switchMode.isPending}
-                  >
-                    <Wallet className="mr-1 h-3 w-3" /> Commission
-                  </Button>
-                </div>
+                <Badge variant="default" className="gap-1">
+                  <Wallet className="h-3 w-3" /> Commission-only
+                </Badge>
+                <p className="text-xs text-muted-foreground">
+                  All stores use wallet-based commission billing. Legacy subscriptions are disabled.
+                </p>
               </div>
               {store.slug && (
                 <a
@@ -146,45 +110,31 @@ export default function ManageStoreDialog({ storeId, open, onOpenChange, default
             <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
               <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="billing">Billing</TabsTrigger>
-                <TabsTrigger value="wallet" disabled={!isCommission}>Wallet</TabsTrigger>
+                <TabsTrigger value="billing">Commission</TabsTrigger>
+                <TabsTrigger value="wallet">Wallet</TabsTrigger>
                 <TabsTrigger value="danger">Danger</TabsTrigger>
               </TabsList>
 
               {/* OVERVIEW */}
               <TabsContent value="overview">
-                <OverviewTab store={store} owner={ownerProfile} mode={mode} wallet={wallet} config={config} assignment={assignment} />
+                <OverviewTab store={store} owner={ownerProfile} wallet={wallet} config={config} />
               </TabsContent>
 
               {/* BILLING */}
               <TabsContent value="billing">
-                {isCommission ? (
-                  <CommissionConfigPanel storeId={storeId!} config={config} onSaved={invalidateAll} />
-                ) : (
-                  <SubscriptionPanel
-                    storeId={storeId!}
-                    assignment={assignment}
-                    plans={plans}
-                    payments={payments}
-                    onSaved={invalidateAll}
-                  />
-                )}
+                <CommissionConfigPanel storeId={storeId!} config={config} onSaved={invalidateAll} />
               </TabsContent>
 
               {/* WALLET */}
               <TabsContent value="wallet">
-                {isCommission ? (
-                  <WalletPanel
-                    storeId={storeId!}
-                    store={store}
-                    wallet={wallet}
-                    ledger={ledger}
-                    recharges={recharges}
-                    onSaved={invalidateAll}
-                  />
-                ) : (
-                  <Card><CardContent className="py-8 text-center text-muted-foreground">Switch to Commission mode to manage wallet.</CardContent></Card>
-                )}
+                <WalletPanel
+                  storeId={storeId!}
+                  store={store}
+                  wallet={wallet}
+                  ledger={ledger}
+                  recharges={recharges}
+                  onSaved={invalidateAll}
+                />
               </TabsContent>
 
               {/* DANGER */}
@@ -201,9 +151,9 @@ export default function ManageStoreDialog({ storeId, open, onOpenChange, default
 
 /* ── Overview ────────────────────────────────────────────── */
 
-function OverviewTab({ store, owner, mode, wallet, config, assignment }: any) {
+function OverviewTab({ store, owner, wallet, config }: any) {
   const stats = [
-    { label: "Mode", value: mode === "commission" ? "Commission" : "Subscription" },
+    { label: "Mode", value: "Commission" },
     { label: "Suspended", value: store.is_suspended ? "Yes" : "No" },
     { label: "Verified", value: store.is_verified ? "Yes" : "No" },
     { label: "Owner blocked", value: owner?.is_blocked ? "Yes" : "No" },
@@ -225,200 +175,24 @@ function OverviewTab({ store, owner, mode, wallet, config, assignment }: any) {
         <CardContent className="space-y-1 p-4 text-sm">
           <p><span className="text-muted-foreground">Owner:</span> {owner?.full_name || "—"}</p>
           <p><span className="text-muted-foreground">Created:</span> {store.created_at ? format(new Date(store.created_at), "PPP") : "—"}</p>
-          {mode === "commission" ? (
-            <>
-              <p><span className="text-muted-foreground">Wallet balance:</span> ₹{Number(wallet?.balance ?? 0).toFixed(2)}</p>
-              <p><span className="text-muted-foreground">Commission %:</span> {config?.commission_percentage ?? 3}%</p>
-            </>
-          ) : (
-            <>
-              <p><span className="text-muted-foreground">Plan:</span> {assignment?.custom_plan_name || assignment?.plans?.name || "—"}</p>
-              <p><span className="text-muted-foreground">Status:</span> {assignment?.billing_status || "—"}</p>
-            </>
-          )}
+          <p><span className="text-muted-foreground">Wallet balance:</span> ₹{Number(wallet?.balance ?? 0).toFixed(2)}</p>
+          <p><span className="text-muted-foreground">Commission %:</span> {config?.commission_percentage ?? 3}%</p>
         </CardContent>
       </Card>
     </div>
   );
-}
-
-/* ── Subscription Panel ──────────────────────────────────── */
-
-function SubscriptionPanel({ storeId, assignment, plans, payments, onSaved }: any) {
-  const [planId, setPlanId] = useState(assignment?.plan_id || plans[0]?.id || "");
-  const [customPlanName, setCustomPlanName] = useState(assignment?.custom_plan_name || "");
-  const [customPrice, setCustomPrice] = useState(assignment?.custom_price?.toString() || "");
-  const [customLimit, setCustomLimit] = useState(assignment?.custom_product_limit?.toString() || "");
-  const [isFreeLifetime, setIsFreeLifetime] = useState(!!assignment?.is_free_lifetime);
-  const [isOneTime, setIsOneTime] = useState(!!assignment?.is_one_time);
-  const [billingStatus, setBillingStatus] = useState(assignment?.billing_status || "active");
-  const [trialEnds, setTrialEnds] = useState(toLocal(assignment?.trial_ends_at));
-  const [periodEnd, setPeriodEnd] = useState(toLocal(assignment?.current_period_end));
-  const [graceEnd, setGraceEnd] = useState(toLocal(assignment?.grace_period_ends_at));
-  const [notes, setNotes] = useState(assignment?.notes || "");
-
-  useEffect(() => {
-    setPlanId(assignment?.plan_id || plans[0]?.id || "");
-    setCustomPlanName(assignment?.custom_plan_name || "");
-    setCustomPrice(assignment?.custom_price?.toString() || "");
-    setCustomLimit(assignment?.custom_product_limit?.toString() || "");
-    setIsFreeLifetime(!!assignment?.is_free_lifetime);
-    setIsOneTime(!!assignment?.is_one_time);
-    setBillingStatus(assignment?.billing_status || "active");
-    setTrialEnds(toLocal(assignment?.trial_ends_at));
-    setPeriodEnd(toLocal(assignment?.current_period_end));
-    setGraceEnd(toLocal(assignment?.grace_period_ends_at));
-    setNotes(assignment?.notes || "");
-  }, [assignment, plans]);
-
-  const save = useMutation({
-    mutationFn: async () => {
-      const effectiveStatus = isFreeLifetime ? "lifetime" : isOneTime ? "one_time_paid" : billingStatus;
-      const payload: any = {
-        action: "update_subscription",
-        store_id: storeId,
-        plan_id: planId,
-        custom_plan_name: customPlanName.trim() || null,
-        custom_price: isFreeLifetime ? null : customPrice === "" ? null : Number(customPrice),
-        custom_product_limit: customLimit === "" ? null : parseInt(customLimit),
-        is_free_lifetime: isFreeLifetime,
-        is_one_time: isOneTime,
-        billing_status: effectiveStatus,
-        trial_ends_at: isFreeLifetime || isOneTime ? null : trialEnds ? new Date(trialEnds).toISOString() : null,
-        current_period_end: isFreeLifetime || isOneTime ? null : periodEnd ? new Date(periodEnd).toISOString() : null,
-        grace_period_ends_at: isFreeLifetime || isOneTime || !["past_due", "suspended"].includes(effectiveStatus) ? null : graceEnd ? new Date(graceEnd).toISOString() : null,
-        notes: notes.trim() || null,
-      };
-      await callControl(payload);
-    },
-    onSuccess: () => { toast.success("Subscription updated"); onSaved(); },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardContent className="space-y-4 p-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <Label>Plan</Label>
-              <Select value={planId} onValueChange={setPlanId}>
-                <SelectTrigger><SelectValue placeholder="Select plan" /></SelectTrigger>
-                <SelectContent>
-                  {plans.map((p: any) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name} — ₹{Number(p.price).toFixed(0)}/mo</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Status</Label>
-              <Select value={isFreeLifetime ? "lifetime" : isOneTime ? "one_time_paid" : billingStatus} onValueChange={setBillingStatus} disabled={isFreeLifetime || isOneTime}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {["trialing","active","past_due","suspended","cancelled","lifetime","one_time_paid"].map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Custom plan name</Label>
-              <Input value={customPlanName} onChange={(e) => setCustomPlanName(e.target.value)} placeholder="(optional)" maxLength={80} />
-            </div>
-            <div>
-              <Label>Custom price (₹/mo)</Label>
-              <Input type="number" value={customPrice} onChange={(e) => setCustomPrice(e.target.value)} placeholder="Plan default" />
-            </div>
-            <div>
-              <Label>Custom product limit</Label>
-              <Input type="number" value={customLimit} onChange={(e) => setCustomLimit(e.target.value)} placeholder="Plan default" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between rounded border p-2">
-                <Label>Free lifetime</Label>
-                <Switch checked={isFreeLifetime} onCheckedChange={(v) => { setIsFreeLifetime(v); if (v) setIsOneTime(false); }} />
-              </div>
-              <div className="flex items-center justify-between rounded border p-2">
-                <Label>One-time</Label>
-                <Switch checked={isOneTime} onCheckedChange={(v) => { setIsOneTime(v); if (v) setIsFreeLifetime(false); }} />
-              </div>
-            </div>
-            <div>
-              <Label>Trial ends</Label>
-              <Input type="datetime-local" value={trialEnds} onChange={(e) => setTrialEnds(e.target.value)} />
-            </div>
-            <div>
-              <Label>Period end</Label>
-              <Input type="datetime-local" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
-            </div>
-            <div>
-              <Label>Grace ends</Label>
-              <Input type="datetime-local" value={graceEnd} onChange={(e) => setGraceEnd(e.target.value)} />
-            </div>
-            <div className="md:col-span-2">
-              <Label>Admin notes</Label>
-              <Input value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={200} />
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={() => save.mutate()} disabled={save.isPending || !planId}>
-              {save.isPending ? "Saving…" : "Save subscription"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-0">
-          <div className="border-b p-3 text-sm font-medium">Recent payments</div>
-          {payments.length === 0 ? (
-            <p className="p-4 text-center text-sm text-muted-foreground">No payments yet</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Provider</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payments.map((p: any) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="text-sm">{format(new Date(p.created_at), "MMM d, yyyy")}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{p.provider || "—"}</TableCell>
-                    <TableCell className="text-right tabular-nums">₹{Number(p.amount).toFixed(2)}</TableCell>
-                    <TableCell><Badge variant={p.status === "paid" ? "default" : "secondary"}>{p.status}</Badge></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function toLocal(iso?: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 /* ── Commission Config Panel ─────────────────────────────── */
 
 function CommissionConfigPanel({ storeId, config, onSaved }: any) {
   const [pct, setPct] = useState(String(config?.commission_percentage ?? 3));
-  const [minR, setMinR] = useState(String(config?.min_recharge ?? 700));
+  const [minR, setMinR] = useState(String(config?.min_recharge ?? 500));
   const [low, setLow] = useState(String(config?.low_balance_threshold ?? 100));
 
   useEffect(() => {
     setPct(String(config?.commission_percentage ?? 3));
-    setMinR(String(config?.min_recharge ?? 700));
+    setMinR(String(config?.min_recharge ?? 500));
     setLow(String(config?.low_balance_threshold ?? 100));
   }, [config?.commission_percentage, config?.min_recharge, config?.low_balance_threshold]);
 

@@ -46,7 +46,7 @@ export function AppSidebar() {
 
   const storeId = store?.id;
   const storeSlug = store?.slug ?? (routeNeedsAdminStore ? routeStoreSlug : ownStore?.slug);
-  const isWhatsAppOnly = store?.order_mode === "whatsapp";
+  const isWhatsAppOnly = false;
   const { isVisible, isComingSoon } = useMenuConfig();
 
   // Pending order count — replaces raw setInterval. React Query dedupes

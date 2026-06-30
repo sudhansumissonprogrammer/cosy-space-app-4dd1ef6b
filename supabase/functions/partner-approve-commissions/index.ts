@@ -48,12 +48,8 @@ Deno.serve(async (req) => {
     let approved = 0;
     let skipped = 0;
     for (const c of due ?? []) {
-      // Verify the underlying payment is still paid
-      if (c.payment_id) {
-        const { data: pmt } = await admin.from("subscription_payments")
-          .select("status").eq("id", c.payment_id).maybeSingle();
-        if (!pmt || pmt.status !== "paid") { skipped++; continue; }
-      }
+      // Subscription billing tables are retired; pending partner commissions are
+      // now approved only from the immutable partner_commissions row itself.
       const { data: ok } = await admin.rpc("wallet_approve_commission", { _commission_id: c.id });
       if (ok) approved++;
     }
