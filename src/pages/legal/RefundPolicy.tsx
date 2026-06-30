@@ -2,43 +2,52 @@ import LegalLayout from "./LegalLayout";
 
 const RefundPolicy = () => (
   <LegalLayout title="Refund & Cancellation Policy">
-    <p>This Refund & Cancellation Policy applies to subscription payments made to ShopBanao for use of our SaaS platform.</p>
+    <p>This Refund & Cancellation Policy applies to <strong>wallet recharges</strong> and <strong>platform commission</strong> charged by ShopBanao for use of our SaaS platform. ShopBanao does not charge subscription fees — accounts are free to create and operate, and we earn only through a small platform commission on confirmed orders.</p>
 
-    <h2>1. Subscription Cancellation</h2>
+    <h2>1. Account Cancellation</h2>
     <ul>
-      <li>You may cancel your subscription at any time from your dashboard or by emailing sudhansusahoo313@gmail.com.</li>
-      <li>Upon cancellation, your account will remain active until the end of the current billing period.</li>
-      <li>You will not be charged for subsequent billing cycles after cancellation.</li>
+      <li>You may close your ShopBanao account at any time by emailing <a href="mailto:sudhansusahoo313@gmail.com">sudhansusahoo313@gmail.com</a> from your registered email address.</li>
+      <li>There is no recurring billing to cancel. Your storefront will be deactivated once outstanding commission (if any) is settled.</li>
     </ul>
 
-    <h2>2. Refund Eligibility</h2>
-    <p>Because ShopBanao is a digital SaaS service, all subscription payments are generally non-refundable. However, we offer refunds in the following limited cases:</p>
+    <h2>2. Wallet Recharge Refunds</h2>
+    <p>Wallet top-ups are pre-paid balance used to settle platform commission. Refunds of unused wallet balance are available in the following cases:</p>
     <ul>
-      <li><strong>7-day money-back guarantee</strong> on first-time monthly and yearly subscriptions if you have not actively used the platform (no products published, no orders received).</li>
-      <li><strong>Duplicate payment:</strong> if you are accidentally charged twice for the same subscription, the duplicate amount will be refunded in full.</li>
-      <li><strong>Service failure:</strong> if ShopBanao experiences extended downtime (more than 72 continuous hours) attributable to us, a pro-rata refund may be issued.</li>
+      <li><strong>Unused balance on account closure:</strong> any remaining wallet balance after settling outstanding commission can be refunded on written request within 90 days of account closure.</li>
+      <li><strong>Duplicate payment:</strong> if you are accidentally charged twice for the same recharge, the duplicate amount will be refunded in full.</li>
+      <li><strong>Failed recharge:</strong> if your bank is debited but the wallet is not credited, the amount is auto-reconciled or refunded within 5–7 business days.</li>
     </ul>
 
-    <h2>3. Non-Refundable Items</h2>
+    <h2>3. Commission Refunds</h2>
+    <p>Platform commission is charged only on confirmed, shipped, or delivered orders.</p>
     <ul>
-      <li>Lifetime plans after 7 days of purchase.</li>
-      <li>Add-ons or one-time service fees once delivered.</li>
-      <li>Subscription periods already used.</li>
-      <li>Custom domain registration fees paid to third parties.</li>
+      <li>If a customer order is fully cancelled or refunded before the commission cut-off, the corresponding commission is automatically reversed to your wallet.</li>
+      <li>Commission already settled on completed orders is non-refundable.</li>
     </ul>
 
-    <h2>4. Refund Process</h2>
+    <h2>4. Non-Refundable Items</h2>
     <ul>
-      <li>To request a refund, email sudhansusahoo313@gmail.com with your registered email, payment ID, and reason.</li>
-      <li>Approved refunds are processed within <strong>5–7 business days</strong> via the original payment method through Razorpay.</li>
+      <li>Commission on orders that were successfully fulfilled or delivered.</li>
+      <li>Custom domain registration fees paid to third-party registrars.</li>
+      <li>One-time setup, design, or onboarding services once delivered.</li>
+      <li>WhatsApp message fees passed through from Meta where applicable.</li>
+    </ul>
+
+    <h2>5. Refund Process</h2>
+    <ul>
+      <li>To request a refund, email <a href="mailto:sudhansusahoo313@gmail.com">sudhansusahoo313@gmail.com</a> with your registered email, store name, transaction / order ID, and reason.</li>
+      <li>Approved refunds are processed within <strong>5–7 business days</strong> via the original payment method through Cashfree.</li>
       <li>Bank processing may take an additional 3–5 business days to reflect in your account.</li>
     </ul>
 
-    <h2>5. Chargebacks</h2>
-    <p>We encourage you to contact us first to resolve any billing concerns. Initiating a chargeback without contacting us may result in immediate account suspension.</p>
+    <h2>6. Storefront Order Refunds (between merchant and shopper)</h2>
+    <p>Refunds for purchases made on a merchant's storefront are handled by that merchant under their own refund policy. ShopBanao is not a party to those transactions.</p>
 
-    <h2>6. Contact</h2>
-    <p>For refund or cancellation inquiries:<br/>Email: sudhansusahoo313@gmail.com<br/>Phone/WhatsApp: +91 96922 82485</p>
+    <h2>7. Chargebacks</h2>
+    <p>Please contact us first to resolve any billing concerns. Initiating a chargeback without contacting us may result in immediate account suspension and reversal of related wallet credits.</p>
+
+    <h2>8. Contact</h2>
+    <p>For refund or cancellation inquiries:<br/>Email: <a href="mailto:sudhansusahoo313@gmail.com">sudhansusahoo313@gmail.com</a><br/>Phone / WhatsApp: <a href="https://wa.me/919692282485">+91 96922 82485</a></p>
   </LegalLayout>
 );
 
