@@ -2,8 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowDownCircle, ArrowUpCircle, Download } from "lucide-react";
 import WalletAccountCard from "@/components/billing/WalletAccountCard";
+import { downloadWalletInvoice } from "@/lib/walletInvoice";
 
 export default function StoreWallet() {
   const { store, storeId } = useDashboardStore();
