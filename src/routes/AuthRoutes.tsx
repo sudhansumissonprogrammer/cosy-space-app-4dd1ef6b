@@ -16,7 +16,7 @@ const AdminLayout = lazy(() => import("@/layouts/AdminLayout"));
 const AdminOverview = lazy(() => import("@/pages/admin/AdminOverview"));
 const AdminUsersStores = lazy(() => import("@/pages/admin/AdminUsersStores"));
 const AdminOrders = lazy(() => import("@/pages/admin/AdminOrders"));
-const AdminSubscriptions = lazy(() => import("@/pages/admin/AdminSubscriptions"));
+
 const AdminAnalytics = lazy(() => import("@/pages/admin/AdminAnalytics"));
 const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings"));
 const AdminWhatsApp = lazy(() => import("@/pages/admin/AdminWhatsApp"));
