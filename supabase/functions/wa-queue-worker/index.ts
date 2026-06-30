@@ -54,6 +54,17 @@ Deno.serve(async (req) => {
     blocked = new Set(((camps as any[]) || []).filter((c) => c.status === "paused" || c.status === "cancelled").map((c) => c.id));
   }
 
+  let sent = 0, retried = 0, failed = 0, skippedPaused = 0;
+  for (const row of (claimed as any[]) ?? []) {
+    if (row.campaign_id && blocked.has(row.campaign_id)) {
+      await admin.from("wa_send_queue").update({
+        status: "skipped", last_error: "campaign_paused_or_cancelled", locked_until: null,
+      } as any).eq("id", row.id);
+      skippedPaused++;
+      continue;
+    }
+
+
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
       method: "POST",
       headers: {
