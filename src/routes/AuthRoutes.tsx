@@ -116,7 +116,7 @@ export default function AuthRoutes() {
           <Route path="users-stores" element={<AdminUsersStores />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="whatsapp" element={<AdminWhatsApp />} />
-          <Route path="subscriptions" element={<AdminSubscriptions />} />
+          
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="usage" element={<AdminUsageMonitoring />} />
           <Route path="error-logs" element={<AdminErrorLogs />} />
