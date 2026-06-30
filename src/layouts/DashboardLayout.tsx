@@ -362,14 +362,12 @@ export default function DashboardLayout() {
                   {store?.slug && <ShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly />}
                 </div>
               </header>
-              <BillingBanner />
               <main className="flex-1 overflow-auto p-6">
                 <Suspense fallback={<ContentSkeleton />}>
-                  {showPaywall && ownStoreId
-                    ? <BillingPaywall state={billingState!} storeId={ownStoreId} />
-                    : <Outlet />}
+                  <Outlet />
                 </Suspense>
               </main>
+
             </div>
           </div>
         </SidebarProvider>
