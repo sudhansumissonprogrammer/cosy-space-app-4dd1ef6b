@@ -4,7 +4,7 @@
 // When called with store_id and a known template, auto-resolves branding vars.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader } from "../_shared/wa-platform.ts";
-import { loadStore, loadTemplate, resolveTemplateParams } from "../_shared/wa-branding.ts";
+import { loadStore, loadTemplate, resolveTemplateParams, pickLocaleVariant } from "../_shared/wa-branding.ts";
 
 type Body = {
   mode?: "automation" | "test" | "text";
@@ -139,10 +139,13 @@ Deno.serve(async (req) => {
   } else {
     // Resolve template + branding. Also enforce that template is APPROVED at Meta
     // (once template-sync has populated meta_status). Pre-sync (meta_status NULL) is allowed.
-    const [tpl, store] = await Promise.all([
+    const [tplRaw, store] = await Promise.all([
       loadTemplate(admin, body.template_name!),
       loadStore(admin, body.store_id || null),
     ]);
+    // Pick locale variant inside the same template_group when caller asks for a non-default language.
+    const tpl = await pickLocaleVariant(admin, tplRaw, body.language || null);
+
     const tplStatus = (tpl as any)?.meta_status as string | null | undefined;
     if ((tpl as any)?.paused === true) {
       return json({ error: `template_paused:${(tpl as any)?.pause_reason || "manual"}`, error_class: "permanent" }, 400);
@@ -199,11 +202,12 @@ Deno.serve(async (req) => {
       to: phone,
       type: "template",
       template: {
-        name: body.template_name,
-        language: { code: body.language || cfg!.wa_default_lang || "en" },
+        name: (tpl as any)?.name || body.template_name,
+        language: { code: (tpl as any)?.language || body.language || cfg!.wa_default_lang || "en" },
         components,
       },
     };
+
 
   }
 

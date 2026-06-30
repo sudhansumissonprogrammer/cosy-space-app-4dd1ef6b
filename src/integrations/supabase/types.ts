@@ -1646,6 +1646,8 @@ export type Database = {
       }
       platform_wa_campaigns: {
         Row: {
+          ab_split_pct: number | null
+          ab_variant_template: string | null
           audience_filter: Json
           audience_size: number
           created_at: string
@@ -1655,6 +1657,9 @@ export type Database = {
           id: string
           name: string
           queued_count: number
+          quiet_hours_end: number | null
+          quiet_hours_start: number | null
+          respect_recipient_tz: boolean | null
           scheduled_at: string | null
           sent_count: number
           started_at: string | null
@@ -1664,6 +1669,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ab_split_pct?: number | null
+          ab_variant_template?: string | null
           audience_filter?: Json
           audience_size?: number
           created_at?: string
@@ -1673,6 +1680,9 @@ export type Database = {
           id?: string
           name: string
           queued_count?: number
+          quiet_hours_end?: number | null
+          quiet_hours_start?: number | null
+          respect_recipient_tz?: boolean | null
           scheduled_at?: string | null
           sent_count?: number
           started_at?: string | null
@@ -1682,6 +1692,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ab_split_pct?: number | null
+          ab_variant_template?: string | null
           audience_filter?: Json
           audience_size?: number
           created_at?: string
@@ -1691,6 +1703,9 @@ export type Database = {
           id?: string
           name?: string
           queued_count?: number
+          quiet_hours_end?: number | null
+          quiet_hours_start?: number | null
+          respect_recipient_tz?: boolean | null
           scheduled_at?: string | null
           sent_count?: number
           started_at?: string | null
@@ -1717,6 +1732,9 @@ export type Database = {
           button_url_pattern: string | null
           buttons: Json
           category: string | null
+          category_change_reason: string | null
+          category_change_requested_at: string | null
+          category_change_to: string | null
           created_at: string
           created_by: string | null
           footer_text: string | null
@@ -1736,6 +1754,7 @@ export type Database = {
           purpose: string
           quality_score: string | null
           submitted_at: string | null
+          template_group: string | null
           updated_at: string
           variables: string[]
         }
@@ -1746,6 +1765,9 @@ export type Database = {
           button_url_pattern?: string | null
           buttons?: Json
           category?: string | null
+          category_change_reason?: string | null
+          category_change_requested_at?: string | null
+          category_change_to?: string | null
           created_at?: string
           created_by?: string | null
           footer_text?: string | null
@@ -1765,6 +1787,7 @@ export type Database = {
           purpose: string
           quality_score?: string | null
           submitted_at?: string | null
+          template_group?: string | null
           updated_at?: string
           variables?: string[]
         }
@@ -1775,6 +1798,9 @@ export type Database = {
           button_url_pattern?: string | null
           buttons?: Json
           category?: string | null
+          category_change_reason?: string | null
+          category_change_requested_at?: string | null
+          category_change_to?: string | null
           created_at?: string
           created_by?: string | null
           footer_text?: string | null
@@ -1794,6 +1820,7 @@ export type Database = {
           purpose?: string
           quality_score?: string | null
           submitted_at?: string | null
+          template_group?: string | null
           updated_at?: string
           variables?: string[]
         }
@@ -3522,6 +3549,7 @@ export type Database = {
       }
       wa_send_queue: {
         Row: {
+          ab_variant: string | null
           abandoned_cart_id: string | null
           attempts: number
           campaign_id: string | null
@@ -3535,8 +3563,10 @@ export type Database = {
           order_id: string | null
           params: Json
           priority: number
+          recipient_locale: string | null
           recipient_name: string | null
           recipient_phone: string
+          recipient_timezone: string | null
           scheduled_at: string
           sent_message_id: string | null
           status: string
@@ -3546,6 +3576,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ab_variant?: string | null
           abandoned_cart_id?: string | null
           attempts?: number
           campaign_id?: string | null
@@ -3559,8 +3590,10 @@ export type Database = {
           order_id?: string | null
           params?: Json
           priority?: number
+          recipient_locale?: string | null
           recipient_name?: string | null
           recipient_phone: string
+          recipient_timezone?: string | null
           scheduled_at?: string
           sent_message_id?: string | null
           status?: string
@@ -3570,6 +3603,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ab_variant?: string | null
           abandoned_cart_id?: string | null
           attempts?: number
           campaign_id?: string | null
@@ -3583,8 +3617,10 @@ export type Database = {
           order_id?: string | null
           params?: Json
           priority?: number
+          recipient_locale?: string | null
           recipient_name?: string | null
           recipient_phone?: string
+          recipient_timezone?: string | null
           scheduled_at?: string
           sent_message_id?: string | null
           status?: string
@@ -4649,14 +4685,26 @@ export type Database = {
       verify_phone_account_integrity: { Args: never; Returns: undefined }
       wa_campaign_precheck: { Args: { _campaign_id: string }; Returns: Json }
       wa_cancel_campaign: { Args: { _campaign_id: string }; Returns: Json }
+      wa_clone_template: {
+        Args: { _id: string; _new_language?: string; _new_name: string }
+        Returns: string
+      }
       wa_estimate_campaign_cost: {
         Args: { _category?: string; _phones: string[] }
         Returns: Json
       }
       wa_pause_campaign: { Args: { _campaign_id: string }; Returns: Json }
       wa_replay_webhook_event: { Args: { _event_id: string }; Returns: Json }
+      wa_request_category_change: {
+        Args: { _category: string; _id: string; _reason?: string }
+        Returns: undefined
+      }
       wa_resolve_inbound_store: { Args: { _phone: string }; Returns: string }
       wa_resume_campaign: { Args: { _campaign_id: string }; Returns: Json }
+      wa_template_perf: {
+        Args: { _days?: number; _template_name: string }
+        Returns: Json
+      }
       wallet_adjust: {
         Args: {
           _amount: number
