@@ -172,12 +172,12 @@ Deno.serve(async (req) => {
     const tplButtons = ((tpl as any)?.buttons || []) as Array<{ type: string; url?: string; text?: string }>;
     tplButtons.forEach((b, i) => {
       if (b?.type === "URL" && typeof b.url === "string" && b.url.includes("{{")) {
-        const tok = extras.cta_token || extras.cta || "";
+        const tok = sanitizeWaParam(extras.cta_token || extras.cta || "x", 64);
         buttonComponents.push({
           type: "button",
           sub_type: "url",
           index: String(i),
-          parameters: [{ type: "text", text: String(tok || "x") }],
+          parameters: [{ type: "text", text: tok }],
         });
       }
     });
