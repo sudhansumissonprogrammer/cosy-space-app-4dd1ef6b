@@ -85,10 +85,7 @@ export default function CreateStore() {
       });
   }, [user, navigate]);
 
-  // Step 1 - Plan
-  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
-
-  // Step 2
+  // Step 1
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
@@ -101,42 +98,22 @@ export default function CreateStore() {
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [heroPreview, setHeroPreview] = useState<string | null>(null);
 
-  // Step 3
+  // Step 2
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [location, setLocation] = useState("");
 
-  // Step 4
+  // Step 3
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
 
-  // Step 5
+  // Step 4
   const [instagramUrl, setInstagramUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
   const [partnerCode, setPartnerCode] = useState("");
 
   const theme = "theme-1";
 
-  // Auto-select first plan when plans load
-  useEffect(() => {
-    if (plans && plans.length > 0 && !selectedPlanId) {
-      setSelectedPlanId(plans[0].id);
-    }
-  }, [plans, selectedPlanId]);
-
-  const assignPlanToStore = async (storeId: string) => {
-    const { data, error } = await supabase.functions.invoke("assign-store-plan", {
-      body: {
-        storeId,
-        planId: selectedPlanId,
-      },
-    });
-
-    const payload = data as { error?: string } | null;
-    if (error || payload?.error) {
-      throw new Error(payload?.error || error?.message || "Failed to apply selected plan");
-    }
-  };
 
   const generateSlug = (value: string) =>
     value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
