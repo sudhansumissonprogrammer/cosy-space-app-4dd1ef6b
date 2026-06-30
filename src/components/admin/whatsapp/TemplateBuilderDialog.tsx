@@ -132,6 +132,39 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
     finally { setSubmitting(false); }
   };
 
+  const testSend = async () => {
+    if (!testPhone.trim()) { toast.error("Enter a test phone number"); return; }
+    setTesting(true);
+    try {
+      // Use sample values from the system-variable defaults so the message renders cleanly.
+      const tplVars: Record<string, string> = {};
+      varKeys.forEach((k, i) => {
+        if (!k) return;
+        const sys = getSystemVar(k);
+        tplVars[k] = sys?.example || `Sample${i + 1}`;
+      });
+      if (draft.header_media_url && (draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT")) {
+        tplVars.header_media_url = draft.header_media_url;
+      }
+      const { data, error } = await supabase.functions.invoke("wa-platform-send", {
+        body: {
+          mode: "test",
+          recipient_phone: testPhone.trim(),
+          template_name: draft.name,
+          template_vars: tplVars,
+          language: draft.language,
+          message_type: "test",
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      if ((data as any)?.skipped) toast.warning(`Skipped: ${(data as any).reason}`);
+      else toast.success("Test message sent");
+    } catch (e: any) { toast.error(e.message); }
+    finally { setTesting(false); }
+  };
+
+
   const insertVar = () => {
     const next = (extractVars(draft.body_text).at(-1) || 0) + 1;
     setDraft(d => ({ ...d, body_text: (d.body_text || "") + `{{${next}}}` }));
