@@ -35,6 +35,34 @@ export default function StoreWallet() {
 
   const ledger: any[] = (data as any)?.ledger ?? [];
 
+  const recharges: any[] = (data as any)?.recharges ?? [];
+  const rechargeById = new Map(recharges.map((r) => [r.id, r]));
+
+  const invoiceFor = (l: any) => {
+    if (l.kind === "recharge" && l.recharge_id) {
+      const r = rechargeById.get(l.recharge_id);
+      if (!r) return;
+      downloadWalletInvoice({
+        kind: "recharge",
+        id: r.id,
+        createdAt: r.paid_at || r.created_at,
+        amount: Number(r.amount),
+        paymentMethod: r.payment_method,
+        paymentRef: r.cashfree_payment_id || r.cashfree_order_id,
+        store: store as any,
+      });
+    } else if (l.kind === "admin_adjustment" && l.direction === "credit") {
+      downloadWalletInvoice({
+        kind: "credit_note",
+        id: l.id,
+        createdAt: l.created_at,
+        amount: Number(l.amount),
+        notes: l.notes,
+        store: store as any,
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold tracking-tight">Wallet</h1>
@@ -52,7 +80,11 @@ export default function StoreWallet() {
             <p className="text-xs text-muted-foreground py-6 text-center">No transactions yet</p>
           ) : (
             <div className="space-y-2">
-              {ledger.slice(0, 30).map((l: any) => (
+              {ledger.slice(0, 30).map((l: any) => {
+                const hasInvoice =
+                  (l.kind === "recharge" && l.recharge_id) ||
+                  (l.kind === "admin_adjustment" && l.direction === "credit");
+                return (
                 <div key={l.id} className="flex items-center gap-3 border-b pb-2 last:border-0">
                   <div className={`flex h-8 w-8 items-center justify-center rounded-full ${l.direction === "credit" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
                     {l.direction === "credit" ? <ArrowDownCircle className="h-4 w-4" /> : <ArrowUpCircle className="h-4 w-4" />}
@@ -67,8 +99,19 @@ export default function StoreWallet() {
                     </p>
                     <p className="text-[10px] text-muted-foreground tabular-nums">bal ₹{Number(l.balance_after).toFixed(2)}</p>
                   </div>
+                  {hasInvoice && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                      title="Download invoice"
+                      onClick={() => invoiceFor(l)}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                 </div>
-              ))}
+              );})}
             </div>
           )}
         </CardContent>
