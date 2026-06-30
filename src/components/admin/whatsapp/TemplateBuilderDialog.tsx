@@ -134,8 +134,12 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
 
   const testSend = async () => {
     if (!testPhone.trim()) { toast.error("Enter a test phone number"); return; }
+    if (errors.length) { toast.error("Fix validation errors first"); return; }
     setTesting(true);
     try {
+      // Persist current draft so the sender resolves header_type and variables[] correctly.
+      await persistRow();
+
       // Use sample values from the system-variable defaults so the message renders cleanly.
       const tplVars: Record<string, string> = {};
       varKeys.forEach((k, i) => {
