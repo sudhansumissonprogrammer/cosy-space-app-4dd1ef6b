@@ -401,6 +401,17 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
               </div>
             )}
 
+            <div className="border-t pt-3 space-y-2">
+              <Label className="text-xs uppercase text-muted-foreground">Test send</Label>
+              <div className="flex gap-2">
+                <Input value={testPhone} onChange={(e) => setTestPhone(e.target.value)} placeholder="91XXXXXXXXXX or +91…" className="h-8 text-sm" />
+                <Button size="sm" variant="secondary" onClick={testSend} disabled={testing || !isEdit && !draft.name}>
+                  {testing && <Loader2 className="h-3 w-3 mr-1 animate-spin"/>}Send test
+                </Button>
+              </div>
+              <div className="text-[11px] text-muted-foreground">Requires the template to be APPROVED on Meta. Bypasses cart cooldown but still respects opt-outs.</div>
+            </div>
+
             <div className="flex justify-end gap-2 pt-2 border-t">
               <Button variant="ghost" onClick={onClose}>Cancel</Button>
               <Button variant="outline" onClick={saveDraft} disabled={savingDraft || !!errors.length}>
@@ -410,6 +421,7 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
                 {submitting && <Loader2 className="h-3 w-3 mr-1 animate-spin"/>}Save & Submit to Meta
               </Button>
             </div>
+
           </div>
         </div>
       </DialogContent>
