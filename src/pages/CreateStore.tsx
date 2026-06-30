@@ -67,19 +67,7 @@ export default function CreateStore() {
   const [storeCreated, setStoreCreated] = useState(false);
   const [createdSlug, setCreatedSlug] = useState<string>("");
 
-  // Fetch available plans
-  const { data: plans } = useQuery({
-    queryKey: ["available-plans"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("plans")
-        .select("id, name, slug, price, product_limit, currency")
-        .eq("is_active", true)
-        .order("price", { ascending: true });
-      if (error) throw error;
-      return data || [];
-    },
-  });
+
 
   useEffect(() => {
     if (!user) return;
