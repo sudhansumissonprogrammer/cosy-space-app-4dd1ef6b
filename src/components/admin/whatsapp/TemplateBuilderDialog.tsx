@@ -29,19 +29,24 @@ const EMPTY: TplDraft = {
   category: "UTILITY",
   header_type: "TEXT",
   header_text: "",
+  header_media_url: "",
   body_text: "",
   footer_text: "Powered by shopbanao.in",
   buttons: [],
 };
 
+
 export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved }: Props) {
   const [draft, setDraft] = useState<TplDraft>({ ...EMPTY, ...initial } as TplDraft);
   const [submitting, setSubmitting] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testPhone, setTestPhone] = useState("");
   // Ordered mapping: position index (1-based) → system variable key.
   // Persisted to platform_wa_templates.variables[] so the sender resolves
   // {{n}} → template_vars[key] per recipient.
   const [varKeys, setVarKeys] = useState<string[]>([]);
+
 
   useEffect(() => {
     if (!open) return;
@@ -81,7 +86,8 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
       language: draft.language,
       category: draft.category,
       header_type: draft.header_type,
-      header_text: draft.header_text || null,
+      header_text: draft.header_type === "TEXT" ? (draft.header_text || null) : null,
+      header_media_url: (draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT") ? (draft.header_media_url || null) : null,
       body_text: draft.body_text,
       footer_text: draft.footer_text || null,
       buttons: draft.buttons || [],
@@ -97,6 +103,7 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
     const { error } = await supabase.from("platform_wa_templates" as any).upsert(payload, { onConflict: "name" } as any);
     if (error) throw error;
   };
+
 
   const saveDraft = async () => {
     if (errors.length) { toast.error("Fix validation errors first"); return; }
@@ -124,6 +131,43 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
     } catch (e: any) { toast.error(e.message); }
     finally { setSubmitting(false); }
   };
+
+  const testSend = async () => {
+    if (!testPhone.trim()) { toast.error("Enter a test phone number"); return; }
+    if (errors.length) { toast.error("Fix validation errors first"); return; }
+    setTesting(true);
+    try {
+      // Persist current draft so the sender resolves header_type and variables[] correctly.
+      await persistRow();
+
+      // Use sample values from the system-variable defaults so the message renders cleanly.
+      const tplVars: Record<string, string> = {};
+      varKeys.forEach((k, i) => {
+        if (!k) return;
+        const sys = getSystemVar(k);
+        tplVars[k] = sys?.example || `Sample${i + 1}`;
+      });
+      if (draft.header_media_url && (draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT")) {
+        tplVars.header_media_url = draft.header_media_url;
+      }
+      const { data, error } = await supabase.functions.invoke("wa-platform-send", {
+        body: {
+          mode: "test",
+          recipient_phone: testPhone.trim(),
+          template_name: draft.name,
+          template_vars: tplVars,
+          language: draft.language,
+          message_type: "test",
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      if ((data as any)?.skipped) toast.warning(`Skipped: ${(data as any).reason}`);
+      else toast.success("Test message sent");
+    } catch (e: any) { toast.error(e.message); }
+    finally { setTesting(false); }
+  };
+
 
   const insertVar = () => {
     const next = (extractVars(draft.body_text).at(-1) || 0) + 1;
@@ -188,7 +232,7 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
               </Select>
             </div>
 
-            <div className="grid grid-cols-[120px,1fr] gap-3 items-end">
+            <div className="grid grid-cols-[140px,1fr] gap-3 items-end">
               <div>
                 <Label>Header</Label>
                 <Select value={draft.header_type} onValueChange={(v: any) => setDraft({ ...draft, header_type: v })}>
@@ -196,6 +240,9 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
                   <SelectContent>
                     <SelectItem value="NONE">None</SelectItem>
                     <SelectItem value="TEXT">Text</SelectItem>
+                    <SelectItem value="IMAGE">Image</SelectItem>
+                    <SelectItem value="VIDEO">Video</SelectItem>
+                    <SelectItem value="DOCUMENT">Document</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -204,7 +251,13 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
                   onChange={(e) => setDraft({ ...draft, header_text: e.target.value })}
                   placeholder="✅ Order Confirmed" />
               )}
+              {(draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT") && (
+                <Input value={draft.header_media_url || ""}
+                  onChange={(e) => setDraft({ ...draft, header_media_url: e.target.value })}
+                  placeholder={draft.header_type === "IMAGE" ? "https://…/banner.jpg" : draft.header_type === "VIDEO" ? "https://…/clip.mp4" : "https://…/invoice.pdf"} />
+              )}
             </div>
+
 
             <div>
               <div className="flex items-center justify-between">
@@ -352,6 +405,17 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
               </div>
             )}
 
+            <div className="border-t pt-3 space-y-2">
+              <Label className="text-xs uppercase text-muted-foreground">Test send</Label>
+              <div className="flex gap-2">
+                <Input value={testPhone} onChange={(e) => setTestPhone(e.target.value)} placeholder="91XXXXXXXXXX or +91…" className="h-8 text-sm" />
+                <Button size="sm" variant="secondary" onClick={testSend} disabled={testing || !isEdit && !draft.name}>
+                  {testing && <Loader2 className="h-3 w-3 mr-1 animate-spin"/>}Send test
+                </Button>
+              </div>
+              <div className="text-[11px] text-muted-foreground">Requires the template to be APPROVED on Meta. Bypasses cart cooldown but still respects opt-outs.</div>
+            </div>
+
             <div className="flex justify-end gap-2 pt-2 border-t">
               <Button variant="ghost" onClick={onClose}>Cancel</Button>
               <Button variant="outline" onClick={saveDraft} disabled={savingDraft || !!errors.length}>
@@ -361,6 +425,7 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
                 {submitting && <Loader2 className="h-3 w-3 mr-1 animate-spin"/>}Save & Submit to Meta
               </Button>
             </div>
+
           </div>
         </div>
       </DialogContent>

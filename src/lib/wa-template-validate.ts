@@ -5,16 +5,20 @@ export type TplButton =
   | { type: "QUICK_REPLY"; text: string }
   | { type: "PHONE_NUMBER"; text: string; phone_number: string };
 
+export type TplHeaderType = "NONE" | "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT";
+
 export type TplDraft = {
   name: string;
   language: string;
   category: "UTILITY" | "MARKETING" | "AUTHENTICATION";
-  header_type: "NONE" | "TEXT";
+  header_type: TplHeaderType;
   header_text?: string | null;
+  header_media_url?: string | null;
   body_text: string;
   footer_text?: string | null;
   buttons?: TplButton[];
 };
+
 
 export type ValidationIssue = { field: string; message: string; level: "error" | "warn" };
 
@@ -43,7 +47,11 @@ export function validateDraft(d: TplDraft): ValidationIssue[] {
     if (!d.header_text?.trim()) issues.push({ field: "header_text", message: "Header text is required when header type is TEXT", level: "error" });
     else if (d.header_text.length > 60) issues.push({ field: "header_text", message: "Header must be ≤ 60 chars", level: "error" });
     else if (extractVars(d.header_text).length > 1) issues.push({ field: "header_text", message: "Header supports at most 1 variable", level: "error" });
+  } else if (d.header_type === "IMAGE" || d.header_type === "VIDEO" || d.header_type === "DOCUMENT") {
+    if (!d.header_media_url?.trim()) issues.push({ field: "header_media_url", message: `${d.header_type} header needs a sample media URL (used by Meta for review)`, level: "error" });
+    else if (!/^https?:\/\//i.test(d.header_media_url)) issues.push({ field: "header_media_url", message: "Media URL must start with http(s)://", level: "error" });
   }
+
 
   if (!d.body_text?.trim()) issues.push({ field: "body_text", message: "Body is required", level: "error" });
   else {
@@ -96,7 +104,14 @@ export function draftToMetaComponents(d: TplDraft): any[] {
       comp.example = { header_text: ["Sample"] };
     }
     components.push(comp);
+  } else if ((d.header_type === "IMAGE" || d.header_type === "VIDEO" || d.header_type === "DOCUMENT") && d.header_media_url) {
+    components.push({
+      type: "HEADER",
+      format: d.header_type,
+      example: { header_handle: [d.header_media_url] },
+    });
   }
+
 
   const bodyVars = extractVars(d.body_text);
   const body: any = { type: "BODY", text: d.body_text };

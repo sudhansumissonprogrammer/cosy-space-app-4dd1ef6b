@@ -1720,6 +1720,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           footer_text: string | null
+          header_media_url: string | null
           header_text: string | null
           header_type: string | null
           headline: string | null
@@ -1748,6 +1749,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           footer_text?: string | null
+          header_media_url?: string | null
           header_text?: string | null
           header_type?: string | null
           headline?: string | null
@@ -1776,6 +1778,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           footer_text?: string | null
+          header_media_url?: string | null
           header_text?: string | null
           header_type?: string | null
           headline?: string | null
@@ -4645,12 +4648,15 @@ export type Database = {
       verify_cron_secret: { Args: { _secret: string }; Returns: boolean }
       verify_phone_account_integrity: { Args: never; Returns: undefined }
       wa_campaign_precheck: { Args: { _campaign_id: string }; Returns: Json }
+      wa_cancel_campaign: { Args: { _campaign_id: string }; Returns: Json }
       wa_estimate_campaign_cost: {
         Args: { _category?: string; _phones: string[] }
         Returns: Json
       }
+      wa_pause_campaign: { Args: { _campaign_id: string }; Returns: Json }
       wa_replay_webhook_event: { Args: { _event_id: string }; Returns: Json }
       wa_resolve_inbound_store: { Args: { _phone: string }; Returns: string }
+      wa_resume_campaign: { Args: { _campaign_id: string }; Returns: Json }
       wallet_adjust: {
         Args: {
           _amount: number

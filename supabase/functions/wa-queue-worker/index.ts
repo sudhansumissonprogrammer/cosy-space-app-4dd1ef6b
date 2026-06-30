@@ -43,8 +43,28 @@ Deno.serve(async (req) => {
     .eq("status", "pending")
     .select("*");
 
-  let sent = 0, retried = 0, failed = 0;
+  // Skip any rows whose campaign was paused/cancelled while queued.
+  const campaignIds = Array.from(new Set(((claimed as any[]) ?? []).map((r) => r.campaign_id).filter(Boolean)));
+  let blocked = new Set<string>();
+  if (campaignIds.length) {
+    const { data: camps } = await admin
+      .from("platform_wa_campaigns")
+      .select("id,status")
+      .in("id", campaignIds);
+    blocked = new Set(((camps as any[]) || []).filter((c) => c.status === "paused" || c.status === "cancelled").map((c) => c.id));
+  }
+
+  let sent = 0, retried = 0, failed = 0, skippedPaused = 0;
   for (const row of (claimed as any[]) ?? []) {
+    if (row.campaign_id && blocked.has(row.campaign_id)) {
+      await admin.from("wa_send_queue").update({
+        status: "skipped", last_error: "campaign_paused_or_cancelled", locked_until: null,
+      } as any).eq("id", row.id);
+      skippedPaused++;
+      continue;
+    }
+
+
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
       method: "POST",
       headers: {
@@ -109,7 +129,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ processed: (claimed as any[])?.length ?? 0, sent, retried, failed });
+  return json({ processed: (claimed as any[])?.length ?? 0, sent, retried, failed, skipped_paused: skippedPaused });
 });
 
 function json(b: unknown, s = 200) {

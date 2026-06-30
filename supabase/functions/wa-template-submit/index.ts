@@ -20,8 +20,9 @@ type Draft = {
   name: string;
   language: string;
   category: "UTILITY" | "MARKETING" | "AUTHENTICATION";
-  header_type: "NONE" | "TEXT";
+  header_type: "NONE" | "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT";
   header_text?: string | null;
+  header_media_url?: string | null;
   body_text: string;
   footer_text?: string | null;
   buttons?: Btn[];
@@ -41,6 +42,12 @@ function draftToComponents(d: Draft): any[] {
     const comp: any = { type: "HEADER", format: "TEXT", text: d.header_text };
     if (extractVars(d.header_text).length === 1) comp.example = { header_text: ["Sample"] };
     components.push(comp);
+  } else if ((d.header_type === "IMAGE" || d.header_type === "VIDEO" || d.header_type === "DOCUMENT") && d.header_media_url) {
+    components.push({
+      type: "HEADER",
+      format: d.header_type,
+      example: { header_handle: [d.header_media_url] },
+    });
   }
   const bodyVars = extractVars(d.body_text);
   const body: any = { type: "BODY", text: d.body_text };
@@ -59,6 +66,7 @@ function draftToComponents(d: Draft): any[] {
   if (btns.length) components.push({ type: "BUTTONS", buttons: btns });
   return components;
 }
+
 
 function sanitizeError(s: any): string {
   const msg = typeof s === "string" ? s : s?.error?.message || s?.message || JSON.stringify(s);

@@ -180,8 +180,19 @@ Deno.serve(async (req) => {
     });
 
     const components: any[] = [];
+    // Header media (IMAGE/VIDEO/DOCUMENT). Allow per-send override via extras.header_media_url.
+    const headerFmt = (tpl as any)?.header_type as string | null | undefined;
+    const headerUrl = (extras.header_media_url as string) || (tpl as any)?.header_media_url || null;
+    if (headerUrl && (headerFmt === "IMAGE" || headerFmt === "VIDEO" || headerFmt === "DOCUMENT")) {
+      const key = headerFmt.toLowerCase();
+      const mediaParam: any = headerFmt === "DOCUMENT"
+        ? { type: "document", document: { link: headerUrl, filename: (extras.header_filename as string) || "document.pdf" } }
+        : { type: key, [key]: { link: headerUrl } };
+      components.push({ type: "header", parameters: [mediaParam] });
+    }
     if (params.length) components.push({ type: "body", parameters: params });
     components.push(...buttonComponents);
+
 
     metaPayload = {
       messaging_product: "whatsapp",

@@ -12,7 +12,25 @@ export function TemplatePreview({ draft, samples }: Props) {
     <div className="rounded-2xl p-4" style={{ background: "#e5ddd5" }}>
       <div className="ml-2 mr-10 rounded-xl bg-white p-3 shadow-sm relative">
         <div className="absolute -left-2 top-3 h-3 w-3 rotate-45 bg-white" />
+        {draft.header_type === "IMAGE" && (
+          <div className="mb-2 -mt-1 -mx-1 rounded-lg overflow-hidden bg-gray-100 aspect-[16/9] flex items-center justify-center">
+            {draft.header_media_url
+              ? <img src={draft.header_media_url} alt="" className="w-full h-full object-cover" onError={(e)=>{(e.currentTarget as any).style.display='none';}}/>
+              : <span className="text-xs text-gray-500">🖼️ Image header</span>}
+          </div>
+        )}
+        {draft.header_type === "VIDEO" && (
+          <div className="mb-2 -mt-1 -mx-1 rounded-lg overflow-hidden bg-black aspect-[16/9] flex items-center justify-center text-white text-xs">
+            ▶️ Video header
+          </div>
+        )}
+        {draft.header_type === "DOCUMENT" && (
+          <div className="mb-2 flex items-center gap-2 rounded-md bg-gray-50 border p-2 text-xs text-gray-700">
+            📄 {draft.header_media_url?.split("/").pop() || "document.pdf"}
+          </div>
+        )}
         {header && <div className="font-semibold text-sm text-gray-900 mb-1.5">{header}</div>}
+
         <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{body}</div>
         {footer && <div className="text-[11px] text-gray-500 mt-2">{footer}</div>}
         {draft.buttons?.length ? (

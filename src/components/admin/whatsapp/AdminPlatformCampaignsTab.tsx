@@ -4,9 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Eye, Play, ShieldCheck } from "lucide-react";
+import { Plus, Eye, Play, ShieldCheck, Pause, X, RotateCw } from "lucide-react";
 import { CampaignWizard } from "./CampaignWizard";
 import { CampaignDetailDrawer } from "./CampaignDetailDrawer";
+
 
 export function AdminPlatformCampaignsTab() {
   const [rows, setRows] = useState<any[]>([]);
@@ -41,6 +42,26 @@ export function AdminPlatformCampaignsTab() {
     toast.success(`Campaign queued${(data as any)?.enqueued ? `: ${(data as any).enqueued}` : ""}`); load();
   };
 
+  const pause = async (id: string) => {
+    const { error } = await supabase.rpc("wa_pause_campaign" as any, { _campaign_id: id });
+    if (error) return toast.error(error.message);
+    toast.success("Campaign paused — queued messages will be skipped"); load();
+  };
+
+  const resume = async (id: string) => {
+    const { error } = await supabase.rpc("wa_resume_campaign" as any, { _campaign_id: id });
+    if (error) return toast.error(error.message);
+    toast.success("Campaign resumed"); load();
+  };
+
+  const cancel = async (id: string) => {
+    if (!confirm("Cancel this campaign? Pending queued messages will be deleted. This cannot be undone.")) return;
+    const { data, error } = await supabase.rpc("wa_cancel_campaign" as any, { _campaign_id: id });
+    if (error) return toast.error(error.message);
+    toast.success(`Cancelled — ${(data as any)?.purged ?? 0} pending sends purged`); load();
+  };
+
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -63,12 +84,23 @@ export function AdminPlatformCampaignsTab() {
                     {r.scheduled_at ? ` · scheduled ${new Date(r.scheduled_at).toLocaleString()}` : ""}
                   </p>
                 </div>
-                <Badge variant={r.status === "completed" ? "default" : r.status === "failed" ? "destructive" : "secondary"}>{r.status}</Badge>
+                <Badge variant={r.status === "completed" ? "default" : r.status === "failed" || r.status === "cancelled" ? "destructive" : "secondary"}>{r.status}</Badge>
                 <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => precheck(r.id)} title="Pre-check"><ShieldCheck className="h-3.5 w-3.5"/></Button>
-                <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => run(r.id)} disabled={r.status === "running"} title="Run"><Play className="h-3.5 w-3.5"/></Button>
+                {r.status !== "paused" ? (
+                  <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => run(r.id)} disabled={["running","cancelled","completed"].includes(r.status)} title="Run"><Play className="h-3.5 w-3.5"/></Button>
+                ) : (
+                  <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => resume(r.id)} title="Resume"><RotateCw className="h-3.5 w-3.5"/></Button>
+                )}
+                {["running","queued","scheduled"].includes(r.status) && (
+                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => pause(r.id)} title="Pause"><Pause className="h-3.5 w-3.5"/></Button>
+                )}
+                {!["completed","cancelled","failed"].includes(r.status) && (
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-red-600" onClick={() => cancel(r.id)} title="Cancel"><X className="h-3.5 w-3.5"/></Button>
+                )}
                 <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setOpenId(r.id)} title="View stats"><Eye className="h-3.5 w-3.5"/></Button>
               </div>
             ))}
+
             {!rows.length && <div className="p-6 text-sm text-muted-foreground">No campaigns yet. Click <b>New campaign</b> to build your first one.</div>}
           </CardContent>
         </Card>
