@@ -21,6 +21,17 @@ if (typeof window !== "undefined" && typeof (window as any).cancelIdleCallback !
 
 installChunkLoadRecovery();
 
+// 🔗 WhatsApp branded redirector. Templates send users to https://shopbanao.in/r/<token>;
+// bounce straight to the edge function before any React/JS loads. Single short hop.
+if (typeof window !== "undefined" && window.location.pathname.startsWith("/r/")) {
+  const token = window.location.pathname.slice(3).split("/")[0].split("?")[0];
+  if (token) {
+    window.location.replace(`https://dqepeywgftbpxeeqfuwt.supabase.co/functions/v1/wa-r/${encodeURIComponent(token)}`);
+    throw new Error("redirecting"); // halt module eval
+  }
+}
+
+
 // Capture ?ref=SBP… anywhere in the site (landing, signup, storefront subdomain).
 // Runs before App mounts so the cookie is set even on the landing fast-path.
 // PERF: defer to idle so the chunk download never competes with LCP. The

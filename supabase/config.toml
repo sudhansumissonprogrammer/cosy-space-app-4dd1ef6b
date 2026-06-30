@@ -48,3 +48,7 @@ verify_jwt = false
 [functions.wa-link-redirect]
 verify_jwt = false
 
+[functions.wa-r]
+verify_jwt = false
+
+

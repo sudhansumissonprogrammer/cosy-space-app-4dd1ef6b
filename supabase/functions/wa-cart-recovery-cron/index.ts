@@ -73,14 +73,7 @@ Deno.serve(async (req) => {
     const total = items.reduce((s: number, it: any) => s + (Number(it?.price ?? 0) * Number(it?.quantity ?? 1)), 0);
     const customerName = (items[0]?.customer_name as string) || "there";
     const s = (c as any).stores || {};
-    // Pretty multi-line cart list shown inside the WhatsApp body.
-    const cartItemsText = items.slice(0, 4).map((it: any) => {
-      const name = String(it?.name || it?.title || "Item").slice(0, 40);
-      const qty = Number(it?.quantity ?? 1);
-      const price = Number(it?.price ?? 0);
-      return `🛍 ${name}${qty > 1 ? ` × ${qty}` : ""} — ₹${(price * qty).toFixed(0)}`;
-    }).join("\n") + (items.length > 4 ? `\n…and ${items.length - 4} more` : "");
-    const cartToken = (c as any).session_token || (c as any).id;
+    const itemCount = items.reduce((n: number, it: any) => n + Number(it?.quantity ?? 1), 0) || items.length || 1;
 
     const { error: qErr } = await admin.from("wa_send_queue").insert({
       store_id: (c as any).store_id,
@@ -93,13 +86,14 @@ Deno.serve(async (req) => {
       template_vars: {
         customer_name: customerName,
         store_name: (s as any).name || "our store",
-        cart_items: cartItemsText,
+        item_count: String(itemCount),
         cart_total: `₹${total.toFixed(0)}`,
-        cart_token: cartToken,
+        cta_token: `c-${(c as any).id}`,
       },
       priority: 5,
       scheduled_at: new Date().toISOString(),
     } as any);
+
 
     if (qErr) { skipped++; continue; }
     enqueued++;

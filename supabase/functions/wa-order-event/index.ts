@@ -105,6 +105,10 @@ Deno.serve(async (req) => {
   const paymentStatusLine = formatPaymentStatusLine(o);
   const courierName = inferCourierName(o.tracking_url, "Courier partner");
 
+  // Branded short link token resolved by /functions/v1/wa-r/<token>.
+  // 'o-' = order page, 't-' = tracking URL (falls back to order page).
+  const ctaToken = body.event === "order_shipped" ? `t-${o.id}` : `o-${o.id}`;
+
   const { error: qErr } = await admin.from("wa_send_queue").insert({
     store_id: o.store_id,
     recipient_phone: phone,
@@ -127,10 +131,12 @@ Deno.serve(async (req) => {
       tracking_number: o.tracking_number || "",
       courier_name: courierName,
       review_url: reviewUrl,
+      cta_token: ctaToken,
     },
     priority: body.event === "order_confirmation" ? 1 : 3,
     scheduled_at: new Date().toISOString(),
   } as any);
+
 
   // 23505 = unique_violation from the partial unique index → treat as dedup, not error.
   if (qErr) {
