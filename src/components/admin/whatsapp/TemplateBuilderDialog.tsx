@@ -40,10 +40,13 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
   const [draft, setDraft] = useState<TplDraft>({ ...EMPTY, ...initial } as TplDraft);
   const [submitting, setSubmitting] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testPhone, setTestPhone] = useState("");
   // Ordered mapping: position index (1-based) → system variable key.
   // Persisted to platform_wa_templates.variables[] so the sender resolves
   // {{n}} → template_vars[key] per recipient.
   const [varKeys, setVarKeys] = useState<string[]>([]);
+
 
   useEffect(() => {
     if (!open) return;
