@@ -139,10 +139,13 @@ Deno.serve(async (req) => {
   } else {
     // Resolve template + branding. Also enforce that template is APPROVED at Meta
     // (once template-sync has populated meta_status). Pre-sync (meta_status NULL) is allowed.
-    const [tpl, store] = await Promise.all([
+    const [tplRaw, store] = await Promise.all([
       loadTemplate(admin, body.template_name!),
       loadStore(admin, body.store_id || null),
     ]);
+    // Pick locale variant inside the same template_group when caller asks for a non-default language.
+    const tpl = await pickLocaleVariant(admin, tplRaw, body.language || null);
+
     const tplStatus = (tpl as any)?.meta_status as string | null | undefined;
     if ((tpl as any)?.paused === true) {
       return json({ error: `template_paused:${(tpl as any)?.pause_reason || "manual"}`, error_class: "permanent" }, 400);
