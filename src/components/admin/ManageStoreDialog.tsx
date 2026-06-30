@@ -18,8 +18,9 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
-  Store, Wallet, Crown, Settings2, Plus, Minus, Ban, CheckCircle, BadgeCheck, ExternalLink,
+  Store, Wallet, Crown, Settings2, Plus, Minus, Ban, CheckCircle, BadgeCheck, ExternalLink, Download,
 } from "lucide-react";
+import { downloadWalletInvoice } from "@/lib/walletInvoice";
 
 type Mode = "subscription" | "commission";
 type Tab = "overview" | "billing" | "wallet" | "danger";
