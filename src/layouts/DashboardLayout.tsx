@@ -13,10 +13,7 @@ import { toast } from "sonner";
 
 import DynamicPwaManifest from "@/components/storefront/DynamicPwaManifest";
 import SmartInstallPrompt from "@/components/SmartInstallPrompt";
-import BillingBanner from "@/components/billing/BillingBanner";
-import BillingPaywall from "@/components/BillingPaywall";
 import LowBalanceDialog from "@/components/billing/LowBalanceDialog";
-import { useBillingState } from "@/hooks/useBillingState";
 import {
   LayoutDashboard, Package, ShoppingBag, Menu, LogOut,
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
