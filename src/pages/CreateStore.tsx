@@ -227,21 +227,7 @@ export default function CreateStore() {
       }
 
       if (newStore?.id) {
-        try {
-          await assignPlanToStore(newStore.id);
-        } catch (planError: any) {
-          await (supabase as any)
-            .from("stores")
-            .delete()
-            .eq("id", newStore.id)
-            .then(({ error: cleanupError }: any) => {
-              if (cleanupError) {
-                console.warn("Store cleanup after plan assignment failure failed:", cleanupError.message);
-              }
-            });
 
-          throw new Error(planError?.message || "Failed to apply selected plan");
-        }
 
         // Create default theme config
         await (supabase as any).from("store_theme_config").insert({
