@@ -42,6 +42,26 @@ export function AdminPlatformCampaignsTab() {
     toast.success(`Campaign queued${(data as any)?.enqueued ? `: ${(data as any).enqueued}` : ""}`); load();
   };
 
+  const pause = async (id: string) => {
+    const { error } = await supabase.rpc("wa_pause_campaign" as any, { _campaign_id: id });
+    if (error) return toast.error(error.message);
+    toast.success("Campaign paused — queued messages will be skipped"); load();
+  };
+
+  const resume = async (id: string) => {
+    const { error } = await supabase.rpc("wa_resume_campaign" as any, { _campaign_id: id });
+    if (error) return toast.error(error.message);
+    toast.success("Campaign resumed"); load();
+  };
+
+  const cancel = async (id: string) => {
+    if (!confirm("Cancel this campaign? Pending queued messages will be deleted. This cannot be undone.")) return;
+    const { data, error } = await supabase.rpc("wa_cancel_campaign" as any, { _campaign_id: id });
+    if (error) return toast.error(error.message);
+    toast.success(`Cancelled — ${(data as any)?.purged ?? 0} pending sends purged`); load();
+  };
+
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
