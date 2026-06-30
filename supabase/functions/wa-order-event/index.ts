@@ -87,6 +87,16 @@ Deno.serve(async (req) => {
   const trackingUrl = o.tracking_url || orderLink;
   const reviewUrl = `${base}/account/orders/${o.id}#review`;
 
+  // Pull line items so we can show the primary product name (more meaningful than an internal order ID).
+  const { data: items } = await admin
+    .from("order_items")
+    .select("product_name, quantity")
+    .eq("order_id", o.id);
+  const lineItems = (items as any[]) || [];
+  const itemCountNum = lineItems.reduce((n, it) => n + Number(it.quantity || 1), 0) || lineItems.length || 1;
+  const firstName = lineItems[0]?.product_name || "your item";
+  const productName = lineItems.length > 1 ? `${firstName} +${lineItems.length - 1} more` : firstName;
+
   // Delivery ETA: confirmation = 6 days from order date; shipped = 4 days from ship time.
   const etaFrom = body.event === "order_shipped" ? new Date() : new Date(o.created_at || Date.now());
   const etaDays = body.event === "order_shipped" ? 4 : 6;
@@ -106,9 +116,10 @@ Deno.serve(async (req) => {
     template_vars: {
       customer_name: customerName,
       store_name: storeName,
+      product_name: productName,
       order_number: orderNum,
       order_total: orderTotal,
-      item_count: String(Array.isArray((o as any).items) ? (o as any).items.length : ((o as any).item_count ?? 1)),
+      item_count: String(itemCountNum),
       payment_status_line: paymentStatusLine,
       expected_delivery: expectedDelivery,
       order_link: orderLink,
