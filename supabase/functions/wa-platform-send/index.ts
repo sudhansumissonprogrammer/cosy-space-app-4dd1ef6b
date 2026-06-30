@@ -202,11 +202,12 @@ Deno.serve(async (req) => {
       to: phone,
       type: "template",
       template: {
-        name: body.template_name,
-        language: { code: body.language || cfg!.wa_default_lang || "en" },
+        name: (tpl as any)?.name || body.template_name,
+        language: { code: (tpl as any)?.language || body.language || cfg!.wa_default_lang || "en" },
         components,
       },
     };
+
 
   }
 
