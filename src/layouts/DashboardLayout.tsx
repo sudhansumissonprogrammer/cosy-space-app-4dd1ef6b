@@ -459,15 +459,12 @@ export default function DashboardLayout() {
         </div>
       </header>
 
-      <BillingBanner />
-
       <main className="flex-1 overflow-auto px-3 py-4 pb-24">
         <Suspense fallback={<ContentSkeleton />}>
-          {showPaywall && ownStoreId
-            ? <BillingPaywall state={billingState!} storeId={ownStoreId} />
-            : <Outlet />}
+          <Outlet />
         </Suspense>
       </main>
+
 
       {/* Shopify-style bottom nav */}
       <nav className="fixed bottom-0 inset-x-0 z-30 bg-card border-t safe-area-pb">
