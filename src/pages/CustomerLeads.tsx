@@ -42,6 +42,7 @@ async function fetchAllCustomerLeads(storeId: string): Promise<CustomerLead[]> {
       .select("id,name,phone,product_name,product_id,source,created_at")
       .eq("store_id", storeId)
       .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .range(from, to);
 
     if (error) throw error;
@@ -64,6 +65,8 @@ async function fetchOrderedPhoneSuffixes(storeId: string): Promise<Set<string>> 
       .from("orders")
       .select("customer_phone, status")
       .eq("store_id", storeId)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .range(from, to);
 
     if (error) throw error;
