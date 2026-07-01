@@ -17,6 +17,7 @@ interface SmartInstallPromptProps {
   textColor?: string;
   delay?: number;
   logoUrl?: string;
+  stripVariant?: "brand" | "light";
 }
 
 export default function SmartInstallPrompt({
@@ -25,6 +26,7 @@ export default function SmartInstallPrompt({
   textColor = "hsl(var(--primary-foreground))",
   delay = 20000,
   logoUrl,
+  stripVariant = "brand",
 }: SmartInstallPromptProps) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
@@ -143,6 +145,7 @@ export default function SmartInstallPrompt({
       ];
 
   const canNativeInstall = !!deferredPrompt;
+  const lightStrip = stripVariant === "light";
 
   if (showPopup && canNativeInstall) {
     return (
@@ -199,36 +202,36 @@ export default function SmartInstallPrompt({
 
   if (showStrip && canNativeInstall) {
     return (
-      <div className="sticky top-14 z-[55] flex items-center gap-3 border-b border-white/10 bg-gradient-to-r from-[#1a1a2e] to-[#16213e] px-3 py-2 shadow-sm sm:top-12">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/10">
+      <div className={lightStrip ? "sticky top-14 z-[55] flex items-center gap-3 border-b border-border bg-card px-3 py-2 shadow-sm sm:top-12" : "sticky top-14 z-[55] flex items-center gap-3 border-b border-white/10 bg-gradient-to-r from-[#1a1a2e] to-[#16213e] px-3 py-2 shadow-sm sm:top-12"}>
+        <div className={lightStrip ? "flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted" : "flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/10"}>
           {logoUrl ? (
             <img src={logoUrl} alt={appName} className="h-9 w-9 object-contain" />
           ) : (
-            <Smartphone className="h-5 w-5 text-white" />
+            <Smartphone className={lightStrip ? "h-5 w-5 text-foreground" : "h-5 w-5 text-white"} />
           )}
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-semibold leading-tight text-white">
+          <p className={lightStrip ? "truncate text-[13px] font-semibold leading-tight text-foreground" : "truncate text-[13px] font-semibold leading-tight text-white"}>
             {appName}
           </p>
-          <p className="text-[10px] leading-tight text-white/60">
+          <p className={lightStrip ? "text-[10px] leading-tight text-muted-foreground" : "text-[10px] leading-tight text-white/60"}>
             Get the app for a better experience
           </p>
         </div>
 
         <button
           onClick={handleInstall}
-          className="shrink-0 rounded-lg bg-white px-4 py-1.5 text-xs font-bold text-[#1a1a2e] transition-transform active:scale-95"
+          className={lightStrip ? "shrink-0 rounded-lg bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground transition-transform active:scale-95" : "shrink-0 rounded-lg bg-white px-4 py-1.5 text-xs font-bold text-[#1a1a2e] transition-transform active:scale-95"}
         >
           INSTALL
         </button>
 
         <button
           onClick={handleDismissStrip}
-          className="shrink-0 p-1 opacity-50 transition-opacity hover:opacity-100"
+          className={lightStrip ? "shrink-0 p-1 text-muted-foreground transition-opacity hover:text-foreground" : "shrink-0 p-1 opacity-50 transition-opacity hover:opacity-100"}
         >
-          <X className="h-3.5 w-3.5 text-white" />
+          <X className={lightStrip ? "h-3.5 w-3.5" : "h-3.5 w-3.5 text-white"} />
         </button>
       </div>
     );
