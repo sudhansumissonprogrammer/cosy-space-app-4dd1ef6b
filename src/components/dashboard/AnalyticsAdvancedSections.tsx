@@ -79,7 +79,7 @@ interface Props {
 export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEnd, totalSessions, sym }: Props) {
   // Live visitors — last 5 min, refetched every 20s
   const { data: liveCount } = useQuery({
-    queryKey: ["live-visitors", storeId],
+    queryKey: ["analytics-live-count", storeId],
     refetchInterval: 20_000,
     staleTime: 15_000,
     queryFn: async () => {

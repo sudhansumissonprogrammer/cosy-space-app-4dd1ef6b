@@ -29,7 +29,7 @@ export default function LiveVisitors({ storeId }: Props) {
     // sinceIso intentionally NOT in the key — otherwise every 30s tick spawned
     // a brand new cache entry (500-row payload each) and a 1-hour open tab
     // leaked ~60k row objects. Compute inside queryFn instead; invalidate to refetch.
-    queryKey: ["live-visitors", storeId],
+    queryKey: ["dashboard-live-visitors", storeId],
     enabled: !!storeId,
     refetchOnWindowFocus: true,
     staleTime: 30_000,
@@ -52,7 +52,7 @@ export default function LiveVisitors({ storeId }: Props) {
   useEffect(() => {
     const id = setInterval(() => {
       setTick((t) => t + 1);
-      queryClient.invalidateQueries({ queryKey: ["live-visitors", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-live-visitors", storeId] });
     }, 30_000);
     return () => clearInterval(id);
   }, [queryClient, storeId]);
@@ -71,7 +71,7 @@ export default function LiveVisitors({ storeId }: Props) {
           filter: `store_id=eq.${storeId}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ["live-visitors", storeId] });
+          queryClient.invalidateQueries({ queryKey: ["dashboard-live-visitors", storeId] });
         },
       )
       .subscribe();

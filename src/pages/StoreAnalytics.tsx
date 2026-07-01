@@ -302,15 +302,14 @@ export default function StoreAnalytics() {
     },
   });
 
-  // Metrics — only count confirmed revenue (exclude pending & cancelled)
-  const REVENUE_STATUSES = new Set(["confirmed", "shipped", "delivered", "partially_paid"]);
-  const isRevenue = (o: any) => REVENUE_STATUSES.has(o.status);
-  const totalRevenue = filtered.current.filter(isRevenue).reduce((s: number, o: any) => s + Number(o.total || 0), 0);
-  const priorRevenue = filtered.prior.filter(isRevenue).reduce((s: number, o: any) => s + Number(o.total || 0), 0);
+  // Sales metrics come from get_store_sales_analytics so totals are exact even
+  // when a store has more rows than PostgREST/browser-safe fetch limits.
+  const totalRevenue = Number(salesAnalytics?.total_revenue ?? 0);
+  const priorRevenue = Number(salesAnalytics?.prior_revenue ?? 0);
   const revenueChange = priorRevenue > 0 ? ((totalRevenue - priorRevenue) / priorRevenue) * 100 : undefined;
 
-  const totalOrders = filtered.current.filter(isRevenue).length;
-  const priorOrders = filtered.prior.filter(isRevenue).length;
+  const totalOrders = Number(salesAnalytics?.total_orders ?? 0);
+  const priorOrders = Number(salesAnalytics?.prior_orders ?? 0);
   const ordersChange = priorOrders > 0 ? ((totalOrders - priorOrders) / priorOrders) * 100 : undefined;
 
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
@@ -391,47 +390,35 @@ export default function StoreAnalytics() {
   const returningRate = totalCustomers > 0 ? (returningCustomers / totalCustomers) * 100 : 0;
 
   // Charts data
-  const salesByDay = useMemo(() => {
-    const map: Record<string, { date: string; revenue: number; orders: number }> = {};
-    filtered.current.filter(isRevenue).forEach((o: any) => {
-      const day = o.created_at.slice(0, 10);
-      if (!map[day]) map[day] = { date: day, revenue: 0, orders: 0 };
-      map[day].revenue += Number(o.total || 0);
-      map[day].orders += 1;
-    });
-    return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
-  }, [filtered.current]);
+  const salesByDay = useMemo(() => (
+    (salesAnalytics?.sales_by_day || []).map((d) => ({
+      date: String(d.date),
+      revenue: Number(d.revenue || 0),
+      orders: Number(d.orders || 0),
+    }))
+  ), [salesAnalytics?.sales_by_day]);
 
-  const topProducts = useMemo(() => {
-    const map: Record<string, { name: string; units: number; revenue: number }> = {};
-    filtered.current.filter(isRevenue).forEach((o: any) => {
-      o.order_items?.forEach((item: any) => {
-        const key = item.product_name;
-        if (!map[key]) map[key] = { name: key, units: 0, revenue: 0 };
-        map[key].units += item.quantity || 1;
-        map[key].revenue += Number(item.total || 0);
-      });
-    });
-    return Object.values(map).sort((a, b) => b.revenue - a.revenue).slice(0, 8);
-  }, [filtered.current]);
+  const topProducts = useMemo(() => (
+    (salesAnalytics?.top_products || []).map((p) => ({
+      name: String(p.name || "Unknown product"),
+      units: Number(p.units || 0),
+      revenue: Number(p.revenue || 0),
+    }))
+  ), [salesAnalytics?.top_products]);
 
-  const ordersByStatus = useMemo(() => {
-    const map: Record<string, number> = {};
-    filtered.current.forEach((o: any) => {
-      const status = o.status || "unknown";
-      map[status] = (map[status] || 0) + 1;
-    });
-    return Object.entries(map).map(([name, value]) => ({ name, value }));
-  }, [filtered.current]);
+  const ordersByStatus = useMemo(() => (
+    (salesAnalytics?.orders_by_status || []).map((s) => ({
+      name: String(s.name || "unknown"),
+      value: Number(s.value || 0),
+    }))
+  ), [salesAnalytics?.orders_by_status]);
 
-  const paymentMethods = useMemo(() => {
-    const map: Record<string, number> = {};
-    filtered.current.filter((o: any) => o.status !== "cancelled").forEach((o: any) => {
-      const method = o.payment_method || "Unknown";
-      map[method] = (map[method] || 0) + 1;
-    });
-    return Object.entries(map).map(([name, value]) => ({ name, value }));
-  }, [filtered.current]);
+  const paymentMethods = useMemo(() => (
+    (salesAnalytics?.payment_methods || []).map((m) => ({
+      name: String(m.name || "Unknown"),
+      value: Number(m.value || 0),
+    }))
+  ), [salesAnalytics?.payment_methods]);
 
   const viewsByDay = useMemo(() => {
     // Today: unique sessions from raw page_views (not yet rolled up).
