@@ -23,7 +23,7 @@ export function AdminQueueTab() {
     setCounts(out);
     const { data } = await supabase.from("wa_send_queue" as any)
       .select("id, store_id, recipient_phone, template_name, status, attempts, last_error, last_error_class, scheduled_at, created_at")
-      .eq("status", filter).order("created_at", { ascending: false }).limit(100);
+      .eq("status", filter).order("created_at", { ascending: false }).limit(1000);
     setRows((data as any) || []);
     setLoading(false);
   };

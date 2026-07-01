@@ -37,8 +37,21 @@ export function AdminTemplatesTab() {
   const { data: stores } = useQuery({
     queryKey: ["admin-stores-for-templates"],
     queryFn: async () => {
-      const { data } = await supabase.from("stores").select("id, name").limit(10);
-      return data || [];
+      // Paginate — a 10-row cap silently hid every store past #10.
+      const PAGE = 1000;
+      const rows: any[] = [];
+      for (let from = 0; from < 20_000; from += PAGE) {
+        const { data, error } = await supabase
+          .from("stores")
+          .select("id, name")
+          .order("name")
+          .range(from, from + PAGE - 1);
+        if (error) break;
+        const batch = (data || []) as any[];
+        rows.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+      return rows;
     },
   });
 

@@ -70,16 +70,28 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
     refetchInterval: 20_000,
     staleTime: 15_000,
     queryFn: async () => {
+      // Paginated fetch — a 5-min window on a busy store can exceed the 1000-row
+      // default cap. Range-scan defensively up to ~50k rows before giving up.
       const since = new Date(Date.now() - 5 * 60_000).toISOString();
-      const { data } = await supabase
-        .from("page_views")
-        .select("session_id, visitor_id")
-        .eq("store_id", storeId)
-        .eq("is_bot", false)
-        .gte("created_at", since)
-        .limit(2000);
-      const uniq = new Set((data || []).map((r: any) => r.session_id || r.visitor_id || ""));
-      uniq.delete("");
+      const PAGE = 1000;
+      const uniq = new Set<string>();
+      for (let from = 0; from < 50_000; from += PAGE) {
+        const { data, error } = await supabase
+          .from("page_views")
+          .select("session_id, visitor_id")
+          .eq("store_id", storeId)
+          .eq("is_bot", false)
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) break;
+        const batch = (data || []) as any[];
+        for (const r of batch) {
+          const k = r.session_id || r.visitor_id || "";
+          if (k) uniq.add(k);
+        }
+        if (batch.length < PAGE) break;
+      }
       return uniq.size;
     },
     enabled: !!storeId,
@@ -124,15 +136,25 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
     staleTime: 60_000,
     refetchInterval: 60_000,
     queryFn: async () => {
+      // Paginate today's events so funnels stay accurate on high-volume stores.
       const since = new Date();
       since.setHours(0, 0, 0, 0);
-      const { data } = await supabase
-        .from("storefront_events" as any)
-        .select("event_name, session_id, value")
-        .eq("store_id", storeId)
-        .gte("created_at", since.toISOString())
-        .limit(10000);
-      return ((data as any[]) || []);
+      const PAGE = 1000;
+      const rows: any[] = [];
+      for (let from = 0; from < 200_000; from += PAGE) {
+        const { data, error } = await (supabase as any)
+          .from("storefront_events")
+          .select("event_name, session_id, value")
+          .eq("store_id", storeId)
+          .gte("created_at", since.toISOString())
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) break;
+        const batch = (data || []) as any[];
+        rows.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+      return rows;
     },
     enabled: !!storeId,
   });

@@ -261,14 +261,22 @@ function ChatTab({ storeId }: { storeId: string }) {
   const { data: allMessages } = useQuery({
     queryKey: ["whatsapp-all-messages", storeId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("whatsapp_messages")
-        .select("*")
-        .eq("store_id", storeId)
-        .order("created_at", { ascending: false })
-        .limit(500);
-      if (error) throw error;
-      return data || [];
+      // Paginate — 500 cap dropped older conversations for active stores.
+      const PAGE = 1000;
+      const rows: any[] = [];
+      for (let from = 0; from < 10_000; from += PAGE) {
+        const { data, error } = await supabase
+          .from("whatsapp_messages")
+          .select("*")
+          .eq("store_id", storeId)
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const batch = (data || []) as any[];
+        rows.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+      return rows;
     },
     refetchInterval: (query) => (typeof document !== "undefined" && document.visibilityState === "visible") ? 60000 : false,
     refetchOnWindowFocus: true,
