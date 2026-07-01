@@ -11,11 +11,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell,
+  ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell,
 } from "recharts";
 import {
   TrendingUp, TrendingDown, ShoppingBag, Eye, DollarSign, Users,
-  ShoppingCart, Repeat, ArrowUpRight, Package, BarChart3, CalendarIcon,
+  ShoppingCart, Repeat, ArrowUpRight, CalendarIcon,
 } from "lucide-react";
 import { format, subDays, startOfDay, endOfDay, parseISO, differenceInDays } from "date-fns";
 
@@ -93,7 +93,6 @@ export default function StoreAnalytics() {
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   const [customFrom, setCustomFrom] = useState<Date | undefined>(subDays(new Date(), 14));
   const [customTo, setCustomTo] = useState<Date | undefined>(new Date());
-  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const storeId = store?.id as string | undefined;
   const storeIds = storeId ? [storeId] : [];
@@ -135,12 +134,6 @@ export default function StoreAnalytics() {
     priorStart = startOfDay(subDays(now, days * 2 - 1));
     priorEnd = startOfDay(subDays(now, days - 1));
   }
-  const rangeDays = dateRange === "today" || dateRange === "yesterday"
-    ? 1
-    : dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : dateRange === "90d" ? 90
-    : dateRange === "custom" && customFrom && customTo ? (differenceInDays(customTo, customFrom) || 1)
-    : 9999;
-
   const { data: salesAnalytics, isLoading } = useQuery({
     queryKey: [
       "analytics-sales-exact",
