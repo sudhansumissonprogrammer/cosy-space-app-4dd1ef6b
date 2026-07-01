@@ -1211,30 +1211,35 @@ function buildThemeCssFromConfig(tc) {
     // ready in ~100ms, browser uses fallback and NEVER swaps. Repeat visitors
     // (font cached) get the real font on first paint.
     if (localFonts.length > 0) {
-      // v8.39 — The selected heading font must appear on first paint. Use
-      // display:block for the heading family (both regular/bold because many
-      // headers render at 400), while body-only families stay optional.
+      // v8.61 — Reverted v8.39's `display:block` for heading font. On Slow 4G
+      // that added a 3s invisible-text window and pushed LCP to 8s+ because
+      // the browser waited for Alegreya SC (173KB across 400+700) before
+      // painting hero text. All local families now use `display:optional`:
+      // cold visitors paint immediately with fallback; repeat visitors get
+      // the real font from cache on first paint. CLS unaffected.
       let faceCss = "<style data-sf-font-local>";
       for (const fam of localFonts) {
         for (const f of SELF_HOSTED[fam]) {
-          const display = fam === headingFont ? "block" : "optional";
-          faceCss += `@font-face{font-family:'${fam}';font-style:normal;font-weight:${f.weight};font-display:${display};src:url('${f.url}') format('woff2')}`;
+          faceCss += `@font-face{font-family:'${fam}';font-style:normal;font-weight:${f.weight};font-display:optional;src:url('${f.url}') format('woff2')}`;
         }
       }
       faceCss += "</style>\n";
       css += faceCss;
 
-      // v8.39 — Preload heading regular + bold so the selected font is ready
-      // before first paint across headers rendered at either 400 or 700.
+      // v8.61 — Preload ONLY weight 700 for the heading family (hero H1 is
+      // 700). Weight 400 loads non-blocking as needed. Saves ~84KB and one
+      // connection slot on the critical path.
       const headFam = headingFont && SELF_HOSTED[headingFont] ? headingFont : localFonts[0];
       if (headFam && SELF_HOSTED[headFam]) {
-        const picks = SELF_HOSTED[headFam].filter((f) => f.weight === 400 || f.weight === 700 || f.weight === 600);
-        const urls = [...new Set((picks.length ? picks : [SELF_HOSTED[headFam][0]]).map((f) => f.url))];
-        for (const url of urls) {
-          css += `<link rel="preload" as="font" type="font/woff2" href="${url}" crossorigin fetchpriority="high" data-sf-font="1" />\n`;
+        const seven = SELF_HOSTED[headFam].find((f) => f.weight === 700)
+          || SELF_HOSTED[headFam].find((f) => f.weight === 600)
+          || SELF_HOSTED[headFam][0];
+        if (seven) {
+          css += `<link rel="preload" as="font" type="font/woff2" href="${seven.url}" crossorigin fetchpriority="high" data-sf-font="1" />\n`;
         }
       }
     }
+
 
     // v8.39 — Google Fonts CSS uses display=block so non-self-hosted selected
     // heading fonts do not flash as fallback on cold visits.
