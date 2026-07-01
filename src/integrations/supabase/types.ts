@@ -4339,6 +4339,16 @@ export type Database = {
           min_order_amount: number
         }[]
       }
+      get_store_sales_analytics: {
+        Args: {
+          _prior_end: string
+          _prior_start: string
+          _range_end: string
+          _range_start: string
+          _store_id: string
+        }
+        Returns: Json
+      }
       get_store_usage_stats: { Args: never; Returns: Json }
       get_store_views: {
         Args: { _store_ids: string[] }
