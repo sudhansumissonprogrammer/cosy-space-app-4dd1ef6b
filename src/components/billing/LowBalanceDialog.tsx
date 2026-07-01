@@ -1,15 +1,7 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { AlertTriangle, X, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 interface LowBalanceDialogProps {
   open: boolean;
@@ -26,9 +18,9 @@ interface LowBalanceDialogProps {
 /**
  * Wallet balance warning.
  *
- * - Balance below -150 → hard block (modal, cannot dismiss).
- * - Otherwise (balance below threshold but not blocked) → soft warning banner
- *   docked to the bottom of the viewport that does NOT dim the dashboard.
+  * - Balance below -150 → hard block with a light themed overlay.
+  * - Otherwise (balance below threshold but not blocked) → soft warning banner
+  *   docked to the bottom of the viewport that does NOT dim the dashboard.
  *
  * Previously this was always a fullscreen AlertDialog with a `bg-black/80`
  * backdrop, which made the dashboard appear "black" whenever a store was
@@ -58,15 +50,19 @@ export default function LowBalanceDialog({
 
   if (!open) return null;
 
-  // Hard block: keep the blocking modal.
+  const formattedBalance = `${balance < 0 ? "−" : ""}₹${Math.abs(balance).toFixed(2)}`;
+  const walletPath = `/dashboard/stores/${storeSlug}/wallet`;
+
+  // Hard block: blocking modal, but never a black backdrop.
   if (isBlocked) {
     return (
-      <AlertDialog open={open}>
-        <AlertDialogContent
-          onEscapeKeyDown={(e) => {
-            if (!dismissible) e.preventDefault();
-          }}
-          className="max-w-sm relative"
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 px-4 backdrop-blur-sm">
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="low-balance-title"
+          aria-describedby="low-balance-description"
+          className="relative w-full max-w-sm rounded-lg border border-border bg-card p-6 text-card-foreground shadow-xl"
         >
           {dismissible && (
             <button
@@ -77,32 +73,25 @@ export default function LowBalanceDialog({
               <X className="h-4 w-4" />
             </button>
           )}
-          <AlertDialogHeader>
+          <div className="space-y-4 text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
               <AlertTriangle className="h-6 w-6 text-destructive" />
             </div>
-            <AlertDialogTitle className="text-center">
+            <h2 id="low-balance-title" className="text-lg font-semibold leading-tight">
               Wallet blocked — recharge required
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-center">
+            </h2>
+            <p id="low-balance-description" className="text-sm text-muted-foreground">
               Your wallet balance is{" "}
-              <span className="font-semibold text-foreground">
-                {balance < 0 ? "−" : ""}₹{Math.abs(balance).toFixed(2)}
-              </span>
+              <span className="font-semibold text-foreground">{formattedBalance}</span>
               . Your balance has dropped below ₹−150. Access to your store dashboard is locked
               until you recharge. You can only access the wallet page to add funds.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction
-              onClick={() => navigate(`/dashboard/stores/${storeSlug}/wallet`)}
-              className="w-full"
-            >
+            </p>
+            <Button onClick={() => navigate(walletPath)} className="w-full">
               Recharge Wallet
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -111,34 +100,37 @@ export default function LowBalanceDialog({
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-16 z-40 flex justify-center px-3 sm:bottom-4">
-      <div className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl border border-amber-300/60 bg-amber-50 px-3 py-2.5 shadow-lg dark:border-amber-500/30 dark:bg-amber-950/60">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/60">
-          <Wallet className="h-4.5 w-4.5 text-amber-700 dark:text-amber-300" />
+      <div className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-lg border border-warning/30 bg-card px-3 py-2.5 text-card-foreground shadow-lg ring-1 ring-warning/10">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-warning/10">
+          <Wallet className="h-4.5 w-4.5 text-warning" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-semibold text-amber-900 dark:text-amber-100">
-            Low wallet balance · ₹{balance.toFixed(2)}
+          <p className="truncate text-[13px] font-semibold text-foreground">
+            Wallet below ₹{threshold} · {formattedBalance}
           </p>
-          <p className="truncate text-[11px] text-amber-800/80 dark:text-amber-200/80">
-            Recharge to keep accepting orders (min ₹{threshold}).
+          <p className="truncate text-[11px] text-muted-foreground">
+            Recharge now to keep accepting orders.
           </p>
         </div>
         <button
-          onClick={() => navigate(`/dashboard/stores/${storeSlug}/wallet`)}
-          className="shrink-0 rounded-lg bg-amber-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm hover:bg-amber-700 active:scale-95 transition"
+          onClick={() => navigate(walletPath)}
+          className="shrink-0 rounded-lg bg-warning px-3 py-1.5 text-[11px] font-bold text-warning-foreground shadow-sm transition active:scale-95 hover:opacity-90"
         >
           Recharge
         </button>
-        <button
-          onClick={() => {
-            setBannerDismissed(true);
-            try { localStorage.setItem(storageKey, String(Date.now())); } catch {}
-          }}
-          aria-label="Dismiss"
-          className="shrink-0 rounded-full p-1 text-amber-800/70 hover:bg-amber-100 hover:text-amber-900 dark:text-amber-200/70 dark:hover:bg-amber-900/60"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        {dismissible && (
+          <button
+            onClick={() => {
+              setBannerDismissed(true);
+              try { localStorage.setItem(storageKey, String(Date.now())); } catch {}
+              onClose?.();
+            }}
+            aria-label="Dismiss"
+            className="shrink-0 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
     </div>
   );
