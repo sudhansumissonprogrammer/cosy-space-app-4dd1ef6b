@@ -15,7 +15,7 @@ const BRAND = {
   name: "ShopBanao",
   legal: "ShopBanao (Operated by Storivo Technologies)",
   website: "shopbanao.in",
-  email: "sudhansusahoo313@gmail.com",
+  email: "support@shopbanao.in",
   address: "Bhubaneswar, Odisha, India",
 };
 
