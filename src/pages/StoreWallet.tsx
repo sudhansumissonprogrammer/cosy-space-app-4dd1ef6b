@@ -73,45 +73,6 @@ export default function StoreWallet() {
         variant="full"
       />
 
-      <Card>
-        <CardContent className="p-4">
-          <p className="text-sm font-bold mb-3">Recharges & invoices</p>
-          {recharges.filter((r) => r.status === "paid").length === 0 ? (
-            <p className="text-xs text-muted-foreground py-6 text-center">No recharges yet</p>
-          ) : (
-            <div className="space-y-2">
-              {recharges.filter((r) => r.status === "paid").map((r: any) => (
-                <div key={r.id} className="flex items-center gap-3 border-b pb-2 last:border-0">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-                    <ArrowDownCircle className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium truncate">Wallet recharge · {(r.payment_method || "upi").toUpperCase()}</p>
-                    <p className="text-[10px] text-muted-foreground">{new Date(r.paid_at || r.created_at).toLocaleString()}</p>
-                  </div>
-                  <p className="text-sm font-bold tabular-nums text-emerald-600">₹{Number(r.amount).toFixed(2)}</p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 gap-1 px-2 text-[11px]"
-                    onClick={() => downloadWalletInvoice({
-                      kind: "recharge",
-                      id: r.id,
-                      createdAt: r.paid_at || r.created_at,
-                      amount: Number(r.amount),
-                      paymentMethod: r.payment_method,
-                      paymentRef: r.cashfree_payment_id || r.cashfree_order_id,
-                      store: store as any,
-                    })}
-                  >
-                    <Download className="h-3 w-3" /> Invoice
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       <Card>
         <CardContent className="p-4">
