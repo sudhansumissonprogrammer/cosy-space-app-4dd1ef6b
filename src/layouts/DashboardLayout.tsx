@@ -410,18 +410,18 @@ export default function DashboardLayout() {
       )}
 
       {/* Shopify-style header */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between bg-[#1a1a1a] px-3">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-card px-3">
         <div className="flex items-center gap-2.5 min-w-0">
           {store?.logo_url ? (
-            <img src={store.logo_url} alt="" className="h-8 w-8 shrink-0 rounded-lg border border-white/10 object-cover" />
+            <img src={store.logo_url} alt="" className="h-8 w-8 shrink-0 rounded-lg border border-border object-cover" />
           ) : (
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500">
-              <span className="text-xs font-bold text-white">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
+              <span className="text-xs font-bold text-primary-foreground">
                 {store?.name?.slice(0, 3)?.toLowerCase() || "str"}
               </span>
             </div>
           )}
-          <span className="truncate text-sm font-semibold text-white">
+          <span className="truncate text-sm font-semibold text-foreground">
             {store?.name || "Dashboard"}
           </span>
         </div>
@@ -430,7 +430,7 @@ export default function DashboardLayout() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
+              className="h-9 w-9 text-muted-foreground hover:text-foreground"
               onClick={handlePurgeCache}
               disabled={isPurging}
               title="Purge cache"
@@ -441,7 +441,7 @@ export default function DashboardLayout() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
+            className="h-9 w-9 text-muted-foreground hover:text-foreground"
             onClick={() => {/* notification bell */}}
           >
             <Bell className="h-5 w-5" />
@@ -452,8 +452,8 @@ export default function DashboardLayout() {
             className="h-9 w-9 rounded-full"
             onClick={() => go("/dashboard/settings")}
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500">
-              <User className="h-4 w-4 text-white" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
+              <User className="h-4 w-4 text-primary-foreground" />
             </div>
           </Button>
         </div>
