@@ -28,6 +28,17 @@ interface TrafficTotalsPayload {
   prior_visitors?: number | string;
 }
 
+interface SalesAnalyticsPayload {
+  total_revenue?: number | string;
+  prior_revenue?: number | string;
+  total_orders?: number | string;
+  prior_orders?: number | string;
+  sales_by_day?: Array<{ date: string; revenue: number | string; orders: number | string }>;
+  top_products?: Array<{ name: string; units: number | string; revenue: number | string }>;
+  orders_by_status?: Array<{ name: string; value: number | string }>;
+  payment_methods?: Array<{ name: string; value: number | string }>;
+}
+
 type RpcClient = {
   rpc: <T>(fn: string, args: Record<string, unknown>) => Promise<{
     data: T | null;
@@ -82,39 +93,69 @@ export default function StoreAnalytics() {
   const currency = store?.currency || "USD";
   const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
-  // Orders — capped to range start (perf fix). 'all' fetches everything.
-  const ordersGte = useMemo(() => {
-    if (dateRange === "all") return null;
-    if (dateRange === "today") return startOfDay(new Date()).toISOString();
-    if (dateRange === "yesterday") return startOfDay(subDays(new Date(), 2)).toISOString();
-    if (dateRange === "custom" && customFrom) return startOfDay(customFrom).toISOString();
-    const d = dateRange === "7d" ? 14 : dateRange === "30d" ? 60 : 180;
-    return startOfDay(subDays(new Date(), d)).toISOString();
-  }, [dateRange, customFrom]);
+  // Range computation — all bounds are inclusive for the current period.
+  const now = new Date();
+  let rangeStart: Date;
+  let rangeEnd: Date;
+  let priorStart: Date;
+  let priorEnd: Date;
 
-  const { data: allOrders, isLoading } = useQuery({
-    queryKey: ["analytics-orders", storeIds, ordersGte],
-    // Analytics is not real-time: drop the 2-min auto-refetch (was pulling
-    // unlimited orders + nested order_items every 2 min for every open tab).
-    // Users can pull-to-refresh / reload to update.
-    staleTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
+  if (dateRange === "today") {
+    rangeStart = startOfDay(now);
+    rangeEnd = now;
+    priorStart = startOfDay(subDays(now, 1));
+    priorEnd = endOfDay(subDays(now, 1));
+  } else if (dateRange === "yesterday") {
+    rangeStart = startOfDay(subDays(now, 1));
+    rangeEnd = endOfDay(subDays(now, 1));
+    priorStart = startOfDay(subDays(now, 2));
+    priorEnd = endOfDay(subDays(now, 2));
+  } else if (dateRange === "custom" && customFrom && customTo) {
+    rangeStart = startOfDay(customFrom);
+    rangeEnd = endOfDay(customTo);
+    const span = differenceInDays(customTo, customFrom) || 1;
+    priorStart = startOfDay(subDays(customFrom, span));
+    priorEnd = startOfDay(customFrom);
+  } else if (dateRange === "all") {
+    rangeStart = new Date(0);
+    rangeEnd = now;
+    priorStart = new Date(0);
+    priorEnd = new Date(0);
+  } else {
+    const days = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
+    rangeStart = startOfDay(subDays(now, days - 1));
+    rangeEnd = now;
+    priorStart = startOfDay(subDays(now, days * 2 - 1));
+    priorEnd = startOfDay(subDays(now, days - 1));
+  }
+  const rangeDays = dateRange === "today" || dateRange === "yesterday"
+    ? 1
+    : dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : dateRange === "90d" ? 90
+    : dateRange === "custom" && customFrom && customTo ? (differenceInDays(customTo, customFrom) || 1)
+    : 9999;
+
+  const { data: salesAnalytics, isLoading } = useQuery({
+    queryKey: [
+      "analytics-sales-exact",
+      storeId,
+      dateRange,
+      customFrom?.toISOString() || null,
+      customTo?.toISOString() || null,
+    ],
+    staleTime: 60_000,
+    refetchOnWindowFocus: true,
+    enabled: !!storeId,
     queryFn: async () => {
-      let q = supabase
-        .from("orders")
-        .select("created_at, total, status, payment_method, customer_name, order_items(product_name, quantity, total)")
-        .in("store_id", storeIds)
-        .order("created_at", { ascending: true })
-        // Hard cap defends against OOM on stores with massive histories
-        // (a year-1 store with 50k orders × ~5 items would have OOM'd the browser).
-        // 5000 covers ~6 months of heavy stores; range filter does the real bounding.
-        .limit(5000);
-      if (ordersGte) q = q.gte("created_at", ordersGte);
-      const { data, error } = await q;
+      const { data, error } = await (supabase as unknown as RpcClient).rpc<SalesAnalyticsPayload>("get_store_sales_analytics", {
+        _store_id: storeId,
+        _range_start: rangeStart.toISOString(),
+        _range_end: rangeEnd.toISOString(),
+        _prior_start: priorStart.toISOString(),
+        _prior_end: priorEnd.toISOString(),
+      });
       if (error) throw error;
-      return data as any[];
+      return data || {};
     },
-    enabled: storeIds.length > 0,
   });
 
   // Page views — RAW is only used for TODAY (the bucket not yet rolled up by
@@ -181,60 +222,10 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-  // Range computation — all bounds are inclusive [start, end] in ms.
-  const now = new Date();
-  let rangeStart: Date;
-  let rangeEnd: Date;
-  let priorStart: Date;
-  let priorEnd: Date;
-
-  if (dateRange === "today") {
-    rangeStart = startOfDay(now);
-    rangeEnd = now;
-    priorStart = startOfDay(subDays(now, 1));
-    priorEnd = endOfDay(subDays(now, 1));
-  } else if (dateRange === "yesterday") {
-    rangeStart = startOfDay(subDays(now, 1));
-    rangeEnd = endOfDay(subDays(now, 1));
-    priorStart = startOfDay(subDays(now, 2));
-    priorEnd = endOfDay(subDays(now, 2));
-  } else if (dateRange === "custom" && customFrom && customTo) {
-    rangeStart = startOfDay(customFrom);
-    rangeEnd = endOfDay(customTo);
-    const span = differenceInDays(customTo, customFrom) || 1;
-    priorStart = startOfDay(subDays(customFrom, span));
-    priorEnd = startOfDay(customFrom);
-  } else if (dateRange === "all") {
-    rangeStart = new Date(0);
-    rangeEnd = now;
-    priorStart = new Date(0);
-    priorEnd = new Date(0);
-  } else {
-    const days = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
-    rangeStart = startOfDay(subDays(now, days - 1));
-    rangeEnd = now;
-    priorStart = startOfDay(subDays(now, days * 2 - 1));
-    priorEnd = startOfDay(subDays(now, days - 1));
-  }
-  const rangeDays = dateRange === "today" || dateRange === "yesterday"
-    ? 1
-    : dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : dateRange === "90d" ? 90
-    : dateRange === "custom" && customFrom && customTo ? (differenceInDays(customTo, customFrom) || 1)
-    : 9999;
-
   const inRange = (iso: string, start: Date, end: Date) => {
     const t = parseISO(iso).getTime();
     return t >= start.getTime() && t <= end.getTime();
   };
-
-  const filtered = useMemo(() => {
-    if (!allOrders) return { current: [], prior: [] };
-    const current = allOrders.filter((o: any) =>
-      dateRange === "all" ? true : inRange(o.created_at, rangeStart, rangeEnd)
-    );
-    const prior = allOrders.filter((o: any) => inRange(o.created_at, priorStart, priorEnd));
-    return { current, prior };
-  }, [allOrders, dateRange, customFrom, customTo]);
 
   const filteredViews = useMemo(() => {
     if (!pageViews) return { current: [], prior: [] };
