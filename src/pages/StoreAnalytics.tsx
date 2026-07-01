@@ -39,6 +39,13 @@ interface SalesAnalyticsPayload {
   payment_methods?: Array<{ name: string; value: number | string }>;
 }
 
+interface AnalyticsBreakdownsPayload {
+  top_pages?: Array<{ path: string; views: number | string }>;
+  sources?: Array<{ name: string; value: number | string }>;
+  countries?: Array<{ name: string; value: number | string }>;
+  devices?: Array<{ name: string; value: number | string }>;
+}
+
 type RpcClient = {
   rpc: <T>(fn: string, args: Record<string, unknown>) => Promise<{
     data: T | null;
@@ -302,6 +309,28 @@ export default function StoreAnalytics() {
     },
   });
 
+  const { data: analyticsBreakdowns } = useQuery({
+    queryKey: [
+      "analytics-breakdowns-exact",
+      storeId,
+      dateRange,
+      customFrom?.toISOString() || null,
+      customTo?.toISOString() || null,
+    ],
+    staleTime: 60_000,
+    refetchOnWindowFocus: true,
+    enabled: !!storeId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as unknown as RpcClient).rpc<AnalyticsBreakdownsPayload>("get_analytics_breakdowns", {
+        _store_id: storeId,
+        _range_start: rangeStart.toISOString(),
+        _range_end: rangeEnd.toISOString(),
+      });
+      if (error) throw error;
+      return data || {};
+    },
+  });
+
   // Sales metrics come from get_store_sales_analytics so totals are exact even
   // when a store has more rows than PostgREST/browser-safe fetch limits.
   const totalRevenue = Number(salesAnalytics?.total_revenue ?? 0);
@@ -445,16 +474,11 @@ export default function StoreAnalytics() {
 
 
   const topPages = useMemo(() => {
-    const map: Record<string, number> = {};
-    filteredViews.current.forEach((v: any) => {
-      const path = v.path || "/";
-      map[path] = (map[path] || 0) + 1;
-    });
-    return Object.entries(map)
-      .map(([path, views]) => ({ path, views }))
-      .sort((a, b) => b.views - a.views)
-      .slice(0, 10);
-  }, [filteredViews.current]);
+    return (analyticsBreakdowns?.top_pages || []).map((p) => ({
+      path: String(p.path || "/"),
+      views: Number(p.views || 0),
+    }));
+  }, [analyticsBreakdowns?.top_pages]);
 
   const tooltipStyle = {
     backgroundColor: 'hsl(var(--card))',
@@ -755,8 +779,7 @@ export default function StoreAnalytics() {
           storeId={store.id}
           rangeStart={rangeStart}
           rangeEnd={rangeEnd}
-          totalSessions={totalSessions}
-          sym={sym}
+          breakdowns={analyticsBreakdowns}
         />
       )}
     </div>
