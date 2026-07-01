@@ -26,6 +26,19 @@ import WalletAccountCard from "@/components/billing/WalletAccountCard";
 
 import { useCountUp } from "@/hooks/useCountUp";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
+import { endOfMonth, startOfMonth, subMonths } from "date-fns";
+
+interface SalesAnalyticsPayload {
+  total_revenue?: number | string;
+  total_orders?: number | string;
+}
+
+type RpcClient = {
+  rpc: <T>(fn: string, args: Record<string, unknown>) => Promise<{
+    data: T | null;
+    error: Error | null;
+  }>;
+};
 
 function ShimmerBlock({ className }: { className?: string }) {
   return (
@@ -120,20 +133,39 @@ export default function Dashboard() {
   });
 
 
-  const { data: ordersData } = useQuery({
-    queryKey: ["dashboard-orders-analytics", storeId],
+  const { data: ordersByMonth = [] } = useQuery({
+    queryKey: ["dashboard-monthly-sales-exact", storeId],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const REVENUE_STATUSES = ["confirmed", "shipped", "delivered", "partially_paid"];
-      const { data, error } = await supabase
-        .from("orders")
-        .select("created_at, total, status")
-        .eq("store_id", storeId!)
-        .in("status", REVENUE_STATUSES)
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (error) throw error;
-      return data as any[];
+      const now = new Date();
+      const months = Array.from({ length: 12 }, (_, i) => {
+        const d = subMonths(now, 11 - i);
+        const start = startOfMonth(d);
+        const end = i === 11 ? now : endOfMonth(d);
+        return {
+          key: start.toISOString().slice(0, 7),
+          start,
+          end,
+        };
+      });
+
+      const results = await Promise.all(months.map(async (m) => {
+        const { data, error } = await (supabase as unknown as RpcClient).rpc<SalesAnalyticsPayload>("get_store_sales_analytics", {
+          _store_id: storeId!,
+          _range_start: m.start.toISOString(),
+          _range_end: m.end.toISOString(),
+          _prior_start: m.start.toISOString(),
+          _prior_end: m.start.toISOString(),
+        });
+        if (error) throw error;
+        return {
+          month: m.key,
+          orders: Number(data?.total_orders ?? 0),
+          revenue: Number(data?.total_revenue ?? 0),
+        };
+      }));
+
+      return results.filter((m) => m.orders > 0 || m.revenue > 0);
     },
     enabled: !!storeId && !isWhatsAppOnly,
   });
@@ -151,20 +183,6 @@ export default function Dashboard() {
     },
   });
 
-  const ordersByMonth = (() => {
-    if (!ordersData) return [];
-    // ordersData is newest-first (DESC limit 200) — sort ascending for chart display
-    const map: Record<string, { month: string; orders: number; revenue: number }> = {};
-    ordersData.forEach((o: any) => {
-      const month = o.created_at.slice(0, 7);
-      if (!map[month]) map[month] = { month, orders: 0, revenue: 0 };
-      map[month].orders += 1;
-      map[month].revenue += Number(o.total || 0);
-    });
-    return Object.values(map).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
-  })();
-
-  const totalRevenue = ordersData?.reduce((sum: number, o: any) => sum + Number(o.total || 0), 0) || 0;
   const isCommissionMode = (store as any)?.billing_mode === "commission" || (walletSummary as any)?.billing_mode === "commission";
 
   if (storeLoading) return <DashboardSkeleton />;

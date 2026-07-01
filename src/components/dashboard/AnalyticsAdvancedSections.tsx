@@ -50,36 +50,23 @@ function MiniMetric({ label, value, icon: Icon, suffix = "" }: {
   );
 }
 
-function classifyReferrer(ref: string | null, utm_source: string | null): string {
-  if (utm_source) return utm_source.toLowerCase();
-  if (!ref) return "direct";
-  try {
-    const h = new URL(ref).hostname.toLowerCase();
-    if (/google\./.test(h)) return "google";
-    if (/facebook\.|fb\./.test(h)) return "facebook";
-    if (/instagram\./.test(h)) return "instagram";
-    if (/youtube\./.test(h)) return "youtube";
-    if (/whatsapp\./.test(h) || /wa\.me/.test(h)) return "whatsapp";
-    if (/bing\./.test(h)) return "bing";
-    if (/t\.co|twitter\.|x\.com/.test(h)) return "twitter";
-    return h.replace(/^www\./, "");
-  } catch {
-    return "referral";
-  }
-}
-
 interface Props {
   storeId: string;
   rangeStart: Date;
   rangeEnd: Date;
-  totalSessions: number;
-  sym: string;
+  breakdowns?: AnalyticsBreakdownsPayload;
 }
 
-export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEnd, totalSessions, sym }: Props) {
+interface AnalyticsBreakdownsPayload {
+  sources?: Array<{ name: string; value: number | string }>;
+  countries?: Array<{ name: string; value: number | string }>;
+  devices?: Array<{ name: string; value: number | string }>;
+}
+
+export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEnd, breakdowns }: Props) {
   // Live visitors — last 5 min, refetched every 20s
   const { data: liveCount } = useQuery({
-    queryKey: ["live-visitors", storeId],
+    queryKey: ["analytics-live-count", storeId],
     refetchInterval: 20_000,
     staleTime: 15_000,
     queryFn: async () => {
@@ -94,27 +81,6 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
       const uniq = new Set((data || []).map((r: any) => r.session_id || r.visitor_id || ""));
       uniq.delete("");
       return uniq.size;
-    },
-    enabled: !!storeId,
-  });
-
-  // Raw views in range with new dimensions
-  const { data: dimViews } = useQuery({
-    queryKey: ["dim-views", storeId, rangeStart.toISOString(), rangeEnd.toISOString()],
-    staleTime: 5 * 60_000,
-    queryFn: async () => {
-      const start = rangeStart.toISOString();
-      const end = rangeEnd.toISOString();
-      const { data } = await supabase
-        .from("page_views")
-        .select("referrer, utm_source, country, device, browser, session_id")
-        .eq("store_id", storeId)
-        .eq("is_bot", false)
-        .gte("created_at", start)
-        .lte("created_at", end)
-        .order("created_at", { ascending: false })
-        .limit(5000);
-      return (data || []) as any[];
     },
     enabled: !!storeId,
   });
@@ -207,37 +173,25 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
   }, [pvDaily]);
 
   const sources = useMemo(() => {
-    const map: Record<string, number> = {};
-    (dimViews || []).forEach((v: any) => {
-      const key = classifyReferrer(v.referrer, v.utm_source);
-      map[key] = (map[key] || 0) + 1;
-    });
-    return Object.entries(map)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 8);
-  }, [dimViews]);
+    return (breakdowns?.sources || []).map((s) => ({
+      name: String(s.name || "direct"),
+      value: Number(s.value || 0),
+    }));
+  }, [breakdowns?.sources]);
 
   const countries = useMemo(() => {
-    const map: Record<string, number> = {};
-    (dimViews || []).forEach((v: any) => {
-      const c = (v.country || "Unknown").toUpperCase();
-      map[c] = (map[c] || 0) + 1;
-    });
-    return Object.entries(map)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 10);
-  }, [dimViews]);
+    return (breakdowns?.countries || []).map((c) => ({
+      name: String(c.name || "UNKNOWN"),
+      value: Number(c.value || 0),
+    }));
+  }, [breakdowns?.countries]);
 
   const devices = useMemo(() => {
-    const map: Record<string, number> = {};
-    (dimViews || []).forEach((v: any) => {
-      const d = v.device || "unknown";
-      map[d] = (map[d] || 0) + 1;
-    });
-    return Object.entries(map).map(([name, value]) => ({ name, value }));
-  }, [dimViews]);
+    return (breakdowns?.devices || []).map((d) => ({
+      name: String(d.name || "unknown"),
+      value: Number(d.value || 0),
+    }));
+  }, [breakdowns?.devices]);
 
   const funnel = useMemo(() => {
     const map: Record<string, number> = { view_product: 0, add_to_cart: 0, begin_checkout: 0, purchase: 0 };

@@ -4247,6 +4247,10 @@ export type Database = {
       get_admin_analytics: { Args: never; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
       get_admin_users_stores: { Args: never; Returns: Json }
+      get_analytics_breakdowns: {
+        Args: { _range_end: string; _range_start: string; _store_id: string }
+        Returns: Json
+      }
       get_analytics_traffic: {
         Args: {
           _prior_end: string
@@ -4338,6 +4342,16 @@ export type Database = {
           discount_value: number
           min_order_amount: number
         }[]
+      }
+      get_store_sales_analytics: {
+        Args: {
+          _prior_end: string
+          _prior_start: string
+          _range_end: string
+          _range_start: string
+          _store_id: string
+        }
+        Returns: Json
       }
       get_store_usage_stats: { Args: never; Returns: Json }
       get_store_views: {

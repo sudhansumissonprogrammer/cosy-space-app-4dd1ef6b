@@ -11,11 +11,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell,
+  ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell,
 } from "recharts";
 import {
   TrendingUp, TrendingDown, ShoppingBag, Eye, DollarSign, Users,
-  ShoppingCart, Repeat, ArrowUpRight, Package, BarChart3, CalendarIcon,
+  ShoppingCart, Repeat, ArrowUpRight, CalendarIcon,
 } from "lucide-react";
 import { format, subDays, startOfDay, endOfDay, parseISO, differenceInDays } from "date-fns";
 
@@ -26,6 +26,24 @@ interface TrafficTotalsPayload {
   visitors?: number | string;
   prior_sessions?: number | string;
   prior_visitors?: number | string;
+}
+
+interface SalesAnalyticsPayload {
+  total_revenue?: number | string;
+  prior_revenue?: number | string;
+  total_orders?: number | string;
+  prior_orders?: number | string;
+  sales_by_day?: Array<{ date: string; revenue: number | string; orders: number | string }>;
+  top_products?: Array<{ name: string; units: number | string; revenue: number | string }>;
+  orders_by_status?: Array<{ name: string; value: number | string }>;
+  payment_methods?: Array<{ name: string; value: number | string }>;
+}
+
+interface AnalyticsBreakdownsPayload {
+  top_pages?: Array<{ path: string; views: number | string }>;
+  sources?: Array<{ name: string; value: number | string }>;
+  countries?: Array<{ name: string; value: number | string }>;
+  devices?: Array<{ name: string; value: number | string }>;
 }
 
 type RpcClient = {
@@ -75,46 +93,69 @@ export default function StoreAnalytics() {
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   const [customFrom, setCustomFrom] = useState<Date | undefined>(subDays(new Date(), 14));
   const [customTo, setCustomTo] = useState<Date | undefined>(new Date());
-  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const storeId = store?.id as string | undefined;
   const storeIds = storeId ? [storeId] : [];
   const currency = store?.currency || "USD";
   const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
-  // Orders — capped to range start (perf fix). 'all' fetches everything.
-  const ordersGte = useMemo(() => {
-    if (dateRange === "all") return null;
-    if (dateRange === "today") return startOfDay(new Date()).toISOString();
-    if (dateRange === "yesterday") return startOfDay(subDays(new Date(), 2)).toISOString();
-    if (dateRange === "custom" && customFrom) return startOfDay(customFrom).toISOString();
-    const d = dateRange === "7d" ? 14 : dateRange === "30d" ? 60 : 180;
-    return startOfDay(subDays(new Date(), d)).toISOString();
-  }, [dateRange, customFrom]);
+  // Range computation — all bounds are inclusive for the current period.
+  const now = new Date();
+  let rangeStart: Date;
+  let rangeEnd: Date;
+  let priorStart: Date;
+  let priorEnd: Date;
 
-  const { data: allOrders, isLoading } = useQuery({
-    queryKey: ["analytics-orders", storeIds, ordersGte],
-    // Analytics is not real-time: drop the 2-min auto-refetch (was pulling
-    // unlimited orders + nested order_items every 2 min for every open tab).
-    // Users can pull-to-refresh / reload to update.
-    staleTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
+  if (dateRange === "today") {
+    rangeStart = startOfDay(now);
+    rangeEnd = now;
+    priorStart = startOfDay(subDays(now, 1));
+    priorEnd = endOfDay(subDays(now, 1));
+  } else if (dateRange === "yesterday") {
+    rangeStart = startOfDay(subDays(now, 1));
+    rangeEnd = endOfDay(subDays(now, 1));
+    priorStart = startOfDay(subDays(now, 2));
+    priorEnd = endOfDay(subDays(now, 2));
+  } else if (dateRange === "custom" && customFrom && customTo) {
+    rangeStart = startOfDay(customFrom);
+    rangeEnd = endOfDay(customTo);
+    const span = differenceInDays(customTo, customFrom) || 1;
+    priorStart = startOfDay(subDays(customFrom, span));
+    priorEnd = startOfDay(customFrom);
+  } else if (dateRange === "all") {
+    rangeStart = new Date(0);
+    rangeEnd = now;
+    priorStart = new Date(0);
+    priorEnd = new Date(0);
+  } else {
+    const days = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
+    rangeStart = startOfDay(subDays(now, days - 1));
+    rangeEnd = now;
+    priorStart = startOfDay(subDays(now, days * 2 - 1));
+    priorEnd = startOfDay(subDays(now, days - 1));
+  }
+  const { data: salesAnalytics, isLoading } = useQuery({
+    queryKey: [
+      "analytics-sales-exact",
+      storeId,
+      dateRange,
+      customFrom?.toISOString() || null,
+      customTo?.toISOString() || null,
+    ],
+    staleTime: 60_000,
+    refetchOnWindowFocus: true,
+    enabled: !!storeId,
     queryFn: async () => {
-      let q = supabase
-        .from("orders")
-        .select("created_at, total, status, payment_method, customer_name, order_items(product_name, quantity, total)")
-        .in("store_id", storeIds)
-        .order("created_at", { ascending: true })
-        // Hard cap defends against OOM on stores with massive histories
-        // (a year-1 store with 50k orders × ~5 items would have OOM'd the browser).
-        // 5000 covers ~6 months of heavy stores; range filter does the real bounding.
-        .limit(5000);
-      if (ordersGte) q = q.gte("created_at", ordersGte);
-      const { data, error } = await q;
+      const { data, error } = await (supabase as unknown as RpcClient).rpc<SalesAnalyticsPayload>("get_store_sales_analytics", {
+        _store_id: storeId,
+        _range_start: rangeStart.toISOString(),
+        _range_end: rangeEnd.toISOString(),
+        _prior_start: priorStart.toISOString(),
+        _prior_end: priorEnd.toISOString(),
+      });
       if (error) throw error;
-      return data as any[];
+      return data || {};
     },
-    enabled: storeIds.length > 0,
   });
 
   // Page views — RAW is only used for TODAY (the bucket not yet rolled up by
@@ -180,70 +221,6 @@ export default function StoreAnalytics() {
     },
     enabled: storeIds.length > 0,
   });
-
-  // Range computation — all bounds are inclusive [start, end] in ms.
-  const now = new Date();
-  let rangeStart: Date;
-  let rangeEnd: Date;
-  let priorStart: Date;
-  let priorEnd: Date;
-
-  if (dateRange === "today") {
-    rangeStart = startOfDay(now);
-    rangeEnd = now;
-    priorStart = startOfDay(subDays(now, 1));
-    priorEnd = endOfDay(subDays(now, 1));
-  } else if (dateRange === "yesterday") {
-    rangeStart = startOfDay(subDays(now, 1));
-    rangeEnd = endOfDay(subDays(now, 1));
-    priorStart = startOfDay(subDays(now, 2));
-    priorEnd = endOfDay(subDays(now, 2));
-  } else if (dateRange === "custom" && customFrom && customTo) {
-    rangeStart = startOfDay(customFrom);
-    rangeEnd = endOfDay(customTo);
-    const span = differenceInDays(customTo, customFrom) || 1;
-    priorStart = startOfDay(subDays(customFrom, span));
-    priorEnd = startOfDay(customFrom);
-  } else if (dateRange === "all") {
-    rangeStart = new Date(0);
-    rangeEnd = now;
-    priorStart = new Date(0);
-    priorEnd = new Date(0);
-  } else {
-    const days = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
-    rangeStart = startOfDay(subDays(now, days - 1));
-    rangeEnd = now;
-    priorStart = startOfDay(subDays(now, days * 2 - 1));
-    priorEnd = startOfDay(subDays(now, days - 1));
-  }
-  const rangeDays = dateRange === "today" || dateRange === "yesterday"
-    ? 1
-    : dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : dateRange === "90d" ? 90
-    : dateRange === "custom" && customFrom && customTo ? (differenceInDays(customTo, customFrom) || 1)
-    : 9999;
-
-  const inRange = (iso: string, start: Date, end: Date) => {
-    const t = parseISO(iso).getTime();
-    return t >= start.getTime() && t <= end.getTime();
-  };
-
-  const filtered = useMemo(() => {
-    if (!allOrders) return { current: [], prior: [] };
-    const current = allOrders.filter((o: any) =>
-      dateRange === "all" ? true : inRange(o.created_at, rangeStart, rangeEnd)
-    );
-    const prior = allOrders.filter((o: any) => inRange(o.created_at, priorStart, priorEnd));
-    return { current, prior };
-  }, [allOrders, dateRange, customFrom, customTo]);
-
-  const filteredViews = useMemo(() => {
-    if (!pageViews) return { current: [], prior: [] };
-    const current = pageViews.filter((v: any) =>
-      dateRange === "all" ? true : inRange(v.created_at, rangeStart, rangeEnd)
-    );
-    const prior = pageViews.filter((v: any) => inRange(v.created_at, priorStart, priorEnd));
-    return { current, prior };
-  }, [pageViews, dateRange, customFrom, customTo]);
 
   const { data: trafficTotals } = useQuery({
     queryKey: [
@@ -311,84 +288,50 @@ export default function StoreAnalytics() {
     },
   });
 
-  // Metrics — only count confirmed revenue (exclude pending & cancelled)
-  const REVENUE_STATUSES = new Set(["confirmed", "shipped", "delivered", "partially_paid"]);
-  const isRevenue = (o: any) => REVENUE_STATUSES.has(o.status);
-  const totalRevenue = filtered.current.filter(isRevenue).reduce((s: number, o: any) => s + Number(o.total || 0), 0);
-  const priorRevenue = filtered.prior.filter(isRevenue).reduce((s: number, o: any) => s + Number(o.total || 0), 0);
+  const { data: analyticsBreakdowns } = useQuery({
+    queryKey: [
+      "analytics-breakdowns-exact",
+      storeId,
+      dateRange,
+      customFrom?.toISOString() || null,
+      customTo?.toISOString() || null,
+    ],
+    staleTime: 60_000,
+    refetchOnWindowFocus: true,
+    enabled: !!storeId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as unknown as RpcClient).rpc<AnalyticsBreakdownsPayload>("get_analytics_breakdowns", {
+        _store_id: storeId,
+        _range_start: rangeStart.toISOString(),
+        _range_end: rangeEnd.toISOString(),
+      });
+      if (error) throw error;
+      return data || {};
+    },
+  });
+
+  // Sales metrics come from get_store_sales_analytics so totals are exact even
+  // when a store has more rows than PostgREST/browser-safe fetch limits.
+  const totalRevenue = Number(salesAnalytics?.total_revenue ?? 0);
+  const priorRevenue = Number(salesAnalytics?.prior_revenue ?? 0);
   const revenueChange = priorRevenue > 0 ? ((totalRevenue - priorRevenue) / priorRevenue) * 100 : undefined;
 
-  const totalOrders = filtered.current.filter(isRevenue).length;
-  const priorOrders = filtered.prior.filter(isRevenue).length;
+  const totalOrders = Number(salesAnalytics?.total_orders ?? 0);
+  const priorOrders = Number(salesAnalytics?.prior_orders ?? 0);
   const ordersChange = priorOrders > 0 ? ((totalOrders - priorOrders) / priorOrders) * 100 : undefined;
 
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
   const priorAOV = priorOrders > 0 ? priorRevenue / priorOrders : 0;
   const aovChange = priorAOV > 0 ? ((avgOrderValue - priorAOV) / priorAOV) * 100 : undefined;
 
-  const sessionKey = (v: any) => v.session_id || v.visitor_id || "anon";
-  const visitorKey = (v: any) => v.visitor_id || v.session_id || "anon";
-
-  // Rollup is the source of truth for any day strictly before TODAY.
-  // Raw page_views is used only for today (the bucket that hasn't been
-  // rolled up by the nightly cron yet). This makes 7d/30d/90d/yesterday
-  // accurate forever — even after raw rows are purged at 90 days — because
-  // page_views_daily is preserved permanently.
   const todayStart = startOfDay(now);
 
-  const sumRollup = (field: "sessions" | "visitors" | "pageviews", start: Date, end: Date) => {
-    if (!viewsDaily) return 0;
-    return viewsDaily
-      .filter((r: any) => {
-        const d = parseISO(r.date);
-        return d.getTime() >= start.getTime() && d.getTime() < end.getTime();
-      })
-      .reduce((s: number, r: any) => s + (Number(r[field]) || 0), 0);
-  };
-
-  const rawUnique = (rows: any[], key: (v: any) => string, fromTs: number) =>
-    new Set(
-      rows
-        .filter((v: any) => parseISO(v.created_at).getTime() >= fromTs)
-        .map(key)
-    ).size;
-
-  const computeMetric = (
-    rows: any[],
-    rollupField: "sessions" | "visitors",
-    keyFn: (v: any) => string,
-    start: Date,
-    end: Date,
-  ) => {
-    // Rollup covers [start, min(end, todayStart))
-    const rollupEnd = end.getTime() < todayStart.getTime() ? end : todayStart;
-    const rollupVal = start.getTime() < rollupEnd.getTime()
-      ? sumRollup(rollupField, start, rollupEnd)
-      : 0;
-    // Raw covers today only — if range includes today.
-    const includesToday = end.getTime() >= todayStart.getTime();
-    const rawVal = includesToday ? rawUnique(rows, keyFn, todayStart.getTime()) : 0;
-    return rollupVal + rawVal;
-  };
-
-  const totalSessions = useMemo(
-    () => trafficTotals?.sessions ?? computeMetric(filteredViews.current, "sessions", sessionKey, rangeStart, rangeEnd),
-    [trafficTotals?.sessions, filteredViews.current, viewsDaily, rangeStart, rangeEnd]
-  );
-  const priorSessions = useMemo(
-    () => trafficTotals?.prior_sessions ?? computeMetric(filteredViews.prior, "sessions", sessionKey, priorStart, priorEnd),
-    [trafficTotals?.prior_sessions, filteredViews.prior, viewsDaily, priorStart, priorEnd]
-  );
+  const totalSessions = Number(trafficTotals?.sessions ?? 0);
+  const priorSessions = Number(trafficTotals?.prior_sessions ?? 0);
   const sessionsChange = priorSessions > 0 ? ((totalSessions - priorSessions) / priorSessions) * 100 : undefined;
 
-  const totalVisitors = useMemo(
-    () => trafficTotals?.visitors ?? computeMetric(filteredViews.current, "visitors", visitorKey, rangeStart, rangeEnd),
-    [trafficTotals?.visitors, filteredViews.current, viewsDaily, rangeStart, rangeEnd]
-  );
-  const priorVisitors = useMemo(
-    () => trafficTotals?.prior_visitors ?? computeMetric(filteredViews.prior, "visitors", visitorKey, priorStart, priorEnd),
-    [trafficTotals?.prior_visitors, filteredViews.prior, viewsDaily, priorStart, priorEnd]
-  );
+  const totalVisitors = Number(trafficTotals?.visitors ?? 0);
+  const priorVisitors = Number(trafficTotals?.prior_visitors ?? 0);
   const visitorsChange = priorVisitors > 0 ? ((totalVisitors - priorVisitors) / priorVisitors) * 100 : undefined;
 
   const conversionRate = totalSessions > 0 ? (totalOrders / totalSessions) * 100 : 0;
@@ -400,57 +343,45 @@ export default function StoreAnalytics() {
   const returningRate = totalCustomers > 0 ? (returningCustomers / totalCustomers) * 100 : 0;
 
   // Charts data
-  const salesByDay = useMemo(() => {
-    const map: Record<string, { date: string; revenue: number; orders: number }> = {};
-    filtered.current.filter(isRevenue).forEach((o: any) => {
-      const day = o.created_at.slice(0, 10);
-      if (!map[day]) map[day] = { date: day, revenue: 0, orders: 0 };
-      map[day].revenue += Number(o.total || 0);
-      map[day].orders += 1;
-    });
-    return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
-  }, [filtered.current]);
+  const salesByDay = useMemo(() => (
+    (salesAnalytics?.sales_by_day || []).map((d) => ({
+      date: String(d.date),
+      revenue: Number(d.revenue || 0),
+      orders: Number(d.orders || 0),
+    }))
+  ), [salesAnalytics?.sales_by_day]);
 
-  const topProducts = useMemo(() => {
-    const map: Record<string, { name: string; units: number; revenue: number }> = {};
-    filtered.current.filter(isRevenue).forEach((o: any) => {
-      o.order_items?.forEach((item: any) => {
-        const key = item.product_name;
-        if (!map[key]) map[key] = { name: key, units: 0, revenue: 0 };
-        map[key].units += item.quantity || 1;
-        map[key].revenue += Number(item.total || 0);
-      });
-    });
-    return Object.values(map).sort((a, b) => b.revenue - a.revenue).slice(0, 8);
-  }, [filtered.current]);
+  const topProducts = useMemo(() => (
+    (salesAnalytics?.top_products || []).map((p) => ({
+      name: String(p.name || "Unknown product"),
+      units: Number(p.units || 0),
+      revenue: Number(p.revenue || 0),
+    }))
+  ), [salesAnalytics?.top_products]);
 
-  const ordersByStatus = useMemo(() => {
-    const map: Record<string, number> = {};
-    filtered.current.forEach((o: any) => {
-      const status = o.status || "unknown";
-      map[status] = (map[status] || 0) + 1;
-    });
-    return Object.entries(map).map(([name, value]) => ({ name, value }));
-  }, [filtered.current]);
+  const ordersByStatus = useMemo(() => (
+    (salesAnalytics?.orders_by_status || []).map((s) => ({
+      name: String(s.name || "unknown"),
+      value: Number(s.value || 0),
+    }))
+  ), [salesAnalytics?.orders_by_status]);
 
-  const paymentMethods = useMemo(() => {
-    const map: Record<string, number> = {};
-    filtered.current.filter((o: any) => o.status !== "cancelled").forEach((o: any) => {
-      const method = o.payment_method || "Unknown";
-      map[method] = (map[method] || 0) + 1;
-    });
-    return Object.entries(map).map(([name, value]) => ({ name, value }));
-  }, [filtered.current]);
+  const paymentMethods = useMemo(() => (
+    (salesAnalytics?.payment_methods || []).map((m) => ({
+      name: String(m.name || "Unknown"),
+      value: Number(m.value || 0),
+    }))
+  ), [salesAnalytics?.payment_methods]);
 
   const viewsByDay = useMemo(() => {
     // Today: unique sessions from raw page_views (not yet rolled up).
     const todayMap: Record<string, Set<string>> = {};
-    filteredViews.current
+    (pageViews || [])
       .filter((v: any) => parseISO(v.created_at).getTime() >= todayStart.getTime())
       .forEach((v: any) => {
         const day = v.created_at.slice(0, 10);
         if (!todayMap[day]) todayMap[day] = new Set();
-        todayMap[day].add(sessionKey(v));
+        todayMap[day].add(v.session_id || v.visitor_id || "anon");
       });
     const todayBuckets = Object.entries(todayMap).map(([date, set]) => ({ date, views: set.size }));
 
@@ -463,20 +394,15 @@ export default function StoreAnalytics() {
       .map((r: any) => ({ date: r.date, views: Number(r.sessions) || 0 }));
 
     return [...past, ...todayBuckets].sort((a, b) => a.date.localeCompare(b.date));
-  }, [filteredViews.current, viewsDaily, rangeStart, rangeEnd]);
+  }, [pageViews, viewsDaily, rangeStart, rangeEnd]);
 
 
   const topPages = useMemo(() => {
-    const map: Record<string, number> = {};
-    filteredViews.current.forEach((v: any) => {
-      const path = v.path || "/";
-      map[path] = (map[path] || 0) + 1;
-    });
-    return Object.entries(map)
-      .map(([path, views]) => ({ path, views }))
-      .sort((a, b) => b.views - a.views)
-      .slice(0, 10);
-  }, [filteredViews.current]);
+    return (analyticsBreakdowns?.top_pages || []).map((p) => ({
+      path: String(p.path || "/"),
+      views: Number(p.views || 0),
+    }));
+  }, [analyticsBreakdowns?.top_pages]);
 
   const tooltipStyle = {
     backgroundColor: 'hsl(var(--card))',
@@ -777,8 +703,7 @@ export default function StoreAnalytics() {
           storeId={store.id}
           rangeStart={rangeStart}
           rangeEnd={rangeEnd}
-          totalSessions={totalSessions}
-          sym={sym}
+          breakdowns={analyticsBreakdowns}
         />
       )}
     </div>

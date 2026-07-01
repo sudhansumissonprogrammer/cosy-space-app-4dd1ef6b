@@ -2,54 +2,52 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCountUp } from "@/hooks/useCountUp";
 import { TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { endOfDay, startOfDay, subDays } from "date-fns";
 
 interface HeroRevenueProps {
   storeId: string;
   currencySymbol: string;
 }
 
+interface SalesAnalyticsPayload {
+  total_revenue?: number | string;
+  prior_revenue?: number | string;
+  total_orders?: number | string;
+}
+
+type RpcClient = {
+  rpc: <T>(fn: string, args: Record<string, unknown>) => Promise<{
+    data: T | null;
+    error: Error | null;
+  }>;
+};
+
 export default function HeroRevenue({ storeId, currencySymbol }: HeroRevenueProps) {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-
-  const yesterdayStart = new Date(todayStart);
-  yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-
   const { data } = useQuery({
     queryKey: ["hero-revenue", storeId],
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
-      const todayIso = todayStart.toISOString();
-      const yesterdayIso = yesterdayStart.toISOString();
+      const now = new Date();
+      const todayStart = startOfDay(now);
+      const yesterdayStart = startOfDay(subDays(now, 1));
+      const yesterdayEnd = endOfDay(subDays(now, 1));
 
-      // Revenue counts only confirmed, shipped, delivered, or partially_paid orders.
-      // Pending orders are excluded even if they have an advance payment.
-      const REVENUE_STATUSES = ["confirmed", "shipped", "delivered", "partially_paid"];
+      const { data, error } = await (supabase as unknown as RpcClient).rpc<SalesAnalyticsPayload>("get_store_sales_analytics", {
+        _store_id: storeId,
+        _range_start: todayStart.toISOString(),
+        _range_end: now.toISOString(),
+        _prior_start: yesterdayStart.toISOString(),
+        _prior_end: yesterdayEnd.toISOString(),
+      });
+      if (error) throw error;
 
-      const [todayRes, yesterdayRes] = await Promise.all([
-        supabase
-          .from("orders")
-          .select("total")
-          .eq("store_id", storeId)
-          .gte("created_at", todayIso)
-          .in("status", REVENUE_STATUSES),
-        supabase
-          .from("orders")
-          .select("total")
-          .eq("store_id", storeId)
-          .gte("created_at", yesterdayIso)
-          .lt("created_at", todayIso)
-          .in("status", REVENUE_STATUSES),
-      ]);
-
-      const todayOrders = todayRes.data || [];
-      const yesterdayOrders = yesterdayRes.data || [];
-      const todayRevenue = todayOrders.reduce((s, o) => s + Number(o.total || 0), 0);
-      const yesterdayRevenue = yesterdayOrders.reduce((s, o) => s + Number(o.total || 0), 0);
+      const todayRevenue = Number(data?.total_revenue ?? 0);
+      const yesterdayRevenue = Number(data?.prior_revenue ?? 0);
+      const todayOrders = Number(data?.total_orders ?? 0);
 
       return {
         revenue: todayRevenue,
-        orders: todayOrders.length,
+        orders: todayOrders,
         yesterdayRevenue,
         change: yesterdayRevenue > 0
           ? Math.round(((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100)
