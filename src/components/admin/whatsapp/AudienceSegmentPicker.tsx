@@ -55,7 +55,23 @@ export function AudienceSegmentPicker({ value, onChange }: { value: AudienceFilt
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    supabase.from("stores").select("id, name").order("name").limit(500).then(({ data }) => setStores((data as any) || []));
+    (async () => {
+      // Paginate — 500-cap silently truncated the store dropdown.
+      const PAGE = 1000;
+      const rows: { id: string; name: string }[] = [];
+      for (let from = 0; from < 20_000; from += PAGE) {
+        const { data, error } = await supabase
+          .from("stores")
+          .select("id, name")
+          .order("name")
+          .range(from, from + PAGE - 1);
+        if (error) break;
+        const batch = (data || []) as any[];
+        rows.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+      setStores(rows);
+    })();
   }, []);
 
   const estimate = async () => {

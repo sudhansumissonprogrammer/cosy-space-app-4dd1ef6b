@@ -28,13 +28,21 @@ export function AdminChatTab() {
   const { data: allMessages } = useQuery({
     queryKey: ["admin-whatsapp-all-messages"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("whatsapp_messages")
-        .select("*, stores:store_id(name, slug)")
-        .order("created_at", { ascending: false })
-        .limit(1000);
-      if (error) throw error;
-      return data || [];
+      // Paginate so busy platform inboxes don't lose older threads at 1000.
+      const PAGE = 1000;
+      const rows: any[] = [];
+      for (let from = 0; from < 10_000; from += PAGE) {
+        const { data, error } = await supabase
+          .from("whatsapp_messages")
+          .select("*, stores:store_id(name, slug)")
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const batch = (data || []) as any[];
+        rows.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+      return rows;
     },
     refetchInterval: (query) => (typeof document !== "undefined" && document.visibilityState === "visible") ? 60000 : false,
     refetchOnWindowFocus: true,

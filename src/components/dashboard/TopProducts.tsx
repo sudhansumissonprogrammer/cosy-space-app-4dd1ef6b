@@ -13,25 +13,27 @@ const TopProducts = React.forwardRef<HTMLDivElement, TopProductsProps>(function 
     queryKey: ["top-products-dashboard", storeId],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      // Server-side scope to this store via inner join on orders.
-      // Previously this fetched 500 global order_items + 500 orders and filtered client-side
-      // (slowest #2 query in pg_stat_statements, also a tenant-leak risk).
-      const { data, error } = await supabase
-        .from("order_items")
-        .select("product_name, quantity, total, orders!inner(store_id, status)")
-        .eq("orders.store_id", storeId)
-        .neq("orders.status", "cancelled")
-        .limit(500);
-      if (error) throw error;
-
+      // Paginated scan so best-sellers are accurate past 500 items for high-volume stores.
+      const PAGE = 1000;
       const map: Record<string, { name: string; qty: number; revenue: number }> = {};
-      (data || []).forEach((item: any) => {
-        const key = item.product_name;
-        if (!key) return;
-        if (!map[key]) map[key] = { name: key, qty: 0, revenue: 0 };
-        map[key].qty += item.quantity || 0;
-        map[key].revenue += Number(item.total || 0);
-      });
+      for (let from = 0; from < 50_000; from += PAGE) {
+        const { data, error } = await supabase
+          .from("order_items")
+          .select("product_name, quantity, total, orders!inner(store_id, status)")
+          .eq("orders.store_id", storeId)
+          .neq("orders.status", "cancelled")
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const batch = (data || []) as any[];
+        for (const item of batch) {
+          const key = item.product_name;
+          if (!key) continue;
+          if (!map[key]) map[key] = { name: key, qty: 0, revenue: 0 };
+          map[key].qty += item.quantity || 0;
+          map[key].revenue += Number(item.total || 0);
+        }
+        if (batch.length < PAGE) break;
+      }
 
       return Object.values(map)
         .sort((a, b) => b.qty - a.qty)

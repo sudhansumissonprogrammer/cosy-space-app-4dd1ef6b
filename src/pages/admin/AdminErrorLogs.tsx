@@ -36,11 +36,13 @@ export default function AdminErrorLogs() {
     queryKey: ["admin-error-logs"],
     staleTime: 30_000,
     queryFn: async () => {
+      // Bumped from 100 → 1000 so triage isn't blind past the newest 100.
+      // For older logs use the analytics query tool; UI stays snappy at 1000.
       const { data, error } = await supabase
         .from("error_logs")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(1000);
       if (error) throw error;
       return data as ErrorLog[];
     },

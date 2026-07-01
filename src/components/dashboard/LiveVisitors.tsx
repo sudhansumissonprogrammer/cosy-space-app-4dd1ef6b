@@ -34,17 +34,26 @@ export default function LiveVisitors({ storeId }: Props) {
     refetchOnWindowFocus: true,
     staleTime: 30_000,
     queryFn: async () => {
+      // Paginated so busy stores don't get a truncated "live" view.
+      // Cap at 20k rows in a 5-min window (~66/sec sustained) — sane upper bound.
       const since = new Date(Date.now() - LIVE_WINDOW_MS).toISOString();
-      const { data, error } = await supabase
-        .from("page_views")
-        .select("session_id, visitor_id, path, device, created_at")
-        .eq("store_id", storeId)
-        .eq("is_bot", false)
-        .gte("created_at", since)
-        .order("created_at", { ascending: false })
-        .limit(500);
-      if (error) throw error;
-      return (data || []) as Row[];
+      const PAGE = 1000;
+      const rows: Row[] = [];
+      for (let from = 0; from < 20_000; from += PAGE) {
+        const { data, error } = await supabase
+          .from("page_views")
+          .select("session_id, visitor_id, path, device, created_at")
+          .eq("store_id", storeId)
+          .eq("is_bot", false)
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const batch = (data || []) as Row[];
+        rows.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+      return rows;
     },
   });
 
