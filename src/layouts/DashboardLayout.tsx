@@ -251,6 +251,7 @@ export default function DashboardLayout() {
   const showLowBalance =
     !isAdminView &&
     !!walletSummary &&
+    !!storeSlug &&
     walletBalance < 100 &&
     !isWalletRoute;
 

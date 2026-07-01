@@ -14,7 +14,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Wallet, Plus, Loader2 } from "lucide-react";
+import { Wallet, Plus, Loader2, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 declare global {
   interface Window {
@@ -104,7 +105,8 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
     };
   const balanceNum = Number(wallet.balance);
   const isNegative = balanceNum < 0;
-  const lowBalance = !isNegative && balanceNum < Number(config.low_balance_threshold);
+  const lowBalanceThreshold = Number(config.low_balance_threshold ?? 100);
+  const lowBalance = balanceNum < lowBalanceThreshold;
 
   const handleRecharge = async () => {
     const n = Number(amount);
@@ -154,7 +156,10 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
                 {isNegative ? "Outstanding Dues" : "Wallet Balance"}
               </p>
               <p
-                className={`text-3xl font-bold tabular-nums ${isNegative ? "text-destructive" : ""}`}
+                className={cn(
+                  "text-3xl font-bold tabular-nums",
+                  isNegative ? "text-destructive" : lowBalance ? "text-warning" : "text-foreground",
+                )}
               >
                 {isNegative ? "−" : ""}₹{Math.abs(balanceNum).toFixed(2)}
               </p>
@@ -162,9 +167,23 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
             {isNegative ? (
               <Badge variant="destructive">Recharge required</Badge>
             ) : lowBalance ? (
-              <Badge variant="destructive">Low balance</Badge>
+              <Badge className="border-transparent bg-warning text-warning-foreground hover:bg-warning/90">Low balance</Badge>
             ) : null}
           </div>
+
+          {lowBalance && (
+            <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+              <div className="min-w-0">
+                <p className="font-semibold text-foreground">
+                  Wallet below ₹{lowBalanceThreshold}. Recharge required.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Add funds now to keep orders and commission billing running smoothly.
+                </p>
+              </div>
+            </div>
+          )}
 
 
           <p className="text-[11px] text-muted-foreground pt-1">
@@ -187,7 +206,7 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
       </Card>
 
       <Dialog open={rechargeOpen} onOpenChange={setRechargeOpen}>
-        <DialogContent>
+        <DialogContent overlayClassName="bg-background/70 backdrop-blur-sm">
           <DialogHeader>
             <DialogTitle>Recharge wallet</DialogTitle>
           </DialogHeader>
