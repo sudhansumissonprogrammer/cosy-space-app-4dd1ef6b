@@ -1241,8 +1241,6 @@ function buildThemeCssFromConfig(tc) {
     }
 
 
-    // v8.39 — Google Fonts CSS uses display=block so non-self-hosted selected
-    // heading fonts do not flash as fallback on cold visits.
     // v8.61 — Google Fonts CSS uses display=swap so fallback paints instantly
     // on cold visits; real font swaps in when downloaded. (Was display=block
     // which held first paint hostage for ~3s on Slow 4G.)
