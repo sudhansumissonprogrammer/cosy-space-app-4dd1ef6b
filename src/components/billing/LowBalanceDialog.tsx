@@ -18,9 +18,9 @@ interface LowBalanceDialogProps {
 /**
  * Wallet balance warning.
  *
-  * - Balance below -150 → hard block with a light themed overlay.
-  * - Otherwise (balance below threshold but not blocked) → soft warning banner
-  *   docked to the bottom of the viewport that does NOT dim the dashboard.
+ * - Balance below -150 → hard block with a light themed overlay.
+ * - Otherwise (balance below threshold but not blocked) → soft warning banner
+ *   docked to the bottom of the viewport that does NOT dim the dashboard.
  *
  * Previously this was always a fullscreen AlertDialog with a `bg-black/80`
  * backdrop, which made the dashboard appear "black" whenever a store was
@@ -102,7 +102,7 @@ export default function LowBalanceDialog({
     <div className="pointer-events-none fixed inset-x-0 bottom-16 z-40 flex justify-center px-3 sm:bottom-4">
       <div className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-lg border border-warning/30 bg-card px-3 py-2.5 text-card-foreground shadow-lg ring-1 ring-warning/10">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-warning/10">
-          <Wallet className="h-4.5 w-4.5 text-warning" />
+          <Wallet className="h-4 w-4 text-warning" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-semibold text-foreground">
