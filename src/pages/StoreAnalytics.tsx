@@ -222,20 +222,6 @@ export default function StoreAnalytics() {
     enabled: storeIds.length > 0,
   });
 
-  const inRange = (iso: string, start: Date, end: Date) => {
-    const t = parseISO(iso).getTime();
-    return t >= start.getTime() && t <= end.getTime();
-  };
-
-  const filteredViews = useMemo(() => {
-    if (!pageViews) return { current: [], prior: [] };
-    const current = pageViews.filter((v: any) =>
-      dateRange === "all" ? true : inRange(v.created_at, rangeStart, rangeEnd)
-    );
-    const prior = pageViews.filter((v: any) => inRange(v.created_at, priorStart, priorEnd));
-    return { current, prior };
-  }, [pageViews, dateRange, customFrom, customTo]);
-
   const { data: trafficTotals } = useQuery({
     queryKey: [
       "analytics-traffic-exact",
@@ -338,69 +324,14 @@ export default function StoreAnalytics() {
   const priorAOV = priorOrders > 0 ? priorRevenue / priorOrders : 0;
   const aovChange = priorAOV > 0 ? ((avgOrderValue - priorAOV) / priorAOV) * 100 : undefined;
 
-  const sessionKey = (v: any) => v.session_id || v.visitor_id || "anon";
-  const visitorKey = (v: any) => v.visitor_id || v.session_id || "anon";
-
-  // Rollup is the source of truth for any day strictly before TODAY.
-  // Raw page_views is used only for today (the bucket that hasn't been
-  // rolled up by the nightly cron yet). This makes 7d/30d/90d/yesterday
-  // accurate forever — even after raw rows are purged at 90 days — because
-  // page_views_daily is preserved permanently.
   const todayStart = startOfDay(now);
 
-  const sumRollup = (field: "sessions" | "visitors" | "pageviews", start: Date, end: Date) => {
-    if (!viewsDaily) return 0;
-    return viewsDaily
-      .filter((r: any) => {
-        const d = parseISO(r.date);
-        return d.getTime() >= start.getTime() && d.getTime() < end.getTime();
-      })
-      .reduce((s: number, r: any) => s + (Number(r[field]) || 0), 0);
-  };
-
-  const rawUnique = (rows: any[], key: (v: any) => string, fromTs: number) =>
-    new Set(
-      rows
-        .filter((v: any) => parseISO(v.created_at).getTime() >= fromTs)
-        .map(key)
-    ).size;
-
-  const computeMetric = (
-    rows: any[],
-    rollupField: "sessions" | "visitors",
-    keyFn: (v: any) => string,
-    start: Date,
-    end: Date,
-  ) => {
-    // Rollup covers [start, min(end, todayStart))
-    const rollupEnd = end.getTime() < todayStart.getTime() ? end : todayStart;
-    const rollupVal = start.getTime() < rollupEnd.getTime()
-      ? sumRollup(rollupField, start, rollupEnd)
-      : 0;
-    // Raw covers today only — if range includes today.
-    const includesToday = end.getTime() >= todayStart.getTime();
-    const rawVal = includesToday ? rawUnique(rows, keyFn, todayStart.getTime()) : 0;
-    return rollupVal + rawVal;
-  };
-
-  const totalSessions = useMemo(
-    () => trafficTotals?.sessions ?? computeMetric(filteredViews.current, "sessions", sessionKey, rangeStart, rangeEnd),
-    [trafficTotals?.sessions, filteredViews.current, viewsDaily, rangeStart, rangeEnd]
-  );
-  const priorSessions = useMemo(
-    () => trafficTotals?.prior_sessions ?? computeMetric(filteredViews.prior, "sessions", sessionKey, priorStart, priorEnd),
-    [trafficTotals?.prior_sessions, filteredViews.prior, viewsDaily, priorStart, priorEnd]
-  );
+  const totalSessions = Number(trafficTotals?.sessions ?? 0);
+  const priorSessions = Number(trafficTotals?.prior_sessions ?? 0);
   const sessionsChange = priorSessions > 0 ? ((totalSessions - priorSessions) / priorSessions) * 100 : undefined;
 
-  const totalVisitors = useMemo(
-    () => trafficTotals?.visitors ?? computeMetric(filteredViews.current, "visitors", visitorKey, rangeStart, rangeEnd),
-    [trafficTotals?.visitors, filteredViews.current, viewsDaily, rangeStart, rangeEnd]
-  );
-  const priorVisitors = useMemo(
-    () => trafficTotals?.prior_visitors ?? computeMetric(filteredViews.prior, "visitors", visitorKey, priorStart, priorEnd),
-    [trafficTotals?.prior_visitors, filteredViews.prior, viewsDaily, priorStart, priorEnd]
-  );
+  const totalVisitors = Number(trafficTotals?.visitors ?? 0);
+  const priorVisitors = Number(trafficTotals?.prior_visitors ?? 0);
   const visitorsChange = priorVisitors > 0 ? ((totalVisitors - priorVisitors) / priorVisitors) * 100 : undefined;
 
   const conversionRate = totalSessions > 0 ? (totalOrders / totalSessions) * 100 : 0;
@@ -445,12 +376,12 @@ export default function StoreAnalytics() {
   const viewsByDay = useMemo(() => {
     // Today: unique sessions from raw page_views (not yet rolled up).
     const todayMap: Record<string, Set<string>> = {};
-    filteredViews.current
+    (pageViews || [])
       .filter((v: any) => parseISO(v.created_at).getTime() >= todayStart.getTime())
       .forEach((v: any) => {
         const day = v.created_at.slice(0, 10);
         if (!todayMap[day]) todayMap[day] = new Set();
-        todayMap[day].add(sessionKey(v));
+        todayMap[day].add(v.session_id || v.visitor_id || "anon");
       });
     const todayBuckets = Object.entries(todayMap).map(([date, set]) => ({ date, views: set.size }));
 
@@ -463,7 +394,7 @@ export default function StoreAnalytics() {
       .map((r: any) => ({ date: r.date, views: Number(r.sessions) || 0 }));
 
     return [...past, ...todayBuckets].sort((a, b) => a.date.localeCompare(b.date));
-  }, [filteredViews.current, viewsDaily, rangeStart, rangeEnd]);
+  }, [pageViews, viewsDaily, rangeStart, rangeEnd]);
 
 
   const topPages = useMemo(() => {
