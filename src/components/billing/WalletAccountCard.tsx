@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { Wallet, Plus, Loader2, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 declare global {
   interface Window {
@@ -155,7 +156,10 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
                 {isNegative ? "Outstanding Dues" : "Wallet Balance"}
               </p>
               <p
-                className={`text-3xl font-bold tabular-nums ${isNegative ? "text-destructive" : ""}`}
+                className={cn(
+                  "text-3xl font-bold tabular-nums",
+                  isNegative ? "text-destructive" : lowBalance ? "text-warning" : "text-foreground",
+                )}
               >
                 {isNegative ? "−" : ""}₹{Math.abs(balanceNum).toFixed(2)}
               </p>
@@ -163,7 +167,7 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
             {isNegative ? (
               <Badge variant="destructive">Recharge required</Badge>
             ) : lowBalance ? (
-              <Badge variant="destructive">Low balance</Badge>
+              <Badge className="border-transparent bg-warning text-warning-foreground hover:bg-warning/90">Low balance</Badge>
             ) : null}
           </div>
 
