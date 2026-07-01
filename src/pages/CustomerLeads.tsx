@@ -20,6 +20,70 @@ import { useMyStore } from "@/hooks/useMyStore";
 import { getStoreBaseUrl } from "@/lib/storeUrl";
 import { normalizePhone } from "@/lib/phoneUtils";
 
+type CustomerLead = {
+  id: string;
+  name: string | null;
+  phone: string;
+  product_name: string | null;
+  product_id: string | null;
+  source: string;
+  created_at: string;
+};
+
+const FETCH_PAGE_SIZE = 1000;
+
+async function fetchAllCustomerLeads(storeId: string): Promise<CustomerLead[]> {
+  const rows: CustomerLead[] = [];
+
+  for (let from = 0; ; from += FETCH_PAGE_SIZE) {
+    const to = from + FETCH_PAGE_SIZE - 1;
+    const { data, error } = await (supabase as any)
+      .from("customer_leads")
+      .select("id,name,phone,product_name,product_id,source,created_at")
+      .eq("store_id", storeId)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    const batch = (data ?? []) as CustomerLead[];
+    rows.push(...batch);
+
+    if (batch.length < FETCH_PAGE_SIZE) break;
+  }
+
+  return rows;
+}
+
+async function fetchOrderedPhoneSuffixes(storeId: string): Promise<Set<string>> {
+  const set = new Set<string>();
+
+  for (let from = 0; ; from += FETCH_PAGE_SIZE) {
+    const to = from + FETCH_PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from("orders")
+      .select("customer_phone, status")
+      .eq("store_id", storeId)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    const batch = data ?? [];
+    batch.forEach((o: any) => {
+      if (o.status === "cancelled") return;
+      const norm = normalizePhone(o.customer_phone).replace(/\D/g, "");
+      if (norm.length >= 10) set.add(norm.slice(-10));
+    });
+
+    if (batch.length < FETCH_PAGE_SIZE) break;
+  }
+
+  return set;
+}
+
 export default function CustomerLeads() {
   const { storeId } = useStoreSlugParam();
   const queryClient = useQueryClient();
@@ -27,24 +91,7 @@ export default function CustomerLeads() {
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["customer-leads", storeId],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("customer_leads")
-        .select("*")
-        .eq("store_id", storeId)
-        .order("created_at", { ascending: false })
-        .limit(2000);
-      if (error) throw error;
-      return data as {
-        id: string;
-        name: string | null;
-        phone: string;
-        product_name: string | null;
-        product_id: string | null;
-        source: string;
-        created_at: string;
-      }[];
-    },
+    queryFn: () => fetchAllCustomerLeads(storeId!),
     enabled: !!storeId,
   });
 
@@ -58,28 +105,11 @@ export default function CustomerLeads() {
     return Array.from(set);
   }, [leads]);
 
-  // Fetch only the orders whose phone matches a lead — bounded, no full-table scan.
+  // Fetch order phones in pages. A single query is capped by the backend row limit,
+  // which made high-volume stores look stuck at 1000/2000 leads.
   const { data: orderedPhonesSet } = useQuery({
-    queryKey: ["leads-ordered-phones", storeId, leadPhones.join(",")],
-    queryFn: async () => {
-      const set = new Set<string>();
-      if (leadPhones.length === 0) return set;
-      // Match on the last-10-digit suffix (numbers may have +91 prefix variants)
-      const orFilter = leadPhones.map((p) => `customer_phone.ilike.%${p}`).join(",");
-      const { data, error } = await supabase
-        .from("orders")
-        .select("customer_phone, status")
-        .eq("store_id", storeId)
-        .or(orFilter)
-        .limit(5000);
-      if (error) throw error;
-      (data ?? []).forEach((o: any) => {
-        if (o.status === "cancelled") return;
-        const norm = normalizePhone(o.customer_phone).replace(/\D/g, "");
-        if (norm.length >= 10) set.add(norm.slice(-10));
-      });
-      return set;
-    },
+    queryKey: ["leads-ordered-phones", storeId],
+    queryFn: () => fetchOrderedPhoneSuffixes(storeId!),
     enabled: !!storeId && leadPhones.length > 0,
     staleTime: 60 * 1000,
   });
