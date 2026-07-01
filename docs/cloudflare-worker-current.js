@@ -1243,9 +1243,13 @@ function buildThemeCssFromConfig(tc) {
 
     // v8.39 — Google Fonts CSS uses display=block so non-self-hosted selected
     // heading fonts do not flash as fallback on cold visits.
+    // v8.61 — Google Fonts CSS uses display=swap so fallback paints instantly
+    // on cold visits; real font swaps in when downloaded. (Was display=block
+    // which held first paint hostage for ~3s on Slow 4G.)
     if (remoteFonts.length > 0) {
       const families = remoteFonts.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;600;700`).join("&");
-      const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=block`;
+      const googleFontsHref = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+
       css += `<link rel="preconnect" href="https://fonts.googleapis.com" />\n`;
       css += `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />\n`;
       css += `<link rel="preload" as="style" href="${googleFontsHref}" fetchpriority="high" data-sf-font="1" />\n`;
