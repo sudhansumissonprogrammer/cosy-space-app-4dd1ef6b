@@ -4247,6 +4247,10 @@ export type Database = {
       get_admin_analytics: { Args: never; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
       get_admin_users_stores: { Args: never; Returns: Json }
+      get_analytics_breakdowns: {
+        Args: { _range_end: string; _range_start: string; _store_id: string }
+        Returns: Json
+      }
       get_analytics_traffic: {
         Args: {
           _prior_end: string
