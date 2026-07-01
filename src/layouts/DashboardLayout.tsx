@@ -131,14 +131,14 @@ function MobileMenu({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#1a1a1a] font-dashboard">
+    <div className="fixed inset-0 z-50 flex flex-col bg-background text-foreground font-dashboard">
       {/* Scrollable menu items */}
       <div className="flex-1 overflow-auto px-4 pt-6 pb-4">
         <div className="space-y-4">
           {menuSections.map((section, si) => (
             <div key={si}>
               {section.title && (
-                <p className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-widest text-[#666]">
+                <p className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                   {section.title}
                 </p>
               )}
@@ -154,10 +154,10 @@ function MobileMenu({
                       className={cn(
                         "flex w-full items-center gap-3.5 rounded-xl px-4 py-3 text-[15px] transition-colors",
                         comingSoon
-                          ? "opacity-40 cursor-not-allowed text-[#888]"
+                          ? "opacity-40 cursor-not-allowed text-muted-foreground"
                           : active
-                            ? "bg-white/10 text-white font-medium"
-                            : "text-[#b0b0b0] active:bg-white/5"
+                            ? "bg-accent text-accent-foreground font-medium"
+                            : "text-muted-foreground active:bg-accent/60"
                       )}
                     >
                       <item.icon className="h-5 w-5 shrink-0" />
@@ -185,16 +185,16 @@ function MobileMenu({
       <div className="safe-area-pb px-4 pb-4 pt-2 flex items-center gap-3 justify-center">
         <button
           onClick={() => go("/dashboard/settings")}
-          className="flex items-center gap-2.5 rounded-full bg-[#2a2a2a] px-6 py-3"
+          className="flex items-center gap-2.5 rounded-full border border-border bg-card px-6 py-3 shadow-sm"
         >
-          <Settings className="h-5 w-5 text-white" />
-          <span className="text-sm font-medium text-white">Settings</span>
+          <Settings className="h-5 w-5 text-foreground" />
+          <span className="text-sm font-medium text-foreground">Settings</span>
         </button>
         <button
           onClick={onClose}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2a2a2a]"
+          className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-card shadow-sm"
         >
-          <X className="h-5 w-5 text-white" />
+          <X className="h-5 w-5 text-foreground" />
         </button>
       </div>
     </div>
@@ -319,7 +319,7 @@ export default function DashboardLayout() {
         <DashboardStoreProvider value={dashboardStoreValue}>
         <SidebarProvider>
           <DynamicPwaManifest storeName="ShopBanao" logoUrl="/images/shopbanao-logo.png" themeColor="#4361ee" startUrl="/dashboard" />
-          <SmartInstallPrompt appName="ShopBanao" primaryColor="#4361ee" textColor="#ffffff" delay={15000} logoUrl="/images/shopbanao-logo.png" />
+          <SmartInstallPrompt appName="ShopBanao" primaryColor="#4361ee" textColor="#ffffff" delay={15000} logoUrl="/images/shopbanao-logo.png" stripVariant="light" />
           <div className="min-h-screen flex w-full font-dashboard [&_*]:font-dashboard">
             <AppSidebar />
             <div className="flex-1 flex flex-col min-w-0">
@@ -398,7 +398,7 @@ export default function DashboardLayout() {
     <AdminViewProvider value={adminViewValue}>
     <DashboardStoreProvider value={dashboardStoreValue}>
     <DynamicPwaManifest storeName="ShopBanao" logoUrl="/images/shopbanao-logo.png" themeColor="#4361ee" startUrl="/dashboard" />
-    <SmartInstallPrompt appName="ShopBanao" primaryColor="#4361ee" textColor="#ffffff" delay={10000} logoUrl="/images/shopbanao-logo.png" />
+    <SmartInstallPrompt appName="ShopBanao" primaryColor="#4361ee" textColor="#ffffff" delay={10000} logoUrl="/images/shopbanao-logo.png" stripVariant="light" />
     <div
       className="min-h-screen flex flex-col bg-background font-dashboard [&_*]:font-dashboard"
       
