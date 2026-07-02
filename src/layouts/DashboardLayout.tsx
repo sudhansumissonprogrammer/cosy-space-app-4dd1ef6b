@@ -258,7 +258,7 @@ export default function DashboardLayout() {
     !isAdminView &&
     !!walletSummary &&
     !!storeSlug &&
-    walletBalance < 100 &&
+    walletBalance < 0 &&
     !isWalletRoute &&
     !isAccountRoute;
 
