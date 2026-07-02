@@ -153,7 +153,7 @@ export async function firePurchaseCapi(
     // 2. Load store pixel config.
     const { data: store } = await supabase
       .from("stores")
-      .select("facebook_pixel_id, meta_access_token, slug, custom_domain")
+      .select("facebook_pixel_id, meta_access_token, slug, custom_domain, capi_disabled")
       .eq("id", order.store_id)
       .single();
 
@@ -166,6 +166,17 @@ export async function firePurchaseCapi(
         .eq("id", orderId)
         .is("meta_purchase_fired_at", null);
       return { ok: true, reason: "meta_not_configured" };
+    }
+
+    // Per-store CAPI kill-switch. Stamp the order so we never retry
+    // while the switch is on, and skip the Purchase send.
+    if ((store as any).capi_disabled === true) {
+      await supabase
+        .from("orders")
+        .update({ meta_purchase_fired_at: new Date().toISOString() })
+        .eq("id", orderId)
+        .is("meta_purchase_fired_at", null);
+      return { ok: true, reason: "capi_disabled_by_merchant" };
     }
 
     // 3. Load order items for content_ids / contents.
