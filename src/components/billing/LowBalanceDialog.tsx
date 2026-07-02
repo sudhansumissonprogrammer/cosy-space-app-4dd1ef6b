@@ -32,7 +32,7 @@ export default function LowBalanceDialog({
   storeSlug,
   dismissible = false,
   onClose,
-  threshold = 100,
+  threshold = 0,
 }: LowBalanceDialogProps) {
   const navigate = useNavigate();
   const isBlocked = balance < -150;
