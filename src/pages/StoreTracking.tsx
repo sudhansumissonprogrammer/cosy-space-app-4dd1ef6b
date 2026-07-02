@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity } from "lucide-react";
+import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity, ShieldOff } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import MetaCapiSetupWizard from "@/components/dashboard/MetaCapiSetupWizard";
 
 export default function StoreTracking() {
