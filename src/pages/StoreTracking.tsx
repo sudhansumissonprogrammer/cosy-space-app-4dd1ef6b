@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity } from "lucide-react";
+import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity, ShieldOff } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import MetaCapiSetupWizard from "@/components/dashboard/MetaCapiSetupWizard";
 
 export default function StoreTracking() {
@@ -287,6 +288,53 @@ export default function StoreTracking() {
           tokenLoading={metaTokenLoading}
           onAccessTokenChange={handleMetaAccessTokenChange}
         />
+
+        {/* CAPI Kill-Switch — keeps browser Pixel running, silences server events */}
+        {(facebookPixelId || (store as any)?.capi_disabled) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <ShieldOff className="h-5 w-5 text-amber-600" />
+                Pause Server-Side CAPI
+              </CardTitle>
+              <CardDescription>
+                Temporarily stop sending server-side conversion events to Meta (Pixel keeps firing in the browser). Use this while appealing a Meta account restriction.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-start justify-between gap-4 rounded-lg border p-3">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">CAPI paused</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(store as any)?.capi_disabled
+                      ? "Server-side events are OFF for this store. Turn back on to restore full attribution."
+                      : "All server events currently sending. Turn on only if Meta support asks you to."}
+                  </p>
+                </div>
+                <Switch
+                  checked={!!(store as any)?.capi_disabled}
+                  onCheckedChange={async (checked) => {
+                    const { error } = await (supabase as any)
+                      .from("stores")
+                      .update({ capi_disabled: checked })
+                      .eq("id", storeId!);
+                    if (error) {
+                      toast.error("Failed to update: " + error.message);
+                      return;
+                    }
+                    if (store?.slug) {
+                      await purgeStoreCache(store.slug, (store as any).custom_domain ?? null, { shell: true });
+                      prewarmStore(store.slug).catch(() => {});
+                    }
+                    await queryClient.invalidateQueries({ queryKey: ["store", storeId] });
+                    toast.success(checked ? "CAPI paused for this store" : "CAPI re-enabled");
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
 
 
         {/* Product Feed */}
