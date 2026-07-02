@@ -32,7 +32,7 @@ export default function LowBalanceDialog({
   storeSlug,
   dismissible = false,
   onClose,
-  threshold = 100,
+  threshold = 0,
 }: LowBalanceDialogProps) {
   const navigate = useNavigate();
   const isBlocked = balance < -150;
@@ -55,7 +55,7 @@ export default function LowBalanceDialog({
 
   const title = isBlocked
     ? "Wallet blocked — recharge required"
-    : `Wallet below ₹${threshold} — recharge required`;
+    : `Wallet balance is negative — recharge required`;
   const description = isBlocked
     ? `Your wallet balance is ${formattedBalance}. Your balance has dropped below ₹−150. Access to your store dashboard is locked until you recharge. You can only access the wallet page to add funds.`
     : `Your wallet balance is ${formattedBalance}. Recharge now to keep your store running smoothly and continue accepting orders without interruption.`;
