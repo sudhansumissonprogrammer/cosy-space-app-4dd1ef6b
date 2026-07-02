@@ -2907,6 +2907,7 @@ export type Database = {
           best_selling_carousel: boolean
           billing_mode: string
           business_hours: Json | null
+          capi_disabled: boolean
           city: string | null
           created_at: string
           currency: string
@@ -2960,6 +2961,7 @@ export type Database = {
           best_selling_carousel?: boolean
           billing_mode?: string
           business_hours?: Json | null
+          capi_disabled?: boolean
           city?: string | null
           created_at?: string
           currency?: string
@@ -3013,6 +3015,7 @@ export type Database = {
           best_selling_carousel?: boolean
           billing_mode?: string
           business_hours?: Json | null
+          capi_disabled?: boolean
           city?: string | null
           created_at?: string
           currency?: string
