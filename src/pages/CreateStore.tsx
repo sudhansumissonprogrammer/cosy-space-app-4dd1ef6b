@@ -670,8 +670,8 @@ export default function CreateStore() {
             style={{ animationDuration: "0.35s" }}
           >
 
-            {/* Step 2: Store Info */}
-            {step === 2 && (
+            {/* Step 1: Store Info */}
+            {step === 1 && (
               <div className="space-y-5">
                 <div className="mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Store Information</h2>
@@ -799,8 +799,8 @@ export default function CreateStore() {
               </div>
             )}
 
-            {/* Step 3: Location */}
-            {step === 3 && (
+            {/* Step 2: Location */}
+            {step === 2 && (
               <div className="space-y-5">
                 <div className="mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Location Details</h2>
@@ -840,8 +840,8 @@ export default function CreateStore() {
               </div>
             )}
 
-            {/* Step 4: Contact */}
-            {step === 4 && (
+            {/* Step 3: Contact */}
+            {step === 3 && (
               <div className="space-y-5">
                 <div className="mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Contact Details</h2>
@@ -882,8 +882,8 @@ export default function CreateStore() {
               </div>
             )}
 
-            {/* Step 5: Social Media */}
-            {step === 5 && (
+            {/* Step 4: Social Media */}
+            {step === 4 && (
               <div className="space-y-5">
                 <div className="mb-4">
                   <h2 className="text-xl font-semibold text-foreground">Social Media</h2>
