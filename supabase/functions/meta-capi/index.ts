@@ -244,7 +244,7 @@ Deno.serve(async (req) => {
 
     const { data: store, error: storeErr } = await supabase
       .from("stores")
-      .select("facebook_pixel_id, meta_access_token, currency, custom_domain, slug")
+      .select("facebook_pixel_id, meta_access_token, currency, custom_domain, slug, capi_disabled")
       .eq("id", store_id)
       .single();
 
@@ -255,6 +255,16 @@ Deno.serve(async (req) => {
           skipped: true,
           reason: "meta_not_configured",
         }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Per-store CAPI kill-switch. Merchant can flip this on to silence
+    // server-side CAPI (browser Pixel keeps firing) — e.g. while appealing
+    // a Meta ban — without ripping out or reconfiguring the module.
+    if ((store as any).capi_disabled === true) {
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, reason: "capi_disabled_by_merchant" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
