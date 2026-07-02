@@ -323,7 +323,7 @@ export default function StoreTracking() {
                       return;
                     }
                     if (store?.slug) {
-                      await purgeStoreCache(store.slug, { shell: true });
+                      await purgeStoreCache(store.slug, (store as any).custom_domain ?? null, { shell: true });
                       prewarmStore(store.slug).catch(() => {});
                     }
                     await queryClient.invalidateQueries({ queryKey: ["store", storeId] });
