@@ -248,12 +248,19 @@ export default function DashboardLayout() {
   });
   const walletBalance = Number((walletSummary as any)?.wallet?.balance ?? 0);
   const isWalletRoute = location.pathname.includes("/wallet");
+  // Allow the user's profile/settings page through the low-balance gate so
+  // the merchant can always reach account settings and sign out even when
+  // their wallet is blocked.
+  const isAccountRoute =
+    location.pathname === "/dashboard/settings" ||
+    location.pathname.startsWith("/dashboard/settings/");
   const showLowBalance =
     !isAdminView &&
     !!walletSummary &&
     !!storeSlug &&
     walletBalance < 100 &&
-    !isWalletRoute;
+    !isWalletRoute &&
+    !isAccountRoute;
 
 
   // Pending orders count — shared with PendingActions via React Query
