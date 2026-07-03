@@ -32,6 +32,41 @@ import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
+const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
+
+/**
+ * Step 1 gate: if we don't yet have a saved `checkout_phone`, show the
+ * phone-capture screen. Once the shopper submits, the phone is written to
+ * localStorage AND to abandoned_carts + customer_leads, and we render the
+ * full checkout (Step 2).
+ */
+function CheckoutPhoneGate({ children }: { children: React.ReactNode }) {
+  const store = useOutletContext<StoreData>();
+  const { items: cartItems } = useCart();
+  const [phone, setPhone] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem("checkout_phone") || "";
+      const n = normalizePhone(saved);
+      return isValidIndianPhone(n) ? n : "";
+    } catch {
+      return "";
+    }
+  });
+  // If cart is empty the inner page redirects out; skip gate.
+  if (!phone && cartItems.length > 0) {
+    return (
+      <Suspense fallback={<div className="min-h-[70vh]" />}>
+        <CheckoutPhoneStep
+          storeId={store?.id}
+          storeName={store?.name}
+          cartItems={cartItems as any}
+          onComplete={(p) => setPhone(p)}
+        />
+      </Suspense>
+    );
+  }
+  return <>{children}</>;
+}
 
 declare global {
   interface Window {
