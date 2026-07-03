@@ -42,7 +42,7 @@ import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 import WarrantyBadge from "@/components/storefront/WarrantyBadge";
 import PdpTrustBadges from "@/components/storefront/PdpTrustBadges";
-import BuyNowPhoneModal from "@/components/storefront/BuyNowPhoneModal";
+// BuyNowPhoneModal deprecated — phone capture is now Step 1 of CheckoutPage.
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
@@ -135,7 +135,7 @@ export default function ProductDetail() {
   const [openAccordion, setOpenAccordion] = useState<string | null>("description");
   const [variantPromptOpen, setVariantPromptOpen] = useState(false);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
-  const [buyNowModalOpen, setBuyNowModalOpen] = useState(false);
+  // buyNowModalOpen removed — phone capture is now Step 1 of CheckoutPage.
   const inlineCtaRef = useRef<HTMLDivElement>(null);
 
 
