@@ -239,7 +239,7 @@ export default function CheckoutPhoneStep({
                 className="mt-0.5"
               />
               <span>
-                Send me order updates and offers on WhatsApp.
+                Send me order updates on WhatsApp.
                 <br />
                 <span className="opacity-60">
                   You can opt out anytime by replying STOP.
