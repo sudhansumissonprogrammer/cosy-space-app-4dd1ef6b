@@ -22,8 +22,10 @@ Deno.serve(async (req) => {
     .maybeSingle();
   const isPlatformMode = (pcfg as any)?.whatsapp_mode === "platform_only";
   const platformPhoneId: string | null = (pcfg as any)?.wa_phone_number_id ?? null;
-  const platformToken: string | null = (pcfg as any)?.wa_access_token ?? null;
-  const platformAppSecret: string | null = (pcfg as any)?.wa_app_secret ?? null;
+  const platformToken: string | null =
+    (pcfg as any)?.wa_access_token ?? Deno.env.get("WA_ACCESS_TOKEN") ?? null;
+  const platformAppSecret: string | null =
+    (pcfg as any)?.wa_app_secret ?? Deno.env.get("WA_APP_SECRET") ?? null;
 
   // GET — Meta webhook subscription verification
   if (req.method === "GET") {
@@ -44,7 +46,7 @@ Deno.serve(async (req) => {
     const sigHeader = req.headers.get("x-hub-signature-256");
 
     // Signature verification — MANDATORY in platform mode (we own the secret centrally).
-    const envSecret = Deno.env.get("META_APP_SECRET") || Deno.env.get("WHATSAPP_APP_SECRET") || "";
+    const envSecret = Deno.env.get("META_APP_SECRET") || Deno.env.get("WHATSAPP_APP_SECRET") || Deno.env.get("WA_APP_SECRET") || "";
     const appSecret = platformAppSecret || envSecret || "";
 
     if (isPlatformMode) {
