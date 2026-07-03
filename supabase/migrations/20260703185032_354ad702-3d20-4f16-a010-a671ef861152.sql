@@ -1,0 +1,1 @@
+UPDATE platform_wa_templates SET header_text='Order Confirmed', headline='Order Confirmed', updated_at=now() WHERE name='order_confirmation_v2';

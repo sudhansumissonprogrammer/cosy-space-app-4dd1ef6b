@@ -91,15 +91,38 @@ function normalizeUrlButtonVars(buttons: Btn[] | undefined): Btn[] {
   });
 }
 
+// Meta rejects headers containing emoji, asterisks, or newlines. Strip them.
+function cleanHeaderText(t: string | null | undefined): string | null | undefined {
+  if (!t) return t;
+  return t
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F000}-\u{1F2FF}]/gu, "")
+    .replace(/[*\n\r]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function normalizeDraft(raw: Draft): Draft {
-  return { ...raw, buttons: normalizeUrlButtonVars(raw.buttons) };
+  return {
+    ...raw,
+    header_text: cleanHeaderText(raw.header_text) as any,
+    buttons: normalizeUrlButtonVars(raw.buttons),
+  };
 }
 
 
 function sanitizeError(s: any): string {
-  const msg = typeof s === "string" ? s : s?.error?.message || s?.message || JSON.stringify(s);
-  // never echo any tokens that might leak
-  return String(msg).slice(0, 500);
+  if (typeof s === "string") return s.slice(0, 800);
+  const err = s?.error || s;
+  const parts = [
+    err?.message,
+    err?.error_user_title,
+    err?.error_user_msg,
+    err?.error_data?.details,
+    err?.code ? `code=${err.code}` : null,
+    err?.error_subcode ? `subcode=${err.error_subcode}` : null,
+  ].filter(Boolean);
+  const msg = parts.length ? parts.join(" · ") : JSON.stringify(s);
+  return String(msg).slice(0, 800);
 }
 
 Deno.serve(async (req) => {
