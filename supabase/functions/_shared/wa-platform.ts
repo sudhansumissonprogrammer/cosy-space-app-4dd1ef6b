@@ -40,7 +40,13 @@ export async function loadPlatformConfig(admin: any): Promise<PlatformWaConfig |
     .limit(1)
     .maybeSingle();
   if (error || !data) return null;
-  return data as PlatformWaConfig;
+  const cfg = data as PlatformWaConfig;
+  // Env fallback: use WA_ACCESS_TOKEN secret when the DB column is unset.
+  if (!cfg.wa_access_token) {
+    const envTok = Deno.env.get("WA_ACCESS_TOKEN") || Deno.env.get("META_WHATSAPP_TOKEN") || null;
+    if (envTok) cfg.wa_access_token = envTok;
+  }
+  return cfg;
 }
 
 export function platformConfigUsable(cfg: PlatformWaConfig | null): boolean {
