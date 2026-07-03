@@ -93,9 +93,9 @@ Deno.serve(async (req) => {
     });
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(authHeader.replace("Bearer ", ""));
-    if (claimsErr || !claimsData?.claims) return j(401, { error: "Unauthorized" });
-    const userId = claimsData.claims.sub as string;
+    const { data: ud, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !ud?.user?.id) return j(401, { error: "Unauthorized" });
+    const userId = ud.user.id;
 
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
     if (!isAdmin) return j(403, { error: "Forbidden — admin only" });
