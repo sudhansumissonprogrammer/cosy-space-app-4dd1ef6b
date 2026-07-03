@@ -42,7 +42,7 @@ import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 import WarrantyBadge from "@/components/storefront/WarrantyBadge";
 import PdpTrustBadges from "@/components/storefront/PdpTrustBadges";
-import BuyNowPhoneModal from "@/components/storefront/BuyNowPhoneModal";
+// BuyNowPhoneModal deprecated — phone capture is now Step 1 of CheckoutPage.
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
@@ -135,7 +135,7 @@ export default function ProductDetail() {
   const [openAccordion, setOpenAccordion] = useState<string | null>("description");
   const [variantPromptOpen, setVariantPromptOpen] = useState(false);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
-  const [buyNowModalOpen, setBuyNowModalOpen] = useState(false);
+  // buyNowModalOpen removed — phone capture is now Step 1 of CheckoutPage.
   const inlineCtaRef = useRef<HTMLDivElement>(null);
 
 
@@ -575,18 +575,10 @@ export default function ProductDetail() {
     // CAPI dedup). Firing it here too would double-count IC in Meta.
 
 
-    // Phone-lead capture: if we already have a valid phone for this device,
-    // skip the modal and go straight to checkout (Quick Buy returning shopper).
-    // Otherwise open the modal — it saves a lead, persists the phone, and then
-    // navigates to checkout itself.
-    let savedPhone: string | null = null;
-    try { savedPhone = localStorage.getItem("checkout_phone"); } catch {}
-    const normalized = normalizePhone(savedPhone);
-    if (normalized && isValidIndianPhone(normalized)) {
-      navigate(storefrontPath(store.slug, "checkout"));
-    } else {
-      setBuyNowModalOpen(true);
-    }
+    // Phone capture now happens as Step 1 of the checkout page itself
+    // (no more popup). Just navigate — CheckoutPage renders the phone step
+    // when localStorage.checkout_phone is missing.
+    navigate(storefrontPath(store.slug, "checkout"));
   };
 
 
@@ -1255,16 +1247,7 @@ export default function ProductDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Phone-capture popup for Buy Now (skipped when checkout_phone is already saved) */}
-      <BuyNowPhoneModal
-        open={buyNowModalOpen}
-        onOpenChange={setBuyNowModalOpen}
-        storeSlug={store.slug}
-        storeId={store.id}
-        productId={product.id}
-        productName={product.name}
-        source="buy_now_pdp"
-      />
+      {/* Phone capture moved to checkout Step 1 — popup removed. */}
     </div>
   );
 }

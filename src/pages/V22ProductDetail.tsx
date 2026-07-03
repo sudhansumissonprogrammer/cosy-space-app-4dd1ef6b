@@ -39,7 +39,7 @@ import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
-import BuyNowPhoneModal from "@/components/storefront/BuyNowPhoneModal";
+// BuyNowPhoneModal deprecated — phone capture is now Step 1 of CheckoutPage.
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
@@ -132,7 +132,7 @@ export default function V22ProductDetail() {
   const [openAccordion, setOpenAccordion] = useState<string | null>("description");
   const [variantPromptOpen, setVariantPromptOpen] = useState(false);
   const [stickyBarVisible, setStickyBarVisible] = useState(false);
-  const [buyNowModalOpen, setBuyNowModalOpen] = useState(false);
+  // buyNowModalOpen removed — phone capture is now Step 1 of CheckoutPage.
   const inlineCtaRef = useRef<HTMLDivElement>(null);
 
 
@@ -564,14 +564,8 @@ export default function V22ProductDetail() {
     // double-count IC in Meta.
 
 
-    let savedPhone: string | null = null;
-    try { savedPhone = localStorage.getItem("checkout_phone"); } catch {}
-    const normalized = normalizePhone(savedPhone);
-    if (normalized && isValidIndianPhone(normalized)) {
-      navigate(storefrontPath(store.slug, "checkout"));
-    } else {
-      setBuyNowModalOpen(true);
-    }
+    // Phone capture now happens as Step 1 of the checkout page (no popup).
+    navigate(storefrontPath(store.slug, "checkout"));
   };
 
 
@@ -1233,15 +1227,7 @@ export default function V22ProductDetail() {
         </DialogContent>
       </Dialog>
 
-      <BuyNowPhoneModal
-        open={buyNowModalOpen}
-        onOpenChange={setBuyNowModalOpen}
-        storeSlug={store.slug}
-        storeId={store.id}
-        productId={product.id}
-        productName={product.name}
-        source="buy_now_pdp_v22"
-      />
+      {/* Phone capture moved to checkout Step 1 — popup removed. */}
     </div>
   );
 }

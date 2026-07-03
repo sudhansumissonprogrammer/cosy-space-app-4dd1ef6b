@@ -29,6 +29,34 @@ import { loadCashfree } from "@/lib/loadCashfree";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
+const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
+
+function V22CheckoutPhoneGate({ children }: { children: React.ReactNode }) {
+  const store = useOutletContext<StoreData>();
+  const { items: cartItems } = useCart();
+  const [phone, setPhone] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem("checkout_phone") || "";
+      const n = normalizePhone(saved);
+      return isValidIndianPhone(n) ? n : "";
+    } catch {
+      return "";
+    }
+  });
+  if (!phone && cartItems.length > 0) {
+    return (
+      <Suspense fallback={<div className="min-h-[70vh]" />}>
+        <CheckoutPhoneStep
+          storeId={store?.id}
+          storeName={store?.name}
+          cartItems={cartItems as any}
+          onComplete={(p) => setPhone(p)}
+        />
+      </Suspense>
+    );
+  }
+  return <>{children}</>;
+}
 
 declare global {
   interface Window {
@@ -82,6 +110,14 @@ function prewarmEdgeFunction(fnName: string) {
 
 
 export default function V22CheckoutPage() {
+  return (
+    <V22CheckoutPhoneGate>
+      <V22CheckoutPageInner />
+    </V22CheckoutPhoneGate>
+  );
+}
+
+function V22CheckoutPageInner() {
   const store = useOutletContext<StoreData>();
   const [searchParams] = useSearchParams();
   const productId = searchParams.get("product");

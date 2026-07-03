@@ -1,67 +1,112 @@
 
-# Remove Subscription Model — Switch Fully to 3% Commission
+## Goal
 
-## Audit Summary (what exists today)
+Kill the BuyNowPhoneModal popup. Replace it with a **2-step in-page checkout** (Step 1 = phone, Step 2 = address & payment). The moment a phone is entered in Step 1, capture it as both a **lead** AND an **abandoned cart** row so WhatsApp recovery + admin visibility work automatically.
 
-**Two billing modes in `stores.billing_mode`:** `subscription` and `commission`. The commission engine is fully built and live:
+---
 
-- `store_commission_config` (per-store %, min recharge, low balance threshold)
-- `store_wallets`, `store_wallet_ledger`, `store_wallet_recharges`
-- `store_order_commissions` + triggers (`tg_order_commission_handler`, `tg_after_commission_insert`, `wallet_*` RPCs)
-- `is_store_commission_mode()` gate
+## Current state (audit)
 
-**Subscription stack (to retire):**
-- Tables: `plans`, `subscriptions` (0 rows), `subscription_payments`, `store_plan_assignments` (17 rows — legacy)
-- RPCs: `get_store_billing_state`, `validate_billing_status`, `validate_subscription_payment_status`, `tg_subscription_payment_refund`, `auto_assign_new_plan_to_stores`, `auto_assign_plan_to_new_store`, `admin_set_billing_mode`
-- Edge fns: `assign-store-plan`, `billing-cron`, `cashfree-create-order` + `cashfree-verify-payment` + `cashfree-webhook` (subscription checkout flow)
-- Frontend: `useBillingState`, `BillingPaywall`, `BillingBanner`, `BillingSection`, `AdminSubscriptions` page, sidebar entries, dashboard banners, paywall gating on Cart/PDP/SideCart
+- `CheckoutPage.tsx` (default) + `V22CheckoutPage.tsx` (theme 22) are the two active checkouts.
+- `BuyNowPhoneModal` opens as a popup on PDP "Buy Now" and inserts into `customer_leads` only.
+- `abandoned_carts` table already exists with `customer_phone`, `cart_items`, `session_token`, `wa_marketing_consent`, and is what `wa-cart-recovery-cron` reads to fire WhatsApp templates.
+- `customer_leads` is separate (name/phone/product) — currently NOT connected to abandoned carts, so leads never trigger recovery messages.
 
-## Plan
+The gap: phone numbers collected at PDP live in `customer_leads` and go nowhere. Abandoned-cart recovery only fires when someone reaches checkout AND drops off.
 
-### 1. Database migration (single migration)
-- Backfill: `UPDATE stores SET billing_mode='commission'` for all stores.
-- Insert `store_commission_config` rows for every store missing one, default `commission_percentage=3.00`, `min_recharge=500`, `low_balance_threshold=100`, `is_active=true`.
-- Drop triggers/functions tied to subscriptions: `tg_subscription_payment_refund`, `validate_subscription_payment_status`, `validate_billing_status`, `get_store_billing_state`, `auto_assign_new_plan_to_stores`, `auto_assign_plan_to_new_store`, `admin_set_billing_mode`.
-- Drop tables (now unused): `subscription_payments`, `subscriptions`, `store_plan_assignments`, `plans`.
-- Update `is_store_commission_mode()` to always return `true` (kept for backward compatibility with existing call sites — easier than ripping out all references).
-- Change `stores.billing_mode` default to `'commission'`; add CHECK constraint allowing only `'commission'`.
-- Update `handle_new_store` trigger / store creation defaults to auto-insert a 3% commission config row.
+---
 
-### 2. Edge functions
-- Delete: `assign-store-plan`, `billing-cron`, `cashfree-create-order`, `cashfree-verify-payment`, `cashfree-webhook` (these are subscription-only; the *storefront* `store-cashfree-create-order` and `wallet-cashfree-create-order` stay).
-- Unschedule any `billing-cron` pg_cron job.
+## New flow
 
-### 3. Frontend removal
-- **Delete files:** `src/hooks/useBillingState.ts`, `src/components/BillingPaywall.tsx`, `src/components/billing/BillingBanner.tsx`, `src/components/billing/BillingSection.tsx`, `src/pages/admin/AdminSubscriptions.tsx`.
-- **Edit to strip subscription references:**
-  - `src/layouts/DashboardLayout.tsx`, `src/pages/Dashboard.tsx`, `src/pages/CartPage.tsx`, `src/pages/V22CartPage.tsx`, `src/pages/ProductDetail.tsx`, `src/pages/V22ProductDetail.tsx`, `src/components/storefront/SideCart.tsx`, `src/pages/UserSettings.tsx`, `src/pages/StorePayments.tsx` — remove `BillingPaywall`, `useBillingState`, suspended-state gating.
-  - `src/components/AppSidebar.tsx`, `src/components/AdminSidebar.tsx`, `src/components/AdminBreadcrumbs.tsx`, `src/components/AdminCommandPalette.tsx`, `src/layouts/AdminLayout.tsx`, `src/routes/AuthRoutes.tsx` — remove Subscriptions/Billing nav and routes.
-  - `src/components/admin/ManageStoreDialog.tsx`, `src/pages/admin/AdminUsersStores.tsx`, `src/pages/admin/AdminWallets.tsx`, `src/pages/admin/AdminPartners.tsx` — remove plan-assignment UI; keep commission % editor.
-  - `src/pages/CreateStore.tsx` — drop plan selection; commission row auto-created via trigger.
-  - `src/hooks/useMyStore.ts`, `src/hooks/useStoreData.ts`, `src/hooks/useRealtimeStore.ts` — drop subscription joins/fields.
-- **Landing & legal copy:** Strip pricing/plan/trial messaging from `landing/Pricing.tsx`, `landing/Hero.tsx`, `landing/FAQ.tsx`, `landing/StickyMobileCTA.tsx`, `landing/StartRiskFree.tsx`, `landing/SolutionFlow.tsx`, `landing/FinalCTA.tsx`, `landing/AfterYouStart.tsx`, `landing/ExitIntentPopup.tsx`, `landing/LandingJsonLd.tsx`, `landing/v2/*` (`PricingV2`, `ProblemVsUs`, `SavingsCalculator`). Replace with "Free to start • 3% commission per order" messaging. (No specific ₹ prices per project memory.)
-  - Legal pages (`TermsAndConditions`, `RefundPolicy`, `PrivacyPolicy`, `ShippingPolicy`, `ContactUs`, `StorefrontPrivacyPolicy`, `defaultPageContent`) — rewrite subscription/refund clauses to commission terms.
-- **Guides/content:** Update `src/content/guides.ts`.
+```text
+PDP "Buy Now" / Cart "Checkout"
+        │
+        ▼
+┌─────────────────────────────────┐
+│ CheckoutPage · STEP 1           │
+│ ─────────────────────────────── │
+│ • Order summary (mini)          │
+│ • Phone input (+91 …)           │
+│ • WhatsApp consent (default ON) │
+│ • [Continue] button             │
+└─────────────────────────────────┘
+        │  onContinue()
+        │  1. validate 10-digit IN phone
+        │  2. upsert customer_leads (store, phone, source='checkout_step1')
+        │  3. upsert abandoned_carts (store, phone, cart_items, consent, session_token)
+        │  4. localStorage.setItem('checkout_phone', ...)
+        ▼
+┌─────────────────────────────────┐
+│ CheckoutPage · STEP 2           │
+│ ─────────────────────────────── │
+│ • Name, address, pincode        │
+│ • Delivery / payment            │
+│ • [Place Order]                 │
+└─────────────────────────────────┘
+        │  onPlaceOrder()
+        │  → mark abandoned_carts.recovered = true
+        ▼
+     Order placed
+```
 
-### 4. Super-admin commission management (kept & polished)
-- `AdminWallets` already lists wallets + ledger — keep.
-- Add a small "Set commission %" inline editor on `AdminUsersStores` / `ManageStoreDialog` that writes to `store_commission_config` (default 3%).
-- Replace the Subscriptions sidebar entry with "Commissions" pointing to the existing wallets/commissions view.
+If the user closes the tab between Step 1 and Step 2 → row sits in `abandoned_carts` with a phone number → `wa-cart-recovery-cron` fires `abandoned_cart_v3` template after ≥30 min.
 
-### 5. Verification
-- Run typecheck (auto). Smoke: load `/dashboard`, `/admin/wallets`, storefront cart — no `BillingPaywall` mounts, no `useBillingState` calls, no broken imports.
-- DB: confirm no row remains in `plans`/`subscriptions`/`store_plan_assignments`; every store has a `store_commission_config` row at 3%.
+---
 
-## Notes / Risks
-- Migration drops 4 tables — irreversible. `subscriptions` is already empty; `store_plan_assignments` (17 rows) and `subscription_payments` are legacy. Confirming this is OK before I run the migration.
-- Cashfree subscription functions removed do **not** touch storefront order payments.
-- `is_store_commission_mode()` kept as `RETURN true` to avoid touching every call site in one pass.
+## Deliverables
 
-## Technical sequence
-1. Supabase migration (data backfill + drops + new defaults).
-2. Delete edge functions.
-3. Delete + edit frontend files in parallel batches.
-4. Landing/legal copy rewrite.
-5. Final typecheck and dashboard smoke.
+### 1. New shared component `src/components/storefront/CheckoutPhoneStep.tsx`
+- Phone input + consent checkbox + Continue.
+- On submit: writes to `customer_leads` AND `abandoned_carts`, sets `sessionStorage.checkout_phone`.
+- Emits `onComplete(phone)` to parent.
 
-Confirm and I'll execute — especially: OK to drop `plans`, `subscriptions`, `subscription_payments`, `store_plan_assignments` permanently?
+### 2. `src/pages/CheckoutPage.tsx` — 2-step layout
+- Add `step` state (`"phone" | "details"`).
+- Step 1 renders `<CheckoutPhoneStep />` + order summary.
+- Step 2 renders the current form; auto-fills phone from Step 1 (read-only with "change" link that goes back to Step 1).
+- Mobile: single column, sticky order summary at bottom.
+- Desktop: 2-col — form left, summary right.
+- Progress indicator: `● Phone —— ○ Details`.
+
+### 3. `src/pages/V22CheckoutPage.tsx` — same 2-step, V22 styling
+- Reuse `CheckoutPhoneStep`.
+- Match V22's card design.
+
+### 4. Remove `BuyNowPhoneModal` popup usage
+- PDP "Buy Now" → navigate straight to `/checkout` (which now starts with phone step).
+- Delete popup imports from PDP files (`ProductDetail.tsx`, `V19ProductDetail.tsx`, `V20ProductDetail.tsx`, `V22ProductDetail.tsx`).
+- Keep `BuyNowPhoneModal.tsx` file for now (marked deprecated in header comment) — can be deleted in a follow-up once confirmed unused.
+
+### 5. Lead → abandoned-cart bridge (RPC)
+New DB function `capture_checkout_lead(p_store_id, p_phone, p_cart_items jsonb, p_consent bool)`:
+- Normalizes phone to canonical 10-digit.
+- Upserts into `customer_leads` (source = `checkout_step1`).
+- Upserts into `abandoned_carts` keyed on `(store_id, customer_phone, session_token)` — resets `recovered=false`, `recovery_sent_at=null`.
+- Grants `EXECUTE` to `anon` and `authenticated` (checkout runs pre-auth).
+
+### 6. Recovery attribution
+- `wa-cart-recovery-cron` already skips `recovered=true`.
+- Order confirmation edge fn already marks the matching cart recovered — extend the phone-match to include our new Step-1 rows.
+
+### 7. Admin visibility
+- `CustomerLeads.tsx`: add filter chip **Source: checkout_step1** with count badge.
+- `StoreAbandonedCarts.tsx`: add badge column `Stage: phone-only | full-cart` so merchants see which carts dropped at Step 1 vs Step 2.
+
+---
+
+## Technical details
+
+- Phone normalization: reuse `toCanonicalIndianPhone` in `src/lib/phoneUtils.ts` on client, mirror inside the new RPC (`regexp_replace` + length check) — same rules as `create-guest-account`.
+- Consent default: `true` (already the platform default per prior turn); user can uncheck.
+- Rate-limit Step 1 submit: 1 per 5 s per session to prevent spam.
+- No auth required for Step 1 — abandoned_carts already accepts anon writes via existing RLS; the new RPC runs SECURITY DEFINER and validates `store_id` exists + is active.
+- Session token: use existing `visitorSession.ts` helper so recovery joins the right cart on order creation.
+- Tests: add vitest for `CheckoutPhoneStep` (validation, RPC call, error state) and one integration test for step transition.
+
+---
+
+## Out of scope (do later)
+
+- OTP verification on the phone step (add once we have WhatsApp OTP template approved).
+- Address autocomplete / pincode → city lookup.
+- Migrating existing pre-checkout `customer_leads` rows into `abandoned_carts` retroactively.
