@@ -726,33 +726,36 @@ function V22CheckoutPageInner() {
     } catch {}
   };
 
-  // Save abandoned cart on checkout entry (deduplicated via sessionStorage)
-  const [abandonedCartId, setAbandonedCartId] = useState<string | null>(null);
+  // Abandoned-cart row is created by Step 1 (CheckoutPhoneStep → capture_checkout_lead RPC).
+  // Step 2 only needs the id so place-order can mark it recovered.
+  const [abandonedCartId, setAbandonedCartId] = useState<string | null>(() => {
+    try { return sessionStorage.getItem(`ac_${store.id}`); } catch { return null; }
+  });
   useEffect(() => {
+    if (abandonedCartId) return;
     if (checkoutItems.length === 0) return;
-    const sessionKey = `ac_${store.id}`;
-    const existingId = sessionStorage.getItem(sessionKey);
-    if (existingId) {
-      setAbandonedCartId(existingId);
-      return;
-    }
-    const saveAbandonedCart = async () => {
+    const canonPhone = normalizePhone(phone);
+    if (!canonPhone) return;
+    (async () => {
       try {
-        const { data } = await (supabase as any).from("abandoned_carts").insert({
-          store_id: store.id,
-          customer_email: email || null,
-          customer_phone: normalizePhone(phone) || null,
-          cart_items: checkoutItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity, productId: i.productId })),
-          wa_marketing_consent: waConsent,
-        }).select("id").single();
-        if (data?.id) {
-          setAbandonedCartId(data.id);
-          sessionStorage.setItem(sessionKey, data.id);
+        const { data } = await (supabase as any).rpc("capture_checkout_lead", {
+          p_store_id: store.id,
+          p_phone: canonPhone,
+          p_cart_items: checkoutItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity, productId: i.productId })),
+          p_consent: waConsent,
+          p_session_token: null,
+          p_source: "checkout_step2",
+        });
+        const cartId = (data as any)?.cart_id;
+        if (cartId) {
+          setAbandonedCartId(cartId);
+          try { sessionStorage.setItem(`ac_${store.id}`, cartId); } catch {}
         }
       } catch {}
-    };
-    saveAbandonedCart();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   // Auto-recheck pending Cashfree payment when user returns to the tab (UPI completed in another app).
   // Also recovers from sessionStorage on fresh mount/reload — mobile browsers often kill the tab
