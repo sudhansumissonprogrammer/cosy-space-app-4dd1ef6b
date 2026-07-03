@@ -36,6 +36,14 @@ function extractVars(text: string): number[] {
   return Array.from(found).sort((a, b) => a - b);
 }
 
+function buildBodySample(vars: number[]): string[][] {
+  return vars.length ? [vars.map((_, i) => `Sample${i + 1}`)] : [];
+}
+
+function buttonExample(url: string): string[] | undefined {
+  return extractVars(url).length ? ["sample-id"] : undefined;
+}
+
 function draftToComponents(d: Draft): any[] {
   const components: any[] = [];
   if (d.header_type === "TEXT" && d.header_text) {
@@ -51,13 +59,14 @@ function draftToComponents(d: Draft): any[] {
   }
   const bodyVars = extractVars(d.body_text);
   const body: any = { type: "BODY", text: d.body_text };
-  if (bodyVars.length) body.example = { body_text: [bodyVars.map((_, i) => `Sample${i + 1}`)] };
+  if (bodyVars.length) body.example = { body_text: buildBodySample(bodyVars) };
   components.push(body);
   if (d.footer_text) components.push({ type: "FOOTER", text: d.footer_text });
   const btns = (d.buttons || []).map((b) => {
     if (b.type === "URL") {
       const out: any = { type: "URL", text: b.text, url: b.url };
-      if (extractVars(b.url).length === 1) out.example = ["sample-id"];
+      const example = buttonExample(b.url);
+      if (example) out.example = example;
       return out;
     }
     if (b.type === "PHONE_NUMBER") return { type: "PHONE_NUMBER", text: b.text, phone_number: b.phone_number };
@@ -65,6 +74,25 @@ function draftToComponents(d: Draft): any[] {
   });
   if (btns.length) components.push({ type: "BUTTONS", buttons: btns });
   return components;
+}
+
+function normalizeUrlButtonVars(buttons: Btn[] | undefined): Btn[] {
+  return (buttons || []).map((b) => {
+    if (b.type !== "URL") return b;
+    // Meta scopes URL button placeholders separately from body placeholders.
+    // A URL button with one dynamic suffix must be {{1}}, not {{5}} after body vars.
+    let seen = false;
+    const url = b.url.replace(/\{\{\s*\d+\s*\}\}/g, () => {
+      if (seen) return "";
+      seen = true;
+      return "{{1}}";
+    });
+    return { ...b, url };
+  });
+}
+
+function normalizeDraft(raw: Draft): Draft {
+  return { ...raw, buttons: normalizeUrlButtonVars(raw.buttons) };
 }
 
 
@@ -132,7 +160,7 @@ Deno.serve(async (req) => {
 
     // -------- CREATE --------
     if (action === "create") {
-      const draft = body as Draft;
+      const draft = normalizeDraft(body as Draft);
       if (!draft.name || !draft.body_text || !draft.category || !draft.language) {
         return j(400, { error: "Missing required fields (name, body_text, category, language)" });
       }
@@ -154,6 +182,7 @@ Deno.serve(async (req) => {
       }
       const status = (out?.status as string) || "PENDING";
       await admin.from("platform_wa_templates").update({
+        buttons: draft.buttons || [],
         meta_template_id: out?.id || null,
         meta_status: status,
         meta_rejected_reason: null,
@@ -167,7 +196,7 @@ Deno.serve(async (req) => {
 
     // -------- EDIT --------
     if (action === "edit") {
-      const draft = body as Draft;
+      const draft = normalizeDraft(body as Draft);
       const { data: row } = await admin
         .from("platform_wa_templates")
         .select("meta_template_id")
@@ -188,6 +217,7 @@ Deno.serve(async (req) => {
         return j(resp.status, { error: sanitizeError(out) });
       }
       await admin.from("platform_wa_templates").update({
+        buttons: draft.buttons || [],
         meta_status: "PENDING",
         meta_rejected_reason: null,
         submitted_at: new Date().toISOString(),
