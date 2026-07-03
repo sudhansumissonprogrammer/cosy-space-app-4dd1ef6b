@@ -110,6 +110,14 @@ function prewarmEdgeFunction(fnName: string) {
 
 
 export default function V22CheckoutPage() {
+  return (
+    <V22CheckoutPhoneGate>
+      <V22CheckoutPageInner />
+    </V22CheckoutPhoneGate>
+  );
+}
+
+function V22CheckoutPageInner() {
   const store = useOutletContext<StoreData>();
   const [searchParams] = useSearchParams();
   const productId = searchParams.get("product");
