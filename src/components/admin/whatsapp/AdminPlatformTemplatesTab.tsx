@@ -132,8 +132,10 @@ export function AdminPlatformTemplatesTab() {
                     <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => setEditing({ open: true, draft: {
                       name: r.name, language: r.language, category: (r.category as any) || "UTILITY",
                       header_type: (r.header_type as any) || "TEXT", header_text: r.header_text || "",
+                      header_media_url: (r as any).header_media_url || "",
                       body_text: r.body_text || "", footer_text: r.footer_text || "", buttons: r.buttons || [],
-                    }, isEdit: true })}>
+                      variables: (r as any).variables || [],
+                    } as any, isEdit: true })}>
                       <Pencil className="h-3.5 w-3.5"/>
                     </Button>
                     <Button size="sm" className="h-7 px-2" disabled={!!busy || !r.body_text} onClick={() => onSubmit(r)}>
