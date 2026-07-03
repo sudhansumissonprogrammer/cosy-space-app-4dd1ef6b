@@ -137,6 +137,14 @@ function prewarmEdgeFunction(fnName: string) {
 
 
 export default function CheckoutPage() {
+  return (
+    <CheckoutPhoneGate>
+      <CheckoutPageInner />
+    </CheckoutPhoneGate>
+  );
+}
+
+function CheckoutPageInner() {
   const store = useOutletContext<StoreData>();
   const [searchParams] = useSearchParams();
   const productId = searchParams.get("product");
