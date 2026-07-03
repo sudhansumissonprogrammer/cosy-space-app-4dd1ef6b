@@ -96,7 +96,6 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
       // sender resolves each {{n}} via template_vars[ variables[n-1] ].
       variables: varKeys.map(k => (k || "").trim()),
       headline: draft.header_text || null,
-      footer: draft.footer_text || null,
       is_active: true,
     };
     if (!isEdit) payload.meta_status = "draft";
