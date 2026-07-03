@@ -3,7 +3,8 @@
 // Token formats:
 //   o-<order_uuid>      → /account/orders/<id> on store's domain
 //   t-<order_uuid>      → tracking_url (fall back to order page)
-//   c-<cart_id_or_token>→ /checkout?cart=<token> on store's domain
+//   c-<cart_id_or_token>→ /cart?recover=<token> on store's domain
+//   p-<product_uuid>    → /product/<slug> on store's domain
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
