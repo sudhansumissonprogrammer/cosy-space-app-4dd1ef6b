@@ -97,9 +97,18 @@ function normalizeDraft(raw: Draft): Draft {
 
 
 function sanitizeError(s: any): string {
-  const msg = typeof s === "string" ? s : s?.error?.message || s?.message || JSON.stringify(s);
-  // never echo any tokens that might leak
-  return String(msg).slice(0, 500);
+  if (typeof s === "string") return s.slice(0, 800);
+  const err = s?.error || s;
+  const parts = [
+    err?.message,
+    err?.error_user_title,
+    err?.error_user_msg,
+    err?.error_data?.details,
+    err?.code ? `code=${err.code}` : null,
+    err?.error_subcode ? `subcode=${err.error_subcode}` : null,
+  ].filter(Boolean);
+  const msg = parts.length ? parts.join(" · ") : JSON.stringify(s);
+  return String(msg).slice(0, 800);
 }
 
 Deno.serve(async (req) => {
