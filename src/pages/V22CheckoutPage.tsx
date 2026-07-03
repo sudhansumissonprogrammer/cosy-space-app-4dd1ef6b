@@ -1747,7 +1747,10 @@ function V22CheckoutPageInner() {
               </div>
             )}
 
-            {/* Use my location button - hidden for now */}
+            <div className="space-y-1">
+              <Label htmlFor="street" className="text-xs">{tCritical("Street Address", "पता")} *</Label>
+              <Input id="street" autoComplete="street-address" placeholder="House/Flat No., Building, Street" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
+            </div>
             <div className="space-y-1">
               <Label htmlFor="pincode" className="text-xs">{tCritical("Pincode", "पिनकोड")} * {pincodeLoading && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}</Label>
               <Input id="pincode" inputMode="numeric" autoComplete="postal-code" placeholder="Enter pincode to auto-fill city & state" value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
@@ -1758,10 +1761,6 @@ function V22CheckoutPageInner() {
                   <span className="text-muted-foreground font-normal">· {deliveryEstimate.daysAway}-{Math.ceil((deliveryEstimate.maxDate.getTime() - Date.now()) / 86400000)} days</span>
                 </div>
               )}
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="street" className="text-xs">{tCritical("Street Address", "पता")} *</Label>
-              <Input id="street" autoComplete="street-address" placeholder="House/Flat No., Building, Street" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
             </div>
             {/* City + State — always visible, auto-filled from pincode when possible */}
             <div className="grid grid-cols-2 gap-3">
