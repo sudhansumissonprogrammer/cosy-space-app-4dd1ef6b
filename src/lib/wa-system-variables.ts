@@ -29,6 +29,8 @@ export const WA_SYSTEM_VARIABLES: WASystemVar[] = [
 
   // Cart recovery
   { key: "cart_total", label: "Cart total", description: "Formatted ₹ value of abandoned cart", example: "₹1,899", scope: "cart" },
+  { key: "product_title", label: "Product title", description: "Name of the first item in the abandoned cart (single product focus)", example: "Gold Ring", scope: "cart" },
+  { key: "product_price", label: "Product price", description: "Formatted ₹ unit price of the first item in the abandoned cart", example: "₹1,899", scope: "cart" },
 
   // Branded short-link token (consumed by URL buttons → shopbanao.in/r/{{1}})
   { key: "cta_token", label: "CTA link token", description: "Branded short token: o-<order>, t-<order>, c-<cart>. Use inside a URL button as https://shopbanao.in/r/{{n}}.", example: "o-3f9c…", scope: "all" },
