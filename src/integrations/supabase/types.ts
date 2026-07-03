@@ -4227,7 +4227,19 @@ export type Database = {
         Args: { _order_id: string; _reason?: string }
         Returns: boolean
       }
+      canonical_in_phone: { Args: { p_raw: string }; Returns: string }
       canonicalize_indian_phone: { Args: { raw: string }; Returns: string }
+      capture_checkout_lead: {
+        Args: {
+          p_cart_items?: Json
+          p_consent?: boolean
+          p_phone: string
+          p_session_token?: string
+          p_source?: string
+          p_store_id: string
+        }
+        Returns: Json
+      }
       check_product_limit: { Args: { _user_id: string }; Returns: Json }
       claim_coupon: {
         Args: { _coupon_id: string; _store_id: string }
