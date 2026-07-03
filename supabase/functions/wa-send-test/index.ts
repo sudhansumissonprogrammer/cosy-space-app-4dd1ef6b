@@ -7,17 +7,21 @@ Deno.serve(async (req) => {
 
   try {
     const token = Deno.env.get('WA_ACCESS_TOKEN')!;
-    const { to = '919827582350', template = 'hello_world', lang = 'en_US' } = await req.json().catch(() => ({}));
+    const { to = '919827582350', text } = await req.json().catch(() => ({}));
+
+    const body = text
+      ? { messaging_product: 'whatsapp', to, type: 'text', text: { body: text } }
+      : {
+          messaging_product: 'whatsapp',
+          to,
+          type: 'text',
+          text: { body: '✅ ShopBanao WhatsApp is LIVE!\n\nThis is a live test from your business number (+91 98275 82350) via Meta Cloud API.\n\n— Powered by shopbanao.in' },
+        };
 
     const res = await fetch(`https://graph.facebook.com/v21.0/${PHONE_NUMBER_ID}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to,
-        type: 'template',
-        template: { name: template, language: { code: lang } },
-      }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     return new Response(JSON.stringify({ ok: res.ok, status: res.status, data }), {
