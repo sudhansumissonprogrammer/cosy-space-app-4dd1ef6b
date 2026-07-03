@@ -575,18 +575,10 @@ export default function ProductDetail() {
     // CAPI dedup). Firing it here too would double-count IC in Meta.
 
 
-    // Phone-lead capture: if we already have a valid phone for this device,
-    // skip the modal and go straight to checkout (Quick Buy returning shopper).
-    // Otherwise open the modal — it saves a lead, persists the phone, and then
-    // navigates to checkout itself.
-    let savedPhone: string | null = null;
-    try { savedPhone = localStorage.getItem("checkout_phone"); } catch {}
-    const normalized = normalizePhone(savedPhone);
-    if (normalized && isValidIndianPhone(normalized)) {
-      navigate(storefrontPath(store.slug, "checkout"));
-    } else {
-      setBuyNowModalOpen(true);
-    }
+    // Phone capture now happens as Step 1 of the checkout page itself
+    // (no more popup). Just navigate — CheckoutPage renders the phone step
+    // when localStorage.checkout_phone is missing.
+    navigate(storefrontPath(store.slug, "checkout"));
   };
 
 
