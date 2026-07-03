@@ -1227,15 +1227,7 @@ export default function V22ProductDetail() {
         </DialogContent>
       </Dialog>
 
-      <BuyNowPhoneModal
-        open={buyNowModalOpen}
-        onOpenChange={setBuyNowModalOpen}
-        storeSlug={store.slug}
-        storeId={store.id}
-        productId={product.id}
-        productName={product.name}
-        source="buy_now_pdp_v22"
-      />
+      {/* Phone capture moved to checkout Step 1 — popup removed. */}
     </div>
   );
 }
