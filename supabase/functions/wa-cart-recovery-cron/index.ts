@@ -85,17 +85,17 @@ Deno.serve(async (req) => {
     if (!items.length || total <= 0) { emptyCart++; continue; }
     const customerName = (items[0]?.customer_name as string) || "there";
     const s = (c as any).stores || {};
-    const itemCount = items.reduce((n: number, it: any) => n + Number(it?.quantity ?? 1), 0) || items.length || 1;
 
-    // Highlight the first cart item. If the shopper had more items, append
-    // "+ N more" so the template still reflects the true cart size.
+    // We highlight the first cart item (the product the shopper actually
+    // viewed) and pitch that single product — matches the template copy
+    // "You were checking out <product> ... complete your purchase".
     const firstItem = items[0] || {};
     const firstTitle = String(firstItem?.name || firstItem?.title || "your item").trim();
-    const extraItems = Math.max(0, itemCount - Number(firstItem?.quantity ?? 1));
-    const productTitle = extraItems > 0 ? `${firstTitle} + ${extraItems} more` : firstTitle;
+    const unitPrice = Number(firstItem?.price ?? 0);
+    const productPrice = unitPrice > 0 ? `₹${unitPrice.toFixed(0)}` : `₹${total.toFixed(0)}`;
 
-    // CTA opens the product page directly (p-<product_id>). If we can't
-    // identify a product, fall back to the cart-recovery link (c-<cart_id>).
+    // CTA opens the product page directly (p-<product_id>). Fallback to
+    // cart-recovery link when no productId is present.
     const firstProductId = firstItem?.productId || firstItem?.product_id;
     const ctaToken = firstProductId ? `p-${firstProductId}` : `c-${(c as any).id}`;
 
@@ -109,9 +109,9 @@ Deno.serve(async (req) => {
       params: [],
       template_vars: {
         customer_name: customerName,
-        product_title: productTitle,
+        product_title: firstTitle,
         store_name: (s as any).name || "our store",
-        cart_total: `₹${total.toFixed(0)}`,
+        product_price: productPrice,
         cta_token: ctaToken,
       },
       priority: 5,
