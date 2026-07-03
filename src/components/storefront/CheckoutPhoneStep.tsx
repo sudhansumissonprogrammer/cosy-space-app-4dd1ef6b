@@ -13,7 +13,7 @@
  * form renders.
  */
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Loader2, Lock, ShieldCheck, Tag, Trash2 } from "lucide-react";
+import { ChevronDown, Loader2, Lock, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -340,14 +340,8 @@ export default function CheckoutPhoneStep({
             </div>
           )}
 
-          {/* Coupon-code placeholder to match Step 2 look */}
-          <div className="mt-4 flex items-center justify-between gap-2 rounded-xl border bg-muted/30 px-3 py-3 text-sm opacity-70">
-            <span className="flex items-center gap-2">
-              <Tag className="h-4 w-4" />
-              Have a coupon code?
-            </span>
-            <ChevronDown className="h-4 w-4" />
-          </div>
+          {/* Coupon lives on Step 2 — not shown here. */}
+
 
           {storeName && (
             <p className="mt-3 text-[11px] opacity-50">from {storeName}</p>
