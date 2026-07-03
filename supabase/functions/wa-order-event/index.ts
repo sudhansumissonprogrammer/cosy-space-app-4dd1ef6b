@@ -71,11 +71,19 @@ Deno.serve(async (req) => {
   // dispatch time, but stopping here avoids junk rows + false "queued" stats.)
   const { data: storeSettings } = await admin
     .from("stores_wa_settings")
-    .select("platform_marketing_enabled")
+    .select("platform_marketing_enabled, send_order_confirmation, send_order_shipped")
     .eq("store_id", o.store_id)
     .maybeSingle();
-  if (storeSettings && (storeSettings as any).platform_marketing_enabled === false) {
+  // Default OFF: if no row or master disabled, skip.
+  if (!storeSettings || (storeSettings as any).platform_marketing_enabled !== true) {
     return json({ skipped: true, reason: "store_disabled" });
+  }
+  // Per-event toggle — default OFF.
+  const perEventOn =
+    (body.event === "order_confirmation" && (storeSettings as any).send_order_confirmation === true) ||
+    (body.event === "order_shipped" && (storeSettings as any).send_order_shipped === true);
+  if (!perEventOn) {
+    return json({ skipped: true, reason: "event_toggle_off" });
   }
 
   // Gate: "shipped" must have a tracking number, otherwise customer gets a useless message.
