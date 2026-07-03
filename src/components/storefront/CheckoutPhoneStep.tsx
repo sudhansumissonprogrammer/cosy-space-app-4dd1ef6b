@@ -76,7 +76,10 @@ export default function CheckoutPhoneStep({
   });
   const [consent, setConsent] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(true);
   const inFlight = useRef(false);
+  const { removeFromCart } = useCart();
+
 
   const digits = phone.replace(/\D/g, "");
   const valid = digits.length === 10 && /^[6-9]/.test(digits);
@@ -121,12 +124,14 @@ export default function CheckoutPhoneStep({
 
       // Slim the cart snapshot to avoid ballooning the JSONB payload.
       const cartSnapshot = cartItems.map((i) => ({
-        id: i.id,
+        productId: i.productId,
+        variantId: i.variantId,
         name: i.name,
         price: i.price,
         quantity: i.quantity,
         image: i.image,
       }));
+
 
       const { data: rpcData } = await (supabase as any).rpc("capture_checkout_lead", {
         p_store_id: storeId,
