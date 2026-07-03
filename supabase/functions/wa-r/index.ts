@@ -3,7 +3,8 @@
 // Token formats:
 //   o-<order_uuid>      → /account/orders/<id> on store's domain
 //   t-<order_uuid>      → tracking_url (fall back to order page)
-//   c-<cart_id_or_token>→ /checkout?cart=<token> on store's domain
+//   c-<cart_id_or_token>→ /cart?recover=<token> on store's domain
+//   p-<product_uuid>    → /product/<slug> on store's domain
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -54,6 +55,16 @@ Deno.serve(async (req) => {
       const base = storeBase((c as any).stores);
       const t = (c as any).session_token || (c as any).id;
       return redirect(`${base}/cart?recover=${encodeURIComponent(String(t))}`);
+    }
+    if (kind === "p-") {
+      const { data: p } = await admin
+        .from("products")
+        .select("id, slug, stores:store_id(name, slug, custom_domain)")
+        .eq("id", id).maybeSingle();
+      if (!p) return redirect("https://shopbanao.in");
+      const base = storeBase((p as any).stores);
+      const slug = (p as any).slug;
+      return redirect(slug ? `${base}/product/${encodeURIComponent(slug)}` : base);
     }
   } catch { /* fallthrough */ }
   return redirect("https://shopbanao.in");

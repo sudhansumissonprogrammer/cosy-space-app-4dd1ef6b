@@ -87,6 +87,18 @@ Deno.serve(async (req) => {
     const s = (c as any).stores || {};
     const itemCount = items.reduce((n: number, it: any) => n + Number(it?.quantity ?? 1), 0) || items.length || 1;
 
+    // Highlight the first cart item. If the shopper had more items, append
+    // "+ N more" so the template still reflects the true cart size.
+    const firstItem = items[0] || {};
+    const firstTitle = String(firstItem?.name || firstItem?.title || "your item").trim();
+    const extraItems = Math.max(0, itemCount - Number(firstItem?.quantity ?? 1));
+    const productTitle = extraItems > 0 ? `${firstTitle} + ${extraItems} more` : firstTitle;
+
+    // CTA opens the product page directly (p-<product_id>). If we can't
+    // identify a product, fall back to the cart-recovery link (c-<cart_id>).
+    const firstProductId = firstItem?.productId || firstItem?.product_id;
+    const ctaToken = firstProductId ? `p-${firstProductId}` : `c-${(c as any).id}`;
+
     const { error: qErr } = await admin.from("wa_send_queue").insert({
       store_id: (c as any).store_id,
       recipient_phone: phone,
@@ -97,10 +109,10 @@ Deno.serve(async (req) => {
       params: [],
       template_vars: {
         customer_name: customerName,
+        product_title: productTitle,
         store_name: (s as any).name || "our store",
-        item_count: String(itemCount),
         cart_total: `₹${total.toFixed(0)}`,
-        cta_token: `c-${(c as any).id}`,
+        cta_token: ctaToken,
       },
       priority: 5,
       scheduled_at: new Date().toISOString(),
