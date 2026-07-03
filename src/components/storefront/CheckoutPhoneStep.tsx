@@ -134,7 +134,7 @@ export default function CheckoutPhoneStep({
         image: i.image,
       }));
 
-      await (supabase as any).rpc("capture_checkout_lead", {
+      const { data: rpcData } = await (supabase as any).rpc("capture_checkout_lead", {
         p_store_id: storeId,
         p_phone: canon,
         p_cart_items: cartSnapshot,
@@ -143,10 +143,21 @@ export default function CheckoutPhoneStep({
         p_source: "checkout_step1",
       });
 
+      // Share the abandoned_cart id with Step 2 so it doesn't create a
+      // duplicate row. `ac_{storeId}` is the same key CheckoutPageInner /
+      // V22CheckoutPageInner already look up before inserting.
+      try {
+        const cartId = (rpcData as any)?.cart_id;
+        if (cartId && storeId) {
+          sessionStorage.setItem(`ac_${storeId}`, String(cartId));
+        }
+      } catch {}
+
       // Fire-and-forget guest auto-login so Step 2 sees a hydrated session.
       void autoLoginByPhone(storeId, normalized);
 
       onComplete(normalized);
+
     } catch (err) {
       console.warn("[CheckoutPhoneStep] capture failed:", err);
       // Still advance — the number is in localStorage, order flow can retry.
