@@ -56,6 +56,16 @@ Deno.serve(async (req) => {
       const t = (c as any).session_token || (c as any).id;
       return redirect(`${base}/cart?recover=${encodeURIComponent(String(t))}`);
     }
+    if (kind === "p-") {
+      const { data: p } = await admin
+        .from("products")
+        .select("id, slug, stores:store_id(name, slug, custom_domain)")
+        .eq("id", id).maybeSingle();
+      if (!p) return redirect("https://shopbanao.in");
+      const base = storeBase((p as any).stores);
+      const slug = (p as any).slug;
+      return redirect(slug ? `${base}/product/${encodeURIComponent(slug)}` : base);
+    }
   } catch { /* fallthrough */ }
   return redirect("https://shopbanao.in");
 });
