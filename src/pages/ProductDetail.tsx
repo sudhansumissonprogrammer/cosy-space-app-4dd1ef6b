@@ -273,6 +273,18 @@ export default function ProductDetail() {
     contentReadyRef.current = false;
   }, [productSlug]);
 
+  // Prefetch the checkout chunk as soon as the PDP is mounted so that
+  // "Buy Now" navigation is instant on cold visits — no wait for the
+  // CheckoutPage + CheckoutPhoneStep JS to download after the click.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      import("./CheckoutPage").catch(() => {});
+      import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
+    }, 300);
+    return () => clearTimeout(t);
+  }, []);
+
+
   useEffect(() => {
     if (contentReadyRef.current || isLoading) return;
     contentReadyRef.current = true;

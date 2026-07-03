@@ -263,6 +263,16 @@ export default function V22ProductDetail() {
     contentReadyRef.current = false;
   }, [productSlug]);
 
+  // Prefetch checkout chunk so "Buy Now" is instant on cold visits.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      import("./CheckoutPage").catch(() => {});
+      import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
+    }, 300);
+    return () => clearTimeout(t);
+  }, []);
+
+
   useEffect(() => {
     if (contentReadyRef.current || isLoading) return;
     contentReadyRef.current = true;
