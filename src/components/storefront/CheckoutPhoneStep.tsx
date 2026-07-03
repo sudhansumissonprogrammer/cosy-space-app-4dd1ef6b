@@ -249,8 +249,8 @@ export default function CheckoutPhoneStep({
 
             <Button
               onClick={submit}
-              disabled={!valid || submitting}
-              className="h-12 w-full rounded-xl text-sm font-bold uppercase tracking-wider"
+              disabled={submitting}
+              className="h-12 w-full rounded-xl bg-primary text-sm font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-100"
             >
               {submitting ? (
                 <>
@@ -260,6 +260,7 @@ export default function CheckoutPhoneStep({
                 "Continue to address"
               )}
             </Button>
+
 
             <div className="flex items-center justify-center gap-4 pt-1 text-[11px] opacity-60">
               <span className="flex items-center gap-1">
