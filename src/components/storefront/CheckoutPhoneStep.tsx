@@ -273,44 +273,86 @@ export default function CheckoutPhoneStep({
           </div>
         </div>
 
-        {/* Mini summary */}
+        {/* Order Summary — collapsible, per-line remove */}
         <aside className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-            <ShoppingBag className="h-4 w-4" />
-            Order summary
-          </div>
-          <div className="space-y-2 text-sm">
-            {cartItems.slice(0, 3).map((i, idx) => (
-              <div key={idx} className="flex items-center justify-between gap-2">
-                <span className="line-clamp-1 opacity-80">
-                  {(i.name || "Item") +
-                    (i.quantity && i.quantity > 1 ? ` × ${i.quantity}` : "")}
-                </span>
-                <span className="tabular-nums opacity-90">
-                  {formatPrice(
-                    (Number(i.price) || 0) * (Number(i.quantity) || 1),
+          <button
+            type="button"
+            onClick={() => setSummaryOpen((v) => !v)}
+            className="flex w-full items-center justify-between gap-2 text-left"
+          >
+            <span className="text-sm font-semibold">
+              Order Summary
+              <span className="opacity-60"> · {itemCount} item{itemCount === 1 ? "" : "s"}</span>
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="text-sm font-semibold tabular-nums">
+                {formatPrice(subtotal)}
+              </span>
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${summaryOpen ? "rotate-180" : ""}`}
+              />
+            </span>
+          </button>
+
+          {summaryOpen && (
+            <div className="mt-3 space-y-3">
+              {cartItems.map((i, idx) => (
+                <div
+                  key={`${i.productId}-${i.variantId ?? "base"}-${idx}`}
+                  className="flex items-start gap-3"
+                >
+                  {i.image ? (
+                    <img
+                      src={i.image}
+                      alt={i.name}
+                      loading="lazy"
+                      className="h-14 w-14 flex-shrink-0 rounded-lg border object-cover"
+                    />
+                  ) : (
+                    <div className="h-14 w-14 flex-shrink-0 rounded-lg border bg-muted" />
                   )}
-                </span>
-              </div>
-            ))}
-            {cartItems.length > 3 && (
-              <div className="text-xs opacity-60">
-                + {cartItems.length - 3} more item(s)
-              </div>
-            )}
-          </div>
-          <div className="my-3 h-px bg-border" />
-          <div className="flex items-center justify-between text-sm">
-            <span className="opacity-70">
-              {itemCount} item{itemCount === 1 ? "" : "s"}
+                  <div className="min-w-0 flex-1">
+                    <div className="line-clamp-2 text-sm font-medium">
+                      {i.name || "Item"}
+                    </div>
+                    <div className="mt-0.5 text-xs opacity-60">
+                      Qty: {i.quantity || 1}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span className="text-sm font-semibold tabular-nums">
+                      {formatPrice(
+                        (Number(i.price) || 0) * (Number(i.quantity) || 1),
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeFromCart(i.productId, i.variantId)}
+                      className="flex items-center gap-1 text-[11px] opacity-60 transition hover:text-destructive hover:opacity-100"
+                      aria-label={`Remove ${i.name}`}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Coupon-code placeholder to match Step 2 look */}
+          <div className="mt-4 flex items-center justify-between gap-2 rounded-xl border bg-muted/30 px-3 py-3 text-sm opacity-70">
+            <span className="flex items-center gap-2">
+              <Tag className="h-4 w-4" />
+              Have a coupon code?
             </span>
-            <span className="text-base font-semibold tabular-nums">
-              {formatPrice(subtotal)}
-            </span>
+            <ChevronDown className="h-4 w-4" />
           </div>
+
           {storeName && (
             <p className="mt-3 text-[11px] opacity-50">from {storeName}</p>
           )}
+
         </aside>
       </div>
     </div>
