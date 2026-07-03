@@ -13,7 +13,7 @@
  * form renders.
  */
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Loader2, Lock, ShieldCheck, Tag, Trash2 } from "lucide-react";
+import { ChevronDown, Loader2, Lock, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
