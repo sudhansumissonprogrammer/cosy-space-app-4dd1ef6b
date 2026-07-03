@@ -1,0 +1,1 @@
+UPDATE public.platform_config SET wa_waba_id='985420477644368', wa_phone_number_id='1248148541706026', wa_business_phone='+919827582350', wa_enabled=true, whatsapp_mode='platform_only', wa_pilot_mode=true, updated_at=now();
