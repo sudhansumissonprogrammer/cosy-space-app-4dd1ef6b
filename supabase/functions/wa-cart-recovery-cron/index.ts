@@ -38,18 +38,18 @@ Deno.serve(async (req) => {
   if (error) return json({ error: error.message }, 500);
   if (!carts?.length) return json({ processed: 0 });
 
-  // 🔒 Honor each store's master WhatsApp toggle. Default = true (column default),
-  // so a store row only blocks if the merchant explicitly turned it OFF.
+  // 🔒 Default OFF. Only stores with master ON AND send_abandoned_cart ON are eligible.
   const storeIds = Array.from(new Set(carts.map((c: any) => c.store_id).filter(Boolean)));
   const { data: settings } = await admin
     .from("stores_wa_settings")
-    .select("store_id, platform_marketing_enabled")
+    .select("store_id, platform_marketing_enabled, send_abandoned_cart")
     .in("store_id", storeIds);
-  const disabled = new Set(
+  const enabled = new Set(
     (settings || [])
-      .filter((s: any) => s.platform_marketing_enabled === false)
+      .filter((s: any) => s.platform_marketing_enabled === true && s.send_abandoned_cart === true)
       .map((s: any) => s.store_id),
   );
+  const disabled = new Set(storeIds.filter((id: any) => !enabled.has(id)));
 
   // Per-phone 24h marketing cooldown — prevents same number getting multiple
   // marketing pings across stores or repeated carts. Compare on NORMALIZED phone
