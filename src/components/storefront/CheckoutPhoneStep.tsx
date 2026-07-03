@@ -13,7 +13,7 @@
  * form renders.
  */
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Lock, ShieldCheck, ShoppingBag } from "lucide-react";
+import { ChevronDown, Loader2, Lock, ShieldCheck, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -28,22 +28,16 @@ import {
 } from "@/lib/phoneUtils";
 import { getOrCreateSessionId } from "@/lib/visitorSession";
 import { formatPrice } from "@/lib/productUtils";
-
-interface CartLine {
-  id?: string;
-  name?: string;
-  price?: number;
-  quantity?: number;
-  image?: string;
-}
+import { useCart, type CartItem } from "@/contexts/CartContext";
 
 interface Props {
   storeId?: string;
   storeName?: string;
-  cartItems: CartLine[];
+  cartItems: CartItem[];
   /** Fires with the canonical 10-digit phone once Step 1 succeeds. */
   onComplete: (phone: string) => void;
 }
+
 
 async function autoLoginByPhone(storeId: string | undefined, phone: string) {
   if (!storeId) return;
