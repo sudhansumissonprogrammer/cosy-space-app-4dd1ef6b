@@ -85,7 +85,11 @@ export function validateDraft(d: TplDraft): ValidationIssue[] {
     if (b.type === "URL") {
       if (!b.url?.trim()) issues.push({ field: `buttons.${i}.url`, message: "URL required", level: "error" });
       else if (!/^https?:\/\//i.test(b.url)) issues.push({ field: `buttons.${i}.url`, message: "URL must start with http:// or https://", level: "error" });
-      else if (extractVars(b.url).length > 1) issues.push({ field: `buttons.${i}.url`, message: "URL supports at most 1 variable at the end", level: "error" });
+      else {
+        const urlVars = extractVars(b.url);
+        if (urlVars.length > 1) issues.push({ field: `buttons.${i}.url`, message: "URL supports at most 1 variable at the end", level: "error" });
+        else if (urlVars.length === 1 && urlVars[0] !== 1) issues.push({ field: `buttons.${i}.url`, message: "URL button variable must be {{1}}", level: "error" });
+      }
     }
     if (b.type === "PHONE_NUMBER" && !b.phone_number) issues.push({ field: `buttons.${i}.phone_number`, message: "Phone number required", level: "error" });
   }
