@@ -3068,6 +3068,9 @@ export type Database = {
           created_at: string
           pilot_cohort: boolean
           platform_marketing_enabled: boolean
+          send_abandoned_cart: boolean
+          send_order_confirmation: boolean
+          send_order_shipped: boolean
           store_id: string
           updated_at: string
         }
@@ -3075,6 +3078,9 @@ export type Database = {
           created_at?: string
           pilot_cohort?: boolean
           platform_marketing_enabled?: boolean
+          send_abandoned_cart?: boolean
+          send_order_confirmation?: boolean
+          send_order_shipped?: boolean
           store_id: string
           updated_at?: string
         }
@@ -3082,6 +3088,9 @@ export type Database = {
           created_at?: string
           pilot_cohort?: boolean
           platform_marketing_enabled?: boolean
+          send_abandoned_cart?: boolean
+          send_order_confirmation?: boolean
+          send_order_shipped?: boolean
           store_id?: string
           updated_at?: string
         }
@@ -4364,6 +4373,7 @@ export type Database = {
           view_count: number
         }[]
       }
+      get_store_wa_toggles: { Args: { _store_id: string }; Returns: Json }
       get_store_wallet_summary: { Args: { _store_id: string }; Returns: Json }
       get_storefront_products_page: {
         Args: {
@@ -4452,6 +4462,10 @@ export type Database = {
       }
       set_store_platform_marketing: {
         Args: { _enabled: boolean; _store_id: string }
+        Returns: boolean
+      }
+      set_store_wa_toggle: {
+        Args: { _enabled: boolean; _key: string; _store_id: string }
         Returns: boolean
       }
       store_has_active_coupons: {
