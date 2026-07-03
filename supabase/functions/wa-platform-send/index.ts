@@ -80,10 +80,25 @@ Deno.serve(async (req) => {
   const { data: optout } = await admin.from("whatsapp_optouts").select("id").eq("phone", phone).limit(1).maybeSingle();
   if (optout) return json({ skipped: true, reason: "opted_out" });
 
-  // Per-store toggle
+  // Per-store toggles — DEFAULT OFF. Missing row = no consent = skip.
   if (body.mode === "automation" && body.store_id) {
-    const { data: s } = await admin.from("stores_wa_settings").select("platform_marketing_enabled").eq("store_id", body.store_id).maybeSingle();
-    if (s && (s as any).platform_marketing_enabled === false) return json({ skipped: true, reason: "store_disabled" });
+    const { data: s } = await admin
+      .from("stores_wa_settings")
+      .select("platform_marketing_enabled, send_order_confirmation, send_order_shipped, send_abandoned_cart")
+      .eq("store_id", body.store_id)
+      .maybeSingle();
+    if (!s || (s as any).platform_marketing_enabled !== true) {
+      return json({ skipped: true, reason: "store_disabled" });
+    }
+    // Per-event guard (defense-in-depth against callers that skip wa-order-event).
+    const mt = body.message_type || "";
+    const perEventOk =
+      (mt === "order_confirmation" && (s as any).send_order_confirmation === true) ||
+      (mt === "order_shipped" && (s as any).send_order_shipped === true) ||
+      (mt === "abandoned_cart" && (s as any).send_abandoned_cart === true);
+    if (!perEventOk) {
+      return json({ skipped: true, reason: "event_toggle_off" });
+    }
   }
 
   // Daily cap — applies to MARKETING only. Transactional events (order/payment/shipping)
