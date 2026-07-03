@@ -564,14 +564,8 @@ export default function V22ProductDetail() {
     // double-count IC in Meta.
 
 
-    let savedPhone: string | null = null;
-    try { savedPhone = localStorage.getItem("checkout_phone"); } catch {}
-    const normalized = normalizePhone(savedPhone);
-    if (normalized && isValidIndianPhone(normalized)) {
-      navigate(storefrontPath(store.slug, "checkout"));
-    } else {
-      setBuyNowModalOpen(true);
-    }
+    // Phone capture now happens as Step 1 of the checkout page (no popup).
+    navigate(storefrontPath(store.slug, "checkout"));
   };
 
 
