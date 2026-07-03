@@ -35,6 +35,18 @@ const EMPTY: TplDraft = {
   buttons: [],
 };
 
+const normalizeUrlButtonVars = (buttons: TplButton[] | undefined): TplButton[] =>
+  (buttons || []).map((button) => {
+    if (button.type !== "URL") return button;
+    let used = false;
+    const url = button.url.replace(/\{\{\s*\d+\s*\}\}/g, () => {
+      if (used) return "";
+      used = true;
+      return "{{1}}";
+    });
+    return { ...button, url };
+  });
+
 
 export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved }: Props) {
   const [draft, setDraft] = useState<TplDraft>({ ...EMPTY, ...initial } as TplDraft);
@@ -50,7 +62,9 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
 
   useEffect(() => {
     if (!open) return;
-    setDraft({ ...EMPTY, ...initial } as TplDraft);
+    const next = { ...EMPTY, ...initial } as TplDraft;
+    next.buttons = normalizeUrlButtonVars(next.buttons);
+    setDraft(next);
     setVarKeys(Array.isArray((initial as any)?.variables) ? (initial as any).variables : []);
   }, [open, initial]);
 
@@ -62,7 +76,6 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
     const set = new Set<number>();
     extractVars(draft.body_text || "").forEach(n => set.add(n));
     extractVars(draft.header_text || "").forEach(n => set.add(n));
-    (draft.buttons || []).forEach(b => { if (b.type === "URL") extractVars(b.url).forEach(n => set.add(n)); });
     return Array.from(set).sort((a, b) => a - b);
   }, [draft]);
 
@@ -90,7 +103,7 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
       header_media_url: (draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT") ? (draft.header_media_url || null) : null,
       body_text: draft.body_text,
       footer_text: draft.footer_text || null,
-      buttons: draft.buttons || [],
+      buttons: normalizeUrlButtonVars(draft.buttons),
       purpose: draft.category?.toLowerCase() || "utility",
       // Real keys (e.g. ["customer_name","store_name","product_name"]) — the
       // sender resolves each {{n}} via template_vars[ variables[n-1] ].
@@ -148,6 +161,9 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
       });
       if (draft.header_media_url && (draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT")) {
         tplVars.header_media_url = draft.header_media_url;
+      }
+      if ((draft.buttons || []).some((b) => b.type === "URL" && b.url.includes("{{"))) {
+        tplVars.cta_token = "p-sample-product";
       }
       const { data, error } = await supabase.functions.invoke("wa-platform-send", {
         body: {
