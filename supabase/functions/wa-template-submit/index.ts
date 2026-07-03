@@ -91,8 +91,22 @@ function normalizeUrlButtonVars(buttons: Btn[] | undefined): Btn[] {
   });
 }
 
+// Meta rejects headers containing emoji, asterisks, or newlines. Strip them.
+function cleanHeaderText(t: string | null | undefined): string | null | undefined {
+  if (!t) return t;
+  return t
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F000}-\u{1F2FF}]/gu, "")
+    .replace(/[*\n\r]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function normalizeDraft(raw: Draft): Draft {
-  return { ...raw, buttons: normalizeUrlButtonVars(raw.buttons) };
+  return {
+    ...raw,
+    header_text: cleanHeaderText(raw.header_text) as any,
+    buttons: normalizeUrlButtonVars(raw.buttons),
+  };
 }
 
 
