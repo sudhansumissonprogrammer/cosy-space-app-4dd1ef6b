@@ -113,16 +113,19 @@ Deno.serve(async (req) => {
       .gte("created_at", since);
     if ((recent || 0) >= 20) return j(429, { error: "Rate limit: 20 template ops per hour. Try again later." });
 
-    const WABA_ID = Deno.env.get("META_WABA_ID");
     const { data: cfg } = await admin
       .from("platform_config")
-      .select("wa_access_token")
+      .select("wa_access_token, wa_waba_id")
       .limit(1)
       .maybeSingle();
-    const TOKEN = (cfg as any)?.wa_access_token || Deno.env.get("META_WHATSAPP_TOKEN");
+    const WABA_ID = (cfg as any)?.wa_waba_id || Deno.env.get("META_WABA_ID");
+    const TOKEN =
+      (cfg as any)?.wa_access_token ||
+      Deno.env.get("WA_ACCESS_TOKEN") ||
+      Deno.env.get("META_WHATSAPP_TOKEN");
 
-    if (!WABA_ID) return j(400, { error: "META_WABA_ID secret not set. Add it in admin secrets first." });
-    if (!TOKEN) return j(400, { error: "WhatsApp access token not configured. Add it in /admin/whatsapp → Platform." });
+    if (!WABA_ID) return j(400, { error: "WABA ID not configured in platform_config.wa_waba_id" });
+    if (!TOKEN) return j(400, { error: "WhatsApp access token not configured (WA_ACCESS_TOKEN secret or platform_config.wa_access_token)" });
 
     const audit = async (act: string, status: string | null, detail: any) =>
       admin.from("wa_template_audit").insert({ template_name: templateName || "(unknown)", action: act, actor: userId, meta_status: status, detail } as any);
