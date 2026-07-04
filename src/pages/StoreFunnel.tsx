@@ -197,19 +197,19 @@ export default function StoreFunnel() {
   // --- Aggregations ---
   const sessions = useMemo(() => {
     const s = new Set<string>();
-    pvQ.data?.forEach((r: any) => r.session_id && s.add(r.session_id));
+    pvQ.data?.rows.forEach((r: any) => r.session_id && s.add(r.session_id));
     return s.size;
   }, [pvQ.data]);
 
   const visitors = useMemo(() => {
     const s = new Set<string>();
-    pvQ.data?.forEach((r: any) => r.visitor_id && s.add(r.visitor_id));
+    pvQ.data?.rows.forEach((r: any) => r.visitor_id && s.add(r.visitor_id));
     return s.size;
   }, [pvQ.data]);
 
   const pdpViewSessions = useMemo(() => {
     const s = new Set<string>();
-    pvQ.data?.forEach((r: any) => {
+    pvQ.data?.rows.forEach((r: any) => {
       if (r.path?.startsWith("/product/") && r.session_id) s.add(r.session_id);
     });
     return s.size;
@@ -288,7 +288,7 @@ export default function StoreFunnel() {
   // Traffic sources — combine utm_source + referrer host
   const sourceTable = useMemo(() => {
     const m = new Map<string, number>();
-    pvQ.data?.forEach((r: any) => {
+    pvQ.data?.rows.forEach((r: any) => {
       let src = r.utm_source?.toLowerCase();
       if (!src && r.referrer) {
         try {
@@ -308,7 +308,7 @@ export default function StoreFunnel() {
   // Landing pages
   const landingTable = useMemo(() => {
     const m = new Map<string, Set<string>>();
-    pvQ.data?.forEach((r: any) => {
+    pvQ.data?.rows.forEach((r: any) => {
       const p = r.landing_path || r.path;
       if (!p || !r.session_id) return;
       if (!m.has(p)) m.set(p, new Set());
@@ -323,7 +323,7 @@ export default function StoreFunnel() {
   // Device split
   const deviceTable = useMemo(() => {
     const m = new Map<string, Set<string>>();
-    pvQ.data?.forEach((r: any) => {
+    pvQ.data?.rows.forEach((r: any) => {
       const d = r.device || "unknown";
       if (!r.session_id) return;
       if (!m.has(d)) m.set(d, new Set());
