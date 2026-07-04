@@ -144,7 +144,7 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
       for (let from = 0; from < 200_000; from += PAGE) {
         const { data, error } = await (supabase as any)
           .from("storefront_events")
-          .select("event_name, session_id, value")
+          .select("event_name, session_id, value, metadata")
           .eq("store_id", storeId)
           .gte("created_at", since.toISOString())
           .order("created_at", { ascending: false })
