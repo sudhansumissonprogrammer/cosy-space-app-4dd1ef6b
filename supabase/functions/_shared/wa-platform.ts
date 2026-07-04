@@ -208,10 +208,13 @@ export async function metaFetch(
  * means we can't send anyway, so hammering the API would look suspicious.
  */
 export async function hasApprovedTemplates(admin: any): Promise<boolean> {
-  const { count } = await admin
+  // NOTE: `head:true` returns null count under service role in some setups —
+  // use a plain select+limit(1) instead so we get a reliable existence check.
+  const { data } = await admin
     .from("platform_wa_templates")
-    .select("id", { count: "exact", head: true })
-    .eq("meta_status", "APPROVED");
-  return (count ?? 0) > 0;
+    .select("name")
+    .eq("meta_status", "APPROVED")
+    .limit(1);
+  return Array.isArray(data) && data.length > 0;
 }
 
