@@ -348,7 +348,7 @@ export default function StoreFunnel() {
       .sort((a, b) => b[1] - a[1]);
   }, [pvQ.data]);
 
-  // Top products by ATC
+  // Top products by ATC (product_id → count)
   const topAtc = useMemo(() => {
     const m = new Map<string, number>();
     evQ.data?.forEach((e) => {
@@ -357,6 +357,25 @@ export default function StoreFunnel() {
     });
     return Array.from(m.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6);
   }, [evQ.data]);
+
+  // Resolve product names for the Top-ATC list (batched, only for the visible ids).
+  const topAtcIds = topAtc.map(([id]) => id);
+  const productNamesQ = useQuery({
+    enabled: topAtcIds.length > 0,
+    queryKey: ["funnel-product-names", storeId, topAtcIds],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id,name")
+        .in("id", topAtcIds);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      (data || []).forEach((p: any) => { map[p.id] = p.name; });
+      return map;
+    },
+  });
+
 
   // Repeat vs new (paid orders only — most meaningful)
   const repeatCount = ordersPaid.filter((o) => o.is_repeat_customer).length;
