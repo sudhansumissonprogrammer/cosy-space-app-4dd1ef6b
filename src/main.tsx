@@ -31,6 +31,27 @@ if (typeof window !== "undefined" && window.location.pathname.startsWith("/r/"))
   }
 }
 
+// 🔗 WhatsApp template URLs use descriptive paths /cart/<token> and /order/<token>
+// for Meta review readability. Bounce to the wa-r edge fn with the correct kind
+// prefix (c- for carts, o- for orders). Unknown tokens (e.g. demo123 from Meta's
+// sample-URL check) 302 to shopbanao.in homepage — never 404.
+if (typeof window !== "undefined") {
+  const p = window.location.pathname;
+  let prefix = "";
+  let stripLen = 0;
+  if (p.startsWith("/cart/")) { prefix = "c-"; stripLen = 6; }
+  else if (p.startsWith("/order/")) { prefix = "o-"; stripLen = 7; }
+  if (prefix) {
+    const token = p.slice(stripLen).split("/")[0].split("?")[0];
+    if (token) {
+      window.location.replace(`https://dqepeywgftbpxeeqfuwt.supabase.co/functions/v1/wa-r/${encodeURIComponent(prefix + token)}`);
+      throw new Error("redirecting");
+    }
+  }
+}
+
+
+
 
 // Capture ?ref=SBP… anywhere in the site (landing, signup, storefront subdomain).
 // Runs before App mounts so the cookie is set even on the landing fast-path.
