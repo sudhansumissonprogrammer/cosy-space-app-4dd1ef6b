@@ -2118,17 +2118,36 @@ function CheckoutPageInner() {
   const handleViewMyOrders = async () => {
     if (viewingOrders) return;
     setViewingOrders(true);
+
+    // Route target: go DIRECTLY to the specific order page (skips /account list
+    // fetch entirely). If session isn't ready yet we still navigate — the page
+    // shows a skeleton while auth hydrates in the background.
+    const orderPath = orderId
+      ? storefrontPath(store.slug, `account/orders/${orderId}`)
+      : storefrontPath(store.slug, "account");
+
     try {
-      // Wait for the auto-created guest account session to be written before
-      // checking — otherwise we race it and fall into the phone-login path.
-      if (guestAccountPromiseRef.current) {
-        try { await guestAccountPromiseRef.current; } catch {}
-      }
-      // Already authenticated → just go.
+      // Fast path: session already exists (createGuestAccount usually set it
+      // synchronously right after order placement).
       const { data: existing } = await supabaseStorefront.auth.getSession();
       if (existing?.session?.user) {
-        navigate(storefrontPath(store.slug, "account"));
+        navigate(orderPath);
         return;
+      }
+
+      // Give the in-flight guest-account promise a short window (≤600ms) so
+      // most users land already authed. If it takes longer, we navigate anyway
+      // and let the login promise complete in the background.
+      if (guestAccountPromiseRef.current) {
+        await Promise.race([
+          guestAccountPromiseRef.current.catch(() => {}),
+          new Promise((r) => setTimeout(r, 600)),
+        ]);
+        const { data: after } = await supabaseStorefront.auth.getSession();
+        if (after?.session?.user) {
+          navigate(orderPath);
+          return;
+        }
       }
 
       const normalized = normalizePhone(phone);
@@ -2138,24 +2157,28 @@ function CheckoutPageInner() {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("phone-login", {
-        body: {
-          phone: normalized,
-          store_id: store.id,
-          name: fullName || null,
-          claim_order_id: orderId || undefined,
-        },
-      });
-      if (error || !data?.session) {
-        throw new Error(error?.message || data?.error || "Login failed");
-      }
-      const { error: sessErr } = await supabaseStorefront.auth.setSession({
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-      });
-      if (sessErr) throw sessErr;
-      toast.success("Logged in! Loading your orders…");
-      navigate(storefrontPath(store.slug, "account"));
+      // Navigate optimistically, then hydrate the session in the background.
+      // The order page shows its skeleton until auth completes, then re-renders.
+      navigate(orderPath);
+      void (async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke("phone-login", {
+            body: {
+              phone: normalized,
+              store_id: store.id,
+              name: fullName || null,
+              claim_order_id: orderId || undefined,
+            },
+          });
+          if (error || !data?.session) return;
+          await supabaseStorefront.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          });
+        } catch (err) {
+          console.warn("background phone-login failed:", (err as Error)?.message);
+        }
+      })();
     } catch (err: any) {
       toast.error(err?.message || "Could not open your orders. Please try again.");
     } finally {
