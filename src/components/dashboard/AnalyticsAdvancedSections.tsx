@@ -168,7 +168,7 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
     queryFn: async () => {
       const { data } = await supabase
         .from("orders")
-        .select("status, payment_status")
+        .select("status, payment_status, is_repeat_customer, attribution, total")
         .eq("store_id", storeId)
         .gte("created_at", rangeStart.toISOString())
         .lte("created_at", rangeEnd.toISOString());
@@ -176,17 +176,41 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
       const PAID = new Set(["paid", "confirmed", "partially_paid", "delivered", "completed", "shipped"]);
       let created = rows.length;
       let paid = 0, cancelled = 0, pending = 0;
+      let paidNew = 0, paidRepeat = 0;
+      let revNew = 0, revRepeat = 0;
+      const srcMap = new Map<string, { orders: number; revenue: number }>();
       for (const r of rows) {
         const s = String(r.status || "").toLowerCase();
         const ps = String(r.payment_status || "").toLowerCase();
+        const isPaid = PAID.has(s) || PAID.has(ps);
         if (s === "cancelled" || s === "failed") cancelled++;
-        else if (PAID.has(s) || PAID.has(ps)) paid++;
+        else if (isPaid) paid++;
         else pending++;
+        if (isPaid) {
+          const rev = Number(r.total || 0);
+          if (r.is_repeat_customer) { paidRepeat++; revRepeat += rev; }
+          else { paidNew++; revNew += rev; }
+          const attr = r.attribution || {};
+          const src =
+            attr.utm_source ||
+            (attr.fbclid ? "meta-ad" : null) ||
+            (attr.gclid ? "google-ad" : null) ||
+            (attr.ttclid ? "tiktok-ad" : null) ||
+            (attr.referrer ? "referral" : "direct");
+          const key = String(src).slice(0, 40).toLowerCase();
+          const cur = srcMap.get(key) || { orders: 0, revenue: 0 };
+          cur.orders++; cur.revenue += rev;
+          srcMap.set(key, cur);
+        }
       }
-      return { created, paid, cancelled, pending };
+      const sources = Array.from(srcMap.entries())
+        .map(([source, v]) => ({ source, ...v }))
+        .sort((a, b) => b.revenue - a.revenue);
+      return { created, paid, cancelled, pending, paidNew, paidRepeat, revNew, revRepeat, sources };
     },
     enabled: !!storeId,
   });
+
 
   // Cohorts
   const { data: cohorts } = useQuery({
@@ -547,6 +571,49 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
         </Card>
       )}
 
+      {/* New vs Repeat + Revenue by acquisition source */}
+      {(orderCounts?.paid ?? 0) > 0 && (
+        <Card className="border shadow-none">
+          <CardHeader className="p-3 pb-0">
+            <CardTitle className="text-sm font-medium">New vs Repeat buyers (today)</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-2 space-y-3 text-xs">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-md border border-border p-2">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">New buyers</p>
+                <p className="text-lg font-semibold tabular-nums">{orderCounts?.paidNew ?? 0}</p>
+                <p className="text-[10px] text-muted-foreground tabular-nums">
+                  ₹{Math.round(orderCounts?.revNew ?? 0).toLocaleString("en-IN")}
+                </p>
+              </div>
+              <div className="rounded-md border border-primary/40 bg-primary/5 p-2">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Repeat buyers</p>
+                <p className="text-lg font-semibold tabular-nums text-primary">{orderCounts?.paidRepeat ?? 0}</p>
+                <p className="text-[10px] text-muted-foreground tabular-nums">
+                  ₹{Math.round(orderCounts?.revRepeat ?? 0).toLocaleString("en-IN")}
+                </p>
+              </div>
+            </div>
+            {(orderCounts?.sources?.length ?? 0) > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                  Revenue by acquisition source
+                </p>
+                <ul className="space-y-0.5">
+                  {orderCounts!.sources.slice(0, 6).map((s) => (
+                    <li key={s.source} className="flex justify-between">
+                      <span className="text-foreground capitalize">{s.source}</span>
+                      <span className="tabular-nums font-semibold">
+                        {s.orders} · ₹{Math.round(s.revenue).toLocaleString("en-IN")}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
 
       {/* Traffic sources + Devices */}
