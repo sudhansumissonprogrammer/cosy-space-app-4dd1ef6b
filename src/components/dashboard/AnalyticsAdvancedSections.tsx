@@ -245,35 +245,48 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
   }, [breakdowns?.devices]);
 
   const funnel = useMemo(() => {
-    const map: Record<string, number> = { view_product: 0, add_to_cart: 0, begin_checkout: 0, purchase: 0 };
+    const map: Record<string, number> = {
+      view_product: 0, add_to_cart: 0, begin_checkout: 0, pay_click: 0, purchase: 0,
+    };
     (funnelDaily || []).forEach((r: any) => {
       if (map[r.event_name] !== undefined) map[r.event_name] += r.unique_sessions || 0;
     });
-    // Add today's raw events (group by event_name → unique sessions)
+    // Today's raw events (rollup runs nightly, so append today's unique sessions).
     const todayBySession: Record<string, Set<string>> = {
       view_product: new Set(), add_to_cart: new Set(),
-      begin_checkout: new Set(), purchase: new Set(),
+      begin_checkout: new Set(), pay_click: new Set(), purchase: new Set(),
     };
     (funnelToday || []).forEach((e: any) => {
       if (todayBySession[e.event_name]) todayBySession[e.event_name].add(e.session_id || "");
     });
     Object.keys(map).forEach(k => { map[k] += todayBySession[k].size; });
 
+    const sessions = (pvDaily || []).reduce((s: number, r: any) => s + (r.sessions || 0), 0);
+    const created = orderCounts?.created || 0;
+    const paid = orderCounts?.paid || 0;
+
     const steps = [
-      { name: "Product View", value: map.view_product, color: CHART_COLORS[0] },
-      { name: "Add to Cart", value: map.add_to_cart, color: CHART_COLORS[1] },
-      { name: "Checkout", value: map.begin_checkout, color: CHART_COLORS[3] },
-      { name: "Purchase", value: map.purchase, color: CHART_COLORS[2] },
+      { name: "Sessions",       value: sessions,           color: CHART_COLORS[6] },
+      { name: "Product Views",  value: map.view_product,   color: CHART_COLORS[0] },
+      { name: "Add to Cart",    value: map.add_to_cart,    color: CHART_COLORS[1] },
+      { name: "Checkout",       value: map.begin_checkout, color: CHART_COLORS[3] },
+      { name: "Pay Clicked",    value: map.pay_click,      color: CHART_COLORS[4] },
+      { name: "Order Created",  value: created,            color: CHART_COLORS[7] },
+      { name: "Paid",           value: paid,               color: CHART_COLORS[2] },
     ];
     const maxV = Math.max(...steps.map(s => s.value), 1);
     return steps.map((s, i) => ({
       ...s,
       width: (s.value / maxV) * 100,
+      convFromTop: steps[0].value > 0 ? (s.value / steps[0].value) * 100 : 0,
+      convFromPrev: i > 0 && steps[i - 1].value > 0
+        ? (s.value / steps[i - 1].value) * 100
+        : 100,
       dropOff: i > 0 && steps[i - 1].value > 0
         ? ((steps[i - 1].value - s.value) / steps[i - 1].value) * 100
         : 0,
     }));
-  }, [funnelDaily, funnelToday]);
+  }, [funnelDaily, funnelToday, pvDaily, orderCounts]);
 
   const cohortGrid = useMemo(() => {
     if (!cohorts || cohorts.length === 0) return { rows: [], maxOffset: 0 };
