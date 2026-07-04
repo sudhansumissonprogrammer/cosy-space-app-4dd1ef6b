@@ -168,7 +168,7 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
     queryFn: async () => {
       const { data } = await supabase
         .from("orders")
-        .select("status, payment_status")
+        .select("status, payment_status, is_repeat_customer, attribution, total")
         .eq("store_id", storeId)
         .gte("created_at", rangeStart.toISOString())
         .lte("created_at", rangeEnd.toISOString());
@@ -176,17 +176,41 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
       const PAID = new Set(["paid", "confirmed", "partially_paid", "delivered", "completed", "shipped"]);
       let created = rows.length;
       let paid = 0, cancelled = 0, pending = 0;
+      let paidNew = 0, paidRepeat = 0;
+      let revNew = 0, revRepeat = 0;
+      const srcMap = new Map<string, { orders: number; revenue: number }>();
       for (const r of rows) {
         const s = String(r.status || "").toLowerCase();
         const ps = String(r.payment_status || "").toLowerCase();
+        const isPaid = PAID.has(s) || PAID.has(ps);
         if (s === "cancelled" || s === "failed") cancelled++;
-        else if (PAID.has(s) || PAID.has(ps)) paid++;
+        else if (isPaid) paid++;
         else pending++;
+        if (isPaid) {
+          const rev = Number(r.total || 0);
+          if (r.is_repeat_customer) { paidRepeat++; revRepeat += rev; }
+          else { paidNew++; revNew += rev; }
+          const attr = r.attribution || {};
+          const src =
+            attr.utm_source ||
+            (attr.fbclid ? "meta-ad" : null) ||
+            (attr.gclid ? "google-ad" : null) ||
+            (attr.ttclid ? "tiktok-ad" : null) ||
+            (attr.referrer ? "referral" : "direct");
+          const key = String(src).slice(0, 40).toLowerCase();
+          const cur = srcMap.get(key) || { orders: 0, revenue: 0 };
+          cur.orders++; cur.revenue += rev;
+          srcMap.set(key, cur);
+        }
       }
-      return { created, paid, cancelled, pending };
+      const sources = Array.from(srcMap.entries())
+        .map(([source, v]) => ({ source, ...v }))
+        .sort((a, b) => b.revenue - a.revenue);
+      return { created, paid, cancelled, pending, paidNew, paidRepeat, revNew, revRepeat, sources };
     },
     enabled: !!storeId,
   });
+
 
   // Cohorts
   const { data: cohorts } = useQuery({
