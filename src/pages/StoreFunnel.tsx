@@ -467,6 +467,13 @@ export default function StoreFunnel() {
         </Card>
       )}
 
+      {pvQ.data?.truncated && (
+        <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+          Very high traffic — showing latest 40,000 pageviews for this window. Percentages remain representative but exact totals may be higher.
+        </div>
+      )}
+
+
       {/* Headline metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card><CardContent className="p-3">
