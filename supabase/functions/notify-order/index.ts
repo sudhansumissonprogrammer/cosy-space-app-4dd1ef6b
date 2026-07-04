@@ -381,18 +381,30 @@ Deno.serve(async (req) => {
       const { data: cronRow } = await supabase.from("cron_auth").select("secret").eq("id", true).maybeSingle();
       const cronSecret = (cronRow as any)?.secret || Deno.env.get("CRON_SECRET") || "";
       if (cronSecret) {
-        const r = await fetch(`${supabaseUrl}/functions/v1/wa-order-event`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-cron-secret": cronSecret,
-            Authorization: `Bearer ${serviceRoleKey}`,
-            apikey: serviceRoleKey,
-          },
-          body: JSON.stringify({ event: "order_confirmation", order_id }),
-        });
-        const txt = await r.text().catch(() => "");
-        console.log("wa-order-event result", r.status, txt);
+        // Retry up to 3 times on 404/5xx — protects against the ~1s window
+        // where an edge function redeploy can return NOT_FOUND_FUNCTION_BLOB.
+        // Without this, one bad-timing order silently loses its WhatsApp.
+        let lastStatus = 0;
+        let lastBody = "";
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          const r = await fetch(`${supabaseUrl}/functions/v1/wa-order-event`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-cron-secret": cronSecret,
+              Authorization: `Bearer ${serviceRoleKey}`,
+              apikey: serviceRoleKey,
+            },
+            body: JSON.stringify({ event: "order_confirmation", order_id }),
+          });
+          lastStatus = r.status;
+          lastBody = await r.text().catch(() => "");
+          if (r.ok) break;
+          // Only retry transient failures (404 during redeploy, 5xx).
+          if (r.status !== 404 && r.status < 500) break;
+          if (attempt < 3) await new Promise((res) => setTimeout(res, 400 * attempt));
+        }
+        console.log("wa-order-event result", lastStatus, lastBody);
       } else {
         console.warn("wa-order-event skipped — cron_auth secret missing");
       }
