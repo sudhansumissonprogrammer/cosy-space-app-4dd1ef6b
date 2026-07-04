@@ -80,3 +80,138 @@ export async function isValidCronHeader(admin: any, headerValue: string): Promis
   return !!dbSecret && headerValue === dbSecret;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Meta API circuit breaker
+//
+// Why: All our Meta calls (send, template-sync, health-check) share ONE System
+// User token. If Meta returns errors and we keep hammering, they flag the token
+// as bot/stolen activity and lock the developer account (already happened once).
+//
+// Rules:
+//   • After 3 consecutive Meta 4xx/5xx (excluding rate-limit 4/17/32 which we
+//     back off separately), open the breaker for 30 min.
+//   • While open, every Meta caller short-circuits without touching the API.
+//   • On the FIRST success after open, we close and reset failures to 0.
+//   • We also log Meta's X-App-Usage / X-Business-Use-Case-Usage headers so we
+//     can spot when we approach quota BEFORE Meta throttles us.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const BREAKER_THRESHOLD = 3;
+const BREAKER_OPEN_MS = 30 * 60 * 1000; // 30 min
+
+export type MetaBreakerState = {
+  failures: number;
+  open_until: string | null;
+  last_error: string | null;
+  last_usage: any;
+};
+
+export async function getMetaBreaker(admin: any): Promise<MetaBreakerState> {
+  const { data } = await admin
+    .from("platform_config")
+    .select("wa_meta_breaker")
+    .limit(1)
+    .maybeSingle();
+  return (data?.wa_meta_breaker as MetaBreakerState) ?? {
+    failures: 0, open_until: null, last_error: null, last_usage: null,
+  };
+}
+
+export function isMetaBreakerOpen(state: MetaBreakerState): boolean {
+  if (!state.open_until) return false;
+  return new Date(state.open_until).getTime() > Date.now();
+}
+
+async function saveMetaBreaker(admin: any, state: MetaBreakerState) {
+  await admin.from("platform_config").update({ wa_meta_breaker: state as any }).neq("id", "00000000-0000-0000-0000-000000000000");
+}
+
+async function logHealth(admin: any, payload: Record<string, unknown>) {
+  try {
+    await admin.from("wa_health_log").insert({
+      checked_at: new Date().toISOString(),
+      raw: payload as any,
+    });
+  } catch { /* logging best-effort */ }
+}
+
+/**
+ * Wrapper around `fetch(https://graph.facebook.com/...)` that honors the
+ * circuit breaker and records X-App-Usage. Use this INSTEAD of raw fetch()
+ * for every Meta Graph call.
+ *
+ * Returns `{ ok, status, body, breakerOpen }`. When `breakerOpen` is true,
+ * no HTTP request was made — callers should skip gracefully.
+ */
+export async function metaFetch(
+  admin: any,
+  url: string,
+  init: RequestInit,
+  opts: { source: string } = { source: "unknown" },
+): Promise<{ ok: boolean; status: number; body: any; breakerOpen: boolean }> {
+  const state = await getMetaBreaker(admin);
+  if (isMetaBreakerOpen(state)) {
+    return { ok: false, status: 0, body: { error: "breaker_open", open_until: state.open_until, last_error: state.last_error }, breakerOpen: true };
+  }
+
+  let r: Response;
+  try {
+    r = await fetch(url, init);
+  } catch (e) {
+    const next = { ...state, failures: state.failures + 1, last_error: `network:${(e as Error).message}` };
+    if (next.failures >= BREAKER_THRESHOLD) next.open_until = new Date(Date.now() + BREAKER_OPEN_MS).toISOString();
+    await saveMetaBreaker(admin, next);
+    await logHealth(admin, { event: "meta_network_error", source: opts.source, error: (e as Error).message });
+    return { ok: false, status: 0, body: { error: "network_error" }, breakerOpen: false };
+  }
+
+  const appUsage = r.headers.get("x-app-usage");
+  const bizUsage = r.headers.get("x-business-use-case-usage");
+  const body: any = await r.json().catch(() => ({}));
+
+  if (r.ok) {
+    // Reset breaker on any successful call. Only log usage when we're
+    // approaching quota (>=80% on any dimension) to keep the log lean.
+    if (state.failures > 0 || state.open_until) {
+      await saveMetaBreaker(admin, { failures: 0, open_until: null, last_error: null, last_usage: appUsage });
+    }
+    if (appUsage) {
+      try {
+        const u = JSON.parse(appUsage);
+        const high = Math.max(u.call_count ?? 0, u.total_cputime ?? 0, u.total_time ?? 0);
+        if (high >= 80) await logHealth(admin, { event: "meta_usage_high", source: opts.source, app_usage: u, biz_usage: bizUsage });
+      } catch { /* ignore */ }
+    }
+    return { ok: true, status: r.status, body, breakerOpen: false };
+  }
+
+  // Failure path — count non-rate-limit errors toward breaker
+  const metaCode = body?.error?.code;
+  const isRateLimit = metaCode === 4 || metaCode === 17 || metaCode === 32 || metaCode === 613 || r.status === 429;
+  const next = {
+    ...state,
+    failures: state.failures + 1,
+    last_error: `${r.status}:${metaCode ?? "-"}:${body?.error?.message ?? ""}`.slice(0, 500),
+    last_usage: appUsage,
+  };
+  if (!isRateLimit && next.failures >= BREAKER_THRESHOLD) {
+    next.open_until = new Date(Date.now() + BREAKER_OPEN_MS).toISOString();
+    await logHealth(admin, { event: "meta_breaker_opened", source: opts.source, code: metaCode, message: body?.error?.message, until: next.open_until });
+  }
+  await saveMetaBreaker(admin, next);
+  return { ok: false, status: r.status, body, breakerOpen: false };
+}
+
+/**
+ * Returns true when at least one platform_wa_templates row is APPROVED.
+ * Crons use this to bail before doing any Meta work — no approved template
+ * means we can't send anyway, so hammering the API would look suspicious.
+ */
+export async function hasApprovedTemplates(admin: any): Promise<boolean> {
+  const { count } = await admin
+    .from("platform_wa_templates")
+    .select("id", { count: "exact", head: true })
+    .eq("meta_status", "APPROVED");
+  return (count ?? 0) > 0;
+}
+
