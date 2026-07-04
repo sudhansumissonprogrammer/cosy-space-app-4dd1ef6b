@@ -266,12 +266,12 @@ export default function StoreFunnel() {
     let worst = -1;
     let worstDrop = 0;
     for (let i = 1; i < steps.length; i++) {
+      // pay_click is instrumentation-lossy; treat chk→ord as the real edge.
+      if (steps[i].key === "pay" || steps[i - 1].key === "pay") continue;
       const prev = steps[i - 1].value;
       const cur = steps[i].value;
-      if (prev < 5) continue; // ignore tiny samples
+      if (prev < 5) continue;
       const drop = 1 - cur / prev;
-      // Weight later-funnel leaks slightly higher — losing a pay-clicker is
-      // costlier than losing a browsing session.
       const weight = 1 + i * 0.15;
       if (drop * weight > worstDrop) {
         worstDrop = drop * weight;
@@ -280,6 +280,7 @@ export default function StoreFunnel() {
     }
     return worst;
   }, [steps]);
+
 
   const base = steps[0].value || 1;
 
