@@ -4,11 +4,32 @@ import { supabase } from "@/integrations/supabase/client";
 import { getOrCreateSessionId, getVisitorId } from "@/lib/visitorSession";
 
 export type StorefrontEventName =
+  // Core funnel (already tracked)
   | "view_product"
   | "add_to_cart"
   | "begin_checkout"
   | "pay_click"
-  | "purchase";
+  | "purchase"
+  // Phase 1 — checkout & payment drop analysis
+  | "checkout_field_error"
+  | "checkout_abandon"
+  | "payment_failed"
+  | "payment_retry"
+  // Phase 2 — PDP engagement & discovery
+  | "pdp_variant_select"
+  | "pdp_deep_scroll"
+  | "pdp_image_view"
+  | "pdp_out_of_stock"
+  | "search_performed"
+  | "search_no_results"
+  | "category_view"
+  // Phase 3 — cart & retention
+  | "cart_view"
+  | "cart_remove"
+  | "cart_qty_change"
+  | "wishlist_add"
+  | "whatsapp_click"
+  | "call_owner_click";
 
 interface FireEventArgs {
   storeId: string;
