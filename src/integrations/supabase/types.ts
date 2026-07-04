@@ -1551,6 +1551,7 @@ export type Database = {
           wa_enabled: boolean
           wa_max_cart_age_hours: number
           wa_messaging_tier: string | null
+          wa_meta_breaker: Json
           wa_min_cart_age_minutes: number
           wa_phone_number_id: string | null
           wa_pilot_cohort: string[]
@@ -1578,6 +1579,7 @@ export type Database = {
           wa_enabled?: boolean
           wa_max_cart_age_hours?: number
           wa_messaging_tier?: string | null
+          wa_meta_breaker?: Json
           wa_min_cart_age_minutes?: number
           wa_phone_number_id?: string | null
           wa_pilot_cohort?: string[]
@@ -1605,6 +1607,7 @@ export type Database = {
           wa_enabled?: boolean
           wa_max_cart_age_hours?: number
           wa_messaging_tier?: string | null
+          wa_meta_breaker?: Json
           wa_min_cart_age_minutes?: number
           wa_phone_number_id?: string | null
           wa_pilot_cohort?: string[]
