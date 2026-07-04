@@ -107,7 +107,7 @@ export function fireStorefrontEvent(args: FireEventArgs): void {
         value: args.value ?? null,
         currency: args.currency || null,
         path: typeof window !== "undefined" ? window.location.pathname.slice(0, 500) : null,
-        metadata: args.metadata || null,
+        metadata: { ...(args.metadata || {}), ...readAttribution() },
       })
       .then(() => {}, () => {});
   } catch {}
