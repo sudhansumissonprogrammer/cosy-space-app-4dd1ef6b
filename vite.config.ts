@@ -52,6 +52,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
+    mcpPlugin(),
     mode === "development" && componentTagger(),
     beastiesPlugin(),
     // Brotli + gzip precompression of build assets. Cloudflare/most CDNs serve
