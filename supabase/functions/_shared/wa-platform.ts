@@ -212,7 +212,7 @@ export async function hasApprovedTemplates(admin: any): Promise<boolean> {
   // use a plain select+limit(1) instead so we get a reliable existence check.
   const { data } = await admin
     .from("platform_wa_templates")
-    .select("id")
+    .select("name")
     .eq("meta_status", "APPROVED")
     .limit(1);
   return Array.isArray(data) && data.length > 0;
