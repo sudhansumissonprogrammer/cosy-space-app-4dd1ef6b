@@ -799,6 +799,7 @@ export type Database = {
       orders: {
         Row: {
           advance_paid: number
+          attribution: Json | null
           balance_due: number
           buyer_fbc: string | null
           buyer_fbp: string | null
@@ -810,8 +811,10 @@ export type Database = {
           currency: string
           customer_id: string | null
           customer_name: string | null
+          customer_order_index: number | null
           customer_phone: string | null
           id: string
+          is_repeat_customer: boolean
           meta_event_id: string | null
           meta_event_source_url: string | null
           meta_purchase_fired_at: string | null
@@ -837,6 +840,7 @@ export type Database = {
         }
         Insert: {
           advance_paid?: number
+          attribution?: Json | null
           balance_due?: number
           buyer_fbc?: string | null
           buyer_fbp?: string | null
@@ -848,8 +852,10 @@ export type Database = {
           currency?: string
           customer_id?: string | null
           customer_name?: string | null
+          customer_order_index?: number | null
           customer_phone?: string | null
           id?: string
+          is_repeat_customer?: boolean
           meta_event_id?: string | null
           meta_event_source_url?: string | null
           meta_purchase_fired_at?: string | null
@@ -875,6 +881,7 @@ export type Database = {
         }
         Update: {
           advance_paid?: number
+          attribution?: Json | null
           balance_due?: number
           buyer_fbc?: string | null
           buyer_fbp?: string | null
@@ -886,8 +893,10 @@ export type Database = {
           currency?: string
           customer_id?: string | null
           customer_name?: string | null
+          customer_order_index?: number | null
           customer_phone?: string | null
           id?: string
+          is_repeat_customer?: boolean
           meta_event_id?: string | null
           meta_event_source_url?: string | null
           meta_purchase_fired_at?: string | null
