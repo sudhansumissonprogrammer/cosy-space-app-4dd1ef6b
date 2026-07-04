@@ -962,6 +962,20 @@ function CheckoutPageInner() {
         profit: cached?.order_profit ?? null,
       });
       setPaymentFailed(true);
+      // Funnel event — records exactly WHY the pay attempt didn't confirm.
+      // Lets us split "user cancelled" vs "gateway timeout" vs "not confirmed yet".
+      try {
+        fireStorefrontEvent({
+          storeId: store.id,
+          eventName: "payment_failed",
+          metadata: {
+            gateway: "payu",
+            payu_status: payuStatus,
+            order_id: orderId,
+            reason: payuStatus === "success" ? "not_confirmed_in_time" : "gateway_reported_failure",
+          },
+        });
+      } catch {}
       toast.error(payuStatus === "success"
         ? "Payment not confirmed yet. You can retry below."
         : "Payment failed. You can retry below.");
