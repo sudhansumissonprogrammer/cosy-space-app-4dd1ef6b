@@ -461,6 +461,94 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
         </CardContent>
       </Card>
 
+      {/* Drop-off diagnostics — actionable "why they didn't buy" list */}
+      {(diagnostics.fieldStops.length > 0 ||
+        diagnostics.payFailReasons.length > 0 ||
+        diagnostics.zeroResultSearches.length > 0 ||
+        diagnostics.cartRemoves.length > 0) && (
+        <Card className="border shadow-none">
+          <CardHeader className="p-3 pb-0">
+            <CardTitle className="text-sm font-medium flex items-center gap-1.5">
+              <TrendingDown className="h-3.5 w-3.5 text-destructive" /> Why they didn't buy (today)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-2 space-y-3 text-xs">
+            {diagnostics.payFailReasons.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Payment failure reasons</p>
+                <ul className="space-y-0.5">
+                  {diagnostics.payFailReasons.map(([reason, n]) => (
+                    <li key={reason} className="flex justify-between">
+                      <span className="text-foreground capitalize">{reason.replace(/_/g, " ")}</span>
+                      <span className="tabular-nums font-semibold text-destructive">{n}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {diagnostics.fieldStops.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Checkout fields that stopped shoppers</p>
+                <ul className="space-y-0.5">
+                  {diagnostics.fieldStops.map(([field, n]) => (
+                    <li key={field} className="flex justify-between">
+                      <span className="text-foreground">{field}</span>
+                      <span className="tabular-nums font-semibold">{n}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {diagnostics.zeroResultSearches.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                  Searches with zero results (add these products!)
+                </p>
+                <ul className="space-y-0.5">
+                  {diagnostics.zeroResultSearches.map(([q, n]) => (
+                    <li key={q} className="flex justify-between">
+                      <span className="text-foreground truncate mr-2">"{q}"</span>
+                      <span className="tabular-nums font-semibold">{n}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {diagnostics.cartRemoves.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                  Most-removed products from cart
+                </p>
+                <ul className="space-y-0.5">
+                  {diagnostics.cartRemoves.map(([pid, n]) => (
+                    <li key={pid} className="flex justify-between">
+                      <span className="text-foreground truncate mr-2 font-mono text-[10px]">{pid.slice(0, 8)}…</span>
+                      <span className="tabular-nums font-semibold">{n}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="pt-2 border-t border-border grid grid-cols-3 gap-2 text-[10px]">
+              <div>
+                <p className="text-muted-foreground">Variant selected</p>
+                <p className="font-semibold text-foreground">{diagnostics.variantSelectSessions} sessions</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Read PDP (75%+)</p>
+                <p className="font-semibold text-foreground">{diagnostics.pdpDeepScrollSessions} sessions</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Attributed traffic</p>
+                <p className="font-semibold text-foreground">{diagnostics.attributedPct.toFixed(0)}%</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+
+
       {/* Traffic sources + Devices */}
       <div className="grid grid-cols-2 gap-2.5">
         <Card className="border shadow-none">
