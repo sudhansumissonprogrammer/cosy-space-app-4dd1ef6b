@@ -159,6 +159,35 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
     enabled: !!storeId,
   });
 
+  // Orders in range — created / paid / cancelled counts feed the tail of the funnel.
+  // Paid statuses mirror firePurchaseCapi.ts so partial-paid counts as revenue.
+  const { data: orderCounts } = useQuery({
+    queryKey: ["funnel-orders", storeId, rangeStart.toISOString(), rangeEnd.toISOString()],
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("status, payment_status")
+        .eq("store_id", storeId)
+        .gte("created_at", rangeStart.toISOString())
+        .lte("created_at", rangeEnd.toISOString());
+      const rows = (data || []) as any[];
+      const PAID = new Set(["paid", "confirmed", "partially_paid", "delivered", "completed", "shipped"]);
+      let created = rows.length;
+      let paid = 0, cancelled = 0, pending = 0;
+      for (const r of rows) {
+        const s = String(r.status || "").toLowerCase();
+        const ps = String(r.payment_status || "").toLowerCase();
+        if (s === "cancelled" || s === "failed") cancelled++;
+        else if (PAID.has(s) || PAID.has(ps)) paid++;
+        else pending++;
+      }
+      return { created, paid, cancelled, pending };
+    },
+    enabled: !!storeId,
+  });
+
   // Cohorts
   const { data: cohorts } = useQuery({
     queryKey: ["cohorts", storeId],
@@ -216,35 +245,48 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
   }, [breakdowns?.devices]);
 
   const funnel = useMemo(() => {
-    const map: Record<string, number> = { view_product: 0, add_to_cart: 0, begin_checkout: 0, purchase: 0 };
+    const map: Record<string, number> = {
+      view_product: 0, add_to_cart: 0, begin_checkout: 0, pay_click: 0, purchase: 0,
+    };
     (funnelDaily || []).forEach((r: any) => {
       if (map[r.event_name] !== undefined) map[r.event_name] += r.unique_sessions || 0;
     });
-    // Add today's raw events (group by event_name → unique sessions)
+    // Today's raw events (rollup runs nightly, so append today's unique sessions).
     const todayBySession: Record<string, Set<string>> = {
       view_product: new Set(), add_to_cart: new Set(),
-      begin_checkout: new Set(), purchase: new Set(),
+      begin_checkout: new Set(), pay_click: new Set(), purchase: new Set(),
     };
     (funnelToday || []).forEach((e: any) => {
       if (todayBySession[e.event_name]) todayBySession[e.event_name].add(e.session_id || "");
     });
     Object.keys(map).forEach(k => { map[k] += todayBySession[k].size; });
 
+    const sessions = (pvDaily || []).reduce((s: number, r: any) => s + (r.sessions || 0), 0);
+    const created = orderCounts?.created || 0;
+    const paid = orderCounts?.paid || 0;
+
     const steps = [
-      { name: "Product View", value: map.view_product, color: CHART_COLORS[0] },
-      { name: "Add to Cart", value: map.add_to_cart, color: CHART_COLORS[1] },
-      { name: "Checkout", value: map.begin_checkout, color: CHART_COLORS[3] },
-      { name: "Purchase", value: map.purchase, color: CHART_COLORS[2] },
+      { name: "Sessions",       value: sessions,           color: CHART_COLORS[6] },
+      { name: "Product Views",  value: map.view_product,   color: CHART_COLORS[0] },
+      { name: "Add to Cart",    value: map.add_to_cart,    color: CHART_COLORS[1] },
+      { name: "Checkout",       value: map.begin_checkout, color: CHART_COLORS[3] },
+      { name: "Pay Clicked",    value: map.pay_click,      color: CHART_COLORS[4] },
+      { name: "Order Created",  value: created,            color: CHART_COLORS[7] },
+      { name: "Paid",           value: paid,               color: CHART_COLORS[2] },
     ];
     const maxV = Math.max(...steps.map(s => s.value), 1);
     return steps.map((s, i) => ({
       ...s,
       width: (s.value / maxV) * 100,
+      convFromTop: steps[0].value > 0 ? (s.value / steps[0].value) * 100 : 0,
+      convFromPrev: i > 0 && steps[i - 1].value > 0
+        ? (s.value / steps[i - 1].value) * 100
+        : 100,
       dropOff: i > 0 && steps[i - 1].value > 0
         ? ((steps[i - 1].value - s.value) / steps[i - 1].value) * 100
         : 0,
     }));
-  }, [funnelDaily, funnelToday]);
+  }, [funnelDaily, funnelToday, pvDaily, orderCounts]);
 
   const cohortGrid = useMemo(() => {
     if (!cohorts || cohorts.length === 0) return { rows: [], maxOffset: 0 };
@@ -306,26 +348,49 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
         </CardHeader>
         <CardContent className="p-3 pt-2">
           {funnel.some(f => f.value > 0) ? (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {funnel.map((step, i) => (
                 <div key={step.name} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-foreground">{step.name}</span>
-                    <span className="text-muted-foreground">
-                      {step.value.toLocaleString()}
+                  <div className="flex items-center justify-between text-xs gap-2">
+                    <span className="font-medium text-foreground truncate">{step.name}</span>
+                    <span className="text-muted-foreground whitespace-nowrap tabular-nums">
+                      <span className="text-foreground font-semibold">{step.value.toLocaleString()}</span>
+                      {i > 0 && (
+                        <span className="ml-1.5">
+                          {step.convFromPrev.toFixed(0)}% of prev
+                        </span>
+                      )}
                       {i > 0 && step.dropOff > 0 && (
                         <span className="ml-1.5 text-destructive">−{step.dropOff.toFixed(0)}%</span>
                       )}
                     </span>
                   </div>
-                  <div className="h-6 w-full rounded bg-muted overflow-hidden">
+                  <div className="h-6 w-full rounded bg-muted overflow-hidden relative">
                     <div
-                      className="h-full rounded transition-[transform,opacity,colors,box-shadow] flex items-center justify-end pr-2 text-[10px] font-medium text-primary-foreground"
+                      className="h-full rounded transition-all"
                       style={{ width: `${Math.max(step.width, 4)}%`, backgroundColor: step.color }}
                     />
+                    {i > 0 && (
+                      <span className="absolute inset-y-0 right-2 flex items-center text-[10px] text-muted-foreground">
+                        {step.convFromTop.toFixed(1)}% of sessions
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
+              {(orderCounts?.cancelled ?? 0) > 0 && (
+                <div className="mt-2 pt-2 border-t border-border flex items-center justify-between text-xs">
+                  <span className="text-destructive font-medium">Cancelled / failed at payment</span>
+                  <span className="tabular-nums text-destructive font-semibold">
+                    {orderCounts!.cancelled} of {orderCounts!.created}
+                    {orderCounts!.created > 0 && (
+                      <span className="ml-1 text-muted-foreground">
+                        ({((orderCounts!.cancelled / orderCounts!.created) * 100).toFixed(0)}%)
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
             </div>
           ) : (
             <p className="py-6 text-center text-xs text-muted-foreground">
