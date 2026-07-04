@@ -7,6 +7,7 @@ export type StorefrontEventName =
   | "view_product"
   | "add_to_cart"
   | "begin_checkout"
+  | "pay_click"
   | "purchase";
 
 interface FireEventArgs {

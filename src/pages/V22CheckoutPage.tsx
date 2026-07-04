@@ -27,6 +27,7 @@ import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import { estimateDelivery, type DeliveryEstimate } from "@/lib/deliveryEstimate";
 import { loadCashfree } from "@/lib/loadCashfree";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
+import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
@@ -1418,6 +1419,16 @@ function V22CheckoutPageInner() {
   };
 
   const handlePlaceOrder = async () => {
+    // Track every Pay button click (before validation) — measures true payment intent.
+    if (store?.id) {
+      fireStorefrontEvent({
+        storeId: store.id,
+        eventName: "pay_click",
+        value: total,
+        currency,
+        metadata: { payment_method: paymentMethod },
+      });
+    }
     // Make sure the address section is open so the inputs exist in the DOM
     if (!expressMode) setExpressMode(true);
 
