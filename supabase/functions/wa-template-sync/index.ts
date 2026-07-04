@@ -8,7 +8,7 @@
 // Also follows Meta's `paging.next` cursor so WABAs with >200 templates get
 // fully reconciled instead of silently truncating at the first page.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, isValidCronHeader, loadPlatformConfig, platformConfigUsable } from "../_shared/wa-platform.ts";
+import { corsHeaders, isValidCronHeader, loadPlatformConfig } from "../_shared/wa-platform.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
