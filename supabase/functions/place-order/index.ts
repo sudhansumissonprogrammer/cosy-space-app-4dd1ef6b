@@ -98,6 +98,7 @@ Deno.serve(async (req) => {
       meta,
       visitor_id,
       session_id,
+      attribution,
     }: {
       store_id: string;
       order: {
@@ -137,7 +138,11 @@ Deno.serve(async (req) => {
       // produced it so conversion rate = orders / unique sessions is accurate.
       visitor_id?: string | null;
       session_id?: string | null;
+      // Attribution snapshot: last-touch UTM + ad-click IDs (fbclid/gclid/...)
+      // sent by the browser so we can tie revenue back to campaigns and ads.
+      attribution?: Record<string, string | null> | null;
     } = await req.json();
+
 
 
     if (!store_id || !order || !Array.isArray(items) || items.length === 0) {
