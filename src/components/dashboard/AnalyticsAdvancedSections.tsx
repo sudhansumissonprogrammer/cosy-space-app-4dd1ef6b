@@ -159,6 +159,35 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
     enabled: !!storeId,
   });
 
+  // Orders in range — created / paid / cancelled counts feed the tail of the funnel.
+  // Paid statuses mirror firePurchaseCapi.ts so partial-paid counts as revenue.
+  const { data: orderCounts } = useQuery({
+    queryKey: ["funnel-orders", storeId, rangeStart.toISOString(), rangeEnd.toISOString()],
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("status, payment_status")
+        .eq("store_id", storeId)
+        .gte("created_at", rangeStart.toISOString())
+        .lte("created_at", rangeEnd.toISOString());
+      const rows = (data || []) as any[];
+      const PAID = new Set(["paid", "confirmed", "partially_paid", "delivered", "completed", "shipped"]);
+      let created = rows.length;
+      let paid = 0, cancelled = 0, pending = 0;
+      for (const r of rows) {
+        const s = String(r.status || "").toLowerCase();
+        const ps = String(r.payment_status || "").toLowerCase();
+        if (s === "cancelled" || s === "failed") cancelled++;
+        else if (PAID.has(s) || PAID.has(ps)) paid++;
+        else pending++;
+      }
+      return { created, paid, cancelled, pending };
+    },
+    enabled: !!storeId,
+  });
+
   // Cohorts
   const { data: cohorts } = useQuery({
     queryKey: ["cohorts", storeId],
