@@ -624,12 +624,18 @@ export default function StoreFunnel() {
           </CardHeader>
           <CardContent>
             {topAtc.length === 0 && <p className="text-xs text-muted-foreground">—</p>}
-            {topAtc.map(([pid, n]) => (
-              <div key={pid} className="flex justify-between py-1.5 text-xs border-b last:border-0 gap-2">
-                <span className="truncate font-mono text-[10px] text-muted-foreground">{pid.slice(0, 8)}…</span>
-                <span className="font-semibold tabular-nums">{n} ATC</span>
-              </div>
-            ))}
+            {topAtc.map(([pid, n]) => {
+              const name = productNamesQ.data?.[pid];
+              return (
+                <div key={pid} className="flex justify-between py-1.5 text-xs border-b last:border-0 gap-2">
+                  <span className="truncate">
+                    {name || <span className="font-mono text-[10px] text-muted-foreground">{pid.slice(0, 8)}…</span>}
+                  </span>
+                  <span className="font-semibold tabular-nums whitespace-nowrap">{n} ATC</span>
+                </div>
+              );
+            })}
+
           </CardContent>
         </Card>
       </div>
