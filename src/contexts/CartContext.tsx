@@ -132,6 +132,14 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
         }
         sessionStorage.setItem(key, `${hash}@${now}`);
       } catch {}
+      // Storefront funnel event — session-unique cart_view.
+      import("@/lib/storefrontEvents").then(m => m.fireStorefrontEvent({
+        storeId,
+        eventName: "cart_view",
+        value: currentItems.reduce((s, i) => s + i.price * i.quantity, 0),
+        currency,
+        metadata: { num_items: currentItems.reduce((s, i) => s + i.quantity, 0) },
+      })).catch(() => {});
       Promise.all([
         import("@/hooks/useFacebookPixel"),
         import("@/lib/metaCapi"),
