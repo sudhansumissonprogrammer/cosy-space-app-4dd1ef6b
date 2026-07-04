@@ -414,6 +414,28 @@ export default function V22ProductDetail() {
     } catch {}
   }, [product?.id]);
 
+  // PDP deep-scroll tracking — fires once when the user scrolls past 75%.
+  useEffect(() => {
+    if (!store?.id || !product?.id) return;
+    let fired = false;
+    const onScroll = () => {
+      if (fired) return;
+      const scrolled = window.scrollY + window.innerHeight;
+      const total = document.documentElement.scrollHeight;
+      if (total > 0 && scrolled / total >= 0.75) {
+        fired = true;
+        import("@/lib/storefrontEvents").then(m => m.fireStorefrontEvent({
+          storeId: store.id,
+          eventName: "pdp_deep_scroll",
+          productId: product.id,
+        })).catch(() => {});
+        window.removeEventListener("scroll", onScroll);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [store?.id, product?.id]);
+
   // Singular /product/ canonical — consolidates the legacy /products/ alias.
   useCanonical(product ? `${getStoreBaseUrl(store.slug, (store as any)?.custom_domain)}/product/${product.slug || product.id}` : null);
 
