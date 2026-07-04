@@ -207,13 +207,23 @@ export default function StoreFunnel() {
     return s.size;
   }, [pvQ.data]);
 
+  // PDP: prefer view_product event over path filter — React fires the event
+  // reliably even when the pageview beacon loses the race on ad-click bounces.
+  // Falls back to path filter only if event pipeline has zero rows for the
+  // window (e.g. very old data before storefront_events was deployed).
   const pdpViewSessions = useMemo(() => {
-    const s = new Set<string>();
-    pvQ.data?.rows.forEach((r: any) => {
-      if (r.path?.startsWith("/product/") && r.session_id) s.add(r.session_id);
+    const eventSess = new Set<string>();
+    evQ.data?.forEach((e) => {
+      if (e.event_name === "view_product" && e.session_id) eventSess.add(e.session_id);
     });
-    return s.size;
-  }, [pvQ.data]);
+    if (eventSess.size > 0) return eventSess.size;
+    const pvSess = new Set<string>();
+    pvQ.data?.rows.forEach((r: any) => {
+      if (r.path?.startsWith("/product/") && r.session_id) pvSess.add(r.session_id);
+    });
+    return pvSess.size;
+  }, [evQ.data, pvQ.data]);
+
 
   const evCounts = useMemo(() => {
     const c: Record<string, number> = {};
