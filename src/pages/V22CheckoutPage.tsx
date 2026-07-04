@@ -1419,6 +1419,16 @@ function V22CheckoutPageInner() {
   };
 
   const handlePlaceOrder = async () => {
+    // Track every Pay button click (before validation) — measures true payment intent.
+    if (store?.id) {
+      fireStorefrontEvent({
+        storeId: store.id,
+        eventName: "pay_click",
+        value: total,
+        currency,
+        metadata: { payment_method: paymentMethod },
+      });
+    }
     // Make sure the address section is open so the inputs exist in the DOM
     if (!expressMode) setExpressMode(true);
 
