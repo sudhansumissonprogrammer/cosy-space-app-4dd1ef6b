@@ -1999,7 +1999,7 @@ function CheckoutPageInner() {
         storeId: store.id,
         eventName: "pay_click",
         value: total,
-        currency: currencyCode,
+        currency,
         metadata: { payment_method: paymentMethod, gateway: activeGateway || null },
       });
     }
