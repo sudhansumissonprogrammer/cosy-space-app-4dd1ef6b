@@ -3,6 +3,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getOrCreateSessionId, getVisitorId } from "@/lib/visitorSession";
 
+// Direct PostgREST endpoint — used for nav-racing events (pay_click, purchase,
+// begin_checkout) via keepalive fetch so the browser doesn't abort them on
+// payment-gateway redirects. Matches the constants in usePageviewBeacon.
+const SUPA_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
+const SUPA_ANON =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
+
+
 export type StorefrontEventName =
   // Core funnel (already tracked)
   | "view_product"
