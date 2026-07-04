@@ -55,7 +55,17 @@ Deno.serve(async (req) => {
   for (let page = 0; page < MAX_PAGES && url; page++) {
     const r: Response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     const body: any = await r.json().catch(() => ({}));
-    if (!r.ok) return j({ error: "meta_error", details: body, page }, 502);
+    if (!r.ok) {
+      const metaMsg = body?.error?.message || "";
+      const metaCode = body?.error?.code;
+      // Code 200 "API access blocked" = token missing whatsapp_business_management scope
+      const hint = metaCode === 200 || /access blocked/i.test(metaMsg)
+        ? "WA_ACCESS_TOKEN is missing the 'whatsapp_business_management' permission. Regenerate the System User token in Meta Business Suite with BOTH whatsapp_business_messaging AND whatsapp_business_management scopes, then update the WA_ACCESS_TOKEN secret."
+        : metaCode === 190
+        ? "WA_ACCESS_TOKEN is expired or invalid. Regenerate it in Meta Business Suite."
+        : "Meta rejected the templates request. Check that WA_ACCESS_TOKEN belongs to a system user with access to this WABA.";
+      return j({ error: "meta_error", hint, details: body, page }, 502);
+    }
 
     for (const t of body?.data ?? []) {
       total++;
