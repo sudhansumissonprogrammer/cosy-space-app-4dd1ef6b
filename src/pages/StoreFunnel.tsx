@@ -253,10 +253,13 @@ export default function StoreFunnel() {
     { key: "pdp", label: "Viewed product", value: pdpViewSessions, icon: Eye, color: "hsl(190, 90%, 45%)" },
     { key: "atc", label: "Added to cart", value: evCounts.sessCount.add_to_cart || 0, icon: ShoppingCart, color: "hsl(160, 70%, 40%)" },
     { key: "chk", label: "Began checkout", value: evCounts.sessCount.begin_checkout || 0, icon: MousePointerClick, color: "hsl(38, 92%, 50%)" },
-    { key: "pay", label: "Clicked pay", value: evCounts.sessCount.pay_click || 0, icon: CreditCard, color: "hsl(280, 65%, 55%)" },
+    // pay_click undercounts on purpose — the insert races the payment-gateway
+    // redirect and often loses. Shown for reference; excluded from leak-scoring.
+    { key: "pay", label: "Clicked pay (tracking approximate)", value: evCounts.sessCount.pay_click || 0, icon: CreditCard, color: "hsl(280, 65%, 55%)" },
     { key: "ord", label: "Order created", value: orders.length, icon: Package, color: "hsl(340, 70%, 50%)" },
     { key: "paid", label: "Order PAID / confirmed", value: ordersPaid.length, icon: CheckCircle2, color: "hsl(142, 76%, 36%)" },
   ];
+
 
   // Find the biggest leak (steepest % drop between two non-zero steps).
   const worstIdx = useMemo(() => {
