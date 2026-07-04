@@ -53,13 +53,21 @@ export default function StorefrontSearchBar({
         import("@/hooks/useFacebookPixel"),
         import("@/lib/metaCapi"),
         import("@/hooks/useGA4"),
-      ]).then(([pixelMod, capiMod, gaMod]) => {
+        import("@/lib/storefrontEvents"),
+      ]).then(([pixelMod, capiMod, gaMod, sfMod]) => {
         const eid = pixelMod.generateEventId();
         pixelMod.fbPixelTrack("Search", { search_string: q }, eid);
-        // CAPI skipped for Search — low signal value unless running search ads, ~5% edge-call reduction.
-        // Pixel browser event still fires; merchants who need server Search can re-enable later.
-        void capiMod; void storeId;
+        void capiMod;
         gaMod.ga4Track("search", { search_term: q });
+        // Internal funnel: search_performed + search_no_results (money lost — add these products).
+        if (storeId) {
+          const hitCount = suggestions.length;
+          sfMod.fireStorefrontEvent({
+            storeId,
+            eventName: hitCount === 0 ? "search_no_results" : "search_performed",
+            metadata: { query: q.slice(0, 100), results: hitCount },
+          });
+        }
       }).catch(() => {});
     }, 900);
     return () => clearTimeout(timer);
