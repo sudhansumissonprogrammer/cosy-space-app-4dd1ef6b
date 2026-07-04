@@ -144,7 +144,7 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
       for (let from = 0; from < 200_000; from += PAGE) {
         const { data, error } = await (supabase as any)
           .from("storefront_events")
-          .select("event_name, session_id, value")
+          .select("event_name, session_id, value, metadata")
           .eq("store_id", storeId)
           .gte("created_at", since.toISOString())
           .order("created_at", { ascending: false })
@@ -288,6 +288,67 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
     }));
   }, [funnelDaily, funnelToday, pvDaily, orderCounts]);
 
+  // Diagnostics — mines today's raw events for actionable drop reasons.
+  // Powers the "Why they didn't buy" card so the merchant sees a fix list,
+  // not just a funnel shape.
+  const diagnostics = useMemo(() => {
+    const rows = (funnelToday || []) as any[];
+    const fieldStops: Record<string, number> = {};
+    const payFailReasons: Record<string, number> = {};
+    const zeroResultSearches: Record<string, number> = {};
+    const variantSelects = new Set<string>();
+    const pdpDeepScrolls = new Set<string>();
+    const cartRemoves: Record<string, number> = {};
+    const attributedSessions = new Set<string>();
+    const allSessions = new Set<string>();
+
+    for (const r of rows) {
+      const md = r.metadata || {};
+      const sid = r.session_id || "";
+      if (sid) allSessions.add(sid);
+      if (sid && (md.fbclid || md.gclid || md.ttclid || md.msclkid || md.utm_source)) {
+        attributedSessions.add(sid);
+      }
+      switch (r.event_name) {
+        case "checkout_field_error": {
+          const f = String(md.field || "unknown");
+          fieldStops[f] = (fieldStops[f] || 0) + 1;
+          break;
+        }
+        case "payment_failed": {
+          const reason = String(md.reason || md.payu_status || "unknown");
+          payFailReasons[reason] = (payFailReasons[reason] || 0) + 1;
+          break;
+        }
+        case "search_no_results": {
+          const q = String(md.query || "").trim().slice(0, 40);
+          if (q) zeroResultSearches[q] = (zeroResultSearches[q] || 0) + 1;
+          break;
+        }
+        case "pdp_variant_select": if (sid) variantSelects.add(sid); break;
+        case "pdp_deep_scroll":   if (sid) pdpDeepScrolls.add(sid); break;
+        case "cart_remove": {
+          const pid = String(r.product_id || md.productId || "unknown");
+          cartRemoves[pid] = (cartRemoves[pid] || 0) + 1;
+          break;
+        }
+      }
+    }
+
+    const top = (obj: Record<string, number>, n = 5) =>
+      Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n);
+
+    return {
+      fieldStops: top(fieldStops),
+      payFailReasons: top(payFailReasons),
+      zeroResultSearches: top(zeroResultSearches),
+      cartRemoves: top(cartRemoves),
+      variantSelectSessions: variantSelects.size,
+      pdpDeepScrollSessions: pdpDeepScrolls.size,
+      attributedPct: allSessions.size > 0 ? (attributedSessions.size / allSessions.size) * 100 : 0,
+    };
+  }, [funnelToday]);
+
   const cohortGrid = useMemo(() => {
     if (!cohorts || cohorts.length === 0) return { rows: [], maxOffset: 0 };
     const byCohort: Record<string, { customers: number; periods: Record<number, number> }> = {};
@@ -399,6 +460,94 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
           )}
         </CardContent>
       </Card>
+
+      {/* Drop-off diagnostics — actionable "why they didn't buy" list */}
+      {(diagnostics.fieldStops.length > 0 ||
+        diagnostics.payFailReasons.length > 0 ||
+        diagnostics.zeroResultSearches.length > 0 ||
+        diagnostics.cartRemoves.length > 0) && (
+        <Card className="border shadow-none">
+          <CardHeader className="p-3 pb-0">
+            <CardTitle className="text-sm font-medium flex items-center gap-1.5">
+              <TrendingDown className="h-3.5 w-3.5 text-destructive" /> Why they didn't buy (today)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-2 space-y-3 text-xs">
+            {diagnostics.payFailReasons.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Payment failure reasons</p>
+                <ul className="space-y-0.5">
+                  {diagnostics.payFailReasons.map(([reason, n]) => (
+                    <li key={reason} className="flex justify-between">
+                      <span className="text-foreground capitalize">{reason.replace(/_/g, " ")}</span>
+                      <span className="tabular-nums font-semibold text-destructive">{n}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {diagnostics.fieldStops.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Checkout fields that stopped shoppers</p>
+                <ul className="space-y-0.5">
+                  {diagnostics.fieldStops.map(([field, n]) => (
+                    <li key={field} className="flex justify-between">
+                      <span className="text-foreground">{field}</span>
+                      <span className="tabular-nums font-semibold">{n}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {diagnostics.zeroResultSearches.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                  Searches with zero results (add these products!)
+                </p>
+                <ul className="space-y-0.5">
+                  {diagnostics.zeroResultSearches.map(([q, n]) => (
+                    <li key={q} className="flex justify-between">
+                      <span className="text-foreground truncate mr-2">"{q}"</span>
+                      <span className="tabular-nums font-semibold">{n}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {diagnostics.cartRemoves.length > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                  Most-removed products from cart
+                </p>
+                <ul className="space-y-0.5">
+                  {diagnostics.cartRemoves.map(([pid, n]) => (
+                    <li key={pid} className="flex justify-between">
+                      <span className="text-foreground truncate mr-2 font-mono text-[10px]">{pid.slice(0, 8)}…</span>
+                      <span className="tabular-nums font-semibold">{n}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="pt-2 border-t border-border grid grid-cols-3 gap-2 text-[10px]">
+              <div>
+                <p className="text-muted-foreground">Variant selected</p>
+                <p className="font-semibold text-foreground">{diagnostics.variantSelectSessions} sessions</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Read PDP (75%+)</p>
+                <p className="font-semibold text-foreground">{diagnostics.pdpDeepScrollSessions} sessions</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Attributed traffic</p>
+                <p className="font-semibold text-foreground">{diagnostics.attributedPct.toFixed(0)}%</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+
 
       {/* Traffic sources + Devices */}
       <div className="grid grid-cols-2 gap-2.5">

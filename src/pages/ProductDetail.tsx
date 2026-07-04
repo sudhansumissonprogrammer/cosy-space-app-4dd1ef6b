@@ -425,6 +425,31 @@ export default function ProductDetail() {
     } catch {}
   }, [product?.id]);
 
+  // PDP deep-scroll tracking — fires once when the user scrolls past 75% of the page.
+  // Signal: whether the shopper actually read the product page or bounced from the fold.
+  useEffect(() => {
+    if (!store?.id || !product?.id) return;
+    let fired = false;
+    const onScroll = () => {
+      if (fired) return;
+      const scrolled = window.scrollY + window.innerHeight;
+      const total = document.documentElement.scrollHeight;
+      if (total > 0 && scrolled / total >= 0.75) {
+        fired = true;
+        try {
+          fireStorefrontEvent({
+            storeId: store.id,
+            eventName: "pdp_deep_scroll",
+            productId: product.id,
+          });
+        } catch {}
+        window.removeEventListener("scroll", onScroll);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [store?.id, product?.id]);
+
   // Singular /product/ canonical — consolidates the legacy /products/ alias.
   useCanonical(product ? `${getStoreBaseUrl(store.slug, (store as any)?.custom_domain)}/product/${product.slug || product.id}` : null);
 
@@ -765,7 +790,20 @@ export default function ProductDetail() {
                   <button
                     key={v.id}
                     type="button"
-                    onClick={() => setSelectedVariant(selectedVariant?.id === v.id ? null : v)}
+                    onClick={() => {
+                      const wasSelected = selectedVariant?.id === v.id;
+                      setSelectedVariant(wasSelected ? null : v);
+                      if (!wasSelected && store?.id && product?.id) {
+                        try {
+                          fireStorefrontEvent({
+                            storeId: store.id,
+                            eventName: "pdp_variant_select",
+                            productId: product.id,
+                            metadata: { variant_id: v.id, variant_name: v.name },
+                          });
+                        } catch {}
+                      }
+                    }}
                     className={`transition-[transform,opacity,colors,box-shadow] duration-200 active:scale-95 ${
                       isV18
                         ? `flex h-10 w-10 items-center justify-center border text-sm ${

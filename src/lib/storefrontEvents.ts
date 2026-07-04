@@ -4,11 +4,32 @@ import { supabase } from "@/integrations/supabase/client";
 import { getOrCreateSessionId, getVisitorId } from "@/lib/visitorSession";
 
 export type StorefrontEventName =
+  // Core funnel (already tracked)
   | "view_product"
   | "add_to_cart"
   | "begin_checkout"
   | "pay_click"
-  | "purchase";
+  | "purchase"
+  // Phase 1 — checkout & payment drop analysis
+  | "checkout_field_error"
+  | "checkout_abandon"
+  | "payment_failed"
+  | "payment_retry"
+  // Phase 2 — PDP engagement & discovery
+  | "pdp_variant_select"
+  | "pdp_deep_scroll"
+  | "pdp_image_view"
+  | "pdp_out_of_stock"
+  | "search_performed"
+  | "search_no_results"
+  | "category_view"
+  // Phase 3 — cart & retention
+  | "cart_view"
+  | "cart_remove"
+  | "cart_qty_change"
+  | "wishlist_add"
+  | "whatsapp_click"
+  | "call_owner_click";
 
 interface FireEventArgs {
   storeId: string;
@@ -18,6 +39,25 @@ interface FireEventArgs {
   currency?: string;
   metadata?: Record<string, any>;
 }
+
+// Pull first-touch attribution from sessionStorage (set by usePageviewBeacon).
+// Attaching this to every event lets the dashboard slice funnels by source/ad
+// with no extra joins — the metadata jsonb already accepts it.
+function readAttribution(): Record<string, string> {
+  try {
+    const raw = sessionStorage.getItem("__sf_utm__");
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, string | null>;
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (v) out[k] = String(v).slice(0, 200);
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 
 // Module-level dedup: same event for same session+product within 30s collapses.
 const recentEvents = new Map<string, number>();
@@ -67,7 +107,7 @@ export function fireStorefrontEvent(args: FireEventArgs): void {
         value: args.value ?? null,
         currency: args.currency || null,
         path: typeof window !== "undefined" ? window.location.pathname.slice(0, 500) : null,
-        metadata: args.metadata || null,
+        metadata: { ...(args.metadata || {}), ...readAttribution() },
       })
       .then(() => {}, () => {});
   } catch {}

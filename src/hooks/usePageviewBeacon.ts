@@ -53,6 +53,15 @@ function captureUtmAndLanding(pathname: string) {
       utm_campaign: url.searchParams.get("utm_campaign"),
       utm_term: url.searchParams.get("utm_term"),
       utm_content: url.searchParams.get("utm_content"),
+      // Ad-click IDs — the only way to tie a purchase back to a specific ad.
+      // fbclid = Meta, gclid = Google, ttclid = TikTok, wbraid/gbraid = Google iOS,
+      // msclkid = Microsoft/Bing, epik = Pinterest, li_fat_id = LinkedIn.
+      fbclid: url.searchParams.get("fbclid"),
+      gclid: url.searchParams.get("gclid"),
+      ttclid: url.searchParams.get("ttclid"),
+      wbraid: url.searchParams.get("wbraid"),
+      gbraid: url.searchParams.get("gbraid"),
+      msclkid: url.searchParams.get("msclkid"),
     };
     // Persist UTM + landing for the session (first hit wins).
     if (!sessionStorage.getItem(UTM_KEY)) {
