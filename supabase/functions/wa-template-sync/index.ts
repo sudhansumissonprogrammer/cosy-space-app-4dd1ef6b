@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
   if (!authed) return j({ error: "unauthorized" }, 401);
 
   const cfg = await loadPlatformConfig(admin);
-  if (!platformConfigUsable(cfg)) return j({ skipped: true, reason: "wa_disabled" });
+  if (!cfg?.wa_enabled) return j({ skipped: true, reason: "wa_disabled" });
   const waba = (cfg as any)?.wa_waba_id;
   const token = (cfg as any)?.wa_access_token;
   if (!waba || !token) return j({ skipped: true, reason: "no_waba_or_token" });
