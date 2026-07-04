@@ -1403,6 +1403,16 @@ function V22CheckoutPageInner() {
   };
 
   const focusField = (id: string) => {
+    // Funnel event — logs which checkout field made the user stop.
+    if (store?.id) {
+      try {
+        fireStorefrontEvent({
+          storeId: store.id,
+          eventName: "checkout_field_error",
+          metadata: { field: id, method: paymentMethod },
+        });
+      } catch {}
+    }
     // Wait one frame so any collapsed section (express mode) has time to expand
     requestAnimationFrame(() => {
       const el = document.getElementById(id) as HTMLInputElement | null;
