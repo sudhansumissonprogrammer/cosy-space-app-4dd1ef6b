@@ -348,26 +348,49 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
         </CardHeader>
         <CardContent className="p-3 pt-2">
           {funnel.some(f => f.value > 0) ? (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {funnel.map((step, i) => (
                 <div key={step.name} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-foreground">{step.name}</span>
-                    <span className="text-muted-foreground">
-                      {step.value.toLocaleString()}
+                  <div className="flex items-center justify-between text-xs gap-2">
+                    <span className="font-medium text-foreground truncate">{step.name}</span>
+                    <span className="text-muted-foreground whitespace-nowrap tabular-nums">
+                      <span className="text-foreground font-semibold">{step.value.toLocaleString()}</span>
+                      {i > 0 && (
+                        <span className="ml-1.5">
+                          {step.convFromPrev.toFixed(0)}% of prev
+                        </span>
+                      )}
                       {i > 0 && step.dropOff > 0 && (
                         <span className="ml-1.5 text-destructive">−{step.dropOff.toFixed(0)}%</span>
                       )}
                     </span>
                   </div>
-                  <div className="h-6 w-full rounded bg-muted overflow-hidden">
+                  <div className="h-6 w-full rounded bg-muted overflow-hidden relative">
                     <div
-                      className="h-full rounded transition-[transform,opacity,colors,box-shadow] flex items-center justify-end pr-2 text-[10px] font-medium text-primary-foreground"
+                      className="h-full rounded transition-all"
                       style={{ width: `${Math.max(step.width, 4)}%`, backgroundColor: step.color }}
                     />
+                    {i > 0 && (
+                      <span className="absolute inset-y-0 right-2 flex items-center text-[10px] text-muted-foreground">
+                        {step.convFromTop.toFixed(1)}% of sessions
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
+              {(orderCounts?.cancelled ?? 0) > 0 && (
+                <div className="mt-2 pt-2 border-t border-border flex items-center justify-between text-xs">
+                  <span className="text-destructive font-medium">Cancelled / failed at payment</span>
+                  <span className="tabular-nums text-destructive font-semibold">
+                    {orderCounts!.cancelled} of {orderCounts!.created}
+                    {orderCounts!.created > 0 && (
+                      <span className="ml-1 text-muted-foreground">
+                        ({((orderCounts!.cancelled / orderCounts!.created) * 100).toFixed(0)}%)
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
             </div>
           ) : (
             <p className="py-6 text-center text-xs text-muted-foreground">
