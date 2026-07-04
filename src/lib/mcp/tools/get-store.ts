@@ -18,13 +18,13 @@ export default defineTool({
     const { data, error } = await supabase
       .from("stores")
       .select(
-        "slug, name, description, logo_url, banner_url, whatsapp_number, contact_email, theme, is_published",
+        "slug, name, description, logo_url, banner_url, whatsapp_number, owner_email, theme, city, state, instagram_url, facebook_url, custom_domain",
       )
       .eq("slug", slug)
-      .eq("is_published", true)
+      .eq("is_suspended", false)
       .maybeSingle();
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    if (!data) return { content: [{ type: "text", text: `No published store with slug "${slug}".` }], isError: true };
+    if (!data) return { content: [{ type: "text", text: `No active store with slug "${slug}".` }], isError: true };
     return {
       content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
       structuredContent: { store: data },

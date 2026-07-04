@@ -18,8 +18,8 @@ export default defineTool({
     });
     let q = supabase
       .from("stores")
-      .select("slug, name, description, logo_url")
-      .eq("is_published", true)
+      .select("slug, name, description, logo_url, city, state")
+      .eq("is_suspended", false)
       .limit(limit ?? 20);
     if (search) q = q.or(`name.ilike.%${search}%,slug.ilike.%${search}%`);
     const { data, error } = await q;
