@@ -100,39 +100,65 @@ export default function StoreFunnel() {
   const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
   // ---- Page views (sessions / visitors / landing / device / source) ----
+  // is_bot filter is server-side so bots don't push real rows past the row
+  // cap. `.or()` covers both `is_bot=false` and legacy null rows.
+  // Batched fetch handles high-volume stores (a busy shop can do >20k pv/30d).
   const pvQ = useQuery({
     enabled: !!storeId,
     queryKey: ["funnel-pv", storeId, since],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("page_views")
-        .select("session_id,visitor_id,path,device,utm_source,utm_medium,utm_campaign,referrer,landing_path,is_bot")
-        .eq("store_id", storeId!)
-        .gte("created_at", since)
-        .limit(20000);
-      if (error) throw error;
-      return (data || []).filter((r: any) => !r.is_bot);
+      const PAGE = 5000;
+      const MAX_PAGES = 8; // hard ceiling = 40k rows so a runaway shop can't OOM the tab
+      let all: any[] = [];
+      let truncated = false;
+      for (let i = 0; i < MAX_PAGES; i++) {
+        const { data, error } = await supabase
+          .from("page_views")
+          .select("session_id,visitor_id,path,device,utm_source,utm_medium,utm_campaign,referrer,landing_path")
+          .eq("store_id", storeId!)
+          .or("is_bot.is.null,is_bot.eq.false")
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .range(i * PAGE, i * PAGE + PAGE - 1);
+        if (error) throw error;
+        if (!data?.length) break;
+        all = all.concat(data);
+        if (data.length < PAGE) break;
+        if (i === MAX_PAGES - 1) truncated = true;
+      }
+      return { rows: all, truncated };
     },
   });
 
   // ---- Storefront events (funnel steps) ----
+  // Same batched pattern — event volume can rival page views on busy stores.
   const evQ = useQuery({
     enabled: !!storeId,
     queryKey: ["funnel-events", storeId, since],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("storefront_events")
-        .select("event_name,session_id,product_id,value,metadata")
-        .eq("store_id", storeId!)
-        .gte("created_at", since)
-        .limit(20000);
-      if (error) throw error;
-      return (data || []) as Array<{
+      const PAGE = 5000;
+      const MAX_PAGES = 6;
+      let all: any[] = [];
+      for (let i = 0; i < MAX_PAGES; i++) {
+        const { data, error } = await (supabase as any)
+          .from("storefront_events")
+          .select("event_name,session_id,product_id,value")
+          .eq("store_id", storeId!)
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .range(i * PAGE, i * PAGE + PAGE - 1);
+        if (error) throw error;
+        if (!data?.length) break;
+        all = all.concat(data);
+        if (data.length < PAGE) break;
+      }
+      return all as Array<{
         event_name: string; session_id: string | null;
-        product_id: string | null; value: number | null; metadata: any;
+        product_id: string | null; value: number | null;
       }>;
     },
   });
+
 
   // ---- Orders (created + status + payment method + repeat) ----
   const ordQ = useQuery({
