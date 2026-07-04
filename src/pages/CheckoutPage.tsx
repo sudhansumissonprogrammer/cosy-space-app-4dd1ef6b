@@ -1992,6 +1992,17 @@ function CheckoutPageInner() {
   };
 
   const handlePlaceOrder = async () => {
+    // Track every Pay button click (before validation) so we can measure
+    // how many people actually attempt to pay vs just open checkout.
+    if (store?.id) {
+      fireStorefrontEvent({
+        storeId: store.id,
+        eventName: "pay_click",
+        value: total,
+        currency: currencyCode,
+        metadata: { payment_method: paymentMethod, gateway: activeGateway || null },
+      });
+    }
     // Guard: never let an order through before we know what the store accepts.
     if (!paymentConfigLoaded) {
       toast.error(t("Loading payment options, please wait…", "भुगतान विकल्प लोड हो रहे हैं, कृपया प्रतीक्षा करें…"));
