@@ -1990,6 +1990,17 @@ function CheckoutPageInner() {
   };
 
   const focusField = (id: string) => {
+    // Funnel event — records which field made the user stop.
+    // Dedup handled server-side (30s window per session in fireStorefrontEvent).
+    if (store?.id) {
+      try {
+        fireStorefrontEvent({
+          storeId: store.id,
+          eventName: "checkout_field_error",
+          metadata: { field: id, gateway: activeGateway || null, method: paymentMethod },
+        });
+      } catch {}
+    }
     // Wait one frame so any collapsed section (express mode) has time to expand
     requestAnimationFrame(() => {
       const el = document.getElementById(id) as HTMLInputElement | null;
