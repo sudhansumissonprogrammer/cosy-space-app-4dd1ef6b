@@ -100,39 +100,65 @@ export default function StoreFunnel() {
   const sym = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
   // ---- Page views (sessions / visitors / landing / device / source) ----
+  // is_bot filter is server-side so bots don't push real rows past the row
+  // cap. `.or()` covers both `is_bot=false` and legacy null rows.
+  // Batched fetch handles high-volume stores (a busy shop can do >20k pv/30d).
   const pvQ = useQuery({
     enabled: !!storeId,
     queryKey: ["funnel-pv", storeId, since],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("page_views")
-        .select("session_id,visitor_id,path,device,utm_source,utm_medium,utm_campaign,referrer,landing_path,is_bot")
-        .eq("store_id", storeId!)
-        .gte("created_at", since)
-        .limit(20000);
-      if (error) throw error;
-      return (data || []).filter((r: any) => !r.is_bot);
+      const PAGE = 5000;
+      const MAX_PAGES = 8; // hard ceiling = 40k rows so a runaway shop can't OOM the tab
+      let all: any[] = [];
+      let truncated = false;
+      for (let i = 0; i < MAX_PAGES; i++) {
+        const { data, error } = await supabase
+          .from("page_views")
+          .select("session_id,visitor_id,path,device,utm_source,utm_medium,utm_campaign,referrer,landing_path")
+          .eq("store_id", storeId!)
+          .or("is_bot.is.null,is_bot.eq.false")
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .range(i * PAGE, i * PAGE + PAGE - 1);
+        if (error) throw error;
+        if (!data?.length) break;
+        all = all.concat(data);
+        if (data.length < PAGE) break;
+        if (i === MAX_PAGES - 1) truncated = true;
+      }
+      return { rows: all, truncated };
     },
   });
 
   // ---- Storefront events (funnel steps) ----
+  // Same batched pattern — event volume can rival page views on busy stores.
   const evQ = useQuery({
     enabled: !!storeId,
     queryKey: ["funnel-events", storeId, since],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("storefront_events")
-        .select("event_name,session_id,product_id,value,metadata")
-        .eq("store_id", storeId!)
-        .gte("created_at", since)
-        .limit(20000);
-      if (error) throw error;
-      return (data || []) as Array<{
+      const PAGE = 5000;
+      const MAX_PAGES = 6;
+      let all: any[] = [];
+      for (let i = 0; i < MAX_PAGES; i++) {
+        const { data, error } = await (supabase as any)
+          .from("storefront_events")
+          .select("event_name,session_id,product_id,value")
+          .eq("store_id", storeId!)
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .range(i * PAGE, i * PAGE + PAGE - 1);
+        if (error) throw error;
+        if (!data?.length) break;
+        all = all.concat(data);
+        if (data.length < PAGE) break;
+      }
+      return all as Array<{
         event_name: string; session_id: string | null;
-        product_id: string | null; value: number | null; metadata: any;
+        product_id: string | null; value: number | null;
       }>;
     },
   });
+
 
   // ---- Orders (created + status + payment method + repeat) ----
   const ordQ = useQuery({
@@ -171,23 +197,33 @@ export default function StoreFunnel() {
   // --- Aggregations ---
   const sessions = useMemo(() => {
     const s = new Set<string>();
-    pvQ.data?.forEach((r: any) => r.session_id && s.add(r.session_id));
+    pvQ.data?.rows.forEach((r: any) => r.session_id && s.add(r.session_id));
     return s.size;
   }, [pvQ.data]);
 
   const visitors = useMemo(() => {
     const s = new Set<string>();
-    pvQ.data?.forEach((r: any) => r.visitor_id && s.add(r.visitor_id));
+    pvQ.data?.rows.forEach((r: any) => r.visitor_id && s.add(r.visitor_id));
     return s.size;
   }, [pvQ.data]);
 
+  // PDP: prefer view_product event over path filter — React fires the event
+  // reliably even when the pageview beacon loses the race on ad-click bounces.
+  // Falls back to path filter only if event pipeline has zero rows for the
+  // window (e.g. very old data before storefront_events was deployed).
   const pdpViewSessions = useMemo(() => {
-    const s = new Set<string>();
-    pvQ.data?.forEach((r: any) => {
-      if (r.path?.startsWith("/product/") && r.session_id) s.add(r.session_id);
+    const eventSess = new Set<string>();
+    evQ.data?.forEach((e) => {
+      if (e.event_name === "view_product" && e.session_id) eventSess.add(e.session_id);
     });
-    return s.size;
-  }, [pvQ.data]);
+    if (eventSess.size > 0) return eventSess.size;
+    const pvSess = new Set<string>();
+    pvQ.data?.rows.forEach((r: any) => {
+      if (r.path?.startsWith("/product/") && r.session_id) pvSess.add(r.session_id);
+    });
+    return pvSess.size;
+  }, [evQ.data, pvQ.data]);
+
 
   const evCounts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -217,22 +253,25 @@ export default function StoreFunnel() {
     { key: "pdp", label: "Viewed product", value: pdpViewSessions, icon: Eye, color: "hsl(190, 90%, 45%)" },
     { key: "atc", label: "Added to cart", value: evCounts.sessCount.add_to_cart || 0, icon: ShoppingCart, color: "hsl(160, 70%, 40%)" },
     { key: "chk", label: "Began checkout", value: evCounts.sessCount.begin_checkout || 0, icon: MousePointerClick, color: "hsl(38, 92%, 50%)" },
-    { key: "pay", label: "Clicked pay", value: evCounts.sessCount.pay_click || 0, icon: CreditCard, color: "hsl(280, 65%, 55%)" },
+    // pay_click undercounts on purpose — the insert races the payment-gateway
+    // redirect and often loses. Shown for reference; excluded from leak-scoring.
+    { key: "pay", label: "Clicked pay (tracking approximate)", value: evCounts.sessCount.pay_click || 0, icon: CreditCard, color: "hsl(280, 65%, 55%)" },
     { key: "ord", label: "Order created", value: orders.length, icon: Package, color: "hsl(340, 70%, 50%)" },
     { key: "paid", label: "Order PAID / confirmed", value: ordersPaid.length, icon: CheckCircle2, color: "hsl(142, 76%, 36%)" },
   ];
+
 
   // Find the biggest leak (steepest % drop between two non-zero steps).
   const worstIdx = useMemo(() => {
     let worst = -1;
     let worstDrop = 0;
     for (let i = 1; i < steps.length; i++) {
+      // pay_click is instrumentation-lossy; treat chk→ord as the real edge.
+      if (steps[i].key === "pay" || steps[i - 1].key === "pay") continue;
       const prev = steps[i - 1].value;
       const cur = steps[i].value;
-      if (prev < 5) continue; // ignore tiny samples
+      if (prev < 5) continue;
       const drop = 1 - cur / prev;
-      // Weight later-funnel leaks slightly higher — losing a pay-clicker is
-      // costlier than losing a browsing session.
       const weight = 1 + i * 0.15;
       if (drop * weight > worstDrop) {
         worstDrop = drop * weight;
@@ -241,6 +280,7 @@ export default function StoreFunnel() {
     }
     return worst;
   }, [steps]);
+
 
   const base = steps[0].value || 1;
 
@@ -262,7 +302,7 @@ export default function StoreFunnel() {
   // Traffic sources — combine utm_source + referrer host
   const sourceTable = useMemo(() => {
     const m = new Map<string, number>();
-    pvQ.data?.forEach((r: any) => {
+    pvQ.data?.rows.forEach((r: any) => {
       let src = r.utm_source?.toLowerCase();
       if (!src && r.referrer) {
         try {
@@ -282,7 +322,7 @@ export default function StoreFunnel() {
   // Landing pages
   const landingTable = useMemo(() => {
     const m = new Map<string, Set<string>>();
-    pvQ.data?.forEach((r: any) => {
+    pvQ.data?.rows.forEach((r: any) => {
       const p = r.landing_path || r.path;
       if (!p || !r.session_id) return;
       if (!m.has(p)) m.set(p, new Set());
@@ -297,7 +337,7 @@ export default function StoreFunnel() {
   // Device split
   const deviceTable = useMemo(() => {
     const m = new Map<string, Set<string>>();
-    pvQ.data?.forEach((r: any) => {
+    pvQ.data?.rows.forEach((r: any) => {
       const d = r.device || "unknown";
       if (!r.session_id) return;
       if (!m.has(d)) m.set(d, new Set());
@@ -308,7 +348,7 @@ export default function StoreFunnel() {
       .sort((a, b) => b[1] - a[1]);
   }, [pvQ.data]);
 
-  // Top products by ATC
+  // Top products by ATC (product_id → count)
   const topAtc = useMemo(() => {
     const m = new Map<string, number>();
     evQ.data?.forEach((e) => {
@@ -317,6 +357,25 @@ export default function StoreFunnel() {
     });
     return Array.from(m.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6);
   }, [evQ.data]);
+
+  // Resolve product names for the Top-ATC list (batched, only for the visible ids).
+  const topAtcIds = topAtc.map(([id]) => id);
+  const productNamesQ = useQuery({
+    enabled: topAtcIds.length > 0,
+    queryKey: ["funnel-product-names", storeId, topAtcIds],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id,name")
+        .in("id", topAtcIds);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      (data || []).forEach((p: any) => { map[p.id] = p.name; });
+      return map;
+    },
+  });
+
 
   // Repeat vs new (paid orders only — most meaningful)
   const repeatCount = ordersPaid.filter((o) => o.is_repeat_customer).length;
@@ -407,6 +466,13 @@ export default function StoreFunnel() {
           </CardContent>
         </Card>
       )}
+
+      {pvQ.data?.truncated && (
+        <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+          Very high traffic — showing latest 40,000 pageviews for this window. Percentages remain representative but exact totals may be higher.
+        </div>
+      )}
+
 
       {/* Headline metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -565,12 +631,18 @@ export default function StoreFunnel() {
           </CardHeader>
           <CardContent>
             {topAtc.length === 0 && <p className="text-xs text-muted-foreground">—</p>}
-            {topAtc.map(([pid, n]) => (
-              <div key={pid} className="flex justify-between py-1.5 text-xs border-b last:border-0 gap-2">
-                <span className="truncate font-mono text-[10px] text-muted-foreground">{pid.slice(0, 8)}…</span>
-                <span className="font-semibold tabular-nums">{n} ATC</span>
-              </div>
-            ))}
+            {topAtc.map(([pid, n]) => {
+              const name = productNamesQ.data?.[pid];
+              return (
+                <div key={pid} className="flex justify-between py-1.5 text-xs border-b last:border-0 gap-2">
+                  <span className="truncate">
+                    {name || <span className="font-mono text-[10px] text-muted-foreground">{pid.slice(0, 8)}…</span>}
+                  </span>
+                  <span className="font-semibold tabular-nums whitespace-nowrap">{n} ATC</span>
+                </div>
+              );
+            })}
+
           </CardContent>
         </Card>
       </div>
