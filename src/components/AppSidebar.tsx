@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Settings, LogOut, Package, Upload, ShoppingBag,
   Users, UserCheck, Globe, Store, Plus, CreditCard, Tag, Truck, Receipt,
   ShoppingCart, Palette, BarChart3, MessageSquare, FolderOpen, Image as ImageIcon,
-  Clock, FileText, Star, Wallet,
+  Clock, FileText, Star, Wallet, TrendingDown,
 } from "lucide-react";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { NavLink } from "@/components/NavLink";
@@ -118,6 +118,7 @@ export function AppSidebar() {
   const marketingItems = storeSlug
     ? [
         ...(!isWhatsAppOnly ? [{ title: "WhatsApp Marketing", url: `/dashboard/stores/${storeSlug}/whatsapp`, icon: MessageSquare, menuKey: "whatsapp_marketing" }] : []),
+        { title: "Sales Funnel", url: `/dashboard/stores/${storeSlug}/funnel`, icon: TrendingDown, menuKey: "sales_funnel" },
         { title: "Tracking & Analytics", url: `/dashboard/stores/${storeSlug}/tracking`, icon: BarChart3, menuKey: "tracking_analytics" },
       ].filter((i) => isVisible(i.menuKey))
     : [];

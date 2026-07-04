@@ -64,6 +64,7 @@ const WhatsAppMarketing = lazy(() => import("@/pages/WhatsAppMarketing"));
 const StoreWhatsAppSimple = lazy(() => import("@/pages/StoreWhatsAppSimple"));
 import { WhatsAppGate } from "@/components/whatsapp/WhatsAppGate";
 const StoreTracking = lazy(() => import("@/pages/StoreTracking"));
+const StoreFunnel = lazy(() => import("@/pages/StoreFunnel"));
 
 const CategoryManagement = lazy(() => import("@/pages/CategoryManagement"));
 const MediaLibrary = lazy(() => import("@/pages/MediaLibrary"));
@@ -162,6 +163,7 @@ export default function AuthRoutes() {
           <Route path="stores/:storeSlug/pages/:pageId/edit" element={<StorePageEditor />} />
           <Route path="stores/:storeSlug/whatsapp" element={<WhatsAppGate platform={<StoreWhatsAppSimple />} merchant={<WhatsAppMarketing />} />} />
           <Route path="stores/:storeSlug/tracking" element={<StoreTracking />} />
+          <Route path="stores/:storeSlug/funnel" element={<StoreFunnel />} />
           <Route path="stores/:storeSlug/best-sellers" element={<BestSellerManagement />} />
           <Route path="stores/:storeSlug/spacing-check" element={<SpacingCheck />} />
           
