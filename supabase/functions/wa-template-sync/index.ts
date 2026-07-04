@@ -76,16 +76,19 @@ Deno.serve(async (req) => {
     for (const t of body?.data ?? []) {
       total++;
       seen.push(t.name);
+      // UPSERT so templates approved at Meta but not yet tracked in DB
+      // (e.g. new versions like _v3, _v4) show up in the admin panel too.
       const { error } = await admin
         .from("platform_wa_templates")
-        .update({
+        .upsert({
+          name: t.name,
           meta_status: t.status,
           meta_template_id: t.id,
           quality_score: t?.quality_score?.score ?? null,
-          language: t.language ?? undefined,
+          language: t.language ?? "en",
+          category: t.category ?? null,
           last_synced_at: new Date().toISOString(),
-        })
-        .eq("name", t.name);
+        } as any, { onConflict: "name" });
       if (!error) updated++;
     }
     url = body?.paging?.next ?? null;
