@@ -96,19 +96,50 @@ export function fireStorefrontEvent(args: FireEventArgs): void {
       }
     }
 
+    const row = {
+      store_id: args.storeId,
+      session_id: sid,
+      visitor_id: vid,
+      event_name: args.eventName,
+      product_id: args.productId || null,
+      value: args.value ?? null,
+      currency: args.currency || null,
+      path: typeof window !== "undefined" ? window.location.pathname.slice(0, 500) : null,
+      metadata: { ...(args.metadata || {}), ...readAttribution() },
+    };
+
+    // pay_click races the payment-gateway redirect. supabase-js uses plain
+    // fetch which the browser aborts on navigation → ~80% of pay_clicks were
+    // being lost. Send via keepalive fetch so the request survives unload.
+    // Same for purchase (post-payment redirects) and begin_checkout for good
+    // measure (some themes hard-navigate on checkout entry).
+    const NAV_SAFE = args.eventName === "pay_click"
+      || args.eventName === "purchase"
+      || args.eventName === "begin_checkout";
+
+    if (NAV_SAFE && typeof fetch !== "undefined") {
+      try {
+        fetch(`${SUPA_URL}/rest/v1/storefront_events`, {
+          method: "POST",
+          keepalive: true,
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SUPA_ANON,
+            Authorization: `Bearer ${SUPA_ANON}`,
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify(row),
+        }).catch(() => {});
+        return;
+      } catch {
+        // fall through to supabase-js path
+      }
+    }
+
     supabase
       .from("storefront_events" as any)
-      .insert({
-        store_id: args.storeId,
-        session_id: sid,
-        visitor_id: vid,
-        event_name: args.eventName,
-        product_id: args.productId || null,
-        value: args.value ?? null,
-        currency: args.currency || null,
-        path: typeof window !== "undefined" ? window.location.pathname.slice(0, 500) : null,
-        metadata: { ...(args.metadata || {}), ...readAttribution() },
-      })
+      .insert(row)
       .then(() => {}, () => {});
   } catch {}
 }
+
