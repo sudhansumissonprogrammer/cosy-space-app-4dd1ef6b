@@ -97,12 +97,23 @@ export function AdminPlatformTemplatesTab() {
     setBusy("__syncAll");
     try {
       const { data, error } = await supabase.functions.invoke("wa-template-sync", { body: {} });
-      if (error) throw error;
+      if (error) {
+        // FunctionsHttpError hides the JSON body; fetch it out for a useful message.
+        let hint = "";
+        try {
+          const ctx: any = (error as any).context;
+          if (ctx && typeof ctx.json === "function") {
+            const j = await ctx.json();
+            hint = j?.hint || j?.details?.error?.message || j?.error || "";
+          }
+        } catch {}
+        throw new Error(hint || error.message);
+      }
       const d: any = data || {};
       if (d.skipped) toast.info(`Sync skipped: ${d.reason}`);
       else toast.success(`Synced ${d.updated ?? 0} of ${d.total ?? 0} templates from Meta`);
       await load();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(e.message, { duration: 10000 }); }
     finally { setBusy(null); }
   };
 
