@@ -250,6 +250,17 @@ export default function StorePayments() {
     );
   }
 
+  // Derive the gateway that is ACTUALLY live per DB (source of truth for checkout).
+  // A stale entry in payment_methods without credentials would silently fall through,
+  // so we require both to consider a gateway "live".
+  const liveMethods: string[] = (paymentConfig?.payment_methods as string[] | undefined) || [];
+  const liveGateway: OnlineGateway =
+    liveMethods.includes("razorpay") && paymentConfig?.razorpay_key_id ? "razorpay"
+    : liveMethods.includes("cashfree") && paymentConfig?.cashfree_app_id ? "cashfree"
+    : liveMethods.includes("payu") && paymentConfig?.payu_merchant_key ? "payu"
+    : "none";
+  const gatewayMismatch = onlineGateway !== "none" && onlineGateway !== liveGateway;
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
@@ -258,6 +269,33 @@ export default function StorePayments() {
           Configure how customers place orders and pay
         </p>
       </div>
+
+      {/* Live-gateway indicator — shows what's ACTUALLY charging customers right now,
+          not just what's picked in the form. Prevents "I switched but old one still opens". */}
+      {showPaymentConfig && (
+        <div className={`rounded-xl border p-3 text-sm ${
+          gatewayMismatch
+            ? "border-amber-400 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+            : "border-primary/30 bg-primary/5 text-foreground"
+        }`}>
+          <div className="flex items-start gap-2">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+            <div className="flex-1">
+              <p className="font-medium">
+                Live on checkout: {liveGateway === "none"
+                  ? "COD only (no online gateway saved)"
+                  : liveGateway.charAt(0).toUpperCase() + liveGateway.slice(1)}
+              </p>
+              {gatewayMismatch && (
+                <p className="mt-0.5 text-xs">
+                  You picked <strong>{onlineGateway}</strong> below, but it's not saved yet.
+                  Enter the credentials and click <strong>Save</strong> — otherwise customers keep seeing <strong>{liveGateway}</strong>.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Section 1: Order Mode */}
       <Card>
