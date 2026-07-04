@@ -40,6 +40,31 @@ interface FireEventArgs {
   metadata?: Record<string, any>;
 }
 
+// Pull first-touch attribution from sessionStorage (set by usePageviewBeacon).
+// Attaching this to every event lets the dashboard slice funnels by source/ad
+// with no extra joins — the metadata jsonb already accepts it.
+function readAttribution(): Record<string, string> {
+  try {
+    const raw = sessionStorage.getItem("__sf_utm__");
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, string | null>;
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (v) out[k] = String(v).slice(0, 200);
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+  storeId: string;
+  eventName: StorefrontEventName;
+  productId?: string;
+  value?: number;
+  currency?: string;
+  metadata?: Record<string, any>;
+}
+
 // Module-level dedup: same event for same session+product within 30s collapses.
 const recentEvents = new Map<string, number>();
 const DEDUP_MS = 30_000;
