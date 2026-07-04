@@ -64,6 +64,7 @@ const WhatsAppMarketing = lazy(() => import("@/pages/WhatsAppMarketing"));
 const StoreWhatsAppSimple = lazy(() => import("@/pages/StoreWhatsAppSimple"));
 import { WhatsAppGate } from "@/components/whatsapp/WhatsAppGate";
 const StoreTracking = lazy(() => import("@/pages/StoreTracking"));
+const StoreFunnel = lazy(() => import("@/pages/StoreFunnel"));
 
 const CategoryManagement = lazy(() => import("@/pages/CategoryManagement"));
 const MediaLibrary = lazy(() => import("@/pages/MediaLibrary"));
