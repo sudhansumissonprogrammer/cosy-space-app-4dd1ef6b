@@ -163,6 +163,7 @@ export default function AuthRoutes() {
           <Route path="stores/:storeSlug/pages/:pageId/edit" element={<StorePageEditor />} />
           <Route path="stores/:storeSlug/whatsapp" element={<WhatsAppGate platform={<StoreWhatsAppSimple />} merchant={<WhatsAppMarketing />} />} />
           <Route path="stores/:storeSlug/tracking" element={<StoreTracking />} />
+          <Route path="stores/:storeSlug/funnel" element={<StoreFunnel />} />
           <Route path="stores/:storeSlug/best-sellers" element={<BestSellerManagement />} />
           <Route path="stores/:storeSlug/spacing-check" element={<SpacingCheck />} />
           
