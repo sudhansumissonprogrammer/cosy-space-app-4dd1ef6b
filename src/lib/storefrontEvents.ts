@@ -57,13 +57,7 @@ function readAttribution(): Record<string, string> {
     return {};
   }
 }
-  storeId: string;
-  eventName: StorefrontEventName;
-  productId?: string;
-  value?: number;
-  currency?: string;
-  metadata?: Record<string, any>;
-}
+
 
 // Module-level dedup: same event for same session+product within 30s collapses.
 const recentEvents = new Map<string, number>();
