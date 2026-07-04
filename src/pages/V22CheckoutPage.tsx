@@ -27,6 +27,7 @@ import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import { estimateDelivery, type DeliveryEstimate } from "@/lib/deliveryEstimate";
 import { loadCashfree } from "@/lib/loadCashfree";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
+import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
