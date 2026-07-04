@@ -23,6 +23,7 @@ export function normalizePhone(raw: string | null | undefined): string | null {
 export type PlatformWaConfig = {
   whatsapp_mode: string;
   wa_enabled: boolean;
+  wa_waba_id: string | null;
   wa_phone_number_id: string | null;
   wa_access_token: string | null;
   wa_default_lang: string;
@@ -35,7 +36,7 @@ export async function loadPlatformConfig(admin: any): Promise<PlatformWaConfig |
   const { data, error } = await admin
     .from("platform_config")
     .select(
-      "whatsapp_mode, wa_enabled, wa_phone_number_id, wa_access_token, wa_default_lang, wa_min_cart_age_minutes, wa_max_cart_age_hours, wa_daily_cap_per_phone"
+      "whatsapp_mode, wa_enabled, wa_waba_id, wa_phone_number_id, wa_access_token, wa_default_lang, wa_min_cart_age_minutes, wa_max_cart_age_hours, wa_daily_cap_per_phone"
     )
     .limit(1)
     .maybeSingle();
@@ -45,6 +46,10 @@ export async function loadPlatformConfig(admin: any): Promise<PlatformWaConfig |
   if (!cfg.wa_access_token) {
     const envTok = Deno.env.get("WA_ACCESS_TOKEN") || Deno.env.get("META_WHATSAPP_TOKEN") || null;
     if (envTok) cfg.wa_access_token = envTok;
+  }
+  if (!cfg.wa_waba_id) {
+    const envWaba = Deno.env.get("META_WABA_ID") || null;
+    if (envWaba) cfg.wa_waba_id = envWaba;
   }
   return cfg;
 }
