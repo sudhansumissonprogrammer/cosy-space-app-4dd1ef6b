@@ -358,6 +358,46 @@ Deno.serve(async (req) => {
     const metaEventId = sanitizeMetaEventId(meta?.event_id);
     const metaEventSourceUrl = sanitizeMetaSourceUrl(meta?.event_source_url, store);
 
+    // Compute new-vs-repeat: count prior PAID orders in this store for the
+    // same storefront customer id (preferred) or the same normalized phone.
+    // Used by the dashboard for LTV / repeat-rate slicing.
+    let priorOrderCount = 0;
+    try {
+      const PAID = ["paid", "confirmed", "partially_paid", "delivered", "completed", "shipped"];
+      const normPhone = String(order.customer_phone || "").replace(/\D/g, "");
+      let q = supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", store_id)
+        .in("status", PAID);
+      if (storefrontCustomerId) {
+        q = q.eq("storefront_customer_id", storefrontCustomerId);
+      } else if (normPhone) {
+        q = q.eq("customer_phone", order.customer_phone);
+      } else {
+        q = q.eq("id", "00000000-0000-0000-0000-000000000000");
+      }
+      const { count } = await q;
+      priorOrderCount = count || 0;
+    } catch { /* non-fatal */ }
+
+    // Sanitize attribution snapshot — only keep known keys, cap length.
+    const ATTR_KEYS = new Set([
+      "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+      "fbclid", "gclid", "ttclid", "wbraid", "gbraid", "msclkid",
+      "referrer", "landing_path",
+    ]);
+    let attributionClean: Record<string, string> | null = null;
+    if (attribution && typeof attribution === "object") {
+      const out: Record<string, string> = {};
+      for (const [k, v] of Object.entries(attribution)) {
+        if (ATTR_KEYS.has(k) && typeof v === "string" && v) {
+          out[k] = v.slice(0, 200);
+        }
+      }
+      if (Object.keys(out).length) attributionClean = out;
+    }
+
     const { data: createdOrder, error: orderErr } = await supabase
       .from("orders")
       .insert({
@@ -386,9 +426,13 @@ Deno.serve(async (req) => {
         meta_event_source_url: metaEventSourceUrl,
         visitor_id: visitor_id || null,
         session_id: session_id || null,
+        customer_order_index: priorOrderCount + 1,
+        is_repeat_customer: priorOrderCount > 0,
+        attribution: attributionClean,
       })
       .select("id")
       .single();
+
 
     if (orderErr || !createdOrder) {
       throw orderErr ?? new Error("Failed to create order");
