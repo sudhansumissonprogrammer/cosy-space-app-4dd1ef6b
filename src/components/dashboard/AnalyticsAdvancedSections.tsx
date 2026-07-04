@@ -571,6 +571,49 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
         </Card>
       )}
 
+      {/* New vs Repeat + Revenue by acquisition source */}
+      {(orderCounts?.paid ?? 0) > 0 && (
+        <Card className="border shadow-none">
+          <CardHeader className="p-3 pb-0">
+            <CardTitle className="text-sm font-medium">New vs Repeat buyers (today)</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-2 space-y-3 text-xs">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-md border border-border p-2">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">New buyers</p>
+                <p className="text-lg font-semibold tabular-nums">{orderCounts?.paidNew ?? 0}</p>
+                <p className="text-[10px] text-muted-foreground tabular-nums">
+                  ₹{Math.round(orderCounts?.revNew ?? 0).toLocaleString("en-IN")}
+                </p>
+              </div>
+              <div className="rounded-md border border-primary/40 bg-primary/5 p-2">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Repeat buyers</p>
+                <p className="text-lg font-semibold tabular-nums text-primary">{orderCounts?.paidRepeat ?? 0}</p>
+                <p className="text-[10px] text-muted-foreground tabular-nums">
+                  ₹{Math.round(orderCounts?.revRepeat ?? 0).toLocaleString("en-IN")}
+                </p>
+              </div>
+            </div>
+            {(orderCounts?.sources?.length ?? 0) > 0 && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                  Revenue by acquisition source
+                </p>
+                <ul className="space-y-0.5">
+                  {orderCounts!.sources.slice(0, 6).map((s) => (
+                    <li key={s.source} className="flex justify-between">
+                      <span className="text-foreground capitalize">{s.source}</span>
+                      <span className="tabular-nums font-semibold">
+                        {s.orders} · ₹{Math.round(s.revenue).toLocaleString("en-IN")}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
 
       {/* Traffic sources + Devices */}
