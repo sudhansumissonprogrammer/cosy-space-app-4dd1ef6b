@@ -765,7 +765,18 @@ export default function V22ProductDetail() {
                   <button
                     key={v.id}
                     type="button"
-                    onClick={() => setSelectedVariant(selectedVariant?.id === v.id ? null : v)}
+                    onClick={() => {
+                      const wasSelected = selectedVariant?.id === v.id;
+                      setSelectedVariant(wasSelected ? null : v);
+                      if (!wasSelected && store?.id && product?.id) {
+                        import("@/lib/storefrontEvents").then(m => m.fireStorefrontEvent({
+                          storeId: store.id,
+                          eventName: "pdp_variant_select",
+                          productId: product.id,
+                          metadata: { variant_id: v.id, variant_name: v.name },
+                        })).catch(() => {});
+                      }
+                    }}
                     className={`transition-[transform,opacity,colors,box-shadow] duration-200 active:scale-95 ${
                       isV18
                         ? `flex h-10 w-10 items-center justify-center border text-sm ${
