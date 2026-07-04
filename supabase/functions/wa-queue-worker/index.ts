@@ -20,6 +20,10 @@ Deno.serve(async (req) => {
 
   const cfg = await loadPlatformConfig(admin);
   if (!platformConfigUsable(cfg)) return json({ skipped: true, reason: "wa_disabled" });
+
+  const breaker = await getMetaBreaker(admin);
+  if (isMetaBreakerOpen(breaker)) return json({ skipped: true, reason: "meta_breaker_open", open_until: breaker.open_until });
+  if (!(await hasApprovedTemplates(admin))) return json({ skipped: true, reason: "no_approved_templates" });
   const batchSize = (cfg as any)?.wa_queue_batch_size || 50;
   const downstreamSecret = (await getCronSecret(admin)) || "";
 
