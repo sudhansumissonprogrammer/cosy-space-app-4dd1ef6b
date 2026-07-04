@@ -288,6 +288,67 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
     }));
   }, [funnelDaily, funnelToday, pvDaily, orderCounts]);
 
+  // Diagnostics — mines today's raw events for actionable drop reasons.
+  // Powers the "Why they didn't buy" card so the merchant sees a fix list,
+  // not just a funnel shape.
+  const diagnostics = useMemo(() => {
+    const rows = (funnelToday || []) as any[];
+    const fieldStops: Record<string, number> = {};
+    const payFailReasons: Record<string, number> = {};
+    const zeroResultSearches: Record<string, number> = {};
+    const variantSelects = new Set<string>();
+    const pdpDeepScrolls = new Set<string>();
+    const cartRemoves: Record<string, number> = {};
+    const attributedSessions = new Set<string>();
+    const allSessions = new Set<string>();
+
+    for (const r of rows) {
+      const md = r.metadata || {};
+      const sid = r.session_id || "";
+      if (sid) allSessions.add(sid);
+      if (sid && (md.fbclid || md.gclid || md.ttclid || md.msclkid || md.utm_source)) {
+        attributedSessions.add(sid);
+      }
+      switch (r.event_name) {
+        case "checkout_field_error": {
+          const f = String(md.field || "unknown");
+          fieldStops[f] = (fieldStops[f] || 0) + 1;
+          break;
+        }
+        case "payment_failed": {
+          const reason = String(md.reason || md.payu_status || "unknown");
+          payFailReasons[reason] = (payFailReasons[reason] || 0) + 1;
+          break;
+        }
+        case "search_no_results": {
+          const q = String(md.query || "").trim().slice(0, 40);
+          if (q) zeroResultSearches[q] = (zeroResultSearches[q] || 0) + 1;
+          break;
+        }
+        case "pdp_variant_select": if (sid) variantSelects.add(sid); break;
+        case "pdp_deep_scroll":   if (sid) pdpDeepScrolls.add(sid); break;
+        case "cart_remove": {
+          const pid = String(r.product_id || md.productId || "unknown");
+          cartRemoves[pid] = (cartRemoves[pid] || 0) + 1;
+          break;
+        }
+      }
+    }
+
+    const top = (obj: Record<string, number>, n = 5) =>
+      Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, n);
+
+    return {
+      fieldStops: top(fieldStops),
+      payFailReasons: top(payFailReasons),
+      zeroResultSearches: top(zeroResultSearches),
+      cartRemoves: top(cartRemoves),
+      variantSelectSessions: variantSelects.size,
+      pdpDeepScrollSessions: pdpDeepScrolls.size,
+      attributedPct: allSessions.size > 0 ? (attributedSessions.size / allSessions.size) * 100 : 0,
+    };
+  }, [funnelToday]);
+
   const cohortGrid = useMemo(() => {
     if (!cohorts || cohorts.length === 0) return { rows: [], maxOffset: 0 };
     const byCohort: Record<string, { customers: number; periods: Record<number, number> }> = {};
