@@ -7,6 +7,7 @@ import { VitePWA } from "vite-plugin-pwa";
 import Beasties from "beasties";
 import { compression } from "vite-plugin-compression2";
 import { visualizer } from "rollup-plugin-visualizer";
+import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 
 /**
  * Inline critical CSS from dist/index.html and async-load the rest.
@@ -51,6 +52,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
+    mcpPlugin(),
     mode === "development" && componentTagger(),
     beastiesPlugin(),
     // Brotli + gzip precompression of build assets. Cloudflare/most CDNs serve
