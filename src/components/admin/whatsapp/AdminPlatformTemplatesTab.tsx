@@ -93,16 +93,36 @@ export function AdminPlatformTemplatesTab() {
     if (error) toast.error(error.message); else load();
   };
 
+  const syncAll = async () => {
+    setBusy("__syncAll");
+    try {
+      const { data, error } = await supabase.functions.invoke("wa-template-sync", { body: {} });
+      if (error) throw error;
+      const d: any = data || {};
+      if (d.skipped) toast.info(`Sync skipped: ${d.reason}`);
+      else toast.success(`Synced ${d.updated ?? 0} of ${d.total ?? 0} templates from Meta`);
+      await load();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setBusy(null); }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-2 flex-wrap">
         <div className="text-xs text-muted-foreground">
           Templates submitted via this panel post directly to Meta. Approval typically arrives in 1–60 min.
         </div>
-        <Button size="sm" onClick={() => setEditing({ open: true, draft: { name: "" }, isEdit: false })}>
-          <Plus className="h-3.5 w-3.5 mr-1"/>New template
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={syncAll} disabled={busy === "__syncAll"}>
+            {busy === "__syncAll" ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin"/> : <RefreshCw className="h-3.5 w-3.5 mr-1"/>}
+            Sync all from Meta
+          </Button>
+          <Button size="sm" onClick={() => setEditing({ open: true, draft: { name: "" }, isEdit: false })}>
+            <Plus className="h-3.5 w-3.5 mr-1"/>New template
+          </Button>
+        </div>
       </div>
+
 
       {loading ? (
         <div className="text-sm text-muted-foreground">Loading…</div>
