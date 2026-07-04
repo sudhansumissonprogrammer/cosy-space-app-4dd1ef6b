@@ -1,7 +1,7 @@
 // pg_cron calls this every 10 minutes. Enqueues abandoned-cart recovery
 // sends into wa_send_queue (the queue worker handles retries + dispatch).
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader } from "../_shared/wa-platform.ts";
+import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader, hasApprovedTemplates, getMetaBreaker, isMetaBreakerOpen } from "../_shared/wa-platform.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -15,6 +15,11 @@ Deno.serve(async (req) => {
 
   const cfg = await loadPlatformConfig(admin);
   if (!platformConfigUsable(cfg)) return json({ skipped: true, reason: "wa_disabled" });
+
+  // Prevent hammering Meta when we couldn't send anyway.
+  const breaker = await getMetaBreaker(admin);
+  if (isMetaBreakerOpen(breaker)) return json({ skipped: true, reason: "meta_breaker_open", open_until: breaker.open_until });
+  if (!(await hasApprovedTemplates(admin))) return json({ skipped: true, reason: "no_approved_templates" });
 
   const now = Date.now();
   const minAgeMs = cfg!.wa_min_cart_age_minutes * 60 * 1000;

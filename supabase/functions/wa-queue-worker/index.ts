@@ -2,7 +2,7 @@
 // FOR UPDATE SKIP LOCKED, fires wa-platform-send, and either marks them
 // sent or schedules a retry with exponential backoff.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, isValidCronHeader, getCronSecret, loadPlatformConfig, platformConfigUsable } from "../_shared/wa-platform.ts";
+import { corsHeaders, isValidCronHeader, getCronSecret, loadPlatformConfig, platformConfigUsable, hasApprovedTemplates, getMetaBreaker, isMetaBreakerOpen } from "../_shared/wa-platform.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -20,6 +20,10 @@ Deno.serve(async (req) => {
 
   const cfg = await loadPlatformConfig(admin);
   if (!platformConfigUsable(cfg)) return json({ skipped: true, reason: "wa_disabled" });
+
+  const breaker = await getMetaBreaker(admin);
+  if (isMetaBreakerOpen(breaker)) return json({ skipped: true, reason: "meta_breaker_open", open_until: breaker.open_until });
+  if (!(await hasApprovedTemplates(admin))) return json({ skipped: true, reason: "no_approved_templates" });
   const batchSize = (cfg as any)?.wa_queue_batch_size || 50;
   const downstreamSecret = (await getCronSecret(admin)) || "";
 

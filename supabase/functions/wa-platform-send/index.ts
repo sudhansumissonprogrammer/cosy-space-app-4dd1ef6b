@@ -3,7 +3,7 @@
 // per-store toggle (when called from automation), daily-per-phone cap.
 // When called with store_id and a known template, auto-resolves branding vars.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader } from "../_shared/wa-platform.ts";
+import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader, metaFetch } from "../_shared/wa-platform.ts";
 import { loadStore, loadTemplate, resolveTemplateParams, pickLocaleVariant, sanitizeWaParam } from "../_shared/wa-branding.ts";
 
 type Body = {
@@ -238,18 +238,26 @@ Deno.serve(async (req) => {
   let errCls: "permanent" | "transient" = "transient";
 
   try {
-    const r = await fetch(`https://graph.facebook.com/v21.0/${cfg!.wa_phone_number_id}/messages`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${cfg!.wa_access_token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(metaPayload),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (r.ok) {
+    const res = await metaFetch(
+      admin,
+      `https://graph.facebook.com/v21.0/${cfg!.wa_phone_number_id}/messages`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${cfg!.wa_access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(metaPayload),
+      },
+      { source: "wa-platform-send" },
+    );
+    if (res.breakerOpen) {
+      status = "failed";
+      errMsg = "meta_breaker_open";
+      errCls = "transient";
+    } else if (res.ok) {
       status = "sent";
-      metaId = j?.messages?.[0]?.id ?? null;
+      metaId = res.body?.messages?.[0]?.id ?? null;
     } else {
-      errMsg = JSON.stringify(j?.error ?? j);
-      const code = Number(j?.error?.code ?? 0);
+      errMsg = JSON.stringify(res.body?.error ?? res.body);
+      const code = Number(res.body?.error?.code ?? 0);
       errCls = PERMANENT_META_CODES.has(code) ? "permanent" : "transient";
     }
   } catch (e) {

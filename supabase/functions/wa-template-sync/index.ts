@@ -8,7 +8,7 @@
 // Also follows Meta's `paging.next` cursor so WABAs with >200 templates get
 // fully reconciled instead of silently truncating at the first page.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, isValidCronHeader, loadPlatformConfig } from "../_shared/wa-platform.ts";
+import { corsHeaders, isValidCronHeader, loadPlatformConfig, metaFetch, getMetaBreaker, isMetaBreakerOpen } from "../_shared/wa-platform.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -37,36 +37,42 @@ Deno.serve(async (req) => {
   }
   if (!authed) return j({ error: "unauthorized" }, 401);
 
+  // Circuit breaker: if Meta has been failing recently, skip entirely rather
+  // than hammer the API (that's what got the account locked before).
+  const breaker = await getMetaBreaker(admin);
+  if (isMetaBreakerOpen(breaker)) {
+    return j({ skipped: true, reason: "meta_breaker_open", open_until: breaker.open_until, last_error: breaker.last_error });
+  }
+
   const cfg = await loadPlatformConfig(admin);
   if (!cfg?.wa_enabled) return j({ skipped: true, reason: "wa_disabled" });
   const waba = (cfg as any)?.wa_waba_id;
   const token = (cfg as any)?.wa_access_token;
   if (!waba || !token) return j({ skipped: true, reason: "no_waba_or_token" });
 
-  // Paginate through Meta's paging.next cursor — WABAs with lots of templates
-  // (or many language variants of the same template) can exceed one page.
+  // Paginate through Meta's paging.next cursor.
   let url: string | null =
     `https://graph.facebook.com/v21.0/${waba}/message_templates?limit=200&fields=name,status,language,id,quality_score,category`;
   let total = 0;
   let updated = 0;
   const seen: string[] = [];
-  const MAX_PAGES = 10; // safety ceiling
+  const MAX_PAGES = 10;
 
   for (let page = 0; page < MAX_PAGES && url; page++) {
-    const r: Response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    const body: any = await r.json().catch(() => ({}));
-    if (!r.ok) {
+    const res = await metaFetch(admin, url, { headers: { Authorization: `Bearer ${token}` } }, { source: "wa-template-sync" });
+    if (res.breakerOpen) return j({ skipped: true, reason: "meta_breaker_open_midflight" });
+    if (!res.ok) {
+      const body = res.body;
       const metaMsg = body?.error?.message || "";
       const metaCode = body?.error?.code;
-      // Code 200 "API access blocked" = token missing whatsapp_business_management scope
       const hint = metaCode === 200 || /access blocked/i.test(metaMsg)
-        ? "WA_ACCESS_TOKEN is missing the 'whatsapp_business_management' permission. Regenerate the System User token in Meta Business Suite with BOTH whatsapp_business_messaging AND whatsapp_business_management scopes, then update the WA_ACCESS_TOKEN secret."
+        ? "WA_ACCESS_TOKEN is missing the 'whatsapp_business_management' permission, OR the System User is not assigned to this WABA in Meta Business Suite → Business Settings → System Users → Assigned Assets."
         : metaCode === 190
         ? "WA_ACCESS_TOKEN is expired or invalid. Regenerate it in Meta Business Suite."
-        : "Meta rejected the templates request. Check that WA_ACCESS_TOKEN belongs to a system user with access to this WABA.";
+        : "Meta rejected the templates request.";
       return j({ error: "meta_error", hint, details: body, page }, 502);
     }
-
+    const body: any = res.body;
     for (const t of body?.data ?? []) {
       total++;
       seen.push(t.name);
