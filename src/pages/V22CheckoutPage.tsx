@@ -915,6 +915,17 @@ function V22CheckoutPageInner() {
         // accurate conversion rate (orders ÷ unique sessions).
         visitor_id: (() => { try { return getVisitorId(); } catch { return null; } })(),
         session_id: (() => { try { return getOrCreateSessionId(); } catch { return null; } })(),
+        // Attribution snapshot for last-touch revenue reporting.
+        attribution: (() => {
+          try {
+            const raw = sessionStorage.getItem("__sf_utm__");
+            const utm = raw ? JSON.parse(raw) : {};
+            const landing = sessionStorage.getItem("__sf_landing__") || null;
+            const ref = document.referrer ? document.referrer.slice(0, 200) : null;
+            return { ...utm, landing_path: landing, referrer: ref };
+          } catch { return null; }
+        })(),
+
       },
     });
 
