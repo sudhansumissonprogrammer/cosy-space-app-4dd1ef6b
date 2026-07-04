@@ -196,20 +196,42 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
   }, [slug, storeId, currency]);
 
   const removeFromCart = useCallback((productId: string, variantId?: string) => {
-    setItems((prev) => prev.filter((i) => !(i.productId === productId && i.variantId === variantId)));
-  }, []);
+    setItems((prev) => {
+      const removed = prev.find((i) => i.productId === productId && i.variantId === variantId);
+      if (removed && storeId) {
+        import("@/lib/storefrontEvents").then(m => m.fireStorefrontEvent({
+          storeId,
+          eventName: "cart_remove",
+          productId,
+          value: removed.price,
+          currency,
+          metadata: { qty: removed.quantity, variantId: variantId || null },
+        })).catch(() => {});
+      }
+      return prev.filter((i) => !(i.productId === productId && i.variantId === variantId));
+    });
+  }, [storeId, currency]);
 
   const updateQuantity = useCallback((productId: string, variantId: string | undefined, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(productId, variantId);
       return;
     }
-    setItems((prev) =>
-      prev.map((i) =>
+    setItems((prev) => {
+      const cur = prev.find((i) => i.productId === productId && i.variantId === variantId);
+      if (cur && storeId && cur.quantity !== quantity) {
+        import("@/lib/storefrontEvents").then(m => m.fireStorefrontEvent({
+          storeId,
+          eventName: "cart_qty_change",
+          productId,
+          metadata: { from: cur.quantity, to: quantity, variantId: variantId || null },
+        })).catch(() => {});
+      }
+      return prev.map((i) =>
         i.productId === productId && i.variantId === variantId ? { ...i, quantity } : i
-      )
-    );
-  }, [removeFromCart]);
+      );
+    });
+  }, [removeFromCart, storeId]);
 
   const clearCart = useCallback(() => setItems([]), []);
 
