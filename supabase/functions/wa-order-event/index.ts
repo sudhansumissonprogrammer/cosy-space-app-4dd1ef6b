@@ -168,6 +168,30 @@ Deno.serve(async (req) => {
     if ((qErr as any).code === "23505") return json({ ok: true, queued: false, reason: "already_enqueued" });
     return json({ error: qErr.message }, 500);
   }
+
+  // 🚀 Fire the queue worker immediately (fire-and-forget) so the customer
+  // gets their WhatsApp within seconds instead of waiting ≤1 min for the
+  // pg_cron tick. The worker itself is idempotent + rate-limited.
+  try {
+    const cronSecret = Deno.env.get("CRON_SECRET") || "";
+    const kick = fetch(`${SUPABASE_URL}/functions/v1/wa-queue-worker`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-cron-secret": cronSecret,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+      },
+      body: "{}",
+    }).catch((e) => console.warn("wa-queue-worker kick failed:", (e as Error).message));
+    // @ts-ignore — EdgeRuntime is available in Supabase Deno runtime
+    if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(kick);
+    }
+  } catch (e) {
+    console.warn("wa-queue-worker kick error:", (e as Error).message);
+  }
+
   return json({ ok: true, queued: true });
 });
 
