@@ -125,17 +125,26 @@ export function AdminChatTab() {
   }, [conversations, searchQuery]);
 
   const selectedConversation = useMemo(() => {
-    if (!selectedPhone || !selectedStoreId) return [];
-    const conv = conversations.find((c) => c.phone === selectedPhone && c.storeId === selectedStoreId);
+    if (!selectedPhone) return [];
+    // storeId may legitimately be null (orphan thread). Match on both fields explicitly.
+    const conv = conversations.find((c) => c.phone === selectedPhone && (c.storeId ?? null) === (selectedStoreId ?? null));
     return conv ? [...conv.messages].reverse() : [];
   }, [selectedPhone, selectedStoreId, conversations]);
 
   const currentConv = useMemo(
-    () => conversations.find((c) => c.phone === selectedPhone && c.storeId === selectedStoreId),
+    () => conversations.find((c) => c.phone === selectedPhone && (c.storeId ?? null) === (selectedStoreId ?? null)),
     [selectedPhone, selectedStoreId, conversations]
   );
 
   React.useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [selectedConversation]);
+
+  // Auto-mark the thread as read the moment it's opened (WhatsApp-style).
+  React.useEffect(() => {
+    if (!selectedPhone || !currentConv || currentConv.unread === 0) return;
+    supabase.rpc("admin_wa_mark_thread_read" as any, { _phone: selectedPhone, _store_id: selectedStoreId })
+      .then(() => queryClient.invalidateQueries({ queryKey: ["admin-whatsapp-all-messages"] }));
+  }, [selectedPhone, selectedStoreId, currentConv, queryClient]);
+
 
   const sendMessage = async () => {
     if (!selectedPhone || !message.trim()) return;
