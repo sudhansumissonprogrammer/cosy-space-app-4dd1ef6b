@@ -18,6 +18,7 @@ import { AdminPlatformAnalyticsTab } from "@/components/admin/whatsapp/AdminPlat
 import { AdminQueueTab } from "@/components/admin/whatsapp/AdminQueueTab";
 import { AdminAICampaignWriterTab } from "@/components/admin/whatsapp/AdminAICampaignWriterTab";
 import { AdminOptOutsTab } from "@/components/admin/whatsapp/AdminOptOutsTab";
+import { AdminPricingTab } from "@/components/admin/whatsapp/AdminPricingTab";
 import { useWhatsAppMode } from "@/hooks/useWhatsAppMode";
 
 type NavItem = {
