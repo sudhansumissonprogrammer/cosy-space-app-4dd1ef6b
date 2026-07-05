@@ -249,7 +249,10 @@ export default function StoreAbandonedCarts() {
                 {f.label}
               </Button>
             ))}
-          </div>
+      </div>
+
+      {/* Failed messages (no charge from Meta) */}
+      {storeId && <FailedMessagesPanel storeId={storeId} />}
 
           <div className="flex items-center gap-2 flex-wrap">
             <Popover>
