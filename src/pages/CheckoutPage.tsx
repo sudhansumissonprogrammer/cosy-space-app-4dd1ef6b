@@ -43,6 +43,9 @@ const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPho
 function CheckoutPhoneGate({ children }: { children: React.ReactNode }) {
   const store = useOutletContext<StoreData>();
   const { items: cartItems } = useCart();
+  const [searchParams] = useSearchParams();
+  const productId = searchParams.get("product");
+  const variantId = searchParams.get("variant");
   const [phone, setPhone] = useState<string>(() => {
     try {
       const saved = localStorage.getItem("checkout_phone") || "";
@@ -52,14 +55,63 @@ function CheckoutPhoneGate({ children }: { children: React.ReactNode }) {
       return "";
     }
   });
-  // If cart is empty the inner page redirects out; skip gate.
-  if (!phone && cartItems.length > 0) {
+  const needsPhone = !phone && (cartItems.length > 0 || !!productId);
+
+  const { data: buyNowProduct, isLoading: buyNowLoading } = useQuery({
+    queryKey: ["checkout-phone-gate-product", productId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id,name,price,sale_price,image_url")
+        .eq("id", productId!)
+        .eq("is_active", true)
+        .single();
+      if (error) throw error;
+      return data as any;
+    },
+    enabled: needsPhone && cartItems.length === 0 && !!productId,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: buyNowVariant } = useQuery({
+    queryKey: ["checkout-phone-gate-variant", variantId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("product_variants")
+        .select("id,name,price")
+        .eq("id", variantId!)
+        .eq("is_active", true)
+        .single();
+      if (error) throw error;
+      return data as any;
+    },
+    enabled: needsPhone && cartItems.length === 0 && !!variantId,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const gateCartItems = useMemo(() => {
+    if (cartItems.length > 0) return cartItems as any;
+    if (!buyNowProduct) return [];
+    return [{
+      productId: buyNowProduct.id,
+      variantId: buyNowVariant?.id,
+      name: buyNowVariant ? `${buyNowProduct.name} (${buyNowVariant.name})` : buyNowProduct.name,
+      price: buyNowVariant?.price ?? (buyNowProduct.sale_price && buyNowProduct.sale_price < buyNowProduct.price ? buyNowProduct.sale_price : buyNowProduct.price),
+      quantity: 1,
+      image: buyNowProduct.image_url,
+    }];
+  }, [cartItems, buyNowProduct, buyNowVariant]);
+
+  if (needsPhone) {
+    if (productId && gateCartItems.length === 0 && buyNowLoading) {
+      return <div className="min-h-[70vh]" />;
+    }
     return (
       <Suspense fallback={<div className="min-h-[70vh]" />}>
         <CheckoutPhoneStep
           storeId={store?.id}
           storeName={store?.name}
-          cartItems={cartItems as any}
+          cartItems={gateCartItems as any}
           onComplete={(p) => setPhone(p)}
         />
       </Suspense>
