@@ -246,10 +246,18 @@ Deno.serve(async (req) => {
     await admin.from("abandoned_carts")
       .update({ recovery_sent_at: new Date().toISOString(), recovery_status: "queued" })
       .eq("id", (c as any).id);
-    // Stamp cooldown on customers row (no-op if customer row doesn't exist yet).
+    // Stamp cooldown on customers row across all phone-format variants
+    // (normalized/bare/raw) so we don't miss the row if stored differently.
+    const rawP = String((c as any).customer_phone || "").replace(/\D/g, "");
+    const bareP = rawP.startsWith("91") && rawP.length >= 12 ? rawP.slice(2) : rawP;
+    const withCcP = bareP.length === 10 ? `91${bareP}` : rawP;
+    const phoneVars = Array.from(new Set([
+      (c as any).customer_phone, rawP, bareP, withCcP, `+${withCcP}`, phone,
+    ].filter(Boolean)));
     await admin.from("customers")
       .update({ last_marketing_sent_at: new Date().toISOString() })
-      .eq("phone", (c as any).customer_phone);
+      .in("phone", phoneVars as string[]);
+
   }
 
   return json({ processed: carts.length, enqueued, skipped, store_off: storeOff, cooldown, empty_cart: emptyCart, already_ordered: alreadyOrdered, phone_capped: phoneCapped });
