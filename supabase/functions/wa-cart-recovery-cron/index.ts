@@ -143,9 +143,9 @@ Deno.serve(async (req) => {
         .select("id, order_items(product_id)")
         .eq("store_id", (c as any).store_id)
         .in("customer_phone", phoneVariants)
-        // Cancelled/failed orders are not real recoveries. If the shopper
-        // cancelled the same-product order, they should still get cart recovery.
-        .not("status", "in", '("cancelled","failed","rejected")')
+        // Cancelled/failed/pending orders are not real recoveries. Pending =
+        // customer opened the payment gateway but hasn't paid — still a lead.
+        .not("status", "in", '("cancelled","failed","rejected","pending")')
         .gte("created_at", (c as any).created_at)
         .limit(20);
       const orderedIds = new Set<string>();
