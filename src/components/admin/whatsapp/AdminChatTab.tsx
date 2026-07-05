@@ -48,30 +48,75 @@ export function AdminChatTab() {
     refetchOnWindowFocus: true,
   });
 
+  // 🔴 Realtime — new messages (incoming webhook or outbound send) appear instantly
+  // instead of waiting up to 60s for the poll.
+  React.useEffect(() => {
+    const ch = supabase
+      .channel("admin-wa-inbox")
+      .on("postgres_changes", { event: "*", schema: "public", table: "whatsapp_messages" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["admin-whatsapp-all-messages"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [queryClient]);
+
+  const prettyTemplateName = (raw: string | null | undefined) => {
+    if (!raw) return "";
+    const m = /\[template:([^\]]+)\]/.exec(raw);
+    if (!m) return raw;
+    // order_confirmation_v2 → "📦 Order confirmation"
+    const map: Record<string, string> = {
+      order_confirmation: "📦 Order confirmation",
+      order_shipped: "🚚 Order shipped",
+      payment_success: "💳 Payment received",
+      order_delivered: "✅ Delivered",
+      abandoned_cart: "🛒 Cart reminder",
+      review_request: "⭐ Review request",
+    };
+    const base = m[1].replace(/_v\d+$/, "");
+    return map[base] || base.replace(/_/g, " ");
+  };
+
   const conversations = useMemo(() => {
     if (!allMessages) return [];
+    // Pass 1: build a phone → best-known store_id index so orphaned rows
+    // (incoming messages that arrived before we could resolve a store) merge
+    // into the same customer thread instead of creating an "Unknown Store" ghost.
+    const phoneToStore = new Map<string, string>();
+    for (const m of allMessages as any[]) {
+      const phone = m.direction === "incoming" ? (m.sender_phone || m.recipient_phone) : m.recipient_phone;
+      if (!phone || !m.store_id) continue;
+      if (!phoneToStore.has(phone)) phoneToStore.set(phone, m.store_id);
+    }
+
     const map = new Map<string, any>();
     for (const msg of allMessages) {
       const m = msg as any;
       const phone = m.direction === "incoming" ? (m.sender_phone || m.recipient_phone) : m.recipient_phone;
       if (!phone) continue;
-      const key = `${m.store_id}_${phone}`;
+      const effectiveStoreId = m.store_id || phoneToStore.get(phone) || null;
+      const key = `${effectiveStoreId}_${phone}`;
       const storeName = m.stores?.name || "Unknown Store";
       if (!map.has(key)) {
-        map.set(key, { phone, storeId: m.store_id, storeName, name: msg.recipient_name, messages: [], lastMessage: msg, unread: 0, lastIncomingAt: null });
+        map.set(key, { phone, storeId: effectiveStoreId, storeName, name: msg.recipient_name, messages: [], lastMessage: msg, unread: 0, lastIncomingAt: null });
       }
       const conv = map.get(key)!;
+      // storeName: prefer any non-Unknown label we encounter.
+      if (conv.storeName === "Unknown Store" && m.stores?.name) conv.storeName = m.stores.name;
       conv.messages.push(msg);
       if (m.direction === "incoming") {
         if (msg.status === "received") conv.unread++;
         if (!conv.lastIncomingAt || new Date(msg.created_at) > new Date(conv.lastIncomingAt)) conv.lastIncomingAt = msg.created_at;
       }
       if (!conv.name && msg.recipient_name) conv.name = msg.recipient_name;
+      // Newest message wins for the list preview.
+      if (new Date(msg.created_at) > new Date(conv.lastMessage.created_at)) conv.lastMessage = msg;
     }
     return Array.from(map.values()).sort(
       (a, b) => new Date(b.lastMessage.created_at).getTime() - new Date(a.lastMessage.created_at).getTime()
     );
   }, [allMessages]);
+
 
   const filteredConversations = useMemo(() => {
     if (!searchQuery.trim()) return conversations;
