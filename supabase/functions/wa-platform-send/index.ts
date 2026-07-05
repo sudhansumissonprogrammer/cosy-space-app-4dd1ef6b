@@ -91,16 +91,26 @@ Deno.serve(async (req) => {
   const { data: optout } = await admin.from("whatsapp_optouts").select("id").eq("phone", phone).limit(1).maybeSingle();
   if (optout) return json({ skipped: true, reason: "opted_out" });
 
-  // Per-store toggles — DEFAULT OFF. Missing row = no consent = skip.
+  // Category classifier — must be declared before per-store toggle + daily cap use it.
+  const TRANSACTIONAL = new Set(["order_confirmation", "payment_received", "payment_success", "order_shipped", "order_delivered"]);
+
+
+  // Per-store toggles — DEFAULT OFF for marketing.
+  // TRANSACTIONAL messages (order_confirmation, order_shipped, payment_*, delivered)
+  // are UTILITY-category — customer paid, they MUST reach them. Do NOT gate them
+  // on the marketing master switch.
   if (body.mode === "automation" && body.store_id) {
+    const mt = body.message_type || "";
+    const isTransactionalMt = TRANSACTIONAL.has(mt);
     const { data: s } = await admin
       .from("stores_wa_settings")
       .select("platform_marketing_enabled, send_order_confirmation, send_order_shipped, send_abandoned_cart")
       .eq("store_id", body.store_id)
       .maybeSingle();
-    if (!s || (s as any).platform_marketing_enabled !== true) {
+    if (!isTransactionalMt && (!s || (s as any).platform_marketing_enabled !== true)) {
       return json({ skipped: true, reason: "store_disabled" });
     }
+
     // Per-event guard (defense-in-depth against callers that skip wa-order-event).
     // Abandoned-cart recovery is the baseline marketing automation: the cron
     // enqueues it when the store master switch is ON, so the sender must not
@@ -117,8 +127,8 @@ Deno.serve(async (req) => {
 
   // Daily cap — applies to MARKETING only. Transactional events (order/payment/shipping)
   // must always reach the customer and are excluded from the cap.
-  const TRANSACTIONAL = new Set(["order_confirmation", "payment_received", "payment_success", "order_shipped", "order_delivered"]);
   const isTransactional = TRANSACTIONAL.has(body.message_type || "");
+
   if (!isTransactional) {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     // Count MARKETING messages only — transactional sends (order confirmation,

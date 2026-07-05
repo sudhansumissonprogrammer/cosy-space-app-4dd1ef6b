@@ -41,10 +41,10 @@ Deno.serve(async (req) => {
   const { data: normalCarts, error } = await q;
 
   // ⚡ Fast-lane: carts whose customer started an online payment (order.status='pending')
-  // that has been sitting for >1 minute without becoming confirmed/partially_paid.
-  // These shoppers dropped off at the payment gateway — treat them as leads
-  // immediately (bypass the 30-min minimum-age gate).
-  const pendingCutoffIso = new Date(now - 60 * 1000).toISOString(); // 1 minute
+  // that has been sitting for >5 minutes without becoming confirmed/partially_paid.
+  // Waiting 5 min (not 1 min) prevents false-positive recovery messages during
+  // slow gateway roundtrips (UPI intents, 3DS, bank OTP flows can take 2-4 min).
+  const pendingCutoffIso = new Date(now - 5 * 60 * 1000).toISOString();
   const { data: pendingOrders } = await admin
     .from("orders")
     .select("store_id, customer_phone, created_at")
@@ -55,15 +55,24 @@ Deno.serve(async (req) => {
 
   let fastLaneCarts: any[] = [];
   if (pendingOrders?.length) {
-    // For each pending order, resolve phone variants and grab matching unsent carts.
+    // Build ALL plausible phone variants because orders + abandoned_carts may
+    // store the same phone in different formats (with/without +91, 10-digit,
+    // 12-digit, 13-digit with '+'). Missing a variant means the shopper never
+    // gets recovery even though we detected drop-off.
     const phoneSet = new Set<string>();
     for (const o of pendingOrders) {
       const raw = String((o as any).customer_phone || "").replace(/\D/g, "");
       if (!raw) continue;
-      phoneSet.add(raw);
-      phoneSet.add(raw.startsWith("91") ? raw.slice(2) : `91${raw}`);
+      const bare = raw.startsWith("91") && raw.length >= 12 ? raw.slice(2) : raw;
+      const withCc = bare.length === 10 ? `91${bare}` : raw;
+      // All observed storage formats:
+      phoneSet.add(raw);            // as-stored
+      phoneSet.add(bare);           // 10-digit
+      phoneSet.add(withCc);         // 12-digit 91XXXXXXXXXX
+      phoneSet.add(`+${withCc}`);   // +91 prefix
+      phoneSet.add(`+91${bare}`);   // explicit
     }
-    const phones = Array.from(phoneSet);
+    const phones = Array.from(phoneSet).filter(Boolean);
     if (phones.length) {
       let fq = admin
         .from("abandoned_carts")
@@ -78,6 +87,7 @@ Deno.serve(async (req) => {
       fastLaneCarts = fc ?? [];
     }
   }
+
 
   // Merge (dedupe by cart id) — normal batch first, then any fast-lane carts not already included.
   const seen = new Set<string>((normalCarts ?? []).map((c: any) => c.id));
@@ -236,10 +246,18 @@ Deno.serve(async (req) => {
     await admin.from("abandoned_carts")
       .update({ recovery_sent_at: new Date().toISOString(), recovery_status: "queued" })
       .eq("id", (c as any).id);
-    // Stamp cooldown on customers row (no-op if customer row doesn't exist yet).
+    // Stamp cooldown on customers row across all phone-format variants
+    // (normalized/bare/raw) so we don't miss the row if stored differently.
+    const rawP = String((c as any).customer_phone || "").replace(/\D/g, "");
+    const bareP = rawP.startsWith("91") && rawP.length >= 12 ? rawP.slice(2) : rawP;
+    const withCcP = bareP.length === 10 ? `91${bareP}` : rawP;
+    const phoneVars = Array.from(new Set([
+      (c as any).customer_phone, rawP, bareP, withCcP, `+${withCcP}`, phone,
+    ].filter(Boolean)));
     await admin.from("customers")
       .update({ last_marketing_sent_at: new Date().toISOString() })
-      .eq("phone", (c as any).customer_phone);
+      .in("phone", phoneVars as string[]);
+
   }
 
   return json({ processed: carts.length, enqueued, skipped, store_off: storeOff, cooldown, empty_cart: emptyCart, already_ordered: alreadyOrdered, phone_capped: phoneCapped });

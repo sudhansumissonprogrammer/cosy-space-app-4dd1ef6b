@@ -90,6 +90,55 @@ Deno.serve(async (req) => {
       continue;
     }
 
+    // 🛒 Just-in-time abandoned-cart guard. Between enqueue and now, the
+    // customer may have COMPLETED the order (recovered=true) or the cart was
+    // manually skipped. Sending "come back!" to someone who just bought is a
+    // major quality-score risk (they'll block/report). Re-check right before send.
+    if (row.message_type === "abandoned_cart" && row.abandoned_cart_id) {
+      const { data: cart } = await admin
+        .from("abandoned_carts")
+        .select("recovered")
+        .eq("id", row.abandoned_cart_id)
+        .maybeSingle();
+      if (!cart || (cart as any).recovered === true) {
+        await admin.from("wa_send_queue").update({
+          status: "skipped", last_error: "cart_already_recovered", locked_until: null,
+        } as any).eq("id", row.id);
+        skippedPaused++;
+        continue;
+      }
+    }
+
+    // 🛒 Second guard: if the SAME customer placed a confirmed order in this
+    // store AFTER the cart was enqueued (any product), skip — they're not
+    // abandoning anymore, they converted through another path.
+    if (row.message_type === "abandoned_cart" && row.recipient_phone && row.store_id) {
+      const rawPhone = String(row.recipient_phone).replace(/\D/g, "");
+      const bare = rawPhone.startsWith("91") && rawPhone.length >= 12 ? rawPhone.slice(2) : rawPhone;
+      const withCc = bare.length === 10 ? `91${bare}` : rawPhone;
+      const phoneVariants = Array.from(new Set([rawPhone, bare, withCc, `+${withCc}`].filter(Boolean)));
+      const { count: recentConfirmed } = await admin
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", row.store_id)
+        .in("customer_phone", phoneVariants)
+        .in("status", ["confirmed", "partially_paid", "paid", "processing", "shipped", "delivered"])
+        .gte("created_at", new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString());
+      if ((recentConfirmed ?? 0) > 0) {
+        await admin.from("wa_send_queue").update({
+          status: "skipped", last_error: "recent_confirmed_order", locked_until: null,
+        } as any).eq("id", row.id);
+        if (row.abandoned_cart_id) {
+          await admin.from("abandoned_carts")
+            .update({ recovered: true, recovery_status: "skipped", recovery_error: "customer_converted" })
+            .eq("id", row.abandoned_cart_id);
+        }
+        skippedPaused++;
+        continue;
+      }
+    }
+
+
 
 
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
