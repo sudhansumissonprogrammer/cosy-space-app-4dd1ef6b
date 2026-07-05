@@ -58,6 +58,7 @@ export default function AdminWhatsApp() {
       label: "Insights",
       items: [
         { id: "analytics", label: "Analytics", desc: "Delivery & engagement", icon: LineChart, render: () => <AdminPlatformAnalyticsTab /> },
+        { id: "pricing", label: "Pricing", desc: "Per-conversation charges", icon: IndianRupee, render: () => <AdminPricingTab /> },
         { id: "optouts", label: "Opt-outs", desc: "Blocked recipients", icon: UserX, render: () => <AdminOptOutsTab /> },
       ],
     },
