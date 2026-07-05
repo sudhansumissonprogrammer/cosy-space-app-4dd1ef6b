@@ -38,10 +38,57 @@ Deno.serve(async (req) => {
     .gte("created_at", afterIso)
     .limit(200);
   if (requireConsent) q = q.eq("wa_marketing_consent", true);
-  const { data: carts, error } = await q;
+  const { data: normalCarts, error } = await q;
 
-  if (error) return json({ error: error.message }, 500);
-  if (!carts?.length) return json({ processed: 0 });
+  // ⚡ Fast-lane: carts whose customer started an online payment (order.status='pending')
+  // that has been sitting for >1 minute without becoming confirmed/partially_paid.
+  // These shoppers dropped off at the payment gateway — treat them as leads
+  // immediately (bypass the 30-min minimum-age gate).
+  const pendingCutoffIso = new Date(now - 60 * 1000).toISOString(); // 1 minute
+  const { data: pendingOrders } = await admin
+    .from("orders")
+    .select("store_id, customer_phone, created_at")
+    .eq("status", "pending")
+    .lte("created_at", pendingCutoffIso)
+    .gte("created_at", afterIso)
+    .limit(300);
+
+  let fastLaneCarts: any[] = [];
+  if (pendingOrders?.length) {
+    // For each pending order, resolve phone variants and grab matching unsent carts.
+    const phoneSet = new Set<string>();
+    for (const o of pendingOrders) {
+      const raw = String((o as any).customer_phone || "").replace(/\D/g, "");
+      if (!raw) continue;
+      phoneSet.add(raw);
+      phoneSet.add(raw.startsWith("91") ? raw.slice(2) : `91${raw}`);
+    }
+    const phones = Array.from(phoneSet);
+    if (phones.length) {
+      let fq = admin
+        .from("abandoned_carts")
+        .select("id, store_id, customer_phone, cart_items, created_at, wa_marketing_consent, stores:store_id(name, slug, custom_domain)")
+        .eq("recovered", false)
+        .is("recovery_sent_at", null)
+        .in("customer_phone", phones)
+        .gte("created_at", afterIso)
+        .limit(200);
+      if (requireConsent) fq = fq.eq("wa_marketing_consent", true);
+      const { data: fc } = await fq;
+      fastLaneCarts = fc ?? [];
+    }
+  }
+
+  // Merge (dedupe by cart id) — normal batch first, then any fast-lane carts not already included.
+  const seen = new Set<string>((normalCarts ?? []).map((c: any) => c.id));
+  const carts = [
+    ...(normalCarts ?? []),
+    ...fastLaneCarts.filter((c: any) => !seen.has(c.id)),
+  ];
+
+  if (error && !fastLaneCarts.length) return json({ error: error.message }, 500);
+  if (!carts.length) return json({ processed: 0 });
+
 
   // 🔒 Default: send abandoned cart recovery whenever the store has WhatsApp
   // platform marketing enabled at all. The per-feature `send_abandoned_cart`
