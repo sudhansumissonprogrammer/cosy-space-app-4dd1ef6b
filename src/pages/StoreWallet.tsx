@@ -95,6 +95,7 @@ export default function StoreWallet() {
         <CardContent className="p-4">
           <p className="text-sm font-bold mb-3">Recent activity</p>
           {ledger.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-6 text-center">No transactions yet</p>
           ) : (
             <div className="space-y-2">
               {ledger.slice(0, 30).map((l: any) => {
