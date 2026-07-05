@@ -231,11 +231,18 @@ export default function CustomerLeads() {
   }, [leads, cartLeads]);
 
   // Annotate each lead with `hasOrdered` + product-of-interest, then filter.
+  // Hide a lead ONLY if a confirmed order was placed within 30 min AFTER that
+  // specific lead attempt. A later, unrelated successful order from the same
+  // phone must NOT erase earlier abandoned attempts (phone-only drops, cancelled,
+  // pending) — the store owner needs every recovery opportunity visible.
+  const CONVERSION_WINDOW_MS = 30 * 60 * 1000;
   const enrichedLeads = useMemo(() => {
     return combinedLeads.map((l) => {
       const key = normalizePhone(l.phone).replace(/\D/g, "").slice(-10);
       const purchasedAt = key.length === 10 ? purchasedOrderDatesByPhone?.get(key) : undefined;
-      const hasOrdered = !!(purchasedAt && new Date(purchasedAt).getTime() >= new Date(l.created_at).getTime());
+      const leadTime = new Date(l.created_at).getTime();
+      const purchasedTime = purchasedAt ? new Date(purchasedAt).getTime() : 0;
+      const hasOrdered = !!(purchasedAt && purchasedTime >= leadTime && purchasedTime - leadTime <= CONVERSION_WINDOW_MS);
       const productFromCart = key.length === 10 ? cartProductByPhone?.get(key) : undefined;
       return {
         ...l,
