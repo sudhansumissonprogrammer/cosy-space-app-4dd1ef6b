@@ -274,7 +274,13 @@ Deno.serve(async (req) => {
       const id = (row as any)?.meta_template_id;
       if (!id) return j(400, { error: "Template has not been submitted to Meta yet. Use 'Submit' first." });
 
-      const components = draftToComponents(draft);
+      let headerHandle: string | null = null;
+      if ((draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT") && draft.header_media_url) {
+        if (!APP_ID) return j(400, { error: "Meta App ID not configured — set it in Admin → WhatsApp → Meta credentials before submitting media-header templates." });
+        try { headerHandle = await uploadHeaderMedia(draft.header_media_url, draft.header_type, APP_ID, TOKEN); }
+        catch (e: any) { await audit("edit", "error", { error: sanitizeError(e.message) }); return j(400, { error: e.message }); }
+      }
+      const components = draftToComponents(draft, headerHandle);
       const resp = await fetch(`${GRAPH}/${id}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
