@@ -256,7 +256,7 @@ export function AdminChatTab() {
                     <div className="flex items-center justify-between mt-0.5">
                       <p className="text-[12px] text-muted-foreground truncate flex-1">
                         <Badge variant="outline" className="text-[9px] mr-1 py-0">{conv.storeName}</Badge>
-                        {conv.lastMessage.message_body?.slice(0, 30)}
+                        {prettyTemplateName(conv.lastMessage.message_body)?.slice(0, 32)}
                       </p>
                       {conv.unread > 0 && (
                         <span className="ml-2 h-5 min-w-[20px] rounded-full bg-[hsl(142,72%,40%)] text-white text-[11px] font-bold flex items-center justify-center px-1.5">
