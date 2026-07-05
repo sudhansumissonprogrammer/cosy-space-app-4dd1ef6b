@@ -220,9 +220,9 @@ export function AdminPlatformAnalyticsTab() {
             ) : (
               <div className="space-y-2">
                 {a.failures.map((f, i) => (
-                  <div key={i} className="flex items-center justify-between text-sm border-b pb-2 last:border-0">
-                    <span className="truncate flex-1 text-muted-foreground">{f.reason}</span>
-                    <Badge variant="destructive" className="ml-2 shrink-0">{f.n}</Badge>
+                  <div key={i} className="flex items-start justify-between gap-2 text-sm border-b pb-2 last:border-0">
+                    <span className="flex-1 text-muted-foreground break-words whitespace-normal leading-snug" title={f.reason}>{f.reason}</span>
+                    <Badge variant="destructive" className="shrink-0">{f.n}</Badge>
                   </div>
                 ))}
               </div>
