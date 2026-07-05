@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     // Get order to determine partial vs full
     const { data: orderInfo } = await supabase
       .from("orders")
-      .select("payment_type, status")
+      .select("payment_type, status, checkout_token")
       .eq("id", order_id)
       .eq("store_id", store_id)
       .single();

@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
 
     const { data: orderInfo } = await supabase
       .from("orders")
-      .select("payment_type, status, customer_phone, storefront_customer_id")
+      .select("payment_type, status, customer_phone, storefront_customer_id, checkout_token")
       .eq("id", order_id)
       .eq("store_id", store_id)
       .single();
