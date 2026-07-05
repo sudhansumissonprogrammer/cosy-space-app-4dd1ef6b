@@ -121,9 +121,13 @@ Deno.serve(async (req) => {
   const isTransactional = TRANSACTIONAL.has(body.message_type || "");
   if (!isTransactional) {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    // Count MARKETING messages only — transactional sends (order confirmation,
+    // shipping, payment) must not consume the marketing cap.
     const { count: sentToday } = await admin
       .from("whatsapp_messages").select("id", { count: "exact", head: true })
-      .eq("recipient_phone", phone).eq("sent_via", "platform").gte("created_at", since);
+      .eq("recipient_phone", phone).eq("sent_via", "platform").eq("direction", "outgoing")
+      .not("message_type", "in", `(${Array.from(TRANSACTIONAL).map((t) => `"${t}"`).join(",")})`)
+      .gte("created_at", since);
     if ((sentToday ?? 0) >= cfg!.wa_daily_cap_per_phone) return json({ skipped: true, reason: "daily_cap" });
   }
 
