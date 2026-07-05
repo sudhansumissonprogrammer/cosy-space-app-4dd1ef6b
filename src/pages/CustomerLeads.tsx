@@ -125,15 +125,51 @@ export default function CustomerLeads() {
   });
 
 
-  // Annotate each lead with `hasOrdered`, then filter based on toggle
+  // Fetch abandoned-cart product interest per phone so we can show it in the
+  // Leads row even when the lead itself has no product_name.
+  const { data: cartProductByPhone } = useQuery({
+    queryKey: ["leads-cart-products", storeId],
+    queryFn: async () => {
+      const map = new Map<string, string>();
+      for (let from = 0; ; from += FETCH_PAGE_SIZE) {
+        const to = from + FETCH_PAGE_SIZE - 1;
+        const { data, error } = await (supabase as any)
+          .from("abandoned_carts")
+          .select("customer_phone,cart_items,created_at")
+          .eq("store_id", storeId!)
+          .order("created_at", { ascending: false })
+          .range(from, to);
+        if (error) throw error;
+        const batch = (data ?? []) as any[];
+        batch.forEach((c) => {
+          const key = normalizePhone(c.customer_phone).replace(/\D/g, "").slice(-10);
+          if (key.length !== 10 || map.has(key)) return; // newest wins
+          const items = Array.isArray(c.cart_items) ? c.cart_items : [];
+          const first = items[0]?.name;
+          if (first) map.set(key, String(first) + (items.length > 1 ? ` +${items.length - 1}` : ""));
+        });
+        if (batch.length < FETCH_PAGE_SIZE) break;
+      }
+      return map;
+    },
+    enabled: !!storeId,
+    staleTime: 60 * 1000,
+  });
+
+  // Annotate each lead with `hasOrdered` + product-of-interest, then filter.
   const enrichedLeads = useMemo(() => {
     if (!leads) return [];
     return leads.map((l) => {
       const key = normalizePhone(l.phone).replace(/\D/g, "").slice(-10);
       const hasOrdered = !!(orderedPhonesSet && key.length === 10 && orderedPhonesSet.has(key));
-      return { ...l, hasOrdered };
+      const productFromCart = key.length === 10 ? cartProductByPhone?.get(key) : undefined;
+      return {
+        ...l,
+        hasOrdered,
+        product_name: l.product_name || productFromCart || null,
+      };
     });
-  }, [leads, orderedPhonesSet]);
+  }, [leads, orderedPhonesSet, cartProductByPhone]);
 
   const visibleLeads = useMemo(
     () => enrichedLeads.filter((l) => !l.hasOrdered),
