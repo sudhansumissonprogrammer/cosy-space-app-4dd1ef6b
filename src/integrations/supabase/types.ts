@@ -4415,6 +4415,7 @@ export type Database = {
         Returns: Json
       }
       get_today_analytics: { Args: { _store_id: string }; Returns: Json }
+      get_wa_analytics_v2: { Args: { _days?: number }; Returns: Json }
       get_wa_cost_summary: { Args: never; Returns: Json }
       get_wa_platform_kpis: { Args: { _days?: number }; Returns: Json }
       get_whatsapp_mode: { Args: never; Returns: string }
