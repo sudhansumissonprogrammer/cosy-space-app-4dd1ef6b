@@ -152,9 +152,30 @@ Deno.serve(async (req) => {
       .not("message_type", "in", `(${TRANSACTIONAL.map((t) => `"${t}"`).join(",")})`)
       .gte("created_at", since24h);
     if (((sentMkt ?? 0) + (pendingMkt ?? 0)) >= 1) {
-      await admin.from("abandoned_carts")
-        .update({ recovery_status: "skipped", recovery_error: "phone_daily_cap" })
-        .eq("id", (c as any).id);
+      const { data: sentForCart } = await admin
+        .from("wa_send_queue")
+        .select("sent_message_id, updated_at")
+        .eq("abandoned_cart_id", (c as any).id)
+        .eq("message_type", "abandoned_cart")
+        .eq("status", "sent")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (sentForCart) {
+        await admin.from("abandoned_carts")
+          .update({
+            recovery_status: "sent",
+            recovery_sent_at: (sentForCart as any).updated_at ?? new Date().toISOString(),
+            recovery_message_id: (sentForCart as any).sent_message_id ?? null,
+            recovery_error: null,
+          })
+          .eq("id", (c as any).id);
+      } else {
+        await admin.from("abandoned_carts")
+          .update({ recovery_status: "skipped", recovery_error: "phone_daily_cap" })
+          .eq("id", (c as any).id);
+      }
       phoneCapped++;
       continue;
     }
