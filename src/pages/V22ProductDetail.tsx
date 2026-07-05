@@ -1560,8 +1560,10 @@ function ImageGallery({
     );
   }
 
-  // For single-slide products, render a fake 2-slide loop so user can still swipe
-  const renderSlides: Slide[] = len === 1 ? [slides[0], slides[0]] : slides;
+  // Render the real slide list only. Duplicating single-image products makes
+  // Embla AutoHeight measure the row too tall on mobile, leaving a large blank
+  // area between the product image and details.
+  const renderSlides: Slide[] = slides;
 
   // Lightbox only handles images — strip video slides
   const lightboxImages = slides.filter((s): s is Extract<Slide, { kind: "image" }> => s.kind === "image").map((s) => s.url);
