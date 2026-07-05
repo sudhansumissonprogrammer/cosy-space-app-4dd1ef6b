@@ -66,25 +66,30 @@ Deno.serve(async (req) => {
 
   const o = order as any;
 
-  // 🔒 Per-store master switch. If the merchant toggled WhatsApp marketing OFF
-  // in their dashboard, do not even enqueue. (wa-platform-send also blocks at
-  // dispatch time, but stopping here avoids junk rows + false "queued" stats.)
+  // 🔒 Transactional exemption: order_confirmation & order_shipped are UTILITY
+  // messages under Meta pricing. They MUST always deliver (customer paid,
+  // deserves confirmation). Do NOT gate them behind the platform_marketing_enabled
+  // switch — that switch only controls MARKETING (abandoned cart, campaigns).
+  const isTransactional = body.event === "order_confirmation" || body.event === "order_shipped";
   const { data: storeSettings } = await admin
     .from("stores_wa_settings")
     .select("platform_marketing_enabled, send_order_confirmation, send_order_shipped")
     .eq("store_id", o.store_id)
     .maybeSingle();
-  // Default OFF: if no row or master disabled, skip.
-  if (!storeSettings || (storeSettings as any).platform_marketing_enabled !== true) {
-    return json({ skipped: true, reason: "store_disabled" });
+  if (!isTransactional) {
+    // Marketing-only events still require the master switch.
+    if (!storeSettings || (storeSettings as any).platform_marketing_enabled !== true) {
+      return json({ skipped: true, reason: "store_disabled" });
+    }
   }
-  // Per-event toggle — default OFF.
+  // Per-event toggle — default OFF for marketing; transactional defaults ON when store exists.
   const perEventOn =
-    (body.event === "order_confirmation" && (storeSettings as any).send_order_confirmation === true) ||
-    (body.event === "order_shipped" && (storeSettings as any).send_order_shipped === true);
+    (body.event === "order_confirmation" && (storeSettings as any)?.send_order_confirmation !== false) ||
+    (body.event === "order_shipped" && (storeSettings as any)?.send_order_shipped !== false);
   if (!perEventOn) {
     return json({ skipped: true, reason: "event_toggle_off" });
   }
+
 
   // Gate: "shipped" must have a tracking number, otherwise customer gets a useless message.
   if (body.event === "order_shipped" && (!o.tracking_number || String(o.tracking_number).trim() === "")) {
