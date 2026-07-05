@@ -115,10 +115,9 @@ Deno.serve(async (req) => {
     // Abandoned-cart recovery is the baseline marketing automation: the cron
     // enqueues it when the store master switch is ON, so the sender must not
     // block it again on the legacy sub-toggle.
-    const mt = body.message_type || "";
     const perEventOk =
-      (mt === "order_confirmation" && (s as any).send_order_confirmation === true) ||
-      (mt === "order_shipped" && (s as any).send_order_shipped === true) ||
+      (mt === "order_confirmation" && (s as any)?.send_order_confirmation === true) ||
+      (mt === "order_shipped" && (s as any)?.send_order_shipped === true) ||
       mt === "abandoned_cart";
     if (!perEventOk) {
       return json({ skipped: true, reason: "event_toggle_off" });
