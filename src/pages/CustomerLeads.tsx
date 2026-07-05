@@ -32,6 +32,15 @@ type CustomerLead = {
 
 const FETCH_PAGE_SIZE = 1000;
 
+function productFromCartItems(cartItems: unknown): { product_name: string | null; product_id: string | null } {
+  const items = Array.isArray(cartItems) ? cartItems : [];
+  const first = items[0] as any;
+  return {
+    product_name: first?.name ? String(first.name) + (items.length > 1 ? ` +${items.length - 1}` : "") : null,
+    product_id: first?.productId ? String(first.productId) : null,
+  };
+}
+
 async function fetchAllCustomerLeads(storeId: string): Promise<CustomerLead[]> {
   const rows: CustomerLead[] = [];
 
@@ -66,14 +75,14 @@ const PURCHASED_STATUSES = new Set([
   "delivered",
 ]);
 
-async function fetchOrderedPhoneSuffixes(storeId: string): Promise<Set<string>> {
-  const set = new Set<string>();
+async function fetchPurchasedOrderDatesByPhone(storeId: string): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
 
   for (let from = 0; ; from += FETCH_PAGE_SIZE) {
     const to = from + FETCH_PAGE_SIZE - 1;
     const { data, error } = await supabase
       .from("orders")
-      .select("customer_phone, status")
+      .select("customer_phone, status, created_at")
       .eq("store_id", storeId)
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
@@ -85,13 +94,55 @@ async function fetchOrderedPhoneSuffixes(storeId: string): Promise<Set<string>> 
     batch.forEach((o: any) => {
       if (!PURCHASED_STATUSES.has(o.status)) return;
       const norm = normalizePhone(o.customer_phone).replace(/\D/g, "");
-      if (norm.length >= 10) set.add(norm.slice(-10));
+      const key = norm.length >= 10 ? norm.slice(-10) : "";
+      if (!key) return;
+      const prev = map.get(key);
+      if (!prev || new Date(o.created_at).getTime() > new Date(prev).getTime()) {
+        map.set(key, o.created_at);
+      }
     });
 
     if (batch.length < FETCH_PAGE_SIZE) break;
   }
 
-  return set;
+  return map;
+}
+
+async function fetchOpenAbandonedCartLeads(storeId: string): Promise<CustomerLead[]> {
+  const rows: CustomerLead[] = [];
+
+  for (let from = 0; ; from += FETCH_PAGE_SIZE) {
+    const to = from + FETCH_PAGE_SIZE - 1;
+    const { data, error } = await (supabase as any)
+      .from("abandoned_carts")
+      .select("id,customer_phone,cart_items,created_at")
+      .eq("store_id", storeId)
+      .eq("recovered", false)
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    const batch = (data ?? []) as any[];
+    batch.forEach((c) => {
+      const phone = normalizePhone(c.customer_phone);
+      if (!phone) return;
+      const product = productFromCartItems(c.cart_items);
+      rows.push({
+        id: `cart:${c.id}`,
+        name: null,
+        phone,
+        product_name: product.product_name,
+        product_id: product.product_id,
+        source: "abandoned_cart",
+        created_at: c.created_at,
+      });
+    });
+
+    if (batch.length < FETCH_PAGE_SIZE) break;
+  }
+
+  return rows;
 }
 
 export default function CustomerLeads() {
@@ -99,11 +150,20 @@ export default function CustomerLeads() {
   const queryClient = useQueryClient();
   const { data: myStore } = useMyStore();
 
-  const { data: leads, isLoading } = useQuery({
+  const { data: leads, isLoading: leadsLoading } = useQuery({
     queryKey: ["customer-leads", storeId],
     queryFn: () => fetchAllCustomerLeads(storeId!),
     enabled: !!storeId,
   });
+
+  const { data: cartLeads, isLoading: cartsLoading } = useQuery({
+    queryKey: ["leads-open-abandoned-carts", storeId],
+    queryFn: () => fetchOpenAbandonedCartLeads(storeId!),
+    enabled: !!storeId,
+    staleTime: 60 * 1000,
+  });
+
+  const isLoading = leadsLoading || cartsLoading;
 
   // Build normalized lead-phone list — used to scope the orders lookup.
   const leadPhones = useMemo(() => {
@@ -117,10 +177,10 @@ export default function CustomerLeads() {
 
   // Fetch order phones in pages. A single query is capped by the backend row limit,
   // which made high-volume stores look stuck at 1000/2000 leads.
-  const { data: orderedPhonesSet } = useQuery({
+  const { data: purchasedOrderDatesByPhone } = useQuery({
     queryKey: ["leads-ordered-phones", storeId],
-    queryFn: () => fetchOrderedPhoneSuffixes(storeId!),
-    enabled: !!storeId && leadPhones.length > 0,
+    queryFn: () => fetchPurchasedOrderDatesByPhone(storeId!),
+    enabled: !!storeId && (leadPhones.length > 0 || (cartLeads?.length ?? 0) > 0),
     staleTime: 60 * 1000,
   });
 
@@ -144,9 +204,8 @@ export default function CustomerLeads() {
         batch.forEach((c) => {
           const key = normalizePhone(c.customer_phone).replace(/\D/g, "").slice(-10);
           if (key.length !== 10 || map.has(key)) return; // newest wins
-          const items = Array.isArray(c.cart_items) ? c.cart_items : [];
-          const first = items[0]?.name;
-          if (first) map.set(key, String(first) + (items.length > 1 ? ` +${items.length - 1}` : ""));
+          const product = productFromCartItems(c.cart_items);
+          if (product.product_name) map.set(key, product.product_name);
         });
         if (batch.length < FETCH_PAGE_SIZE) break;
       }
@@ -156,12 +215,27 @@ export default function CustomerLeads() {
     staleTime: 60 * 1000,
   });
 
+  const combinedLeads = useMemo(() => {
+    const rows = [...(leads ?? [])];
+    (cartLeads ?? []).forEach((cartLead) => {
+      const cartKey = normalizePhone(cartLead.phone).replace(/\D/g, "").slice(-10);
+      const cartTime = new Date(cartLead.created_at).getTime();
+      const hasNearLead = rows.some((lead) => {
+        const leadKey = normalizePhone(lead.phone).replace(/\D/g, "").slice(-10);
+        if (leadKey !== cartKey) return false;
+        return Math.abs(new Date(lead.created_at).getTime() - cartTime) <= 5 * 60 * 1000;
+      });
+      if (!hasNearLead) rows.push(cartLead);
+    });
+    return rows.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [leads, cartLeads]);
+
   // Annotate each lead with `hasOrdered` + product-of-interest, then filter.
   const enrichedLeads = useMemo(() => {
-    if (!leads) return [];
-    return leads.map((l) => {
+    return combinedLeads.map((l) => {
       const key = normalizePhone(l.phone).replace(/\D/g, "").slice(-10);
-      const hasOrdered = !!(orderedPhonesSet && key.length === 10 && orderedPhonesSet.has(key));
+      const purchasedAt = key.length === 10 ? purchasedOrderDatesByPhone?.get(key) : undefined;
+      const hasOrdered = !!(purchasedAt && new Date(purchasedAt).getTime() >= new Date(l.created_at).getTime());
       const productFromCart = key.length === 10 ? cartProductByPhone?.get(key) : undefined;
       return {
         ...l,
@@ -169,7 +243,7 @@ export default function CustomerLeads() {
         product_name: l.product_name || productFromCart || null,
       };
     });
-  }, [leads, orderedPhonesSet, cartProductByPhone]);
+  }, [combinedLeads, purchasedOrderDatesByPhone, cartProductByPhone]);
 
   const visibleLeads = useMemo(
     () => enrichedLeads.filter((l) => !l.hasOrdered),
@@ -270,14 +344,17 @@ export default function CustomerLeads() {
 
   const deleteMutation = useMutation({
     mutationFn: async (leadId: string) => {
+      const isCartLead = leadId.startsWith("cart:");
       const { error } = await (supabase as any)
-        .from("customer_leads")
+        .from(isCartLead ? "abandoned_carts" : "customer_leads")
         .delete()
-        .eq("id", leadId);
+        .eq("id", isCartLead ? leadId.slice(5) : leadId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customer-leads", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["leads-open-abandoned-carts", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["leads-cart-products", storeId] });
       toast.success("Lead deleted");
     },
     onError: () => toast.error("Failed to delete lead"),
