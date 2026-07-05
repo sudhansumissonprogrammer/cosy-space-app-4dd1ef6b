@@ -136,8 +136,10 @@ Deno.serve(async (req) => {
     const { count: sentToday } = await admin
       .from("whatsapp_messages").select("id", { count: "exact", head: true })
       .eq("recipient_phone", phone).eq("sent_via", "platform").eq("direction", "outgoing")
+      .eq("status", "sent") // 🩹 only DELIVERED msgs consume cap — failed Meta-throttles must not lock out legit follow-ups
       .not("message_type", "in", `(${Array.from(TRANSACTIONAL).map((t) => `"${t}"`).join(",")})`)
       .gte("created_at", since);
+
     if ((sentToday ?? 0) >= cfg!.wa_daily_cap_per_phone) return json({ skipped: true, reason: "daily_cap" });
   }
 
