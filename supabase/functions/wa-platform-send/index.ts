@@ -91,16 +91,22 @@ Deno.serve(async (req) => {
   const { data: optout } = await admin.from("whatsapp_optouts").select("id").eq("phone", phone).limit(1).maybeSingle();
   if (optout) return json({ skipped: true, reason: "opted_out" });
 
-  // Per-store toggles — DEFAULT OFF. Missing row = no consent = skip.
+  // Per-store toggles — DEFAULT OFF for marketing.
+  // TRANSACTIONAL messages (order_confirmation, order_shipped, payment_*, delivered)
+  // are UTILITY-category — customer paid, they MUST reach them. Do NOT gate them
+  // on the marketing master switch.
   if (body.mode === "automation" && body.store_id) {
+    const mt = body.message_type || "";
+    const isTransactionalMt = TRANSACTIONAL.has(mt);
     const { data: s } = await admin
       .from("stores_wa_settings")
       .select("platform_marketing_enabled, send_order_confirmation, send_order_shipped, send_abandoned_cart")
       .eq("store_id", body.store_id)
       .maybeSingle();
-    if (!s || (s as any).platform_marketing_enabled !== true) {
+    if (!isTransactionalMt && (!s || (s as any).platform_marketing_enabled !== true)) {
       return json({ skipped: true, reason: "store_disabled" });
     }
+
     // Per-event guard (defense-in-depth against callers that skip wa-order-event).
     // Abandoned-cart recovery is the baseline marketing automation: the cron
     // enqueues it when the store master switch is ON, so the sender must not
