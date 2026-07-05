@@ -97,8 +97,12 @@ export function AdminChatTab() {
       const effectiveStoreId = m.store_id || phoneToStore.get(phone) || null;
       const key = `${effectiveStoreId}_${phone}`;
       const storeName = m.stores?.name || "Unknown Store";
+      // "there" is the template fallback we send when we have no real name —
+      // don't treat it as a customer name in the inbox.
+      const cleanName = (n: string | null | undefined) =>
+        n && n.trim() && n.trim().toLowerCase() !== "there" ? n.trim() : null;
       if (!map.has(key)) {
-        map.set(key, { phone, storeId: effectiveStoreId, storeName, name: msg.recipient_name, messages: [], lastMessage: msg, unread: 0, lastIncomingAt: null });
+        map.set(key, { phone, storeId: effectiveStoreId, storeName, name: cleanName(msg.recipient_name), messages: [], lastMessage: msg, unread: 0, lastIncomingAt: null });
       }
       const conv = map.get(key)!;
       // storeName: prefer any non-Unknown label we encounter.
@@ -108,7 +112,10 @@ export function AdminChatTab() {
         if (msg.status === "received") conv.unread++;
         if (!conv.lastIncomingAt || new Date(msg.created_at) > new Date(conv.lastIncomingAt)) conv.lastIncomingAt = msg.created_at;
       }
-      if (!conv.name && msg.recipient_name) conv.name = msg.recipient_name;
+      if (!conv.name) {
+        const cn = cleanName(msg.recipient_name);
+        if (cn) conv.name = cn;
+      }
       // Newest message wins for the list preview.
       if (new Date(msg.created_at) > new Date(conv.lastMessage.created_at)) conv.lastMessage = msg;
     }
