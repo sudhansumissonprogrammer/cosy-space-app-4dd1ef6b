@@ -141,6 +141,7 @@ export function AdminPlatformTab() {
               wa_phone_number_id: cfg.wa_phone_number_id ?? undefined,
               wa_business_phone: cfg.wa_business_phone ?? undefined,
               wa_waba_id: cfg.wa_waba_id ?? undefined,
+              wa_app_id: cfg.wa_app_id ?? undefined,
               wa_default_lang: cfg.wa_default_lang,
               wa_access_token: tokenInput || undefined,
               wa_app_secret: secretInput || undefined,
