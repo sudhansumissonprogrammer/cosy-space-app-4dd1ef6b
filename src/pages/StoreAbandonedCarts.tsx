@@ -23,6 +23,7 @@ import {
 import { toast } from "sonner";
 import { format, isWithinInterval, startOfDay, endOfDay, subDays, isToday, isYesterday } from "date-fns";
 import { cn } from "@/lib/utils";
+import { FailedMessagesPanel } from "@/components/whatsapp/FailedMessagesPanel";
 
 const QUICK_FILTERS = [
   { label: "Today", days: 0 },
