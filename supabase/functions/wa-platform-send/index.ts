@@ -127,8 +127,8 @@ Deno.serve(async (req) => {
 
   // Daily cap — applies to MARKETING only. Transactional events (order/payment/shipping)
   // must always reach the customer and are excluded from the cap.
-  const TRANSACTIONAL = new Set(["order_confirmation", "payment_received", "payment_success", "order_shipped", "order_delivered"]);
   const isTransactional = TRANSACTIONAL.has(body.message_type || "");
+
   if (!isTransactional) {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     // Count MARKETING messages only — transactional sends (order confirmation,
