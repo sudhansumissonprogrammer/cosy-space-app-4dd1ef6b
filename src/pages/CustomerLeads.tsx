@@ -75,8 +75,8 @@ const PURCHASED_STATUSES = new Set([
   "delivered",
 ]);
 
-async function fetchPurchasedOrderDatesByPhone(storeId: string): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
+async function fetchPurchasedOrderDatesByPhone(storeId: string): Promise<Map<string, number[]>> {
+  const map = new Map<string, number[]>();
 
   for (let from = 0; ; from += FETCH_PAGE_SIZE) {
     const to = from + FETCH_PAGE_SIZE - 1;
@@ -96,15 +96,16 @@ async function fetchPurchasedOrderDatesByPhone(storeId: string): Promise<Map<str
       const norm = normalizePhone(o.customer_phone).replace(/\D/g, "");
       const key = norm.length >= 10 ? norm.slice(-10) : "";
       if (!key) return;
-      const prev = map.get(key);
-      if (!prev || new Date(o.created_at).getTime() > new Date(prev).getTime()) {
-        map.set(key, o.created_at);
-      }
+      const t = new Date(o.created_at).getTime();
+      const arr = map.get(key);
+      if (arr) arr.push(t); else map.set(key, [t]);
     });
 
     if (batch.length < FETCH_PAGE_SIZE) break;
   }
 
+  // Sort ascending for efficient lookup.
+  map.forEach((arr) => arr.sort((a, b) => a - b));
   return map;
 }
 
