@@ -36,8 +36,8 @@ export function AdminPlatformTab() {
 
   // test send
   const [testPhone, setTestPhone] = useState("");
-  const [testTemplate, setTestTemplate] = useState("abandoned_cart_v1");
-  const [testVars, setTestVars] = useState("Customer,Store,₹999,https://shopbanao.in");
+  const [testTemplate, setTestTemplate] = useState("abandoned_cart_v2");
+  const [testVars, setTestVars] = useState("Customer,Chain,Store,₹999");
   const [testing, setTesting] = useState(false);
 
   const load = async () => {
@@ -64,11 +64,11 @@ export function AdminPlatformTab() {
     if (!testPhone || !testTemplate) { toast.error("Phone and template required"); return; }
     setTesting(true);
     const params = testVars.split(",").map(s => s.trim()).filter(Boolean);
-    const { error } = await supabase.functions.invoke("wa-platform-send", {
+    const { data, error } = await supabase.functions.invoke("wa-platform-send", {
       body: { mode: "test", recipient_phone: testPhone, template_name: testTemplate, template_params: params },
     });
     setTesting(false);
-    if (error) toast.error(error.message);
+    if (error || (data as any)?.error) toast.error(await formatWaFunctionError(error, data));
     else toast.success("Test message dispatched");
   };
 
@@ -242,6 +242,22 @@ export function AdminPlatformTab() {
 
     </div>
   );
+}
+
+async function formatWaFunctionError(error: any, data: unknown) {
+  const payload = data as any;
+  if (payload?.error) return [payload.error, payload.details].filter(Boolean).join(": ");
+
+  const response = error?.context;
+  if (response?.clone) {
+    try {
+      const body = await response.clone().json();
+      return [body?.error, body?.details || body?.reason].filter(Boolean).join(": ") || error?.message || "Send failed";
+    } catch {
+      // fall through to the SDK message
+    }
+  }
+  return error?.message || "Send failed";
 }
 
 function QualityThrottleCard() {
