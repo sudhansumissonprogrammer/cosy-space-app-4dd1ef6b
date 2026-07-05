@@ -69,11 +69,15 @@ Deno.serve(async (req) => {
   const cooldownSince = new Date(now - 24 * 60 * 60 * 1000).toISOString();
   const onCooldown = new Set<string>();
   if (normPhones.length) {
+    // Only marketing messages should trigger the 24h cooldown. Transactional
+    // messages like order_confirmation must NOT block a future cart recovery —
+    // otherwise every customer who just ordered is silenced for 24h.
     const { data: recent } = await admin
       .from("whatsapp_messages")
       .select("recipient_phone")
       .in("recipient_phone", normPhones)
       .eq("sent_via", "platform").eq("direction", "outgoing")
+      .in("message_type", ["abandoned_cart", "marketing", "campaign"])
       .gte("created_at", cooldownSince)
       .limit(5000);
     for (const r of (recent as any[]) ?? []) if (r?.recipient_phone) onCooldown.add(String(r.recipient_phone));
