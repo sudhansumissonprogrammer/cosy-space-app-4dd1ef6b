@@ -112,6 +112,16 @@ Deno.serve(async (req) => {
         console.error("Order update error", updateErr);
         return jsonRes({ error: "Failed to update order" }, 500);
       }
+      // Mark the linked abandoned cart as recovered (payment succeeded).
+      // place-order intentionally leaves online-payment carts un-recovered so
+      // failed payments can be re-targeted; the verify step owns the flip.
+      if (orderInfo?.checkout_token) {
+        await supabase
+          .from("abandoned_carts")
+          .update({ recovered: true })
+          .eq("store_id", store_id)
+          .eq("session_token", orderInfo.checkout_token);
+      }
       // Await to make sure CAPI fires before edge runtime kills the isolate
       await firePurchaseCapi(supabase, order_id, { source: "payu-verify" });
       return jsonRes({ success: true, status: "PAID" });

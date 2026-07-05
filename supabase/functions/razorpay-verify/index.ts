@@ -126,6 +126,24 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Mark the linked abandoned cart as recovered (payment succeeded).
+    // Look up checkout_token from the just-updated order and clear the cart
+    // so the recovery cron doesn't chase a customer who already paid.
+    {
+      const { data: ord } = await supabase
+        .from("orders")
+        .select("checkout_token")
+        .eq("id", order_id)
+        .maybeSingle();
+      if (ord?.checkout_token) {
+        await supabase
+          .from("abandoned_carts")
+          .update({ recovered: true })
+          .eq("store_id", store_id)
+          .eq("session_token", ord.checkout_token);
+      }
+    }
+
     // Payment confirmed — fire Meta CAPI Purchase (server-to-server, idempotent).
     await firePurchaseCapi(supabase, order_id, { source: "razorpay" });
 

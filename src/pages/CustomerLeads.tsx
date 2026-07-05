@@ -65,12 +65,12 @@ async function fetchAllCustomerLeads(storeId: string): Promise<CustomerLead[]> {
   return rows;
 }
 
-// Only these order statuses mean the customer actually bought → hide from Leads.
-// `pending` (COD placed but not confirmed) and `cancelled` MUST remain in Leads
-// per store-owner requirement (they are still recovery opportunities).
+// Only these order statuses mean the customer FULLY paid → hide from Leads.
+// `pending` (COD placed but not confirmed), `cancelled`, and `partially_paid`
+// (advance paid, balance still due) MUST remain in Leads — the store owner
+// still needs to chase the balance / re-confirm those customers.
 const PURCHASED_STATUSES = new Set([
   "confirmed",
-  "partially_paid",
   "shipped",
   "delivered",
 ]);
