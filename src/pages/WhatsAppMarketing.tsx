@@ -3,6 +3,7 @@ import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWhatsAppMode } from "@/hooks/useWhatsAppMode";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -241,6 +242,7 @@ const EMOJI_LIST = ["😊", "😂", "❤️", "👍", "🙏", "🎉", "🔥", "�
 
 function ChatTab({ storeId }: { storeId: string }) {
   const queryClient = useQueryClient();
+  const { isPlatformOnly } = useWhatsAppMode();
   const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -268,7 +270,7 @@ function ChatTab({ storeId }: { storeId: string }) {
         const { data, error } = await supabase
           .from("whatsapp_messages")
           .select("*")
-          .eq("store_id", storeId)
+          .or(`store_id.eq.${storeId},inferred_store_id.eq.${storeId}`)
           .order("created_at", { ascending: false })
           .range(from, from + PAGE - 1);
         if (error) throw error;
@@ -281,6 +283,18 @@ function ChatTab({ storeId }: { storeId: string }) {
     refetchInterval: (query) => (typeof document !== "undefined" && document.visibilityState === "visible") ? 60000 : false,
     refetchOnWindowFocus: true,
   });
+
+  React.useEffect(() => {
+    const ch = supabase
+      .channel(`store-wa-inbox-${storeId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "whatsapp_messages" },
+        () => queryClient.invalidateQueries({ queryKey: ["whatsapp-all-messages", storeId] }),
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [queryClient, storeId]);
 
   // Group messages by phone number to create conversations
   const conversations = useMemo(() => {
@@ -356,6 +370,12 @@ function ChatTab({ storeId }: { storeId: string }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [selectedConversation]);
 
+  React.useEffect(() => {
+    if (!selectedPhone || !currentConv || currentConv.unread === 0) return;
+    supabase.rpc("store_wa_mark_thread_read" as any, { _store_id: storeId, _phone: selectedPhone })
+      .then(() => queryClient.invalidateQueries({ queryKey: ["whatsapp-all-messages", storeId] }));
+  }, [selectedPhone, currentConv, queryClient, storeId]);
+
   // Typing indicator logic
   const handleTyping = useCallback(() => {
     setIsTyping(true);
@@ -367,6 +387,11 @@ function ChatTab({ storeId }: { storeId: string }) {
     if (!selectedPhone || (!message.trim() && !mediaPreview)) return;
     setSending(true);
     try {
+      if (isPlatformOnly && mediaPreview) {
+        toast({ title: "Text replies only", description: "Media replies are not available on the shared number yet.", variant: "destructive" });
+        return;
+      }
+
       let mediaUrl: string | null = null;
       let mediaType: string | null = null;
 
@@ -388,14 +413,32 @@ function ChatTab({ storeId }: { storeId: string }) {
         setUploadingMedia(false);
       }
 
-      // ⚠️ WhatsApp send temporarily disabled — feature coming soon
-      toast({
-        title: "🚧 Coming soon",
-        description: "Direct WhatsApp messaging is temporarily disabled. This feature will be available soon!",
-      });
-      void mediaUrl; void mediaType; void selectedPhone;
-      setSending(false);
-      return;
+      if (isPlatformOnly) {
+        const res = await supabase.functions.invoke("wa-platform-send", {
+          body: {
+            mode: "text",
+            store_id: storeId,
+            recipient_phone: selectedPhone,
+            message_body: message.trim(),
+            message_type: "text_reply",
+          },
+        });
+        if (res.error) throw res.error;
+        if ((res.data as any)?.error) throw new Error((res.data as any).error);
+      } else {
+        const res = await supabase.functions.invoke("whatsapp-send", {
+          body: {
+            store_id: storeId,
+            recipient_phone: selectedPhone,
+            message_body: message.trim(),
+            message_type: "manual",
+            media_url: mediaUrl,
+            media_type: mediaType,
+          },
+        });
+        if (res.error) throw res.error;
+        if ((res.data as any)?.error) throw new Error((res.data as any).error);
+      }
       setMessage("");
       setShowEmoji(false);
       setMediaPreview(null);

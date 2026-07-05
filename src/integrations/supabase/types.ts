@@ -4496,6 +4496,10 @@ export type Database = {
         Args: { _store_id: string }
         Returns: boolean
       }
+      store_wa_mark_thread_read: {
+        Args: { _phone: string; _store_id: string }
+        Returns: number
+      }
       swap_category_order: {
         Args: { _a: string; _b: string }
         Returns: undefined
