@@ -15,6 +15,7 @@ type Cfg = {
   wa_phone_number_id: string | null;
   wa_business_phone: string | null;
   wa_waba_id: string | null;
+  wa_app_id: string | null;
   wa_default_lang: string;
   wa_min_cart_age_minutes: number;
   wa_max_cart_age_hours: number;
