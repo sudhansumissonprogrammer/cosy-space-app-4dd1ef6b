@@ -121,6 +121,10 @@ export function AdminPlatformTab() {
             <Input value={cfg.wa_waba_id ?? ""} onChange={(e) => setCfg({ ...cfg, wa_waba_id: e.target.value })} />
           </div>
           <div>
+            <Label>Meta App ID <span className="text-[10px] text-muted-foreground">(needed for image/video/doc templates)</span></Label>
+            <Input value={cfg.wa_app_id ?? ""} onChange={(e) => setCfg({ ...cfg, wa_app_id: e.target.value })} placeholder="e.g. 123456789012345" />
+          </div>
+          <div>
             <Label>Default language</Label>
             <Input value={cfg.wa_default_lang} onChange={(e) => setCfg({ ...cfg, wa_default_lang: e.target.value })} />
           </div>
