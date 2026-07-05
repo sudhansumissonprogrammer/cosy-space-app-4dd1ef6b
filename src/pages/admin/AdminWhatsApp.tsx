@@ -2,7 +2,7 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useState } from "react";
 import {
   MessageSquare, Megaphone, FileCheck, BarChart3, Settings, Library,
-  Send, UserX, ListChecks, Sparkles, LineChart, ChevronRight, Inbox, Zap,
+  Send, UserX, ListChecks, Sparkles, LineChart, ChevronRight, Inbox, Zap, IndianRupee,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
