@@ -227,7 +227,13 @@ Deno.serve(async (req) => {
       if (!draft.name || !draft.body_text || !draft.category || !draft.language) {
         return j(400, { error: "Missing required fields (name, body_text, category, language)" });
       }
-      const components = draftToComponents(draft);
+      let headerHandle: string | null = null;
+      if ((draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT") && draft.header_media_url) {
+        if (!APP_ID) return j(400, { error: "Meta App ID not configured — set it in Admin → WhatsApp → Meta credentials before submitting media-header templates." });
+        try { headerHandle = await uploadHeaderMedia(draft.header_media_url, draft.header_type, APP_ID, TOKEN); }
+        catch (e: any) { await audit("create", "error", { error: sanitizeError(e.message) }); return j(400, { error: e.message }); }
+      }
+      const components = draftToComponents(draft, headerHandle);
       const resp = await fetch(`${GRAPH}/${WABA_ID}/message_templates`, {
         method: "POST",
         headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
