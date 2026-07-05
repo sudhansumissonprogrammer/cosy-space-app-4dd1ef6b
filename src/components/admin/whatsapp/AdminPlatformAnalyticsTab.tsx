@@ -36,7 +36,7 @@ export function AdminPlatformAnalyticsTab() {
   const [syncing, setSyncing] = useState(false);
   const [meta, setMeta] = useState<any>(null);
 
-  const { data: a, isLoading, refetch } = useQuery({
+  const { data: a, isLoading, error, refetch } = useQuery({
     queryKey: ["wa-analytics-v2", days],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_wa_analytics_v2" as any, { _days: days });
@@ -44,6 +44,7 @@ export function AdminPlatformAnalyticsTab() {
       return data as unknown as Analytics;
     },
     refetchInterval: 60000,
+    retry: 1,
   });
 
   const syncMeta = async () => {
@@ -63,7 +64,19 @@ export function AdminPlatformAnalyticsTab() {
   useEffect(() => { syncMeta(); /* eslint-disable-next-line */ }, []);
 
   if (isLoading) return <div className="text-sm text-muted-foreground p-4">Loading analytics…</div>;
-  if (!a) return <div className="text-sm text-muted-foreground p-4">No data yet.</div>;
+  if (error) return (
+    <div className="p-4 space-y-2">
+      <div className="text-sm font-medium text-red-600">Failed to load analytics</div>
+      <div className="text-xs text-muted-foreground break-all">{(error as any)?.message || String(error)}</div>
+      <Button size="sm" variant="outline" onClick={() => refetch()}>Retry</Button>
+    </div>
+  );
+  if (!a || !a.totals) return (
+    <div className="p-4 space-y-2">
+      <div className="text-sm text-muted-foreground">No data yet.</div>
+      <Button size="sm" variant="outline" onClick={() => refetch()}>Reload</Button>
+    </div>
+  );
 
   const t = a.totals;
   const deliveredPct = pct(t.delivered, t.sent);
