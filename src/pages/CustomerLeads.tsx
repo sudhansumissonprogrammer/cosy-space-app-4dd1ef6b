@@ -240,10 +240,11 @@ export default function CustomerLeads() {
   const enrichedLeads = useMemo(() => {
     return combinedLeads.map((l) => {
       const key = normalizePhone(l.phone).replace(/\D/g, "").slice(-10);
-      const purchasedAt = key.length === 10 ? purchasedOrderDatesByPhone?.get(key) : undefined;
+      const purchaseTimes = key.length === 10 ? purchasedOrderDatesByPhone?.get(key) : undefined;
       const leadTime = new Date(l.created_at).getTime();
-      const purchasedTime = purchasedAt ? new Date(purchasedAt).getTime() : 0;
-      const hasOrdered = !!(purchasedAt && purchasedTime >= leadTime && purchasedTime - leadTime <= CONVERSION_WINDOW_MS);
+      // Find the earliest confirmed purchase at or after this lead's timestamp.
+      const nextPurchase = purchaseTimes?.find((t) => t >= leadTime);
+      const hasOrdered = !!(nextPurchase && nextPurchase - leadTime <= CONVERSION_WINDOW_MS);
       const productFromCart = key.length === 10 ? cartProductByPhone?.get(key) : undefined;
       return {
         ...l,
