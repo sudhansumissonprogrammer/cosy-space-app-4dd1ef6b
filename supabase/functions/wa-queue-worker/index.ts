@@ -165,11 +165,13 @@ Deno.serve(async (req) => {
     const j = await resp.json().catch(() => ({}));
 
     if (resp.ok && j?.success) {
+      const sentAt = new Date().toISOString();
       await admin.from("wa_send_queue").update({
         status: "sent",
         sent_message_id: j?.message_id ?? null,
         locked_until: null,
       } as any).eq("id", row.id);
+      await markAbandonedCartSent(admin, row, j?.message_id ?? null, sentAt);
       sent++;
     } else if (resp.ok && j?.skipped) {
       await admin.from("wa_send_queue").update({
@@ -182,9 +184,7 @@ Deno.serve(async (req) => {
       // next cron cycle can retry (still bounded by wa_max_cart_age_hours).
       const transientSkipReasons = new Set(["daily_cap", "quality_throttle", "tier_limit", "meta_breaker_open"]);
       if (row.message_type === "abandoned_cart" && row.abandoned_cart_id && transientSkipReasons.has(String(j?.reason || ""))) {
-        await admin.from("abandoned_carts")
-          .update({ recovery_sent_at: null, recovery_status: "pending", recovery_error: `skipped:${j?.reason}` })
-          .eq("id", row.abandoned_cart_id);
+        await syncAbandonedCartAfterTransientBlock(admin, row, `skipped:${j?.reason}`);
       }
     } else {
       const cls = j?.error_class || (resp.status >= 500 || resp.status === 429 ? "transient" : "permanent");
@@ -204,9 +204,7 @@ Deno.serve(async (req) => {
         // For truly permanent errors (invalid_phone, template_bad), keep it
         // stamped so we don't spam-retry a known-broken send.
         if (row.message_type === "abandoned_cart" && row.abandoned_cart_id && cls === "transient") {
-          await admin.from("abandoned_carts")
-            .update({ recovery_sent_at: null, recovery_status: "pending", recovery_error: "attempts_exhausted" })
-            .eq("id", row.abandoned_cart_id);
+          await syncAbandonedCartAfterTransientBlock(admin, row, "attempts_exhausted");
         }
       } else {
         const delayMin = BACKOFF_MIN[Math.min(attempts - 1, BACKOFF_MIN.length - 1)];
@@ -229,4 +227,39 @@ Deno.serve(async (req) => {
 
 function json(b: unknown, s = 200) {
   return new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+}
+
+async function markAbandonedCartSent(admin: any, row: any, messageId: string | null, sentAt?: string) {
+  if (row.message_type !== "abandoned_cart" || !row.abandoned_cart_id) return;
+  await admin.from("abandoned_carts")
+    .update({
+      recovery_sent_at: sentAt || new Date().toISOString(),
+      recovery_status: "sent",
+      recovery_message_id: messageId,
+      recovery_error: null,
+    })
+    .eq("id", row.abandoned_cart_id);
+}
+
+async function syncAbandonedCartAfterTransientBlock(admin: any, row: any, pendingError: string) {
+  if (row.message_type !== "abandoned_cart" || !row.abandoned_cart_id) return;
+
+  const { data: sentRow } = await admin
+    .from("wa_send_queue")
+    .select("sent_message_id, updated_at")
+    .eq("abandoned_cart_id", row.abandoned_cart_id)
+    .eq("message_type", "abandoned_cart")
+    .eq("status", "sent")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (sentRow) {
+    await markAbandonedCartSent(admin, row, sentRow.sent_message_id ?? null, sentRow.updated_at ?? undefined);
+    return;
+  }
+
+  await admin.from("abandoned_carts")
+    .update({ recovery_sent_at: null, recovery_status: "pending", recovery_error: pendingError })
+    .eq("id", row.abandoned_cart_id);
 }
