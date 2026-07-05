@@ -62,7 +62,18 @@ Deno.serve(async (req) => {
     const { data: { user } } = await userClient.auth.getUser();
     if (!user) return json({ error: "unauthorized", error_class: "permanent" }, 401);
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
-    if (!isAdmin) return json({ error: "forbidden", error_class: "permanent" }, 403);
+    if (!isAdmin) {
+      // Store owners may only send 24h session text replies for their own store.
+      // Automation/templates remain admin/internal-only so merchants cannot bypass
+      // platform campaign controls or broadcast limits.
+      if (!isTextReply || !body.store_id) return json({ error: "forbidden", error_class: "permanent" }, 403);
+      const { data: storeRow } = await admin
+        .from("stores")
+        .select("owner_id")
+        .eq("id", body.store_id)
+        .maybeSingle();
+      if ((storeRow as any)?.owner_id !== user.id) return json({ error: "forbidden", error_class: "permanent" }, 403);
+    }
   }
 
   const cfg = await loadPlatformConfig(admin);
