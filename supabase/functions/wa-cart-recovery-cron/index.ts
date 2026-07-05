@@ -242,7 +242,7 @@ Deno.serve(async (req) => {
       .eq("phone", (c as any).customer_phone);
   }
 
-  return json({ processed: carts.length, enqueued, skipped, store_off: storeOff, cooldown, empty_cart: emptyCart, already_ordered: alreadyOrdered });
+  return json({ processed: carts.length, enqueued, skipped, store_off: storeOff, cooldown, empty_cart: emptyCart, already_ordered: alreadyOrdered, phone_capped: phoneCapped });
 });
 
 
