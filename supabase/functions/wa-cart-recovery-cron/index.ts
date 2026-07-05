@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
     for (const r of (recent as any[]) ?? []) if (r?.recipient_phone) onCooldown.add(String(r.recipient_phone));
   }
 
-  let enqueued = 0, skipped = 0, storeOff = 0, cooldown = 0, emptyCart = 0;
+  let enqueued = 0, skipped = 0, storeOff = 0, cooldown = 0, emptyCart = 0, alreadyOrdered = 0;
   for (const c of carts) {
     if (disabled.has((c as any).store_id)) { storeOff++; continue; }
     const phone = normalizePhone((c as any).customer_phone);
@@ -95,6 +95,44 @@ Deno.serve(async (req) => {
     // Skip empty / zero-value carts — sending "₹0 · 0 items" looks broken and
     // is a marketing-policy red flag (low-quality messaging → quality drop).
     if (!items.length || total <= 0) { emptyCart++; continue; }
+
+    // 🛒 Product-overlap check: if this customer already placed an order in
+    // this store containing ANY product from the cart (since the cart was
+    // created), the cart is effectively recovered — skip and mark it.
+    // Match on phone variants because orders.customer_phone may be stored
+    // without the country-code that normalizePhone() adds.
+    const cartProductIds = items
+      .map((it: any) => String(it?.productId || it?.product_id || ""))
+      .filter(Boolean);
+    if (cartProductIds.length) {
+      const rawPhone = String((c as any).customer_phone || "").replace(/\D/g, "");
+      const phoneVariants = Array.from(new Set([
+        phone,
+        rawPhone,
+        rawPhone.startsWith("91") ? rawPhone.slice(2) : `91${rawPhone}`,
+      ].filter(Boolean)));
+      const { data: matchOrders } = await admin
+        .from("orders")
+        .select("id, order_items(product_id)")
+        .eq("store_id", (c as any).store_id)
+        .in("customer_phone", phoneVariants)
+        .gte("created_at", (c as any).created_at)
+        .limit(20);
+      const orderedIds = new Set<string>();
+      for (const o of (matchOrders as any[]) ?? []) {
+        for (const oi of (o.order_items ?? [])) {
+          if (oi?.product_id) orderedIds.add(String(oi.product_id));
+        }
+      }
+      if (cartProductIds.some((pid: string) => orderedIds.has(pid))) {
+        await admin.from("abandoned_carts")
+          .update({ recovered: true, recovery_status: "skipped", recovery_error: "product already ordered" })
+          .eq("id", (c as any).id);
+        alreadyOrdered++;
+        continue;
+      }
+    }
+
     const customerName = (items[0]?.customer_name as string) || "there";
     const s = (c as any).stores || {};
 
