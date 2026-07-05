@@ -59,36 +59,16 @@ Deno.serve(async (req) => {
   );
   const disabled = new Set(storeIds.filter((id: any) => !enabled.has(id)));
 
-  // Per-phone 24h marketing cooldown — prevents same number getting multiple
-  // marketing pings across stores or repeated carts. Compare on NORMALIZED phone
-  // because customers.phone and abandoned_carts.customer_phone aren't guaranteed
-  // to share the same format (e.g. "+91..." vs "91..." vs "98...").
-  const normPhones = Array.from(new Set(
-    carts.map((c: any) => normalizePhone(c.customer_phone)).filter(Boolean) as string[],
-  ));
-  const cooldownSince = new Date(now - 24 * 60 * 60 * 1000).toISOString();
-  const onCooldown = new Set<string>();
-  if (normPhones.length) {
-    // Only marketing messages should trigger the 24h cooldown. Transactional
-    // messages like order_confirmation must NOT block a future cart recovery —
-    // otherwise every customer who just ordered is silenced for 24h.
-    const { data: recent } = await admin
-      .from("whatsapp_messages")
-      .select("recipient_phone")
-      .in("recipient_phone", normPhones)
-      .eq("sent_via", "platform").eq("direction", "outgoing")
-      .in("message_type", ["abandoned_cart", "marketing", "campaign"])
-      .gte("created_at", cooldownSince)
-      .limit(5000);
-    for (const r of (recent as any[]) ?? []) if (r?.recipient_phone) onCooldown.add(String(r.recipient_phone));
-  }
+  // Do not suppress eligible carts here with a broad 24h cooldown. The sender
+  // already enforces the configured daily per-phone marketing cap, while a
+  // cron-side cooldown can make valid carts expire past wa_max_cart_age_hours
+  // without ever being queued.
 
   let enqueued = 0, skipped = 0, storeOff = 0, cooldown = 0, emptyCart = 0, alreadyOrdered = 0;
   for (const c of carts) {
     if (disabled.has((c as any).store_id)) { storeOff++; continue; }
     const phone = normalizePhone((c as any).customer_phone);
     if (!phone) { skipped++; continue; }
-    if (onCooldown.has(phone)) { cooldown++; continue; }
 
     const items = Array.isArray((c as any).cart_items) ? (c as any).cart_items : [];
     const total = items.reduce((s: number, it: any) => s + (Number(it?.price ?? 0) * Number(it?.quantity ?? 1)), 0);
@@ -116,6 +96,9 @@ Deno.serve(async (req) => {
         .select("id, order_items(product_id)")
         .eq("store_id", (c as any).store_id)
         .in("customer_phone", phoneVariants)
+        // Cancelled/failed orders are not real recoveries. If the shopper
+        // cancelled the same-product order, they should still get cart recovery.
+        .not("status", "in", '("cancelled","failed","rejected")')
         .gte("created_at", (c as any).created_at)
         .limit(20);
       const orderedIds = new Set<string>();
