@@ -205,10 +205,11 @@ Deno.serve(async (req) => {
 
     const { data: cfg } = await admin
       .from("platform_config")
-      .select("wa_access_token, wa_waba_id")
+      .select("wa_access_token, wa_waba_id, wa_app_id")
       .limit(1)
       .maybeSingle();
     const WABA_ID = (cfg as any)?.wa_waba_id || Deno.env.get("META_WABA_ID");
+    const APP_ID = (cfg as any)?.wa_app_id || Deno.env.get("META_APP_ID");
     const TOKEN =
       (cfg as any)?.wa_access_token ||
       Deno.env.get("WA_ACCESS_TOKEN") ||
