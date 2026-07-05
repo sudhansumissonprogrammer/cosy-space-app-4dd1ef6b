@@ -140,8 +140,10 @@ Deno.serve(async (req) => {
       .from("whatsapp_messages")
       .select("id", { count: "exact", head: true })
       .eq("recipient_phone", phone).eq("sent_via", "platform").eq("direction", "outgoing")
+      .eq("status", "sent") // 🩹 failed msgs (Meta throttle) must not consume the cap
       .not("message_type", "in", `(${TRANSACTIONAL.map((t) => `"${t}"`).join(",")})`)
       .gte("created_at", since24h);
+
     const { count: pendingMkt } = await admin
       .from("wa_send_queue")
       .select("id", { count: "exact", head: true })

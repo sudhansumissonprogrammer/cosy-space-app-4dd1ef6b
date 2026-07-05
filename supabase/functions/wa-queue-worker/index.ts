@@ -177,6 +177,15 @@ Deno.serve(async (req) => {
         last_error: j?.reason || "skipped",
         locked_until: null,
       } as any).eq("id", row.id);
+      // 🩹 R3: cart-recovery skipped due to daily_cap/quality_throttle/tier_limit
+      // is a TRANSIENT skip. Unstamp abandoned_carts.recovery_sent_at so the
+      // next cron cycle can retry (still bounded by wa_max_cart_age_hours).
+      const transientSkipReasons = new Set(["daily_cap", "quality_throttle", "tier_limit", "meta_breaker_open"]);
+      if (row.message_type === "abandoned_cart" && row.abandoned_cart_id && transientSkipReasons.has(String(j?.reason || ""))) {
+        await admin.from("abandoned_carts")
+          .update({ recovery_sent_at: null, recovery_status: "pending", recovery_error: `skipped:${j?.reason}` })
+          .eq("id", row.abandoned_cart_id);
+      }
     } else {
       const cls = j?.error_class || (resp.status >= 500 || resp.status === 429 ? "transient" : "permanent");
       const attempts = (row.attempts || 0) + 1;
@@ -190,6 +199,15 @@ Deno.serve(async (req) => {
           locked_until: null,
         } as any).eq("id", row.id);
         failed++;
+        // 🩹 R3: on transient permanent-cap-exhaustion for cart recovery,
+        // unstamp so a fresh cart-recovery attempt is possible next window.
+        // For truly permanent errors (invalid_phone, template_bad), keep it
+        // stamped so we don't spam-retry a known-broken send.
+        if (row.message_type === "abandoned_cart" && row.abandoned_cart_id && cls === "transient") {
+          await admin.from("abandoned_carts")
+            .update({ recovery_sent_at: null, recovery_status: "pending", recovery_error: "attempts_exhausted" })
+            .eq("id", row.abandoned_cart_id);
+        }
       } else {
         const delayMin = BACKOFF_MIN[Math.min(attempts - 1, BACKOFF_MIN.length - 1)];
         await admin.from("wa_send_queue").update({
@@ -203,6 +221,7 @@ Deno.serve(async (req) => {
         retried++;
       }
     }
+
   }
 
   return json({ processed: (claimed as any[])?.length ?? 0, sent, retried, failed, skipped_paused: skippedPaused });
