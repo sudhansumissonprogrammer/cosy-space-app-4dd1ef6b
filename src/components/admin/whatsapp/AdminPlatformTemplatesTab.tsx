@@ -15,6 +15,7 @@ type Row = {
   category: string | null;
   header_type: string | null;
   header_text: string | null;
+  header_media_url: string | null;
   body_text: string | null;
   footer_text: string | null;
   buttons: TplButton[] | null;
