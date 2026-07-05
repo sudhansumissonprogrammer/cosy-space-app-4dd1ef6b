@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     // Get order to determine partial vs full
     const { data: orderInfo } = await supabase
       .from("orders")
-      .select("payment_type, status")
+      .select("payment_type, status, checkout_token")
       .eq("id", order_id)
       .eq("store_id", store_id)
       .single();
@@ -94,6 +94,14 @@ Deno.serve(async (req) => {
       if (updateErr) {
         console.error("Order update error", updateErr);
         return jsonRes({ error: "Failed to update order" }, 500);
+      }
+      // Mark the linked abandoned cart as recovered (payment succeeded).
+      if (orderInfo?.checkout_token) {
+        await supabase
+          .from("abandoned_carts")
+          .update({ recovered: true })
+          .eq("store_id", store_id)
+          .eq("session_token", orderInfo.checkout_token);
       }
       await firePurchaseCapi(supabase, order_id, { source: "cashfree-verify" });
       return jsonRes({ success: true, status: "PAID" });

@@ -497,7 +497,13 @@ Deno.serve(async (req) => {
     // Coupon usage was already atomically incremented above via claim_coupon RPC.
 
 
-    if (abandoned_cart_id) {
+    // Only mark the cart as recovered when the order is ACTUALLY placed
+    // (COD → status="confirmed"). For online payments the order starts as
+    // "pending" and only becomes confirmed after the payment-verify webhook.
+    // If we mark recovered here for online orders, a failed/cancelled payment
+    // leaves the cart flagged as recovered forever and the recovery cron
+    // skips it — customer never gets their abandoned-cart WhatsApp.
+    if (abandoned_cart_id && order.status === "confirmed") {
       postInsertOps.push(
         supabase
           .from("abandoned_carts")
