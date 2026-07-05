@@ -387,6 +387,11 @@ function ChatTab({ storeId }: { storeId: string }) {
     if (!selectedPhone || (!message.trim() && !mediaPreview)) return;
     setSending(true);
     try {
+      if (isPlatformOnly && mediaPreview) {
+        toast({ title: "Text replies only", description: "Media replies are not available on the shared number yet.", variant: "destructive" });
+        return;
+      }
+
       let mediaUrl: string | null = null;
       let mediaType: string | null = null;
 
@@ -409,10 +414,6 @@ function ChatTab({ storeId }: { storeId: string }) {
       }
 
       if (isPlatformOnly) {
-        if (mediaPreview) {
-          toast({ title: "Text replies only", description: "Media replies are not available on the shared number yet.", variant: "destructive" });
-          return;
-        }
         const res = await supabase.functions.invoke("wa-platform-send", {
           body: {
             mode: "text",
