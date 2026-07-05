@@ -1,112 +1,92 @@
-
 ## Goal
 
-Kill the BuyNowPhoneModal popup. Replace it with a **2-step in-page checkout** (Step 1 = phone, Step 2 = address & payment). The moment a phone is entered in Step 1, capture it as both a **lead** AND an **abandoned cart** row so WhatsApp recovery + admin visibility work automatically.
+Meter WhatsApp usage per store on the shared platform number and deduct from `store_wallets` when a template message is **delivered**. Use Meta's real billing unit — a **24-hour conversation window per recipient per category** — so 50 marketing messages to one number in 24 h = one ₹1 charge, not fifty.
 
----
+## Pricing (default, admin-configurable)
 
-## Current state (audit)
+| Category | Price per 24h conversation |
+|---|---|
+| Marketing | ₹1.00 |
+| Utility | ₹0.30 |
+| Authentication | ₹0.30 |
+| Service (24h free-form replies) | ₹0.00 |
 
-- `CheckoutPage.tsx` (default) + `V22CheckoutPage.tsx` (theme 22) are the two active checkouts.
-- `BuyNowPhoneModal` opens as a popup on PDP "Buy Now" and inserts into `customer_leads` only.
-- `abandoned_carts` table already exists with `customer_phone`, `cart_items`, `session_token`, `wa_marketing_consent`, and is what `wa-cart-recovery-cron` reads to fire WhatsApp templates.
-- `customer_leads` is separate (name/phone/product) — currently NOT connected to abandoned carts, so leads never trigger recovery messages.
+Stored in a new single-row `wa_pricing_config` table so we can change prices later without a deploy.
 
-The gap: phone numbers collected at PDP live in `customer_leads` and go nowhere. Abandoned-cart recovery only fires when someone reaches checkout AND drops off.
+## Data model
 
----
+**New table `wa_billing_conversations`** — one row per (store, recipient, category, 24 h window).
+- `store_id`, `recipient_phone`, `category`
+- `window_start` (delivered_at of first msg), `window_end` = window_start + 24h
+- `message_count`, `first_message_id`, `last_message_id`
+- `price_charged`, `charged_at`, `ledger_id` (FK → `store_wallet_ledger`)
+- Partial unique index on (store_id, recipient_phone, category) `WHERE window_end > now()` — guarantees only one active window at a time.
 
-## New flow
+**Reuse `store_wallet_ledger`** with new `kind='wa_conversation'`. `notes` (jsonb-in-text) carries category, masked phone, template name, message count.
 
-```text
-PDP "Buy Now" / Cart "Checkout"
-        │
-        ▼
-┌─────────────────────────────────┐
-│ CheckoutPage · STEP 1           │
-│ ─────────────────────────────── │
-│ • Order summary (mini)          │
-│ • Phone input (+91 …)           │
-│ • WhatsApp consent (default ON) │
-│ • [Continue] button             │
-└─────────────────────────────────┘
-        │  onContinue()
-        │  1. validate 10-digit IN phone
-        │  2. upsert customer_leads (store, phone, source='checkout_step1')
-        │  3. upsert abandoned_carts (store, phone, cart_items, consent, session_token)
-        │  4. localStorage.setItem('checkout_phone', ...)
-        ▼
-┌─────────────────────────────────┐
-│ CheckoutPage · STEP 2           │
-│ ─────────────────────────────── │
-│ • Name, address, pincode        │
-│ • Delivery / payment            │
-│ • [Place Order]                 │
-└─────────────────────────────────┘
-        │  onPlaceOrder()
-        │  → mark abandoned_carts.recovered = true
-        ▼
-     Order placed
-```
+**New table `wa_pricing_config`** — one row, admin-editable, holds four price columns + updated_by/at.
 
-If the user closes the tab between Step 1 and Step 2 → row sits in `abandoned_carts` with a phone number → `wa-cart-recovery-cron` fires `abandoned_cart_v3` template after ≥30 min.
+## How charging happens (atomic + idempotent)
 
----
+1. **Trigger `wa_messages_charge_on_delivered`** — AFTER UPDATE on `whatsapp_messages`, fires only when `status` transitions `!= 'delivered' → 'delivered'` AND `direction = 'outgoing'`.
+2. Trigger calls `charge_wa_conversation(store_id, recipient_phone, category, message_id, template_name)`.
+3. Inside the function:
+   - `pg_advisory_xact_lock(hashtext(store_id::text || phone || category))` — prevents race between two concurrent deliveries in same conversation.
+   - Look up active window (`window_end > now()`).
+   - **If active window exists** → increment `message_count`, update `last_message_id`, **no wallet change**.
+   - **If none** → open new window (24 h), read price from `wa_pricing_config`, insert `store_wallet_ledger` (direction='debit', amount=price, balance_after=…), decrement `store_wallets.balance` + increment `total_charged`, store `ledger_id` back on the conversation row.
 
-## Deliverables
+Category resolution: `platform_wa_templates.category` (already synced from Meta) for template sends; `service` for `message_type='text_reply'`; conservative fallback = `marketing`.
 
-### 1. New shared component `src/components/storefront/CheckoutPhoneStep.tsx`
-- Phone input + consent checkbox + Continue.
-- On submit: writes to `customer_leads` AND `abandoned_carts`, sets `sessionStorage.checkout_phone`.
-- Emits `onComplete(phone)` to parent.
+## Safety nets
 
-### 2. `src/pages/CheckoutPage.tsx` — 2-step layout
-- Add `step` state (`"phone" | "details"`).
-- Step 1 renders `<CheckoutPhoneStep />` + order summary.
-- Step 2 renders the current form; auto-fills phone from Step 1 (read-only with "change" link that goes back to Step 1).
-- Mobile: single column, sticky order summary at bottom.
-- Desktop: 2-col — form left, summary right.
-- Progress indicator: `● Phone —— ○ Details`.
+- **Reconciler edge fn `wa-billing-reconcile`** — cron every 15 min, scans `whatsapp_messages` with `delivered_at IS NOT NULL` in last 30 h and calls the same charge function for any missing billing row. Idempotent (function early-exits on active window).
+- **No retroactive charge** — start clean from deploy date. Existing delivered messages are not billed.
+- **No hard gate at send time** in this iteration — negative balance allowed (user asked only for deduction). Optional follow-up: block marketing sends when balance ≤ 0.
 
-### 3. `src/pages/V22CheckoutPage.tsx` — same 2-step, V22 styling
-- Reuse `CheckoutPhoneStep`.
-- Match V22's card design.
+## UI
 
-### 4. Remove `BuyNowPhoneModal` popup usage
-- PDP "Buy Now" → navigate straight to `/checkout` (which now starts with phone step).
-- Delete popup imports from PDP files (`ProductDetail.tsx`, `V19ProductDetail.tsx`, `V20ProductDetail.tsx`, `V22ProductDetail.tsx`).
-- Keep `BuyNowPhoneModal.tsx` file for now (marked deprecated in header comment) — can be deleted in a follow-up once confirmed unused.
+**`src/pages/StoreWallet.tsx` — add "WhatsApp Usage" tab.**
+- Top summary card for a selectable range (today / 7d / 30d): marketing conversations, utility conversations, total charged, messages delivered per category.
+- Table below: individual conversations (recipient masked `98…4884`, category badge, window_start, message_count, price).
+- Ledger entries with `kind='wa_conversation'` render inline in the existing wallet history list with a friendly label; click expands to show the recipient + message breakdown from `wa_billing_conversations`.
 
-### 5. Lead → abandoned-cart bridge (RPC)
-New DB function `capture_checkout_lead(p_store_id, p_phone, p_cart_items jsonb, p_consent bool)`:
-- Normalizes phone to canonical 10-digit.
-- Upserts into `customer_leads` (source = `checkout_step1`).
-- Upserts into `abandoned_carts` keyed on `(store_id, customer_phone, session_token)` — resets `recovered=false`, `recovery_sent_at=null`.
-- Grants `EXECUTE` to `anon` and `authenticated` (checkout runs pre-auth).
+**Admin pricing screen** — `src/pages/admin/AdminWhatsApp.tsx` gets a small "Pricing" section to edit the 4 prices in `wa_pricing_config`.
 
-### 6. Recovery attribution
-- `wa-cart-recovery-cron` already skips `recovered=true`.
-- Order confirmation edge fn already marks the matching cart recovered — extend the phone-match to include our new Step-1 rows.
+## Edge-case correctness
 
-### 7. Admin visibility
-- `CustomerLeads.tsx`: add filter chip **Source: checkout_step1** with count badge.
-- `StoreAbandonedCarts.tsx`: add badge column `Stage: phone-only | full-cart` so merchants see which carts dropped at Step 1 vs Step 2.
+| Case | Handled by |
+|---|---|
+| Two deliveries land in same ms | advisory lock in charge fn |
+| Webhook fires "delivered" twice for same msg | trigger fires only on status transition, function is idempotent on active window |
+| Message billed then later fails | never happens — `delivered` is terminal in Meta's flow |
+| Store deleted mid-window | FK on delete cascade; ledger keeps a copy of notes |
+| Shared number, wrong store attribution | none — `whatsapp_messages.store_id` is set by `wa-platform-send` at send time, unchanged by webhook |
+| Missing template in `platform_wa_templates` | conservative fallback to `marketing` (user pays more, never less) |
+| Webhook down / trigger missed | 15-min reconciler cron catches it |
 
----
+## Deliverables (in order)
 
-## Technical details
+**Migration 1** — schema
+- `wa_pricing_config` table + single default row (1.00 / 0.30 / 0.30 / 0.00), GRANTs, RLS (admin write, service_role all).
+- `wa_billing_conversations` table + partial unique index + GRANTs, RLS (store owner read via `stores.owner_id`, service_role all).
+- `charge_wa_conversation(...)` SECURITY DEFINER function.
+- Trigger on `whatsapp_messages` for delivered transitions.
+- Allow `kind='wa_conversation'` in `store_wallet_ledger` (no CHECK change needed if column is free-text).
 
-- Phone normalization: reuse `toCanonicalIndianPhone` in `src/lib/phoneUtils.ts` on client, mirror inside the new RPC (`regexp_replace` + length check) — same rules as `create-guest-account`.
-- Consent default: `true` (already the platform default per prior turn); user can uncheck.
-- Rate-limit Step 1 submit: 1 per 5 s per session to prevent spam.
-- No auth required for Step 1 — abandoned_carts already accepts anon writes via existing RLS; the new RPC runs SECURITY DEFINER and validates `store_id` exists + is active.
-- Session token: use existing `visitorSession.ts` helper so recovery joins the right cart on order creation.
-- Tests: add vitest for `CheckoutPhoneStep` (validation, RPC call, error state) and one integration test for step transition.
+**Edge function** — `wa-billing-reconcile` (cron every 15 min via pg_cron + net.http_post, using existing `cron_auth` secret pattern).
 
----
+**Frontend**
+- New "WhatsApp Usage" tab in `StoreWallet.tsx` with summary + conversations table.
+- Pretty renderer for `kind='wa_conversation'` rows in existing wallet history.
+- Admin pricing editor in `AdminWhatsApp.tsx`.
 
-## Out of scope (do later)
+**No changes needed** to `wa-platform-send` or `wa-queue-worker` — attribution already correct; charging is purely webhook-driven.
 
-- OTP verification on the phone step (add once we have WhatsApp OTP template approved).
-- Address autocomplete / pincode → city lookup.
-- Migrating existing pre-checkout `customer_leads` rows into `abandoned_carts` retroactively.
+## Out of scope for this iteration (flag for later)
+- Hard-block sends when balance ≤ 0.
+- Auto-recharge / low-balance WhatsApp alert to store owner.
+- Bulk retroactive backfill of past deliveries.
+- Per-template price overrides.
+
+Ready to build once you approve.

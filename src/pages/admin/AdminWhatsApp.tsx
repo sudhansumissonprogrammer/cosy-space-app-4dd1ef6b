@@ -2,7 +2,7 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useState } from "react";
 import {
   MessageSquare, Megaphone, FileCheck, BarChart3, Settings, Library,
-  Send, UserX, ListChecks, Sparkles, LineChart, ChevronRight, Inbox, Zap,
+  Send, UserX, ListChecks, Sparkles, LineChart, ChevronRight, Inbox, Zap, IndianRupee,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -18,6 +18,7 @@ import { AdminPlatformAnalyticsTab } from "@/components/admin/whatsapp/AdminPlat
 import { AdminQueueTab } from "@/components/admin/whatsapp/AdminQueueTab";
 import { AdminAICampaignWriterTab } from "@/components/admin/whatsapp/AdminAICampaignWriterTab";
 import { AdminOptOutsTab } from "@/components/admin/whatsapp/AdminOptOutsTab";
+import { AdminPricingTab } from "@/components/admin/whatsapp/AdminPricingTab";
 import { useWhatsAppMode } from "@/hooks/useWhatsAppMode";
 
 type NavItem = {
@@ -57,6 +58,7 @@ export default function AdminWhatsApp() {
       label: "Insights",
       items: [
         { id: "analytics", label: "Analytics", desc: "Delivery & engagement", icon: LineChart, render: () => <AdminPlatformAnalyticsTab /> },
+        { id: "pricing", label: "Pricing", desc: "Per-conversation charges", icon: IndianRupee, render: () => <AdminPricingTab /> },
         { id: "optouts", label: "Opt-outs", desc: "Blocked recipients", icon: UserX, render: () => <AdminOptOutsTab /> },
       ],
     },

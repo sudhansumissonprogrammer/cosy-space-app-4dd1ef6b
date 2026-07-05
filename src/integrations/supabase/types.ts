@@ -3192,6 +3192,57 @@ export type Database = {
         }
         Relationships: []
       }
+      wa_billing_conversations: {
+        Row: {
+          category: string
+          charged_at: string | null
+          created_at: string
+          first_message_id: string | null
+          id: string
+          last_message_id: string | null
+          ledger_id: string | null
+          message_count: number
+          price_charged: number
+          recipient_phone: string
+          store_id: string
+          updated_at: string
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          category: string
+          charged_at?: string | null
+          created_at?: string
+          first_message_id?: string | null
+          id?: string
+          last_message_id?: string | null
+          ledger_id?: string | null
+          message_count?: number
+          price_charged?: number
+          recipient_phone: string
+          store_id: string
+          updated_at?: string
+          window_end: string
+          window_start?: string
+        }
+        Update: {
+          category?: string
+          charged_at?: string | null
+          created_at?: string
+          first_message_id?: string | null
+          id?: string
+          last_message_id?: string | null
+          ledger_id?: string | null
+          message_count?: number
+          price_charged?: number
+          recipient_phone?: string
+          store_id?: string
+          updated_at?: string
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       wa_conversation_costs: {
         Row: {
           billable: boolean | null
@@ -3354,6 +3405,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wa_pricing_config: {
+        Row: {
+          created_at: string
+          id: boolean
+          price_authentication: number
+          price_marketing: number
+          price_service: number
+          price_utility: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: boolean
+          price_authentication?: number
+          price_marketing?: number
+          price_service?: number
+          price_utility?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: boolean
+          price_authentication?: number
+          price_marketing?: number
+          price_service?: number
+          price_utility?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       wa_send_queue: {
         Row: {
@@ -4252,6 +4336,17 @@ export type Database = {
         }
         Returns: Json
       }
+      charge_wa_conversation: {
+        Args: {
+          _category: string
+          _delivered_at?: string
+          _message_id: string
+          _recipient_phone: string
+          _store_id: string
+          _template_name?: string
+        }
+        Returns: string
+      }
       check_product_limit: { Args: { _user_id: string }; Returns: Json }
       claim_coupon: {
         Args: { _coupon_id: string; _store_id: string }
@@ -4522,6 +4617,15 @@ export type Database = {
       }
       verify_cron_secret: { Args: { _secret: string }; Returns: boolean }
       verify_phone_account_integrity: { Args: never; Returns: undefined }
+      wa_billing_summary: {
+        Args: { _since?: string; _store_id: string }
+        Returns: {
+          category: string
+          charged: number
+          conversations: number
+          messages: number
+        }[]
+      }
       wa_campaign_precheck: { Args: { _campaign_id: string }; Returns: Json }
       wa_cancel_campaign: { Args: { _campaign_id: string }; Returns: Json }
       wa_clone_template: {

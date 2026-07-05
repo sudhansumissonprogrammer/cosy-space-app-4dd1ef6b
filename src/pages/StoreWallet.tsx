@@ -5,7 +5,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowDownCircle, ArrowUpCircle, Download } from "lucide-react";
 import WalletAccountCard from "@/components/billing/WalletAccountCard";
+import WhatsAppUsageCard from "@/components/wallet/WhatsAppUsageCard";
 import { downloadWalletInvoice } from "@/lib/walletInvoice";
+
+function renderLedgerLabel(l: any): string {
+  if (l.kind === "wa_conversation" && l.notes) {
+    try {
+      const n = typeof l.notes === "string" ? JSON.parse(l.notes) : l.notes;
+      const cat = String(n.category || "marketing");
+      const label = cat.charAt(0).toUpperCase() + cat.slice(1);
+      const phone = String(n.recipient_phone || "");
+      const masked = phone.length >= 6 ? `${phone.slice(0, 2)}…${phone.slice(-4)}` : phone;
+      return `WhatsApp ${label} → ${masked}`;
+    } catch { /* fall through */ }
+  }
+  return l.notes || l.kind;
+}
 
 export default function StoreWallet() {
   const { store, storeId } = useDashboardStore();
@@ -74,6 +89,8 @@ export default function StoreWallet() {
       />
 
 
+      <WhatsAppUsageCard storeId={storeId} />
+
       <Card>
         <CardContent className="p-4">
           <p className="text-sm font-bold mb-3">Recent activity</p>
@@ -91,7 +108,7 @@ export default function StoreWallet() {
                     {l.direction === "credit" ? <ArrowDownCircle className="h-4 w-4" /> : <ArrowUpCircle className="h-4 w-4" />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium truncate">{l.notes || l.kind}</p>
+                    <p className="text-xs font-medium truncate">{renderLedgerLabel(l)}</p>
                     <p className="text-[10px] text-muted-foreground">{new Date(l.created_at).toLocaleString()}</p>
                   </div>
                   <div className="text-right">
