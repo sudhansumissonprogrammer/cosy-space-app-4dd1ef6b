@@ -77,6 +77,7 @@ export function AdminPlatformTemplatesTab() {
           action, template_name: r.name,
           name: r.name, language: r.language, category: (r.category || "UTILITY").toUpperCase(),
           header_type: r.header_type || "TEXT", header_text: r.header_text,
+          header_media_url: r.header_media_url,
           body_text: r.body_text, footer_text: r.footer_text, buttons: r.buttons || [],
         },
       });
