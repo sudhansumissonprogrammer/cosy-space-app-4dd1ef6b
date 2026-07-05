@@ -108,7 +108,7 @@ export default function StoreWallet() {
                     {l.direction === "credit" ? <ArrowDownCircle className="h-4 w-4" /> : <ArrowUpCircle className="h-4 w-4" />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium truncate">{l.notes || l.kind}</p>
+                    <p className="text-xs font-medium truncate">{renderLedgerLabel(l)}</p>
                     <p className="text-[10px] text-muted-foreground">{new Date(l.created_at).toLocaleString()}</p>
                   </div>
                   <div className="text-right">
