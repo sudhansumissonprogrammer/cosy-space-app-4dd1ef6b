@@ -1544,6 +1544,7 @@ export type Database = {
           platform_name: string
           updated_at: string
           wa_access_token: string | null
+          wa_app_id: string | null
           wa_app_secret: string | null
           wa_business_phone: string | null
           wa_daily_cap_per_phone: number
@@ -1572,6 +1573,7 @@ export type Database = {
           platform_name?: string
           updated_at?: string
           wa_access_token?: string | null
+          wa_app_id?: string | null
           wa_app_secret?: string | null
           wa_business_phone?: string | null
           wa_daily_cap_per_phone?: number
@@ -1600,6 +1602,7 @@ export type Database = {
           platform_name?: string
           updated_at?: string
           wa_access_token?: string | null
+          wa_app_id?: string | null
           wa_app_secret?: string | null
           wa_business_phone?: string | null
           wa_daily_cap_per_phone?: number

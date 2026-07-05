@@ -15,6 +15,7 @@ type Cfg = {
   wa_phone_number_id: string | null;
   wa_business_phone: string | null;
   wa_waba_id: string | null;
+  wa_app_id: string | null;
   wa_default_lang: string;
   wa_min_cart_age_minutes: number;
   wa_max_cart_age_hours: number;
@@ -120,6 +121,10 @@ export function AdminPlatformTab() {
             <Input value={cfg.wa_waba_id ?? ""} onChange={(e) => setCfg({ ...cfg, wa_waba_id: e.target.value })} />
           </div>
           <div>
+            <Label>Meta App ID <span className="text-[10px] text-muted-foreground">(needed for image/video/doc templates)</span></Label>
+            <Input value={cfg.wa_app_id ?? ""} onChange={(e) => setCfg({ ...cfg, wa_app_id: e.target.value })} placeholder="e.g. 123456789012345" />
+          </div>
+          <div>
             <Label>Default language</Label>
             <Input value={cfg.wa_default_lang} onChange={(e) => setCfg({ ...cfg, wa_default_lang: e.target.value })} />
           </div>
@@ -136,6 +141,7 @@ export function AdminPlatformTab() {
               wa_phone_number_id: cfg.wa_phone_number_id ?? undefined,
               wa_business_phone: cfg.wa_business_phone ?? undefined,
               wa_waba_id: cfg.wa_waba_id ?? undefined,
+              wa_app_id: cfg.wa_app_id ?? undefined,
               wa_default_lang: cfg.wa_default_lang,
               wa_access_token: tokenInput || undefined,
               wa_app_secret: secretInput || undefined,

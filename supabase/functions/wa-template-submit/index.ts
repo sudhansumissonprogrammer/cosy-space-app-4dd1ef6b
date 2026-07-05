@@ -44,17 +44,17 @@ function buttonExample(url: string): string[] | undefined {
   return extractVars(url).length ? ["sample-id"] : undefined;
 }
 
-function draftToComponents(d: Draft): any[] {
+function draftToComponents(d: Draft, headerHandle?: string | null): any[] {
   const components: any[] = [];
   if (d.header_type === "TEXT" && d.header_text) {
     const comp: any = { type: "HEADER", format: "TEXT", text: d.header_text };
     if (extractVars(d.header_text).length === 1) comp.example = { header_text: ["Sample"] };
     components.push(comp);
-  } else if ((d.header_type === "IMAGE" || d.header_type === "VIDEO" || d.header_type === "DOCUMENT") && d.header_media_url) {
+  } else if ((d.header_type === "IMAGE" || d.header_type === "VIDEO" || d.header_type === "DOCUMENT") && headerHandle) {
     components.push({
       type: "HEADER",
       format: d.header_type,
-      example: { header_handle: [d.header_media_url] },
+      example: { header_handle: [headerHandle] },
     });
   }
   const bodyVars = extractVars(d.body_text);
@@ -74,6 +74,45 @@ function draftToComponents(d: Draft): any[] {
   });
   if (btns.length) components.push({ type: "BUTTONS", buttons: btns });
   return components;
+}
+
+// Meta Resumable Upload API — turns a public URL into a `h` handle usable as
+// header_handle for IMAGE/VIDEO/DOCUMENT template samples.
+async function uploadHeaderMedia(
+  mediaUrl: string,
+  headerType: "IMAGE" | "VIDEO" | "DOCUMENT",
+  appId: string,
+  token: string,
+): Promise<string> {
+  const mediaResp = await fetch(mediaUrl);
+  if (!mediaResp.ok) throw new Error(`Header media fetch failed (${mediaResp.status}) — the URL must be publicly reachable`);
+  const buf = new Uint8Array(await mediaResp.arrayBuffer());
+  const fileLength = buf.byteLength;
+  if (!fileLength) throw new Error("Header media is empty");
+  const contentType =
+    mediaResp.headers.get("content-type") ||
+    (headerType === "IMAGE" ? "image/jpeg" : headerType === "VIDEO" ? "video/mp4" : "application/pdf");
+  const fileName = mediaUrl.split("/").pop()?.split("?")[0] ||
+    (headerType === "IMAGE" ? "sample.jpg" : headerType === "VIDEO" ? "sample.mp4" : "sample.pdf");
+
+  const startUrl = `${GRAPH}/${appId}/uploads?file_name=${encodeURIComponent(fileName)}&file_length=${fileLength}&file_type=${encodeURIComponent(contentType)}&access_token=${encodeURIComponent(token)}`;
+  const startResp = await fetch(startUrl, { method: "POST" });
+  const startJson = await startResp.json();
+  if (!startResp.ok || !startJson?.id) throw new Error(`Upload session failed: ${sanitizeError(startJson)}`);
+  const sessionId: string = startJson.id;
+
+  const putResp = await fetch(`${GRAPH}/${sessionId}`, {
+    method: "POST",
+    headers: {
+      Authorization: `OAuth ${token}`,
+      file_offset: "0",
+      "Content-Type": contentType,
+    },
+    body: buf,
+  });
+  const putJson = await putResp.json();
+  if (!putResp.ok || !putJson?.h) throw new Error(`Upload failed: ${sanitizeError(putJson)}`);
+  return putJson.h as string;
 }
 
 function normalizeUrlButtonVars(buttons: Btn[] | undefined): Btn[] {
@@ -166,10 +205,11 @@ Deno.serve(async (req) => {
 
     const { data: cfg } = await admin
       .from("platform_config")
-      .select("wa_access_token, wa_waba_id")
+      .select("wa_access_token, wa_waba_id, wa_app_id")
       .limit(1)
       .maybeSingle();
     const WABA_ID = (cfg as any)?.wa_waba_id || Deno.env.get("META_WABA_ID");
+    const APP_ID = (cfg as any)?.wa_app_id || Deno.env.get("META_APP_ID");
     const TOKEN =
       (cfg as any)?.wa_access_token ||
       Deno.env.get("WA_ACCESS_TOKEN") ||
@@ -187,7 +227,13 @@ Deno.serve(async (req) => {
       if (!draft.name || !draft.body_text || !draft.category || !draft.language) {
         return j(400, { error: "Missing required fields (name, body_text, category, language)" });
       }
-      const components = draftToComponents(draft);
+      let headerHandle: string | null = null;
+      if ((draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT") && draft.header_media_url) {
+        if (!APP_ID) return j(400, { error: "Meta App ID not configured — set it in Admin → WhatsApp → Meta credentials before submitting media-header templates." });
+        try { headerHandle = await uploadHeaderMedia(draft.header_media_url, draft.header_type, APP_ID, TOKEN); }
+        catch (e: any) { await audit("create", "error", { error: sanitizeError(e.message) }); return j(400, { error: e.message }); }
+      }
+      const components = draftToComponents(draft, headerHandle);
       const resp = await fetch(`${GRAPH}/${WABA_ID}/message_templates`, {
         method: "POST",
         headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
@@ -228,7 +274,13 @@ Deno.serve(async (req) => {
       const id = (row as any)?.meta_template_id;
       if (!id) return j(400, { error: "Template has not been submitted to Meta yet. Use 'Submit' first." });
 
-      const components = draftToComponents(draft);
+      let headerHandle: string | null = null;
+      if ((draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT") && draft.header_media_url) {
+        if (!APP_ID) return j(400, { error: "Meta App ID not configured — set it in Admin → WhatsApp → Meta credentials before submitting media-header templates." });
+        try { headerHandle = await uploadHeaderMedia(draft.header_media_url, draft.header_type, APP_ID, TOKEN); }
+        catch (e: any) { await audit("edit", "error", { error: sanitizeError(e.message) }); return j(400, { error: e.message }); }
+      }
+      const components = draftToComponents(draft, headerHandle);
       const resp = await fetch(`${GRAPH}/${id}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },

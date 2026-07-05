@@ -129,6 +129,8 @@ export function TemplateBuilderDialog({ open, onClose, initial, isEdit, onSaved 
 
   const submitToMeta = async () => {
     if (errors.length) { toast.error("Fix validation errors first"); return; }
+    if (!draft.name) { toast.error("Name is required"); return; }
+    if (allVars.length && varKeys.some(k => !k)) { toast.error("Assign a system variable to every {{n}} position"); return; }
     setSubmitting(true);
     try {
       await persistRow();
