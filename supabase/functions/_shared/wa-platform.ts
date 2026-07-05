@@ -42,14 +42,25 @@ export async function loadPlatformConfig(admin: any): Promise<PlatformWaConfig |
     .maybeSingle();
   if (error || !data) return null;
   const cfg = data as PlatformWaConfig;
-  // Env fallback: use WA_ACCESS_TOKEN secret when the DB column is unset.
+  // Env fallback: use whichever secret name the project stores the Meta token under.
   if (!cfg.wa_access_token) {
-    const envTok = Deno.env.get("WA_ACCESS_TOKEN") || Deno.env.get("META_WHATSAPP_TOKEN") || null;
+    const envTok =
+      Deno.env.get("WHATSAPP_ACCESS_TOKEN") ||
+      Deno.env.get("WA_ACCESS_TOKEN") ||
+      Deno.env.get("META_WHATSAPP_TOKEN") ||
+      null;
     if (envTok) cfg.wa_access_token = envTok;
   }
   if (!cfg.wa_waba_id) {
-    const envWaba = Deno.env.get("META_WABA_ID") || null;
+    const envWaba =
+      Deno.env.get("WHATSAPP_BUSINESS_ACCOUNT_ID") ||
+      Deno.env.get("META_WABA_ID") ||
+      null;
     if (envWaba) cfg.wa_waba_id = envWaba;
+  }
+  if (!cfg.wa_phone_number_id) {
+    const envPn = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID") || null;
+    if (envPn) cfg.wa_phone_number_id = envPn;
   }
   return cfg;
 }
