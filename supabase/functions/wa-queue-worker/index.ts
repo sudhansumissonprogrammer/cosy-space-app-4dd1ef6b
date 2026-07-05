@@ -14,7 +14,21 @@ Deno.serve(async (req) => {
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
   const cronHeader = req.headers.get("x-cron-secret") || "";
-  if (!(await isValidCronHeader(admin, cronHeader))) {
+  const authHeader = req.headers.get("Authorization") || "";
+  let authorized = await isValidCronHeader(admin, cronHeader);
+
+  if (!authorized && authHeader.startsWith("Bearer ")) {
+    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user } } = await userClient.auth.getUser();
+    if (user) {
+      const { data: isAdmin } = await admin.rpc("has_role", { _user_id: user.id, _role: "admin" });
+      authorized = isAdmin === true;
+    }
+  }
+
+  if (!authorized) {
     return json({ error: "unauthorized" }, 401);
   }
 
