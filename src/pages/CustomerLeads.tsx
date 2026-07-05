@@ -56,6 +56,16 @@ async function fetchAllCustomerLeads(storeId: string): Promise<CustomerLead[]> {
   return rows;
 }
 
+// Only these order statuses mean the customer actually bought → hide from Leads.
+// `pending` (COD placed but not confirmed) and `cancelled` MUST remain in Leads
+// per store-owner requirement (they are still recovery opportunities).
+const PURCHASED_STATUSES = new Set([
+  "confirmed",
+  "partially_paid",
+  "shipped",
+  "delivered",
+]);
+
 async function fetchOrderedPhoneSuffixes(storeId: string): Promise<Set<string>> {
   const set = new Set<string>();
 
@@ -73,7 +83,7 @@ async function fetchOrderedPhoneSuffixes(storeId: string): Promise<Set<string>> 
 
     const batch = data ?? [];
     batch.forEach((o: any) => {
-      if (o.status === "cancelled") return;
+      if (!PURCHASED_STATUSES.has(o.status)) return;
       const norm = normalizePhone(o.customer_phone).replace(/\D/g, "");
       if (norm.length >= 10) set.add(norm.slice(-10));
     });
