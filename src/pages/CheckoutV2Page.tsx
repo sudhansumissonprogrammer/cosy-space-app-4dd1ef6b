@@ -688,12 +688,73 @@ export default function CheckoutV2Page() {
     return null;
   };
 
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [viewingOrders, setViewingOrders] = useState(false);
   const finishSuccess = (paidOrderId?: string | null) => {
     const finalOrderId = paidOrderId || orderId;
     if (!finalOrderId) return;
     clearWaiting();
     onOrderSuccess(finalOrderId);
-    navigate(storefrontPath(store.slug, `account/orders/${finalOrderId}`));
+    if (!orderId) setOrderId(finalOrderId);
+    setWaiting(false);
+    setOrderPlaced(true);
+  };
+
+  const handleViewMyOrders = async () => {
+    if (viewingOrders) return;
+    setViewingOrders(true);
+    const orderPath = orderId
+      ? storefrontPath(store.slug, `account/orders/${orderId}`)
+      : storefrontPath(store.slug, "account");
+    try {
+      const { data: existing } = await supabaseStorefront.auth.getSession();
+      if (existing?.session?.user) { navigate(orderPath); return; }
+
+      if (guestAccountPromiseRef.current) {
+        await Promise.race([
+          guestAccountPromiseRef.current.catch(() => {}),
+          new Promise((r) => setTimeout(r, 600)),
+        ]);
+        const { data: after } = await supabaseStorefront.auth.getSession();
+        if (after?.session?.user) { navigate(orderPath); return; }
+      }
+
+      const normalized = normalizePhone(phone);
+      if (!normalized || normalized.length < 10) {
+        // No phone available (e.g. returning from PayU redirect on fresh tab) —
+        // go to the order page anyway; it will render skeleton until auth hydrates.
+        navigate(orderPath);
+        return;
+      }
+
+      navigate(orderPath);
+      void (async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke("phone-login", {
+            body: {
+              phone: normalized,
+              store_id: store.id,
+              name: fullName || null,
+              claim_order_id: orderId || undefined,
+            },
+          });
+          if (error) throw error;
+          const res = data as { session?: { access_token?: string; refresh_token?: string } } | null;
+          if (res?.session?.access_token && res?.session?.refresh_token) {
+            await supabaseStorefront.auth.setSession({
+              access_token: res.session.access_token,
+              refresh_token: res.session.refresh_token,
+            });
+          }
+        } catch (err) {
+          console.error("phone-login (view orders) failed:", err);
+        }
+      })();
+    } catch (err: any) {
+      toast.error(err?.message || "Could not open your orders. Please try again.");
+    } finally {
+      setViewingOrders(false);
+    }
   };
 
   useEffect(() => {
