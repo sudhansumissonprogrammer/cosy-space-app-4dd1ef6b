@@ -180,7 +180,7 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
       <h1 className="sr-only">{buildStorefrontH1(store)}</h1>
       {/* Search bar trigger — hidden when header already has search */}
       {!hideSearchBar && (
-        <div className="backdrop-blur-md px-4 pt-3 pb-1" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", minHeight: 52, contain: "layout style" }}>
+        <div className="px-4 pt-3 pb-1" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", minHeight: 52, contain: "layout style" }}>
           <div className="mx-auto max-w-7xl flex items-center gap-2">
             <button
               onClick={() => setSearchOpen(true)}
