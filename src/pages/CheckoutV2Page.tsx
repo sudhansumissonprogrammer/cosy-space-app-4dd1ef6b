@@ -621,7 +621,7 @@ export default function CheckoutV2Page() {
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
                 )}
-                <div className="text-xs text-muted-foreground mt-2">Amount: {formatPrice(total, currency)}</div>
+                <div className="text-xs text-muted-foreground mt-2">Amount: {formatPrice(chargeAmount, currency)}</div>
                 {intents.any.status === "ready" && (
                   <Button variant="outline" size="sm" className="mt-3" onClick={() => setWaiting(true)}>
                     I've scanned — waiting for payment
