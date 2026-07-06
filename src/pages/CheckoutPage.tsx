@@ -191,12 +191,27 @@ function prewarmEdgeFunction(fnName: string) {
 
 
 export default function CheckoutPage() {
+  const store = useOutletContext<StoreData>();
+  const [searchParams] = useSearchParams();
+  // Feature-flagged GoKwik-style 1-page checkout. Enabled per-store via
+  // stores.checkout_v2_enabled, OR force-enabled on any store by adding ?v2=1
+  // to the URL (for internal testing on preview builds). Default = old flow.
+  const forceV2 = searchParams.get("v2") === "1";
+  const storeV2 = Boolean((store as any)?.checkout_v2_enabled);
+  if (forceV2 || storeV2) {
+    return (
+      <Suspense fallback={<div className="min-h-[70vh]" />}>
+        <CheckoutV2Page />
+      </Suspense>
+    );
+  }
   return (
     <CheckoutPhoneGate>
       <CheckoutPageInner />
     </CheckoutPhoneGate>
   );
 }
+
 
 function CheckoutPageInner() {
   const store = useOutletContext<StoreData>();
