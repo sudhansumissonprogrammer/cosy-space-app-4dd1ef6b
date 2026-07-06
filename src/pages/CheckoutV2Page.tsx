@@ -462,11 +462,30 @@ export default function CheckoutV2Page() {
             </div>
           </div>
 
+          {(() => {
+            const allFailed = (["gpay","phonepe","paytm","any"] as UpiApp[]).every((k) => intents[k].status === "failed");
+            if (!allFailed) return null;
+            const firstErr = intents.any.error || intents.gpay.error || "UPI is temporarily unavailable";
+            const goClassic = () => {
+              const url = new URL(window.location.href);
+              url.searchParams.delete("v2");
+              window.location.href = url.toString();
+            };
+            return (
+              <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200 mb-3">
+                <div className="font-semibold mb-1">UPI apps unavailable</div>
+                <div className="mb-2 opacity-80">{firstErr}</div>
+                <Button size="sm" variant="outline" className="w-full" onClick={goClassic}>Use standard checkout instead</Button>
+              </div>
+            );
+          })()}
+
           <div>
             <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
               <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">2</span>
               Pay {formatPrice(total, currency)}
             </h2>
+
 
             {mobile && (
               <>
