@@ -531,7 +531,8 @@ export default function CheckoutV2Page() {
             <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 mt-4">Other options</div>
             <button
               onClick={placeCod}
-              className="w-full flex items-center gap-3 rounded-lg border-2 border-transparent bg-muted/30 hover:border-primary hover:bg-primary/5 p-3"
+              disabled={placingCod}
+              className="w-full flex items-center gap-3 rounded-lg border-2 border-transparent bg-muted/30 hover:border-primary hover:bg-primary/5 p-3 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <div className="h-10 w-10 rounded bg-emerald-100 flex items-center justify-center">
                 <Banknote className="h-5 w-5 text-emerald-700" />
@@ -540,7 +541,7 @@ export default function CheckoutV2Page() {
                 <div className="text-sm font-semibold">Cash on Delivery</div>
                 <div className="text-xs text-muted-foreground">Pay when you receive</div>
               </div>
-              <span className="text-xs text-primary">→</span>
+              {placingCod ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <span className="text-xs text-primary">→</span>}
             </button>
 
             <div className="text-[10px] text-muted-foreground text-center mt-6 flex items-center justify-center gap-1">
