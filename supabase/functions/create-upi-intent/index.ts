@@ -147,9 +147,15 @@ Deno.serve(async (req) => {
             continue;
           }
 
+          // Cashfree UPI channels:
+          //   • "link"    → server returns intent deeplinks in data.payload.*  (no upi_id)
+          //   • "collect" → server pushes a request to the given VPA           (upi_id = vpa)
+          // Sending `upi_id: "gpay"` with channel "link" is a BUG — Cashfree
+          // treats upi_id as a VPA and rejects/ignores the request. To open a
+          // specific app we pick the matching key from data.payload instead.
           const upiPayload: Record<string, unknown> = vpa
             ? { channel: "collect", upi_id: vpa }
-            : { channel: "link", ...(CF_APP_MAP[upiApp] ? { upi_id: CF_APP_MAP[upiApp] } : {}) };
+            : { channel: "link" };
 
           const cfPayRes = await fetch(`${cfBase}/orders/sessions`, {
             method: "POST",
@@ -172,12 +178,18 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          const intentUrl =
-            cfPay?.data?.url ||
-            cfPay?.data?.payload?.default ||
-            cfPay?.data?.payload?.gpay ||
-            cfPay?.data?.payload?.phonepe ||
-            cfPay?.data?.payload?.paytm;
+          // App-specific first, then default. Cashfree may nest payload one or
+          // two levels deep depending on api-version, so probe both shapes.
+          const payload = cfPay?.data?.payload || cfPay?.payload || {};
+          const appKey = CF_APP_MAP[upiApp]; // gpay / phonepe / paytm / undefined
+          const intentUrl: string | undefined =
+            (appKey && (payload as any)[appKey]) ||
+            (payload as any).default ||
+            (payload as any).web ||
+            (payload as any).gpay ||
+            (payload as any).phonepe ||
+            (payload as any).paytm ||
+            cfPay?.data?.url;
 
           if (!intentUrl) {
             lastError = { pg: "cashfree", message: "Cashfree returned no intent URL", details: cfPay };
@@ -188,7 +200,7 @@ Deno.serve(async (req) => {
             pg: "cashfree",
             env,
             intent_url: intentUrl,
-            payload: cfPay?.data?.payload || null,
+            payload,
             cf_order_id: cfOrderId,
             payment_session_id: cfOrder.payment_session_id,
             amount: chargeAmount,
