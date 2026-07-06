@@ -710,15 +710,52 @@ export default function CheckoutV2Page() {
     }
   };
 
+  // Persist waiting state across tab kills. Mobile UPI redirects frequently
+  // destroy the checkout tab; when the user comes back the page reloads with
+  // fresh React state (orderId=null, waiting=false) → poller never runs and
+  // the order stays "pending" forever even though Razorpay captured it.
+  const WAIT_KEY = `sf_wait_v2_${store.id}`;
+  const persistWaiting = (app: UpiApp, label: string) => {
+    try {
+      sessionStorage.setItem(WAIT_KEY, JSON.stringify({
+        orderId, orderNumber, app, label,
+        gateway: gatewayRef.current,
+        ts: Date.now(),
+      }));
+    } catch { /* noop */ }
+  };
+  const clearWaiting = () => { try { sessionStorage.removeItem(WAIT_KEY); } catch { /* noop */ } };
+
   const tapUpiApp = (app: UpiApp) => {
     const s = intents[app];
     if (s.status !== "ready" || !s.url) return;
-    setWaitingApp(UPI_APPS.find((u) => u.key === app)?.label || "UPI");
+    const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
+    setWaitingApp(label);
     setWaiting(true);
+    persistWaiting(app, label);
     try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
     // MUST be synchronous in same tap event for iOS Safari
     window.location.href = s.url;
   };
+
+  // On mount: restore waiting state if user is returning from a UPI app after
+  // the tab was killed. Only restore if less than 15 min old.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(WAIT_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (!saved?.orderId) return;
+      if (Date.now() - (saved.ts || 0) > 15 * 60 * 1000) { clearWaiting(); return; }
+      setOrderId(saved.orderId);
+      setOrderNumber(saved.orderNumber || null);
+      setShowPayment(true);
+      setWaitingApp(saved.label || "UPI");
+      gatewayRef.current = saved.gateway || {};
+      setWaiting(true);
+    } catch { /* noop */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [placingCod, setPlacingCod] = useState(false);
   const placeCod = async () => {
