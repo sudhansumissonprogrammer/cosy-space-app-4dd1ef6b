@@ -90,14 +90,16 @@ Deno.serve(async (req) => {
 
     const methods = Array.isArray(config.payment_methods) ? (config.payment_methods as string[]) : [];
 
-    // Pick PG in order: cashfree > razorpay > payu (Cashfree has the cleanest UPI intent API)
-    const pg: "cashfree" | "razorpay" | "payu" | null =
-      methods.includes("cashfree") && config.cashfree_app_id && config.cashfree_secret_key ? "cashfree" :
-      methods.includes("razorpay") && config.razorpay_key_id && config.razorpay_key_secret ? "razorpay" :
-      methods.includes("payu") && config.payu_merchant_key && config.payu_merchant_salt ? "payu" :
-      null;
+    // Build an ordered fallback list of gateways to try (Cashfree S2S requires
+    // approval; when not approved we transparently fall back to Razorpay).
+    const gatewayChain: ("cashfree" | "razorpay" | "payu")[] = [];
+    if (methods.includes("cashfree") && config.cashfree_app_id && config.cashfree_secret_key) gatewayChain.push("cashfree");
+    if (methods.includes("razorpay") && config.razorpay_key_id && config.razorpay_key_secret) gatewayChain.push("razorpay");
+    if (methods.includes("payu") && config.payu_merchant_key && config.payu_merchant_salt) gatewayChain.push("payu");
 
-    if (!pg) return jsonRes({ error: "No UPI-capable gateway configured" }, 400);
+    if (gatewayChain.length === 0) {
+      return jsonRes({ error: "No UPI-capable gateway configured", code: "no_gateway" }, 400);
+    }
 
     const safePhone = String(customer_phone || "").replace(/\D/g, "").slice(-10) || "9999999999";
     const safeEmail = (customer_email && String(customer_email).trim()) || "noreply@shopbanao.in";
