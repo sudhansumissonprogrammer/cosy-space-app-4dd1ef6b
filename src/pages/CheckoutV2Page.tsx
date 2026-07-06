@@ -353,6 +353,18 @@ export default function CheckoutV2Page() {
     } catch { return null; }
   };
 
+  const buildPaymentReturnUrl = () => {
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.delete("payu_status");
+      u.searchParams.delete("txnid");
+      u.searchParams.delete("payu_order");
+      return u.toString();
+    } catch {
+      return `${window.location.origin}/checkout`;
+    }
+  };
+
   const createOrderAndIntents = async () => {
     const err = validateAddress();
     if (err) { toast.error(err); return; }
@@ -433,6 +445,7 @@ export default function CheckoutV2Page() {
             customer_name: fullName.trim(),
             customer_phone: normalizePhone(phone),
             customer_email: email.trim() || undefined,
+            return_url: buildPaymentReturnUrl(),
           },
         });
         const payload: any = intentData ?? (intErr as any)?.context?.body;
@@ -616,6 +629,34 @@ export default function CheckoutV2Page() {
   const [waitingApp, setWaitingApp] = useState<string>("");
   const [manualChecking, setManualChecking] = useState(false);
 
+  // Mobile UPI / PayU return flows can reopen checkout in a fresh tab. Keep
+  // enough state in localStorage too, not only sessionStorage.
+  const WAIT_KEY = `sf_wait_v2_${store.id}`;
+  const persistWaiting = (app: UpiApp, label: string, override?: { orderId?: string | null; orderNumber?: string | null }) => {
+    try {
+      const payload = JSON.stringify({
+        orderId: override?.orderId ?? orderId,
+        orderNumber: override?.orderNumber ?? orderNumber,
+        app,
+        label,
+        gateway: gatewayRef.current,
+        ts: Date.now(),
+      });
+      sessionStorage.setItem(WAIT_KEY, payload);
+      localStorage.setItem(WAIT_KEY, payload);
+    } catch { /* noop */ }
+  };
+  const clearWaiting = () => {
+    try { sessionStorage.removeItem(WAIT_KEY); } catch { /* noop */ }
+    try { localStorage.removeItem(WAIT_KEY); } catch { /* noop */ }
+  };
+
+  const normalizeGatewayResult = (payload: any): "success" | "pending" => {
+    const raw = String(payload?.status || payload?.payment_status || payload?.order_status || "").toLowerCase();
+    if (payload?.success === true || ["paid", "success", "captured", "authorized"].includes(raw)) return "success";
+    return "pending";
+  };
+
   const forceGatewayVerify = async () => {
     if (!orderId) return null;
     const gw = gatewayRef.current;
@@ -642,11 +683,12 @@ export default function CheckoutV2Page() {
     return null;
   };
 
-  const finishSuccess = () => {
-    if (!orderId) return;
-    try { sessionStorage.removeItem(`sf_wait_v2_${store.id}`); } catch { /* noop */ }
-    onOrderSuccess(orderId);
-    navigate(storefrontPath(store.slug, `account/orders/${orderId}`));
+  const finishSuccess = (paidOrderId?: string | null) => {
+    const finalOrderId = paidOrderId || orderId;
+    if (!finalOrderId) return;
+    clearWaiting();
+    onOrderSuccess(finalOrderId);
+    navigate(storefrontPath(store.slug, `account/orders/${finalOrderId}`));
   };
 
   useEffect(() => {
@@ -655,7 +697,8 @@ export default function CheckoutV2Page() {
     let attempts = 0;
     const maxAttempts = 120; // 4 min at ~2s
     const checkNow = async (): Promise<boolean> => {
-      await forceGatewayVerify();
+      const gatewayResult = await forceGatewayVerify();
+      if (normalizeGatewayResult(gatewayResult) === "success") { finishSuccess(); return true; }
       try {
         const { data } = await supabase.functions.invoke("order-payment-status", {
           body: { store_id: store.id, order_id: orderId },
@@ -698,7 +741,8 @@ export default function CheckoutV2Page() {
     if (manualChecking || !orderId) return;
     setManualChecking(true);
     try {
-      await forceGatewayVerify();
+      const gatewayResult = await forceGatewayVerify();
+      if (normalizeGatewayResult(gatewayResult) === "success") { finishSuccess(); return; }
       const { data } = await supabase.functions.invoke("order-payment-status", {
         body: { store_id: store.id, order_id: orderId },
       });
@@ -710,22 +754,6 @@ export default function CheckoutV2Page() {
       setManualChecking(false);
     }
   };
-
-  // Persist waiting state across tab kills. Mobile UPI redirects frequently
-  // destroy the checkout tab; when the user comes back the page reloads with
-  // fresh React state (orderId=null, waiting=false) → poller never runs and
-  // the order stays "pending" forever even though Razorpay captured it.
-  const WAIT_KEY = `sf_wait_v2_${store.id}`;
-  const persistWaiting = (app: UpiApp, label: string) => {
-    try {
-      sessionStorage.setItem(WAIT_KEY, JSON.stringify({
-        orderId, orderNumber, app, label,
-        gateway: gatewayRef.current,
-        ts: Date.now(),
-      }));
-    } catch { /* noop */ }
-  };
-  const clearWaiting = () => { try { sessionStorage.removeItem(WAIT_KEY); } catch { /* noop */ } };
 
   const tapUpiApp = (app: UpiApp) => {
     const s = intents[app];
@@ -743,7 +771,7 @@ export default function CheckoutV2Page() {
   // the tab was killed. Only restore if less than 15 min old.
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem(WAIT_KEY);
+      const raw = sessionStorage.getItem(WAIT_KEY) || localStorage.getItem(WAIT_KEY);
       if (!raw) return;
       const saved = JSON.parse(raw);
       if (!saved?.orderId) return;
@@ -757,6 +785,34 @@ export default function CheckoutV2Page() {
     } catch { /* noop */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // PayU redirect-back recovery. Without this, PayU may return to checkout with
+  // success params while the V2 poller has no restored order/gateway state.
+  useEffect(() => {
+    if (!store?.id) return;
+    const params = new URLSearchParams(window.location.search);
+    const payuStatus = params.get("payu_status");
+    const txnid = params.get("txnid");
+    const returnedOrderId = params.get("payu_order");
+    if (!payuStatus || !txnid || !returnedOrderId) return;
+
+    gatewayRef.current = { pg: "payu", payu_txnid: txnid };
+    setOrderId(returnedOrderId);
+    setOrderNumber(null);
+    setShowPayment(true);
+    setWaitingApp("UPI");
+    persistWaiting("any", "UPI", { orderId: returnedOrderId, orderNumber: null });
+    setWaiting(true);
+
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.delete("payu_status");
+      u.searchParams.delete("txnid");
+      u.searchParams.delete("payu_order");
+      window.history.replaceState({}, "", u.toString());
+    } catch { /* noop */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id]);
 
   const [placingCod, setPlacingCod] = useState(false);
   const placeCod = async () => {
