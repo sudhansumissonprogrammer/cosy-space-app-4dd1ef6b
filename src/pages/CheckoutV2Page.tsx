@@ -564,7 +564,7 @@ export default function CheckoutV2Page() {
           <div>
             <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
               <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">2</span>
-              Pay {formatPrice(total, currency)}
+              Pay {formatPrice(chargeAmount, currency)}{hasPartial && effectiveMode === "partial" ? " advance" : ""}
             </h2>
 
 
