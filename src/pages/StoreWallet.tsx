@@ -1,9 +1,10 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowDownCircle, ArrowUpCircle, Download } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Download, ChevronDown, ChevronRight, MessageCircle } from "lucide-react";
 import WalletAccountCard from "@/components/billing/WalletAccountCard";
 import WhatsAppUsageCard from "@/components/wallet/WhatsAppUsageCard";
 import { downloadWalletInvoice } from "@/lib/walletInvoice";
