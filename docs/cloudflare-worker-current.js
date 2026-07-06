@@ -6119,8 +6119,103 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
 }
 
 /* ============================================================
+   WhatsApp branded redirect — native edge implementation
+   ============================================================ */
+
+const WA_R_KV_PREFIX = "war:v1:";
+
+async function _handleWaRedirectNative(token, request, env, ctx) {
+  if (!token || token.length < 3) return null;
+
+  // 1. KV cache lookup (very short TTL — token→destination map only)
+  const kvKey = WA_R_KV_PREFIX + token;
+  let payload = null;
+  if (env?.STORE_KV) {
+    try {
+      const cached = await env.STORE_KV.get(kvKey, { type: "json" });
+      if (cached && cached.ok) payload = cached;
+    } catch {}
+  }
+
+  // 2. Miss → single RPC call to Postgres
+  if (!payload) {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_wa_redirect`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ _token: token }),
+      });
+      if (!r.ok) return null;
+      payload = await r.json();
+      if (!payload || !payload.ok || !payload.target) return null;
+      // Cache successful lookups for the RPC-suggested TTL (max 1 day).
+      const kvTtl = Math.max(60, Math.min(payload.ttl || 300, 86400));
+      if (env?.STORE_KV) {
+        ctx.waitUntil(env.STORE_KV.put(kvKey, JSON.stringify(payload), { expirationTtl: kvTtl }).catch(() => {}));
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  // 3. Fire-and-forget click log — never awaits.
+  try {
+    const ua = request.headers.get("user-agent") || "";
+    const ip = request.headers.get("cf-connecting-ip") || "";
+    const kind = token.slice(0, 2);
+    const refId = token.slice(2);
+    ctx.waitUntil(
+      fetch(`${SUPABASE_URL}/rest/v1/wa_link_clicks`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          token, kind, ref_id: refId,
+          user_agent: ua.slice(0, 256),
+          ip_address: ip || null,
+        }),
+      }).catch(() => {})
+    );
+  } catch {}
+
+  // 4. Build 302/301 with preconnect + preload headers.
+  //    Cloudflare converts `Link: rel=preload/preconnect` into HTTP 103
+  //    Early Hints when Early Hints is enabled on the zone.
+  const status = payload.status === 301 ? 301 : 302;
+  const ttl = Math.max(0, Math.min(payload.ttl || 0, 86400));
+  const headers = new Headers({
+    location: payload.target,
+    "cache-control": ttl > 0 ? `public, max-age=${ttl}` : "no-store",
+  });
+  const links = [];
+  if (payload.host) {
+    links.push(`<https://${payload.host}>; rel=preconnect; crossorigin`);
+    links.push(`<https://${payload.host}>; rel=dns-prefetch`);
+  }
+  if (payload.hero && /^https?:\/\//.test(payload.hero)) {
+    links.push(`<${payload.hero}>; rel=preload; as=image; fetchpriority=high`);
+  }
+  if (payload.slug && payload.host) {
+    const pdpApi = `https://${payload.host}/api/pdp?slug=${encodeURIComponent(payload.slug)}`;
+    links.push(`<${pdpApi}>; rel=preload; as=fetch; crossorigin`);
+  }
+  if (links.length) headers.set("link", links.join(", "));
+  return new Response(null, { status, headers });
+}
+
+/* ============================================================
    MAIN FETCH HANDLER
    ============================================================ */
+
+
 
 export default {
   async fetch(request, env, ctx) {
@@ -6159,18 +6254,17 @@ async function _handleFetch(request, env, ctx) {
   }
 
   /* ──────────────────────────────────────────────────────────
-       WhatsApp branded redirector — EDGE FAST PATH
+       WhatsApp branded redirector — NATIVE EDGE PATH (v8.70.0)
        ──────────────────────────────────────────────────────────
        Templates send users to https://shopbanao.in/{r,cart,order}/<token>.
-       Previously the browser loaded LandingApp just to run
-       window.location.replace() to the wa-r edge fn (wasted 2-4s of
-       HTML+JS download+parse before the actual 302 to the store).
-       Now: the Worker fetches wa-r itself and returns the 302 directly.
-       Zero React, zero HTML, ~400-700ms total for the whole redirect.
-       Response is not cached (each token maps to a user-specific URL and
-       tokens are one-shot). We ONLY handle the exact WA link paths on
-       the root marketing host so nothing else can regress. Approved
-       WhatsApp template URLs are unchanged — only server handling moves. */
+       Previously this proxied to the wa-r Deno edge function (~500-700ms:
+       Deno cold start + hop). Now: the Worker resolves the token via a
+       single Postgres RPC (get_wa_redirect) in ~30-80ms and returns 302
+       with Link: preconnect + preload headers. Cloudflare converts those
+       Link headers to HTTP 103 Early Hints (if Early Hints is enabled on
+       the zone) so the browser starts hero image download BEFORE the
+       redirect body lands. Falls back to proxying wa-r on any error so
+       behavior stays identical if RPC or KV is unreachable. */
   if (earlyMethod === "GET" && (earlyUrl.hostname === ROOT_DOMAIN || earlyUrl.hostname === `www.${ROOT_DOMAIN}`)) {
     let waToken = null;
     if (earlyPath.startsWith("/r/")) {
@@ -6183,8 +6277,11 @@ async function _handleFetch(request, env, ctx) {
       if (t) waToken = "o-" + t;
     }
     if (waToken) {
+      const nativeRes = await _handleWaRedirectNative(waToken, request, env, ctx).catch(() => null);
+      if (nativeRes) return nativeRes;
+      // Fallback: proxy to wa-r Deno fn (original behavior).
       try {
-        const upstream = `https://dqepeywgftbpxeeqfuwt.supabase.co/functions/v1/wa-r/${encodeURIComponent(waToken)}`;
+        const upstream = `${SUPABASE_URL}/functions/v1/wa-r/${encodeURIComponent(waToken)}`;
         const upstreamRes = await fetch(upstream, {
           method: "GET",
           redirect: "manual",
@@ -6196,10 +6293,7 @@ async function _handleFetch(request, env, ctx) {
         });
         const loc = upstreamRes.headers.get("location");
         if (loc && upstreamRes.status >= 300 && upstreamRes.status < 400) {
-          const headers = new Headers({
-            location: loc,
-            "cache-control": "no-store",
-          });
+          const headers = new Headers({ location: loc, "cache-control": "no-store" });
           try {
             const destOrigin = new URL(loc).origin;
             headers.set("link", `<${destOrigin}>; rel=preconnect, <${destOrigin}>; rel=dns-prefetch`);
@@ -6215,6 +6309,7 @@ async function _handleFetch(request, env, ctx) {
       }
     }
   }
+
 
   /* ──────────────────────────────────────────────────────────
        v8.3.0: EARLY EDGE-CACHE LOOKUP FOR SYNTHESIZED RESPONSES

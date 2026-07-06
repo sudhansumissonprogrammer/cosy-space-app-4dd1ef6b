@@ -25,6 +25,7 @@ Deno.serve(async (req) => {
   try {
     let slug: string | null = null;
     let domain: string | null = null;
+    let productSlug: string | null = null;
 
     const url = new URL(req.url);
     if (req.headers.get("content-type")?.includes("application/json")) {
@@ -32,12 +33,14 @@ Deno.serve(async (req) => {
         const body = await req.json();
         slug = body.slug || null;
         domain = body.domain || null;
+        productSlug = body.productSlug || null;
       } catch {
         // fallback to query params
       }
     }
     slug = slug || url.searchParams.get("slug");
     domain = domain || url.searchParams.get("domain");
+    productSlug = productSlug || url.searchParams.get("productSlug");
 
     if (!slug) {
       return new Response(
@@ -60,6 +63,7 @@ Deno.serve(async (req) => {
     // and KV writes for custom-domain stores. Purge still hits both hostnames
     // (handled in src/lib/purgeStoreCache.ts) so the subdomain edge cache
     // remains consistent — only proactive warming is skipped.
+    const targetHost = domain || `${slug}.${ROOT_DOMAIN}`;
     if (domain) {
       const domParams = new URLSearchParams({ slug, domain });
       prewarmUrls.push(`https://${domain}/api/prewarm?${domParams}`);
@@ -68,20 +72,29 @@ Deno.serve(async (req) => {
       prewarmUrls.push(`https://${slug}.${ROOT_DOMAIN}/api/prewarm?${subParams}`);
     }
 
+    // If a productSlug was passed, also warm the PDP JSON endpoint so the
+    // very first WhatsApp click after product save is a hot cache hit.
+    if (productSlug) {
+      prewarmUrls.push(`https://${targetHost}/api/pdp?slug=${encodeURIComponent(productSlug)}`);
+    }
+
     // Fire all prewarm requests in parallel (15s timeout each)
     const prewarmResults = await Promise.allSettled(
       prewarmUrls.map(async (prewarmUrl) => {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 15_000);
+        const isPdp = prewarmUrl.includes("/api/pdp?");
         try {
           const res = await fetch(prewarmUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ slug, domain }),
+            method: isPdp ? "GET" : "POST",
+            headers: isPdp
+              ? { "X-Warmer": "prewarm-store" }
+              : { "Content-Type": "application/json" },
+            body: isPdp ? undefined : JSON.stringify({ slug, domain }),
             signal: controller.signal,
           });
           clearTimeout(timeout);
-          const data = await res.json().catch(() => ({}));
+          const data = isPdp ? null : await res.json().catch(() => ({}));
           return { url: prewarmUrl, status: res.status, data };
         } catch (err) {
           clearTimeout(timeout);

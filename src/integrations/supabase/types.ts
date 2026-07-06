@@ -4516,6 +4516,7 @@ export type Database = {
       get_wa_analytics_v2: { Args: { _days?: number }; Returns: Json }
       get_wa_cost_summary: { Args: never; Returns: Json }
       get_wa_platform_kpis: { Args: { _days?: number }; Returns: Json }
+      get_wa_redirect: { Args: { _token: string }; Returns: Json }
       get_whatsapp_mode: { Args: never; Returns: string }
       has_role: {
         Args: {
