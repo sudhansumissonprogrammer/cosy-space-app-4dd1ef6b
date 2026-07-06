@@ -63,12 +63,19 @@ Deno.serve(async (req) => {
     // and KV writes for custom-domain stores. Purge still hits both hostnames
     // (handled in src/lib/purgeStoreCache.ts) so the subdomain edge cache
     // remains consistent — only proactive warming is skipped.
+    const targetHost = domain || `${slug}.${ROOT_DOMAIN}`;
     if (domain) {
       const domParams = new URLSearchParams({ slug, domain });
       prewarmUrls.push(`https://${domain}/api/prewarm?${domParams}`);
     } else {
       const subParams = new URLSearchParams({ slug });
       prewarmUrls.push(`https://${slug}.${ROOT_DOMAIN}/api/prewarm?${subParams}`);
+    }
+
+    // If a productSlug was passed, also warm the PDP JSON endpoint so the
+    // very first WhatsApp click after product save is a hot cache hit.
+    if (productSlug) {
+      prewarmUrls.push(`https://${targetHost}/api/pdp?slug=${encodeURIComponent(productSlug)}`);
     }
 
     // Fire all prewarm requests in parallel (15s timeout each)
