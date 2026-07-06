@@ -44,7 +44,28 @@ if (typeof window !== "undefined") {
     if (t) redirectToken = "o-" + t;
   }
   if (redirectToken) {
-    window.location.replace(`https://dqepeywgftbpxeeqfuwt.supabase.co/functions/v1/wa-r/${encodeURIComponent(redirectToken)}`);
+    const api = "https://dqepeywgftbpxeeqfuwt.supabase.co";
+    const anon = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
+    const fallback = () => window.location.replace(`${api}/functions/v1/wa-r/${encodeURIComponent(redirectToken)}`);
+    const timer = window.setTimeout(fallback, 900);
+    try { window.stop(); } catch {}
+    fetch(`${api}/rest/v1/rpc/get_wa_redirect`, {
+      method: "POST",
+      cache: "no-store",
+      credentials: "omit",
+      headers: { apikey: anon, Authorization: `Bearer ${anon}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ _token: redirectToken }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.ok && d?.target) {
+          window.clearTimeout(timer);
+          window.location.replace(d.target);
+        } else {
+          fallback();
+        }
+      })
+      .catch(fallback);
     throw new Error("redirecting"); // halt module eval
   }
 }
