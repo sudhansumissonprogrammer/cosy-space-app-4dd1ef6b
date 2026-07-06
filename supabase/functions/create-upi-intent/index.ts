@@ -44,6 +44,7 @@ Deno.serve(async (req) => {
       customer_name,
       customer_phone,
       customer_email,
+      return_url,
     } = body || {};
 
     if (!store_id || !order_id) return jsonRes({ error: "Missing required fields" }, 400);
@@ -196,6 +197,13 @@ Deno.serve(async (req) => {
             continue;
           }
 
+          await supabase
+            .from("orders")
+            .update({ payment_method: "cashfree" })
+            .eq("id", order_id)
+            .eq("store_id", store_id)
+            .eq("status", "pending");
+
           return jsonRes({
             pg: "cashfree",
             env,
@@ -235,8 +243,13 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // Persist razorpay_order_id so the razorpay-webhook safety-net can resolve this order
-          await supabase.from("orders").update({ razorpay_order_id: rzpOrder.id }).eq("id", order_id).eq("store_id", store_id);
+          // Persist gateway refs so webhooks / status checks can resolve this order.
+          await supabase
+            .from("orders")
+            .update({ razorpay_order_id: rzpOrder.id, payment_method: "razorpay" })
+            .eq("id", order_id)
+            .eq("store_id", store_id)
+            .eq("status", "pending");
 
           const upiParams: Record<string, string> = {
             amount: String(amountInPaise),
@@ -315,8 +328,21 @@ Deno.serve(async (req) => {
           const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
           const notifyUrl = `${supabaseUrl}/functions/v1/payu-webhook`;
           const originHdr = req.headers.get("origin") || "";
-          const surl = originHdr ? `${originHdr}/?payu_status=success&txnid=${txnid}&payu_order=${order_id}` : notifyUrl;
-          const furl = originHdr ? `${originHdr}/?payu_status=failure&txnid=${txnid}&payu_order=${order_id}` : notifyUrl;
+          let returnBase = originHdr || "";
+          try {
+            const candidate = return_url ? new URL(String(return_url)) : null;
+            const origin = originHdr ? new URL(originHdr) : null;
+            if (candidate && origin && candidate.origin === origin.origin) returnBase = candidate.toString();
+          } catch { /* keep origin fallback */ }
+          const withPayuParams = (base: string, status: "success" | "failure") => {
+            const u = new URL(base || originHdr || "https://shopbanao.in/checkout");
+            u.searchParams.set("payu_status", status);
+            u.searchParams.set("txnid", txnid);
+            u.searchParams.set("payu_order", order_id);
+            return u.toString();
+          };
+          const surl = returnBase ? withPayuParams(returnBase, "success") : notifyUrl;
+          const furl = returnBase ? withPayuParams(returnBase, "failure") : notifyUrl;
 
           const hash = await computePayuRequestHash({
             key: config.payu_merchant_key!,
@@ -400,6 +426,13 @@ Deno.serve(async (req) => {
 
 
           // Webhook resolves the order via udf1/udf2 — no extra order column needed.
+
+          await supabase
+            .from("orders")
+            .update({ payment_method: "payu" })
+            .eq("id", order_id)
+            .eq("store_id", store_id)
+            .eq("status", "pending");
 
 
 
