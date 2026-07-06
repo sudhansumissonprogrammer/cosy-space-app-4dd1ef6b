@@ -279,6 +279,16 @@ export default function CheckoutV2Page() {
             setIntents((s) => ({ ...s, [app]: { status: "failed", error: errMsg } }));
             return;
           }
+          // Save gateway info (first successful response wins — all apps
+          // resolve to the same PSP for a given order).
+          if (!gatewayRef.current.pg && payload?.pg) {
+            gatewayRef.current = {
+              pg: payload.pg,
+              cf_order_id: payload.cf_order_id,
+              payu_txnid: payload.payu_txnid,
+              razorpay_payment_id: payload.razorpay_payment_id,
+            };
+          }
           setIntents((s) => ({ ...s, [app]: { status: "ready", url: schemeFor(app, url) } }));
         } catch (e: any) {
           setIntents((s) => ({ ...s, [app]: { status: "failed", error: e.message || "Failed" } }));
