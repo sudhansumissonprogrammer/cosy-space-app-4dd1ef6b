@@ -1,0 +1,1 @@
+UPDATE platform_config SET wa_min_cart_age_minutes = 5;
