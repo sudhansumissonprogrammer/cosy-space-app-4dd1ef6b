@@ -97,7 +97,8 @@ Deno.serve(async (req) => {
   ];
 
   if (error && !fastLaneCarts.length) return json({ error: error.message }, 500);
-  if (!carts.length) return json({ processed: 0 });
+  // NOTE: do NOT early-return when carts is empty — the payment drop-off lane
+  // at the bottom of this function must still run to catch pay-and-drop users.
 
 
   // 🔒 Default: send abandoned cart recovery whenever the store has WhatsApp
