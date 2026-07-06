@@ -55,6 +55,9 @@ export default function StorePayments() {
   const [partialType, setPartialType] = useState<"percentage" | "fixed">("percentage");
   const [partialValue, setPartialValue] = useState("");
 
+  // Checkout V2 (GoKwik-style one-page UPI intent checkout) — off by default
+  const [checkoutV2Enabled, setCheckoutV2Enabled] = useState(false);
+
   const { data: store, isLoading: storeLoading } = useStoreData(storeId);
 
   useEffect(() => {
@@ -62,6 +65,7 @@ export default function StorePayments() {
       setPartialEnabled((store as any).partial_payment_enabled ?? false);
       setPartialType((store as any).partial_payment_type || "percentage");
       setPartialValue((store as any).partial_payment_value ? String((store as any).partial_payment_value) : "");
+      setCheckoutV2Enabled((store as any).checkout_v2_enabled ?? false);
     }
   }, [store]);
 
@@ -154,6 +158,7 @@ export default function StorePayments() {
         partial_payment_enabled: partialEnabled && onlineEnabled,
         partial_payment_type: partialType,
         partial_payment_value: partialEnabled && partialValue ? Number(partialValue) : null,
+        checkout_v2_enabled: checkoutV2Enabled,
       };
 
       if (partialEnabled && onlineEnabled && partialValue) {
@@ -818,6 +823,36 @@ export default function StorePayments() {
                   This setting applies to all products in your store. Click "Save Settings" below to apply.
                 </p>
               </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Section 4: Checkout V2 (Beta) — GoKwik-style one-page UPI checkout */}
+      {showPaymentConfig && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Zap className="h-5 w-5" /> Fast Checkout (Beta)
+            </CardTitle>
+            <CardDescription>
+              One-page checkout with UPI app deeplinks (GPay, PhonePe, Paytm). Address auto-fills from pincode. Existing checkout keeps working — turn this on only when you're ready to test.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Enable Fast Checkout</p>
+                <p className="text-xs text-muted-foreground">
+                  You can preview safely anytime by adding <code className="rounded bg-muted px-1">?v2=1</code> to your checkout URL — no need to enable this switch.
+                </p>
+              </div>
+              <Switch checked={checkoutV2Enabled} onCheckedChange={setCheckoutV2Enabled} />
+            </div>
+            {checkoutV2Enabled && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                Fast Checkout will be shown to <b>all</b> customers on this store. Make sure you've tested it end-to-end (place a real ₹1 order) before saving.
+              </div>
             )}
           </CardContent>
         </Card>
