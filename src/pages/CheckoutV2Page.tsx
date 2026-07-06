@@ -49,15 +49,29 @@ function isMobile(): boolean {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
-/** Rewrite an intent URL to use an app-specific scheme (Cashfree returns upi:// — GPay opens best on gpay://). */
+/**
+ * Rewrite a `upi://pay?...` URL to the app-specific deeplink so the target
+ * app opens directly AND parses the payment intent.
+ *
+ * IMPORTANT: each app has its OWN path — using the wrong one opens the app
+ * but drops the payment payload (user lands on the app's home screen with
+ * no amount pre-filled). Verified paths (Nov 2024):
+ *   - GPay:    tez://upi/pay?...          (path = /upi/pay)
+ *   - PhonePe: phonepe://pay?...          (NO /upi prefix)
+ *   - Paytm:   paytmmp://pay?...          (NO /upi prefix)
+ */
 function schemeFor(app: UpiApp, url: string): string {
   if (!url) return url;
   if (app === "any") return url;
-  // Replace leading "upi://" with app-specific scheme so target app opens directly.
-  const rest = url.replace(/^upi:\/\//i, "");
-  if (app === "gpay") return `tez://upi/${rest.replace(/^\/*/, "")}`;
-  if (app === "phonepe") return `phonepe://upi/${rest.replace(/^\/*/, "")}`;
-  if (app === "paytm") return `paytmmp://upi/${rest.replace(/^\/*/, "")}`;
+  // Extract the query string after `upi://pay?` (case-insensitive, tolerate
+  // extra slashes). If we can't parse a query, fall back to the original URL
+  // so we never break the "any UPI" flow.
+  const m = url.match(/^upi:\/\/[^?]*\?(.+)$/i);
+  const query = m?.[1];
+  if (!query) return url;
+  if (app === "gpay") return `tez://upi/pay?${query}`;
+  if (app === "phonepe") return `phonepe://pay?${query}`;
+  if (app === "paytm") return `paytmmp://pay?${query}`;
   return url;
 }
 
