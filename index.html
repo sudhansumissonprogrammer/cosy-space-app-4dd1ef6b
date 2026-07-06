@@ -71,6 +71,7 @@
             if (o) tok = "o-" + o;
           }
           if (tok) {
+            try{ window.stop(); }catch(_){ }
             var api = "https://dqepeywgftbpxeeqfuwt.supabase.co";
             var anon = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
             var settled = false;
@@ -90,7 +91,6 @@
               if(d && d.ok && d.target){ settled = true; clearTimeout(timer); location.replace(d.target); }
               else fallback();
             }).catch(fallback);
-            try{ window.stop(); }catch(_){ }
           }
         }catch(_){}
       })();
