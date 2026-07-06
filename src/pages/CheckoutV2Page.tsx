@@ -892,7 +892,7 @@ export default function CheckoutV2Page() {
       const res = data as { ok?: boolean; error?: string } | null;
       if (!res?.ok) throw new Error(res?.error || "Failed to place COD order");
       onOrderSuccess(orderId);
-      navigate(storefrontPath(store.slug, `account/orders/${orderId}`));
+      setOrderPlaced(true);
     } catch (e: any) {
       toast.error(e.message || "Failed to place COD order");
     } finally {
