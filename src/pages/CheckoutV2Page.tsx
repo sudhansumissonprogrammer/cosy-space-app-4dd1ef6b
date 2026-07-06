@@ -353,6 +353,18 @@ export default function CheckoutV2Page() {
     } catch { return null; }
   };
 
+  const buildPaymentReturnUrl = () => {
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.delete("payu_status");
+      u.searchParams.delete("txnid");
+      u.searchParams.delete("payu_order");
+      return u.toString();
+    } catch {
+      return `${window.location.origin}/checkout`;
+    }
+  };
+
   const createOrderAndIntents = async () => {
     const err = validateAddress();
     if (err) { toast.error(err); return; }
@@ -433,6 +445,7 @@ export default function CheckoutV2Page() {
             customer_name: fullName.trim(),
             customer_phone: normalizePhone(phone),
             customer_email: email.trim() || undefined,
+            return_url: buildPaymentReturnUrl(),
           },
         });
         const payload: any = intentData ?? (intErr as any)?.context?.body;
