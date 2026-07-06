@@ -81,7 +81,18 @@ export function AdminPlatformTemplatesTab() {
           body_text: r.body_text, footer_text: r.footer_text, buttons: r.buttons || [],
         },
       });
-      if (error) throw error;
+      if (error) {
+        // FunctionsHttpError hides the response body — read it explicitly.
+        let msg = error.message;
+        try {
+          const ctx = (error as any).context;
+          if (ctx && typeof ctx.json === "function") {
+            const j = await ctx.json();
+            if (j?.error) msg = j.error;
+          }
+        } catch { /* ignore */ }
+        throw new Error(msg);
+      }
       if ((data as any)?.error) throw new Error((data as any).error);
       toast.success(`Submitted · ${(data as any)?.meta_status || "PENDING"}`);
       setTimeout(() => invoke("refresh", r.name), 5000);
