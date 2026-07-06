@@ -813,7 +813,7 @@ export default function CheckoutV2Page() {
 
         <button
           className="mt-3 text-xs text-muted-foreground underline"
-          onClick={() => setWaiting(false)}
+          onClick={() => { clearWaiting(); setWaiting(false); }}
         >
           Cancel and choose another method
         </button>
