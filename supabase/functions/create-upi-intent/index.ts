@@ -4,6 +4,7 @@
 // Used by the CheckoutV2 tile UI. Dormant until UI calls it — safe to deploy alongside
 // the existing checkout flow.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { computePayuRequestHash, payuCheckoutHost, type PayuEnv } from "../_shared/payuHelpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
