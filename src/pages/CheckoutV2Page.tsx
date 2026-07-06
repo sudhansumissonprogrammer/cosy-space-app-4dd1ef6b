@@ -664,7 +664,7 @@ export default function CheckoutV2Page() {
         if (status === "success") { finishSuccess(); return true; }
         if (status === "failed") {
           toast.error("Payment failed — please try again");
-          setWaiting(false);
+          clearWaiting(); setWaiting(false);
           return true;
         }
       } catch { /* keep polling */ }
@@ -704,7 +704,7 @@ export default function CheckoutV2Page() {
       });
       const status = (data as any)?.payment_status;
       if (status === "success") { finishSuccess(); return; }
-      if (status === "failed") { toast.error("Payment failed — please try again"); setWaiting(false); return; }
+      if (status === "failed") { toast.error("Payment failed — please try again"); clearWaiting(); setWaiting(false); return; }
       toast("Not confirmed yet — please complete the payment in your UPI app");
     } finally {
       setManualChecking(false);
