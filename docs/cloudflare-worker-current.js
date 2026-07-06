@@ -3794,7 +3794,9 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
   }
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
-  let cssPreload = cssMatch ? `<link rel="preload" href="${cssMatch[1]}" as="style" crossorigin />\n` : "";
+  // Match Vite's eventual stylesheet credentials mode. Adding crossorigin here
+  // made Chromium ignore the preload and fetch the CSS again, wasting one RTT.
+  let cssPreload = cssMatch ? `<link rel="preload" href="${cssMatch[1]}" as="style" />\n` : "";
 
   const DASHBOARD_CHUNK_PATTERN =
     /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages)-/;
