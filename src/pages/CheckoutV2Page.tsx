@@ -450,6 +450,43 @@ export default function CheckoutV2Page() {
             </div>
           </div>
 
+          {/* Partial-payment mode selector — visible only when store enabled it */}
+          {hasPartial && (
+            <div className="rounded-lg border p-3">
+              <div className="text-xs font-semibold mb-2 flex items-center gap-2">
+                <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">2</span>
+                Payment Option
+              </div>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setPayMode("partial")}
+                  className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${payMode === "partial" ? "border-primary bg-primary/5" : "border-border"}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${payMode === "partial" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                      {payMode === "partial" && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}
+                    </div>
+                    <div className="text-sm font-semibold">Pay {formatPrice(partialAdvanceTotal, currency)} now · {formatPrice(partialBalanceDue, currency)} on delivery</div>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-1 ml-6">Pay advance online to confirm, rest as cash on delivery.</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPayMode("full")}
+                  className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${payMode === "full" ? "border-primary bg-primary/5" : "border-border"}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${payMode === "full" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                      {payMode === "full" && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}
+                    </div>
+                    <div className="text-sm font-semibold">Pay full {formatPrice(total, currency)} online</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Order summary */}
           <div className="rounded-lg border p-3 bg-muted/30">
             <div className="text-xs font-semibold mb-2">Order Summary</div>
@@ -464,6 +501,18 @@ export default function CheckoutV2Page() {
                 <span>Total</span>
                 <span>{formatPrice(total, currency)}</span>
               </div>
+              {hasPartial && effectiveMode === "partial" && (
+                <>
+                  <div className="flex justify-between text-xs pt-1">
+                    <span className="text-muted-foreground">Pay now (advance)</span>
+                    <span className="font-semibold">{formatPrice(partialAdvanceTotal, currency)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Balance on delivery</span>
+                    <span className="font-semibold">{formatPrice(partialBalanceDue, currency)}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
