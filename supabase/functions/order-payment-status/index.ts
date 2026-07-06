@@ -7,6 +7,8 @@
 // directly (that would 20x their API traffic during polling). PG webhooks + the
 // existing verify functions keep the DB fresh.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
+import { mapPayuStatus, verifyPayuTxn, type PayuEnv } from "../_shared/payuHelpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,6 +23,10 @@ function jsonRes(data: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "content-type": "application/json" },
   });
+}
+
+function txnidForPayuOrder(orderId: string): string {
+  return `sb_${String(orderId).replace(/-/g, "").slice(0, 16)}`;
 }
 
 Deno.serve(async (req) => {
@@ -42,12 +48,56 @@ Deno.serve(async (req) => {
 
     const { data: order, error } = await supabase
       .from("orders")
-      .select("id, store_id, status, payment_verified, payment_method")
+      .select("id, store_id, status, payment_verified, payment_method, payment_type, checkout_token")
       .eq("id", order_id)
       .maybeSingle();
 
     if (error || !order) return jsonRes({ error: "Order not found" }, 404);
     if (order.store_id !== store_id) return jsonRes({ error: "Order/store mismatch" }, 403);
+
+    // PayU safety net: CheckoutV2 can lose in-memory gateway refs when mobile
+    // UPI/PayU returns in a fresh tab. The PayU txnid is deterministic for V2,
+    // so verify directly here before reporting "pending" forever.
+    if (order.status === "pending") {
+      const { data: cfg } = await supabase
+        .from("store_payment_config")
+        .select("payment_methods, payu_merchant_key, payu_merchant_salt, payu_env")
+        .eq("store_id", store_id)
+        .maybeSingle();
+
+      const methods = Array.isArray(cfg?.payment_methods) ? cfg.payment_methods : [];
+      if (methods.includes("payu") && cfg?.payu_merchant_key && cfg?.payu_merchant_salt) {
+        const txnid = txnidForPayuOrder(order_id);
+        const env = (cfg.payu_env === "sandbox" ? "sandbox" : "production") as PayuEnv;
+        const det = await verifyPayuTxn({ env, key: cfg.payu_merchant_key, salt: cfg.payu_merchant_salt, txnid });
+        if (det && mapPayuStatus(det.status) === "PAID") {
+          const newStatus = order.payment_type === "partial" ? "partially_paid" : "confirmed";
+          await supabase
+            .from("orders")
+            .update({
+              status: newStatus,
+              payment_method: "payu",
+              notes: `PayU Txn ID: ${txnid}${det.mihpayid ? ` (mihpayid: ${det.mihpayid})` : ""}`,
+              payment_verified: true,
+              payment_verified_at: new Date().toISOString(),
+            })
+            .eq("id", order_id)
+            .eq("store_id", store_id)
+            .eq("status", "pending");
+          if (order.checkout_token) {
+            await supabase
+              .from("abandoned_carts")
+              .update({ recovered: true })
+              .eq("store_id", store_id)
+              .eq("session_token", order.checkout_token);
+          }
+          await firePurchaseCapi(supabase, order_id, { source: "order-payment-status-payu" });
+          order.status = newStatus;
+          order.payment_method = "payu";
+          order.payment_verified = true;
+        }
+      }
+    }
 
     let payment_status: "pending" | "success" | "failed" = "pending";
     if (order.status === "confirmed" || order.status === "partially_paid" || order.status === "paid") {
