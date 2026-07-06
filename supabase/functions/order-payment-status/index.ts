@@ -29,6 +29,30 @@ function txnidForPayuOrder(orderId: string): string {
   return `sb_${String(orderId).replace(/-/g, "").slice(0, 16)}`;
 }
 
+async function markRecovered(supabase: any, order: any, storeId: string, updates: Record<string, unknown>) {
+  const { data: updated } = await supabase
+    .from("orders")
+    .update({ ...updates, payment_verified: true, payment_verified_at: new Date().toISOString() })
+    .eq("id", order.id)
+    .eq("store_id", storeId)
+    .eq("status", "pending")
+    .select("status, payment_method, payment_verified")
+    .maybeSingle();
+
+  if (order.checkout_token) {
+    await supabase
+      .from("abandoned_carts")
+      .update({ recovered: true })
+      .eq("store_id", storeId)
+      .eq("session_token", order.checkout_token);
+  }
+  if (updated) {
+    order.status = updated.status;
+    order.payment_method = updated.payment_method;
+    order.payment_verified = updated.payment_verified;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -61,40 +85,85 @@ Deno.serve(async (req) => {
     if (order.status === "pending") {
       const { data: cfg } = await supabase
         .from("store_payment_config")
-        .select("payment_methods, payu_merchant_key, payu_merchant_salt, payu_env")
+        .select("payment_methods, payu_merchant_key, payu_merchant_salt, payu_env, cashfree_app_id, cashfree_secret_key, cashfree_env, razorpay_key_id, razorpay_key_secret")
         .eq("store_id", store_id)
         .maybeSingle();
 
       const methods = Array.isArray(cfg?.payment_methods) ? cfg.payment_methods : [];
-      if (methods.includes("payu") && cfg?.payu_merchant_key && cfg?.payu_merchant_salt) {
+      if (methods.includes("cashfree") && cfg?.cashfree_app_id && cfg?.cashfree_secret_key) {
+        const cfId = String(order.notes || "").match(/Cashfree Order ID:\s*([^\s]+)/i)?.[1];
+        if (cfId) {
+          const cfBase = cfg.cashfree_env === "sandbox" ? "https://sandbox.cashfree.com/pg" : "https://api.cashfree.com/pg";
+          const cfRes = await fetch(`${cfBase}/orders/${encodeURIComponent(cfId)}`, {
+            headers: {
+              "x-api-version": "2023-08-01",
+              "x-client-id": cfg.cashfree_app_id,
+              "x-client-secret": cfg.cashfree_secret_key,
+            },
+          });
+          if (cfRes.ok) {
+            const cfOrder = await cfRes.json();
+            if (cfOrder?.order_status === "PAID") {
+              const newStatus = order.payment_type === "partial" ? "partially_paid" : "confirmed";
+              await markRecovered(supabase, order, store_id, {
+                status: newStatus,
+                payment_method: "cashfree",
+                notes: `Cashfree Order ID: ${cfId}`,
+              });
+              await firePurchaseCapi(supabase, order_id, { source: "order-payment-status-cashfree" });
+            }
+          }
+        }
+      }
+
+      if (order.status === "pending" && methods.includes("razorpay") && cfg?.razorpay_key_id && cfg?.razorpay_key_secret) {
+        const { data: freshOrder } = await supabase
+          .from("orders")
+          .select("razorpay_order_id")
+          .eq("id", order_id)
+          .eq("store_id", store_id)
+          .maybeSingle();
+        if (freshOrder?.razorpay_order_id) {
+          const authHeader = "Basic " + btoa(`${cfg.razorpay_key_id}:${cfg.razorpay_key_secret}`);
+          const rzpRes = await fetch(`https://api.razorpay.com/v1/orders/${freshOrder.razorpay_order_id}/payments`, {
+            headers: { Authorization: authHeader },
+          });
+          if (rzpRes.ok) {
+            const body = await rzpRes.json();
+            const items: any[] = Array.isArray(body?.items) ? body.items : [];
+            const captured = items.find((p) => p.status === "captured" || p.status === "authorized");
+            if (captured) {
+              const newStatus = order.payment_type === "partial" ? "partially_paid" : "confirmed";
+              await markRecovered(supabase, order, store_id, {
+                status: newStatus,
+                payment_method: "razorpay",
+                notes: `Razorpay Payment ID: ${captured.id}`,
+              });
+              if (captured.status === "authorized") {
+                await fetch(`https://api.razorpay.com/v1/payments/${captured.id}/capture`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Authorization: authHeader },
+                  body: JSON.stringify({ amount: captured.amount, currency: captured.currency }),
+                });
+              }
+              await firePurchaseCapi(supabase, order_id, { source: "order-payment-status-razorpay" });
+            }
+          }
+        }
+      }
+
+      if (order.status === "pending" && methods.includes("payu") && cfg?.payu_merchant_key && cfg?.payu_merchant_salt) {
         const txnid = txnidForPayuOrder(order_id);
         const env = (cfg.payu_env === "sandbox" ? "sandbox" : "production") as PayuEnv;
         const det = await verifyPayuTxn({ env, key: cfg.payu_merchant_key, salt: cfg.payu_merchant_salt, txnid });
         if (det && mapPayuStatus(det.status) === "PAID") {
           const newStatus = order.payment_type === "partial" ? "partially_paid" : "confirmed";
-          await supabase
-            .from("orders")
-            .update({
-              status: newStatus,
-              payment_method: "payu",
-              notes: `PayU Txn ID: ${txnid}${det.mihpayid ? ` (mihpayid: ${det.mihpayid})` : ""}`,
-              payment_verified: true,
-              payment_verified_at: new Date().toISOString(),
-            })
-            .eq("id", order_id)
-            .eq("store_id", store_id)
-            .eq("status", "pending");
-          if (order.checkout_token) {
-            await supabase
-              .from("abandoned_carts")
-              .update({ recovered: true })
-              .eq("store_id", store_id)
-              .eq("session_token", order.checkout_token);
-          }
+          await markRecovered(supabase, order, store_id, {
+            status: newStatus,
+            payment_method: "payu",
+            notes: `PayU Txn ID: ${txnid}${det.mihpayid ? ` (mihpayid: ${det.mihpayid})` : ""}`,
+          });
           await firePurchaseCapi(supabase, order_id, { source: "order-payment-status-payu" });
-          order.status = newStatus;
-          order.payment_method = "payu";
-          order.payment_verified = true;
         }
       }
     }
