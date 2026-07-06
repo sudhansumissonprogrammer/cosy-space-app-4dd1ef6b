@@ -179,6 +179,15 @@ export default function CheckoutV2Page() {
     paytm: { status: "idle" }, any: { status: "idle" },
   });
 
+  // Gateway metadata captured from the first successful intent response so the
+  // waiting screen can actively verify with the PSP (not just poll the DB).
+  const gatewayRef = useRef<{
+    pg?: "cashfree" | "razorpay" | "payu";
+    cf_order_id?: string;
+    payu_txnid?: string;
+    razorpay_payment_id?: string;
+  }>({});
+
   const purchaseEventIdRef = useRef<string>(generateEventId());
 
   const validateAddress = (): string | null => {
@@ -270,6 +279,16 @@ export default function CheckoutV2Page() {
             setIntents((s) => ({ ...s, [app]: { status: "failed", error: errMsg } }));
             return;
           }
+          // Save gateway info (first successful response wins — all apps
+          // resolve to the same PSP for a given order).
+          if (!gatewayRef.current.pg && payload?.pg) {
+            gatewayRef.current = {
+              pg: payload.pg,
+              cf_order_id: payload.cf_order_id,
+              payu_txnid: payload.payu_txnid,
+              razorpay_payment_id: payload.razorpay_payment_id,
+            };
+          }
           setIntents((s) => ({ ...s, [app]: { status: "ready", url: schemeFor(app, url) } }));
         } catch (e: any) {
           setIntents((s) => ({ ...s, [app]: { status: "failed", error: e.message || "Failed" } }));
@@ -285,40 +304,108 @@ export default function CheckoutV2Page() {
   // ─── Payment polling ────────────────────────────────────────────────────
   const [waiting, setWaiting] = useState(false);
   const [waitingApp, setWaitingApp] = useState<string>("");
+  const [manualChecking, setManualChecking] = useState(false);
+
+  // Actively ask the correct PSP for a live verdict (also updates the DB row
+  // so the next DB poll wins). Silent — never throws.
+  const forceGatewayVerify = async () => {
+    if (!orderId) return null;
+    const gw = gatewayRef.current;
+    try {
+      if (gw.pg === "cashfree" && gw.cf_order_id) {
+        const { data } = await supabase.functions.invoke("store-cashfree-status", {
+          body: { store_id: store.id, order_id: orderId, cf_order_id: gw.cf_order_id },
+        });
+        return data;
+      }
+      if (gw.pg === "razorpay") {
+        const { data } = await supabase.functions.invoke("razorpay-payment-status", {
+          body: { store_id: store.id, order_id: orderId, razorpay_payment_id: gw.razorpay_payment_id },
+        });
+        return data;
+      }
+      if (gw.pg === "payu") {
+        const { data } = await supabase.functions.invoke("payu-status", {
+          body: { store_id: store.id, order_id: orderId, txnid: gw.payu_txnid },
+        });
+        return data;
+      }
+    } catch { /* ignore, DB poll will still catch it */ }
+    return null;
+  };
+
+  const finishSuccess = () => {
+    clearCart();
+    navigate(storefrontPath(store.slug, `account/orders/${orderId}`));
+  };
 
   useEffect(() => {
     if (!waiting || !orderId) return;
     let cancelled = false;
     let attempts = 0;
-    const maxAttempts = 90; // 3 min at 2s
-    const poll = async () => {
-      if (cancelled) return;
-      attempts++;
+    const maxAttempts = 120; // 4 min at ~2s
+    const checkNow = async (): Promise<boolean> => {
+      // 1) Live gateway verify (writes to DB if paid). Cheap enough to do every tick.
+      await forceGatewayVerify();
+      // 2) Read the DB via order-payment-status (cheap indexed select).
       try {
         const { data } = await supabase.functions.invoke("order-payment-status", {
           body: { store_id: store.id, order_id: orderId },
         });
         const status = (data as any)?.payment_status;
-        if (status === "success") {
-          clearCart();
-          navigate(storefrontPath(store.slug, `account/orders/${orderId}`));
-          return;
-        }
+        if (status === "success") { finishSuccess(); return true; }
         if (status === "failed") {
           toast.error("Payment failed — please try again");
           setWaiting(false);
-          return;
+          return true;
         }
       } catch { /* keep polling */ }
+      return false;
+    };
+    const poll = async () => {
+      if (cancelled) return;
+      attempts++;
+      const done = await checkNow();
+      if (done || cancelled) return;
       if (attempts >= maxAttempts) {
         toast("Still waiting? Tap 'I've paid' to re-check", { duration: 6000 });
         return;
       }
-      setTimeout(poll, 2000);
+      // Faster early ticks — most UPI captures land in 3-8s.
+      const delay = attempts < 5 ? 1500 : 2500;
+      setTimeout(poll, delay);
     };
-    setTimeout(poll, 2000);
-    return () => { cancelled = true; };
+    // First check almost immediately (user is back from the app).
+    setTimeout(poll, 800);
+    // Re-check instantly whenever the tab regains focus / becomes visible.
+    const onFocus = () => { checkNow(); };
+    const onVis = () => { if (document.visibilityState === "visible") checkNow(); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [waiting, orderId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const manualRecheck = async () => {
+    if (manualChecking || !orderId) return;
+    setManualChecking(true);
+    try {
+      await forceGatewayVerify();
+      const { data } = await supabase.functions.invoke("order-payment-status", {
+        body: { store_id: store.id, order_id: orderId },
+      });
+      const status = (data as any)?.payment_status;
+      if (status === "success") { finishSuccess(); return; }
+      if (status === "failed") { toast.error("Payment failed — please try again"); setWaiting(false); return; }
+      toast("Not confirmed yet — please complete the payment in your UPI app");
+    } finally {
+      setManualChecking(false);
+    }
+  };
+
 
   const tapUpiApp = (app: UpiApp) => {
     const s = intents[app];
@@ -353,10 +440,8 @@ export default function CheckoutV2Page() {
     }
   };
 
-  const forceRecheck = () => {
-    setWaiting(false);
-    setTimeout(() => setWaiting(true), 100);
-  };
+  const forceRecheck = () => { manualRecheck(); };
+
 
   // ─── Empty cart guard ──────────────────────────────────────────────────
   if (cartItems.length === 0 && !orderId) {
@@ -385,9 +470,10 @@ export default function CheckoutV2Page() {
             <div>Do not close this page. We'll confirm automatically once you approve payment in the app.</div>
           </div>
         </div>
-        <Button variant="outline" className="w-full" onClick={forceRecheck}>
-          I've paid — check now
+        <Button variant="outline" className="w-full" onClick={forceRecheck} disabled={manualChecking}>
+          {manualChecking ? "Checking…" : "I've paid — check now"}
         </Button>
+
         <button
           className="mt-3 text-xs text-muted-foreground underline"
           onClick={() => setWaiting(false)}
