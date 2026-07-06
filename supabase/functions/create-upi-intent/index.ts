@@ -362,8 +362,9 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // Persist txnid so payu-webhook / payu-status can resolve later
-          await supabase.from("orders").update({ payu_txnid: txnid }).eq("id", order_id).eq("store_id", store_id);
+          // Webhook resolves the order via udf1/udf2 — no extra order column needed.
+
+
 
           return jsonRes({
             pg: "payu",
