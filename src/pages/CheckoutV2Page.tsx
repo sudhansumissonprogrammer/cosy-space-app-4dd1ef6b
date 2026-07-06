@@ -285,20 +285,23 @@ export default function CheckoutV2Page() {
     window.location.href = s.url;
   };
 
+  const [placingCod, setPlacingCod] = useState(false);
   const placeCod = async () => {
-    if (!orderId) return;
-    // Order was already created with status=pending; upgrade to confirmed + payment_method=cod
+    if (!orderId || placingCod) return;
+    setPlacingCod(true);
     try {
-      const { error } = await supabase
-        .from("orders")
-        .update({ status: "confirmed", payment_method: "cod" })
-        .eq("id", orderId)
-        .eq("store_id", store.id);
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke("checkout-v2-cod", {
+        body: { store_id: store.id, order_id: orderId },
+      });
+      if (error) throw new Error(error.message);
+      const res = data as { ok?: boolean; error?: string } | null;
+      if (!res?.ok) throw new Error(res?.error || "Failed to place COD order");
       clearCart();
       navigate(storefrontPath(store.slug, `account/orders/${orderId}`));
     } catch (e: any) {
       toast.error(e.message || "Failed to place COD order");
+    } finally {
+      setPlacingCod(false);
     }
   };
 
