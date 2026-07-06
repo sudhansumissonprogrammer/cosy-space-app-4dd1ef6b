@@ -250,8 +250,13 @@ export default function CheckoutV2Page() {
       setOrderNumber(result.order_number || null);
       setShowPayment(true);
 
-      // Pre-generate all 4 UPI intent URLs in parallel — required so tapping a
-      // tile on iOS Safari fires location.href synchronously (no await).
+      // Generate ONE base UPI intent URL from the gateway, then re-scheme it
+      // client-side for each app (gpay/phonepe/paytm/any). Previously we hit
+      // `create-upi-intent` 4× in parallel, which created 4 separate PSP
+      // transactions per order — Razorpay races on the saved `razorpay_order_id`,
+      // PayU rejects the duplicate `txnid`, and Cashfree burns 4 order slots.
+      // The UPI payload (VPA/amount/txn ref) is app-agnostic, so one call is
+      // enough and every app tile is instant.
       const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "any"];
       setIntents((s) => {
         const next = { ...s };
@@ -259,29 +264,28 @@ export default function CheckoutV2Page() {
         return next;
       });
 
-      apps.forEach(async (app) => {
-        try {
-          const { data: intentData, error: intErr } = await supabase.functions.invoke("create-upi-intent", {
-            body: {
-              store_id: store.id,
-              order_id: result.order_id,
-              app,
-              customer_name: fullName.trim(),
-              customer_phone: normalizePhone(phone),
-              customer_email: email.trim() || undefined,
-            },
+      try {
+        const { data: intentData, error: intErr } = await supabase.functions.invoke("create-upi-intent", {
+          body: {
+            store_id: store.id,
+            order_id: result.order_id,
+            app: "any",
+            customer_name: fullName.trim(),
+            customer_phone: normalizePhone(phone),
+            customer_email: email.trim() || undefined,
+          },
+        });
+        const payload: any = intentData ?? (intErr as any)?.context?.body;
+        const url: string | undefined = payload?.intent_url;
+        if (!url) {
+          const errMsg: string = payload?.error || intErr?.message || "Failed";
+          setIntents((s) => {
+            const next = { ...s };
+            apps.forEach((a) => { next[a] = { status: "failed", error: errMsg }; });
+            return next;
           });
-          // functions.invoke returns error for non-2xx BUT data still contains the JSON body
-          const payload: any = intentData ?? (intErr as any)?.context?.body;
-          const url: string | undefined = payload?.intent_url;
-          if (!url) {
-            const errMsg: string = payload?.error || intErr?.message || "Failed";
-            setIntents((s) => ({ ...s, [app]: { status: "failed", error: errMsg } }));
-            return;
-          }
-          // Save gateway info (first successful response wins — all apps
-          // resolve to the same PSP for a given order).
-          if (!gatewayRef.current.pg && payload?.pg) {
+        } else {
+          if (payload?.pg) {
             gatewayRef.current = {
               pg: payload.pg,
               cf_order_id: payload.cf_order_id,
@@ -289,11 +293,20 @@ export default function CheckoutV2Page() {
               razorpay_payment_id: payload.razorpay_payment_id,
             };
           }
-          setIntents((s) => ({ ...s, [app]: { status: "ready", url: schemeFor(app, url) } }));
-        } catch (e: any) {
-          setIntents((s) => ({ ...s, [app]: { status: "failed", error: e.message || "Failed" } }));
+          setIntents((s) => {
+            const next = { ...s };
+            apps.forEach((a) => { next[a] = { status: "ready", url: schemeFor(a, url) }; });
+            return next;
+          });
         }
-      });
+      } catch (e: any) {
+        const msg = e?.message || "Failed";
+        setIntents((s) => {
+          const next = { ...s };
+          apps.forEach((a) => { next[a] = { status: "failed", error: msg }; });
+          return next;
+        });
+      }
     } catch (e: any) {
       toast.error(e.message || "Failed to create order");
     } finally {
