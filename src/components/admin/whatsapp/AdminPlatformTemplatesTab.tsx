@@ -59,7 +59,17 @@ export function AdminPlatformTemplatesTab() {
     setBusy(name + ":" + action);
     try {
       const { data, error } = await supabase.functions.invoke("wa-template-submit", { body: { action, template_name: name } });
-      if (error) throw error;
+      if (error) {
+        let msg = error.message;
+        try {
+          const ctx = (error as any).context;
+          if (ctx && typeof ctx.json === "function") {
+            const j = await ctx.json();
+            if (j?.error) msg = j.error;
+          }
+        } catch { /* ignore */ }
+        throw new Error(msg);
+      }
       if ((data as any)?.error) throw new Error((data as any).error);
       toast.success(`${action} ok${(data as any)?.meta_status ? ` · ${(data as any).meta_status}` : ""}`);
       await load();
