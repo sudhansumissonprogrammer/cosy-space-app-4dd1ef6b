@@ -55,6 +55,9 @@ export default function StorePayments() {
   const [partialType, setPartialType] = useState<"percentage" | "fixed">("percentage");
   const [partialValue, setPartialValue] = useState("");
 
+  // Checkout V2 (GoKwik-style one-page UPI intent checkout) — off by default
+  const [checkoutV2Enabled, setCheckoutV2Enabled] = useState(false);
+
   const { data: store, isLoading: storeLoading } = useStoreData(storeId);
 
   useEffect(() => {
