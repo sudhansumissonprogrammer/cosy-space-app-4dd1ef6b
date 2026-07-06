@@ -1,105 +1,123 @@
-## Speed up marketing → PDP path (no template resubmit)
 
-Three coordinated changes. All keep the URL `shopbanao.in/r/<token>` — WhatsApp templates untouched.
+# GoKwik-Clone Checkout — Safe Build Plan
 
----
-
-### 1. PDP bundle lazy-splits (frontend, ~30 min)
-
-In `src/pages/ProductDetail.tsx` (and V19/V20/V22 variants), convert three eager imports to lazy so they don't block first paint:
-
-- `VideoSlide` → `lazy(() => import(...))`, only mount when `product.video_url` exists
-- `Dialog` chain (zoom modal, share modal) → dynamic `import()` on first open
-- `UniversalProductCard` → remove from PDP top import; it's already reachable via lazy `RelatedProducts`
-
-Cuts ~40–80KB gzipped off the critical PDP chunk. Faster hydrate on every mobile.
+Goal: exact GoKwik UX — one page shows address + payment tiles (GPay, PhonePe, Paytm, Any UPI, UPI ID, Card, COD). Tapping GPay opens the GPay app directly. No PG page ever shown. Built **behind a feature flag** so the live checkout, running ads, and current sales are 100% untouched until you flip it on.
 
 ---
 
-### 2. Move `/r/*` redirect into the Cloudflare Worker (biggest single win)
+## What stays UNCHANGED (safety guarantee)
 
-Since `shopbanao.in` is on Cloudflare, add a Worker Route `shopbanao.in/r/*` so redirects run at the edge with **no Deno hop, no cold start**.
-
-Update `docs/cloudflare-worker-current.js`:
-
-- Detect hostname `shopbanao.in` + path `/r/<token>` at the top of the worker's `fetch()`
-- Parse token prefix (`o-` / `t-` / `c-` / `p-`) same as current `wa-r`
-- Look up order/product/cart via Supabase REST (`https://<ref>.supabase.co/rest/v1/...`) using service role key stored as Worker secret `SUPABASE_SERVICE_KEY`
-- Cache the lookup in Worker KV (`STORE_KV`) keyed by token — same TTLs as today (product 5 min, order 1 day, cart no-cache)
-- Emit the same 301/302 with `Link: rel=preconnect` + `rel=preload as=image` (hero) + `rel=preload as=fetch` (PDP API) headers
-- **Emit HTTP 103 Early Hints** with the Link headers before the 302 body (Deno can't do this; Cloudflare can) — browser starts hero download ~200ms earlier
-- Fire-and-forget click log to `wa_link_clicks` via Supabase REST (no `await`)
-
-Keep the existing `supabase/functions/wa-r/index.ts` deployed as a **fallback** in case the worker route is bypassed (nothing to remove; harmless).
-
-**Manual step for user:** In Cloudflare dashboard → Workers → Routes, add `shopbanao.in/r/*` → your existing worker. (Worker file itself deploys via your normal process.)
-
-Expected: `/r/*` latency drops from ~700ms → ~40–80ms. Plus 103 Early Hints shave another ~150–250ms off LCP.
+- Existing `CheckoutPage.tsx`, `V22CheckoutPage.tsx`, all V19/V20/V22 cart flows — **not modified**.
+- Existing edge functions (`razorpay-order`, `razorpay-verify`, `store-cashfree-create-order`, `store-cashfree-verify`, `payu-create-txn`, `payu-webhook`) — **not modified**.
+- All live stores continue to use the current "Pay Now → PG modal" flow. Ads, pixel, CAPI, conversions untouched.
 
 ---
 
-### 3. Auto-prewarm PDP cache on product save (~20 min)
+## The new UX (matches GoKwik exactly)
 
-Ensure every WhatsApp campaign click lands on a hot cache — never a cold DB hit.
-
-In the product create/edit code path (client-side after save success), call the existing `prewarm-store` edge function with the store slug + custom domain. It already warms `/api/prewarm?slug=...` — extend the worker's prewarm handler to also warm `/api/pdp?slug=<newly-saved-slug>` when a `productSlug` param is passed. Fire-and-forget, no UX impact.
-
-Result: merchant saves product → 300ms later, edge KV holds the PDP JSON → first WhatsApp click is warm-path (~200ms end-to-end lookup).
-
----
-
-## Technical details
-
-**Worker `/r/*` handler sketch (added early in `fetch()`):**
-```js
-if (host === "shopbanao.in" && url.pathname.startsWith("/r/")) {
-  return handleWaRedirect(request, url, env, ctx);
-}
+```text
+┌─────────────────────────────────────┐
+│  ← Back              Order  ₹1,249  │
+├─────────────────────────────────────┤
+│  📱 +91 98xxx xxxxx     ✓ Verified  │
+│  📍 Ravi · H.No 12, Jaipur 302001   │
+│     [Change]                        │
+├─────────────────────────────────────┤
+│  Pay ₹1,249                         │
+│                                     │
+│  UPI apps                           │
+│  ┌───────┐ ┌───────┐ ┌───────┐     │
+│  │ GPay  │ │PhonePe│ │ Paytm │     │
+│  └───────┘ └───────┘ └───────┘     │
+│  ┌─────────────────────────┐       │
+│  │ ▶ Any UPI app           │       │
+│  └─────────────────────────┘       │
+│  ┌─────────────────────────┐       │
+│  │ Enter UPI ID  [______]  │       │
+│  └─────────────────────────┘       │
+│                                     │
+│  Other                              │
+│  💳 Credit / Debit Card             │
+│  🏦 Netbanking                      │
+│  💵 Cash on Delivery                │
+└─────────────────────────────────────┘
 ```
 
-**Supabase REST lookup pattern:**
-```js
-const r = await fetch(
-  `https://${env.SUPABASE_REF}.supabase.co/rest/v1/products?id=eq.${id}&select=id,slug,stores(slug,custom_domain)`,
-  { headers: { apikey: env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}` } }
-);
-```
+Tap **GPay** → GPay app opens with ₹1,249 pre-filled → user approves → we poll → order confirmed → thank-you page. No Razorpay/Cashfree page ever appears.
 
-**Early Hints (Cloudflare-native):**
-```js
-return new Response(null, {
-  status: 302,
-  headers: { Location: target, Link: linkHeaders, "Cache-Control": "..." }
-  // CF automatically converts Link headers to 103 Early Hints when enabled on the zone
-});
-```
-User must enable **Early Hints** in Cloudflare zone → Speed → Optimization (one toggle).
-
-**Secrets needed as Cloudflare Worker environment vars:**
-- `SUPABASE_REF` = `dqepeywgftbpxeeqfuwt`
-- `SUPABASE_SERVICE_KEY` = (from Lovable Cloud — user pastes into CF Workers dashboard)
+Desktop → same tiles show a QR code instead (UPI apps aren't installed on desktop).
 
 ---
 
-## Expected combined result
+## Architecture
 
-| Stage | Now | After |
-|---|---|---|
-| `/r/*` redirect | 700ms | 60ms |
-| Early Hints preload | — | −200ms LCP |
-| PDP hydrate | 1.5–2.5s | 1.0–1.7s |
-| Cold cache DB hit | Sometimes | Never |
-| **Total to LCP** | **~4.5s** | **~2.0–2.5s** |
+### New edge functions (all dormant until UI calls them — zero risk)
 
-No template resubmit. No storefront breaking change. Reversible per-item.
+1. **`create-upi-intent`** — accepts `{ order_id, store_id, app: "gpay"|"phonepe"|"paytm"|"any", vpa? }`; picks active PG from `store_payment_config` (Cashfree first, then Razorpay, then PayU); calls that PG's UPI Intent API; returns `{ intent_url, order_ref, poll_token }`.
+   - Cashfree: `POST /pg/orders/sessions` with `payment_method.upi.channel="link", app=...`.
+   - Razorpay: reuse existing `razorpay-upi-intent/index.ts` (already built, currently unused) — just call it from the wrapper.
+   - PayU: S2S `_payment` with `bankcode=TEZ | PHONEPE | PAYTM | UPI`.
+
+2. **`create-card-session`** — returns a payment session token for the chosen PG's on-page card iframe (Razorpay Elements or Cashfree Drop card-only mode). No new PG code, just a thin wrapper for the tile UI.
+
+3. **`order-payment-status`** — single polling endpoint the tile UI hits every 2s. Reads `orders.status` and (if pending) queries the active PG's status API. Returns `pending | success | failed`.
+
+### New frontend files (all new, replace nothing)
+
+- `src/pages/CheckoutV2.tsx` — new checkout page, mounted only when feature flag is on.
+- `src/components/checkout-v2/AddressBlock.tsx` — phone + saved address, edit-in-place.
+- `src/components/checkout-v2/PaymentTiles.tsx` — the tile grid.
+- `src/components/checkout-v2/UpiAppTile.tsx` — one tile (GPay/PhonePe/Paytm/Any). Pre-generates intent URL on mount so the tap fires `location.href = intentUrl` synchronously (required for iOS Safari).
+- `src/components/checkout-v2/UpiIdInput.tsx` — VPA input + Verify + Pay (UPI Collect flow).
+- `src/components/checkout-v2/CardTile.tsx` — mounts Razorpay/Cashfree card iframe inline.
+- `src/components/checkout-v2/UpiQrDesktop.tsx` — QR fallback for desktop.
+- `src/components/checkout-v2/WaitingScreen.tsx` — "Complete payment in GPay… (up to 3 min)" with polling.
+- `src/assets/upi/gpay.svg`, `phonepe.svg`, `paytm.svg`, `bhim.svg` — official brand icons (already have GPay/PhonePe/Paytm SVGs in `public/icons/`).
+
+### Feature flag (per-store, admin-controlled)
+
+- Add one boolean column: `stores.checkout_v2_enabled boolean default false`.
+- Route logic in `CheckoutPage.tsx` (tiny 3-line change — the only edit to existing checkout code): if `store.checkout_v2_enabled === true` **and** URL has `?v2=1` OR store is fully opted-in, render `<CheckoutV2 />` instead of the current form. Otherwise render existing checkout unchanged.
+- Admin panel gets one toggle in `StorePayments.tsx`: **"Enable new 1-click checkout (beta)"** — off by default for all existing stores.
+- Rollout: you flip it on for **one test store** first → watch 10–20 real orders → then enable per-store as you gain confidence.
 
 ---
 
-## Deploy order
+## Rollout stages (each stage is independently reversible)
 
-1. Ship PDP lazy-splits (frontend, auto-deploys)
-2. Ship worker changes to `docs/cloudflare-worker-current.js` — you deploy manually as usual
-3. Add worker route `shopbanao.in/r/*` in Cloudflare dashboard
-4. Add `SUPABASE_REF` + `SUPABASE_SERVICE_KEY` as Worker env vars in Cloudflare
-5. Enable Early Hints toggle in Cloudflare Speed panel
-6. Extend `prewarm-store` + client save hook (frontend, auto-deploys)
+**Stage 1 — Backend only, invisible**
+- Deploy `create-upi-intent`, `create-card-session`, `order-payment-status`.
+- Add `stores.checkout_v2_enabled` column (default false = nobody sees it).
+- Zero UI change. Zero live impact.
+
+**Stage 2 — UI behind `?v2=1` URL param**
+- Ship `CheckoutV2.tsx` + tile components.
+- Only reachable by visiting `/checkout?v2=1` manually.
+- Test on preview URL with Cashfree sandbox → real UPI sandbox → real ₹1 live order on one store.
+
+**Stage 3 — Enable on one test store**
+- Flip `checkout_v2_enabled=true` for one low-volume store.
+- Compare conversion vs old flow for 3–5 days.
+
+**Stage 4 — Gradual rollout**
+- Enable per-store from admin panel as you gain confidence.
+- Old checkout remains as instant fallback — flip flag back to `false` to revert any store in 1 click.
+
+---
+
+## Critical technical details
+
+- **iOS UPI intents must fire in the same tap event**, no `await`. Solution: `UpiAppTile` pre-fetches the intent URL on mount so tap = synchronous `location.href = url`.
+- **Intent TTL ≈ 5 min** — regenerate if user idles past 4 min.
+- **UPI apps rarely redirect back** — we rely on 3-minute polling + PG webhook. Waiting screen shows a "I've paid" button that immediately re-polls.
+- **App detection** — on Android/iOS, hide GPay/PhonePe/Paytm tiles when `navigator.userAgent` says the app isn't installable (fallback: always show, they'll get "app not found").
+- **Card iframe** uses Razorpay's card-only mode or Cashfree Drop with `components: ['card']` — never leaves the page.
+- **Missing Cashfree/Razorpay webhooks (open gap flagged by exploration)** — Stage 1 also adds `cashfree-webhook` and `razorpay-webhook` public endpoints as safety net so orders never stick in "pending" even if the browser dies mid-payment. This benefits the OLD checkout too.
+
+---
+
+## What you approve now
+
+Stages 1–2 only (backend + UI behind `?v2=1`). Nothing goes live to real customers, no store gets the new flow, ads/sales completely untouched. After you test on the preview URL and are happy, you tell me to move to Stage 3.
+
+Say "go" to start Stage 1.
