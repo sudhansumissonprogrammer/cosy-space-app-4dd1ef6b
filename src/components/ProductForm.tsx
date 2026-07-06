@@ -570,9 +570,11 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       ]);
       
       // Pre-warm edge caches so storefront reflects changes instantly.
-      // Skip entirely for inactive/draft products — they're hidden from shoppers.
+      // Pass the product slug so /api/pdp?slug=... is warmed too — first
+      // WhatsApp click after save lands on a hot KV cache (no DB hit).
+      const productSlugForWarm = (slug?.trim() || generateSlug(name.trim())) || undefined;
       import("@/lib/prewarmStore").then(({ prewarmStore }) => {
-        if (storeSlug) prewarmStore(storeSlug, undefined, { hidden: !isActive });
+        if (storeSlug) prewarmStore(storeSlug, undefined, { hidden: !isActive, productSlug: productSlugForWarm });
       }).catch(() => {});
       // Also purge edge cache so changes propagate immediately on storefront
       purgeStore();

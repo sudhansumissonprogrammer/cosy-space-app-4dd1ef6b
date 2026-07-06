@@ -23,6 +23,11 @@ interface PrewarmOptions {
    * draft product, suspended store). Skipped entirely. Default: false.
    */
   hidden?: boolean;
+  /**
+   * If provided, warms the specific PDP JSON at /api/pdp?slug=<productSlug>
+   * so the very first WhatsApp click after product save lands on a hot cache.
+   */
+  productSlug?: string;
 }
 
 /**
@@ -74,6 +79,7 @@ export async function prewarmStore(
     try {
       const body: Record<string, string> = { slug };
       if (domain) body.domain = domain;
+      if (options.productSlug) body.productSlug = options.productSlug;
 
       const { supabase } = await import("@/integrations/supabase/client");
       await supabase.functions.invoke("prewarm-store", { body });
