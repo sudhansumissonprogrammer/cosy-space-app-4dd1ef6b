@@ -266,7 +266,7 @@ export default function StorefrontHomeV16() {
         <h1 className="sr-only">{buildStorefrontH1(store)}</h1>
         {/* Search bar */}
         {!hideSearchBar && (
-          <div className="backdrop-blur-md px-4 pt-3 pb-1" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", minHeight: 52, contain: "layout style" }}>
+          <div className="px-4 pt-3 pb-1" style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", minHeight: 52, contain: "layout style" }}>
             <div className="mx-auto max-w-7xl flex items-center gap-2">
               <button onClick={() => setSearchOpen(true)} className="flex flex-1 items-center gap-2.5 rounded-full bg-accent/60 px-4 py-2.5 text-sm text-foreground/60 transition-colors hover:bg-accent" aria-label="Search products">
                 <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
