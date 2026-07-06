@@ -74,26 +74,20 @@ function redirect(to: string, opts: RedirectOpts = {}): Response {
   return new Response(null, { status, headers });
 }
 
-// Fire-and-forget storefront cache warmers. Runs during the ~150-300ms the
-// browser spends handshaking to the storefront domain, so KV is already hot
-// when the real request arrives. Errors are ignored — this is best-effort.
+// Fire-and-forget storefront cache warmer. Only warms the JSON PDP bundle
+// (`/api/pdp?slug=...`) — NOT the HTML shell — so we don't pollute pageview
+// analytics with synthetic hits. HTML shell latency is already mitigated by
+// the `Link: rel=preconnect` header on the 302, which warms TLS to the
+// storefront domain during the redirect.
 function warmStorefront(host: string, productSlug?: string) {
   try {
-    const targets: string[] = [];
-    if (productSlug) {
-      // Warms the merged PDP bundle (worker route → KV cached).
-      targets.push(`https://${host}/api/pdp?slug=${encodeURIComponent(productSlug)}`);
-      // Warms the storefront HTML shell for this product route.
-      targets.push(`https://${host}/product/${encodeURIComponent(productSlug)}`);
-    }
-    for (const url of targets) {
-      // No await — let it race. cf-worker keepalive keeps it running past
-      // the response return in the Supabase runtime.
-      fetch(url, {
-        method: "GET",
-        headers: { "User-Agent": "wa-r-warmer/1.0", "X-Warmer": "wa-r" },
-      }).catch(() => {});
-    }
+    if (!productSlug) return;
+    const url = `https://${host}/api/pdp?slug=${encodeURIComponent(productSlug)}`;
+    // No await — race the browser. Errors ignored (best-effort).
+    fetch(url, {
+      method: "GET",
+      headers: { "User-Agent": "wa-r-warmer/1.0", "X-Warmer": "wa-r" },
+    }).catch(() => {});
   } catch { /* noop */ }
 }
 
