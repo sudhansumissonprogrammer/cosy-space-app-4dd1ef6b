@@ -41,10 +41,10 @@ Deno.serve(async (req) => {
   const { data: normalCarts, error } = await q;
 
   // ⚡ Fast-lane: carts whose customer started an online payment (order.status='pending')
-  // that has been sitting for >5 minutes without becoming confirmed/partially_paid.
-  // Waiting 5 min (not 1 min) prevents false-positive recovery messages during
-  // slow gateway roundtrips (UPI intents, 3DS, bank OTP flows can take 2-4 min).
-  const pendingCutoffIso = new Date(now - 5 * 60 * 1000).toISOString();
+  // that has been sitting for the strict min age (30 min) without becoming
+  // confirmed/partially_paid. Uses the same wa_min_cart_age_minutes as normal
+  // carts so pending/cancelled orders follow the same 30-min rule.
+  const pendingCutoffIso = new Date(now - minAgeMs).toISOString();
   const { data: pendingOrders } = await admin
     .from("orders")
     .select("store_id, customer_phone, created_at")
