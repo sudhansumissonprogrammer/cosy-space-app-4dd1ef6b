@@ -363,7 +363,7 @@ export default function CheckoutV2Page() {
         </div>
         <h1 className="text-xl font-bold mb-2">Complete payment in {waitingApp}</h1>
         <p className="text-sm text-muted-foreground mb-8">
-          Approve the payment request of <span className="font-semibold text-foreground">{formatPrice(total, currency)}</span> in {waitingApp} to confirm your order.
+          Approve the payment request of <span className="font-semibold text-foreground">{formatPrice(chargeAmount, currency)}</span> in {waitingApp} to confirm your order.
         </p>
         <div className="rounded-lg border bg-muted/30 p-4 text-left text-xs text-muted-foreground mb-6">
           <div className="flex items-start gap-2">
