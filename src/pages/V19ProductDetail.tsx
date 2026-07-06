@@ -63,6 +63,22 @@ export default function V19ProductDetail() {
     return () => clearInterval(id);
   }, []);
 
+  // Worker-inlined PDP payload — skips the initial RPC on cold /product/* loads
+  const getInlineProduct = () => {
+    try {
+      const inline = (window as any).__PRODUCT_INLINE__;
+      if (inline?.product && (inline.product.slug === productSlug || inline.product.id === productSlug)) {
+        return {
+          ...inline.product,
+          product_images: inline.images || [],
+          product_variants: inline.variants || [],
+        };
+      }
+    } catch { /* ignore */ }
+    return undefined;
+  };
+  const inlineProductInitial = getInlineProduct();
+
   // Fetch product
   const { data: product, isLoading } = useQuery({
     queryKey: ["v19-product", store?.id, productSlug],
@@ -85,6 +101,7 @@ export default function V19ProductDetail() {
       return data;
     },
     staleTime: 5 * 60 * 1000,
+    ...(inlineProductInitial ? { initialData: inlineProductInitial as any } : {}),
   });
 
   // Fetch similar products (co-purchased fallback to category)
