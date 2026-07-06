@@ -644,6 +644,7 @@ export default function CheckoutV2Page() {
 
   const finishSuccess = () => {
     if (!orderId) return;
+    try { sessionStorage.removeItem(`sf_wait_v2_${store.id}`); } catch { /* noop */ }
     onOrderSuccess(orderId);
     navigate(storefrontPath(store.slug, `account/orders/${orderId}`));
   };
