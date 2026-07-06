@@ -268,8 +268,24 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          const intentUrl = payData.data?.intent_url || payData.intent_url;
-          if (!intentUrl) {
+          // Modern Razorpay S2S UPI Intent returns
+          //   { razorpay_payment_id, type: "intent", next: [{ action: "invoke", url: "upi://..." }] }
+          // Older/enterprise variants use  data.intent_url  or  intent_url.
+          // Some accounts return the raw intent under  data.next[0].url.
+          const nextArr: any[] = payData?.next || payData?.data?.next || [];
+          const nextInvoke = nextArr.find((n) => n?.action === "invoke" || String(n?.url || "").startsWith("upi://"));
+          const rawIntent: string | undefined =
+            nextInvoke?.url ||
+            payData?.data?.intent_url ||
+            payData?.intent_url ||
+            payData?.data?.upi?.intent_url;
+
+          let intentUrl: string | undefined;
+          if (rawIntent) {
+            intentUrl = rawIntent.startsWith("upi://") ? rawIntent : `upi://pay?${rawIntent.replace(/^\?/, "")}`;
+          }
+
+          if (!intentUrl || !intentUrl.startsWith("upi://")) {
             lastError = { pg: "razorpay", message: "Razorpay returned no intent URL", details: payData };
             continue;
           }
