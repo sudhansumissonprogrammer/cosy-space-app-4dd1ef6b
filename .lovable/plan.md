@@ -1,123 +1,61 @@
+# CheckoutV2 parity fixes
 
-# GoKwik-Clone Checkout — Safe Build Plan
+After a deep diff against `src/pages/CheckoutPage.tsx` (the old, battle-tested checkout), CheckoutV2 is missing several revenue-critical and reliability pieces. It currently only computes `subtotal` and forwards a very thin `place-order` body. This causes:
 
-Goal: exact GoKwik UX — one page shows address + payment tiles (GPay, PhonePe, Paytm, Any UPI, UPI ID, Card, COD). Tapping GPay opens the GPay app directly. No PG page ever shown. Built **behind a feature flag** so the live checkout, running ads, and current sales are 100% untouched until you flip it on.
+- **Undercharging** — no shipping, no tax, no coupons applied on the charged amount.
+- **Broken attribution & tracking** — no Pixel Purchase, no GA4 purchase, no storefront funnel event, no Meta CAPI signals (fbc/fbp/event_id/event_source_url), no visitor/session/UTM snapshot.
+- **Broken abandoned-cart recovery** — `abandoned_cart_id` is never passed to `place-order`, so recovered orders aren't marked.
+- **Broken account flow** — no `create-guest-account` call, no save-address-to-account, no `order-placed` event, no auto-applied coupon from `?coupon=` / `pending_coupon` storage.
+- **No order notifications** — `notify-order` (owner email + PWA push + customer email) never fires.
+- **Wrong partial advance** — advance math ignores shipping/tax/coupon.
 
----
+## What changes (single file: `src/pages/CheckoutV2Page.tsx`)
 
-## What stays UNCHANGED (safety guarantee)
+### 1. Totals engine — mirror old checkout exactly
+- Fetch `store_shipping_config` + `store_tax_config` (React Query, same keys as CheckoutPage so cache is shared).
+- Compute `shippingCharge`, `taxAmount`, `couponDiscount`, and `total = subtotal + tax + shipping − discount`.
+- Rewrite `partialAdvanceTotal` to spread tax/shipping proportionally and subtract coupon share (same formula as `CheckoutPage.tsx` lines 683–695).
+- Order Summary panel: show line items for Shipping, Tax, Discount when non-zero.
+- CTA + waiting screen amounts use the correct `chargeAmount`.
 
-- Existing `CheckoutPage.tsx`, `V22CheckoutPage.tsx`, all V19/V20/V22 cart flows — **not modified**.
-- Existing edge functions (`razorpay-order`, `razorpay-verify`, `store-cashfree-create-order`, `store-cashfree-verify`, `payu-create-txn`, `payu-webhook`) — **not modified**.
-- All live stores continue to use the current "Pay Now → PG modal" flow. Ads, pixel, CAPI, conversions untouched.
+### 2. Coupon auto-apply (no new UI)
+- On mount, read `?coupon=` from URL, else `sessionStorage.pending_coupon` / `localStorage.pending_coupon` (WhatsApp recovery flow).
+- Call `validate_store_coupon` RPC once, apply if valid; silent-fail otherwise.
+- Clean up on successful order.
 
----
+### 3. Rich `place-order` body
+Extend the current body with the fields the old checkout sends:
+- `coupon_id`, `abandoned_cart_id`
+- `meta: { event_id, fbc, fbp, event_source_url }` (sanitized, preview-safe)
+- `visitor_id`, `session_id`, `attribution` (UTM + landing + referrer)
+- Persist `abandoned_cart_id` from URL or an `abandoned_cart_id_<storeId>` localStorage key just like the old code.
 
-## The new UX (matches GoKwik exactly)
+### 4. Success-side plumbing (new `onOrderSuccess(orderId)` helper)
+Fires exactly once per order (Set-based idempotency):
+- Fire Pixel Purchase (sessionStorage dedupe key `meta_purchase_fired_<orderId>` — same as old).
+- Fire GA4 `purchase`.
+- Fire storefront funnel `purchase` event.
+- Dispatch `window` event `order-placed`.
+- Call `notify-order` (owner + customer email + owner push).
+- If no logged-in customer, call `create-guest-account` and hydrate session via `supabaseStorefront`.
+- If logged in, call `saveAddressToAccount` (same helper pattern as old file).
+- Clear cart, clear pending coupon storage, clear `checkout_phone`.
 
-```text
-┌─────────────────────────────────────┐
-│  ← Back              Order  ₹1,249  │
-├─────────────────────────────────────┤
-│  📱 +91 98xxx xxxxx     ✓ Verified  │
-│  📍 Ravi · H.No 12, Jaipur 302001   │
-│     [Change]                        │
-├─────────────────────────────────────┤
-│  Pay ₹1,249                         │
-│                                     │
-│  UPI apps                           │
-│  ┌───────┐ ┌───────┐ ┌───────┐     │
-│  │ GPay  │ │PhonePe│ │ Paytm │     │
-│  └───────┘ └───────┘ └───────┘     │
-│  ┌─────────────────────────┐       │
-│  │ ▶ Any UPI app           │       │
-│  └─────────────────────────┘       │
-│  ┌─────────────────────────┐       │
-│  │ Enter UPI ID  [______]  │       │
-│  └─────────────────────────┘       │
-│                                     │
-│  Other                              │
-│  💳 Credit / Debit Card             │
-│  🏦 Netbanking                      │
-│  💵 Cash on Delivery                │
-└─────────────────────────────────────┘
-```
+`onOrderSuccess` is invoked from every success path: UPI polling, manual "I've paid" recheck, COD, and QR-scan success.
 
-Tap **GPay** → GPay app opens with ₹1,249 pre-filled → user approves → we poll → order confirmed → thank-you page. No Razorpay/Cashfree page ever appears.
+### 5. Correct `payment_method` on order
+- Send `payment_method: "razorpay"` today is a placeholder → change to the actual gateway once `create-upi-intent` returns `pg`, via a follow-up `orders.update({ payment_method })` in the client (RLS-safe: `place-order` already exposes a small `update-order-gateway` path or we piggy-back on the existing `checkout-v2-cod`-style pattern). If none is safe, we leave as-is (cosmetic).
 
-Desktop → same tiles show a QR code instead (UPI apps aren't installed on desktop).
+### 6. Safety guards kept
+- Single `create-upi-intent` call (already fixed).
+- Live PSP verify each poll tick + focus/visibility instant recheck (already fixed).
+- Cross-check that `create-upi-intent` uses `chargeAmount` from the DB order row (it already reads `dbOrder.total` + `advance_paid`, which is set by `place-order` from the enriched body), so shipping/tax/coupon flow to the gateway automatically.
 
----
+## Files touched
+- `src/pages/CheckoutV2Page.tsx` — all of the above.
 
-## Architecture
+No DB migrations, no edge function changes. All backend endpoints already exist and already accept these fields (they're what the old CheckoutPage sends today).
 
-### New edge functions (all dormant until UI calls them — zero risk)
-
-1. **`create-upi-intent`** — accepts `{ order_id, store_id, app: "gpay"|"phonepe"|"paytm"|"any", vpa? }`; picks active PG from `store_payment_config` (Cashfree first, then Razorpay, then PayU); calls that PG's UPI Intent API; returns `{ intent_url, order_ref, poll_token }`.
-   - Cashfree: `POST /pg/orders/sessions` with `payment_method.upi.channel="link", app=...`.
-   - Razorpay: reuse existing `razorpay-upi-intent/index.ts` (already built, currently unused) — just call it from the wrapper.
-   - PayU: S2S `_payment` with `bankcode=TEZ | PHONEPE | PAYTM | UPI`.
-
-2. **`create-card-session`** — returns a payment session token for the chosen PG's on-page card iframe (Razorpay Elements or Cashfree Drop card-only mode). No new PG code, just a thin wrapper for the tile UI.
-
-3. **`order-payment-status`** — single polling endpoint the tile UI hits every 2s. Reads `orders.status` and (if pending) queries the active PG's status API. Returns `pending | success | failed`.
-
-### New frontend files (all new, replace nothing)
-
-- `src/pages/CheckoutV2.tsx` — new checkout page, mounted only when feature flag is on.
-- `src/components/checkout-v2/AddressBlock.tsx` — phone + saved address, edit-in-place.
-- `src/components/checkout-v2/PaymentTiles.tsx` — the tile grid.
-- `src/components/checkout-v2/UpiAppTile.tsx` — one tile (GPay/PhonePe/Paytm/Any). Pre-generates intent URL on mount so the tap fires `location.href = intentUrl` synchronously (required for iOS Safari).
-- `src/components/checkout-v2/UpiIdInput.tsx` — VPA input + Verify + Pay (UPI Collect flow).
-- `src/components/checkout-v2/CardTile.tsx` — mounts Razorpay/Cashfree card iframe inline.
-- `src/components/checkout-v2/UpiQrDesktop.tsx` — QR fallback for desktop.
-- `src/components/checkout-v2/WaitingScreen.tsx` — "Complete payment in GPay… (up to 3 min)" with polling.
-- `src/assets/upi/gpay.svg`, `phonepe.svg`, `paytm.svg`, `bhim.svg` — official brand icons (already have GPay/PhonePe/Paytm SVGs in `public/icons/`).
-
-### Feature flag (per-store, admin-controlled)
-
-- Add one boolean column: `stores.checkout_v2_enabled boolean default false`.
-- Route logic in `CheckoutPage.tsx` (tiny 3-line change — the only edit to existing checkout code): if `store.checkout_v2_enabled === true` **and** URL has `?v2=1` OR store is fully opted-in, render `<CheckoutV2 />` instead of the current form. Otherwise render existing checkout unchanged.
-- Admin panel gets one toggle in `StorePayments.tsx`: **"Enable new 1-click checkout (beta)"** — off by default for all existing stores.
-- Rollout: you flip it on for **one test store** first → watch 10–20 real orders → then enable per-store as you gain confidence.
-
----
-
-## Rollout stages (each stage is independently reversible)
-
-**Stage 1 — Backend only, invisible**
-- Deploy `create-upi-intent`, `create-card-session`, `order-payment-status`.
-- Add `stores.checkout_v2_enabled` column (default false = nobody sees it).
-- Zero UI change. Zero live impact.
-
-**Stage 2 — UI behind `?v2=1` URL param**
-- Ship `CheckoutV2.tsx` + tile components.
-- Only reachable by visiting `/checkout?v2=1` manually.
-- Test on preview URL with Cashfree sandbox → real UPI sandbox → real ₹1 live order on one store.
-
-**Stage 3 — Enable on one test store**
-- Flip `checkout_v2_enabled=true` for one low-volume store.
-- Compare conversion vs old flow for 3–5 days.
-
-**Stage 4 — Gradual rollout**
-- Enable per-store from admin panel as you gain confidence.
-- Old checkout remains as instant fallback — flip flag back to `false` to revert any store in 1 click.
-
----
-
-## Critical technical details
-
-- **iOS UPI intents must fire in the same tap event**, no `await`. Solution: `UpiAppTile` pre-fetches the intent URL on mount so tap = synchronous `location.href = url`.
-- **Intent TTL ≈ 5 min** — regenerate if user idles past 4 min.
-- **UPI apps rarely redirect back** — we rely on 3-minute polling + PG webhook. Waiting screen shows a "I've paid" button that immediately re-polls.
-- **App detection** — on Android/iOS, hide GPay/PhonePe/Paytm tiles when `navigator.userAgent` says the app isn't installable (fallback: always show, they'll get "app not found").
-- **Card iframe** uses Razorpay's card-only mode or Cashfree Drop with `components: ['card']` — never leaves the page.
-- **Missing Cashfree/Razorpay webhooks (open gap flagged by exploration)** — Stage 1 also adds `cashfree-webhook` and `razorpay-webhook` public endpoints as safety net so orders never stick in "pending" even if the browser dies mid-payment. This benefits the OLD checkout too.
-
----
-
-## What you approve now
-
-Stages 1–2 only (backend + UI behind `?v2=1`). Nothing goes live to real customers, no store gets the new flow, ads/sales completely untouched. After you test on the preview URL and are happy, you tell me to move to Stage 3.
-
-Say "go" to start Stage 1.
+## Out of scope (explicitly deferred)
+- Coupon **entry UI** (input box + apply button). Auto-apply from URL/storage is included so WhatsApp recovery works; the visible input can be a follow-up if you want it.
+- Rewriting the address form / theme.
