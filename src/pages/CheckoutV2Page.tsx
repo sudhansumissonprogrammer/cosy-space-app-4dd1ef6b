@@ -440,10 +440,8 @@ export default function CheckoutV2Page() {
     }
   };
 
-  const forceRecheck = () => {
-    setWaiting(false);
-    setTimeout(() => setWaiting(true), 100);
-  };
+  const forceRecheck = () => { manualRecheck(); };
+
 
   // ─── Empty cart guard ──────────────────────────────────────────────────
   if (cartItems.length === 0 && !orderId) {
