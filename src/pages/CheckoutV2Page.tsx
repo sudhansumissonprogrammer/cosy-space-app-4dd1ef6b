@@ -7,15 +7,18 @@
 // Flow:
 //   1. Shopper enters phone → name → address (auto-fill from pincode).
 //   2. Tap "Continue to Pay" → creates order via `place-order` (status=pending)
-//      AND fires 4 `create-upi-intent` calls in parallel (gpay/phonepe/paytm/any)
-//      so tap-to-open is instant on iOS Safari (no async delay).
+//      AND fires 1 `create-upi-intent` call (re-schemed per app on the client).
 //   3. Tap GPay/PhonePe/Paytm/Any-UPI tile → `location.href = intent_url` fires
 //      synchronously → UPI app opens with amount pre-filled.
-//   4. Waiting screen polls `order-payment-status` every 2s (up to 3 min).
-//   5. On success → navigate to order tracking page.
+//   4. Waiting screen polls `order-payment-status` (+ live PSP verify) every ~2s
+//      up to 4 min, and instant-rechecks on tab focus/visibility.
+//   5. On success → run full post-order plumbing (Pixel, GA4, funnel, guest
+//      account, address save, order notifications), then navigate to tracking.
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useOutletContext, useSearchParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
 import { useCart } from "@/contexts/CartContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { formatPrice } from "@/lib/productUtils";
@@ -24,10 +27,14 @@ import { storefrontPath } from "@/lib/subdomain";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, CreditCard, Banknote } from "lucide-react";
+import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote } from "lucide-react";
 import { toast } from "sonner";
 import type { StoreData } from "@/layouts/StorefrontLayout";
-import { generateEventId } from "@/hooks/useFacebookPixel";
+import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
+import { ga4Track } from "@/hooks/useGA4";
+import { getMetaCookies } from "@/lib/metaCapi";
+import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
+import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "any";
 
@@ -54,8 +61,7 @@ function isMobile(): boolean {
  * app opens directly AND parses the payment intent.
  *
  * IMPORTANT: each app has its OWN path — using the wrong one opens the app
- * but drops the payment payload (user lands on the app's home screen with
- * no amount pre-filled). Verified paths (Nov 2024):
+ * but drops the payment payload. Verified paths (Nov 2024):
  *   - GPay:    tez://upi/pay?...          (path = /upi/pay)
  *   - PhonePe: phonepe://pay?...          (NO /upi prefix)
  *   - Paytm:   paytmmp://pay?...          (NO /upi prefix)
@@ -63,9 +69,6 @@ function isMobile(): boolean {
 function schemeFor(app: UpiApp, url: string): string {
   if (!url) return url;
   if (app === "any") return url;
-  // Extract the query string after `upi://pay?` (case-insensitive, tolerate
-  // extra slashes). If we can't parse a query, fall back to the original URL
-  // so we never break the "any UPI" flow.
   const m = url.match(/^upi:\/\/[^?]*\?(.+)$/i);
   const query = m?.[1];
   if (!query) return url;
@@ -133,12 +136,97 @@ export default function CheckoutV2Page() {
     return () => { cancelled = true; };
   }, [pincode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Cart totals ────────────────────────────────────────────────────────
+  // ─── Store shipping + tax config (keys ALIGNED with CheckoutPage so cache is shared) ──
+  const { data: shippingConfig } = useQuery({
+    queryKey: ["storefront-shipping-config", store.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("store_shipping_config")
+        .select("*")
+        .eq("store_id", store.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 30 * 60 * 1000,
+  });
+
+  const { data: taxConfig } = useQuery({
+    queryKey: ["store-tax-config", store.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("store_tax_config")
+        .select("*")
+        .eq("store_id", store.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 30 * 60 * 1000,
+  });
+
+  // ─── Cart totals (mirror CheckoutPage math exactly) ─────────────────────
   const subtotal = useMemo(
     () => cartItems.reduce((s, i) => s + i.price * i.quantity, 0),
     [cartItems],
   );
-  const total = subtotal;
+
+  const shippingActive = shippingConfig?.is_active;
+  const flatShippingRate = shippingActive ? Number(shippingConfig?.flat_rate) || 0 : 0;
+  const freeShippingThreshold = shippingActive ? Number(shippingConfig?.free_shipping_above) || 0 : 0;
+  const qualifiesForFreeShipping = shippingActive && freeShippingThreshold > 0 && subtotal >= freeShippingThreshold && flatShippingRate > 0;
+  const shippingCharge = shippingActive ? (qualifiesForFreeShipping ? 0 : flatShippingRate) : 0;
+
+  const taxActive = !!(taxConfig?.is_active && Number(taxConfig?.tax_rate) > 0);
+  const taxRate = taxActive ? Number(taxConfig.tax_rate) : 0;
+  const taxInclusive = taxConfig?.is_inclusive ?? false;
+  const taxName = taxConfig?.tax_name || "Tax";
+  let taxAmount = 0;
+  if (taxActive) {
+    if (taxInclusive) taxAmount = subtotal - (subtotal / (1 + taxRate / 100));
+    else taxAmount = (subtotal * taxRate) / 100;
+  }
+
+  // ─── Coupon state (auto-apply from URL / storage — WhatsApp recovery flow) ──
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const autoAppliedCouponRef = useRef(false);
+  const urlCoupon =
+    searchParams.get("coupon") ||
+    (typeof window !== "undefined"
+      ? sessionStorage.getItem("pending_coupon") || localStorage.getItem("pending_coupon")
+      : null);
+
+  useEffect(() => {
+    if (!urlCoupon || autoAppliedCouponRef.current) return;
+    if (!store?.id || subtotal <= 0 || appliedCoupon) return;
+    autoAppliedCouponRef.current = true;
+    const code = urlCoupon.toUpperCase();
+    (async () => {
+      try {
+        const { data: rows } = await (supabase as any).rpc("validate_store_coupon", {
+          _store_id: store.id,
+          _code: code,
+        });
+        const data: any = Array.isArray(rows) ? rows[0] ?? null : rows ?? null;
+        if (!data) return;
+        const now = new Date();
+        if (data.starts_at && new Date(data.starts_at) > now) return;
+        if (data.expires_at && new Date(data.expires_at) < now) return;
+        if (data.max_uses && data.used_count >= data.max_uses) return;
+        if (subtotal < (data.min_order_amount || 0)) return;
+        let discount = data.discount_type === "percentage"
+          ? (subtotal * data.discount_value) / 100
+          : data.discount_value;
+        discount = Math.min(discount, subtotal);
+        setAppliedCoupon(data);
+        setCouponDiscount(discount);
+        toast.success(`Coupon ${code} applied — you save ${formatPrice(discount, currency)}`);
+      } catch { /* silent */ }
+    })();
+  }, [urlCoupon, store?.id, subtotal, appliedCoupon, currency]);
+
+  const total = Math.max(0, subtotal + (taxInclusive ? 0 : taxAmount) + shippingCharge - couponDiscount);
 
   // ─── Store-level partial payment config ─────────────────────────────────
   const partialEnabled: boolean = (store as any)?.partial_payment_enabled ?? false;
@@ -146,7 +234,7 @@ export default function CheckoutV2Page() {
   const partialValue: number | null = (store as any)?.partial_payment_value ?? null;
   const hasPartial = partialEnabled && !!partialValue && Number(partialValue) > 0;
 
-  // Compute advance for the whole cart (mirrors CheckoutPage math)
+  // Partial advance — mirrors CheckoutPage.tsx (tax/shipping proportional, coupon proportional).
   const partialAdvanceTotal = useMemo(() => {
     if (!hasPartial) return total;
     let advance = 0;
@@ -157,18 +245,47 @@ export default function CheckoutV2Page() {
       itemAdv = Math.max(itemAdv, 50);
       advance += itemAdv * it.quantity;
     }
+    const ratio = subtotal > 0 ? advance / subtotal : 1;
+    advance += (taxInclusive ? 0 : taxAmount) * ratio + shippingCharge;
+    advance -= couponDiscount * ratio;
     return Math.max(50, Math.min(total, Math.round(advance)));
-  }, [cartItems, hasPartial, partialType, partialValue, total]);
+  }, [cartItems, hasPartial, partialType, partialValue, subtotal, taxAmount, taxInclusive, shippingCharge, couponDiscount, total]);
   const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
 
-  // Payment mode: only relevant when partial is enabled. Defaults to "partial"
-  // (matches legacy CheckoutPage default) so the user sees the discounted
-  // upfront amount without an extra click.
   const [payMode, setPayMode] = useState<"full" | "partial">("partial");
   const effectiveMode: "full" | "partial" = hasPartial ? payMode : "full";
   const chargeAmount = effectiveMode === "partial" ? partialAdvanceTotal : total;
 
-  // ─── Order creation + intent pre-generation ─────────────────────────────
+  // ─── Abandoned cart id (WhatsApp recovery attribution) ──────────────────
+  const [abandonedCartId, setAbandonedCartId] = useState<string | null>(() => {
+    try { return sessionStorage.getItem(`ac_${store.id}`); } catch { return null; }
+  });
+  useEffect(() => {
+    if (abandonedCartId) return;
+    if (cartItems.length === 0) return;
+    const canonPhone = normalizePhone(phone);
+    if (!canonPhone) return;
+    (async () => {
+      try {
+        const { data } = await (supabase as any).rpc("capture_checkout_lead", {
+          p_store_id: store.id,
+          p_phone: canonPhone,
+          p_cart_items: cartItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity, productId: i.productId })),
+          p_consent: true,
+          p_session_token: null,
+          p_source: "checkout_v2",
+        });
+        const cartId = (data as any)?.cart_id;
+        if (cartId) {
+          setAbandonedCartId(cartId);
+          try { sessionStorage.setItem(`ac_${store.id}`, cartId); } catch { /* noop */ }
+        }
+      } catch { /* noop */ }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phone, cartItems.length]);
+
+  // ─── Order creation + intent generation ─────────────────────────────────
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [creatingOrder, setCreatingOrder] = useState(false);
@@ -179,8 +296,8 @@ export default function CheckoutV2Page() {
     paytm: { status: "idle" }, any: { status: "idle" },
   });
 
-  // Gateway metadata captured from the first successful intent response so the
-  // waiting screen can actively verify with the PSP (not just poll the DB).
+  // Gateway metadata captured from the intent response so the waiting screen
+  // can actively verify with the PSP (not just poll the DB).
   const gatewayRef = useRef<{
     pg?: "cashfree" | "razorpay" | "payu";
     cf_order_id?: string;
@@ -188,7 +305,9 @@ export default function CheckoutV2Page() {
     razorpay_payment_id?: string;
   }>({});
 
+  // Meta / analytics signals — captured once per checkout session.
   const purchaseEventIdRef = useRef<string>(generateEventId());
+  const metaCookiesRef = useRef<{ fbc: string; fbp: string }>(getMetaCookies());
 
   const validateAddress = (): string | null => {
     if (!fullName.trim()) return "Please enter your name";
@@ -201,6 +320,39 @@ export default function CheckoutV2Page() {
     return null;
   };
 
+  const buildPlaceOrderMeta = () => {
+    // Sanitize event_source_url like CheckoutPage — strip query/fragment and
+    // drop preview hosts so server CAPI falls back to the canonical URL.
+    let safeUrl: string | undefined;
+    try {
+      const u = new URL(window.location.href);
+      const h = u.hostname;
+      const isPreview =
+        h === "localhost" ||
+        h === "127.0.0.1" ||
+        h.endsWith(".lovableproject.com") ||
+        h.endsWith(".lovable.dev") ||
+        h.endsWith(".sandbox.lovable.dev");
+      if (!isPreview) safeUrl = `${u.origin}${u.pathname}`;
+    } catch { /* noop */ }
+    return {
+      event_id: purchaseEventIdRef.current,
+      fbc: metaCookiesRef.current.fbc || undefined,
+      fbp: metaCookiesRef.current.fbp || undefined,
+      event_source_url: safeUrl,
+    };
+  };
+
+  const buildAttribution = () => {
+    try {
+      const raw = sessionStorage.getItem("__sf_utm__");
+      const utm = raw ? JSON.parse(raw) : {};
+      const landing = sessionStorage.getItem("__sf_landing__") || null;
+      const ref = document.referrer ? document.referrer.slice(0, 200) : null;
+      return { ...utm, landing_path: landing, referrer: ref };
+    } catch { return null; }
+  };
+
   const createOrderAndIntents = async () => {
     const err = validateAddress();
     if (err) { toast.error(err); return; }
@@ -208,13 +360,16 @@ export default function CheckoutV2Page() {
 
     setCreatingOrder(true);
     try {
-      // Persist address for future visits
       try {
         localStorage.setItem("checkout_phone", normalizePhone(phone));
         localStorage.setItem(`express_checkout_${store.id}`, JSON.stringify({
           fullName, email, pincode, streetAddress, city, state,
         }));
       } catch { /* noop */ }
+
+      const orderNotes = appliedCoupon
+        ? `Coupon: ${appliedCoupon.code} (-${formatPrice(couponDiscount, currency)})`
+        : undefined;
 
       const { data, error } = await supabase.functions.invoke("place-order", {
         body: {
@@ -229,7 +384,11 @@ export default function CheckoutV2Page() {
             city: city.trim(),
             state: state.trim(),
             pincode: pincode.trim(),
-            payment_method: "razorpay", // placeholder — actual gateway resolved by create-upi-intent
+            // Placeholder — the actual gateway is resolved by create-upi-intent's
+            // fallback chain. The gateway-specific webhooks / verify functions
+            // update `payment_method` server-side when they confirm the order.
+            payment_method: "razorpay",
+            notes: orderNotes,
             storefront_customer_id: customer?.id ?? null,
             payment_type: effectiveMode,
           },
@@ -239,7 +398,12 @@ export default function CheckoutV2Page() {
             price: it.price,
             quantity: it.quantity,
           })),
-          meta: { event_id: purchaseEventIdRef.current },
+          coupon_id: appliedCoupon?.id ?? null,
+          abandoned_cart_id: abandonedCartId ?? null,
+          meta: buildPlaceOrderMeta(),
+          visitor_id: (() => { try { return getVisitorId(); } catch { return null; } })(),
+          session_id: (() => { try { return getOrCreateSessionId(); } catch { return null; } })(),
+          attribution: buildAttribution(),
         },
       });
       if (error) throw new Error(error.message);
@@ -250,13 +414,9 @@ export default function CheckoutV2Page() {
       setOrderNumber(result.order_number || null);
       setShowPayment(true);
 
-      // Generate ONE base UPI intent URL from the gateway, then re-scheme it
-      // client-side for each app (gpay/phonepe/paytm/any). Previously we hit
-      // `create-upi-intent` 4× in parallel, which created 4 separate PSP
-      // transactions per order — Razorpay races on the saved `razorpay_order_id`,
-      // PayU rejects the duplicate `txnid`, and Cashfree burns 4 order slots.
-      // The UPI payload (VPA/amount/txn ref) is app-agnostic, so one call is
-      // enough and every app tile is instant.
+      // ONE intent call (app-agnostic). See earlier commit — 4 parallel calls
+      // caused Razorpay races, PayU duplicate-txnid errors, and Cashfree quota
+      // burn. The `upi://` URL is app-agnostic; schemeFor rewrites it per app.
       const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "any"];
       setIntents((s) => {
         const next = { ...s };
@@ -314,13 +474,148 @@ export default function CheckoutV2Page() {
     }
   };
 
+  // ─── Post-order plumbing (Pixel / GA4 / funnel / notify / guest) ────────
+  const finalizedOrderIdsRef = useRef<Set<string>>(new Set());
+
+  const saveAddressToAccount = async () => {
+    if (!customer?.id) return;
+    try {
+      const { data: existing } = await supabaseStorefront
+        .from("customer_addresses")
+        .select("id")
+        .eq("storefront_customer_id", customer.id)
+        .eq("street_address", streetAddress.trim())
+        .eq("pincode", pincode.trim())
+        .maybeSingle();
+      if (existing) return;
+      const { count } = await supabaseStorefront
+        .from("customer_addresses")
+        .select("id", { count: "exact", head: true })
+        .eq("storefront_customer_id", customer.id);
+      await supabaseStorefront.from("customer_addresses").insert({
+        storefront_customer_id: customer.id,
+        label: "Home",
+        full_name: fullName.trim(),
+        phone: normalizePhone(phone),
+        street_address: streetAddress.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        pincode: pincode.trim(),
+        is_default: (count ?? 0) === 0,
+      });
+    } catch (err) {
+      console.error("Failed to save address to account:", err);
+    }
+  };
+
+  const createGuestAccount = async (ordId: string) => {
+    try {
+      const { data } = await supabase.functions.invoke("create-guest-account", {
+        body: {
+          email: email.trim(),
+          phone: normalizePhone(phone),
+          name: fullName.trim(),
+          store_id: store.id,
+          order_id: ordId,
+        },
+      });
+      const result = data as { session?: { access_token?: string; refresh_token?: string } } | null;
+      if (result?.session?.access_token && result?.session?.refresh_token) {
+        await supabaseStorefront.auth.setSession({
+          access_token: result.session.access_token,
+          refresh_token: result.session.refresh_token,
+        });
+      }
+    } catch (err) {
+      console.error("Guest account creation failed:", err);
+    }
+  };
+
+  const notifyOrderEmail = (ordId: string) => {
+    void supabase.functions
+      .invoke("notify-order", {
+        body: { order_id: ordId, customer_email: email.trim() },
+      })
+      .then(({ error }) => {
+        if (error) console.error("notify-order error:", error.message);
+      })
+      .catch((err) => console.error("notify-order invoke error:", err));
+  };
+
+  const onOrderSuccess = (ordId: string) => {
+    if (finalizedOrderIdsRef.current.has(ordId)) return;
+    finalizedOrderIdsRef.current.add(ordId);
+
+    // Clean up pending-coupon storage + BuyNow phone (matches old checkout).
+    try { sessionStorage.removeItem("pending_coupon"); localStorage.removeItem("pending_coupon"); } catch { /* noop */ }
+    try { localStorage.removeItem("checkout_phone"); } catch { /* noop */ }
+    try { sessionStorage.removeItem(`ac_${store.id}`); } catch { /* noop */ }
+
+    clearCart();
+    window.dispatchEvent(new CustomEvent("order-placed"));
+
+    // Pixel Purchase — dedup with sessionStorage per order (matches old code).
+    // Server CAPI is fired by place-order / cashfree-webhook / payu-webhook /
+    // razorpay-verify — same event_id so Meta dedupes Pixel ↔ CAPI.
+    const purchaseDedupKey = `meta_purchase_fired_${ordId}`;
+    let alreadyFired = false;
+    try { alreadyFired = sessionStorage.getItem(purchaseDedupKey) === "1"; } catch { /* noop */ }
+    if (!alreadyFired) {
+      try { sessionStorage.setItem(purchaseDedupKey, "1"); } catch { /* noop */ }
+      try {
+        fbPixelTrack(
+          "Purchase",
+          {
+            content_ids: cartItems.map((i) => i.productId),
+            contents: cartItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+            content_type: "product",
+            content_name: cartItems.map((i) => i.name).join(", "),
+            value: chargeAmount,
+            currency,
+            num_items: cartItems.reduce((s, i) => s + (i.quantity || 1), 0),
+          },
+          purchaseEventIdRef.current,
+        );
+      } catch { /* noop */ }
+    }
+
+    // GA4 purchase.
+    try {
+      ga4Track("purchase", {
+        transaction_id: ordId,
+        value: chargeAmount,
+        currency,
+        items: cartItems.map((i) => ({
+          item_id: i.productId,
+          item_name: i.name,
+          item_variant: i.variantId,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+      });
+    } catch { /* noop */ }
+
+    // Storefront funnel purchase event.
+    try {
+      fireStorefrontEvent({
+        storeId: store.id,
+        eventName: "purchase",
+        value: chargeAmount,
+        currency,
+        metadata: { order_id: ordId, items: cartItems.length },
+      });
+    } catch { /* noop */ }
+
+    // Auto-login for guests, save address for logged-in customers.
+    if (!customer) { void createGuestAccount(ordId); } else { void saveAddressToAccount(); }
+    notifyOrderEmail(ordId);
+  };
+
   // ─── Payment polling ────────────────────────────────────────────────────
   const [waiting, setWaiting] = useState(false);
   const [waitingApp, setWaitingApp] = useState<string>("");
   const [manualChecking, setManualChecking] = useState(false);
 
-  // Actively ask the correct PSP for a live verdict (also updates the DB row
-  // so the next DB poll wins). Silent — never throws.
   const forceGatewayVerify = async () => {
     if (!orderId) return null;
     const gw = gatewayRef.current;
@@ -343,12 +638,13 @@ export default function CheckoutV2Page() {
         });
         return data;
       }
-    } catch { /* ignore, DB poll will still catch it */ }
+    } catch { /* ignore */ }
     return null;
   };
 
   const finishSuccess = () => {
-    clearCart();
+    if (!orderId) return;
+    onOrderSuccess(orderId);
     navigate(storefrontPath(store.slug, `account/orders/${orderId}`));
   };
 
@@ -358,9 +654,7 @@ export default function CheckoutV2Page() {
     let attempts = 0;
     const maxAttempts = 120; // 4 min at ~2s
     const checkNow = async (): Promise<boolean> => {
-      // 1) Live gateway verify (writes to DB if paid). Cheap enough to do every tick.
       await forceGatewayVerify();
-      // 2) Read the DB via order-payment-status (cheap indexed select).
       try {
         const { data } = await supabase.functions.invoke("order-payment-status", {
           body: { store_id: store.id, order_id: orderId },
@@ -384,13 +678,10 @@ export default function CheckoutV2Page() {
         toast("Still waiting? Tap 'I've paid' to re-check", { duration: 6000 });
         return;
       }
-      // Faster early ticks — most UPI captures land in 3-8s.
       const delay = attempts < 5 ? 1500 : 2500;
       setTimeout(poll, delay);
     };
-    // First check almost immediately (user is back from the app).
     setTimeout(poll, 800);
-    // Re-check instantly whenever the tab regains focus / becomes visible.
     const onFocus = () => { checkNow(); };
     const onVis = () => { if (document.visibilityState === "visible") checkNow(); };
     window.addEventListener("focus", onFocus);
@@ -419,15 +710,11 @@ export default function CheckoutV2Page() {
     }
   };
 
-
   const tapUpiApp = (app: UpiApp) => {
     const s = intents[app];
     if (s.status !== "ready" || !s.url) return;
     setWaitingApp(UPI_APPS.find((u) => u.key === app)?.label || "UPI");
     setWaiting(true);
-    // Suppress the checkout beforeunload "Confirm Navigation" prompt —
-    // opening a upi:// intent counts as a navigation in Instagram / FB
-    // in-app browsers, and the warning scares customers away.
     try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
     // MUST be synchronous in same tap event for iOS Safari
     window.location.href = s.url;
@@ -444,7 +731,7 @@ export default function CheckoutV2Page() {
       if (error) throw new Error(error.message);
       const res = data as { ok?: boolean; error?: string } | null;
       if (!res?.ok) throw new Error(res?.error || "Failed to place COD order");
-      clearCart();
+      onOrderSuccess(orderId);
       navigate(storefrontPath(store.slug, `account/orders/${orderId}`));
     } catch (e: any) {
       toast.error(e.message || "Failed to place COD order");
@@ -454,7 +741,6 @@ export default function CheckoutV2Page() {
   };
 
   const forceRecheck = () => { manualRecheck(); };
-
 
   // ─── Empty cart guard ──────────────────────────────────────────────────
   if (cartItems.length === 0 && !orderId) {
@@ -610,6 +896,36 @@ export default function CheckoutV2Page() {
                   <span>{formatPrice(it.price * it.quantity, currency)}</span>
                 </div>
               ))}
+              <div className="border-t pt-2 mt-2 space-y-1">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Subtotal</span>
+                  <span>{formatPrice(subtotal, currency)}</span>
+                </div>
+                {shippingActive && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Shipping</span>
+                    <span>{shippingCharge > 0 ? formatPrice(shippingCharge, currency) : "Free"}</span>
+                  </div>
+                )}
+                {taxActive && !taxInclusive && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>{taxName} ({taxRate}%)</span>
+                    <span>{formatPrice(taxAmount, currency)}</span>
+                  </div>
+                )}
+                {taxActive && taxInclusive && (
+                  <div className="flex justify-between text-muted-foreground text-[10px]">
+                    <span>(Inclusive of {taxName})</span>
+                    <span>{formatPrice(taxAmount, currency)}</span>
+                  </div>
+                )}
+                {appliedCoupon && couponDiscount > 0 && (
+                  <div className="flex justify-between text-emerald-600">
+                    <span>Coupon ({appliedCoupon.code})</span>
+                    <span>− {formatPrice(couponDiscount, currency)}</span>
+                  </div>
+                )}
+              </div>
               <div className="border-t pt-2 mt-2 flex justify-between font-bold text-sm">
                 <span>Total</span>
                 <span>{formatPrice(total, currency)}</span>
