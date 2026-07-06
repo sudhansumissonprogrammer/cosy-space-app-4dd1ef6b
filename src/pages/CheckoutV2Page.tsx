@@ -126,6 +126,34 @@ export default function CheckoutV2Page() {
   );
   const total = subtotal;
 
+  // ─── Store-level partial payment config ─────────────────────────────────
+  const partialEnabled: boolean = (store as any)?.partial_payment_enabled ?? false;
+  const partialType: string = (store as any)?.partial_payment_type || "percentage";
+  const partialValue: number | null = (store as any)?.partial_payment_value ?? null;
+  const hasPartial = partialEnabled && !!partialValue && Number(partialValue) > 0;
+
+  // Compute advance for the whole cart (mirrors CheckoutPage math)
+  const partialAdvanceTotal = useMemo(() => {
+    if (!hasPartial) return total;
+    let advance = 0;
+    for (const it of cartItems) {
+      let itemAdv = partialType === "percentage"
+        ? Math.round(it.price * (Number(partialValue) / 100))
+        : Math.min(Number(partialValue), it.price);
+      itemAdv = Math.max(itemAdv, 50);
+      advance += itemAdv * it.quantity;
+    }
+    return Math.max(50, Math.min(total, Math.round(advance)));
+  }, [cartItems, hasPartial, partialType, partialValue, total]);
+  const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
+
+  // Payment mode: only relevant when partial is enabled. Defaults to "partial"
+  // (matches legacy CheckoutPage default) so the user sees the discounted
+  // upfront amount without an extra click.
+  const [payMode, setPayMode] = useState<"full" | "partial">("partial");
+  const effectiveMode: "full" | "partial" = hasPartial ? payMode : "full";
+  const chargeAmount = effectiveMode === "partial" ? partialAdvanceTotal : total;
+
   // ─── Order creation + intent pre-generation ─────────────────────────────
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
@@ -180,7 +208,7 @@ export default function CheckoutV2Page() {
             pincode: pincode.trim(),
             payment_method: "razorpay", // placeholder — actual gateway resolved by create-upi-intent
             storefront_customer_id: customer?.id ?? null,
-            payment_type: "full",
+            payment_type: effectiveMode,
           },
           items: cartItems.map((it) => ({
             productId: it.productId,
@@ -335,7 +363,7 @@ export default function CheckoutV2Page() {
         </div>
         <h1 className="text-xl font-bold mb-2">Complete payment in {waitingApp}</h1>
         <p className="text-sm text-muted-foreground mb-8">
-          Approve the payment request of <span className="font-semibold text-foreground">{formatPrice(total, currency)}</span> in {waitingApp} to confirm your order.
+          Approve the payment request of <span className="font-semibold text-foreground">{formatPrice(chargeAmount, currency)}</span> in {waitingApp} to confirm your order.
         </p>
         <div className="rounded-lg border bg-muted/30 p-4 text-left text-xs text-muted-foreground mb-6">
           <div className="flex items-start gap-2">
@@ -422,6 +450,43 @@ export default function CheckoutV2Page() {
             </div>
           </div>
 
+          {/* Partial-payment mode selector — visible only when store enabled it */}
+          {hasPartial && (
+            <div className="rounded-lg border p-3">
+              <div className="text-xs font-semibold mb-2 flex items-center gap-2">
+                <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">2</span>
+                Payment Option
+              </div>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setPayMode("partial")}
+                  className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${payMode === "partial" ? "border-primary bg-primary/5" : "border-border"}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${payMode === "partial" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                      {payMode === "partial" && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}
+                    </div>
+                    <div className="text-sm font-semibold">Pay {formatPrice(partialAdvanceTotal, currency)} now · {formatPrice(partialBalanceDue, currency)} on delivery</div>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-1 ml-6">Pay advance online to confirm, rest as cash on delivery.</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPayMode("full")}
+                  className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${payMode === "full" ? "border-primary bg-primary/5" : "border-border"}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${payMode === "full" ? "border-primary bg-primary" : "border-muted-foreground"}`}>
+                      {payMode === "full" && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}
+                    </div>
+                    <div className="text-sm font-semibold">Pay full {formatPrice(total, currency)} online</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Order summary */}
           <div className="rounded-lg border p-3 bg-muted/30">
             <div className="text-xs font-semibold mb-2">Order Summary</div>
@@ -436,6 +501,18 @@ export default function CheckoutV2Page() {
                 <span>Total</span>
                 <span>{formatPrice(total, currency)}</span>
               </div>
+              {hasPartial && effectiveMode === "partial" && (
+                <>
+                  <div className="flex justify-between text-xs pt-1">
+                    <span className="text-muted-foreground">Pay now (advance)</span>
+                    <span className="font-semibold">{formatPrice(partialAdvanceTotal, currency)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Balance on delivery</span>
+                    <span className="font-semibold">{formatPrice(partialBalanceDue, currency)}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -449,7 +526,7 @@ export default function CheckoutV2Page() {
             onClick={createOrderAndIntents}
             disabled={creatingOrder}
           >
-            {creatingOrder ? <Loader2 className="h-5 w-5 animate-spin" /> : `Continue to Pay ${formatPrice(total, currency)}`}
+            {creatingOrder ? <Loader2 className="h-5 w-5 animate-spin" /> : `Continue to Pay ${formatPrice(chargeAmount, currency)}`}
           </Button>
         </div>
       ) : (
@@ -487,7 +564,7 @@ export default function CheckoutV2Page() {
           <div>
             <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
               <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">2</span>
-              Pay {formatPrice(total, currency)}
+              Pay {formatPrice(chargeAmount, currency)}{hasPartial && effectiveMode === "partial" ? " advance" : ""}
             </h2>
 
 
@@ -544,7 +621,7 @@ export default function CheckoutV2Page() {
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
                 )}
-                <div className="text-xs text-muted-foreground mt-2">Amount: {formatPrice(total, currency)}</div>
+                <div className="text-xs text-muted-foreground mt-2">Amount: {formatPrice(chargeAmount, currency)}</div>
                 {intents.any.status === "ready" && (
                   <Button variant="outline" size="sm" className="mt-3" onClick={() => setWaiting(true)}>
                     I've scanned — waiting for payment
@@ -553,21 +630,25 @@ export default function CheckoutV2Page() {
               </div>
             )}
 
-            <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 mt-4">Other options</div>
-            <button
-              onClick={placeCod}
-              disabled={placingCod}
-              className="w-full flex items-center gap-3 rounded-lg border-2 border-transparent bg-muted/30 hover:border-primary hover:bg-primary/5 p-3 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <div className="h-10 w-10 rounded bg-emerald-100 flex items-center justify-center">
-                <Banknote className="h-5 w-5 text-emerald-700" />
-              </div>
-              <div className="flex-1 text-left">
-                <div className="text-sm font-semibold">Cash on Delivery</div>
-                <div className="text-xs text-muted-foreground">Pay when you receive</div>
-              </div>
-              {placingCod ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <span className="text-xs text-primary">→</span>}
-            </button>
+            {effectiveMode === "full" && (
+              <>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 mt-4">Other options</div>
+                <button
+                  onClick={placeCod}
+                  disabled={placingCod}
+                  className="w-full flex items-center gap-3 rounded-lg border-2 border-transparent bg-muted/30 hover:border-primary hover:bg-primary/5 p-3 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <div className="h-10 w-10 rounded bg-emerald-100 flex items-center justify-center">
+                    <Banknote className="h-5 w-5 text-emerald-700" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <div className="text-sm font-semibold">Cash on Delivery</div>
+                    <div className="text-xs text-muted-foreground">Pay when you receive</div>
+                  </div>
+                  {placingCod ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <span className="text-xs text-primary">→</span>}
+                </button>
+              </>
+            )}
 
             <div className="text-[10px] text-muted-foreground text-center mt-6 flex items-center justify-center gap-1">
               <ShieldCheck className="h-3 w-3" /> Payments secured by your bank & UPI
