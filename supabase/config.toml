@@ -51,4 +51,15 @@ verify_jwt = false
 [functions.wa-r]
 verify_jwt = false
 
+[functions.razorpay-webhook]
+verify_jwt = false
+
+[functions.create-upi-intent]
+verify_jwt = false
+
+[functions.order-payment-status]
+verify_jwt = false
+
+
+
 

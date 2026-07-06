@@ -2923,6 +2923,7 @@ export type Database = {
           billing_mode: string
           business_hours: Json | null
           capi_disabled: boolean
+          checkout_v2_enabled: boolean
           city: string | null
           created_at: string
           currency: string
@@ -2977,6 +2978,7 @@ export type Database = {
           billing_mode?: string
           business_hours?: Json | null
           capi_disabled?: boolean
+          checkout_v2_enabled?: boolean
           city?: string | null
           created_at?: string
           currency?: string
@@ -3031,6 +3033,7 @@ export type Database = {
           billing_mode?: string
           business_hours?: Json | null
           capi_disabled?: boolean
+          checkout_v2_enabled?: boolean
           city?: string | null
           created_at?: string
           currency?: string
