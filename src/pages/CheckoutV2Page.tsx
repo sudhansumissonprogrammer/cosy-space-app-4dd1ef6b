@@ -283,6 +283,10 @@ export default function CheckoutV2Page() {
     if (s.status !== "ready" || !s.url) return;
     setWaitingApp(UPI_APPS.find((u) => u.key === app)?.label || "UPI");
     setWaiting(true);
+    // Suppress the checkout beforeunload "Confirm Navigation" prompt —
+    // opening a upi:// intent counts as a navigation in Instagram / FB
+    // in-app browsers, and the warning scares customers away.
+    try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
     // MUST be synchronous in same tap event for iOS Safari
     window.location.href = s.url;
   };
