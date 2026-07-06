@@ -345,15 +345,23 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // Intent URL can appear under several keys depending on PayU response variant
-          const intentUrl: string | undefined =
+          // PayU returns the intent in `result.intentURIData` as a bare query
+          // string (e.g. `pa=...&pn=...&am=...`). Some variants return a full
+          // `upi://pay?...` URL under `data` or `metaData.upiIntentUri`.
+          const rawIntent: string | undefined =
+            payuData?.result?.intentURIData ||
             payuData?.data ||
             payuData?.upi_intent_url ||
             payuData?.metaData?.upiIntentUri ||
             payuData?.metaData?.intentURIData ||
             (typeof payuData?.result === "string" && payuData.result.startsWith("upi://") ? payuData.result : undefined);
 
-          if (!intentUrl || !String(intentUrl).startsWith("upi://")) {
+          let intentUrl: string | undefined;
+          if (rawIntent) {
+            intentUrl = rawIntent.startsWith("upi://") ? rawIntent : `upi://pay?${rawIntent}`;
+          }
+
+          if (!intentUrl || !intentUrl.startsWith("upi://")) {
             lastError = {
               pg: "payu",
               message: payuData?.error_Message || payuData?.message || "PayU returned no intent URL",
@@ -361,6 +369,7 @@ Deno.serve(async (req) => {
             };
             continue;
           }
+
 
           // Webhook resolves the order via udf1/udf2 — no extra order column needed.
 
