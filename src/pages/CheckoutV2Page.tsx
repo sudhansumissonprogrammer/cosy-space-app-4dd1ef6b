@@ -521,27 +521,32 @@ export default function CheckoutV2Page() {
     }
   };
 
-  const createGuestAccount = async (ordId: string) => {
-    try {
-      const { data } = await supabase.functions.invoke("create-guest-account", {
-        body: {
-          email: email.trim(),
-          phone: normalizePhone(phone),
-          name: fullName.trim(),
-          store_id: store.id,
-          order_id: ordId,
-        },
-      });
-      const result = data as { session?: { access_token?: string; refresh_token?: string } } | null;
-      if (result?.session?.access_token && result?.session?.refresh_token) {
-        await supabaseStorefront.auth.setSession({
-          access_token: result.session.access_token,
-          refresh_token: result.session.refresh_token,
+  const guestAccountPromiseRef = useRef<Promise<void> | null>(null);
+  const createGuestAccount = (ordId: string) => {
+    const p = (async () => {
+      try {
+        const { data } = await supabase.functions.invoke("create-guest-account", {
+          body: {
+            email: email.trim(),
+            phone: normalizePhone(phone),
+            name: fullName.trim(),
+            store_id: store.id,
+            order_id: ordId,
+          },
         });
+        const result = data as { session?: { access_token?: string; refresh_token?: string } } | null;
+        if (result?.session?.access_token && result?.session?.refresh_token) {
+          await supabaseStorefront.auth.setSession({
+            access_token: result.session.access_token,
+            refresh_token: result.session.refresh_token,
+          });
+        }
+      } catch (err) {
+        console.error("Guest account creation failed:", err);
       }
-    } catch (err) {
-      console.error("Guest account creation failed:", err);
-    }
+    })();
+    guestAccountPromiseRef.current = p;
+    return p;
   };
 
   const notifyOrderEmail = (ordId: string) => {
