@@ -52,6 +52,31 @@
         }catch(_){}
       })();
     </script>
+    <!-- ⚡ WhatsApp branded redirector — INLINE FAST PATH
+         Runs before ANY bundle downloads. Catches /r/<token>, /cart/<token>,
+         /order/<token> and hands off to the wa-r edge function directly.
+         Saves 1.5-2s vs waiting for main-*.js to boot just to run
+         location.replace(). Only active when root/preview domain serves the
+         request (Cloudflare Worker already handles this on proxied hosts). -->
+    <script>
+      (function(){
+        try{
+          var p = location.pathname, tok = "";
+          if (p.indexOf("/r/") === 0) {
+            tok = p.slice(3).split("/")[0].split("?")[0];
+          } else if (p.indexOf("/cart/") === 0) {
+            var c = p.slice(6).split("/")[0].split("?")[0];
+            if (c) tok = "c-" + c;
+          } else if (p.indexOf("/order/") === 0) {
+            var o = p.slice(7).split("/")[0].split("?")[0];
+            if (o) tok = "o-" + o;
+          }
+          if (tok) {
+            location.replace("https://dqepeywgftbpxeeqfuwt.supabase.co/functions/v1/wa-r/" + encodeURIComponent(tok) + location.search);
+          }
+        }catch(_){}
+      })();
+    </script>
     <!-- Preconnect to backend + CDN origins so the first Supabase REST call
          and first storefront image skip the cold DNS+TCP+TLS handshake
          (~150–300 ms saved on cold visits, mobile especially). Safe on all
