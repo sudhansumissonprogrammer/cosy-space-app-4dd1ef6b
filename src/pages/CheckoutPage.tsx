@@ -33,6 +33,8 @@ import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
+const CheckoutV2Page = lazy(() => import("@/pages/CheckoutV2Page"));
+
 
 /**
  * Step 1 gate: if we don't yet have a saved `checkout_phone`, show the
