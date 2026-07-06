@@ -6159,6 +6159,64 @@ async function _handleFetch(request, env, ctx) {
   }
 
   /* ──────────────────────────────────────────────────────────
+       WhatsApp branded redirector — EDGE FAST PATH
+       ──────────────────────────────────────────────────────────
+       Templates send users to https://shopbanao.in/{r,cart,order}/<token>.
+       Previously the browser loaded LandingApp just to run
+       window.location.replace() to the wa-r edge fn (wasted 2-4s of
+       HTML+JS download+parse before the actual 302 to the store).
+       Now: the Worker fetches wa-r itself and returns the 302 directly.
+       Zero React, zero HTML, ~400-700ms total for the whole redirect.
+       Response is not cached (each token maps to a user-specific URL and
+       tokens are one-shot). We ONLY handle the exact WA link paths on
+       the root marketing host so nothing else can regress. Approved
+       WhatsApp template URLs are unchanged — only server handling moves. */
+  if (earlyMethod === "GET" && (earlyUrl.hostname === ROOT_DOMAIN || earlyUrl.hostname === `www.${ROOT_DOMAIN}`)) {
+    let waToken = null;
+    if (earlyPath.startsWith("/r/")) {
+      waToken = earlyPath.slice(3).split("/")[0];
+    } else if (earlyPath.startsWith("/cart/")) {
+      const t = earlyPath.slice(6).split("/")[0];
+      if (t) waToken = "c-" + t;
+    } else if (earlyPath.startsWith("/order/")) {
+      const t = earlyPath.slice(7).split("/")[0];
+      if (t) waToken = "o-" + t;
+    }
+    if (waToken) {
+      try {
+        const upstream = `https://dqepeywgftbpxeeqfuwt.supabase.co/functions/v1/wa-r/${encodeURIComponent(waToken)}`;
+        const upstreamRes = await fetch(upstream, {
+          method: "GET",
+          redirect: "manual",
+          headers: {
+            "user-agent": request.headers.get("user-agent") || "",
+            "cf-connecting-ip": request.headers.get("cf-connecting-ip") || "",
+            "x-forwarded-for": request.headers.get("x-forwarded-for") || "",
+          },
+        });
+        const loc = upstreamRes.headers.get("location");
+        if (loc && upstreamRes.status >= 300 && upstreamRes.status < 400) {
+          const headers = new Headers({
+            location: loc,
+            "cache-control": "no-store",
+          });
+          try {
+            const destOrigin = new URL(loc).origin;
+            headers.set("link", `<${destOrigin}>; rel=preconnect, <${destOrigin}>; rel=dns-prefetch`);
+          } catch {}
+          return new Response(null, { status: 302, headers });
+        }
+        return new Response(upstreamRes.body, {
+          status: upstreamRes.status,
+          headers: { "cache-control": "no-store", "content-type": upstreamRes.headers.get("content-type") || "text/plain" },
+        });
+      } catch {
+        return new Response(null, { status: 302, headers: { location: `https://${ROOT_DOMAIN}`, "cache-control": "no-store" } });
+      }
+    }
+  }
+
+  /* ──────────────────────────────────────────────────────────
        v8.3.0: EARLY EDGE-CACHE LOOKUP FOR SYNTHESIZED RESPONSES
        ──────────────────────────────────────────────────────────
        Redirects (3xx), attack-path 410s, bot 403s, 405s, favicon 204s,
