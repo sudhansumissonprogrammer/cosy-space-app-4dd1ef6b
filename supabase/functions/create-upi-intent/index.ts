@@ -90,175 +90,208 @@ Deno.serve(async (req) => {
 
     const methods = Array.isArray(config.payment_methods) ? (config.payment_methods as string[]) : [];
 
-    // Pick PG in order: cashfree > razorpay > payu (Cashfree has the cleanest UPI intent API)
-    const pg: "cashfree" | "razorpay" | "payu" | null =
-      methods.includes("cashfree") && config.cashfree_app_id && config.cashfree_secret_key ? "cashfree" :
-      methods.includes("razorpay") && config.razorpay_key_id && config.razorpay_key_secret ? "razorpay" :
-      methods.includes("payu") && config.payu_merchant_key && config.payu_merchant_salt ? "payu" :
-      null;
+    // Build an ordered fallback list of gateways to try (Cashfree S2S requires
+    // approval; when not approved we transparently fall back to Razorpay).
+    const gatewayChain: ("cashfree" | "razorpay" | "payu")[] = [];
+    if (methods.includes("cashfree") && config.cashfree_app_id && config.cashfree_secret_key) gatewayChain.push("cashfree");
+    if (methods.includes("razorpay") && config.razorpay_key_id && config.razorpay_key_secret) gatewayChain.push("razorpay");
+    if (methods.includes("payu") && config.payu_merchant_key && config.payu_merchant_salt) gatewayChain.push("payu");
 
-    if (!pg) return jsonRes({ error: "No UPI-capable gateway configured" }, 400);
+    if (gatewayChain.length === 0) {
+      return jsonRes({ error: "No UPI-capable gateway configured", code: "no_gateway" }, 400);
+    }
 
     const safePhone = String(customer_phone || "").replace(/\D/g, "").slice(-10) || "9999999999";
     const safeEmail = (customer_email && String(customer_email).trim()) || "noreply@shopbanao.in";
     const safeName = (customer_name || "Customer").toString().trim().slice(0, 60) || "Customer";
 
-    // ─── Cashfree UPI Intent ──────────────────────────────────────────────
-    if (pg === "cashfree") {
-      const env = config.cashfree_env === "sandbox" ? "sandbox" : "production";
-      const cfBase = env === "sandbox" ? "https://sandbox.cashfree.com/pg" : "https://api.cashfree.com/pg";
+    // Attempt each gateway in the fallback chain. If Cashfree returns
+    // s2s_enabled_not_approved (merchant doesn't have server-to-server API
+    // enabled), we transparently try the next configured gateway. Only
+    // return the last error to the client if ALL gateways fail.
+    let lastError: { pg: string; message: string; code?: string; details?: unknown } | null = null;
 
-      // Create the order first (Cashfree requires an order before sessions)
-      const cfOrderId = `v2_${order_id.slice(0, 8)}_${Date.now()}`;
-      const cfOrderRes = await fetch(`${cfBase}/orders`, {
-        method: "POST",
-        headers: {
-          "x-api-version": "2023-08-01",
-          "x-client-id": config.cashfree_app_id!,
-          "x-client-secret": config.cashfree_secret_key!,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          order_id: cfOrderId,
-          order_amount: Number(chargeAmount.toFixed(2)),
-          order_currency: currency,
-          customer_details: {
-            customer_id: order_id,
-            customer_name: safeName,
-            customer_email: safeEmail,
-            customer_phone: safePhone,
-          },
-          order_tags: { store_order_id: order_id, store_id, flow: "checkout_v2" },
-        }),
-      });
-      const cfOrder = await cfOrderRes.json();
-      if (!cfOrderRes.ok || !cfOrder.payment_session_id) {
-        console.error("cashfree create-order failed", cfOrder);
-        return jsonRes({ error: cfOrder.message || "Cashfree order create failed" }, 502);
+    for (const pg of gatewayChain) {
+      // ─── Cashfree UPI Intent ────────────────────────────────────────────
+      if (pg === "cashfree") {
+        try {
+          const env = config.cashfree_env === "sandbox" ? "sandbox" : "production";
+          const cfBase = env === "sandbox" ? "https://sandbox.cashfree.com/pg" : "https://api.cashfree.com/pg";
+
+          const cfOrderId = `v2_${order_id.slice(0, 8)}_${Date.now()}`;
+          const cfOrderRes = await fetch(`${cfBase}/orders`, {
+            method: "POST",
+            headers: {
+              "x-api-version": "2023-08-01",
+              "x-client-id": config.cashfree_app_id!,
+              "x-client-secret": config.cashfree_secret_key!,
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({
+              order_id: cfOrderId,
+              order_amount: Number(chargeAmount.toFixed(2)),
+              order_currency: currency,
+              customer_details: {
+                customer_id: order_id,
+                customer_name: safeName,
+                customer_email: safeEmail,
+                customer_phone: safePhone,
+              },
+              order_tags: { store_order_id: order_id, store_id, flow: "checkout_v2" },
+            }),
+          });
+          const cfOrder = await cfOrderRes.json();
+          if (!cfOrderRes.ok || !cfOrder.payment_session_id) {
+            lastError = { pg: "cashfree", message: cfOrder.message || "Cashfree order create failed", code: cfOrder.code, details: cfOrder };
+            continue;
+          }
+
+          const upiPayload: Record<string, unknown> = vpa
+            ? { channel: "collect", upi_id: vpa }
+            : { channel: "link", ...(CF_APP_MAP[upiApp] ? { upi_id: CF_APP_MAP[upiApp] } : {}) };
+
+          const cfPayRes = await fetch(`${cfBase}/orders/sessions`, {
+            method: "POST",
+            headers: {
+              "x-api-version": "2023-08-01",
+              "x-client-id": config.cashfree_app_id!,
+              "x-client-secret": config.cashfree_secret_key!,
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({
+              payment_session_id: cfOrder.payment_session_id,
+              payment_method: { upi: upiPayload },
+            }),
+          });
+          const cfPay = await cfPayRes.json();
+          if (!cfPayRes.ok) {
+            // s2s_enabled_not_approved → account cannot use /orders/sessions. Fall back silently.
+            console.warn("cashfree sessions failed — trying next gateway", cfPay?.code);
+            lastError = { pg: "cashfree", message: cfPay.message || "Cashfree UPI intent failed", code: cfPay.code, details: cfPay };
+            continue;
+          }
+
+          const intentUrl =
+            cfPay?.data?.url ||
+            cfPay?.data?.payload?.default ||
+            cfPay?.data?.payload?.gpay ||
+            cfPay?.data?.payload?.phonepe ||
+            cfPay?.data?.payload?.paytm;
+
+          if (!intentUrl) {
+            lastError = { pg: "cashfree", message: "Cashfree returned no intent URL", details: cfPay };
+            continue;
+          }
+
+          return jsonRes({
+            pg: "cashfree",
+            env,
+            intent_url: intentUrl,
+            payload: cfPay?.data?.payload || null,
+            cf_order_id: cfOrderId,
+            payment_session_id: cfOrder.payment_session_id,
+            amount: chargeAmount,
+            currency,
+            channel: vpa ? "collect" : "link",
+          });
+        } catch (e: any) {
+          lastError = { pg: "cashfree", message: e?.message || "Cashfree threw" };
+          continue;
+        }
       }
 
-      // Now call the pay endpoint with UPI channel=link (or collect for VPA)
-      const upiPayload: Record<string, unknown> = vpa
-        ? { channel: "collect", upi_id: vpa }
-        : { channel: "link", ...(CF_APP_MAP[upiApp] ? { upi_id: CF_APP_MAP[upiApp] } : {}) };
+      // ─── Razorpay UPI Intent ────────────────────────────────────────────
+      if (pg === "razorpay") {
+        try {
+          const authHeader = "Basic " + btoa(`${config.razorpay_key_id}:${config.razorpay_key_secret}`);
+          const amountInPaise = Math.round(chargeAmount * 100);
 
-      const cfPayRes = await fetch(`${cfBase}/orders/sessions`, {
-        method: "POST",
-        headers: {
-          "x-api-version": "2023-08-01",
-          "x-client-id": config.cashfree_app_id!,
-          "x-client-secret": config.cashfree_secret_key!,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          payment_session_id: cfOrder.payment_session_id,
-          payment_method: { upi: upiPayload },
-        }),
-      });
-      const cfPay = await cfPayRes.json();
-      if (!cfPayRes.ok) {
-        console.error("cashfree sessions failed", cfPay);
-        return jsonRes({ error: cfPay.message || "Cashfree UPI intent failed", details: cfPay }, 502);
+          const rzpOrderRes = await fetch("https://api.razorpay.com/v1/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: authHeader },
+            body: JSON.stringify({
+              amount: amountInPaise,
+              currency,
+              receipt: order_id,
+              notes: { order_id, store_id, flow: "checkout_v2" },
+            }),
+          });
+          const rzpOrder = await rzpOrderRes.json();
+          if (!rzpOrderRes.ok) {
+            lastError = { pg: "razorpay", message: rzpOrder?.error?.description || "Razorpay order failed", details: rzpOrder };
+            continue;
+          }
+
+          // Persist razorpay_order_id so the razorpay-webhook safety-net can resolve this order
+          await supabase.from("orders").update({ razorpay_order_id: rzpOrder.id }).eq("id", order_id).eq("store_id", store_id);
+
+          const upiParams: Record<string, string> = {
+            amount: String(amountInPaise),
+            currency,
+            order_id: rzpOrder.id,
+            email: safeEmail,
+            contact: safePhone,
+            method: "upi",
+            description: `Order ${dbOrder.order_number || order_id.slice(0, 8)}`,
+          };
+          if (vpa) {
+            upiParams["upi[flow]"] = "collect";
+            upiParams["upi[vpa]"] = vpa;
+          } else {
+            upiParams["upi[flow]"] = "intent";
+          }
+
+          const payRes = await fetch("https://api.razorpay.com/v1/payments/create/upi", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              Authorization: authHeader,
+            },
+            body: new URLSearchParams(upiParams).toString(),
+          });
+          const payData = await payRes.json();
+          if (!payRes.ok || payData.error) {
+            lastError = { pg: "razorpay", message: payData?.error?.description || "Razorpay UPI intent failed", details: payData };
+            continue;
+          }
+
+          const intentUrl = payData.data?.intent_url || payData.intent_url;
+          if (!intentUrl) {
+            lastError = { pg: "razorpay", message: "Razorpay returned no intent URL", details: payData };
+            continue;
+          }
+
+          return jsonRes({
+            pg: "razorpay",
+            env: "production",
+            intent_url: intentUrl,
+            razorpay_payment_id: payData.razorpay_payment_id,
+            razorpay_order_id: rzpOrder.id,
+            amount: chargeAmount,
+            currency,
+            channel: vpa ? "collect" : "link",
+          });
+        } catch (e: any) {
+          lastError = { pg: "razorpay", message: e?.message || "Razorpay threw" };
+          continue;
+        }
       }
 
-      // Cashfree returns intent URL in `data.url` for link channel
-      const intentUrl =
-        cfPay?.data?.url ||
-        cfPay?.data?.payload?.default ||
-        cfPay?.data?.payload?.gpay ||
-        cfPay?.data?.payload?.phonepe ||
-        cfPay?.data?.payload?.paytm;
-
-      return jsonRes({
-        pg: "cashfree",
-        env,
-        intent_url: intentUrl || null,
-        payload: cfPay?.data?.payload || null,
-        cf_order_id: cfOrderId,
-        payment_session_id: cfOrder.payment_session_id,
-        amount: chargeAmount,
-        currency,
-        channel: vpa ? "collect" : "link",
-      });
+      if (pg === "payu") {
+        // PayU S2S UPI intent needs additional integration work.
+        lastError = { pg: "payu", message: "PayU UPI intent not implemented", code: "payu_unsupported" };
+        continue;
+      }
     }
 
-    // ─── Razorpay UPI Intent ──────────────────────────────────────────────
-    if (pg === "razorpay") {
-      const authHeader = "Basic " + btoa(`${config.razorpay_key_id}:${config.razorpay_key_secret}`);
-      const amountInPaise = Math.round(chargeAmount * 100);
-
-      // Create RZP order
-      const rzpOrderRes = await fetch("https://api.razorpay.com/v1/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: authHeader },
-        body: JSON.stringify({
-          amount: amountInPaise,
-          currency,
-          receipt: order_id,
-          notes: { order_id, store_id, flow: "checkout_v2" },
-        }),
-      });
-      const rzpOrder = await rzpOrderRes.json();
-      if (!rzpOrderRes.ok) {
-        console.error("razorpay order failed", rzpOrder);
-        return jsonRes({ error: "Razorpay order failed", details: rzpOrder }, 502);
-      }
-
-      // Create UPI payment (intent or collect)
-      const upiParams: Record<string, string> = {
-        amount: String(amountInPaise),
-        currency,
-        order_id: rzpOrder.id,
-        email: safeEmail,
-        contact: safePhone,
-        method: "upi",
-        description: `Order ${dbOrder.order_number || order_id.slice(0, 8)}`,
-      };
-      if (vpa) {
-        upiParams["upi[flow]"] = "collect";
-        upiParams["upi[vpa]"] = vpa;
-      } else {
-        upiParams["upi[flow]"] = "intent";
-      }
-
-      const payRes = await fetch("https://api.razorpay.com/v1/payments/create/upi", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: authHeader,
-        },
-        body: new URLSearchParams(upiParams).toString(),
-      });
-      const payData = await payRes.json();
-      if (!payRes.ok || payData.error) {
-        console.error("razorpay upi intent failed", payData);
-        return jsonRes({ error: payData.error?.description || "Razorpay UPI intent failed" }, 502);
-      }
-
-      return jsonRes({
-        pg: "razorpay",
-        env: "production",
-        intent_url: payData.data?.intent_url || payData.intent_url || null,
-        razorpay_payment_id: payData.razorpay_payment_id,
-        razorpay_order_id: rzpOrder.id,
-        amount: chargeAmount,
-        currency,
-        channel: vpa ? "collect" : "link",
-      });
-    }
-
-    // ─── PayU S2S UPI (Bank codes: TEZ=GPay, PHONEPE, PAYTM, UPI=any) ─────
-    // PayU S2S is complex; for v1 we return a signal to the UI to fall back to Bolt SDK.
-    // Full PayU UPI intent can be added in a later stage.
-    if (pg === "payu") {
-      return jsonRes({
-        pg: "payu",
-        fallback: true,
-        message: "PayU tile UPI intent not yet implemented — use Bolt SDK",
-      }, 200);
-    }
-
-    return jsonRes({ error: "Unsupported gateway" }, 400);
+    // All gateways failed
+    console.error("create-upi-intent: all gateways failed", lastError);
+    return jsonRes({
+      error: lastError?.message || "No gateway could generate a UPI intent",
+      code: lastError?.code || "all_gateways_failed",
+      pg_tried: gatewayChain,
+      last_pg: lastError?.pg,
+    }, 502);
   } catch (err) {
     console.error("create-upi-intent error", err);
     return jsonRes({ error: "Internal server error" }, 500);
