@@ -470,9 +470,10 @@ export default function CheckoutV2Page() {
             <div>Do not close this page. We'll confirm automatically once you approve payment in the app.</div>
           </div>
         </div>
-        <Button variant="outline" className="w-full" onClick={forceRecheck}>
-          I've paid — check now
+        <Button variant="outline" className="w-full" onClick={forceRecheck} disabled={manualChecking}>
+          {manualChecking ? "Checking…" : "I've paid — check now"}
         </Button>
+
         <button
           className="mt-3 text-xs text-muted-foreground underline"
           onClick={() => setWaiting(false)}
