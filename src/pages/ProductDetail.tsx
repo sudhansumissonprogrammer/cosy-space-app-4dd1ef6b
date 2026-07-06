@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import useEmblaCarousel from "embla-carousel-react";
-import { VideoSlide } from "@/components/storefront/VideoSlide";
+// VideoSlide lazy-loaded (only ~5% of products have video) — see below
 import { createPortal } from "react-dom";
 import { useParams, Link, useOutletContext, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -28,7 +28,7 @@ import { useWishlist } from "@/contexts/WishlistContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, splitImageUrls } from "@/lib/imageOptimize";
-import UniversalProductCard from "@/components/storefront/UniversalProductCard";
+// UniversalProductCard removed from PDP critical path — reached via lazy RelatedProducts
 import { VariantCountProvider } from "@/hooks/useVariantCounts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import type { Tables } from "@/integrations/supabase/types";
@@ -47,6 +47,9 @@ import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
 const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
+const VideoSlide = lazy(() =>
+  import("@/components/storefront/VideoSlide").then((m) => ({ default: m.VideoSlide }))
+);
 
 
 import DeliveryTimeline from "@/components/storefront/DeliveryTimeline";
@@ -1628,14 +1631,18 @@ function ImageGallery({
                 if (slide.kind === "video") {
                   const isActive = realIdx === activeIndex;
                   return (
-                    <VideoSlide
+                    <Suspense
                       key={`${i}-vid-${slide.url}`}
-                      url={slide.url}
-                      poster={slide.poster ? optimizeImageUrl(slide.poster, 800) : undefined}
-                      isActive={isActive}
-                      videoPlaying={videoPlaying}
-                      setVideoPlaying={setVideoPlaying}
-                    />
+                      fallback={<div className="flex-[0_0_100%] min-w-0 aspect-[4/5] sm:aspect-square bg-muted" />}
+                    >
+                      <VideoSlide
+                        url={slide.url}
+                        poster={slide.poster ? optimizeImageUrl(slide.poster, 800) : undefined}
+                        isActive={isActive}
+                        videoPlaying={videoPlaying}
+                        setVideoPlaying={setVideoPlaying}
+                      />
+                    </Suspense>
                   );
                 }
                 const loaded = imageLoaded[realIdx];
