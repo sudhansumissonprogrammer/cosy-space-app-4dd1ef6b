@@ -6159,18 +6159,17 @@ async function _handleFetch(request, env, ctx) {
   }
 
   /* ──────────────────────────────────────────────────────────
-       WhatsApp branded redirector — EDGE FAST PATH
+       WhatsApp branded redirector — NATIVE EDGE PATH (v8.70.0)
        ──────────────────────────────────────────────────────────
        Templates send users to https://shopbanao.in/{r,cart,order}/<token>.
-       Previously the browser loaded LandingApp just to run
-       window.location.replace() to the wa-r edge fn (wasted 2-4s of
-       HTML+JS download+parse before the actual 302 to the store).
-       Now: the Worker fetches wa-r itself and returns the 302 directly.
-       Zero React, zero HTML, ~400-700ms total for the whole redirect.
-       Response is not cached (each token maps to a user-specific URL and
-       tokens are one-shot). We ONLY handle the exact WA link paths on
-       the root marketing host so nothing else can regress. Approved
-       WhatsApp template URLs are unchanged — only server handling moves. */
+       Previously this proxied to the wa-r Deno edge function (~500-700ms:
+       Deno cold start + hop). Now: the Worker resolves the token via a
+       single Postgres RPC (get_wa_redirect) in ~30-80ms and returns 302
+       with Link: preconnect + preload headers. Cloudflare converts those
+       Link headers to HTTP 103 Early Hints (if Early Hints is enabled on
+       the zone) so the browser starts hero image download BEFORE the
+       redirect body lands. Falls back to proxying wa-r on any error so
+       behavior stays identical if RPC or KV is unreachable. */
   if (earlyMethod === "GET" && (earlyUrl.hostname === ROOT_DOMAIN || earlyUrl.hostname === `www.${ROOT_DOMAIN}`)) {
     let waToken = null;
     if (earlyPath.startsWith("/r/")) {
@@ -6183,8 +6182,11 @@ async function _handleFetch(request, env, ctx) {
       if (t) waToken = "o-" + t;
     }
     if (waToken) {
+      const nativeRes = await _handleWaRedirectNative(waToken, request, env, ctx).catch(() => null);
+      if (nativeRes) return nativeRes;
+      // Fallback: proxy to wa-r Deno fn (original behavior).
       try {
-        const upstream = `https://dqepeywgftbpxeeqfuwt.supabase.co/functions/v1/wa-r/${encodeURIComponent(waToken)}`;
+        const upstream = `${SUPABASE_URL}/functions/v1/wa-r/${encodeURIComponent(waToken)}`;
         const upstreamRes = await fetch(upstream, {
           method: "GET",
           redirect: "manual",
@@ -6196,10 +6198,7 @@ async function _handleFetch(request, env, ctx) {
         });
         const loc = upstreamRes.headers.get("location");
         if (loc && upstreamRes.status >= 300 && upstreamRes.status < 400) {
-          const headers = new Headers({
-            location: loc,
-            "cache-control": "no-store",
-          });
+          const headers = new Headers({ location: loc, "cache-control": "no-store" });
           try {
             const destOrigin = new URL(loc).origin;
             headers.set("link", `<${destOrigin}>; rel=preconnect, <${destOrigin}>; rel=dns-prefetch`);
@@ -6215,6 +6214,7 @@ async function _handleFetch(request, env, ctx) {
       }
     }
   }
+
 
   /* ──────────────────────────────────────────────────────────
        v8.3.0: EARLY EDGE-CACHE LOOKUP FOR SYNTHESIZED RESPONSES
