@@ -126,6 +126,34 @@ export default function CheckoutV2Page() {
   );
   const total = subtotal;
 
+  // ─── Store-level partial payment config ─────────────────────────────────
+  const partialEnabled: boolean = (store as any)?.partial_payment_enabled ?? false;
+  const partialType: string = (store as any)?.partial_payment_type || "percentage";
+  const partialValue: number | null = (store as any)?.partial_payment_value ?? null;
+  const hasPartial = partialEnabled && !!partialValue && Number(partialValue) > 0;
+
+  // Compute advance for the whole cart (mirrors CheckoutPage math)
+  const partialAdvanceTotal = useMemo(() => {
+    if (!hasPartial) return total;
+    let advance = 0;
+    for (const it of cartItems) {
+      let itemAdv = partialType === "percentage"
+        ? Math.round(it.price * (Number(partialValue) / 100))
+        : Math.min(Number(partialValue), it.price);
+      itemAdv = Math.max(itemAdv, 50);
+      advance += itemAdv * it.quantity;
+    }
+    return Math.max(50, Math.min(total, Math.round(advance)));
+  }, [cartItems, hasPartial, partialType, partialValue, total]);
+  const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
+
+  // Payment mode: only relevant when partial is enabled. Defaults to "partial"
+  // (matches legacy CheckoutPage default) so the user sees the discounted
+  // upfront amount without an extra click.
+  const [payMode, setPayMode] = useState<"full" | "partial">("partial");
+  const effectiveMode: "full" | "partial" = hasPartial ? payMode : "full";
+  const chargeAmount = effectiveMode === "partial" ? partialAdvanceTotal : total;
+
   // ─── Order creation + intent pre-generation ─────────────────────────────
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
