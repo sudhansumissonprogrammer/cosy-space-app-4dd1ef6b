@@ -6119,8 +6119,103 @@ async function cachedFetch(request, slug = "", ctx, isCustomDomain = false, env 
 }
 
 /* ============================================================
+   WhatsApp branded redirect — native edge implementation
+   ============================================================ */
+
+const WA_R_KV_PREFIX = "war:v1:";
+
+async function _handleWaRedirectNative(token, request, env, ctx) {
+  if (!token || token.length < 3) return null;
+
+  // 1. KV cache lookup (very short TTL — token→destination map only)
+  const kvKey = WA_R_KV_PREFIX + token;
+  let payload = null;
+  if (env?.STORE_KV) {
+    try {
+      const cached = await env.STORE_KV.get(kvKey, { type: "json" });
+      if (cached && cached.ok) payload = cached;
+    } catch {}
+  }
+
+  // 2. Miss → single RPC call to Postgres
+  if (!payload) {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_wa_redirect`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ _token: token }),
+      });
+      if (!r.ok) return null;
+      payload = await r.json();
+      if (!payload || !payload.ok || !payload.target) return null;
+      // Cache successful lookups for the RPC-suggested TTL (max 1 day).
+      const kvTtl = Math.max(60, Math.min(payload.ttl || 300, 86400));
+      if (env?.STORE_KV) {
+        ctx.waitUntil(env.STORE_KV.put(kvKey, JSON.stringify(payload), { expirationTtl: kvTtl }).catch(() => {}));
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  // 3. Fire-and-forget click log — never awaits.
+  try {
+    const ua = request.headers.get("user-agent") || "";
+    const ip = request.headers.get("cf-connecting-ip") || "";
+    const kind = token.slice(0, 2);
+    const refId = token.slice(2);
+    ctx.waitUntil(
+      fetch(`${SUPABASE_URL}/rest/v1/wa_link_clicks`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          token, kind, ref_id: refId,
+          user_agent: ua.slice(0, 256),
+          ip_address: ip || null,
+        }),
+      }).catch(() => {})
+    );
+  } catch {}
+
+  // 4. Build 302/301 with preconnect + preload headers.
+  //    Cloudflare converts `Link: rel=preload/preconnect` into HTTP 103
+  //    Early Hints when Early Hints is enabled on the zone.
+  const status = payload.status === 301 ? 301 : 302;
+  const ttl = Math.max(0, Math.min(payload.ttl || 0, 86400));
+  const headers = new Headers({
+    location: payload.target,
+    "cache-control": ttl > 0 ? `public, max-age=${ttl}` : "no-store",
+  });
+  const links = [];
+  if (payload.host) {
+    links.push(`<https://${payload.host}>; rel=preconnect; crossorigin`);
+    links.push(`<https://${payload.host}>; rel=dns-prefetch`);
+  }
+  if (payload.hero && /^https?:\/\//.test(payload.hero)) {
+    links.push(`<${payload.hero}>; rel=preload; as=image; fetchpriority=high`);
+  }
+  if (payload.slug && payload.host) {
+    const pdpApi = `https://${payload.host}/api/pdp?slug=${encodeURIComponent(payload.slug)}`;
+    links.push(`<${pdpApi}>; rel=preload; as=fetch; crossorigin`);
+  }
+  if (links.length) headers.set("link", links.join(", "));
+  return new Response(null, { status, headers });
+}
+
+/* ============================================================
    MAIN FETCH HANDLER
    ============================================================ */
+
+
 
 export default {
   async fetch(request, env, ctx) {
