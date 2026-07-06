@@ -83,15 +83,18 @@ Deno.serve(async (req) => {
       prewarmUrls.map(async (prewarmUrl) => {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 15_000);
+        const isPdp = prewarmUrl.includes("/api/pdp?");
         try {
           const res = await fetch(prewarmUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ slug, domain }),
+            method: isPdp ? "GET" : "POST",
+            headers: isPdp
+              ? { "X-Warmer": "prewarm-store" }
+              : { "Content-Type": "application/json" },
+            body: isPdp ? undefined : JSON.stringify({ slug, domain }),
             signal: controller.signal,
           });
           clearTimeout(timeout);
-          const data = await res.json().catch(() => ({}));
+          const data = isPdp ? null : await res.json().catch(() => ({}));
           return { url: prewarmUrl, status: res.status, data };
         } catch (err) {
           clearTimeout(timeout);
