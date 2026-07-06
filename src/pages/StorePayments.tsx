@@ -158,6 +158,7 @@ export default function StorePayments() {
         partial_payment_enabled: partialEnabled && onlineEnabled,
         partial_payment_type: partialType,
         partial_payment_value: partialEnabled && partialValue ? Number(partialValue) : null,
+        checkout_v2_enabled: checkoutV2Enabled,
       };
 
       if (partialEnabled && onlineEnabled && partialValue) {
