@@ -292,7 +292,7 @@ Deno.serve(async (req) => {
   // ══════════════════════════════════════════════════════════════════════
   let payDropEnqueued = 0, payDropSkipped = 0, payDropStoreOff = 0, payDropCapped = 0, payDropCompleted = 0;
 
-  const payDropMinAgeIso = new Date(now - Math.max(minAgeMs, 5 * 60 * 1000)).toISOString();
+  const payDropMinAgeIso = new Date(now - minAgeMs).toISOString();
   const { data: dropOrders } = await admin
     .from("orders")
     .select("id, store_id, customer_phone, customer_name, total, created_at, order_items(product_id, product_name, unit_price), stores:store_id(name, slug, custom_domain)")
