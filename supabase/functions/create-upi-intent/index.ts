@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     // Load canonical order + amount
     const { data: dbOrder, error: orderErr } = await supabase
       .from("orders")
-      .select("id, store_id, total, status, payment_type, advance_paid, order_number, currency")
+      .select("id, store_id, total, status, payment_type, advance_paid, order_number, currency, notes")
       .eq("id", order_id)
       .maybeSingle();
     if (orderErr || !dbOrder) return jsonRes({ error: "Order not found" }, 404);
@@ -199,7 +199,10 @@ Deno.serve(async (req) => {
 
           await supabase
             .from("orders")
-            .update({ payment_method: "cashfree" })
+            .update({
+              payment_method: "cashfree",
+              notes: [dbOrder.notes, `Cashfree Order ID: ${cfOrderId}`].filter(Boolean).join("\n"),
+            })
             .eq("id", order_id)
             .eq("store_id", store_id)
             .eq("status", "pending");
