@@ -283,7 +283,137 @@ Deno.serve(async (req) => {
 
   }
 
-  return json({ processed: carts.length, enqueued, skipped, store_off: storeOff, cooldown, empty_cart: emptyCart, already_ordered: alreadyOrdered, phone_capped: phoneCapped });
+  // ══════════════════════════════════════════════════════════════════════
+  // 💳 PAYMENT DROP-OFF LANE — orders where customer clicked pay but never
+  // completed. These live in `orders` (status=pending|cancelled,
+  // payment_verified=false) and are NOT in abandoned_carts. Without this
+  // lane, ~60% of highest-intent leads never receive any reminder.
+  // ══════════════════════════════════════════════════════════════════════
+  let payDropEnqueued = 0, payDropSkipped = 0, payDropStoreOff = 0, payDropCapped = 0, payDropCompleted = 0;
+
+  const payDropMinAgeIso = new Date(now - Math.max(minAgeMs, 5 * 60 * 1000)).toISOString();
+  const { data: dropOrders } = await admin
+    .from("orders")
+    .select("id, store_id, customer_phone, customer_name, total, created_at, order_items(product_id, product_name, unit_price), stores:store_id(name, slug, custom_domain)")
+    .in("status", ["pending", "cancelled"])
+    .eq("payment_verified", false)
+    .not("customer_phone", "is", null)
+    .lte("created_at", payDropMinAgeIso)
+    .gte("created_at", afterIso)
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (dropOrders?.length) {
+    const dropStoreIds = Array.from(new Set(dropOrders.map((o: any) => o.store_id).filter(Boolean)));
+    const { data: dropSettings } = await admin
+      .from("stores_wa_settings")
+      .select("store_id, platform_marketing_enabled")
+      .in("store_id", dropStoreIds);
+    const dropEnabled = new Set(
+      (dropSettings || [])
+        .filter((s: any) => s.platform_marketing_enabled === true)
+        .map((s: any) => s.store_id),
+    );
+
+    // Dedup by phone: only keep the newest drop-off per phone.
+    const seenPhone = new Set<string>();
+    const uniqueDrops: any[] = [];
+    for (const o of dropOrders) {
+      const p = normalizePhone((o as any).customer_phone);
+      if (!p || seenPhone.has(p)) continue;
+      seenPhone.add(p);
+      uniqueDrops.push(o);
+    }
+
+    for (const o of uniqueDrops) {
+      if (!dropEnabled.has((o as any).store_id)) { payDropStoreOff++; continue; }
+      const phone = normalizePhone((o as any).customer_phone);
+      if (!phone) { payDropSkipped++; continue; }
+
+      // Skip if customer has ANY confirmed order in this store since drop-off
+      // (they eventually completed via COD, retry, or another gateway).
+      const rawPhone = String((o as any).customer_phone || "").replace(/\D/g, "");
+      const phoneVariants = Array.from(new Set([
+        phone, rawPhone,
+        rawPhone.startsWith("91") ? rawPhone.slice(2) : `91${rawPhone}`,
+      ].filter(Boolean)));
+      const { count: completedCount } = await admin
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", (o as any).store_id)
+        .in("customer_phone", phoneVariants)
+        .in("status", ["confirmed", "processing", "shipped", "delivered", "partially_paid"])
+        .gte("created_at", (o as any).created_at);
+      if ((completedCount ?? 0) > 0) { payDropCompleted++; continue; }
+
+      // Reuse the strict 1/24h per-phone marketing cap.
+      const { count: sentMkt } = await admin
+        .from("whatsapp_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("recipient_phone", phone).eq("sent_via", "platform").eq("direction", "outgoing")
+        .eq("status", "sent")
+        .not("message_type", "in", `(${TRANSACTIONAL.map((t) => `"${t}"`).join(",")})`)
+        .gte("created_at", since24h);
+      const { count: pendingMkt } = await admin
+        .from("wa_send_queue")
+        .select("id", { count: "exact", head: true })
+        .eq("recipient_phone", phone)
+        .in("status", ["pending", "sending", "sent"])
+        .not("message_type", "in", `(${TRANSACTIONAL.map((t) => `"${t}"`).join(",")})`)
+        .gte("created_at", since24h);
+      if (((sentMkt ?? 0) + (pendingMkt ?? 0)) >= 1) { payDropCapped++; continue; }
+
+      const items = Array.isArray((o as any).order_items) ? (o as any).order_items : [];
+      const firstItem = items[0] || {};
+      const firstTitle = String(firstItem?.product_name || "your item").trim();
+      const orderTotal = Number((o as any).total ?? 0);
+      const unitPrice = Number(firstItem?.unit_price ?? 0);
+      const productPrice = unitPrice > 0 ? `₹${unitPrice.toFixed(0)}` : `₹${orderTotal.toFixed(0)}`;
+      const firstProductId = firstItem?.product_id;
+      const ctaToken = firstProductId ? `p-${firstProductId}` : `o-${(o as any).id}`;
+      const customerName = String((o as any).customer_name || "there").trim() || "there";
+      const s = (o as any).stores || {};
+
+      const { error: qErr } = await admin.from("wa_send_queue").insert({
+        store_id: (o as any).store_id,
+        recipient_phone: phone,
+        recipient_name: customerName,
+        template_name: "abandoned_cart_v2",
+        message_type: "abandoned_cart",
+        params: [],
+        template_vars: {
+          customer_name: customerName,
+          product_title: firstTitle,
+          store_name: (s as any).name || "our store",
+          product_price: productPrice,
+          cta_token: ctaToken,
+        },
+        priority: 4, // slightly higher than cart-only (5) — these are hotter leads
+        scheduled_at: new Date().toISOString(),
+      } as any);
+
+      if (qErr) { payDropSkipped++; continue; }
+      payDropEnqueued++;
+
+      await admin.from("customers")
+        .update({ last_marketing_sent_at: new Date().toISOString() })
+        .in("phone", phoneVariants as string[]);
+    }
+  }
+
+  return json({
+    processed: carts.length,
+    enqueued, skipped, store_off: storeOff, cooldown,
+    empty_cart: emptyCart, already_ordered: alreadyOrdered, phone_capped: phoneCapped,
+    pay_dropoff: {
+      scanned: dropOrders?.length ?? 0,
+      enqueued: payDropEnqueued,
+      skipped: payDropSkipped,
+      store_off: payDropStoreOff,
+      already_completed: payDropCompleted,
+      phone_capped: payDropCapped,
+    },
+  });
 });
 
 
