@@ -902,6 +902,53 @@ export default function CheckoutV2Page() {
 
   const forceRecheck = () => { manualRecheck(); };
 
+  // ─── Thank-you screen (matches legacy CheckoutPage post-order UX) ─────
+  if (orderPlaced) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+          <CheckCircle2 className="h-8 w-8 text-primary" />
+        </div>
+        <h1 className="text-2xl font-bold text-foreground">Order Placed!</h1>
+        <p className="mt-2 text-muted-foreground">
+          Your order has been placed successfully. The store will contact you shortly.
+        </p>
+        {(orderNumber || orderId) && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Order ID: <span className="font-mono font-semibold">{orderNumber || orderId?.slice(0, 8)}</span>
+          </p>
+        )}
+        <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+          <p className="flex items-center justify-center gap-1.5 text-sm font-medium text-foreground">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" /> Order confirmed!
+          </p>
+          {(phone || email) && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              We'll send updates to <strong>{phone}</strong>{email ? ` and ${email}` : ""}.
+            </p>
+          )}
+        </div>
+        <div className="mt-6 flex flex-col items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleViewMyOrders}
+            disabled={viewingOrders}
+            className="h-10 px-6"
+          >
+            {viewingOrders && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            View My Orders
+          </Button>
+          <Button
+            onClick={() => navigate(storefrontPath(store.slug))}
+            className="h-10 px-6"
+          >
+            Continue Shopping
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // ─── Empty cart guard ──────────────────────────────────────────────────
   if (cartItems.length === 0 && !orderId) {
     return (
