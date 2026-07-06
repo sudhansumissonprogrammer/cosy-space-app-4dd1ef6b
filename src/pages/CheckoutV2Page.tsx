@@ -208,7 +208,7 @@ export default function CheckoutV2Page() {
             pincode: pincode.trim(),
             payment_method: "razorpay", // placeholder — actual gateway resolved by create-upi-intent
             storefront_customer_id: customer?.id ?? null,
-            payment_type: "full",
+            payment_type: effectiveMode,
           },
           items: cartItems.map((it) => ({
             productId: it.productId,
