@@ -1,92 +1,105 @@
-## Goal
+## Speed up marketing → PDP path (no template resubmit)
 
-Meter WhatsApp usage per store on the shared platform number and deduct from `store_wallets` when a template message is **delivered**. Use Meta's real billing unit — a **24-hour conversation window per recipient per category** — so 50 marketing messages to one number in 24 h = one ₹1 charge, not fifty.
+Three coordinated changes. All keep the URL `shopbanao.in/r/<token>` — WhatsApp templates untouched.
 
-## Pricing (default, admin-configurable)
+---
 
-| Category | Price per 24h conversation |
-|---|---|
-| Marketing | ₹1.00 |
-| Utility | ₹0.30 |
-| Authentication | ₹0.30 |
-| Service (24h free-form replies) | ₹0.00 |
+### 1. PDP bundle lazy-splits (frontend, ~30 min)
 
-Stored in a new single-row `wa_pricing_config` table so we can change prices later without a deploy.
+In `src/pages/ProductDetail.tsx` (and V19/V20/V22 variants), convert three eager imports to lazy so they don't block first paint:
 
-## Data model
+- `VideoSlide` → `lazy(() => import(...))`, only mount when `product.video_url` exists
+- `Dialog` chain (zoom modal, share modal) → dynamic `import()` on first open
+- `UniversalProductCard` → remove from PDP top import; it's already reachable via lazy `RelatedProducts`
 
-**New table `wa_billing_conversations`** — one row per (store, recipient, category, 24 h window).
-- `store_id`, `recipient_phone`, `category`
-- `window_start` (delivered_at of first msg), `window_end` = window_start + 24h
-- `message_count`, `first_message_id`, `last_message_id`
-- `price_charged`, `charged_at`, `ledger_id` (FK → `store_wallet_ledger`)
-- Partial unique index on (store_id, recipient_phone, category) `WHERE window_end > now()` — guarantees only one active window at a time.
+Cuts ~40–80KB gzipped off the critical PDP chunk. Faster hydrate on every mobile.
 
-**Reuse `store_wallet_ledger`** with new `kind='wa_conversation'`. `notes` (jsonb-in-text) carries category, masked phone, template name, message count.
+---
 
-**New table `wa_pricing_config`** — one row, admin-editable, holds four price columns + updated_by/at.
+### 2. Move `/r/*` redirect into the Cloudflare Worker (biggest single win)
 
-## How charging happens (atomic + idempotent)
+Since `shopbanao.in` is on Cloudflare, add a Worker Route `shopbanao.in/r/*` so redirects run at the edge with **no Deno hop, no cold start**.
 
-1. **Trigger `wa_messages_charge_on_delivered`** — AFTER UPDATE on `whatsapp_messages`, fires only when `status` transitions `!= 'delivered' → 'delivered'` AND `direction = 'outgoing'`.
-2. Trigger calls `charge_wa_conversation(store_id, recipient_phone, category, message_id, template_name)`.
-3. Inside the function:
-   - `pg_advisory_xact_lock(hashtext(store_id::text || phone || category))` — prevents race between two concurrent deliveries in same conversation.
-   - Look up active window (`window_end > now()`).
-   - **If active window exists** → increment `message_count`, update `last_message_id`, **no wallet change**.
-   - **If none** → open new window (24 h), read price from `wa_pricing_config`, insert `store_wallet_ledger` (direction='debit', amount=price, balance_after=…), decrement `store_wallets.balance` + increment `total_charged`, store `ledger_id` back on the conversation row.
+Update `docs/cloudflare-worker-current.js`:
 
-Category resolution: `platform_wa_templates.category` (already synced from Meta) for template sends; `service` for `message_type='text_reply'`; conservative fallback = `marketing`.
+- Detect hostname `shopbanao.in` + path `/r/<token>` at the top of the worker's `fetch()`
+- Parse token prefix (`o-` / `t-` / `c-` / `p-`) same as current `wa-r`
+- Look up order/product/cart via Supabase REST (`https://<ref>.supabase.co/rest/v1/...`) using service role key stored as Worker secret `SUPABASE_SERVICE_KEY`
+- Cache the lookup in Worker KV (`STORE_KV`) keyed by token — same TTLs as today (product 5 min, order 1 day, cart no-cache)
+- Emit the same 301/302 with `Link: rel=preconnect` + `rel=preload as=image` (hero) + `rel=preload as=fetch` (PDP API) headers
+- **Emit HTTP 103 Early Hints** with the Link headers before the 302 body (Deno can't do this; Cloudflare can) — browser starts hero download ~200ms earlier
+- Fire-and-forget click log to `wa_link_clicks` via Supabase REST (no `await`)
 
-## Safety nets
+Keep the existing `supabase/functions/wa-r/index.ts` deployed as a **fallback** in case the worker route is bypassed (nothing to remove; harmless).
 
-- **Reconciler edge fn `wa-billing-reconcile`** — cron every 15 min, scans `whatsapp_messages` with `delivered_at IS NOT NULL` in last 30 h and calls the same charge function for any missing billing row. Idempotent (function early-exits on active window).
-- **No retroactive charge** — start clean from deploy date. Existing delivered messages are not billed.
-- **No hard gate at send time** in this iteration — negative balance allowed (user asked only for deduction). Optional follow-up: block marketing sends when balance ≤ 0.
+**Manual step for user:** In Cloudflare dashboard → Workers → Routes, add `shopbanao.in/r/*` → your existing worker. (Worker file itself deploys via your normal process.)
 
-## UI
+Expected: `/r/*` latency drops from ~700ms → ~40–80ms. Plus 103 Early Hints shave another ~150–250ms off LCP.
 
-**`src/pages/StoreWallet.tsx` — add "WhatsApp Usage" tab.**
-- Top summary card for a selectable range (today / 7d / 30d): marketing conversations, utility conversations, total charged, messages delivered per category.
-- Table below: individual conversations (recipient masked `98…4884`, category badge, window_start, message_count, price).
-- Ledger entries with `kind='wa_conversation'` render inline in the existing wallet history list with a friendly label; click expands to show the recipient + message breakdown from `wa_billing_conversations`.
+---
 
-**Admin pricing screen** — `src/pages/admin/AdminWhatsApp.tsx` gets a small "Pricing" section to edit the 4 prices in `wa_pricing_config`.
+### 3. Auto-prewarm PDP cache on product save (~20 min)
 
-## Edge-case correctness
+Ensure every WhatsApp campaign click lands on a hot cache — never a cold DB hit.
 
-| Case | Handled by |
-|---|---|
-| Two deliveries land in same ms | advisory lock in charge fn |
-| Webhook fires "delivered" twice for same msg | trigger fires only on status transition, function is idempotent on active window |
-| Message billed then later fails | never happens — `delivered` is terminal in Meta's flow |
-| Store deleted mid-window | FK on delete cascade; ledger keeps a copy of notes |
-| Shared number, wrong store attribution | none — `whatsapp_messages.store_id` is set by `wa-platform-send` at send time, unchanged by webhook |
-| Missing template in `platform_wa_templates` | conservative fallback to `marketing` (user pays more, never less) |
-| Webhook down / trigger missed | 15-min reconciler cron catches it |
+In the product create/edit code path (client-side after save success), call the existing `prewarm-store` edge function with the store slug + custom domain. It already warms `/api/prewarm?slug=...` — extend the worker's prewarm handler to also warm `/api/pdp?slug=<newly-saved-slug>` when a `productSlug` param is passed. Fire-and-forget, no UX impact.
 
-## Deliverables (in order)
+Result: merchant saves product → 300ms later, edge KV holds the PDP JSON → first WhatsApp click is warm-path (~200ms end-to-end lookup).
 
-**Migration 1** — schema
-- `wa_pricing_config` table + single default row (1.00 / 0.30 / 0.30 / 0.00), GRANTs, RLS (admin write, service_role all).
-- `wa_billing_conversations` table + partial unique index + GRANTs, RLS (store owner read via `stores.owner_id`, service_role all).
-- `charge_wa_conversation(...)` SECURITY DEFINER function.
-- Trigger on `whatsapp_messages` for delivered transitions.
-- Allow `kind='wa_conversation'` in `store_wallet_ledger` (no CHECK change needed if column is free-text).
+---
 
-**Edge function** — `wa-billing-reconcile` (cron every 15 min via pg_cron + net.http_post, using existing `cron_auth` secret pattern).
+## Technical details
 
-**Frontend**
-- New "WhatsApp Usage" tab in `StoreWallet.tsx` with summary + conversations table.
-- Pretty renderer for `kind='wa_conversation'` rows in existing wallet history.
-- Admin pricing editor in `AdminWhatsApp.tsx`.
+**Worker `/r/*` handler sketch (added early in `fetch()`):**
+```js
+if (host === "shopbanao.in" && url.pathname.startsWith("/r/")) {
+  return handleWaRedirect(request, url, env, ctx);
+}
+```
 
-**No changes needed** to `wa-platform-send` or `wa-queue-worker` — attribution already correct; charging is purely webhook-driven.
+**Supabase REST lookup pattern:**
+```js
+const r = await fetch(
+  `https://${env.SUPABASE_REF}.supabase.co/rest/v1/products?id=eq.${id}&select=id,slug,stores(slug,custom_domain)`,
+  { headers: { apikey: env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}` } }
+);
+```
 
-## Out of scope for this iteration (flag for later)
-- Hard-block sends when balance ≤ 0.
-- Auto-recharge / low-balance WhatsApp alert to store owner.
-- Bulk retroactive backfill of past deliveries.
-- Per-template price overrides.
+**Early Hints (Cloudflare-native):**
+```js
+return new Response(null, {
+  status: 302,
+  headers: { Location: target, Link: linkHeaders, "Cache-Control": "..." }
+  // CF automatically converts Link headers to 103 Early Hints when enabled on the zone
+});
+```
+User must enable **Early Hints** in Cloudflare zone → Speed → Optimization (one toggle).
 
-Ready to build once you approve.
+**Secrets needed as Cloudflare Worker environment vars:**
+- `SUPABASE_REF` = `dqepeywgftbpxeeqfuwt`
+- `SUPABASE_SERVICE_KEY` = (from Lovable Cloud — user pastes into CF Workers dashboard)
+
+---
+
+## Expected combined result
+
+| Stage | Now | After |
+|---|---|---|
+| `/r/*` redirect | 700ms | 60ms |
+| Early Hints preload | — | −200ms LCP |
+| PDP hydrate | 1.5–2.5s | 1.0–1.7s |
+| Cold cache DB hit | Sometimes | Never |
+| **Total to LCP** | **~4.5s** | **~2.0–2.5s** |
+
+No template resubmit. No storefront breaking change. Reversible per-item.
+
+---
+
+## Deploy order
+
+1. Ship PDP lazy-splits (frontend, auto-deploys)
+2. Ship worker changes to `docs/cloudflare-worker-current.js` — you deploy manually as usual
+3. Add worker route `shopbanao.in/r/*` in Cloudflare dashboard
+4. Add `SUPABASE_REF` + `SUPABASE_SERVICE_KEY` as Worker env vars in Cloudflare
+5. Enable Early Hints toggle in Cloudflare Speed panel
+6. Extend `prewarm-store` + client save hook (frontend, auto-deploys)
