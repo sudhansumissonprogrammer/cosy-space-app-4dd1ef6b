@@ -179,6 +179,15 @@ export default function CheckoutV2Page() {
     paytm: { status: "idle" }, any: { status: "idle" },
   });
 
+  // Gateway metadata captured from the first successful intent response so the
+  // waiting screen can actively verify with the PSP (not just poll the DB).
+  const gatewayRef = useRef<{
+    pg?: "cashfree" | "razorpay" | "payu";
+    cf_order_id?: string;
+    payu_txnid?: string;
+    razorpay_payment_id?: string;
+  }>({});
+
   const purchaseEventIdRef = useRef<string>(generateEventId());
 
   const validateAddress = (): string | null => {
