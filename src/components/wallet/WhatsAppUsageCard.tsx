@@ -137,37 +137,6 @@ export default function WhatsAppUsageCard({ storeId }: { storeId: string }) {
           })}
         </div>
 
-        {/* Recent conversations */}
-        <div>
-          <p className="mb-2 text-xs font-semibold">Recent conversations</p>
-          {!conversations?.length ? (
-            <p className="py-4 text-center text-[11px] text-muted-foreground">
-              No WhatsApp conversations in this range
-            </p>
-          ) : (
-            <div className="divide-y">
-              {conversations.map((c) => {
-                const meta = CAT_META[c.category] ?? CAT_META.marketing;
-                return (
-                  <div key={c.id} className="flex items-center gap-2 py-1.5 text-xs">
-                    <Badge variant="outline" className={`text-[9px] py-0 ${meta.color} border-0`}>
-                      {meta.label}
-                    </Badge>
-                    <span className="tabular-nums">{maskPhone(c.recipient_phone)}</span>
-                    <span className="text-muted-foreground">
-                      {new Date(c.window_start).toLocaleDateString([], { month: "short", day: "numeric" })}{" "}
-                      {new Date(c.window_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                    <span className="ml-auto text-muted-foreground">×{c.message_count}</span>
-                    <span className="w-14 text-right font-semibold tabular-nums">
-                      ₹{Number(c.price_charged).toFixed(2)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
       </CardContent>
     </Card>
   );
