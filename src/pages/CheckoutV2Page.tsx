@@ -521,27 +521,32 @@ export default function CheckoutV2Page() {
     }
   };
 
-  const createGuestAccount = async (ordId: string) => {
-    try {
-      const { data } = await supabase.functions.invoke("create-guest-account", {
-        body: {
-          email: email.trim(),
-          phone: normalizePhone(phone),
-          name: fullName.trim(),
-          store_id: store.id,
-          order_id: ordId,
-        },
-      });
-      const result = data as { session?: { access_token?: string; refresh_token?: string } } | null;
-      if (result?.session?.access_token && result?.session?.refresh_token) {
-        await supabaseStorefront.auth.setSession({
-          access_token: result.session.access_token,
-          refresh_token: result.session.refresh_token,
+  const guestAccountPromiseRef = useRef<Promise<void> | null>(null);
+  const createGuestAccount = (ordId: string) => {
+    const p = (async () => {
+      try {
+        const { data } = await supabase.functions.invoke("create-guest-account", {
+          body: {
+            email: email.trim(),
+            phone: normalizePhone(phone),
+            name: fullName.trim(),
+            store_id: store.id,
+            order_id: ordId,
+          },
         });
+        const result = data as { session?: { access_token?: string; refresh_token?: string } } | null;
+        if (result?.session?.access_token && result?.session?.refresh_token) {
+          await supabaseStorefront.auth.setSession({
+            access_token: result.session.access_token,
+            refresh_token: result.session.refresh_token,
+          });
+        }
+      } catch (err) {
+        console.error("Guest account creation failed:", err);
       }
-    } catch (err) {
-      console.error("Guest account creation failed:", err);
-    }
+    })();
+    guestAccountPromiseRef.current = p;
+    return p;
   };
 
   const notifyOrderEmail = (ordId: string) => {
@@ -683,12 +688,73 @@ export default function CheckoutV2Page() {
     return null;
   };
 
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [viewingOrders, setViewingOrders] = useState(false);
   const finishSuccess = (paidOrderId?: string | null) => {
     const finalOrderId = paidOrderId || orderId;
     if (!finalOrderId) return;
     clearWaiting();
     onOrderSuccess(finalOrderId);
-    navigate(storefrontPath(store.slug, `account/orders/${finalOrderId}`));
+    if (!orderId) setOrderId(finalOrderId);
+    setWaiting(false);
+    setOrderPlaced(true);
+  };
+
+  const handleViewMyOrders = async () => {
+    if (viewingOrders) return;
+    setViewingOrders(true);
+    const orderPath = orderId
+      ? storefrontPath(store.slug, `account/orders/${orderId}`)
+      : storefrontPath(store.slug, "account");
+    try {
+      const { data: existing } = await supabaseStorefront.auth.getSession();
+      if (existing?.session?.user) { navigate(orderPath); return; }
+
+      if (guestAccountPromiseRef.current) {
+        await Promise.race([
+          guestAccountPromiseRef.current.catch(() => {}),
+          new Promise((r) => setTimeout(r, 600)),
+        ]);
+        const { data: after } = await supabaseStorefront.auth.getSession();
+        if (after?.session?.user) { navigate(orderPath); return; }
+      }
+
+      const normalized = normalizePhone(phone);
+      if (!normalized || normalized.length < 10) {
+        // No phone available (e.g. returning from PayU redirect on fresh tab) —
+        // go to the order page anyway; it will render skeleton until auth hydrates.
+        navigate(orderPath);
+        return;
+      }
+
+      navigate(orderPath);
+      void (async () => {
+        try {
+          const { data, error } = await supabase.functions.invoke("phone-login", {
+            body: {
+              phone: normalized,
+              store_id: store.id,
+              name: fullName || null,
+              claim_order_id: orderId || undefined,
+            },
+          });
+          if (error) throw error;
+          const res = data as { session?: { access_token?: string; refresh_token?: string } } | null;
+          if (res?.session?.access_token && res?.session?.refresh_token) {
+            await supabaseStorefront.auth.setSession({
+              access_token: res.session.access_token,
+              refresh_token: res.session.refresh_token,
+            });
+          }
+        } catch (err) {
+          console.error("phone-login (view orders) failed:", err);
+        }
+      })();
+    } catch (err: any) {
+      toast.error(err?.message || "Could not open your orders. Please try again.");
+    } finally {
+      setViewingOrders(false);
+    }
   };
 
   useEffect(() => {
@@ -826,7 +892,7 @@ export default function CheckoutV2Page() {
       const res = data as { ok?: boolean; error?: string } | null;
       if (!res?.ok) throw new Error(res?.error || "Failed to place COD order");
       onOrderSuccess(orderId);
-      navigate(storefrontPath(store.slug, `account/orders/${orderId}`));
+      setOrderPlaced(true);
     } catch (e: any) {
       toast.error(e.message || "Failed to place COD order");
     } finally {
@@ -835,6 +901,53 @@ export default function CheckoutV2Page() {
   };
 
   const forceRecheck = () => { manualRecheck(); };
+
+  // ─── Thank-you screen (matches legacy CheckoutPage post-order UX) ─────
+  if (orderPlaced) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+          <CheckCircle2 className="h-8 w-8 text-primary" />
+        </div>
+        <h1 className="text-2xl font-bold text-foreground">Order Placed!</h1>
+        <p className="mt-2 text-muted-foreground">
+          Your order has been placed successfully. The store will contact you shortly.
+        </p>
+        {(orderNumber || orderId) && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Order ID: <span className="font-mono font-semibold">{orderNumber || orderId?.slice(0, 8)}</span>
+          </p>
+        )}
+        <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+          <p className="flex items-center justify-center gap-1.5 text-sm font-medium text-foreground">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" /> Order confirmed!
+          </p>
+          {(phone || email) && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              We'll send updates to <strong>{phone}</strong>{email ? ` and ${email}` : ""}.
+            </p>
+          )}
+        </div>
+        <div className="mt-6 flex flex-col items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleViewMyOrders}
+            disabled={viewingOrders}
+            className="h-10 px-6"
+          >
+            {viewingOrders && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            View My Orders
+          </Button>
+          <Button
+            onClick={() => navigate(storefrontPath(store.slug))}
+            className="h-10 px-6"
+          >
+            Continue Shopping
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // ─── Empty cart guard ──────────────────────────────────────────────────
   if (cartItems.length === 0 && !orderId) {
