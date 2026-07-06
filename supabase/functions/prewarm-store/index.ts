@@ -25,6 +25,7 @@ Deno.serve(async (req) => {
   try {
     let slug: string | null = null;
     let domain: string | null = null;
+    let productSlug: string | null = null;
 
     const url = new URL(req.url);
     if (req.headers.get("content-type")?.includes("application/json")) {
@@ -32,12 +33,14 @@ Deno.serve(async (req) => {
         const body = await req.json();
         slug = body.slug || null;
         domain = body.domain || null;
+        productSlug = body.productSlug || null;
       } catch {
         // fallback to query params
       }
     }
     slug = slug || url.searchParams.get("slug");
     domain = domain || url.searchParams.get("domain");
+    productSlug = productSlug || url.searchParams.get("productSlug");
 
     if (!slug) {
       return new Response(
