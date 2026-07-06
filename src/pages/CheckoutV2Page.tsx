@@ -220,10 +220,12 @@ export default function CheckoutV2Page() {
               customer_email: email.trim() || undefined,
             },
           });
-          if (intErr) throw new Error(intErr.message);
-          const url: string | undefined = (intentData as any)?.intent_url;
+          // functions.invoke returns error for non-2xx BUT data still contains the JSON body
+          const payload: any = intentData ?? (intErr as any)?.context?.body;
+          const url: string | undefined = payload?.intent_url;
           if (!url) {
-            setIntents((s) => ({ ...s, [app]: { status: "failed", error: "No intent URL" } }));
+            const errMsg: string = payload?.error || intErr?.message || "Failed";
+            setIntents((s) => ({ ...s, [app]: { status: "failed", error: errMsg } }));
             return;
           }
           setIntents((s) => ({ ...s, [app]: { status: "ready", url: schemeFor(app, url) } }));
