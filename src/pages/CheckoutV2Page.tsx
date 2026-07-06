@@ -526,7 +526,7 @@ export default function CheckoutV2Page() {
             onClick={createOrderAndIntents}
             disabled={creatingOrder}
           >
-            {creatingOrder ? <Loader2 className="h-5 w-5 animate-spin" /> : `Continue to Pay ${formatPrice(total, currency)}`}
+            {creatingOrder ? <Loader2 className="h-5 w-5 animate-spin" /> : `Continue to Pay ${formatPrice(chargeAmount, currency)}`}
           </Button>
         </div>
       ) : (
