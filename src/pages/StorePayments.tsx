@@ -65,6 +65,7 @@ export default function StorePayments() {
       setPartialEnabled((store as any).partial_payment_enabled ?? false);
       setPartialType((store as any).partial_payment_type || "percentage");
       setPartialValue((store as any).partial_payment_value ? String((store as any).partial_payment_value) : "");
+      setCheckoutV2Enabled((store as any).checkout_v2_enabled ?? false);
     }
   }, [store]);
 
