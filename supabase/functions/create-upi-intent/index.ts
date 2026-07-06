@@ -4,6 +4,7 @@
 // Used by the CheckoutV2 tile UI. Dormant until UI calls it — safe to deploy alongside
 // the existing checkout flow.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { computePayuRequestHash, payuCheckoutHost, type PayuEnv } from "../_shared/payuHelpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -278,9 +279,106 @@ Deno.serve(async (req) => {
       }
 
       if (pg === "payu") {
-        // PayU S2S UPI intent needs additional integration work.
-        lastError = { pg: "payu", message: "PayU UPI intent not implemented", code: "payu_unsupported" };
-        continue;
+        try {
+          const env = (config.payu_env === "sandbox" ? "sandbox" : "production") as PayuEnv;
+          const txnid = `sb_${order_id.replace(/-/g, "").slice(0, 16)}`;
+          const amountStr = chargeAmount.toFixed(2);
+          const productinfo = `Order ${dbOrder.order_number || order_id.slice(0, 8)}`;
+          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+          const notifyUrl = `${supabaseUrl}/functions/v1/payu-webhook`;
+          const originHdr = req.headers.get("origin") || "";
+          const surl = originHdr ? `${originHdr}/?payu_status=success&txnid=${txnid}&payu_order=${order_id}` : notifyUrl;
+          const furl = originHdr ? `${originHdr}/?payu_status=failure&txnid=${txnid}&payu_order=${order_id}` : notifyUrl;
+
+          const hash = await computePayuRequestHash({
+            key: config.payu_merchant_key!,
+            txnid,
+            amount: amountStr,
+            productinfo,
+            firstname: safeName,
+            email: safeEmail,
+            udf1: order_id,
+            udf2: store_id,
+            salt: config.payu_merchant_salt!,
+          });
+
+          // PayU S2S seamless UPI Intent (requires merchant account to be
+          // approved for seamless S2S — if not, PayU returns an error and
+          // we fall through so the UI can show its "use standard checkout" hint).
+          const body = new URLSearchParams({
+            key: config.payu_merchant_key!,
+            txnid,
+            amount: amountStr,
+            productinfo,
+            firstname: safeName,
+            email: safeEmail,
+            phone: safePhone,
+            surl,
+            furl,
+            hash,
+            pg: "UPI",
+            bankcode: "INTENT",
+            txn_s2s_flow: "4",
+            s2s_client_ip: req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "0.0.0.0",
+            s2s_device_info: "WEB",
+            udf1: order_id,
+            udf2: store_id,
+            udf3: "",
+            udf4: "",
+            udf5: "",
+          });
+
+          const payuRes = await fetch(`${payuCheckoutHost(env)}/_payment`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "Accept": "application/json",
+            },
+            body: body.toString(),
+          });
+          const rawText = await payuRes.text();
+          let payuData: any = null;
+          try { payuData = JSON.parse(rawText); } catch { /* not JSON — hosted checkout HTML */ }
+
+          if (!payuData) {
+            lastError = { pg: "payu", message: "PayU S2S not enabled on this merchant account", code: "payu_seamless_not_enabled" };
+            continue;
+          }
+
+          // Intent URL can appear under several keys depending on PayU response variant
+          const intentUrl: string | undefined =
+            payuData?.data ||
+            payuData?.upi_intent_url ||
+            payuData?.metaData?.upiIntentUri ||
+            payuData?.metaData?.intentURIData ||
+            (typeof payuData?.result === "string" && payuData.result.startsWith("upi://") ? payuData.result : undefined);
+
+          if (!intentUrl || !String(intentUrl).startsWith("upi://")) {
+            lastError = {
+              pg: "payu",
+              message: payuData?.error_Message || payuData?.message || "PayU returned no intent URL",
+              details: payuData,
+            };
+            continue;
+          }
+
+          // Webhook resolves the order via udf1/udf2 — no extra order column needed.
+
+
+
+          return jsonRes({
+            pg: "payu",
+            env,
+            intent_url: intentUrl,
+            payu_txnid: txnid,
+            amount: chargeAmount,
+            currency,
+            channel: "link",
+          });
+        } catch (e: any) {
+          lastError = { pg: "payu", message: e?.message || "PayU threw" };
+          continue;
+        }
       }
     }
 
