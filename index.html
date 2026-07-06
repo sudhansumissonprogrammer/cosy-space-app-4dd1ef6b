@@ -54,10 +54,9 @@
     </script>
     <!-- ⚡ WhatsApp branded redirector — INLINE FAST PATH
          Runs before ANY bundle downloads. Catches /r/<token>, /cart/<token>,
-         /order/<token> and hands off to the wa-r edge function directly.
-         Saves 1.5-2s vs waiting for main-*.js to boot just to run
-         location.replace(). Only active when root/preview domain serves the
-         request (Cloudflare Worker already handles this on proxied hosts). -->
+         /order/<token>. First tries the native redirect RPC directly, then
+         falls back to wa-r. window.stop() prevents the rest of this HTML shell
+         from downloading JS/CSS while the redirect is already resolving. -->
     <script>
       (function(){
         try{
@@ -72,7 +71,26 @@
             if (o) tok = "o-" + o;
           }
           if (tok) {
-            location.replace("https://dqepeywgftbpxeeqfuwt.supabase.co/functions/v1/wa-r/" + encodeURIComponent(tok) + location.search);
+            try{ window.stop(); }catch(_){ }
+            var api = "https://dqepeywgftbpxeeqfuwt.supabase.co";
+            var anon = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
+            var settled = false;
+            var fallback = function(){
+              if(settled) return; settled = true;
+              location.replace(api + "/functions/v1/wa-r/" + encodeURIComponent(tok) + location.search);
+            };
+            var timer = setTimeout(fallback, 900);
+            fetch(api + "/rest/v1/rpc/get_wa_redirect", {
+              method: "POST",
+              cache: "no-store",
+              credentials: "omit",
+              headers: { apikey: anon, Authorization: "Bearer " + anon, "Content-Type": "application/json" },
+              body: JSON.stringify({ _token: tok })
+            }).then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+              if(settled) return;
+              if(d && d.ok && d.target){ settled = true; clearTimeout(timer); location.replace(d.target); }
+              else fallback();
+            }).catch(fallback);
           }
         }catch(_){}
       })();

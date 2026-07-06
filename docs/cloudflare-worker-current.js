@@ -422,13 +422,17 @@ async function finalizeResponse(request, response) {
    sequentially after JS executes. Expected gain: 2-3s on cold load.
    ============================================================ */
 const ROOT_DOMAIN = "shopbanao.in";
+// Hosts that must act as pure WhatsApp short-link redirectors before any
+// storefront/root routing. Keep `go.shopbanao.in` here because Cloudflare may
+// route it to this Worker even when the main root host is still on Lovable.
+const WA_REDIRECT_HOSTS = new Set([ROOT_DOMAIN, `www.${ROOT_DOMAIN}`, `go.${ROOT_DOMAIN}`]);
 const ORIGIN_HOST = "cosy-space-app.lovable.app";
 // v8.58.0: Decoupled from WORKER_VERSION. Bump ONLY when HTML output shape
 // changes (head injection, skeleton, JSON-LD, inline data markers). Previously
 // every worker deploy invalidated 100% of HTML cache globally → 5-10x Supabase
 // spike for ~20min post-deploy. CHECKLIST before bumping: did you change
 // buildSkeleton, injectIntoHtml, _buildPrebuiltHead, JSON-LD, or __*_INLINE__?
-const HTML_CACHE_SCHEMA_VERSION = "html-v5";
+const HTML_CACHE_SCHEMA_VERSION = "html-v6";
 const R2_CDN_HOST = "cdn.shopbanao.in";
 
 const SUPABASE_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
@@ -3790,7 +3794,9 @@ function injectIntoHtml(html, slug, storefrontData, dataSource, inlineProducts) 
   }
 
   const cssMatch = html.match(/href="(\/assets\/[^"]+\.css)"/);
-  let cssPreload = cssMatch ? `<link rel="preload" href="${cssMatch[1]}" as="style" crossorigin />\n` : "";
+  // Match Vite's eventual stylesheet credentials mode. Adding crossorigin here
+  // made Chromium ignore the preload and fetch the CSS again, wasting one RTT.
+  let cssPreload = cssMatch ? `<link rel="preload" href="${cssMatch[1]}" as="style" />\n` : "";
 
   const DASHBOARD_CHUNK_PATTERN =
     /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages)-/;
@@ -6265,7 +6271,7 @@ async function _handleFetch(request, env, ctx) {
        the zone) so the browser starts hero image download BEFORE the
        redirect body lands. Falls back to proxying wa-r on any error so
        behavior stays identical if RPC or KV is unreachable. */
-  if (earlyMethod === "GET" && (earlyUrl.hostname === ROOT_DOMAIN || earlyUrl.hostname === `www.${ROOT_DOMAIN}`)) {
+  if (earlyMethod === "GET" && WA_REDIRECT_HOSTS.has(earlyUrl.hostname)) {
     let waToken = null;
     if (earlyPath.startsWith("/r/")) {
       waToken = earlyPath.slice(3).split("/")[0];
