@@ -167,8 +167,10 @@ function sanitizeError(s: any): string {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const j = (status: number, body: any) =>
-    new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  const j = (status: number, body: any) => {
+    if (status >= 400) console.error("wa-template-submit reject", status, JSON.stringify(body));
+    return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  };
 
   try {
     const authHeader = req.headers.get("Authorization") || "";
