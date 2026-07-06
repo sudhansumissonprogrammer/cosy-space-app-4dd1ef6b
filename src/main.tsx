@@ -21,32 +21,31 @@ if (typeof window !== "undefined" && typeof (window as any).cancelIdleCallback !
 
 installChunkLoadRecovery();
 
-// 🔗 WhatsApp branded redirector. Templates send users to https://shopbanao.in/r/<token>;
-// bounce straight to the edge function before any React/JS loads. Single short hop.
-if (typeof window !== "undefined" && window.location.pathname.startsWith("/r/")) {
-  const token = window.location.pathname.slice(3).split("/")[0].split("?")[0];
-  if (token) {
-    window.location.replace(`https://dqepeywgftbpxeeqfuwt.supabase.co/functions/v1/wa-r/${encodeURIComponent(token)}`);
-    throw new Error("redirecting"); // halt module eval
-  }
-}
-
-// 🔗 WhatsApp template URLs use descriptive paths /cart/<token> and /order/<token>
-// for Meta review readability. Bounce to the wa-r edge fn with the correct kind
-// prefix (c- for carts, o- for orders). Unknown tokens (e.g. demo123 from Meta's
-// sample-URL check) 302 to shopbanao.in homepage — never 404.
+// 🔗 WhatsApp branded redirector (/r/<token>, /cart/<token>, /order/<token>)
+// is now handled entirely at the Cloudflare Worker edge — it fetches wa-r
+// and returns the 302 directly, with zero HTML/JS. This saves the 2-4s
+// previously spent downloading + parsing LandingApp just to run
+// window.location.replace(). See docs/cloudflare-worker-current.js
+// (WhatsApp branded redirector — EDGE FAST PATH).
+//
+// The JS fallback below only fires if a user somehow lands on these paths
+// via the SPA (e.g. Worker bypass, local dev, or preview host) — real
+// production traffic never reaches this code.
 if (typeof window !== "undefined") {
   const p = window.location.pathname;
-  let prefix = "";
-  let stripLen = 0;
-  if (p.startsWith("/cart/")) { prefix = "c-"; stripLen = 6; }
-  else if (p.startsWith("/order/")) { prefix = "o-"; stripLen = 7; }
-  if (prefix) {
-    const token = p.slice(stripLen).split("/")[0].split("?")[0];
-    if (token) {
-      window.location.replace(`https://dqepeywgftbpxeeqfuwt.supabase.co/functions/v1/wa-r/${encodeURIComponent(prefix + token)}`);
-      throw new Error("redirecting");
-    }
+  let redirectToken = "";
+  if (p.startsWith("/r/")) {
+    redirectToken = p.slice(3).split("/")[0].split("?")[0];
+  } else if (p.startsWith("/cart/")) {
+    const t = p.slice(6).split("/")[0].split("?")[0];
+    if (t) redirectToken = "c-" + t;
+  } else if (p.startsWith("/order/")) {
+    const t = p.slice(7).split("/")[0].split("?")[0];
+    if (t) redirectToken = "o-" + t;
+  }
+  if (redirectToken) {
+    window.location.replace(`https://dqepeywgftbpxeeqfuwt.supabase.co/functions/v1/wa-r/${encodeURIComponent(redirectToken)}`);
+    throw new Error("redirecting"); // halt module eval
   }
 }
 
