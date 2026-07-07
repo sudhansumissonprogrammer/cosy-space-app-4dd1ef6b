@@ -1365,6 +1365,8 @@ export default function CheckoutV2Page() {
 
       const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "any"];
       setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "loading" }; }); return next; });
+      // Fresh intent = fresh QR — allow the desktop auto-poll to arm again.
+      desktopQrPollStartedRef.current = false;
 
       try {
         const { data: intentData, error: intErr } = await supabase.functions.invoke("create-upi-intent", {
