@@ -1378,6 +1378,29 @@ export default function CheckoutV2Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPayment, intents.any.status, intents.any.url, orderId, waiting]);
 
+  // Partial ↔ Full toggle: the previous order + UPI intent were minted for the
+  // old amount and stamped with the old payment_type. Reset everything so the
+  // next auto-advance recreates a fresh order (new checkout_token, new
+  // advance_paid on the DB row, new intent URL with the correct amount).
+  const lastPayModeRef = useRef(payMode);
+  useEffect(() => {
+    if (lastPayModeRef.current === payMode) return;
+    lastPayModeRef.current = payMode;
+    if (!orderId && !showPayment) return; // nothing to reset yet
+    if (waiting || confirmingPayment || orderPlaced) return; // don't disrupt an in-flight payment
+    setOrderId(null);
+    setOrderNumber(null);
+    setIntents({
+      gpay: { status: "idle" }, phonepe: { status: "idle" },
+      paytm: { status: "idle" }, any: { status: "idle" },
+    });
+    gatewayRef.current = {};
+    autoAdvancedRef.current = false;
+    desktopQrPollStartedRef.current = false;
+    setCheckoutToken(newCheckoutToken());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payMode]);
+
 
   // ─── Full gateway modal paths (Razorpay / Cashfree / PayU) ──────────────
   const openRazorpay = async (order: PendingOrder) => {
