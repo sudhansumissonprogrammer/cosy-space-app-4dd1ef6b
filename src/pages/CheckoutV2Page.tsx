@@ -2004,7 +2004,7 @@ export default function CheckoutV2Page() {
 
       {/* Header: back • logo • Secured payment */}
       <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-4 py-3 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} aria-label="Back" className="p-1 -ml-1">
+        <button onClick={goBack} aria-label="Back" className="p-1 -ml-1">
           <ArrowLeft className="h-5 w-5" />
         </button>
         {store?.logo_url ? (
