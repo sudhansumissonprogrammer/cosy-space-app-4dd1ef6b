@@ -1141,7 +1141,7 @@ export default function CheckoutV2Page() {
         const { data: after } = await supabaseStorefront.auth.getSession();
         if (after?.session?.user) { navigate(orderPath); return; }
       }
-      const normalized = normalizePhone(phone);
+      const normalized = toCanonicalIndianPhone(phone) || normalizePhone(phone);
       if (!normalized || normalized.length < 10) { navigate(orderPath); return; }
       navigate(orderPath);
       void (async () => {
@@ -1345,7 +1345,7 @@ export default function CheckoutV2Page() {
         const { data: intentData, error: intErr } = await supabase.functions.invoke("create-upi-intent", {
           body: {
             store_id: store.id, order_id: order.id, app: "any",
-            customer_name: fullName.trim(), customer_phone: normalizePhone(phone),
+            customer_name: fullName.trim(), customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
             customer_email: email.trim() || undefined,
             return_url: buildPaymentReturnUrl(),
           },
@@ -1519,7 +1519,7 @@ export default function CheckoutV2Page() {
       loadCashfree(env),
       callEdgeFunction("store-cashfree-create-order", {
         store_id: store.id, amount: chargeAmount, currency, order_id: order.id,
-        customer_name: fullName, customer_phone: phone, customer_email: email || undefined,
+        customer_name: fullName, customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone), customer_email: email || undefined,
         return_url: `${window.location.origin}/checkout?cf_order={order_id}&order=${order.id}`,
       }),
     ]);
@@ -1589,7 +1589,7 @@ export default function CheckoutV2Page() {
     try {
       payuData = await callEdgeFunction("payu-create-txn", {
         store_id: store.id, order_id: order.id,
-        customer_name: fullName, customer_phone: phone, customer_email: email || undefined,
+        customer_name: fullName, customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone), customer_email: email || undefined,
         return_url: returnUrl,
       });
     } catch (err: any) {
@@ -1904,7 +1904,7 @@ export default function CheckoutV2Page() {
   // create the abandoned_carts row (via CheckoutPhoneStep → capture_checkout_lead)
   // BEFORE the shopper can drop off on the address form. WhatsApp cart-recovery
   // cron then reaches out after 30 min.
-  const needsPhone = !isValidIndianPhone(normalizePhone(phone));
+  const needsPhone = !toCanonicalIndianPhone(phone);
   // Pincode gate (Step 1.5): once phone is captured we ask for pincode only,
   // then hydrate city/state via the existing autofill effect before showing
   // the full address form.
@@ -1920,7 +1920,7 @@ export default function CheckoutV2Page() {
             cartItems={checkoutItems as any}
             onComplete={(p) => {
               setPhone(p);
-              try { localStorage.setItem("checkout_phone", p); } catch { /* noop */ }
+              try { localStorage.setItem("checkout_phone", toCanonicalIndianPhone(p) || p); } catch { /* noop */ }
             }}
           />
         </div>
