@@ -1359,6 +1359,24 @@ export default function CheckoutV2Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pincode, streetAddress, city, state, fullName, paymentConfigLoaded, showPayment, creatingOrder]);
 
+  // Desktop QR: auto-start payment polling as soon as the UPI intent URL is
+  // ready, so the moment the shopper scans + pays in any UPI app we detect it
+  // and advance to success without waiting for a button tap.
+  const desktopQrPollStartedRef = useRef(false);
+  useEffect(() => {
+    if (desktopQrPollStartedRef.current) return;
+    if (isMobile()) return;
+    if (!showPayment || waiting) return;
+    if (!orderId) return;
+    if (intents.any.status !== "ready" || !intents.any.url) return;
+    desktopQrPollStartedRef.current = true;
+    setWaitingApp("UPI QR");
+    persistWaiting("any", "UPI QR");
+    setWaiting(true);
+    try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPayment, intents.any.status, intents.any.url, orderId, waiting]);
+
 
   // ─── Full gateway modal paths (Razorpay / Cashfree / PayU) ──────────────
   const openRazorpay = async (order: PendingOrder) => {
