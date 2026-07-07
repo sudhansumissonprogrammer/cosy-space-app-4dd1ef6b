@@ -42,7 +42,7 @@ const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurcha
 import { QRCodeSVG } from "qrcode.react";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
 
-type UpiApp = "gpay" | "phonepe" | "paytm" | "any";
+type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
 
 interface IntentState {
