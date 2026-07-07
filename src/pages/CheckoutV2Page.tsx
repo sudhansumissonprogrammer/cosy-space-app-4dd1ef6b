@@ -2441,12 +2441,19 @@ export default function CheckoutV2Page() {
 
           {/* UPI card */}
           {mobile && (
-            <div className="relative bg-white rounded-xl border border-[#ECECEC] p-3.5">
+            <div className="relative bg-white rounded-xl border border-[#ECECEC] p-3.5 pt-5 mt-2">
+              {/* Discount ribbon */}
+              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10">
+                <div className="relative bg-[#E53935] text-white text-[10.5px] font-bold px-2.5 py-1 rounded-md shadow-sm whitespace-nowrap">
+                  Get Extra Discount
+                  <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-[#E53935]" />
+                </div>
+              </div>
 
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded bg-gradient-to-br from-orange-500 to-blue-600" />
-                  <div className="text-[15px] font-bold">UPI</div>
+                <div className="flex items-center gap-2.5">
+                  <img src="/icons/upi.png" alt="UPI" className="h-8 w-auto object-contain" />
+                  <div className="text-[17px] font-bold tracking-tight">UPI</div>
                 </div>
                 <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
               </div>
