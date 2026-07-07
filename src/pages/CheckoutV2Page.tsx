@@ -2452,50 +2452,62 @@ export default function CheckoutV2Page() {
 
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2.5">
-                  <img src="/icons/upi.png" alt="UPI" className="h-8 w-auto object-contain" />
-                  <div className="text-[17px] font-bold tracking-tight">UPI</div>
+                  <img src="/icons/upi.png" alt="UPI" className="h-11 w-auto object-contain" />
+                  <div className="text-[19px] font-bold tracking-tight">UPI</div>
                 </div>
                 <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
               </div>
-              <div className="grid grid-cols-4 gap-2">
-                {UPI_APPS.slice(0, 3).map((app, i) => {
-                  const s = intents[app.key];
-                  const disabled = s.status !== "ready";
-                  const bg = ["bg-sky-50", "bg-purple-50", "bg-rose-50"][i] || "bg-gray-50";
-                  return (
-                    <button
-                      key={app.key}
-                      onClick={() => tapUpiApp(app.key)}
-                      disabled={disabled}
-                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 disabled:opacity-40 disabled:cursor-not-allowed min-h-[92px] relative`}
-                    >
-                      
-                      <img src={app.icon} alt={app.label} className="h-8 w-8 mt-3 mb-1 object-contain" />
-                      <div className="text-[11px] font-semibold">{app.label}</div>
-                      {s.status === "loading" && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
-                    </button>
-                  );
-                })}
-                <button
-                  onClick={() => tapUpiApp("any")}
-                  disabled={intents.any.status !== "ready"}
-                  className="flex flex-col items-center justify-center rounded-lg bg-gray-50 active:scale-95 transition-all p-2.5 disabled:opacity-40 min-h-[92px]"
-                >
-                  <div className="h-8 w-8 mt-3 mb-1 rounded-full bg-black flex items-center justify-center text-white text-[10px] font-bold">UPI</div>
-                  <div className="text-[11px] font-semibold">Any App</div>
-                  {intents.any.status === "loading" && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
-                </button>
+
+              {/* Horizontally scrollable UPI apps carousel */}
+              <div className="-mx-1 overflow-x-auto no-scrollbar">
+                <div className="flex gap-2 px-1 pb-1 min-w-max">
+                  {([
+                    { key: "paytm" as const, label: "Paytm", icon: "/icons/paytm-round.png", bg: "bg-sky-50", cashback: true, routeKey: "paytm" as UpiApp },
+                    { key: "phonepe" as const, label: "PhonePe", icon: "/icons/phonepe-round.png", bg: "bg-purple-50", cashback: false, routeKey: "phonepe" as UpiApp },
+                    { key: "gpay" as const, label: "G Pay", icon: "/icons/gpay-round.svg", bg: "bg-rose-50", cashback: false, routeKey: "gpay" as UpiApp },
+                    { key: "amazonpay" as const, label: "Amazon Pay", icon: null, initial: "pay", initialBg: "bg-black", initialColor: "text-white", bg: "bg-emerald-50", cashback: true, routeKey: "any" as UpiApp },
+                    { key: "bhim" as const, label: "BHIM UPI", icon: null, initial: "BHIM", initialBg: "bg-gradient-to-br from-orange-500 to-green-600", initialColor: "text-white", bg: "bg-orange-50", cashback: false, routeKey: "any" as UpiApp },
+                    { key: "navi" as const, label: "Navi", icon: null, initial: "N", initialBg: "bg-blue-600", initialColor: "text-white", bg: "bg-indigo-50", cashback: false, routeKey: "any" as UpiApp },
+                  ] as const).map((app) => {
+                    const s = intents[app.routeKey];
+                    const disabled = s.status !== "ready";
+                    return (
+                      <div key={app.key} className={`relative rounded-xl ${app.cashback ? app.bg : ""} p-1 pt-4`}>
+                        {app.cashback && (
+                          <div className="absolute -top-0 left-2 text-[9.5px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-sm">
+                            Win Cashback
+                          </div>
+                        )}
+                        <button
+                          onClick={() => tapUpiApp(app.routeKey)}
+                          disabled={disabled}
+                          className="flex flex-col items-center justify-center rounded-lg bg-white border border-[#ECECEC] active:scale-95 transition-all px-3 py-3 disabled:opacity-40 disabled:cursor-not-allowed w-[78px]"
+                        >
+                          {app.icon ? (
+                            <img src={app.icon} alt={app.label} className="h-11 w-11 object-contain" />
+                          ) : (
+                            <div className={`h-11 w-11 rounded-full ${app.initialBg} ${app.initialColor} flex items-center justify-center text-[11px] font-bold`}>
+                              {app.initial}
+                            </div>
+                          )}
+                          <div className="text-[11px] font-semibold mt-1.5 text-center leading-tight">{app.label}</div>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
+
               <button
                 onClick={() => tapUpiApp("any")}
                 disabled={intents.any.status !== "ready"}
-                className="mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] disabled:opacity-40"
+                className="mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-3 active:scale-[0.99] disabled:opacity-40"
               >
-                <span className="text-[13px] font-semibold">All UPI Apps</span>
-                <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
-                  Pay with any UPI app
-                  <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
+                <span className="flex items-center gap-2">
+                  <span className="text-[13.5px] font-bold">All UPI Apps</span>
+                  <span className="text-[12px] font-semibold text-emerald-600">8 Deals Available</span>
                 </span>
+                <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
               </button>
             </div>
           )}
