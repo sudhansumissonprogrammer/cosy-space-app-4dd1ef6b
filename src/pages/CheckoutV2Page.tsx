@@ -1944,15 +1944,16 @@ export default function CheckoutV2Page() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <div className="text-[14px] font-bold">Deliver To {fullName}</div>
-                      {customer && savedAddresses && savedAddresses.length > 0 && (
-                        <button
-                          onClick={() => setShowAddressDialog(true)}
-                          className="relative bg-black text-white text-[11px] font-semibold px-2 py-1 rounded-md"
-                        >
-                          Tap To Edit Address
-                          <span className="absolute -bottom-1 left-4 w-2 h-2 bg-black rotate-45" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => {
+                          if (savedAddresses && savedAddresses.length > 0) setShowAddressDialog(true);
+                          else setStreetAddress("");
+                        }}
+                        className="relative bg-black text-white text-[11px] font-semibold px-2 py-1 rounded-md"
+                      >
+                        Tap To Edit Address
+                        <span className="absolute -bottom-1 left-4 w-2 h-2 bg-black rotate-45" />
+                      </button>
                     </div>
                     <div className="text-[13px] text-foreground/80 mt-0.5">
                       {streetAddress}
@@ -1964,12 +1965,13 @@ export default function CheckoutV2Page() {
                       +91 {phone}{email ? <> &nbsp;|&nbsp; <span className="truncate">{email}</span></> : null}
                     </div>
                   </div>
-                  {customer && savedAddresses && savedAddresses.length > 0 ? (
-                    <button
-                      onClick={() => setShowAddressDialog(true)}
-                      className="text-[13px] font-semibold border border-[#111] rounded-md px-3 py-1.5"
-                    >Change</button>
-                  ) : null}
+                  <button
+                    onClick={() => {
+                      if (savedAddresses && savedAddresses.length > 0) setShowAddressDialog(true);
+                      else setStreetAddress("");
+                    }}
+                    className="text-[13px] font-semibold border border-[#111] rounded-md px-3 py-1.5"
+                  >Change</button>
                 </div>
                 {shippingActive && (
                   <div className="mt-3 pt-3 border-t border-[#ECECEC] bg-[#F9FAFB] -mx-3.5 -mb-3.5 px-3.5 py-2.5 rounded-b-xl">
@@ -2462,62 +2464,92 @@ export default function CheckoutV2Page() {
       )}
 
       {/* Address book dialog (saved addresses sheet) */}
-      <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
-        <DialogContent className="max-w-md p-0 gap-0 rounded-t-2xl">
-          <DialogHeader className="p-4 border-b border-[#ECECEC]">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-[15px] font-bold">Select Delivery Address</DialogTitle>
-              {!showAddAddress && (
-                <button className="text-[13px] font-semibold border border-[#111] rounded-md px-3 py-1.5" onClick={() => setShowAddAddress(true)}>
-                  + Add New Address
-                </button>
-              )}
-            </div>
-            <DialogDescription className="sr-only">Pick a saved address or add a new one.</DialogDescription>
-          </DialogHeader>
-          {!showAddAddress ? (
-            <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
-              {(savedAddresses || []).map((a: any) => (
-                <div key={a.id} className="rounded-xl border border-[#ECECEC] p-3.5">
-                  <div className="flex items-start justify-between mb-1">
-                    <div className="text-[14px] font-bold">
-                      {a.full_name} <span className="ml-1 text-[11px] bg-sky-100 text-sky-700 rounded px-1.5 py-0.5 font-semibold">{a.label || "Home"}</span>
-                    </div>
-                    <button className="text-muted-foreground" aria-label="Edit"><svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
-                  </div>
-                  <div className="text-[13px] text-foreground/80">{a.street_address}, {a.city}, {a.state}, {a.pincode}</div>
-                  <div className="text-[12px] text-muted-foreground mt-0.5">+91 {a.phone}</div>
+      {/* Address book bottom-sheet */}
+      {showAddressDialog && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => { setShowAddressDialog(false); setShowAddAddress(false); }}
+            aria-hidden
+          />
+          <button
+            type="button"
+            onClick={() => { setShowAddressDialog(false); setShowAddAddress(false); }}
+            aria-label="Close"
+            className="relative mx-auto mb-3 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col max-h-[80vh]">
+            {!showAddAddress ? (
+              <>
+                <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+                  <div className="text-[16px] font-semibold">Select Delivery Address</div>
                   <button
-                    onClick={() => { selectAddress(a); setShowAddressDialog(false); }}
-                    className="w-full mt-3 bg-black text-white rounded-lg py-3 text-[14px] font-bold"
-                  >Deliver Here</button>
+                    className="text-[13px] font-semibold border border-[#111] rounded-full px-3 py-1.5"
+                    onClick={() => setShowAddAddress(true)}
+                  >
+                    + Add New Address
+                  </button>
                 </div>
-              ))}
-              {(savedAddresses || []).length === 0 && (
-                <div className="text-center text-sm text-muted-foreground py-8">No saved addresses yet.</div>
-              )}
-            </div>
-          ) : (
-            <div className="p-4 space-y-2.5">
-              <div className="grid grid-cols-2 gap-2">
-                <Input placeholder="Full name *" value={newAddr.full_name} onChange={(e) => setNewAddr({ ...newAddr, full_name: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
-                <Input placeholder="Phone *" value={newAddr.phone} onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })} inputMode="numeric" maxLength={10} className="h-11 rounded-lg border-[#ECECEC]" />
-              </div>
-              <Input placeholder="Flat, House no., Street, Area *" value={newAddr.street_address} onChange={(e) => setNewAddr({ ...newAddr, street_address: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
-              <div className="grid grid-cols-3 gap-2">
-                <Input placeholder="Pincode *" value={newAddr.pincode} onChange={(e) => setNewAddr({ ...newAddr, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })} inputMode="numeric" className="h-11 rounded-lg border-[#ECECEC]" />
-                <Input placeholder="City *" value={newAddr.city} onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
-                <Input placeholder="State *" value={newAddr.state} onChange={(e) => setNewAddr({ ...newAddr, state: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
-              </div>
-              <Input placeholder="Label (Home / Work)" value={newAddr.label} onChange={(e) => setNewAddr({ ...newAddr, label: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
-              <div className="flex gap-2 pt-1">
-                <Button className="flex-1 h-11 bg-black hover:bg-black/90" onClick={saveNewAddress}>Save address</Button>
-                <Button variant="outline" className="h-11" onClick={() => setShowAddAddress(false)}>Cancel</Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                <div className="px-4 pb-5 space-y-3 overflow-y-auto">
+                  {(savedAddresses || []).map((a: any) => (
+                    <div key={a.id} className="rounded-xl border border-[#ECECEC] p-3.5">
+                      <div className="flex items-start justify-between mb-1">
+                        <div className="text-[14px] font-bold">
+                          {a.full_name}
+                          <span className="ml-2 text-[11px] bg-sky-100 text-sky-700 rounded px-1.5 py-0.5 font-semibold">
+                            {a.label || "Home"}
+                          </span>
+                        </div>
+                        <button className="text-muted-foreground" aria-label="Edit">
+                          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                        </button>
+                      </div>
+                      <div className="text-[13px] text-foreground/80">
+                        {a.street_address}, {a.city}, {a.state}, {a.pincode}
+                      </div>
+                      {a.email && (
+                        <div className="text-[12px] text-muted-foreground mt-0.5">{a.email}</div>
+                      )}
+                      <button
+                        onClick={() => { selectAddress(a); setShowAddressDialog(false); }}
+                        className="w-full mt-3 bg-black text-white rounded-lg py-3 text-[14px] font-bold"
+                      >Deliver Here</button>
+                    </div>
+                  ))}
+                  {(savedAddresses || []).length === 0 && (
+                    <div className="text-center text-sm text-muted-foreground py-8">
+                      No saved addresses yet. Tap "+ Add New Address" to add one.
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="px-5 pt-5 pb-2 text-[16px] font-semibold">Add Delivery Address</div>
+                <div className="px-4 pb-4 space-y-2.5 overflow-y-auto">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input placeholder="Full name *" value={newAddr.full_name} onChange={(e) => setNewAddr({ ...newAddr, full_name: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
+                    <Input placeholder="Phone *" value={newAddr.phone} onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })} inputMode="numeric" maxLength={10} className="h-11 rounded-lg border-[#ECECEC]" />
+                  </div>
+                  <Input placeholder="Flat, House no., Street, Area *" value={newAddr.street_address} onChange={(e) => setNewAddr({ ...newAddr, street_address: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
+                  <div className="grid grid-cols-3 gap-2">
+                    <Input placeholder="Pincode *" value={newAddr.pincode} onChange={(e) => setNewAddr({ ...newAddr, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })} inputMode="numeric" className="h-11 rounded-lg border-[#ECECEC]" />
+                    <Input placeholder="City *" value={newAddr.city} onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
+                    <Input placeholder="State *" value={newAddr.state} onChange={(e) => setNewAddr({ ...newAddr, state: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
+                  </div>
+                  <Input placeholder="Label (Home / Work)" value={newAddr.label} onChange={(e) => setNewAddr({ ...newAddr, label: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
+                  <div className="flex gap-2 pt-1">
+                    <Button className="flex-1 h-11 bg-black hover:bg-black/90" onClick={saveNewAddress}>Save address</Button>
+                    <Button variant="outline" className="h-11" onClick={() => setShowAddAddress(false)}>Cancel</Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
