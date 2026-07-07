@@ -2219,7 +2219,7 @@ export default function CheckoutV2Page() {
 
           {/* Contact + Address form (only if not filled) — bottom-sheet popup */}
           {(!addressFilled || showAddressFormSheet) && (
-            <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="Add delivery address">
+            <div className="fixed inset-0 z-[60] flex items-end justify-center" role="dialog" aria-modal="true" aria-label="Add delivery address">
               {/* Backdrop */}
               <div
                 className="absolute inset-0 bg-black/60 animate-in fade-in duration-200"
@@ -2227,8 +2227,10 @@ export default function CheckoutV2Page() {
                 aria-hidden
               />
               {/* Sheet — full-width on mobile, centered on desktop, slides up */}
-              <div className="absolute inset-x-0 bottom-0 mx-auto w-full sm:max-w-md">
-                <div className="bg-white rounded-t-2xl shadow-2xl flex flex-col h-[92dvh] animate-in slide-in-from-bottom duration-300">
+              <div
+                className="relative w-full sm:max-w-md bg-white rounded-t-2xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300"
+                style={{ height: "92svh", maxHeight: "92dvh" }}
+              >
                   {/* Grab handle */}
                   <div className="pt-2.5 pb-1 flex justify-center flex-shrink-0">
                     <span className="h-1.5 w-10 rounded-full bg-gray-300" />
