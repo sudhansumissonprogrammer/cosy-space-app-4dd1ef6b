@@ -2252,39 +2252,8 @@ export default function CheckoutV2Page() {
             </div>
           )}
 
+          {/* Partial-payment selector moved into payment section below */}
 
-          {/* Partial-payment selector */}
-          {hasPartial && addressFilled && (
-            <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
-              <div className="text-[13px] font-bold mb-2">Payment Option</div>
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => setPayMode("partial")}
-                  className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${payMode === "partial" ? "border-black bg-black/5" : "border-[#ECECEC]"}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${payMode === "partial" ? "border-black bg-black" : "border-muted-foreground"}`}>
-                      {payMode === "partial" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
-                    </div>
-                    <div className="text-[13px] font-semibold">Pay {formatPrice(partialAdvanceTotal, currency)} now · {formatPrice(partialBalanceDue, currency)} on delivery</div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPayMode("full")}
-                  className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${payMode === "full" ? "border-black bg-black/5" : "border-[#ECECEC]"}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${payMode === "full" ? "border-black bg-black" : "border-muted-foreground"}`}>
-                      {payMode === "full" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
-                    </div>
-                    <div className="text-[13px] font-semibold">Pay full {formatPrice(total, currency)} online</div>
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Trust footer only shown when payment step isn't below */}
           {!showPayment && !(pincode && streetAddress && city && state && fullName) && (
