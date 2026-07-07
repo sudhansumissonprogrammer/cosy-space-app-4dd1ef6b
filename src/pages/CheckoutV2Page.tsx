@@ -2462,13 +2462,13 @@ export default function CheckoutV2Page() {
               <div className="-mx-1 overflow-x-auto no-scrollbar">
                 <div className="flex gap-2 px-1 pb-1 min-w-max">
                   {([
-                    { key: "paytm" as const, label: "Paytm", icon: "/icons/paytm-round.png", bg: "bg-sky-50", cashback: true, routeKey: "paytm" as UpiApp },
-                    { key: "phonepe" as const, label: "PhonePe", icon: "/icons/phonepe-round.png", bg: "bg-purple-50", cashback: false, routeKey: "phonepe" as UpiApp },
-                    { key: "gpay" as const, label: "G Pay", icon: "/icons/gpay-round.svg", bg: "bg-rose-50", cashback: false, routeKey: "gpay" as UpiApp },
-                    { key: "amazonpay" as const, label: "Amazon Pay", icon: null, initial: "pay", initialBg: "bg-black", initialColor: "text-white", bg: "bg-emerald-50", cashback: true, routeKey: "any" as UpiApp },
-                    { key: "bhim" as const, label: "BHIM UPI", icon: null, initial: "BHIM", initialBg: "bg-gradient-to-br from-orange-500 to-green-600", initialColor: "text-white", bg: "bg-orange-50", cashback: false, routeKey: "any" as UpiApp },
-                    { key: "navi" as const, label: "Navi", icon: null, initial: "N", initialBg: "bg-blue-600", initialColor: "text-white", bg: "bg-indigo-50", cashback: false, routeKey: "any" as UpiApp },
-                  ] as const).map((app) => {
+                    { key: "paytm", label: "Paytm", icon: "/icons/paytm-round.png", bg: "bg-sky-50", cashback: true, routeKey: "paytm" as UpiApp, initial: "", initialBg: "", initialColor: "" },
+                    { key: "phonepe", label: "PhonePe", icon: "/icons/phonepe-round.png", bg: "bg-purple-50", cashback: false, routeKey: "phonepe" as UpiApp, initial: "", initialBg: "", initialColor: "" },
+                    { key: "gpay", label: "G Pay", icon: "/icons/gpay-round.svg", bg: "bg-rose-50", cashback: false, routeKey: "gpay" as UpiApp, initial: "", initialBg: "", initialColor: "" },
+                    { key: "amazonpay", label: "Amazon Pay", icon: null as string | null, initial: "pay", initialBg: "bg-black", initialColor: "text-white", bg: "bg-emerald-50", cashback: true, routeKey: "any" as UpiApp },
+                    { key: "bhim", label: "BHIM UPI", icon: null as string | null, initial: "BHIM", initialBg: "bg-gradient-to-br from-orange-500 to-green-600", initialColor: "text-white", bg: "bg-orange-50", cashback: false, routeKey: "any" as UpiApp },
+                    { key: "navi", label: "Navi", icon: null as string | null, initial: "N", initialBg: "bg-blue-600", initialColor: "text-white", bg: "bg-indigo-50", cashback: false, routeKey: "any" as UpiApp },
+                  ]).map((app) => {
                     const s = intents[app.routeKey];
                     const disabled = s.status !== "ready";
                     return (
