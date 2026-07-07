@@ -733,7 +733,8 @@ export default function CheckoutV2Page() {
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [pendingOrder, setPendingOrder] = useState<PendingOrder | null>(null);
   const [paymentFailed, setPaymentFailed] = useState(false);
-  const [checkoutToken] = useState<string>(() => (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `ct_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+  const newCheckoutToken = () => (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `ct_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const [checkoutToken, setCheckoutToken] = useState<string>(() => newCheckoutToken());
 
   const [intents, setIntents] = useState<Record<UpiApp, IntentState>>({
     gpay: { status: "idle" }, phonepe: { status: "idle" },
