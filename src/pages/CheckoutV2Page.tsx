@@ -1385,6 +1385,8 @@ export default function CheckoutV2Page() {
       }
     } catch (e: any) {
       toast.error(e.message || "Failed to create order");
+      // Allow the auto-advance effect to retry (and let the manual button work)
+      autoAdvancedRef.current = false;
     } finally {
       setCreatingOrder(false);
     }
