@@ -9,6 +9,7 @@
 // Safe: only mutates orders that are still `pending` AND belong to the given
 // store, and only if the store actually has COD enabled in payment_methods.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,8 +65,14 @@ Deno.serve(async (req) => {
     if (fetchErr || !order) return jsonRes({ error: "Order not found" }, 404);
     if (order.store_id !== store_id) return jsonRes({ error: "Order/store mismatch" }, 403);
 
-    // Already-processed guard (idempotent)
+    // Already-processed guard (idempotent). If the order was created directly
+    // as COD in place-order, that path already fired Purchase CAPI. If it was
+    // flipped by a prior checkout-v2-cod call, the firePurchaseCapi stamp
+    // (meta_purchase_fired_at) makes the retry a no-op.
     if (order.status === "confirmed" || order.status === "partially_paid" || order.status === "paid") {
+      // Safety re-fire: no-op if already stamped. Covers race where the initial
+      // flip succeeded but the CAPI call was interrupted.
+      await firePurchaseCapi(supabase, order_id, { source: "checkout-v2-cod-idempotent" });
       return jsonRes({ ok: true, already: true, order_id });
     }
     if (order.status !== "pending") {
@@ -88,6 +95,13 @@ Deno.serve(async (req) => {
       .eq("store_id", store_id)
       .eq("status", "pending"); // race guard
     if (updErr) return jsonRes({ error: updErr.message }, 500);
+
+    // CRITICAL: fire Meta Purchase CAPI now. place-order skipped it because
+    // the order was originally inserted as `payment_method="razorpay"` (the
+    // UPI placeholder). Without this, browser Pixel Purchase fires with no
+    // server-side dedup partner and Meta Event Match Quality tanks for the
+    // "UPI-then-switched-to-COD" segment of orders.
+    await firePurchaseCapi(supabase, order_id, { source: "checkout-v2-cod" });
 
     return jsonRes({ ok: true, order_id });
   } catch (err) {
