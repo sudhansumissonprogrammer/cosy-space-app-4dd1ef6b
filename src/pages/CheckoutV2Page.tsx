@@ -18,7 +18,7 @@ import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
 import { useCart } from "@/contexts/CartContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { formatPrice } from "@/lib/productUtils";
-import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
+import { normalizePhone, isValidIndianPhone, toCanonicalIndianPhone } from "@/lib/phoneUtils";
 import { storefrontPath } from "@/lib/subdomain";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -215,8 +215,8 @@ export default function CheckoutV2Page() {
 
   const [phone, setPhone] = useState<string>(() => {
     const s = buyNowPhone || savedInfo.phone || "";
-    const n = normalizePhone(s);
-    return isValidIndianPhone(n) ? n : (s || "");
+    const canon = toCanonicalIndianPhone(s);
+    return canon || (s ? String(s).replace(/\D/g, "").slice(-10) : "");
   });
   const [fullName, setFullName] = useState(savedInfo.fullName || "");
   const [email, setEmail] = useState("");
@@ -555,10 +555,10 @@ export default function CheckoutV2Page() {
   useEffect(() => {
     if (savedAddresses && savedAddresses.length > 0) return;
     if (returningDismissed || returningUsed) return;
-    const norm = normalizePhone(phone);
-    if (!isValidIndianPhone(norm)) { setReturningOrder(null); return; }
-    if (norm === lastLookedUpPhoneRef.current) return;
-    lastLookedUpPhoneRef.current = norm;
+    const canon = toCanonicalIndianPhone(phone);
+    if (!canon) { setReturningOrder(null); return; }
+    if (canon === lastLookedUpPhoneRef.current) return;
+    lastLookedUpPhoneRef.current = canon;
     let cancelled = false;
     (async () => {
       try {
@@ -566,7 +566,7 @@ export default function CheckoutV2Page() {
           .from("orders")
           .select("id, customer_name, customer_phone, street_address, city, state, pincode, created_at")
           .eq("store_id", store.id)
-          .eq("customer_phone", norm)
+          .eq("customer_phone", canon)
           .not("street_address", "is", null)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -705,7 +705,7 @@ export default function CheckoutV2Page() {
       if (cached) { setAbandonedCartId(cached); return; }
     } catch { /* noop */ }
     if (checkoutItems.length === 0) return;
-    const canonPhone = normalizePhone(phone);
+    const canonPhone = toCanonicalIndianPhone(phone);
     if (!canonPhone) return;
     (async () => {
       try {
@@ -873,9 +873,10 @@ export default function CheckoutV2Page() {
 
   const saveExpressInfo = () => {
     try {
-      localStorage.setItem("checkout_phone", normalizePhone(phone));
+      const canonPhone = toCanonicalIndianPhone(phone);
+      localStorage.setItem("checkout_phone", canonPhone || normalizePhone(phone));
       localStorage.setItem(`express_checkout_${store.id}`, JSON.stringify({
-        fullName, email, pincode, streetAddress, city, state, phone: normalizePhone(phone), waConsent,
+        fullName, email, pincode, streetAddress, city, state, phone: canonPhone || normalizePhone(phone), waConsent,
       }));
     } catch { /* noop */ }
   };
@@ -891,7 +892,7 @@ export default function CheckoutV2Page() {
         order: {
           total, currency, status: "pending",
           customer_name: fullName.trim(),
-          customer_phone: normalizePhone(phone),
+          customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
           customer_email: email.trim() || null,
           street_address: streetAddress.trim(),
           city: city.trim(), state: state.trim(), pincode: pincode.trim(),
@@ -941,7 +942,7 @@ export default function CheckoutV2Page() {
         storefront_customer_id: customer.id,
         label: "Home",
         full_name: fullName.trim(),
-        phone: normalizePhone(phone),
+        phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
         street_address: streetAddress.trim(),
         city: city.trim(), state: state.trim(), pincode: pincode.trim(),
         is_default: (count ?? 0) === 0,
@@ -955,7 +956,7 @@ export default function CheckoutV2Page() {
       try {
         const { data } = await supabase.functions.invoke("create-guest-account", {
           body: {
-            email: email.trim(), phone: normalizePhone(phone),
+            email: email.trim(), phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
             name: fullName.trim(), store_id: store.id, order_id: ordId,
           },
         });
