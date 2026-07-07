@@ -24,7 +24,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote, LocateFixed, Tag, X, Plus, Check, CreditCard } from "lucide-react";
 import { toast } from "sonner";
@@ -471,6 +470,7 @@ export default function CheckoutV2Page() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [showAddAddress, setShowAddAddress] = useState(false);
+  const [showAddressFormSheet, setShowAddressFormSheet] = useState(false);
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", apartment: "", city: "", state: "", pincode: "" });
   const [addrLabel, setAddrLabel] = useState<"Home" | "Work">("Home");
   const [apartment, setApartment] = useState("");
@@ -484,6 +484,18 @@ export default function CheckoutV2Page() {
     setState(addr.state || "");
     setPincode(addr.pincode || "");
   };
+
+  const openAddressFormSheet = () => {
+    setShowAddressDialog(false);
+    setShowAddAddress(false);
+    setShowAddressFormSheet(true);
+  };
+
+  const closeAddressFormSheet = () => {
+    if (showAddressFormSheet) setShowAddressFormSheet(false);
+    else navigate(-1);
+  };
+
   useEffect(() => {
     if (savedAddresses && savedAddresses.length > 0 && !selectedAddressId) {
       const def = savedAddresses.find((a: any) => a.is_default) || savedAddresses[0];
@@ -1966,10 +1978,7 @@ export default function CheckoutV2Page() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <div className="text-[14px] font-bold">Deliver To {fullName}</div>
                       <button
-                        onClick={() => {
-                          if (savedAddresses && savedAddresses.length > 0) setShowAddressDialog(true);
-                          else setStreetAddress("");
-                        }}
+                        onClick={openAddressFormSheet}
                         className="relative bg-black text-white text-[11px] font-semibold px-2 py-1 rounded-md"
                       >
                         Tap To Edit Address
@@ -1987,10 +1996,7 @@ export default function CheckoutV2Page() {
                     </div>
                   </div>
                   <button
-                    onClick={() => {
-                      if (savedAddresses && savedAddresses.length > 0) setShowAddressDialog(true);
-                      else setStreetAddress("");
-                    }}
+                    onClick={openAddressFormSheet}
                     className="text-[13px] font-semibold border border-[#111] rounded-md px-3 py-1.5"
                   >Change</button>
                 </div>
@@ -2059,23 +2065,23 @@ export default function CheckoutV2Page() {
           )}
 
           {/* Contact + Address form (only if not filled) — bottom-sheet popup */}
-          {!addressFilled && (
-            <div className="fixed inset-0 z-40 flex flex-col justify-end">
+          {(!addressFilled || showAddressFormSheet) && (
+            <div className="fixed inset-0 z-50 mx-auto flex h-[100dvh] max-w-md flex-col justify-end overflow-hidden">
               {/* Scrim */}
               <div className="absolute inset-0 bg-black/50" aria-hidden />
               {/* Close chip above sheet */}
               <button
                 type="button"
-                onClick={() => navigate(-1)}
+                onClick={closeAddressFormSheet}
                 aria-label="Close"
-                className="relative mx-auto mb-3 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center"
+                className="relative z-10 mx-auto mb-3 h-10 w-10 flex-shrink-0 rounded-full bg-white shadow-md flex items-center justify-center"
               >
                 <X className="h-5 w-5" />
               </button>
               {/* Sheet */}
-              <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col max-h-[85vh]">
+              <div className="relative z-10 w-full bg-white rounded-t-2xl flex max-h-[calc(100dvh-72px)] flex-col overflow-hidden shadow-2xl">
                 <div className="px-5 pt-5 pb-2 text-[16px] font-semibold">Add Delivery Address</div>
-                <div className="overflow-y-auto px-5 pt-2 pb-4 space-y-3">
+                <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-2 pb-4 space-y-3">
                   {/* Returning-guest 1-tap */}
                   {returningOrder && !returningUsed && (
                     <div className="rounded-lg border border-primary/40 bg-primary/5 p-2.5 flex items-start gap-2">
@@ -2180,7 +2186,7 @@ export default function CheckoutV2Page() {
                   </label>
                 </div>
                 {/* Sticky Continue inside sheet */}
-                <div className="border-t border-[#ECECEC] p-3 bg-white">
+                <div className="flex-shrink-0 border-t border-[#ECECEC] p-3 bg-white">
                   <Button
                     className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
                     onClick={() => {
@@ -2189,6 +2195,7 @@ export default function CheckoutV2Page() {
                       if (!streetAddress.trim()) { toast.error("Enter Flat, House no."); return; }
                       if (!city.trim() || !state.trim()) { toast.error("Enter city and state"); return; }
                       if (!customer && !email.trim()) { toast.error("Email address is required"); return; }
+                      setShowAddressFormSheet(false);
                       // Values are already synced to page state; addressFilled becomes true and closes the sheet.
                     }}
                   >
@@ -2479,7 +2486,7 @@ export default function CheckoutV2Page() {
       {/* Address book dialog (saved addresses sheet) */}
       {/* Address book bottom-sheet */}
       {showAddressDialog && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        <div className="fixed inset-0 z-50 mx-auto flex h-[100dvh] max-w-md flex-col justify-end overflow-hidden">
           <div
             className="absolute inset-0 bg-black/50"
             onClick={() => { setShowAddressDialog(false); setShowAddAddress(false); }}
@@ -2489,11 +2496,11 @@ export default function CheckoutV2Page() {
             type="button"
             onClick={() => { setShowAddressDialog(false); setShowAddAddress(false); }}
             aria-label="Close"
-            className="relative mx-auto mb-3 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center"
+            className="relative z-10 mx-auto mb-3 h-10 w-10 flex-shrink-0 rounded-full bg-white shadow-md flex items-center justify-center"
           >
             <X className="h-5 w-5" />
           </button>
-          <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col max-h-[80vh]">
+          <div className="relative z-10 w-full bg-white rounded-t-2xl flex max-h-[calc(100dvh-72px)] flex-col overflow-hidden shadow-2xl">
             {!showAddAddress ? (
               <>
                 <div className="px-5 pt-5 pb-3 flex items-center justify-between">
@@ -2505,7 +2512,7 @@ export default function CheckoutV2Page() {
                     + Add New Address
                   </button>
                 </div>
-                <div className="px-4 pb-5 space-y-3 overflow-y-auto">
+                <div className="min-h-0 flex-1 px-4 pb-5 space-y-3 overflow-y-auto">
                   {(savedAddresses || []).map((a: any) => (
                     <div key={a.id} className="rounded-xl border border-[#ECECEC] p-3.5">
                       <div className="flex items-start justify-between mb-1">
@@ -2541,7 +2548,7 @@ export default function CheckoutV2Page() {
             ) : (
               <>
                 <div className="px-5 pt-5 pb-2 text-[16px] font-semibold">Add Delivery Address</div>
-                <div className="px-4 pb-4 space-y-2.5 overflow-y-auto">
+                <div className="min-h-0 flex-1 px-4 pb-4 space-y-2.5 overflow-y-auto">
                   <div className="grid grid-cols-2 gap-2">
                     <Input placeholder="Full name *" value={newAddr.full_name} onChange={(e) => setNewAddr({ ...newAddr, full_name: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
                     <Input placeholder="Phone *" value={newAddr.phone} onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })} inputMode="numeric" maxLength={10} className="h-11 rounded-lg border-[#ECECEC]" />
