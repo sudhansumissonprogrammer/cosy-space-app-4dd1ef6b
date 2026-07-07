@@ -350,37 +350,8 @@ export default function CheckoutPhoneStep({
             </div>
           </div>
         </div>
-
-        {/* Trust footer */}
-        <div className="pt-6 pb-2 text-center">
-          <div className="text-[11px] text-muted-foreground mb-1">
-            Powered by
-          </div>
-          <div className="text-[14px] font-bold tracking-tight">
-            {storeName || "Storivo"}
-          </div>
-          <div className="text-[12px] text-muted-foreground mt-3">
-            Powering secure checkout for 10,000+ brands
-          </div>
-          <div className="flex items-center justify-center gap-4 mt-3 text-muted-foreground">
-            <div className="flex items-center gap-1 text-[11px]">
-              <ShieldCheck className="h-4 w-4" /> PCI DSS
-              <br />
-              Certified
-            </div>
-            <div className="flex items-center gap-1 text-[11px]">
-              <Lock className="h-4 w-4" /> Secured
-              <br />
-              Payments
-            </div>
-            <div className="flex items-center gap-1 text-[11px]">
-              <CheckCircle2 className="h-4 w-4" /> Verified
-              <br />
-              Merchant
-            </div>
-          </div>
-        </div>
       </div>
+
 
       {/* Sticky bottom: consent + Continue */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3">
