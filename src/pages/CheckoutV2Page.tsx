@@ -1171,7 +1171,7 @@ export default function CheckoutV2Page() {
     if (!waiting || !orderId) return;
     let cancelled = false;
     let attempts = 0;
-    const maxAttempts = gatewayRef.current.pg ? 10 : 18;
+    const maxAttempts = gatewayRef.current.pg ? 6 : 8;
     const checkNow = async (): Promise<boolean> => {
       if (waitingCheckInFlightRef.current) return false;
       waitingCheckInFlightRef.current = true;
@@ -1225,7 +1225,7 @@ export default function CheckoutV2Page() {
       });
       const status = (data as any)?.payment_status;
       if (status === "success") { finishSuccess(); return; }
-      if (status === "failed") { toast.error("Payment failed — please try again"); clearWaiting(); setWaiting(false); return; }
+      if (status === "failed") { toast.error("Payment failed — please try again"); clearWaiting(); setWaiting(false); try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ } return; }
       toast("Not confirmed yet — please complete the payment in your UPI app");
     } finally { setManualChecking(false); }
   };
@@ -1271,13 +1271,22 @@ export default function CheckoutV2Page() {
     const txnid = params.get("txnid");
     const returnedOrderId = params.get("payu_order");
     if (!payuStatus || !txnid || !returnedOrderId) return;
+    const normalizedPayuStatus = payuStatus.toLowerCase().replace(/[\s_-]/g, "");
     gatewayRef.current = { pg: "payu", payu_txnid: txnid };
     setOrderId(returnedOrderId);
     setOrderNumber(null);
     setShowPayment(true);
-    setWaitingApp("UPI");
-    persistWaiting("any", "UPI", { orderId: returnedOrderId, orderNumber: null });
-    setWaiting(true);
+    if (["failed", "failure", "cancel", "cancelled", "canceled", "usercancelled", "dropped"].includes(normalizedPayuStatus)) {
+      clearWaiting();
+      setPendingOrder({ id: returnedOrderId, number: null });
+      setPaymentFailed(true);
+      setWaiting(false);
+      try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+    } else {
+      setWaitingApp("PayU");
+      persistWaiting("any", "PayU", { orderId: returnedOrderId, orderNumber: null });
+      setWaiting(true);
+    }
     try {
       const u = new URL(window.location.href);
       u.searchParams.delete("payu_status");
@@ -1685,7 +1694,7 @@ export default function CheckoutV2Page() {
           setPendingOrder(order); setPaymentFailed(true);
           toast.error("Payment not confirmed yet. If you paid, it will update automatically.");
           done();
-        }, 90000);
+        }, 12000);
         const isCancelStatus = (s: string) =>
           s === "cancel" || s === "cancelled" || s === "canceled" ||
           s === "usercancelled" || s === "user_cancelled" ||
