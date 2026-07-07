@@ -2460,10 +2460,10 @@ export default function CheckoutV2Page() {
                 <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
               </div>
               <div className="grid grid-cols-4 gap-2">
-                {UPI_APPS.slice(0, 3).map((app, i) => {
+                {UPI_APPS.slice(0, 4).map((app, i) => {
                   const s = intents[app.key];
                   const disabled = s.status !== "ready";
-                  const bg = ["bg-sky-50", "bg-purple-50", "bg-rose-50"][i] || "bg-gray-50";
+                  const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
                   return (
                     <button
                       key={app.key}
@@ -2478,15 +2478,6 @@ export default function CheckoutV2Page() {
                     </button>
                   );
                 })}
-                <button
-                  onClick={() => tapUpiApp("any")}
-                  disabled={intents.any.status !== "ready"}
-                  className="flex flex-col items-center justify-center rounded-lg bg-gray-50 active:scale-95 transition-all p-2.5 disabled:opacity-40 min-h-[92px]"
-                >
-                  <div className="h-8 w-8 mt-3 mb-1 rounded-full bg-black flex items-center justify-center text-white text-[10px] font-bold">UPI</div>
-                  <div className="text-[11px] font-semibold">Any App</div>
-                  {intents.any.status === "loading" && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
-                </button>
               </div>
               <button
                 onClick={() => tapUpiApp("any")}
