@@ -2111,11 +2111,6 @@ export default function CheckoutV2Page() {
                     </div>
                   )}
                 </div>
-                {/* Beast Cash / rewards earning strip (cosmetic) */}
-                <div className="border-t border-[#ECECEC] px-3.5 py-2.5 flex items-center gap-2">
-                  <svg viewBox="0 0 24 24" className="h-5 w-5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 7l1.5 3 3.3.5-2.4 2.3.6 3.3-3-1.6-3 1.6.6-3.3-2.4-2.3 3.3-.5z"/></svg>
-                  <div className="text-[12px] text-amber-800">You're earning <span className="font-bold">{Math.max(1, Math.round(total * 0.01))} {store?.name || "Store"} Cash</span> on this order</div>
-                </div>
               </div>
             </>
           )}
@@ -2392,7 +2387,7 @@ export default function CheckoutV2Page() {
                       disabled={disabled}
                       className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 disabled:opacity-40 disabled:cursor-not-allowed min-h-[92px] relative`}
                     >
-                      {(i === 0) && <div className="absolute top-1 left-1 right-1 text-[8px] font-semibold text-emerald-700 bg-emerald-50 rounded px-1 py-0.5">Win Cashback</div>}
+                      
                       <img src={app.icon} alt={app.label} className="h-8 w-8 mt-3 mb-1 object-contain" />
                       <div className="text-[11px] font-semibold">{app.label}</div>
                       {s.status === "loading" && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
@@ -2415,8 +2410,8 @@ export default function CheckoutV2Page() {
                 className="mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] disabled:opacity-40"
               >
                 <span className="text-[13px] font-semibold">All UPI Apps</span>
-                <span className="flex items-center gap-2 text-[12px] text-emerald-600 font-semibold">
-                  {UPI_APPS.length}+ Deals Available
+                <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
+                  Pay with any UPI app
                   <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
                 </span>
               </button>
@@ -2551,11 +2546,10 @@ export default function CheckoutV2Page() {
               disabled={openingGateway || confirmingPayment}
               className="relative w-full bg-white rounded-xl border border-[#ECECEC] p-3.5 flex items-center justify-between active:scale-[0.99] transition-all disabled:opacity-40"
             >
-              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">Get cashback</div>
               <div className="flex items-center gap-3">
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M16 12h2"/></svg>
                 <div className="text-left">
-                  <div className="text-[14px] font-bold">Wallets</div>
+                  <div className="text-[14px] font-bold">Cards / Netbanking / Wallets</div>
                 </div>
               </div>
               <div className="flex items-center gap-1 text-[14px] font-bold">
@@ -2572,7 +2566,7 @@ export default function CheckoutV2Page() {
               disabled={placingCod || confirmingPayment}
               className="relative w-full bg-white rounded-xl border border-[#ECECEC] p-3.5 flex items-center justify-between active:scale-[0.99] transition-all disabled:opacity-40"
             >
-              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap">COD available</div>
+              
               <div className="flex items-center gap-3">
                 <Banknote className="h-5 w-5" />
                 <div className="text-left">
