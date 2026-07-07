@@ -140,11 +140,27 @@ function cleanHeaderText(t: string | null | undefined): string | null | undefine
     .trim();
 }
 
+// Meta rejects button labels with emojis, variables, newlines, or formatting marks.
+function cleanButtonText(t: string | null | undefined): string {
+  const cleaned = String(t || "")
+    .replace(/\{\{\s*\d+\s*\}\}/g, "")
+    .replace(/[\u{1F1E6}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F000}-\u{1F2FF}\u{FE0E}\u{FE0F}\u{200D}]/gu, "")
+    .replace(/[*_~`\n\r]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 25)
+    .trim();
+  return cleaned || "View";
+}
+
 function normalizeDraft(raw: Draft): Draft {
   return {
     ...raw,
     header_text: cleanHeaderText(raw.header_text) as any,
-    buttons: normalizeUrlButtonVars(raw.buttons),
+    buttons: normalizeUrlButtonVars(raw.buttons).map((button) => ({
+      ...button,
+      text: cleanButtonText(button.text),
+    } as Btn)),
   };
 }
 
