@@ -497,6 +497,16 @@ export default function CheckoutV2Page() {
     else navigate(-1);
   };
 
+  // Lock body scroll while any bottom-sheet is open so the page behind
+  // doesn't scroll and the sheet's own scroll container is the only one active.
+  useEffect(() => {
+    const anySheetOpen = showAddressFormSheet || showAddressDialog;
+    if (!anySheetOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [showAddressFormSheet, showAddressDialog]);
+
   useEffect(() => {
     if (savedAddresses && savedAddresses.length > 0 && !selectedAddressId) {
       const def = savedAddresses.find((a: any) => a.is_default) || savedAddresses[0];
