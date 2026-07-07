@@ -76,6 +76,7 @@ export default function CheckoutAwareLayout({
   const headerVisible = useSmartHeader();
   const getHeaderIcon = useNavIcons(store.id);
   const SearchIcon = getHeaderIcon("search");
+  const checkoutOwnsHeader = isCheckout && (Boolean((store as any)?.checkout_v2_enabled) || new URLSearchParams(location.search).get("v2") === "1");
 
   useEffect(() => {
     // v8: Defer route prefetching by 1.2s (was 3s). Internally uses
@@ -177,8 +178,8 @@ export default function CheckoutAwareLayout({
         </Suspense>
       )}
 
-      {/* Mobile header + checkout header */}
-      <nav className={`${isCheckout ? 'sticky top-0' : 'md:hidden'} ${mobileNavEnabled && headerStyle === 'normal' ? 'sm:sticky sm:top-0' : isCheckout ? '' : 'sticky top-0'} z-30 smart-header ${!isCheckout && !headerVisible ? 'smart-header-hidden' : ''} ${
+      {/* Mobile header + legacy checkout header. Checkout V2 renders its own header. */}
+      {!checkoutOwnsHeader && <nav className={`${isCheckout ? 'sticky top-0' : 'md:hidden'} ${mobileNavEnabled && headerStyle === 'normal' ? 'sm:sticky sm:top-0' : isCheckout ? '' : 'sticky top-0'} z-30 smart-header ${!isCheckout && !headerVisible ? 'smart-header-hidden' : ''} ${
         headerClassName ? headerClassName :
         headerBgOverride ? '' :
         isCheckout ? '' :
@@ -244,7 +245,7 @@ export default function CheckoutAwareLayout({
             </>
           )}
         </div>
-      </nav>
+      </nav>}
 
       {/* Lazy search overlay */}
       {searchOpen && (
@@ -259,8 +260,8 @@ export default function CheckoutAwareLayout({
         </Suspense>
       )}
 
-      <main className={mobileNavEnabled ? "pb-16 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><PageTransition><Outlet context={store} /></PageTransition></Suspense></main>
-      {mobileNavEnabled && mobileNav}
+      <main className={mobileNavEnabled && !isCheckout ? "pb-16 sm:pb-0" : ""}><Suspense fallback={<StorefrontContentSkeleton />}><PageTransition><Outlet context={store} /></PageTransition></Suspense></main>
+      {mobileNavEnabled && !isCheckout && mobileNav}
       {!isCheckout && (
         <Suspense fallback={<div aria-hidden className="mt-16" style={{ minHeight: "600px" }} />}>
           <LazyStorefrontFooter store={store} />
