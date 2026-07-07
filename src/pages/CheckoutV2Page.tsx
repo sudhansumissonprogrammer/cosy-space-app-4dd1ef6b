@@ -2216,7 +2216,7 @@ export default function CheckoutV2Page() {
               />
               {/* Sheet — full-width on mobile, centered on desktop, slides up */}
               <div className="absolute inset-x-0 bottom-0 mx-auto w-full sm:max-w-md">
-                <div className="bg-white rounded-t-2xl shadow-2xl flex flex-col max-h-[92dvh] animate-in slide-in-from-bottom duration-300">
+                <div className="bg-white rounded-t-2xl shadow-2xl flex flex-col h-[92dvh] animate-in slide-in-from-bottom duration-300">
                   {/* Grab handle */}
                   <div className="pt-2.5 pb-1 flex justify-center flex-shrink-0">
                     <span className="h-1.5 w-10 rounded-full bg-gray-300" />
@@ -2529,10 +2529,15 @@ export default function CheckoutV2Page() {
                   ) : (
                     <div className="h-[168px] w-[168px] flex items-center justify-center bg-[#F5F5F5] rounded">
                       {intents.any.status === "failed" ? (
-                        <span className="text-[11px] text-destructive text-center px-2">QR unavailable</span>
+                        <span className="text-[11px] text-destructive text-center px-2">QR unavailable — try another method</span>
                       ) : (
                         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                       )}
+                    </div>
+                  )}
+                  {intents.any.status === "ready" && intents.any.url && !/^upi:/i.test(intents.any.url) && (
+                    <div className="mt-2 text-[10px] text-muted-foreground text-center max-w-[168px]">
+                      Scanning opens the secure payment page
                     </div>
                   )}
                 </div>
