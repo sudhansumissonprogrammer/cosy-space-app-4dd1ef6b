@@ -27,13 +27,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch detailed address + landmark/POI in parallel
-    const [detailRes, poiRes] = await Promise.all([
-      fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`),
-      fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&result_type=point_of_interest|establishment|neighborhood|sublocality`),
-    ]);
-
-    const [detailData, poiData] = await Promise.all([detailRes.json(), poiRes.json()]);
+    // 1st call — main reverse geocode. Almost always enough on its own.
+    const detailRes = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&language=en&region=in`
+    );
+    const detailData = await detailRes.json();
 
     if (detailData.status !== "OK" || !detailData.results?.length) {
       return new Response(
@@ -47,36 +45,13 @@ Deno.serve(async (req) => {
     const get = (type: string) =>
       components.find((c: any) => c.types.includes(type))?.long_name || "";
 
-    // Helper: detect plus codes like "6RFV+3QR" or "XXXX+XX"
     const isPlusCode = (s: string) => /^[A-Z0-9]{4,}\+[A-Z0-9]{2,}$/i.test(s.trim());
 
-    // Extract landmark from POI results (skip plus codes)
-    let landmark = "";
-    if (poiData.status === "OK" && poiData.results?.length) {
-      for (const r of poiData.results) {
-        const hasPoi = r.types?.some((t: string) =>
-          ["point_of_interest", "establishment", "neighborhood", "sublocality"].includes(t)
-        );
-        if (hasPoi) {
-          // Try formatted_address first part for a readable name
-          const name = r.address_components?.[0]?.long_name || "";
-          if (name && !isPlusCode(name)) {
-            landmark = name;
-            break;
-          }
-        }
-      }
-    }
-
-    // Also scan detail results for neighborhood/village names
-    const allResults = detailData.results || [];
+    // Scan detail results for neighborhood/village names (no extra network cost)
     let villageName = "";
     let areaName = "";
-    for (const r of allResults) {
+    for (const r of (detailData.results || [])) {
       for (const comp of (r.address_components || [])) {
-        if (!villageName && comp.types?.includes("locality") && !isPlusCode(comp.long_name)) {
-          // skip, we use this for city
-        }
         if (!villageName && (comp.types?.includes("sublocality_level_1") || comp.types?.includes("neighborhood")) && !isPlusCode(comp.long_name)) {
           villageName = comp.long_name;
         }
@@ -88,25 +63,39 @@ Deno.serve(async (req) => {
 
     const route = get("route");
     const sublocality = get("sublocality_level_1") || get("sublocality") || get("neighborhood");
+    const premise = get("premise") || get("subpremise") || get("street_number");
 
-    // Build street address: prioritize landmark/area/village, filter plus codes
-    const streetParts = [
-      landmark ? `Near ${landmark}` : "",
+    // Try to build street from primary geocode alone
+    let streetParts = [
+      premise && !isPlusCode(premise) ? premise : "",
       route && !isPlusCode(route) ? route : "",
-      areaName && areaName !== landmark && areaName !== sublocality ? areaName : "",
-      villageName && villageName !== landmark && villageName !== areaName ? villageName : "",
-      sublocality && sublocality !== villageName && sublocality !== areaName && sublocality !== landmark ? sublocality : "",
+      areaName ? areaName : "",
+      villageName && villageName !== areaName ? villageName : "",
+      sublocality && sublocality !== villageName && sublocality !== areaName ? sublocality : "",
     ].filter(Boolean);
 
-    // Deduplicate
+    // Only fire the extra POI/landmark call when the primary geocode gave us nothing usable.
+    if (streetParts.length === 0) {
+      try {
+        const poiRes = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&result_type=point_of_interest|establishment|neighborhood|sublocality&language=en&region=in`
+        );
+        const poiData = await poiRes.json();
+        if (poiData.status === "OK" && poiData.results?.length) {
+          for (const r of poiData.results) {
+            const name = r.address_components?.[0]?.long_name || "";
+            if (name && !isPlusCode(name)) { streetParts = [`Near ${name}`]; break; }
+          }
+        }
+      } catch { /* landmark is best-effort */ }
+    }
+
     const uniqueParts = [...new Set(streetParts)];
 
-    // Fallback: use formatted_address but strip plus codes
     let fallbackAddress = "";
     if (uniqueParts.length === 0) {
       const parts = (result.formatted_address || "").split(",").map((s: string) => s.trim());
-      const cleanParts = parts.filter((p: string) => !isPlusCode(p) && p.length > 1).slice(0, 2);
-      fallbackAddress = cleanParts.join(", ");
+      fallbackAddress = parts.filter((p: string) => !isPlusCode(p) && p.length > 1).slice(0, 2).join(", ");
     }
 
     const address = {
@@ -115,6 +104,8 @@ Deno.serve(async (req) => {
       state: get("administrative_area_level_1"),
       pincode: get("postal_code"),
     };
+
+
 
     return new Response(
       JSON.stringify({ success: true, address }),
