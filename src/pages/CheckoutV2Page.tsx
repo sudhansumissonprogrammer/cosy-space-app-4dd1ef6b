@@ -2363,6 +2363,17 @@ export default function CheckoutV2Page() {
           {/* Partial-payment selector moved into payment section below */}
 
 
+          {/* Fallback: address is filled but payment tiles haven't loaded — let the shopper trigger it manually */}
+          {!showPayment && !!(pincode && streetAddress && city && state && fullName) && (
+            <Button
+              onClick={() => { autoAdvancedRef.current = false; void createOrderAndIntents(); }}
+              disabled={creatingOrder || !paymentConfigLoaded}
+              className="w-full h-12 bg-black hover:bg-black/90 text-white font-semibold rounded-xl"
+            >
+              {creatingOrder ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading payment options…</>) : "Continue to Payment"}
+            </Button>
+          )}
+
           {/* Trust footer only shown when payment step isn't below */}
           {!showPayment && !(pincode && streetAddress && city && state && fullName) && (
             <div className="pt-6 pb-2 text-center">
