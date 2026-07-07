@@ -239,29 +239,57 @@ Deno.serve(async (req) => {
     const unitPrice = Number(firstItem?.price ?? 0);
     const productPrice = unitPrice > 0 ? `₹${unitPrice.toFixed(0)}` : `₹${total.toFixed(0)}`;
 
+    // 💰 abandoned_cart_v4 offer math — ₹100 flat off + ₹100 advance, rest COD.
+    // Uses the item's unit price (falls back to cart total when unit price missing).
+    const basePrice = unitPrice > 0 ? unitPrice : total;
+    const OFFER_DISCOUNT = 100;
+    const ADVANCE_AMOUNT = 100;
+    const discountedPrice = Math.max(basePrice - OFFER_DISCOUNT, 0);
+    const balanceDue = Math.max(discountedPrice - ADVANCE_AMOUNT, 0);
+
     // CTA opens the product page directly (p-<product_id>). Fallback to
     // cart-recovery link when no productId is present.
     const firstProductId = firstItem?.productId || firstItem?.product_id;
     const ctaToken = firstProductId ? `p-${firstProductId}` : `c-${(c as any).id}`;
 
+    // Auto-pick the newest APPROVED + active abandoned_cart template. This lets
+    // us promote v4 by flipping is_active/meta_status in the DB — no code edit.
+    const { data: activeTpl } = await admin
+      .from("platform_wa_templates")
+      .select("name, variables")
+      .like("name", "abandoned_cart_v%")
+      .eq("is_active", true)
+      .eq("paused", false)
+      .ilike("meta_status", "approved")
+      .order("name", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const chosenTemplate = (activeTpl as any)?.name || "abandoned_cart_v2";
+
     const { error: qErr } = await admin.from("wa_send_queue").insert({
       store_id: (c as any).store_id,
       recipient_phone: phone,
       recipient_name: customerName,
-      template_name: "abandoned_cart_v2",
+      template_name: chosenTemplate,
       message_type: "abandoned_cart",
       abandoned_cart_id: (c as any).id,
       params: [],
       template_vars: {
+        // v2 vars (kept for backwards compatibility)
         customer_name: customerName,
         product_title: firstTitle,
         store_name: (s as any).name || "our store",
         product_price: productPrice,
+        // v4 offer vars — resolved by wa-branding only if template asks for them
+        original_price: basePrice.toFixed(0),
+        discounted_price: discountedPrice.toFixed(0),
+        balance_due: balanceDue.toFixed(0),
         cta_token: ctaToken,
       },
       priority: 5,
       scheduled_at: new Date().toISOString(),
     } as any);
+
 
 
     if (qErr) { skipped++; continue; }
