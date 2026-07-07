@@ -449,6 +449,10 @@ export default function CheckoutV2Page() {
     prewarmEdgeFunction("create-upi-intent");
   }, [paymentConfigLoaded, hasRazorpay, hasCashfree, hasPayu, paymentConfig?.cashfree_env, paymentConfig?.payu_env]);
 
+  const autoAdvancedRef = useRef(false);
+
+
+
   // ─── Address book (logged-in customers) ─────────────────────────────────
   const { data: savedAddresses } = useQuery({
     queryKey: ["checkoutv2-saved-addresses", customer?.id],
@@ -1326,6 +1330,21 @@ export default function CheckoutV2Page() {
     }
   };
 
+  // Auto-advance to payment options once the address is complete — the
+  // shopper sees UPI/Cards/COD tiles inline on the same page (no explicit
+  // "Continue" tap needed). Guarded by a ref so it only fires once per fill.
+  useEffect(() => {
+    if (autoAdvancedRef.current) return;
+    if (showPayment || creatingOrder) return;
+    if (!paymentConfigLoaded) return;
+    const filled = !!(pincode && streetAddress && city && state && fullName);
+    if (!filled) return;
+    autoAdvancedRef.current = true;
+    void createOrderAndIntents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pincode, streetAddress, city, state, fullName, paymentConfigLoaded, showPayment, creatingOrder]);
+
+
   // ─── Full gateway modal paths (Razorpay / Cashfree / PayU) ──────────────
   const openRazorpay = async (order: PendingOrder) => {
     setConfirmingPayment(false);
@@ -1885,8 +1904,8 @@ export default function CheckoutV2Page() {
         </div>
       )}
 
-      {/* ═══════ CONTACT + ADDRESS STEP ═══════ */}
-      {!showPayment && (
+      {/* ═══════ CONTACT + ADDRESS STEP (always visible) ═══════ */}
+      {true && (
         <div className="px-3 py-3 space-y-3">
 
           {/* Order Summary card */}
@@ -2212,34 +2231,26 @@ export default function CheckoutV2Page() {
             </div>
           )}
 
-          {/* Trust footer */}
-          <div className="pt-6 pb-2 text-center">
-            <div className="text-[11px] text-muted-foreground mb-1">Powered by</div>
-            <div className="text-[14px] font-bold tracking-tight">{store?.name || "Storivo"}</div>
-            <div className="text-[12px] text-muted-foreground mt-3">Powering secure checkout for 10,000+ brands</div>
-            <div className="flex items-center justify-center gap-4 mt-3 text-muted-foreground">
-              <div className="flex items-center gap-1 text-[11px]"><ShieldCheck className="h-4 w-4" /> PCI DSS<br/>Certified</div>
-              <div className="flex items-center gap-1 text-[11px]"><Lock className="h-4 w-4" /> Secured<br/>Payments</div>
-              <div className="flex items-center gap-1 text-[11px]"><CheckCircle2 className="h-4 w-4" /> Verified<br/>Merchant</div>
+          {/* Trust footer only shown when payment step isn't below */}
+          {!showPayment && !(pincode && streetAddress && city && state && fullName) && (
+            <div className="pt-6 pb-2 text-center">
+              <div className="text-[11px] text-muted-foreground mb-1">Powered by</div>
+              <div className="text-[14px] font-bold tracking-tight">{store?.name || "Storivo"}</div>
+              <div className="text-[12px] text-muted-foreground mt-3">Powering secure checkout for 10,000+ brands</div>
+              <div className="flex items-center justify-center gap-4 mt-3 text-muted-foreground">
+                <div className="flex items-center gap-1 text-[11px]"><ShieldCheck className="h-4 w-4" /> PCI DSS<br/>Certified</div>
+                <div className="flex items-center gap-1 text-[11px]"><Lock className="h-4 w-4" /> Secured<br/>Payments</div>
+                <div className="flex items-center gap-1 text-[11px]"><CheckCircle2 className="h-4 w-4" /> Verified<br/>Merchant</div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
-      {/* ═══════ PAYMENT STEP ═══════ */}
+      {/* ═══════ PAYMENT STEP (inline, below address) ═══════ */}
       {showPayment && (
-        <div className="px-3 py-3 space-y-3">
-          {/* Compact delivery recap */}
-          <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
-            <div className="flex items-start gap-2">
-              <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-bold">{fullName} · +91 {phone}</div>
-                <div className="text-[12px] text-muted-foreground truncate">{streetAddress}, {city}, {state} - {pincode}</div>
-              </div>
-              <button className="text-[13px] font-semibold border border-[#111] rounded-md px-3 py-1" onClick={() => setShowPayment(false)}>Change</button>
-            </div>
-          </div>
+        <div className="px-3 pb-3 space-y-3">
+
 
           {(() => {
             const allFailed = (["gpay","phonepe","paytm","any"] as UpiApp[]).every((k) => intents[k].status === "failed");
@@ -2448,7 +2459,7 @@ export default function CheckoutV2Page() {
       )}
 
       {/* Sticky bottom Continue (contact step only) */}
-      {!showPayment && (
+      {!showPayment && !(pincode && streetAddress && city && state && fullName) && (
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3">
           <Button
             className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
