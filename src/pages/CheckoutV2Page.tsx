@@ -2089,6 +2089,42 @@ export default function CheckoutV2Page() {
                   </div>
                 </div>
 
+                {/* Save Address As */}
+                <div className="pt-2 border-t border-[#ECECEC]">
+                  <div className="text-[13px] font-semibold mb-2">Save Address As</div>
+                  <div className="flex gap-2">
+                    {(["Home", "Work"] as const).map((lbl) => (
+                      <button
+                        key={lbl}
+                        type="button"
+                        onClick={() => setAddrLabel(lbl)}
+                        className={`flex items-center gap-2 rounded-lg px-4 py-2 border ${addrLabel === lbl ? "border-black" : "border-[#ECECEC]"}`}
+                      >
+                        <span className="text-[13px] font-semibold">{lbl}</span>
+                        <span className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${addrLabel === lbl ? "border-black" : "border-muted-foreground/40"}`}>
+                          {addrLabel === lbl && <span className="h-2 w-2 rounded-full bg-black" />}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Shipping Method inline */}
+                {shippingActive && (
+                  <div className="pt-2 border-t border-[#ECECEC]">
+                    <div className="text-[13px] font-semibold mb-2">Shipping Method</div>
+                    <div className="rounded-lg border border-[#ECECEC] p-3 flex items-center justify-between">
+                      <div>
+                        <div className="text-[13px] font-semibold">{shippingCharge > 0 ? formatPrice(shippingCharge, currency) + " Shipping" : "Free Shipping"}</div>
+                        {shippingCharge === 0 && <span className="inline-block mt-1 px-1.5 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold">Free</span>}
+                      </div>
+                      <span className="h-4 w-4 rounded-full border-2 border-black flex items-center justify-center">
+                        <span className="h-2 w-2 rounded-full bg-black" />
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <label className="flex items-start gap-2 text-[12px] text-muted-foreground pt-1">
                   <Checkbox checked={waConsent} onCheckedChange={(v) => setWaConsent(v === true)} className="mt-0.5" />
                   <span>Send me order updates & offers - (no spam)</span>
