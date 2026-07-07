@@ -38,6 +38,7 @@ import { loadCashfree } from "@/lib/loadCashfree";
 import { loadPayuBolt } from "@/lib/loadPayuBolt";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
+import { QRCodeSVG } from "qrcode.react";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
 const PincodeSheet = lazy(() => import("@/components/storefront/PincodeSheet"));
 
@@ -1358,6 +1359,24 @@ export default function CheckoutV2Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pincode, streetAddress, city, state, fullName, paymentConfigLoaded, showPayment, creatingOrder]);
 
+  // Desktop QR: auto-start payment polling as soon as the UPI intent URL is
+  // ready, so the moment the shopper scans + pays in any UPI app we detect it
+  // and advance to success without waiting for a button tap.
+  const desktopQrPollStartedRef = useRef(false);
+  useEffect(() => {
+    if (desktopQrPollStartedRef.current) return;
+    if (isMobile()) return;
+    if (!showPayment || waiting) return;
+    if (!orderId) return;
+    if (intents.any.status !== "ready" || !intents.any.url) return;
+    desktopQrPollStartedRef.current = true;
+    setWaitingApp("UPI QR");
+    persistWaiting("any", "UPI QR");
+    setWaiting(true);
+    try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPayment, intents.any.status, intents.any.url, orderId, waiting]);
+
 
   // ─── Full gateway modal paths (Razorpay / Cashfree / PayU) ──────────────
   const openRazorpay = async (order: PendingOrder) => {
@@ -1797,8 +1816,11 @@ export default function CheckoutV2Page() {
     );
   }
 
-  // ─── Waiting screen (UPI intent flow) ───────────────────────────────────
-  if (waiting) {
+  // ─── Waiting screen (UPI intent flow) — mobile only ─────────────────────
+  // On desktop we keep the QR inline (see the desktop UPI QR card below) and
+  // just show a small "waiting" strip there, so the shopper can still see the
+  // QR code while completing payment in their phone's UPI app.
+  if (waiting && isMobile()) {
     return (
       <div className="mx-auto max-w-md p-6 pt-16 text-center">
         <div className="mx-auto mb-6 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -2331,6 +2353,68 @@ export default function CheckoutV2Page() {
                   <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
                 </span>
               </button>
+            </div>
+          )}
+
+          {/* Desktop: UPI QR — scan with any UPI app to pay */}
+          {!mobile && (
+            <div className="relative bg-white rounded-xl border border-[#ECECEC] p-4">
+              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[11px] font-bold px-2.5 py-0.5 rounded">Get {formatPrice(50, currency)} Off</div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded bg-gradient-to-br from-orange-500 to-blue-600" />
+                  <div className="text-[15px] font-bold">Pay via UPI QR</div>
+                </div>
+                <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 rounded-lg border border-[#ECECEC] p-3 bg-white">
+                  {intents.any.status === "ready" && intents.any.url ? (
+                    <QRCodeSVG value={intents.any.url} size={168} level="M" includeMargin={false} />
+                  ) : (
+                    <div className="h-[168px] w-[168px] flex items-center justify-center bg-[#F5F5F5] rounded">
+                      {intents.any.status === "failed" ? (
+                        <span className="text-[11px] text-destructive text-center px-2">QR unavailable</span>
+                      ) : (
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 text-[13px] space-y-2">
+                  <div className="font-semibold text-[14px]">Scan & Pay from any UPI app</div>
+                  <ol className="list-decimal ml-4 space-y-1 text-muted-foreground text-[12px]">
+                    <li>Open GPay, PhonePe, Paytm, or any UPI app</li>
+                    <li>Scan this QR code</li>
+                    <li>Complete the payment — we'll confirm automatically</li>
+                  </ol>
+                  <div className="flex items-center gap-2 pt-1">
+                    <img src="/icons/gpay.svg" alt="GPay" className="h-5 w-5 object-contain" />
+                    <img src="/icons/phonepe.svg" alt="PhonePe" className="h-5 w-5 object-contain" />
+                    <img src="/icons/paytm.svg" alt="Paytm" className="h-5 w-5 object-contain" />
+                    <img src="/icons/upi.png" alt="UPI" className="h-5 w-auto object-contain" />
+                  </div>
+                  {intents.any.status === "ready" && !waiting && (
+                    <button
+                      onClick={() => {
+                        setWaitingApp("UPI QR");
+                        setWaiting(true);
+                        persistWaiting("any", "UPI QR");
+                        try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
+                      }}
+                      className="mt-1 text-[12px] font-semibold text-primary underline"
+                    >
+                      I've scanned — waiting for confirmation
+                    </button>
+                  )}
+                  {waiting && (
+                    <div className="mt-1 flex items-center gap-2 text-[12px] text-emerald-700">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Waiting for payment confirmation…
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
