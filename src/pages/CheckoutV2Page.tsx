@@ -1396,7 +1396,6 @@ export default function CheckoutV2Page() {
   // shopper sees UPI/Cards/COD tiles inline on the same page (no explicit
   // "Continue" tap needed). Guarded by a ref so it only fires once per fill.
   useEffect(() => {
-    if (autoAdvancedRef.current) return;
     if (showPayment || creatingOrder) return;
     if (!paymentConfigLoaded) return;
     const filled = !!(pincode && streetAddress && city && state && fullName);
