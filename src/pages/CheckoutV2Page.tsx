@@ -2011,6 +2011,11 @@ export default function CheckoutV2Page() {
                     </div>
                   )}
                 </div>
+                {/* Beast Cash / rewards earning strip (cosmetic) */}
+                <div className="border-t border-[#ECECEC] px-3.5 py-2.5 flex items-center gap-2">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 7l1.5 3 3.3.5-2.4 2.3.6 3.3-3-1.6-3 1.6.6-3.3-2.4-2.3 3.3-.5z"/></svg>
+                  <div className="text-[12px] text-amber-800">You're earning <span className="font-bold">{Math.max(1, Math.round(total * 0.01))} {store?.name || "Store"} Cash</span> on this order</div>
+                </div>
               </div>
             </>
           )}
