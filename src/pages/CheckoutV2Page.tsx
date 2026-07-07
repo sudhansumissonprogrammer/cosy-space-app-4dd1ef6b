@@ -1357,7 +1357,8 @@ export default function CheckoutV2Page() {
       return;
     }
     if (checkoutItems.length === 0) { toast.error("Your cart is empty"); return; }
-    if (!paymentConfigLoaded) { toast("Loading payment methods…"); return; }
+    // Note: intentionally NOT waiting on paymentConfigLoaded — server picks the gateway.
+
 
     setCreatingOrder(true);
     try {
