@@ -733,7 +733,8 @@ export default function CheckoutV2Page() {
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [pendingOrder, setPendingOrder] = useState<PendingOrder | null>(null);
   const [paymentFailed, setPaymentFailed] = useState(false);
-  const [checkoutToken] = useState<string>(() => (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `ct_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+  const newCheckoutToken = () => (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `ct_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const [checkoutToken, setCheckoutToken] = useState<string>(() => newCheckoutToken());
 
   const [intents, setIntents] = useState<Record<UpiApp, IntentState>>({
     gpay: { status: "idle" }, phonepe: { status: "idle" },
@@ -1376,6 +1377,29 @@ export default function CheckoutV2Page() {
     try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPayment, intents.any.status, intents.any.url, orderId, waiting]);
+
+  // Partial ↔ Full toggle: the previous order + UPI intent were minted for the
+  // old amount and stamped with the old payment_type. Reset everything so the
+  // next auto-advance recreates a fresh order (new checkout_token, new
+  // advance_paid on the DB row, new intent URL with the correct amount).
+  const lastPayModeRef = useRef(payMode);
+  useEffect(() => {
+    if (lastPayModeRef.current === payMode) return;
+    lastPayModeRef.current = payMode;
+    if (!orderId && !showPayment) return; // nothing to reset yet
+    if (waiting || confirmingPayment || orderPlaced) return; // don't disrupt an in-flight payment
+    setOrderId(null);
+    setOrderNumber(null);
+    setIntents({
+      gpay: { status: "idle" }, phonepe: { status: "idle" },
+      paytm: { status: "idle" }, any: { status: "idle" },
+    });
+    gatewayRef.current = {};
+    autoAdvancedRef.current = false;
+    desktopQrPollStartedRef.current = false;
+    setCheckoutToken(newCheckoutToken());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payMode]);
 
 
   // ─── Full gateway modal paths (Razorpay / Cashfree / PayU) ──────────────
@@ -2228,39 +2252,8 @@ export default function CheckoutV2Page() {
             </div>
           )}
 
+          {/* Partial-payment selector moved into payment section below */}
 
-          {/* Partial-payment selector */}
-          {hasPartial && addressFilled && (
-            <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
-              <div className="text-[13px] font-bold mb-2">Payment Option</div>
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => setPayMode("partial")}
-                  className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${payMode === "partial" ? "border-black bg-black/5" : "border-[#ECECEC]"}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${payMode === "partial" ? "border-black bg-black" : "border-muted-foreground"}`}>
-                      {payMode === "partial" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
-                    </div>
-                    <div className="text-[13px] font-semibold">Pay {formatPrice(partialAdvanceTotal, currency)} now · {formatPrice(partialBalanceDue, currency)} on delivery</div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPayMode("full")}
-                  className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${payMode === "full" ? "border-black bg-black/5" : "border-[#ECECEC]"}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${payMode === "full" ? "border-black bg-black" : "border-muted-foreground"}`}>
-                      {payMode === "full" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
-                    </div>
-                    <div className="text-[13px] font-semibold">Pay full {formatPrice(total, currency)} online</div>
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Trust footer only shown when payment step isn't below */}
           {!showPayment && !(pincode && streetAddress && city && state && fullName) && (
@@ -2281,6 +2274,61 @@ export default function CheckoutV2Page() {
       {/* ═══════ PAYMENT STEP (inline, below address) ═══════ */}
       {showPayment && (
         <div className="px-3 pb-3 space-y-3">
+
+          {/* Partial-payment mode selector — prominent, above tiles */}
+          {hasPartial && (
+            <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="text-[13px] font-bold">Choose payment plan</div>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Recommended</span>
+              </div>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setPayMode("partial")}
+                  className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${payMode === "partial" ? "border-black bg-black/5" : "border-[#ECECEC]"}`}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${payMode === "partial" ? "border-black bg-black" : "border-muted-foreground"}`}>
+                      {payMode === "partial" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-semibold">Pay {formatPrice(partialAdvanceTotal, currency)} advance now</div>
+                      <div className="text-[12px] text-muted-foreground mt-0.5">Balance {formatPrice(partialBalanceDue, currency)} on delivery (Cash)</div>
+                    </div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPayMode("full")}
+                  className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${payMode === "full" ? "border-black bg-black/5" : "border-[#ECECEC]"}`}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${payMode === "full" ? "border-black bg-black" : "border-muted-foreground"}`}>
+                      {payMode === "full" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-semibold">Pay full {formatPrice(total, currency)} online</div>
+                      <div className="text-[12px] text-muted-foreground mt-0.5">Nothing to pay on delivery</div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+              {isPartialOrder && (
+                <div className="mt-2.5 flex items-start gap-2 rounded-lg bg-emerald-50 px-2.5 py-2 text-[11px] text-emerald-800">
+                  <ShieldCheck className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                  <span>You'll pay only <strong>{formatPrice(partialAdvanceTotal, currency)}</strong> now to confirm this order. Remaining <strong>{formatPrice(partialBalanceDue, currency)}</strong> is paid in cash when delivered.</span>
+                </div>
+              )}
+              {(creatingOrder || intents.any.status === "loading") && (
+                <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Updating amount…
+                </div>
+              )}
+            </div>
+          )}
+
+
 
 
           {(() => {
