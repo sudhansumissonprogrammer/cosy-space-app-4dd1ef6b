@@ -18,7 +18,6 @@ import {
   CheckCircle2,
   Trash2,
   UserCircle2,
-  Star,
   ShoppingCart,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -100,9 +99,6 @@ export default function CheckoutPhoneStep({
     (n, i) => n + (Number(i.quantity) || 1),
     0,
   );
-  // Cosmetic Store Cash earning (1% of subtotal, matches GoKwik "Beast Cash" strip)
-  const earning = Math.max(1, Math.round(subtotal * 0.01));
-
   const submit = async () => {
     if (inFlight.current) return;
     const normalized = normalizePhone(digits);
@@ -120,7 +116,7 @@ export default function CheckoutPhoneStep({
     setSubmitting(true);
     try {
       try {
-        localStorage.setItem("checkout_phone", normalized);
+        localStorage.setItem("checkout_phone", canon);
         if (couponDraft.trim()) {
           localStorage.setItem("checkout_coupon_draft", couponDraft.trim().toUpperCase());
         }
@@ -159,11 +155,11 @@ export default function CheckoutPhoneStep({
         }
       } catch {}
 
-      void autoLoginByPhone(storeId, normalized);
-      onComplete(normalized);
+      void autoLoginByPhone(storeId, canon);
+      onComplete(canon);
     } catch (err) {
       console.warn("[CheckoutPhoneStep] capture failed:", err);
-      onComplete(normalized);
+      onComplete(canon);
     } finally {
       setSubmitting(false);
       inFlight.current = false;
@@ -300,23 +296,12 @@ export default function CheckoutPhoneStep({
               Coupons will be applied on the next step.
             </div>
           </div>
-          {/* Beast Cash earning strip */}
-          <div className="border-t border-[#ECECEC] px-3.5 py-2.5 flex items-center gap-2">
-            <Star className="h-5 w-5 text-amber-600 flex-shrink-0" />
-            <div className="text-[12px] text-amber-800">
-              You're earning{" "}
-              <span className="font-bold">
-                {earning} {storeName || "Store"} Cash
-              </span>{" "}
-              on this order
-            </div>
-          </div>
         </div>
 
         {/* Login card */}
         <div className="bg-white rounded-xl border border-[#ECECEC] overflow-hidden">
           <div className="bg-amber-50 text-amber-800 text-[13px] font-semibold text-center py-2">
-            Login to Redeem {storeName || "Store"} Cash
+            Login to continue securely
           </div>
           <div className="p-3.5 space-y-3">
             <div className="flex items-center gap-2">
