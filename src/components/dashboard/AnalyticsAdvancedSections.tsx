@@ -168,7 +168,7 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
     queryFn: async () => {
       const { data } = await supabase
         .from("orders")
-        .select("status, payment_status, is_repeat_customer, attribution, total")
+        .select("status, is_repeat_customer, attribution, total")
         .eq("store_id", storeId)
         .gte("created_at", rangeStart.toISOString())
         .lte("created_at", rangeEnd.toISOString());
@@ -181,8 +181,8 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
       const srcMap = new Map<string, { orders: number; revenue: number }>();
       for (const r of rows) {
         const s = String(r.status || "").toLowerCase();
-        const ps = String(r.payment_status || "").toLowerCase();
-        const isPaid = PAID.has(s) || PAID.has(ps);
+        const isPaid = PAID.has(s);
+
         if (s === "cancelled" || s === "failed") cancelled++;
         else if (isPaid) paid++;
         else pending++;
