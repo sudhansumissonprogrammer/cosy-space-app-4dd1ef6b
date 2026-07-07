@@ -1663,6 +1663,7 @@ export default function CheckoutV2Page() {
                 orderNumber={orderNumber}
                 orderedProductIds={checkoutItems.map((i) => i.productId)}
                 currency={currency}
+                onSkip={() => setShowUpsell(false)}
               />
             </Suspense>
           </div>
