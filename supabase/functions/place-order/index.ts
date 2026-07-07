@@ -308,41 +308,59 @@ Deno.serve(async (req) => {
     order.total = serverTotal;
     coupon_id = validCouponId;
 
-    // Hardcode initial order status. Never trust the client.
-    const safeStatus = order.payment_method === "cod" ? "confirmed" : "pending";
-    order.status = safeStatus;
     // ────────────────────────────────────────────────────────────────
-
-    // Server-side partial payment calculation (store-level)
-    const isPartial = order.payment_type === "partial";
+    // Server-side partial payment calculation (store-level).
+    // Must be the SINGLE source of truth — UI value is advisory only.
+    // Formula mirrors CheckoutV2Page: sum per-item advance, add full
+    // shipping + proportional discount subtraction, single ₹50 floor,
+    // cap at order total. Never applies a per-line-item ₹50 floor.
+    // ────────────────────────────────────────────────────────────────
+    let isPartial = order.payment_type === "partial";
     let advancePaid = 0;
     let balanceDue = 0;
 
     if (isPartial) {
-      // Read partial payment config from store
+      // Partial requires an online gateway — reject partial+cod combo.
+      if (order.payment_method === "cod") {
+        return new Response(
+          JSON.stringify({ error: "Partial payment requires an online payment method." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       const { data: storeData } = await supabase
         .from("stores")
         .select("partial_payment_enabled, partial_payment_type, partial_payment_value")
         .eq("id", store_id)
         .single();
 
-      if (storeData?.partial_payment_enabled && storeData?.partial_payment_value) {
-        let totalAdvance = 0;
+      const partialValue = Number(storeData?.partial_payment_value || 0);
+      if (storeData?.partial_payment_enabled && partialValue > 0) {
+        let itemsAdvance = 0;
         for (const item of items) {
           const itemPrice = Number(item.price);
-          let itemAdv: number;
-          if (storeData.partial_payment_type === "percentage") {
-            itemAdv = Math.round(itemPrice * (Number(storeData.partial_payment_value) / 100));
-          } else {
-            itemAdv = Math.min(Number(storeData.partial_payment_value), itemPrice);
-          }
-          itemAdv = Math.max(itemAdv, 50);
-          totalAdvance += itemAdv * Number(item.quantity);
+          const itemAdv = storeData.partial_payment_type === "percentage"
+            ? Math.round(itemPrice * (partialValue / 100))
+            : Math.min(partialValue, itemPrice);
+          itemsAdvance += itemAdv * Number(item.quantity);
         }
-        advancePaid = Math.max(50, Math.round(totalAdvance));
+        const ratio = serverSubtotal > 0 ? itemsAdvance / serverSubtotal : 1;
+        // shipping paid up-front; discount reduces advance proportionally
+        const raw = itemsAdvance + serverShipping - (serverDiscount * ratio);
+        advancePaid = Math.max(50, Math.min(Number(order.total), Math.round(raw)));
         balanceDue = Math.max(0, Number(order.total) - advancePaid);
+      } else {
+        // Store doesn't actually offer partial — downgrade to full instead of
+        // silently stamping payment_type=partial with advance_paid=0.
+        isPartial = false;
+        order.payment_type = "full";
       }
     }
+
+    // Hardcode initial order status. Never trust the client.
+    // COD → confirmed. Online (full or partial) → pending until verify upgrades it.
+    const safeStatus = order.payment_method === "cod" ? "confirmed" : "pending";
+    order.status = safeStatus;
 
     // Capture real buyer signals for Meta CAPI (forwarded by Cloudflare/Vercel/SB edge).
     // We store these on the order row so the Purchase event sent to Meta carries the
