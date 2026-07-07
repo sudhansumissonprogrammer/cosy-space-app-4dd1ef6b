@@ -18,7 +18,7 @@ import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
 import { useCart } from "@/contexts/CartContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { formatPrice } from "@/lib/productUtils";
-import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
+import { normalizePhone, isValidIndianPhone, toCanonicalIndianPhone } from "@/lib/phoneUtils";
 import { storefrontPath } from "@/lib/subdomain";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -215,8 +215,8 @@ export default function CheckoutV2Page() {
 
   const [phone, setPhone] = useState<string>(() => {
     const s = buyNowPhone || savedInfo.phone || "";
-    const n = normalizePhone(s);
-    return isValidIndianPhone(n) ? n : (s || "");
+    const canon = toCanonicalIndianPhone(s);
+    return canon || (s ? String(s).replace(/\D/g, "").slice(-10) : "");
   });
   const [fullName, setFullName] = useState(savedInfo.fullName || "");
   const [email, setEmail] = useState("");
@@ -555,10 +555,10 @@ export default function CheckoutV2Page() {
   useEffect(() => {
     if (savedAddresses && savedAddresses.length > 0) return;
     if (returningDismissed || returningUsed) return;
-    const norm = normalizePhone(phone);
-    if (!isValidIndianPhone(norm)) { setReturningOrder(null); return; }
-    if (norm === lastLookedUpPhoneRef.current) return;
-    lastLookedUpPhoneRef.current = norm;
+    const canon = toCanonicalIndianPhone(phone);
+    if (!canon) { setReturningOrder(null); return; }
+    if (canon === lastLookedUpPhoneRef.current) return;
+    lastLookedUpPhoneRef.current = canon;
     let cancelled = false;
     (async () => {
       try {
@@ -566,7 +566,7 @@ export default function CheckoutV2Page() {
           .from("orders")
           .select("id, customer_name, customer_phone, street_address, city, state, pincode, created_at")
           .eq("store_id", store.id)
-          .eq("customer_phone", norm)
+          .eq("customer_phone", canon)
           .not("street_address", "is", null)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -705,7 +705,7 @@ export default function CheckoutV2Page() {
       if (cached) { setAbandonedCartId(cached); return; }
     } catch { /* noop */ }
     if (checkoutItems.length === 0) return;
-    const canonPhone = normalizePhone(phone);
+    const canonPhone = toCanonicalIndianPhone(phone);
     if (!canonPhone) return;
     (async () => {
       try {
@@ -873,9 +873,10 @@ export default function CheckoutV2Page() {
 
   const saveExpressInfo = () => {
     try {
-      localStorage.setItem("checkout_phone", normalizePhone(phone));
+      const canonPhone = toCanonicalIndianPhone(phone);
+      localStorage.setItem("checkout_phone", canonPhone || normalizePhone(phone));
       localStorage.setItem(`express_checkout_${store.id}`, JSON.stringify({
-        fullName, email, pincode, streetAddress, city, state, phone: normalizePhone(phone), waConsent,
+        fullName, email, pincode, streetAddress, city, state, phone: canonPhone || normalizePhone(phone), waConsent,
       }));
     } catch { /* noop */ }
   };
@@ -891,7 +892,7 @@ export default function CheckoutV2Page() {
         order: {
           total, currency, status: "pending",
           customer_name: fullName.trim(),
-          customer_phone: normalizePhone(phone),
+          customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
           customer_email: email.trim() || null,
           street_address: streetAddress.trim(),
           city: city.trim(), state: state.trim(), pincode: pincode.trim(),
@@ -941,7 +942,7 @@ export default function CheckoutV2Page() {
         storefront_customer_id: customer.id,
         label: "Home",
         full_name: fullName.trim(),
-        phone: normalizePhone(phone),
+        phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
         street_address: streetAddress.trim(),
         city: city.trim(), state: state.trim(), pincode: pincode.trim(),
         is_default: (count ?? 0) === 0,
@@ -955,7 +956,7 @@ export default function CheckoutV2Page() {
       try {
         const { data } = await supabase.functions.invoke("create-guest-account", {
           body: {
-            email: email.trim(), phone: normalizePhone(phone),
+            email: email.trim(), phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
             name: fullName.trim(), store_id: store.id, order_id: ordId,
           },
         });
@@ -1039,6 +1040,7 @@ export default function CheckoutV2Page() {
   const [waiting, setWaiting] = useState(false);
   const [waitingApp, setWaitingApp] = useState<string>("");
   const [manualChecking, setManualChecking] = useState(false);
+  const waitingCheckInFlightRef = useRef(false);
 
   const WAIT_KEY = `sf_wait_v2_${store?.id}`;
   const persistWaiting = (app: UpiApp, label: string, override?: { orderId?: string | null; orderNumber?: string | null }) => {
@@ -1110,6 +1112,16 @@ export default function CheckoutV2Page() {
     try { window.scrollTo({ top: 0, behavior: "auto" }); } catch { /* noop */ }
   };
 
+  const stopWaitingForPayment = (message?: string) => {
+    clearWaiting();
+    setWaiting(false);
+    setConfirmingPayment(false);
+    if (orderId) setPendingOrder({ id: orderId, number: orderNumber });
+    setPaymentFailed(true);
+    try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+    if (message) toast(message, { duration: 5000 });
+  };
+
   const handleViewMyOrders = async () => {
     if (viewingOrders) return;
     setViewingOrders(true);
@@ -1127,7 +1139,7 @@ export default function CheckoutV2Page() {
         const { data: after } = await supabaseStorefront.auth.getSession();
         if (after?.session?.user) { navigate(orderPath); return; }
       }
-      const normalized = normalizePhone(phone);
+      const normalized = toCanonicalIndianPhone(phone) || normalizePhone(phone);
       if (!normalized || normalized.length < 10) { navigate(orderPath); return; }
       navigate(orderPath);
       void (async () => {
@@ -1157,11 +1169,13 @@ export default function CheckoutV2Page() {
     if (!waiting || !orderId) return;
     let cancelled = false;
     let attempts = 0;
-    const maxAttempts = 120;
+    const maxAttempts = gatewayRef.current.pg ? 6 : 8;
     const checkNow = async (): Promise<boolean> => {
-      const gatewayResult = await forceGatewayVerify();
-      if (normalizeGatewayResult(gatewayResult) === "success") { finishSuccess(); return true; }
+      if (waitingCheckInFlightRef.current) return false;
+      waitingCheckInFlightRef.current = true;
       try {
+        const gatewayResult = await forceGatewayVerify();
+        if (normalizeGatewayResult(gatewayResult) === "success") { finishSuccess(); return true; }
         const { data } = await supabase.functions.invoke("order-payment-status", {
           body: { store_id: store.id, order_id: orderId },
         });
@@ -1169,11 +1183,12 @@ export default function CheckoutV2Page() {
         if (status === "success") { finishSuccess(); return true; }
         if (status === "failed") {
           toast.error("Payment failed — please try again");
-          clearWaiting(); setWaiting(false);
+          clearWaiting(); setWaiting(false); try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
           try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { order_id: orderId } as any }); } catch { /* noop */ }
           return true;
         }
       } catch { /* keep polling */ }
+      finally { waitingCheckInFlightRef.current = false; }
       return false;
     };
     const poll = async () => {
@@ -1181,13 +1196,13 @@ export default function CheckoutV2Page() {
       attempts++;
       const done = await checkNow();
       if (done || cancelled) return;
-      if (attempts >= maxAttempts) { toast("Still waiting? Tap 'I've paid' to re-check", { duration: 6000 }); return; }
+      if (attempts >= maxAttempts) { stopWaitingForPayment("Payment not confirmed. If you paid, tap retry to check again."); return; }
       const delay = attempts < 5 ? 1500 : 2500;
       setTimeout(poll, delay);
     };
     setTimeout(poll, 800);
-    const onFocus = () => { checkNow(); };
-    const onVis = () => { if (document.visibilityState === "visible") checkNow(); };
+    const onFocus = () => { void checkNow(); };
+    const onVis = () => { if (document.visibilityState === "visible") void checkNow(); };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVis);
     return () => {
@@ -1208,7 +1223,7 @@ export default function CheckoutV2Page() {
       });
       const status = (data as any)?.payment_status;
       if (status === "success") { finishSuccess(); return; }
-      if (status === "failed") { toast.error("Payment failed — please try again"); clearWaiting(); setWaiting(false); return; }
+      if (status === "failed") { toast.error("Payment failed — please try again"); clearWaiting(); setWaiting(false); try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ } return; }
       toast("Not confirmed yet — please complete the payment in your UPI app");
     } finally { setManualChecking(false); }
   };
@@ -1252,13 +1267,22 @@ export default function CheckoutV2Page() {
     const txnid = params.get("txnid");
     const returnedOrderId = params.get("payu_order");
     if (!payuStatus || !txnid || !returnedOrderId) return;
+    const normalizedPayuStatus = payuStatus.toLowerCase().replace(/[\s_-]/g, "");
     gatewayRef.current = { pg: "payu", payu_txnid: txnid };
     setOrderId(returnedOrderId);
     setOrderNumber(null);
     setShowPayment(true);
-    setWaitingApp("UPI");
-    persistWaiting("any", "UPI", { orderId: returnedOrderId, orderNumber: null });
-    setWaiting(true);
+    if (["failed", "failure", "cancel", "cancelled", "canceled", "usercancelled", "dropped"].includes(normalizedPayuStatus)) {
+      clearWaiting();
+      setPendingOrder({ id: returnedOrderId, number: null });
+      setPaymentFailed(true);
+      setWaiting(false);
+      try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+    } else {
+      setWaitingApp("PayU");
+      persistWaiting("any", "PayU", { orderId: returnedOrderId, orderNumber: null });
+      setWaiting(true);
+    }
     try {
       const u = new URL(window.location.href);
       u.searchParams.delete("payu_status");
@@ -1326,7 +1350,7 @@ export default function CheckoutV2Page() {
         const { data: intentData, error: intErr } = await supabase.functions.invoke("create-upi-intent", {
           body: {
             store_id: store.id, order_id: order.id, app: "any",
-            customer_name: fullName.trim(), customer_phone: normalizePhone(phone),
+            customer_name: fullName.trim(), customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
             customer_email: email.trim() || undefined,
             return_url: buildPaymentReturnUrl(),
           },
@@ -1500,7 +1524,7 @@ export default function CheckoutV2Page() {
       loadCashfree(env),
       callEdgeFunction("store-cashfree-create-order", {
         store_id: store.id, amount: chargeAmount, currency, order_id: order.id,
-        customer_name: fullName, customer_phone: phone, customer_email: email || undefined,
+        customer_name: fullName, customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone), customer_email: email || undefined,
         return_url: `${window.location.origin}/checkout?cf_order={order_id}&order=${order.id}`,
       }),
     ]);
@@ -1570,7 +1594,7 @@ export default function CheckoutV2Page() {
     try {
       payuData = await callEdgeFunction("payu-create-txn", {
         store_id: store.id, order_id: order.id,
-        customer_name: fullName, customer_phone: phone, customer_email: email || undefined,
+        customer_name: fullName, customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone), customer_email: email || undefined,
         return_url: returnUrl,
       });
     } catch (err: any) {
@@ -1637,7 +1661,14 @@ export default function CheckoutV2Page() {
       await new Promise<void>((resolve) => {
         let settled = false;
         let timeoutId: number | null = null;
-        const done = () => { if (timeoutId != null) window.clearTimeout(timeoutId); resolve(); };
+        let returnedCheckId: number | null = null;
+        let leftCheckoutTab = false;
+        const done = () => {
+          if (timeoutId != null) window.clearTimeout(timeoutId);
+          if (returnedCheckId != null) window.clearTimeout(returnedCheckId);
+          document.removeEventListener("visibilitychange", handleVisibilityReturn);
+          resolve();
+        };
         const finish = async (ok: boolean, cancelled = false) => {
           if (settled) return;
           settled = true;
@@ -1652,21 +1683,40 @@ export default function CheckoutV2Page() {
           const confirmed = await verifyAndFinalize({ attempts: ok ? 10 : 3, intervalMs: 2000, showConfirming: true });
           if (!confirmed) {
             setPendingOrder(order); setPaymentFailed(true);
+            try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
             try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { order_id: order.id, gateway: "payu" } as any }); } catch { /* noop */ }
             toast.error(ok ? "Payment not confirmed yet. You can retry below." : "Payment was not completed. You can retry below.");
           }
           done();
         };
+        const handleVisibilityReturn = () => {
+          if (document.visibilityState === "hidden") { leftCheckoutTab = true; return; }
+          if (!leftCheckoutTab || settled) return;
+          if (returnedCheckId != null) window.clearTimeout(returnedCheckId);
+          returnedCheckId = window.setTimeout(async () => {
+            if (settled) return;
+            const confirmed = await verifyAndFinalize({ attempts: 1, intervalMs: 0, showConfirming: false });
+            if (confirmed) { settled = true; done(); return; }
+            settled = true;
+            setConfirmingPayment(false);
+            setPendingOrder(order); setPaymentFailed(true);
+            try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
+            toast.error("Payment not completed. You can retry below.");
+            done();
+          }, 900);
+        };
+        document.addEventListener("visibilitychange", handleVisibilityReturn);
         timeoutId = window.setTimeout(async () => {
           if (settled) return;
-          const confirmed = await verifyAndFinalize({ attempts: 3, intervalMs: 2500, showConfirming: false });
+          const confirmed = await verifyAndFinalize({ attempts: 1, intervalMs: 0, showConfirming: false });
           if (confirmed) { settled = true; done(); return; }
           settled = true;
           setConfirmingPayment(false);
           setPendingOrder(order); setPaymentFailed(true);
-          toast.error("Payment not confirmed yet. If you paid, it will update automatically.");
+          try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
+          toast.error("Payment not completed. You can retry below.");
           done();
-        }, 90000);
+        }, 30000);
         const isCancelStatus = (s: string) =>
           s === "cancel" || s === "cancelled" || s === "canceled" ||
           s === "usercancelled" || s === "user_cancelled" ||
@@ -1873,7 +1923,7 @@ export default function CheckoutV2Page() {
         <Button variant="outline" className="w-full" onClick={forceRecheck} disabled={manualChecking}>
           {manualChecking ? "Checking…" : "I've paid — check now"}
         </Button>
-        <button className="mt-3 text-xs text-muted-foreground underline" onClick={() => { clearWaiting(); setWaiting(false); }}>
+        <button className="mt-3 text-xs text-muted-foreground underline" onClick={() => { clearWaiting(); setWaiting(false); setConfirmingPayment(false); try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ } }}>
           Cancel and choose another method
         </button>
       </div>
@@ -1885,7 +1935,7 @@ export default function CheckoutV2Page() {
   // create the abandoned_carts row (via CheckoutPhoneStep → capture_checkout_lead)
   // BEFORE the shopper can drop off on the address form. WhatsApp cart-recovery
   // cron then reaches out after 30 min.
-  const needsPhone = !isValidIndianPhone(normalizePhone(phone));
+  const needsPhone = !toCanonicalIndianPhone(phone);
   // Pincode gate (Step 1.5): once phone is captured we ask for pincode only,
   // then hydrate city/state via the existing autofill effect before showing
   // the full address form.
@@ -1901,7 +1951,7 @@ export default function CheckoutV2Page() {
             cartItems={checkoutItems as any}
             onComplete={(p) => {
               setPhone(p);
-              try { localStorage.setItem("checkout_phone", p); } catch { /* noop */ }
+              try { localStorage.setItem("checkout_phone", toCanonicalIndianPhone(p) || p); } catch { /* noop */ }
             }}
           />
         </div>
