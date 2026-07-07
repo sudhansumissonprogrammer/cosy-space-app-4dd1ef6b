@@ -1040,7 +1040,6 @@ export default function CheckoutV2Page() {
   const [waiting, setWaiting] = useState(false);
   const [waitingApp, setWaitingApp] = useState<string>("");
   const [manualChecking, setManualChecking] = useState(false);
-  const waitingStartedAtRef = useRef<number>(0);
   const waitingCheckInFlightRef = useRef(false);
 
   const WAIT_KEY = `sf_wait_v2_${store?.id}`;
@@ -1051,7 +1050,6 @@ export default function CheckoutV2Page() {
         orderNumber: override?.orderNumber ?? orderNumber,
         app, label, gateway: gatewayRef.current, ts: Date.now(),
       });
-      waitingStartedAtRef.current = Date.now();
       sessionStorage.setItem(WAIT_KEY, payload);
       localStorage.setItem(WAIT_KEY, payload);
     } catch { /* noop */ }
@@ -1235,7 +1233,6 @@ export default function CheckoutV2Page() {
     if (s.status !== "ready" || !s.url) return;
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
     setWaitingApp(label);
-    waitingStartedAtRef.current = Date.now();
     setWaiting(true);
     persistWaiting(app, label);
     try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}` } as any }); } catch { /* noop */ }
@@ -1258,7 +1255,6 @@ export default function CheckoutV2Page() {
       setShowPayment(true);
       setWaitingApp(saved.label || "UPI");
       gatewayRef.current = saved.gateway || {};
-      waitingStartedAtRef.current = saved.ts || Date.now();
       setWaiting(true);
     } catch { /* noop */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
