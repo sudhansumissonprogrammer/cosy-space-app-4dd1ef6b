@@ -41,7 +41,6 @@ import { createPortal } from "react-dom";
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 import { QRCodeSVG } from "qrcode.react";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
-const PincodeSheet = lazy(() => import("@/components/storefront/PincodeSheet"));
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
@@ -1961,32 +1960,19 @@ export default function CheckoutV2Page() {
   // BEFORE the shopper can drop off on the address form. WhatsApp cart-recovery
   // cron then reaches out after 30 min.
   const needsPhone = !toCanonicalIndianPhone(phone);
-  // Pincode gate (Step 1.5): once phone is captured we ask for pincode only,
-  // then hydrate city/state via the existing autofill effect before showing
-  // the full address form.
-  const needsPincode = !needsPhone && !/^\d{6}$/.test(pincode);
-  if (needsPhone || needsPincode) {
+  if (needsPhone) {
     return (
       <Suspense fallback={<div className="min-h-[70vh]" />}>
-        <div className={needsPincode ? "pointer-events-none" : ""}>
-          <CheckoutPhoneStep
-            storeId={store?.id}
-            storeName={store?.name}
-            storeLogo={store?.logo_url}
-            cartItems={checkoutItems as any}
-            onComplete={(p) => {
-              setPhone(p);
-              try { localStorage.setItem("checkout_phone", toCanonicalIndianPhone(p) || p); } catch { /* noop */ }
-            }}
-          />
-        </div>
-        {needsPincode && (
-          <PincodeSheet
-            initial={pincode}
-            onClose={() => { /* hard back → clear phone to reset */ setPhone(""); try { localStorage.removeItem("checkout_phone"); } catch { /* noop */ } }}
-            onSubmit={(pc) => setPincode(pc)}
-          />
-        )}
+        <CheckoutPhoneStep
+          storeId={store?.id}
+          storeName={store?.name}
+          storeLogo={store?.logo_url}
+          cartItems={checkoutItems as any}
+          onComplete={(p) => {
+            setPhone(p);
+            try { localStorage.setItem("checkout_phone", toCanonicalIndianPhone(p) || p); } catch { /* noop */ }
+          }}
+        />
       </Suspense>
     );
   }
