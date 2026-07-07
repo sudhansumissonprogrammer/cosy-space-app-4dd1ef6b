@@ -1710,11 +1710,34 @@ export default function CheckoutV2Page() {
     );
   }
 
+  // ─── Phone gate (Step 1) — captures lead + abandoned_cart before form ───
+  // Matches legacy checkout: forces phone entry as the first screen so we
+  // create the abandoned_carts row (via CheckoutPhoneStep → capture_checkout_lead)
+  // BEFORE the shopper can drop off on the address form. WhatsApp cart-recovery
+  // cron then reaches out after 30 min.
+  const needsPhone = !isValidIndianPhone(normalizePhone(phone));
+  if (needsPhone) {
+    return (
+      <Suspense fallback={<div className="min-h-[70vh]" />}>
+        <CheckoutPhoneStep
+          storeId={store?.id}
+          storeName={store?.name}
+          cartItems={checkoutItems as any}
+          onComplete={(p) => {
+            setPhone(p);
+            try { localStorage.setItem("checkout_phone", p); } catch { /* noop */ }
+          }}
+        />
+      </Suspense>
+    );
+  }
+
   // ─── Main layout ────────────────────────────────────────────────────────
   const mobile = isMobile();
 
   return (
     <div className="mx-auto max-w-md min-h-screen bg-background pb-24">
+
       {/* Confirming payment overlay */}
       {confirmingPayment && (
         <div className="fixed inset-0 z-50 bg-background/85 backdrop-blur-sm flex items-center justify-center">
