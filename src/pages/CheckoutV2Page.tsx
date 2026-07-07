@@ -2237,7 +2237,7 @@ export default function CheckoutV2Page() {
                       disabled={disabled}
                       className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 disabled:opacity-40 disabled:cursor-not-allowed min-h-[92px] relative`}
                     >
-                      <div className="absolute top-1 left-1 right-1 text-[8px] font-semibold text-emerald-700 bg-emerald-50 rounded px-1 py-0.5">Win Cashback</div>
+                      {(i === 0) && <div className="absolute top-1 left-1 right-1 text-[8px] font-semibold text-emerald-700 bg-emerald-50 rounded px-1 py-0.5">Win Cashback</div>}
                       <img src={app.icon} alt={app.label} className="h-8 w-8 mt-3 mb-1 object-contain" />
                       <div className="text-[11px] font-semibold">{app.label}</div>
                       {s.status === "loading" && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
