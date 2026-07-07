@@ -497,6 +497,16 @@ export default function CheckoutV2Page() {
     else navigate(-1);
   };
 
+  // Lock body scroll while any bottom-sheet is open so the page behind
+  // doesn't scroll and the sheet's own scroll container is the only one active.
+  useEffect(() => {
+    const anySheetOpen = showAddressFormSheet || showAddressDialog;
+    if (!anySheetOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [showAddressFormSheet, showAddressDialog]);
+
   useEffect(() => {
     if (savedAddresses && savedAddresses.length > 0 && !selectedAddressId) {
       const def = savedAddresses.find((a: any) => a.is_default) || savedAddresses[0];
@@ -2112,9 +2122,16 @@ export default function CheckoutV2Page() {
 
           {/* Contact + Address form (only if not filled) — bottom-sheet popup */}
           {(!addressFilled || showAddressFormSheet) && (
-            <div className="fixed inset-0 z-50 mx-auto flex h-[100dvh] max-w-md flex-col justify-end overflow-hidden">
-              {/* Scrim */}
-              <div className="absolute inset-0 bg-black/50" aria-hidden />
+            <>
+              {/* Full-viewport scrim — covers everything, blocks scroll of page behind */}
+              <div
+                className="fixed inset-0 z-40 bg-black/50"
+                onClick={closeAddressFormSheet}
+                aria-hidden
+              />
+              {/* Sheet container — pinned to bottom, centered mobile column */}
+              <div className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[100dvh] max-w-md flex-col justify-end overflow-hidden pointer-events-none">
+                <div className="pointer-events-auto flex flex-col items-center">
               {/* Close chip above sheet */}
               <button
                 type="button"
@@ -2249,7 +2266,9 @@ export default function CheckoutV2Page() {
                   </Button>
                 </div>
               </div>
-            </div>
+                </div>
+              </div>
+            </>
           )}
 
           {/* Partial-payment selector moved into payment section below */}
@@ -2618,12 +2637,14 @@ export default function CheckoutV2Page() {
       {/* Address book dialog (saved addresses sheet) */}
       {/* Address book bottom-sheet */}
       {showAddressDialog && (
-        <div className="fixed inset-0 z-50 mx-auto flex h-[100dvh] max-w-md flex-col justify-end overflow-hidden">
+        <>
           <div
-            className="absolute inset-0 bg-black/50"
+            className="fixed inset-0 z-40 bg-black/50"
             onClick={() => { setShowAddressDialog(false); setShowAddAddress(false); }}
             aria-hidden
           />
+          <div className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[100dvh] max-w-md flex-col justify-end overflow-hidden pointer-events-none">
+            <div className="pointer-events-auto flex flex-col items-center">
           <button
             type="button"
             onClick={() => { setShowAddressDialog(false); setShowAddAddress(false); }}
@@ -2700,7 +2721,9 @@ export default function CheckoutV2Page() {
               </>
             )}
           </div>
-        </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
