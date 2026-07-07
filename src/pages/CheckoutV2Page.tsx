@@ -760,7 +760,7 @@ export default function CheckoutV2Page() {
 
   const [intents, setIntents] = useState<Record<UpiApp, IntentState>>({
     gpay: { status: "idle" }, phonepe: { status: "idle" },
-    paytm: { status: "idle" }, any: { status: "idle" },
+    paytm: { status: "idle" }, bhim: { status: "idle" }, any: { status: "idle" },
   });
   const gatewayRef = useRef<{
     pg?: "cashfree" | "razorpay" | "payu";
