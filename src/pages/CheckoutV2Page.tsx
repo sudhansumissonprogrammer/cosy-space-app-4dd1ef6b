@@ -1904,8 +1904,8 @@ export default function CheckoutV2Page() {
         </div>
       )}
 
-      {/* ═══════ CONTACT + ADDRESS STEP ═══════ */}
-      {!showPayment && (
+      {/* ═══════ CONTACT + ADDRESS STEP (always visible) ═══════ */}
+      {true && (
         <div className="px-3 py-3 space-y-3">
 
           {/* Order Summary card */}
