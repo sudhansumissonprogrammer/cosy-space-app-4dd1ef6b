@@ -136,7 +136,17 @@ export default function CheckoutV2Page() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const qc = useQueryClient();
-  const { items: cartItems, clearCart } = useCart();
+  const { items: cartItems, clearCart, removeFromCart } = useCart();
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const goBack = useCallback(() => {
+    try {
+      if (typeof window !== "undefined" && window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+    } catch { /* noop */ }
+    navigate("/");
+  }, [navigate]);
   const { customer, ensureCustomer } = useStorefrontAuth();
   const currency = store?.currency || "INR";
   const isHindi = store?.theme === "theme-16" || store?.theme === "theme-21";
