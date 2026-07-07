@@ -10,7 +10,7 @@
 // zippopotam pincode fallback + geolocation, Hindi bilingual labels, and
 // checkout_token idempotency + payment-failed retry banner + confirmingPayment overlay.
 
-import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from "react";
 import { useOutletContext, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
