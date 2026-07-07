@@ -1661,7 +1661,14 @@ export default function CheckoutV2Page() {
       await new Promise<void>((resolve) => {
         let settled = false;
         let timeoutId: number | null = null;
-        const done = () => { if (timeoutId != null) window.clearTimeout(timeoutId); resolve(); };
+        let returnedCheckId: number | null = null;
+        let leftCheckoutTab = false;
+        const done = () => {
+          if (timeoutId != null) window.clearTimeout(timeoutId);
+          if (returnedCheckId != null) window.clearTimeout(returnedCheckId);
+          document.removeEventListener("visibilitychange", handleVisibilityReturn);
+          resolve();
+        };
         const finish = async (ok: boolean, cancelled = false) => {
           if (settled) return;
           settled = true;
@@ -1682,6 +1689,23 @@ export default function CheckoutV2Page() {
           }
           done();
         };
+        const handleVisibilityReturn = () => {
+          if (document.visibilityState === "hidden") { leftCheckoutTab = true; return; }
+          if (!leftCheckoutTab || settled) return;
+          if (returnedCheckId != null) window.clearTimeout(returnedCheckId);
+          returnedCheckId = window.setTimeout(async () => {
+            if (settled) return;
+            const confirmed = await verifyAndFinalize({ attempts: 1, intervalMs: 0, showConfirming: false });
+            if (confirmed) { settled = true; done(); return; }
+            settled = true;
+            setConfirmingPayment(false);
+            setPendingOrder(order); setPaymentFailed(true);
+            try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
+            toast.error("Payment not completed. You can retry below.");
+            done();
+          }, 900);
+        };
+        document.addEventListener("visibilitychange", handleVisibilityReturn);
         timeoutId = window.setTimeout(async () => {
           if (settled) return;
           const confirmed = await verifyAndFinalize({ attempts: 1, intervalMs: 0, showConfirming: false });
@@ -1692,7 +1716,7 @@ export default function CheckoutV2Page() {
           try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
           toast.error("Payment not completed. You can retry below.");
           done();
-        }, 6000);
+        }, 30000);
         const isCancelStatus = (s: string) =>
           s === "cancel" || s === "cancelled" || s === "canceled" ||
           s === "usercancelled" || s === "user_cancelled" ||
