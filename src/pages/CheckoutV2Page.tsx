@@ -1816,8 +1816,11 @@ export default function CheckoutV2Page() {
     );
   }
 
-  // ─── Waiting screen (UPI intent flow) ───────────────────────────────────
-  if (waiting) {
+  // ─── Waiting screen (UPI intent flow) — mobile only ─────────────────────
+  // On desktop we keep the QR inline (see the desktop UPI QR card below) and
+  // just show a small "waiting" strip there, so the shopper can still see the
+  // QR code while completing payment in their phone's UPI app.
+  if (waiting && isMobile()) {
     return (
       <div className="mx-auto max-w-md p-6 pt-16 text-center">
         <div className="mx-auto mb-6 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
