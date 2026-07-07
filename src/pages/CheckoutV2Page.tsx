@@ -36,11 +36,11 @@ import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { loadCashfree } from "@/lib/loadCashfree";
 import { loadPayuBolt } from "@/lib/loadPayuBolt";
+import { createPortal } from "react-dom";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 import { QRCodeSVG } from "qrcode.react";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
-const PincodeSheet = lazy(() => import("@/components/storefront/PincodeSheet"));
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
@@ -507,15 +507,16 @@ export default function CheckoutV2Page() {
     else navigate(-1);
   };
 
-  // Lock body scroll while any bottom-sheet is open so the page behind
-  // doesn't scroll and the sheet's own scroll container is the only one active.
+  const addressSheetOpen = showAddressFormSheet || !(pincode && streetAddress && city && state && fullName);
+
+  // Lock body scroll while any address overlay is open so only the form scrolls.
   useEffect(() => {
-    const anySheetOpen = showAddressFormSheet || showAddressDialog;
+    const anySheetOpen = addressSheetOpen || showAddressDialog;
     if (!anySheetOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
-  }, [showAddressFormSheet, showAddressDialog]);
+  }, [addressSheetOpen, showAddressDialog]);
 
   useEffect(() => {
     if (savedAddresses && savedAddresses.length > 0 && !selectedAddressId) {
@@ -1959,32 +1960,19 @@ export default function CheckoutV2Page() {
   // BEFORE the shopper can drop off on the address form. WhatsApp cart-recovery
   // cron then reaches out after 30 min.
   const needsPhone = !toCanonicalIndianPhone(phone);
-  // Pincode gate (Step 1.5): once phone is captured we ask for pincode only,
-  // then hydrate city/state via the existing autofill effect before showing
-  // the full address form.
-  const needsPincode = !needsPhone && !/^\d{6}$/.test(pincode);
-  if (needsPhone || needsPincode) {
+  if (needsPhone) {
     return (
       <Suspense fallback={<div className="min-h-[70vh]" />}>
-        <div className={needsPincode ? "pointer-events-none" : ""}>
-          <CheckoutPhoneStep
-            storeId={store?.id}
-            storeName={store?.name}
-            storeLogo={store?.logo_url}
-            cartItems={checkoutItems as any}
-            onComplete={(p) => {
-              setPhone(p);
-              try { localStorage.setItem("checkout_phone", toCanonicalIndianPhone(p) || p); } catch { /* noop */ }
-            }}
-          />
-        </div>
-        {needsPincode && (
-          <PincodeSheet
-            initial={pincode}
-            onClose={() => { /* hard back → clear phone to reset */ setPhone(""); try { localStorage.removeItem("checkout_phone"); } catch { /* noop */ } }}
-            onSubmit={(pc) => setPincode(pc)}
-          />
-        )}
+        <CheckoutPhoneStep
+          storeId={store?.id}
+          storeName={store?.name}
+          storeLogo={store?.logo_url}
+          cartItems={checkoutItems as any}
+          onComplete={(p) => {
+            setPhone(p);
+            try { localStorage.setItem("checkout_phone", toCanonicalIndianPhone(p) || p); } catch { /* noop */ }
+          }}
+        />
       </Suspense>
     );
   }
@@ -2217,160 +2205,140 @@ export default function CheckoutV2Page() {
             </>
           )}
 
-          {/* Contact + Address form (only if not filled) — bottom-sheet popup */}
-          {(!addressFilled || showAddressFormSheet) && (
-            <div className="fixed inset-0 z-[60] flex items-end justify-center" role="dialog" aria-modal="true" aria-label="Add delivery address">
-              {/* Backdrop */}
-              <div
-                className="absolute inset-0 bg-black/60 animate-in fade-in duration-200"
-                onClick={closeAddressFormSheet}
-                aria-hidden
-              />
-              {/* Sheet — full-width on mobile, centered on desktop, slides up */}
-              <div
-                className="relative w-full sm:max-w-md bg-white rounded-t-2xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300"
-                style={{ height: "92svh", maxHeight: "92dvh" }}
-              >
-                  {/* Grab handle */}
-                  <div className="pt-2.5 pb-1 flex justify-center flex-shrink-0">
-                    <span className="h-1.5 w-10 rounded-full bg-gray-300" />
-                  </div>
-                  {/* Header */}
-                  <div className="px-5 pt-1 pb-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
-                    <div className="text-[16px] font-bold">Add Delivery Address</div>
-                    <button
-                      type="button"
-                      onClick={closeAddressFormSheet}
-                      aria-label="Close"
-                      className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center -mr-1"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  </div>
-                  {/* Scrollable body */}
-                  <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-3 pb-4 space-y-3">
-                  {/* Returning-guest 1-tap */}
-                  {returningOrder && !returningUsed && (
-                    <div className="rounded-lg border border-primary/40 bg-primary/5 p-2.5 flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5" />
-                      <div className="flex-1">
-                        <div className="text-xs font-semibold">Welcome back, {returningOrder.customer_name?.split(" ")[0]}!</div>
-                        <div className="text-[11px] text-muted-foreground truncate">Load last address?</div>
-                      </div>
-                      <Button size="sm" className="h-7 text-xs px-3" onClick={applyReturningOrder}>Use it</Button>
-                      <button className="text-[11px] text-muted-foreground underline pl-1" onClick={() => setReturningDismissed(true)}>Skip</button>
-                    </div>
-                  )}
-
-                  <div>
-                    <Label className="text-[12px] text-muted-foreground">Pincode *</Label>
-                    <div className="relative">
-                      <Input value={pincode} onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit pincode" inputMode="numeric" maxLength={6} className="h-11 rounded-lg border-[#ECECEC]" />
-                      {pincodeLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
-                    </div>
-                    <button type="button" onClick={detectLocation} disabled={geoLoading} className="text-[11px] text-primary flex items-center gap-1 underline mt-1">
-                      {geoLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <LocateFixed className="h-3 w-3" />}
-                      Use my location
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-[12px] text-muted-foreground">City *</Label>
-                      <Input value={city} onChange={(e) => setCity(e.target.value)} className="h-11 rounded-lg border-[#ECECEC]" />
-                    </div>
-                    <div>
-                      <Label className="text-[12px] text-muted-foreground">State *</Label>
-                      <Input value={state} onChange={(e) => setState(e.target.value)} className="h-11 rounded-lg border-[#ECECEC]" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-[12px] text-muted-foreground">Flat, House no. *</Label>
-                    <Input value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="Enter flat, house no." className="h-11 rounded-lg border-[#ECECEC]" />
-                  </div>
-
-                  <div>
-                    <Label className="text-[12px] text-muted-foreground">Apartment, Area, Sector, Village</Label>
-                    <Input value={apartment} onChange={(e) => setApartment(e.target.value)} placeholder="Apartment, area, sector, village" className="h-11 rounded-lg border-[#ECECEC]" />
-                  </div>
-
-                  <div className="pt-2 border-t border-[#ECECEC]">
-                    <div className="text-[14px] font-bold mb-2">Customer Information</div>
-                    <div className="space-y-3">
-                      <div>
-                        <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
-                        <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" className="h-11 rounded-lg border-[#ECECEC]" />
-                      </div>
-                      <div>
-                        <Label className="text-[12px] text-muted-foreground">Email Address {customer ? "" : "*"}</Label>
-                        <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" type="email" className="h-11 rounded-lg border-[#ECECEC]" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Save Address As */}
-                  <div className="pt-2 border-t border-[#ECECEC]">
-                    <div className="text-[13px] font-semibold mb-2">Save Address As</div>
-                    <div className="flex gap-2">
-                      {(["Home", "Work"] as const).map((lbl) => (
-                        <button
-                          key={lbl}
-                          type="button"
-                          onClick={() => setAddrLabel(lbl)}
-                          className={`flex items-center gap-2 rounded-lg px-4 py-2 border ${addrLabel === lbl ? "border-black" : "border-[#ECECEC]"}`}
-                        >
-                          <span className="text-[13px] font-semibold">{lbl}</span>
-                          <span className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${addrLabel === lbl ? "border-black" : "border-muted-foreground/40"}`}>
-                            {addrLabel === lbl && <span className="h-2 w-2 rounded-full bg-black" />}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Shipping Method inline */}
-                  {shippingActive && (
-                    <div className="pt-2 border-t border-[#ECECEC]">
-                      <div className="rounded-lg border border-[#ECECEC] bg-[#F9FAFB] p-3">
-                        <div className="text-[13px] font-semibold mb-2">Shipping Method</div>
-                        <div className="rounded-lg border border-[#ECECEC] bg-white p-3 flex items-center justify-between">
-                          <div>
-                            <div className="text-[13px] font-semibold">{shippingCharge > 0 ? formatPrice(shippingCharge, currency) + " Shipping" : "Free Shipping"}</div>
-                            {shippingCharge === 0 && <span className="inline-block mt-1 px-1.5 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold">Free</span>}
-                          </div>
-                          <span className="h-4 w-4 rounded-full border-2 border-black flex items-center justify-center">
-                            <span className="h-2 w-2 rounded-full bg-black" />
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <label className="flex items-start gap-2 text-[12px] text-muted-foreground pt-1">
-                    <Checkbox checked={waConsent} onCheckedChange={(v) => setWaConsent(v === true)} className="mt-0.5" />
-                    <span>Send me order updates & offers - (no spam)</span>
-                  </label>
-                  </div>
-                  {/* Sticky Continue */}
-                  <div className="flex-shrink-0 border-t border-[#ECECEC] p-3 bg-white pb-[max(env(safe-area-inset-bottom),0.75rem)]">
-                    <Button
-                      className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
-                      onClick={() => {
-                        if (!fullName.trim()) { toast.error("Full name required"); return; }
-                        if (!/^\d{6}$/.test(pincode)) { toast.error("Enter a valid pincode"); return; }
-                        if (!streetAddress.trim()) { toast.error("Enter Flat, House no."); return; }
-                        if (!city.trim() || !state.trim()) { toast.error("Enter city and state"); return; }
-                        if (!customer && !email.trim()) { toast.error("Email address is required"); return; }
-                        setShowAddressFormSheet(false);
-                      }}
-                    >
-                      Continue
-                    </Button>
-                  </div>
-                </div>
+          {/* Contact + Address form — portaled full-screen editor to avoid half-open fixed-layout bugs */}
+          {(!addressFilled || showAddressFormSheet) && typeof document !== "undefined" && createPortal(
+            <div className="fixed inset-0 z-[100] h-[100dvh] min-h-[100svh] w-screen bg-white flex flex-col overflow-hidden" role="dialog" aria-modal="true" aria-label="Add delivery address">
+              <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
+                <div className="text-[16px] font-bold">Add Delivery Address</div>
+                <button
+                  type="button"
+                  onClick={closeAddressFormSheet}
+                  aria-label="Close"
+                  className="h-9 w-9 rounded-full hover:bg-gray-100 flex items-center justify-center -mr-1"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
 
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-4 pb-5 space-y-3">
+                {returningOrder && !returningUsed && (
+                  <div className="rounded-lg border border-primary/40 bg-primary/5 p-2.5 flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5" />
+                    <div className="flex-1">
+                      <div className="text-xs font-semibold">Welcome back, {returningOrder.customer_name?.split(" ")[0]}!</div>
+                      <div className="text-[11px] text-muted-foreground truncate">Load last address?</div>
+                    </div>
+                    <Button size="sm" className="h-7 text-xs px-3" onClick={applyReturningOrder}>Use it</Button>
+                    <button className="text-[11px] text-muted-foreground underline pl-1" onClick={() => setReturningDismissed(true)}>Skip</button>
+                  </div>
+                )}
+
+                <div>
+                  <Label className="text-[12px] text-muted-foreground">Pincode *</Label>
+                  <div className="relative">
+                    <Input value={pincode} onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit pincode" inputMode="numeric" maxLength={6} className="h-11 rounded-lg border-[#ECECEC]" />
+                    {pincodeLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+                  </div>
+                  <button type="button" onClick={detectLocation} disabled={geoLoading} className="text-[11px] text-primary flex items-center gap-1 underline mt-1">
+                    {geoLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <LocateFixed className="h-3 w-3" />}
+                    Use my location
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[12px] text-muted-foreground">City *</Label>
+                    <Input value={city} onChange={(e) => setCity(e.target.value)} className="h-11 rounded-lg border-[#ECECEC]" />
+                  </div>
+                  <div>
+                    <Label className="text-[12px] text-muted-foreground">State *</Label>
+                    <Input value={state} onChange={(e) => setState(e.target.value)} className="h-11 rounded-lg border-[#ECECEC]" />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-[12px] text-muted-foreground">Flat, House no. *</Label>
+                  <Input value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="Enter flat, house no." className="h-11 rounded-lg border-[#ECECEC]" />
+                </div>
+
+                <div>
+                  <Label className="text-[12px] text-muted-foreground">Apartment, Area, Sector, Village</Label>
+                  <Input value={apartment} onChange={(e) => setApartment(e.target.value)} placeholder="Apartment, area, sector, village" className="h-11 rounded-lg border-[#ECECEC]" />
+                </div>
+
+                <div className="pt-2 border-t border-[#ECECEC]">
+                  <div className="text-[14px] font-bold mb-2">Customer Information</div>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
+                      <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" className="h-11 rounded-lg border-[#ECECEC]" />
+                    </div>
+                    <div>
+                      <Label className="text-[12px] text-muted-foreground">Email Address {customer ? "" : "*"}</Label>
+                      <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" type="email" className="h-11 rounded-lg border-[#ECECEC]" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-[#ECECEC]">
+                  <div className="text-[13px] font-semibold mb-2">Save Address As</div>
+                  <div className="flex gap-2">
+                    {(["Home", "Work"] as const).map((lbl) => (
+                      <button
+                        key={lbl}
+                        type="button"
+                        onClick={() => setAddrLabel(lbl)}
+                        className={`flex items-center gap-2 rounded-lg px-4 py-2 border ${addrLabel === lbl ? "border-black" : "border-[#ECECEC]"}`}
+                      >
+                        <span className="text-[13px] font-semibold">{lbl}</span>
+                        <span className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${addrLabel === lbl ? "border-black" : "border-muted-foreground/40"}`}>
+                          {addrLabel === lbl && <span className="h-2 w-2 rounded-full bg-black" />}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {shippingActive && (
+                  <div className="pt-2 border-t border-[#ECECEC]">
+                    <div className="rounded-lg border border-[#ECECEC] bg-[#F9FAFB] p-3">
+                      <div className="text-[13px] font-semibold mb-2">Shipping Method</div>
+                      <div className="rounded-lg border border-[#ECECEC] bg-white p-3 flex items-center justify-between">
+                        <div>
+                          <div className="text-[13px] font-semibold">{shippingCharge > 0 ? formatPrice(shippingCharge, currency) + " Shipping" : "Free Shipping"}</div>
+                          {shippingCharge === 0 && <span className="inline-block mt-1 px-1.5 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold">Free</span>}
+                        </div>
+                        <span className="h-4 w-4 rounded-full border-2 border-black flex items-center justify-center">
+                          <span className="h-2 w-2 rounded-full bg-black" />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <label className="flex items-start gap-2 text-[12px] text-muted-foreground pt-1">
+                  <Checkbox checked={waConsent} onCheckedChange={(v) => setWaConsent(v === true)} className="mt-0.5" />
+                  <span>Send me order updates & offers - (no spam)</span>
+                </label>
+              </div>
+
+              <div className="flex-shrink-0 border-t border-[#ECECEC] p-3 bg-white pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+                <Button
+                  className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
+                  onClick={() => {
+                    if (!fullName.trim()) { toast.error("Full name required"); return; }
+                    if (!/^\d{6}$/.test(pincode)) { toast.error("Enter a valid pincode"); return; }
+                    if (!streetAddress.trim()) { toast.error("Enter Flat, House no."); return; }
+                    if (!city.trim() || !state.trim()) { toast.error("Enter city and state"); return; }
+                    if (!customer && !email.trim()) { toast.error("Email address is required"); return; }
+                    setShowAddressFormSheet(false);
+                  }}
+                >
+                  Continue
+                </Button>
+              </div>
+            </div>,
+            document.body
           )}
 
           {/* Partial-payment selector moved into payment section below */}
