@@ -2711,7 +2711,9 @@ export default function CheckoutV2Page() {
               </>
             )}
           </div>
-        </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
