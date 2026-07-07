@@ -260,28 +260,28 @@ export default function CheckoutV2Page() {
     let cancelled = false;
     setPincodeLoading(true);
     (async () => {
+      const tryPrimary = async () => {
+        const r = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+        const j = await r.json();
+        const po = j?.[0]?.PostOffice?.[0];
+        if (!po) throw new Error("no post office");
+        return { city: po.District as string, state: po.State as string };
+      };
+      const tryFallback = async () => {
+        const r = await fetch(`https://api.zippopotam.us/in/${pincode}`);
+        const j = await r.json();
+        const p = j?.places?.[0];
+        if (!p) throw new Error("no place");
+        return { city: p["place name"] as string, state: p["state"] as string };
+      };
       try {
-        // Race primary + fallback; first successful win.
-        const primary = fetch(`https://api.postalpincode.in/pincode/${pincode}`)
-          .then((r) => r.json())
-          .then((j) => {
-            const po = j?.[0]?.PostOffice?.[0];
-            if (po) return { city: po.District as string, state: po.State as string };
-            throw new Error("no post office");
-          });
-        const fallback = fetch(`https://api.zippopotam.us/in/${pincode}`)
-          .then((r) => r.json())
-          .then((j) => {
-            const p = j?.places?.[0];
-            if (p) return { city: p["place name"] as string, state: p["state"] as string };
-            throw new Error("no place");
-          });
-        const result = await Promise.any([primary, fallback]);
-        if (cancelled) return;
+        let result: { city: string; state: string } | null = null;
+        try { result = await tryPrimary(); } catch { /* try fallback */ }
+        if (!result) { try { result = await tryFallback(); } catch { /* silent */ } }
+        if (cancelled || !result) return;
         if (!city) setCity(result.city || "");
         if (!state) setState(result.state || "");
-      } catch { /* silent */ }
-      finally { if (!cancelled) setPincodeLoading(false); }
+      } finally { if (!cancelled) setPincodeLoading(false); }
     })();
     return () => { cancelled = true; };
   }, [pincode]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1656,7 +1656,14 @@ export default function CheckoutV2Page() {
         {showUpsell && orderId && (
           <div className="mt-8">
             <Suspense fallback={null}>
-              <PostPurchaseUpsell store={store} orderId={orderId} />
+              <PostPurchaseUpsell
+                storeId={store.id}
+                storeName={store.name}
+                orderId={orderId}
+                orderNumber={orderNumber}
+                orderedProductIds={checkoutItems.map((i) => i.productId)}
+                currency={currency}
+              />
             </Suspense>
           </div>
         )}
