@@ -496,7 +496,9 @@
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    /* No transform in the final frame — leaving one here creates a
+       containing block that breaks position: fixed for descendants
+       (e.g. the checkout address bottom-sheet opens only half-height). */
   }
 }
 
