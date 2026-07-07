@@ -2370,7 +2370,7 @@ export default function CheckoutV2Page() {
                   </div>
                 </div>
               </div>
-            </div>
+
           )}
 
           {/* Partial-payment selector moved into payment section below */}
