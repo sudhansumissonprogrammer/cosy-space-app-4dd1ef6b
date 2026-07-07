@@ -2038,11 +2038,15 @@ export default function CheckoutV2Page() {
       {true && (
         <div className="px-3 py-3 space-y-3">
 
-          {/* Order Summary card */}
+          {/* Order Summary card — matches CheckoutPhoneStep (collapsible w/ images) */}
           <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
-            <div className="flex items-start gap-3">
+            <button
+              type="button"
+              onClick={() => setSummaryOpen((v) => !v)}
+              className="w-full flex items-start gap-3 text-left"
+            >
               <div className="h-9 w-9 rounded-md bg-[#F5F5F5] flex items-center justify-center flex-shrink-0">
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 3h2l3 12h12l2-8H6"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>
+                <ShoppingCart className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[15px] font-bold">Order Summary</div>
@@ -2054,34 +2058,59 @@ export default function CheckoutV2Page() {
               </div>
               <div className="text-right">
                 <div className="text-[11px] text-muted-foreground">{checkoutItems.length} item{checkoutItems.length !== 1 ? "s" : ""}</div>
-                <div className="flex items-baseline gap-1.5 justify-end">
+                <div className="flex items-center gap-1 justify-end">
                   {savedAmount > 0 && <span className="text-[12px] text-muted-foreground line-through">{formatPrice(subtotal, currency)}</span>}
                   <span className="text-[15px] font-bold">{formatPrice(total, currency)}</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${summaryOpen ? "rotate-180" : ""}`} />
                 </div>
               </div>
-            </div>
-            {/* Line items */}
-            <div className="border-t border-[#ECECEC] mt-3 pt-2.5 space-y-1">
-              {checkoutItems.map((it, idx) => (
-                <div key={`${it.productId}-${it.variantId || ""}-${idx}`} className="flex justify-between text-[12px] text-muted-foreground">
-                  <span className="truncate flex-1 pr-2">{it.name} × {it.quantity}</span>
-                  <span>{formatPrice(it.price * it.quantity, currency)}</span>
-                </div>
-              ))}
-              {shippingActive && (
-                <div className="flex justify-between text-[12px] text-muted-foreground">
-                  <span>Shipping</span>
-                  <span>{shippingCharge > 0 ? formatPrice(shippingCharge, currency) : "Free"}</span>
-                </div>
-              )}
-              {taxActive && !taxInclusive && (
-                <div className="flex justify-between text-[12px] text-muted-foreground">
-                  <span>{taxName} ({taxRate}%)</span>
-                  <span>{formatPrice(taxAmount, currency)}</span>
-                </div>
-              )}
-            </div>
+            </button>
+
+            {summaryOpen && (
+              <div className="border-t border-[#ECECEC] mt-3 pt-3 space-y-3">
+                {checkoutItems.map((it, idx) => (
+                  <div key={`${it.productId}-${it.variantId || ""}-${idx}`} className="flex items-start gap-3">
+                    {(it as any).image ? (
+                      <img src={(it as any).image} alt={it.name} loading="lazy" className="h-14 w-14 flex-shrink-0 rounded-lg border object-cover" />
+                    ) : (
+                      <div className="h-14 w-14 flex-shrink-0 rounded-lg border bg-muted" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="line-clamp-2 text-[13px] font-semibold">{it.name || "Item"}</div>
+                      <div className="mt-0.5 text-[11px] text-muted-foreground">Qty: {it.quantity || 1}</div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <span className="text-[13px] font-semibold tabular-nums">{formatPrice(it.price * it.quantity, currency)}</span>
+                      {!isSingleMode && (
+                        <button
+                          type="button"
+                          onClick={() => removeFromCart(it.productId, it.variantId)}
+                          className="flex items-center gap-1 text-[11px] text-muted-foreground transition hover:text-destructive"
+                          aria-label={`Remove ${it.name}`}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {shippingActive && (
+                  <div className="flex justify-between text-[12px] text-muted-foreground pt-1 border-t border-[#ECECEC]">
+                    <span>Shipping</span>
+                    <span>{shippingCharge > 0 ? formatPrice(shippingCharge, currency) : "Free"}</span>
+                  </div>
+                )}
+                {taxActive && !taxInclusive && (
+                  <div className="flex justify-between text-[12px] text-muted-foreground">
+                    <span>{taxName} ({taxRate}%)</span>
+                    <span>{formatPrice(taxAmount, currency)}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
 
           {/* Delivery Details (once address filled) */}
           {addressFilled && (
