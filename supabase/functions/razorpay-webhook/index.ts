@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     // Find local order via razorpay_order_id
     const { data: order } = await supabase
       .from("orders")
-      .select("id, store_id, status, payment_type, checkout_token")
+      .select("id, store_id, status, payment_type, checkout_token, total, advance_paid")
       .eq("razorpay_order_id", razorpayOrderId)
       .maybeSingle();
 
@@ -84,6 +84,20 @@ Deno.serve(async (req) => {
     }
 
     if (eventType === "payment.captured" || eventType === "order.paid") {
+      // Amount-mismatch guard — reject webhook payloads that don't match the
+      // expected charge. Razorpay reports `amount` in paise.
+      const expectedAmount = order.payment_type === "partial" && Number(order.advance_paid) > 0
+        ? Number(order.advance_paid)
+        : Number(order.total);
+      const expectedPaise = Math.round(expectedAmount * 100);
+      const paidPaise = Number(payment.amount || 0);
+      if (Math.abs(paidPaise - expectedPaise) > 1) {
+        console.error("razorpay-webhook: amount mismatch", {
+          orderId: order.id, expectedPaise, paidPaise, paymentId: payment.id,
+        });
+        return new Response("OK (amount mismatch — manual review)", { status: 200 });
+      }
+
       const isPartial = order.payment_type === "partial";
       await supabase
         .from("orders")
@@ -95,7 +109,9 @@ Deno.serve(async (req) => {
           payment_verified_at: new Date().toISOString(),
         })
         .eq("id", order.id)
-        .eq("store_id", order.store_id);
+        .eq("store_id", order.store_id)
+        .eq("status", "pending");
+
 
       if (order.checkout_token) {
         await supabase
