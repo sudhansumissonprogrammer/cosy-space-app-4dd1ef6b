@@ -1179,7 +1179,11 @@ export default function CheckoutV2Page() {
     if (!waiting || !orderId) return;
     let cancelled = false;
     let attempts = 0;
-    const maxAttempts = gatewayRef.current.pg ? 6 : 8;
+    // Desktop UPI QR needs a long window — shopper opens their phone, scans,
+    // then approves in the UPI app. Full-modal gateways (Razorpay/PayU/Cashfree)
+    // resolve much faster because we come back via redirect.
+    const isDesktopQr = !isMobile() && waitingApp === "UPI QR";
+    const maxAttempts = isDesktopQr ? 120 : (gatewayRef.current.pg ? 6 : 8);
     const checkNow = async (): Promise<boolean> => {
       if (waitingCheckInFlightRef.current) return false;
       waitingCheckInFlightRef.current = true;
@@ -1206,8 +1210,14 @@ export default function CheckoutV2Page() {
       attempts++;
       const done = await checkNow();
       if (done || cancelled) return;
-      if (attempts >= maxAttempts) { stopWaitingForPayment("Payment not confirmed. If you paid, tap retry to check again."); return; }
-      const delay = attempts < 5 ? 1500 : 2500;
+      if (attempts >= maxAttempts) {
+        stopWaitingForPayment(isDesktopQr
+          ? "Still not confirmed. If you completed payment, tap retry."
+          : "Payment not confirmed. If you paid, tap retry to check again.");
+        return;
+      }
+      // QR: slow, steady cadence. Gateway redirect: fast for a few seconds.
+      const delay = isDesktopQr ? 2500 : (attempts < 5 ? 1500 : 2500);
       setTimeout(poll, delay);
     };
     setTimeout(poll, 800);
@@ -1220,7 +1230,7 @@ export default function CheckoutV2Page() {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, [waiting, orderId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [waiting, orderId, waitingApp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const manualRecheck = async () => {
     if (manualChecking || !orderId) return;
