@@ -40,6 +40,7 @@ import { loadPayuBolt } from "@/lib/loadPayuBolt";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
+const PincodeSheet = lazy(() => import("@/components/storefront/PincodeSheet"));
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
