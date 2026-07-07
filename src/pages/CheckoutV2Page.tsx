@@ -287,33 +287,79 @@ export default function CheckoutV2Page() {
     return () => { cancelled = true; };
   }, [pincode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const detectLocation = () => {
-    if (!navigator?.geolocation) { toast.error("Geolocation not supported on this browser"); return; }
-    setGeoLoading(true);
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      try {
-        const { data, error } = await supabase.functions.invoke("reverse-geocode", {
-          body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-        });
-        if (error) throw error;
-        const addr = (data as any)?.address ?? {};
-        let filled = 0;
-        if (addr.pincode) { setPincode(addr.pincode); filled++; }
-        if (addr.city) { setCity(addr.city); filled++; }
-        if (addr.state) { setState(addr.state); filled++; }
-        if (addr.street_address) { setStreetAddress(addr.street_address); filled++; }
-        if (filled === 0) toast.error("Could not read address from your location");
-        else toast.success("Location filled");
-      } catch (e: any) {
-        toast.error(e?.message || "Could not detect location");
-      } finally {
-        setGeoLoading(false);
+  const detectLocation = async () => {
+    if (!navigator?.geolocation) {
+      toast.error("Geolocation not supported on this browser");
+      return;
+    }
+    // Secure-context check (geolocation requires https or localhost)
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      toast.error("Location needs a secure (https) page");
+      return;
+    }
+    // Preflight the permission state so we can give a real error instead of a silent fail
+    try {
+      const perm: any = await (navigator as any).permissions?.query?.({ name: "geolocation" });
+      if (perm?.state === "denied") {
+        toast.error("Location blocked. Enable it in your browser site settings, then retry.");
+        return;
       }
-    }, (err) => {
-      setGeoLoading(false);
-      toast.error(err?.code === 1 ? "Please allow location permission" : "Could not get your location");
-    }, { timeout: 10000, enableHighAccuracy: true, maximumAge: 60000 });
+    } catch { /* Permissions API not supported — continue */ }
+
+    setGeoLoading(true);
+    console.log("[UseMyLocation] requesting position…");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        console.log("[UseMyLocation] got position", pos.coords.latitude, pos.coords.longitude);
+        try {
+          const { data, error } = await supabase.functions.invoke("reverse-geocode", {
+            body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+          });
+          if (error) {
+            console.error("[UseMyLocation] edge fn error", error);
+            let detail = error.message;
+            try { if ((error as any).context?.text) detail = await (error as any).context.text(); } catch { /* noop */ }
+            throw new Error(detail || "Geocoding failed");
+          }
+          console.log("[UseMyLocation] response", data);
+          const addr = (data as any)?.address ?? {};
+          let filled = 0;
+          if (addr.pincode) { setPincode(String(addr.pincode)); filled++; }
+          if (addr.city) { setCity(String(addr.city)); filled++; }
+          if (addr.state) { setState(String(addr.state)); filled++; }
+          if (addr.street_address) { setStreetAddress(String(addr.street_address)); filled++; }
+          if (filled === 0) toast.error("No address found at your location — enter it manually");
+          else toast.success(`Filled ${filled} field${filled > 1 ? "s" : ""} from your location`);
+        } catch (e: any) {
+          console.error("[UseMyLocation] fetch failed", e);
+          toast.error(e?.message || "Could not detect location");
+        } finally {
+          setGeoLoading(false);
+        }
+      },
+      (err) => {
+        console.error("[UseMyLocation] getCurrentPosition failed", err?.code, err?.message);
+        setGeoLoading(false);
+        // 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
+        if (err?.code === 1) {
+          const inIframe = typeof window !== "undefined" && window.self !== window.top;
+          toast.error(
+            inIframe
+              ? "Location blocked in preview. Open the site in a new tab and allow location."
+              : "Please allow location permission and try again"
+          );
+        } else if (err?.code === 2) {
+          toast.error("Your device could not determine location. Please enter pincode manually.");
+        } else if (err?.code === 3) {
+          toast.error("Location request timed out. Please try again.");
+        } else {
+          toast.error(err?.message || "Could not get your location");
+        }
+      },
+      { timeout: 15000, enableHighAccuracy: true, maximumAge: 60000 }
+    );
   };
+
 
 
   // ─── Store config queries ───────────────────────────────────────────────
