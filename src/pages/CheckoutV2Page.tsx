@@ -2117,153 +2117,41 @@ export default function CheckoutV2Page() {
 
           {/* Contact + Address form (only if not filled) — bottom-sheet popup */}
           {(!addressFilled || showAddressFormSheet) && (
-            <>
-              {/* Full-viewport scrim — covers everything, blocks scroll of page behind */}
+            <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="Add delivery address">
+              {/* Backdrop */}
               <div
-                className="fixed inset-0 z-40 bg-black/50"
+                className="absolute inset-0 bg-black/60 animate-in fade-in duration-200"
                 onClick={closeAddressFormSheet}
                 aria-hidden
               />
-              {/* Sheet container — pinned to bottom, centered mobile column */}
-              <div className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[100dvh] max-w-md flex-col justify-end overflow-hidden pointer-events-none">
-                <div className="pointer-events-auto flex flex-col items-center">
-              {/* Close chip above sheet */}
-              <button
-                type="button"
-                onClick={closeAddressFormSheet}
-                aria-label="Close"
-                className="relative z-10 mx-auto mb-3 h-10 w-10 flex-shrink-0 rounded-full bg-white shadow-md flex items-center justify-center"
-              >
-                <X className="h-5 w-5" />
-              </button>
-              {/* Sheet */}
-              <div className="relative z-10 w-full bg-white rounded-t-2xl flex max-h-[calc(100dvh-72px)] flex-col overflow-hidden shadow-2xl">
-                <div className="px-5 pt-5 pb-2 text-[16px] font-semibold">Add Delivery Address</div>
-                <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-2 pb-4 space-y-3">
-                  {/* Returning-guest 1-tap */}
-                  {returningOrder && !returningUsed && (
-                    <div className="rounded-lg border border-primary/40 bg-primary/5 p-2.5 flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5" />
-                      <div className="flex-1">
-                        <div className="text-xs font-semibold">Welcome back, {returningOrder.customer_name?.split(" ")[0]}!</div>
-                        <div className="text-[11px] text-muted-foreground truncate">Load last address?</div>
-                      </div>
-                      <Button size="sm" className="h-7 text-xs px-3" onClick={applyReturningOrder}>Use it</Button>
-                      <button className="text-[11px] text-muted-foreground underline pl-1" onClick={() => setReturningDismissed(true)}>Skip</button>
-                    </div>
-                  )}
-
-                  <div>
-                    <Label className="text-[12px] text-muted-foreground">Pincode *</Label>
-                    <div className="relative">
-                      <Input value={pincode} onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit pincode" inputMode="numeric" maxLength={6} className="h-11 rounded-lg border-[#ECECEC]" />
-                      {pincodeLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
-                    </div>
-                    <button type="button" onClick={detectLocation} disabled={geoLoading} className="text-[11px] text-primary flex items-center gap-1 underline mt-1">
-                      {geoLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <LocateFixed className="h-3 w-3" />}
-                      Use my location
+              {/* Sheet — full-width on mobile, centered on desktop, slides up */}
+              <div className="absolute inset-x-0 bottom-0 mx-auto w-full sm:max-w-md">
+                <div className="bg-white rounded-t-2xl shadow-2xl flex flex-col max-h-[92dvh] animate-in slide-in-from-bottom duration-300">
+                  {/* Grab handle */}
+                  <div className="pt-2.5 pb-1 flex justify-center flex-shrink-0">
+                    <span className="h-1.5 w-10 rounded-full bg-gray-300" />
+                  </div>
+                  {/* Header */}
+                  <div className="px-5 pt-1 pb-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
+                    <div className="text-[16px] font-bold">Add Delivery Address</div>
+                    <button
+                      type="button"
+                      onClick={closeAddressFormSheet}
+                      aria-label="Close"
+                      className="h-8 w-8 rounded-full hover:bg-gray-100 flex items-center justify-center -mr-1"
+                    >
+                      <X className="h-5 w-5" />
                     </button>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-[12px] text-muted-foreground">City *</Label>
-                      <Input value={city} onChange={(e) => setCity(e.target.value)} className="h-11 rounded-lg border-[#ECECEC]" />
-                    </div>
-                    <div>
-                      <Label className="text-[12px] text-muted-foreground">State *</Label>
-                      <Input value={state} onChange={(e) => setState(e.target.value)} className="h-11 rounded-lg border-[#ECECEC]" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-[12px] text-muted-foreground">Flat, House no. *</Label>
-                    <Input value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="Enter flat, house no." className="h-11 rounded-lg border-[#ECECEC]" />
-                  </div>
-
-                  <div>
-                    <Label className="text-[12px] text-muted-foreground">Apartment, Area, Sector, Village</Label>
-                    <Input value={apartment} onChange={(e) => setApartment(e.target.value)} placeholder="Apartment, area, sector, village" className="h-11 rounded-lg border-[#ECECEC]" />
-                  </div>
-
-                  <div className="pt-2 border-t border-[#ECECEC]">
-                    <div className="text-[14px] font-bold mb-2">Customer Information</div>
-                    <div className="space-y-3">
-                      <div>
-                        <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
-                        <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" className="h-11 rounded-lg border-[#ECECEC]" />
-                      </div>
-                      <div>
-                        <Label className="text-[12px] text-muted-foreground">Email Address {customer ? "" : "*"}</Label>
-                        <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" type="email" className="h-11 rounded-lg border-[#ECECEC]" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Save Address As */}
-                  <div className="pt-2 border-t border-[#ECECEC]">
-                    <div className="text-[13px] font-semibold mb-2">Save Address As</div>
-                    <div className="flex gap-2">
-                      {(["Home", "Work"] as const).map((lbl) => (
-                        <button
-                          key={lbl}
-                          type="button"
-                          onClick={() => setAddrLabel(lbl)}
-                          className={`flex items-center gap-2 rounded-lg px-4 py-2 border ${addrLabel === lbl ? "border-black" : "border-[#ECECEC]"}`}
-                        >
-                          <span className="text-[13px] font-semibold">{lbl}</span>
-                          <span className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${addrLabel === lbl ? "border-black" : "border-muted-foreground/40"}`}>
-                            {addrLabel === lbl && <span className="h-2 w-2 rounded-full bg-black" />}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Shipping Method inline */}
-                  {shippingActive && (
-                    <div className="pt-2 border-t border-[#ECECEC]">
-                      <div className="rounded-lg border border-[#ECECEC] bg-[#F9FAFB] p-3">
-                        <div className="text-[13px] font-semibold mb-2">Shipping Method</div>
-                        <div className="rounded-lg border border-[#ECECEC] bg-white p-3 flex items-center justify-between">
-                          <div>
-                            <div className="text-[13px] font-semibold">{shippingCharge > 0 ? formatPrice(shippingCharge, currency) + " Shipping" : "Free Shipping"}</div>
-                            {shippingCharge === 0 && <span className="inline-block mt-1 px-1.5 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold">Free</span>}
-                          </div>
-                          <span className="h-4 w-4 rounded-full border-2 border-black flex items-center justify-center">
-                            <span className="h-2 w-2 rounded-full bg-black" />
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <label className="flex items-start gap-2 text-[12px] text-muted-foreground pt-1">
-                    <Checkbox checked={waConsent} onCheckedChange={(v) => setWaConsent(v === true)} className="mt-0.5" />
-                    <span>Send me order updates & offers - (no spam)</span>
-                  </label>
-                </div>
-                {/* Sticky Continue inside sheet */}
-                <div className="flex-shrink-0 border-t border-[#ECECEC] p-3 bg-white">
-                  <Button
-                    className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
-                    onClick={() => {
-                      if (!fullName.trim()) { toast.error("Full name required"); return; }
-                      if (!/^\d{6}$/.test(pincode)) { toast.error("Enter a valid pincode"); return; }
-                      if (!streetAddress.trim()) { toast.error("Enter Flat, House no."); return; }
-                      if (!city.trim() || !state.trim()) { toast.error("Enter city and state"); return; }
-                      if (!customer && !email.trim()) { toast.error("Email address is required"); return; }
-                      setShowAddressFormSheet(false);
-                      // Values are already synced to page state; addressFilled becomes true and closes the sheet.
-                    }}
-                  >
-                    Continue
+                  {/* Scrollable body */}
+                  <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-3 pb-4 space-y-3">
+                  {/* Returning-guest 1-tap */}
+...
                   </Button>
                 </div>
-              </div>
                 </div>
               </div>
-            </>
+            </div>
           )}
 
           {/* Partial-payment selector moved into payment section below */}
