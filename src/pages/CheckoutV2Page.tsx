@@ -293,25 +293,28 @@ export default function CheckoutV2Page() {
     navigator.geolocation.getCurrentPosition(async (pos) => {
       try {
         const { data, error } = await supabase.functions.invoke("reverse-geocode", {
-          body: { latitude: pos.coords.latitude, longitude: pos.coords.longitude },
+          body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
         });
         if (error) throw error;
-        const res: any = data;
-        if (res?.pincode) setPincode(res.pincode);
-        if (res?.city && !city) setCity(res.city);
-        if (res?.state && !state) setState(res.state);
-        if (res?.address && !streetAddress) setStreetAddress(res.address);
-        toast.success("Location detected");
+        const addr = (data as any)?.address ?? {};
+        let filled = 0;
+        if (addr.pincode) { setPincode(addr.pincode); filled++; }
+        if (addr.city) { setCity(addr.city); filled++; }
+        if (addr.state) { setState(addr.state); filled++; }
+        if (addr.street_address) { setStreetAddress(addr.street_address); filled++; }
+        if (filled === 0) toast.error("Could not read address from your location");
+        else toast.success("Location filled");
       } catch (e: any) {
         toast.error(e?.message || "Could not detect location");
       } finally {
         setGeoLoading(false);
       }
-    }, () => {
+    }, (err) => {
       setGeoLoading(false);
-      toast.error("Please allow location permission");
-    }, { timeout: 10000 });
+      toast.error(err?.code === 1 ? "Please allow location permission" : "Could not get your location");
+    }, { timeout: 10000, enableHighAccuracy: true, maximumAge: 60000 });
   };
+
 
   // ─── Store config queries ───────────────────────────────────────────────
   const { data: shippingConfig } = useQuery({
