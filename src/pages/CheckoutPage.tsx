@@ -671,25 +671,23 @@ function CheckoutPageInner() {
 
   const total = Math.max(0, subtotal + (taxInclusive ? 0 : taxAmount) + shippingCharge - couponDiscount);
 
-  // Partial payment calculation (store-level)
+  // Partial payment calculation (store-level).
+  // MUST mirror the server formula in supabase/functions/place-order/index.ts —
+  // single ₹50 floor for the whole order, capped at total. A per-line-item
+  // floor would inflate the UI advance above what the gateway actually charges.
   const partialAdvanceTotal = (() => {
     if (!hasAnyPartialPayment) return total;
-    let advance = 0;
+    let itemsAdvance = 0;
     for (const item of checkoutItems) {
-      let itemAdvance: number;
-      if (storePartialType === "percentage") {
-        itemAdvance = Math.round(item.price * (storePartialValue / 100));
-      } else {
-        itemAdvance = Math.min(storePartialValue, item.price);
-      }
-      itemAdvance = Math.max(itemAdvance, 50); // min ₹50
-      advance += itemAdvance * item.quantity;
+      const itemAdvance = storePartialType === "percentage"
+        ? Math.round(item.price * (storePartialValue / 100))
+        : Math.min(storePartialValue, item.price);
+      itemsAdvance += itemAdvance * item.quantity;
     }
-    // Add tax + shipping proportionally, subtract coupon
-    const ratio = subtotal > 0 ? advance / subtotal : 1;
-    advance += (taxInclusive ? 0 : taxAmount) * ratio + shippingCharge;
-    advance -= couponDiscount * ratio;
-    return Math.max(50, Math.round(advance));
+    // Shipping paid up-front; discount reduces advance proportionally.
+    const ratio = subtotal > 0 ? itemsAdvance / subtotal : 1;
+    const raw = itemsAdvance + (taxInclusive ? 0 : taxAmount) * ratio + shippingCharge - couponDiscount * ratio;
+    return Math.max(50, Math.min(total, Math.round(raw)));
   })();
   const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
   const isPartialOrder = hasAnyPartialPayment && partialPaymentMode === "partial" && hasOnline;
