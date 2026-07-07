@@ -1235,8 +1235,15 @@ export default function CheckoutV2Page() {
     };
   }, [waiting, orderId, waitingApp]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const lastManualCheckRef = useRef(0);
   const manualRecheck = async () => {
     if (manualChecking || !orderId) return;
+    const now = Date.now();
+    if (now - lastManualCheckRef.current < 3000) {
+      toast("Please wait a moment before checking again");
+      return;
+    }
+    lastManualCheckRef.current = now;
     setManualChecking(true);
     try {
       const gatewayResult = await forceGatewayVerify();
@@ -1250,6 +1257,7 @@ export default function CheckoutV2Page() {
       toast("Not confirmed yet — please complete the payment in your UPI app");
     } finally { setManualChecking(false); }
   };
+
 
   const tapUpiApp = (app: UpiApp) => {
     const s = intents[app];
