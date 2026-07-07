@@ -1802,6 +1802,7 @@ export default function CheckoutV2Page() {
         <CheckoutPhoneStep
           storeId={store?.id}
           storeName={store?.name}
+          storeLogo={store?.logo_url}
           cartItems={checkoutItems as any}
           onComplete={(p) => {
             setPhone(p);
