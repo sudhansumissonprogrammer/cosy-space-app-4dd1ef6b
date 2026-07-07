@@ -2063,7 +2063,12 @@ export default function CheckoutV2Page() {
 
                 <div>
                   <Label className="text-[12px] text-muted-foreground">Flat, House no. *</Label>
-                  <Input value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="Enter flat, house no., street, area" className="h-11 rounded-lg border-[#ECECEC]" />
+                  <Input value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="Enter flat, house no." className="h-11 rounded-lg border-[#ECECEC]" />
+                </div>
+
+                <div>
+                  <Label className="text-[12px] text-muted-foreground">Apartment, Area, Sector, Village</Label>
+                  <Input value={apartment} onChange={(e) => setApartment(e.target.value)} placeholder="Apartment, area, sector, village" className="h-11 rounded-lg border-[#ECECEC]" />
                 </div>
 
                 <div className="pt-2 border-t border-[#ECECEC]">
