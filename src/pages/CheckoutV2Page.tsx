@@ -1235,8 +1235,15 @@ export default function CheckoutV2Page() {
     };
   }, [waiting, orderId, waitingApp]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const lastManualCheckRef = useRef(0);
   const manualRecheck = async () => {
     if (manualChecking || !orderId) return;
+    const now = Date.now();
+    if (now - lastManualCheckRef.current < 3000) {
+      toast("Please wait a moment before checking again");
+      return;
+    }
+    lastManualCheckRef.current = now;
     setManualChecking(true);
     try {
       const gatewayResult = await forceGatewayVerify();
@@ -1250,6 +1257,7 @@ export default function CheckoutV2Page() {
       toast("Not confirmed yet — please complete the payment in your UPI app");
     } finally { setManualChecking(false); }
   };
+
 
   const tapUpiApp = (app: UpiApp) => {
     const s = intents[app];
@@ -1266,6 +1274,9 @@ export default function CheckoutV2Page() {
   };
 
   // ─── Restore waiting state on mount / PayU redirect-back ────────────────
+  // Also fires a one-shot server-side reconciliation so shoppers who reload
+  // after paying (webhook already landed) see success instantly instead of
+  // being stuck on the "waiting" screen re-polling.
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(WAIT_KEY) || localStorage.getItem(WAIT_KEY);
@@ -1279,9 +1290,22 @@ export default function CheckoutV2Page() {
       setWaitingApp(saved.label || "UPI");
       gatewayRef.current = saved.gateway || {};
       setWaiting(true);
+      // Kick a single reconciliation immediately — if webhook already flipped
+      // the row to `confirmed`, this short-circuits to the success screen.
+      if (store?.id && saved.orderId) {
+        void supabase.functions
+          .invoke("order-payment-status", { body: { store_id: store.id, order_id: saved.orderId } })
+          .then(({ data }) => {
+            const st = (data as any)?.payment_status;
+            if (st === "success") { finishSuccess(); }
+            else if (st === "failed") { clearWaiting(); setWaiting(false); setPaymentFailed(true); }
+          })
+          .catch(() => { /* poll effect will retry */ });
+      }
     } catch { /* noop */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   useEffect(() => {
     if (!store?.id) return;

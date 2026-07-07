@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
     if (status === "PAID") {
       const { data: orderInfo } = await supabase
         .from("orders")
-        .select("payment_type, status, checkout_token")
+        .select("payment_type, status, checkout_token, total, advance_paid")
         .eq("id", orderId)
         .eq("store_id", storeId)
         .single();
@@ -125,6 +125,18 @@ Deno.serve(async (req) => {
 
       if (orderInfo.status === "confirmed" || orderInfo.status === "partially_paid" || orderInfo.status === "paid") {
         return new Response("OK (already paid)", { status: 200 });
+      }
+
+      // Amount-mismatch guard — reject payments that don't match expected charge.
+      const expectedAmount = orderInfo.payment_type === "partial" && Number(orderInfo.advance_paid) > 0
+        ? Number(orderInfo.advance_paid)
+        : Number(orderInfo.total);
+      const paidAmount = Number(cfOrder.order_amount || 0);
+      if (Math.abs(paidAmount - expectedAmount) > 0.01) {
+        console.error("cashfree-webhook: amount mismatch", {
+          orderId, expectedAmount, paidAmount, cfOrderId,
+        });
+        return new Response("OK (amount mismatch — manual review)", { status: 200 });
       }
 
       const isPartial = orderInfo.payment_type === "partial";
@@ -138,7 +150,9 @@ Deno.serve(async (req) => {
           payment_verified_at: new Date().toISOString(),
         })
         .eq("id", orderId)
-        .eq("store_id", storeId);
+        .eq("store_id", storeId)
+        .eq("status", "pending");
+
 
       if (orderInfo.checkout_token) {
         await supabase
