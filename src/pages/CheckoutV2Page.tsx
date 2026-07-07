@@ -2467,7 +2467,7 @@ export default function CheckoutV2Page() {
       )}
 
       {/* Sticky bottom Continue (contact step only) */}
-      {!showPayment && (
+      {!showPayment && !(pincode && streetAddress && city && state && fullName) && (
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3">
           <Button
             className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
