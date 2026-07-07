@@ -2423,7 +2423,7 @@ export default function CheckoutV2Page() {
 
 
           {(() => {
-            const allFailed = (["gpay","phonepe","paytm","any"] as UpiApp[]).every((k) => intents[k].status === "failed");
+            const allFailed = (["gpay","phonepe","paytm","bhim","any"] as UpiApp[]).every((k) => intents[k].status === "failed");
             if (!allFailed) return null;
             const firstErr = intents.any.error || intents.gpay.error || "UPI is temporarily unavailable";
             return (
