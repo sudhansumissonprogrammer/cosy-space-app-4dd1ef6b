@@ -253,7 +253,7 @@ Deno.serve(async (req) => {
     const ctaToken = firstProductId ? `p-${firstProductId}` : `c-${(c as any).id}`;
 
     // Auto-pick the newest APPROVED + active abandoned_cart template. This lets
-    // us promote v4 by flipping is_active/meta_status in the DB — no code edit.
+    // us promote v4/v5 by flipping is_active/meta_status in the DB — no code edit.
     const { data: activeTpl } = await admin
       .from("platform_wa_templates")
       .select("name, variables")
@@ -264,7 +264,13 @@ Deno.serve(async (req) => {
       .order("name", { ascending: false })
       .limit(1)
       .maybeSingle();
-    const chosenTemplate = (activeTpl as any)?.name || "abandoned_cart_v2";
+    let chosenTemplate = (activeTpl as any)?.name || "abandoned_cart_v2";
+    // 🛡️ Offer-template guard: v4/v5 need MRP ≥ ₹300 or the copy reads broken
+    // (e.g. "Ab Sirf ₹0", "delivery ₹0"). Below the floor, fall back to v2.
+    const tplVars: string[] = ((activeTpl as any)?.variables) || [];
+    const needsOfferMath = tplVars.includes("discounted_price") || tplVars.includes("balance_due");
+    if (needsOfferMath && basePrice < 300) chosenTemplate = "abandoned_cart_v2";
+
 
     const { error: qErr } = await admin.from("wa_send_queue").insert({
       store_id: (c as any).store_id,
@@ -408,11 +414,14 @@ Deno.serve(async (req) => {
 
       const { data: activeTpl2 } = await admin
         .from("platform_wa_templates")
-        .select("name")
+        .select("name, variables")
         .like("name", "abandoned_cart_v%")
         .eq("is_active", true).eq("paused", false).ilike("meta_status", "approved")
         .order("name", { ascending: false }).limit(1).maybeSingle();
-      const chosenTemplate2 = (activeTpl2 as any)?.name || "abandoned_cart_v2";
+      let chosenTemplate2 = (activeTpl2 as any)?.name || "abandoned_cart_v2";
+      const tplVars2: string[] = ((activeTpl2 as any)?.variables) || [];
+      const needsOfferMath2 = tplVars2.includes("discounted_price") || tplVars2.includes("balance_due");
+      if (needsOfferMath2 && basePrice < 300) chosenTemplate2 = "abandoned_cart_v2";
 
       const { error: qErr } = await admin.from("wa_send_queue").insert({
         store_id: (o as any).store_id,
