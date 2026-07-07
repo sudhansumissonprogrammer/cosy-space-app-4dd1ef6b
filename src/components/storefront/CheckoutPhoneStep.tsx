@@ -350,9 +350,8 @@ export default function CheckoutPhoneStep({
             </div>
           </div>
         </div>
-
-        </div>
       </div>
+
 
       {/* Sticky bottom: consent + Continue */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3">
