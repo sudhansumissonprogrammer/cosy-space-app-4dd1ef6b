@@ -455,14 +455,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    // All gateways failed
-    console.error("create-upi-intent: all gateways failed", lastError);
+    // All gateways failed. Return 200 (not 502) so this stops flooding
+    // error-log dashboards — it's a merchant-config situation (no S2S-approved
+    // gateway on this store), not a server crash. Client checks `available`
+    // to hide the UPI-app tile gracefully.
+    console.warn("create-upi-intent: no UPI-intent-capable gateway", lastError);
     return jsonRes({
+      available: false,
       error: lastError?.message || "No gateway could generate a UPI intent",
-      code: lastError?.code || "all_gateways_failed",
+      code: lastError?.code || "no_upi_gateway",
       pg_tried: gatewayChain,
       last_pg: lastError?.pg,
-    }, 502);
+    }, 200);
+
   } catch (err) {
     console.error("create-upi-intent error", err);
     return jsonRes({ error: "Internal server error" }, 500);
