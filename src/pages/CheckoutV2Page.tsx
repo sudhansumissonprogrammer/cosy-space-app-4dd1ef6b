@@ -2288,6 +2288,27 @@ export default function CheckoutV2Page() {
             </button>
           )}
 
+          {/* Pay Later / EMI cosmetic row */}
+          {hasOnline && total >= 500 && (
+            <button
+              onClick={startGatewayPayment}
+              disabled={openingGateway || confirmingPayment}
+              className="w-full bg-white rounded-xl border border-[#ECECEC] p-3.5 flex items-center justify-between active:scale-[0.99] transition-all disabled:opacity-40"
+            >
+              <div className="flex items-center gap-3">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <div className="text-left">
+                  <div className="text-[14px] font-bold">0% EMI on UPI & Cards</div>
+                  <div className="text-[11px] text-muted-foreground">{store?.name || "Store"} Pay Later · by Snapmint</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-[13px] font-bold">{formatPrice(Math.max(100, Math.round(total / 3)), currency)} now</div>
+                <div className="text-[10px] text-muted-foreground">+ 2 EMIs</div>
+              </div>
+            </button>
+          )}
+
           {hasOnline && (
             <button
               onClick={startGatewayPayment}
@@ -2334,6 +2355,7 @@ export default function CheckoutV2Page() {
               disabled={placingCod || confirmingPayment}
               className="relative w-full bg-white rounded-xl border border-[#ECECEC] p-3.5 flex items-center justify-between active:scale-[0.99] transition-all disabled:opacity-40"
             >
+              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap">COD available</div>
               <div className="flex items-center gap-3">
                 <Banknote className="h-5 w-5" />
                 <div className="text-left">
