@@ -6,7 +6,7 @@ export type BrandingExtras = Record<string, string | number | null | undefined>;
 
 const VAR_DEFAULTS: Record<string, (s: any) => string> = {
   store_name: (s) => s?.name || "Our store",
-  store_phone: (s) => s?.business_phone || s?.phone || "",
+  store_phone: (s) => s?.phone || "",
   store_website: (s) => storeUrl(s),
   shop_url: (s) => storeUrl(s),
   customer_name: () => "there",
@@ -24,13 +24,16 @@ function storeUrl(s: any): string {
 
 export async function loadStore(admin: any, storeId: string | null | undefined) {
   if (!storeId) return null;
+  // NOTE: `business_phone` lives on `whatsapp_configs`, NOT on `stores`.
+  // Selecting it here caused every WA send to fail with "column stores.business_phone does not exist".
   const { data } = await admin
     .from("stores")
-    .select("id, name, slug, custom_domain, business_phone, phone")
+    .select("id, name, slug, custom_domain, phone")
     .eq("id", storeId)
     .maybeSingle();
   return data;
 }
+
 
 export async function loadTemplate(admin: any, name: string) {
   const { data } = await admin
