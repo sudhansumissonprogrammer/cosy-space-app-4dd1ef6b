@@ -414,11 +414,14 @@ Deno.serve(async (req) => {
 
       const { data: activeTpl2 } = await admin
         .from("platform_wa_templates")
-        .select("name")
+        .select("name, variables")
         .like("name", "abandoned_cart_v%")
         .eq("is_active", true).eq("paused", false).ilike("meta_status", "approved")
         .order("name", { ascending: false }).limit(1).maybeSingle();
-      const chosenTemplate2 = (activeTpl2 as any)?.name || "abandoned_cart_v2";
+      let chosenTemplate2 = (activeTpl2 as any)?.name || "abandoned_cart_v2";
+      const tplVars2: string[] = ((activeTpl2 as any)?.variables) || [];
+      const needsOfferMath2 = tplVars2.includes("discounted_price") || tplVars2.includes("balance_due");
+      if (needsOfferMath2 && basePrice < 300) chosenTemplate2 = "abandoned_cart_v2";
 
       const { error: qErr } = await admin.from("wa_send_queue").insert({
         store_id: (o as any).store_id,
