@@ -2529,10 +2529,15 @@ export default function CheckoutV2Page() {
                   ) : (
                     <div className="h-[168px] w-[168px] flex items-center justify-center bg-[#F5F5F5] rounded">
                       {intents.any.status === "failed" ? (
-                        <span className="text-[11px] text-destructive text-center px-2">QR unavailable</span>
+                        <span className="text-[11px] text-destructive text-center px-2">QR unavailable — try another method</span>
                       ) : (
                         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                       )}
+                    </div>
+                  )}
+                  {intents.any.status === "ready" && intents.any.url && !/^upi:/i.test(intents.any.url) && (
+                    <div className="mt-2 text-[10px] text-muted-foreground text-center max-w-[168px]">
+                      Scanning opens the secure payment page
                     </div>
                   )}
                 </div>
