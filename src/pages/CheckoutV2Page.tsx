@@ -1500,10 +1500,18 @@ export default function CheckoutV2Page() {
         let settled = false;
         let timeoutId: number | null = null;
         const done = () => { if (timeoutId != null) window.clearTimeout(timeoutId); resolve(); };
-        const finish = async (ok: boolean) => {
+        const finish = async (ok: boolean, cancelled = false) => {
           if (settled) return;
           settled = true;
-          const confirmed = await verifyAndFinalize({ attempts: ok ? 10 : 6, intervalMs: 2000, showConfirming: true });
+          if (cancelled) {
+            // User closed/backed out of Bolt — no need to poll verify, restore instantly
+            setConfirmingPayment(false);
+            setPendingOrder(order); setPaymentFailed(true);
+            try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
+            done();
+            return;
+          }
+          const confirmed = await verifyAndFinalize({ attempts: ok ? 10 : 3, intervalMs: 2000, showConfirming: true });
           if (!confirmed) {
             setPendingOrder(order); setPaymentFailed(true);
             try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { order_id: order.id, gateway: "payu" } as any }); } catch { /* noop */ }
@@ -1521,16 +1529,26 @@ export default function CheckoutV2Page() {
           toast.error("Payment not confirmed yet. If you paid, it will update automatically.");
           done();
         }, 90000);
+        const isCancelStatus = (s: string) =>
+          s === "cancel" || s === "cancelled" || s === "canceled" ||
+          s === "usercancelled" || s === "user_cancelled" ||
+          s === "closed" || s === "closedbyuser" || s === "dropped" ||
+          s === "bolt_closed" || s === "userclosed";
         bolt.launch(boltParams, {
           responseHandler: (response: any) => {
-            const status = String(response?.response?.status || response?.status || "").toLowerCase();
-            void finish(status === "success" || status === "captured");
+            const rawStatus = String(response?.response?.status || response?.status || "").toLowerCase().replace(/[\s-]/g, "");
+            if (isCancelStatus(rawStatus)) { void finish(false, true); return; }
+            void finish(rawStatus === "success" || rawStatus === "captured");
           },
           catchException: (response: any) => {
-            console.warn("[PayU] Bolt exception", response);
-            void finish(false);
+            const rawStatus = String(response?.status || response?.response?.status || "").toLowerCase().replace(/[\s-]/g, "");
+            const msg = String(response?.message || "").toLowerCase();
+            const cancelled = isCancelStatus(rawStatus) || msg.includes("cancel") || msg.includes("closed") || msg.includes("user");
+            console.warn("[PayU] Bolt exception", response, { cancelled });
+            void finish(false, cancelled);
           },
         });
+
       });
       window.dispatchEvent(new CustomEvent("payment-ended"));
     } catch (err) {
