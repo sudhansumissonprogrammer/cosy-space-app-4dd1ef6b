@@ -464,7 +464,9 @@ export default function CheckoutV2Page() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [showAddAddress, setShowAddAddress] = useState(false);
-  const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
+  const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", apartment: "", city: "", state: "", pincode: "" });
+  const [addrLabel, setAddrLabel] = useState<"Home" | "Work">("Home");
+  const [apartment, setApartment] = useState("");
 
   const selectAddress = (addr: any) => {
     setSelectedAddressId(addr.id);
@@ -1967,7 +1969,9 @@ export default function CheckoutV2Page() {
           )}
 
           {/* Offers & Rewards */}
-          {hasActiveCoupons && (
+          {/* Offers & Rewards — always visible */}
+          {(
+            true) && (
             <>
               <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-1">Offers & Rewards</div>
               <div className="bg-white rounded-xl border border-[#ECECEC] overflow-hidden">
