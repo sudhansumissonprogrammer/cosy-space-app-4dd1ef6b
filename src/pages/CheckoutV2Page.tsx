@@ -609,22 +609,33 @@ export default function CheckoutV2Page() {
   const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
 
   // ─── Abandoned cart (respects waConsent) ────────────────────────────────
-  const [abandonedCartId, setAbandonedCartId] = useState<string | null>(() => {
-    try { return sessionStorage.getItem(`ac_${store?.id}`); } catch { return null; }
-  });
+  // NOTE: on first render `store?.id` is often undefined, so we intentionally
+  // start `null` and hydrate from sessionStorage inside the effect below once
+  // the store is known. CheckoutPhoneStep (Step 1) already writes
+  // `sessionStorage[ac_${storeId}]` on submit, so we MUST re-read it here to
+  // avoid a duplicate `capture_checkout_lead` call after the phone gate.
+  const [abandonedCartId, setAbandonedCartId] = useState<string | null>(null);
   useEffect(() => {
+    if (!store?.id) return;
     if (abandonedCartId) return;
+    // Hydrate from Step 1's write first — prevents double capture.
+    try {
+      const cached = sessionStorage.getItem(`ac_${store.id}`);
+      if (cached) { setAbandonedCartId(cached); return; }
+    } catch { /* noop */ }
     if (checkoutItems.length === 0) return;
     const canonPhone = normalizePhone(phone);
     if (!canonPhone) return;
     (async () => {
       try {
+        let sessionToken: string | null = null;
+        try { sessionToken = getOrCreateSessionId(); } catch { /* noop */ }
         const { data } = await (supabase as any).rpc("capture_checkout_lead", {
           p_store_id: store.id,
           p_phone: canonPhone,
-          p_cart_items: checkoutItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity, productId: i.productId })),
+          p_cart_items: checkoutItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity, productId: i.productId, variantId: i.variantId, image: (i as any).image })),
           p_consent: waConsent,
-          p_session_token: null,
+          p_session_token: sessionToken,
           p_source: "checkout_v2",
         });
         const cartId = (data as any)?.cart_id;
@@ -635,7 +646,7 @@ export default function CheckoutV2Page() {
       } catch { /* noop */ }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phone, checkoutItems.length, waConsent]);
+  }, [store?.id, phone, checkoutItems.length, waConsent]);
 
   // ─── begin_checkout storefront funnel event (once per mount) ────────────
   useEffect(() => {
