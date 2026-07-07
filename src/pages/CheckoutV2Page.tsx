@@ -2627,12 +2627,14 @@ export default function CheckoutV2Page() {
       {/* Address book dialog (saved addresses sheet) */}
       {/* Address book bottom-sheet */}
       {showAddressDialog && (
-        <div className="fixed inset-0 z-50 mx-auto flex h-[100dvh] max-w-md flex-col justify-end overflow-hidden">
+        <>
           <div
-            className="absolute inset-0 bg-black/50"
+            className="fixed inset-0 z-40 bg-black/50"
             onClick={() => { setShowAddressDialog(false); setShowAddAddress(false); }}
             aria-hidden
           />
+          <div className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[100dvh] max-w-md flex-col justify-end overflow-hidden pointer-events-none">
+            <div className="pointer-events-auto flex flex-col items-center">
           <button
             type="button"
             onClick={() => { setShowAddressDialog(false); setShowAddAddress(false); }}
