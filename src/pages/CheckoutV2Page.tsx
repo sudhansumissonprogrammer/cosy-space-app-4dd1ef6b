@@ -1923,7 +1923,7 @@ export default function CheckoutV2Page() {
         <Button variant="outline" className="w-full" onClick={forceRecheck} disabled={manualChecking}>
           {manualChecking ? "Checking…" : "I've paid — check now"}
         </Button>
-        <button className="mt-3 text-xs text-muted-foreground underline" onClick={() => { clearWaiting(); setWaiting(false); }}>
+        <button className="mt-3 text-xs text-muted-foreground underline" onClick={() => { clearWaiting(); setWaiting(false); setConfirmingPayment(false); try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ } }}>
           Cancel and choose another method
         </button>
       </div>
