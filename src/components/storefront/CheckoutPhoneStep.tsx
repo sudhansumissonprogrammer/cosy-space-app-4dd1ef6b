@@ -1,19 +1,26 @@
 /**
  * CheckoutPhoneStep — Step 1 of the 2-step checkout.
  *
- * Full-page (not a modal). Captures the shopper's phone number BEFORE the
- * address/payment step so that:
- *   1. We can seed the address form with an auto-created guest account.
- *   2. The number is stored as a lead AND as an abandoned_carts row —
- *      if they close the tab now, `wa-cart-recovery-cron` will fire the
- *      abandoned_cart_v3 WhatsApp template after ≥30 min.
+ * Captures the shopper's phone number BEFORE the address/payment step so:
+ *   1. We seed the address form with an auto-created guest account.
+ *   2. The number is stored as a lead + abandoned_carts row for WA recovery.
  *
- * The parent checkout page reads localStorage.getItem("checkout_phone");
- * as soon as that's set, this component un-mounts and the address/payment
- * form renders.
+ * UI matches the GoKwik-style checkout (Order Summary → Offers → Login card).
+ * Logic (capture_checkout_lead RPC + autoLoginByPhone) is unchanged.
  */
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Loader2, Lock, ShieldCheck, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronDown,
+  Loader2,
+  Lock,
+  ShieldCheck,
+  CheckCircle2,
+  Trash2,
+  UserCircle2,
+  Star,
+  ShoppingCart,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -33,11 +40,11 @@ import { useCart, type CartItem } from "@/contexts/CartContext";
 interface Props {
   storeId?: string;
   storeName?: string;
+  storeLogo?: string;
   cartItems: CartItem[];
   /** Fires with the canonical 10-digit phone once Step 1 succeeds. */
   onComplete: (phone: string) => void;
 }
-
 
 async function autoLoginByPhone(storeId: string | undefined, phone: string) {
   if (!storeId) return;
@@ -62,6 +69,7 @@ async function autoLoginByPhone(storeId: string | undefined, phone: string) {
 export default function CheckoutPhoneStep({
   storeId,
   storeName,
+  storeLogo,
   cartItems,
   onComplete,
 }: Props) {
@@ -76,10 +84,10 @@ export default function CheckoutPhoneStep({
   });
   const [consent, setConsent] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [summaryOpen, setSummaryOpen] = useState(true);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [couponDraft, setCouponDraft] = useState<string>("");
   const inFlight = useRef(false);
   const { removeFromCart } = useCart();
-
 
   const digits = phone.replace(/\D/g, "");
   const valid = digits.length === 10 && /^[6-9]/.test(digits);
@@ -92,6 +100,8 @@ export default function CheckoutPhoneStep({
     (n, i) => n + (Number(i.quantity) || 1),
     0,
   );
+  // Cosmetic Store Cash earning (1% of subtotal, matches GoKwik "Beast Cash" strip)
+  const earning = Math.max(1, Math.round(subtotal * 0.01));
 
   const submit = async () => {
     if (inFlight.current) return;
@@ -111,9 +121,11 @@ export default function CheckoutPhoneStep({
     try {
       try {
         localStorage.setItem("checkout_phone", normalized);
+        if (couponDraft.trim()) {
+          localStorage.setItem("checkout_coupon_draft", couponDraft.trim().toUpperCase());
+        }
       } catch {}
 
-      // Persist lead + abandoned-cart in one RPC (SECURITY DEFINER, anon-callable).
       const session_token = (() => {
         try {
           return getOrCreateSessionId();
@@ -122,7 +134,6 @@ export default function CheckoutPhoneStep({
         }
       })();
 
-      // Slim the cart snapshot to avoid ballooning the JSONB payload.
       const cartSnapshot = cartItems.map((i) => ({
         productId: i.productId,
         variantId: i.variantId,
@@ -131,7 +142,6 @@ export default function CheckoutPhoneStep({
         quantity: i.quantity,
         image: i.image,
       }));
-
 
       const { data: rpcData } = await (supabase as any).rpc("capture_checkout_lead", {
         p_store_id: storeId,
@@ -142,9 +152,6 @@ export default function CheckoutPhoneStep({
         p_source: "checkout_step1",
       });
 
-      // Share the abandoned_cart id with Step 2 so it doesn't create a
-      // duplicate row. `ac_{storeId}` is the same key CheckoutPageInner /
-      // V22CheckoutPageInner already look up before inserting.
       try {
         const cartId = (rpcData as any)?.cart_id;
         if (cartId && storeId) {
@@ -152,14 +159,10 @@ export default function CheckoutPhoneStep({
         }
       } catch {}
 
-      // Fire-and-forget guest auto-login so Step 2 sees a hydrated session.
       void autoLoginByPhone(storeId, normalized);
-
       onComplete(normalized);
-
     } catch (err) {
       console.warn("[CheckoutPhoneStep] capture failed:", err);
-      // Still advance — the number is in localStorage, order flow can retry.
       onComplete(normalized);
     } finally {
       setSubmitting(false);
@@ -173,129 +176,69 @@ export default function CheckoutPhoneStep({
   }, []);
 
   return (
-    <div
-      className="min-h-[70vh] w-full px-4 py-6 sm:py-10"
-      style={{
-        background:
-          "var(--storefront-bg, hsl(var(--background)))",
-        color: "var(--storefront-text, hsl(var(--foreground)))",
-      }}
-    >
-      <div className="mx-auto grid w-full max-w-3xl gap-6 md:grid-cols-[minmax(0,1fr)_320px]">
-        {/* Step 1 card */}
-        <div className="rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
-          {/* Progress */}
-          <div className="mb-5 flex items-center gap-3 text-xs font-medium">
-            <span className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                1
-              </span>
-              Phone
-            </span>
-            <span className="h-px flex-1 bg-border" />
-            <span className="flex items-center gap-2 opacity-50">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full border">
-                2
-              </span>
-              Address & Payment
-            </span>
+    <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-32">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-4 py-3 flex items-center gap-3">
+        <button
+          onClick={() => window.history.back()}
+          aria-label="Back"
+          className="p-1 -ml-1"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        {storeLogo ? (
+          <img
+            src={storeLogo}
+            alt={storeName || "Store"}
+            className="h-8 w-auto max-w-[100px] object-contain"
+          />
+        ) : (
+          <div className="text-sm font-bold truncate max-w-[140px]">
+            {storeName || "Store"}
           </div>
-
-          <h1 className="text-lg font-semibold sm:text-xl">
-            Enter your mobile number
-          </h1>
-          <p className="mt-1 text-sm opacity-70">
-            We'll send your order confirmation on WhatsApp.
-          </p>
-
-          <div className="mt-5 space-y-4">
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium opacity-60">
-                +91
-              </span>
-              <Input
-                id="checkout-phone-input"
-                type="tel"
-                inputMode="numeric"
-                maxLength={10}
-                placeholder="10-digit mobile number"
-                value={phone}
-                onChange={(e) =>
-                  setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && valid && !submitting) submit();
-                }}
-                className="h-12 rounded-xl pl-12 text-base"
-                autoFocus
-                autoComplete="tel-national"
-              />
-            </div>
-
-            <label className="flex cursor-pointer items-start gap-2 text-xs opacity-80">
-              <Checkbox
-                checked={consent}
-                onCheckedChange={(v) => setConsent(v === true)}
-                className="mt-0.5"
-              />
-              <span>
-                Send me order updates on WhatsApp.
-                <br />
-                <span className="opacity-60">
-                  You can opt out anytime by replying STOP.
-                </span>
-              </span>
-            </label>
-
-            <Button
-              onClick={submit}
-              disabled={submitting}
-              className="h-12 w-full rounded-xl bg-primary text-sm font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-100"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…
-                </>
-              ) : (
-                "Continue to address"
-              )}
-            </Button>
-
-
-            <div className="flex items-center justify-center gap-4 pt-1 text-[11px] opacity-60">
-              <span className="flex items-center gap-1">
-                <Lock className="h-3.5 w-3.5" /> Secure checkout
-              </span>
-              <span className="flex items-center gap-1">
-                <ShieldCheck className="h-3.5 w-3.5" /> Privacy protected
-              </span>
-            </div>
-          </div>
+        )}
+        <div className="flex-1" />
+        <div className="text-[13px] text-muted-foreground flex items-center gap-1">
+          100% Secured Payment <Lock className="h-3.5 w-3.5" />
         </div>
+      </div>
 
-        {/* Order Summary — collapsible, per-line remove */}
-        <aside className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+      {/* Announcement bar */}
+      <div className="sticky top-[57px] z-10 bg-black text-white text-[13px] font-semibold text-center py-2.5 px-4">
+        Unlock Extra Discount In Next Step
+      </div>
+
+      <div className="px-3 py-3 space-y-3">
+        {/* Order Summary card */}
+        <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
           <button
             type="button"
             onClick={() => setSummaryOpen((v) => !v)}
-            className="flex w-full items-center justify-between gap-2 text-left"
+            className="w-full flex items-start gap-3 text-left"
           >
-            <span className="text-sm font-semibold">
-              Order Summary
-              <span className="opacity-60"> · {itemCount} item{itemCount === 1 ? "" : "s"}</span>
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="text-sm font-semibold tabular-nums">
-                {formatPrice(subtotal)}
-              </span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${summaryOpen ? "rotate-180" : ""}`}
-              />
-            </span>
+            <div className="h-9 w-9 rounded-md bg-[#F5F5F5] flex items-center justify-center flex-shrink-0">
+              <ShoppingCart className="h-5 w-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[15px] font-bold">Order Summary</div>
+            </div>
+            <div className="text-right">
+              <div className="text-[11px] text-muted-foreground">
+                {itemCount} item{itemCount !== 1 ? "s" : ""}
+              </div>
+              <div className="flex items-center gap-1 justify-end">
+                <span className="text-[15px] font-bold">
+                  {formatPrice(subtotal)}
+                </span>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${summaryOpen ? "rotate-180" : ""}`}
+                />
+              </div>
+            </div>
           </button>
 
           {summaryOpen && (
-            <div className="mt-3 space-y-3">
+            <div className="border-t border-[#ECECEC] mt-3 pt-3 space-y-3">
               {cartItems.map((i, idx) => (
                 <div
                   key={`${i.productId}-${i.variantId ?? "base"}-${idx}`}
@@ -312,15 +255,15 @@ export default function CheckoutPhoneStep({
                     <div className="h-14 w-14 flex-shrink-0 rounded-lg border bg-muted" />
                   )}
                   <div className="min-w-0 flex-1">
-                    <div className="line-clamp-2 text-sm font-medium">
+                    <div className="line-clamp-2 text-[13px] font-semibold">
                       {i.name || "Item"}
                     </div>
-                    <div className="mt-0.5 text-xs opacity-60">
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">
                       Qty: {i.quantity || 1}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1.5">
-                    <span className="text-sm font-semibold tabular-nums">
+                    <span className="text-[13px] font-semibold tabular-nums">
                       {formatPrice(
                         (Number(i.price) || 0) * (Number(i.quantity) || 1),
                       )}
@@ -328,7 +271,7 @@ export default function CheckoutPhoneStep({
                     <button
                       type="button"
                       onClick={() => removeFromCart(i.productId, i.variantId)}
-                      className="flex items-center gap-1 text-[11px] opacity-60 transition hover:text-destructive hover:opacity-100"
+                      className="flex items-center gap-1 text-[11px] text-muted-foreground transition hover:text-destructive"
                       aria-label={`Remove ${i.name}`}
                     >
                       <Trash2 className="h-3 w-3" />
@@ -339,16 +282,135 @@ export default function CheckoutPhoneStep({
               ))}
             </div>
           )}
+        </div>
 
-          {/* Coupon lives on Step 2 — not shown here. */}
+        {/* Offers card */}
+        <div className="bg-white rounded-xl border border-[#ECECEC] overflow-hidden">
+          <div className="bg-emerald-50 text-emerald-700 text-[13px] font-semibold text-center py-2">
+            You save on next step
+          </div>
+          <div className="p-3.5">
+            <Input
+              value={couponDraft}
+              onChange={(e) => setCouponDraft(e.target.value.toUpperCase())}
+              placeholder="Enter coupon code"
+              className="h-11 rounded-lg border-[#ECECEC] uppercase"
+            />
+            <div className="mt-2 text-[11px] text-muted-foreground">
+              Coupons will be applied on the next step.
+            </div>
+          </div>
+          {/* Beast Cash earning strip */}
+          <div className="border-t border-[#ECECEC] px-3.5 py-2.5 flex items-center gap-2">
+            <Star className="h-5 w-5 text-amber-600 flex-shrink-0" />
+            <div className="text-[12px] text-amber-800">
+              You're earning{" "}
+              <span className="font-bold">
+                {earning} {storeName || "Store"} Cash
+              </span>{" "}
+              on this order
+            </div>
+          </div>
+        </div>
 
+        {/* Login card */}
+        <div className="bg-white rounded-xl border border-[#ECECEC] overflow-hidden">
+          <div className="bg-amber-50 text-amber-800 text-[13px] font-semibold text-center py-2">
+            Login to Redeem {storeName || "Store"} Cash
+          </div>
+          <div className="p-3.5 space-y-3">
+            <div className="flex items-center gap-2">
+              <UserCircle2 className="h-6 w-6 text-muted-foreground" />
+              <div className="text-[14px] font-semibold">Login to continue</div>
+            </div>
+            <div className="relative">
+              <Label className="text-[11px] text-muted-foreground absolute -top-2 left-3 bg-white px-1">
+                Enter Mobile Number
+              </Label>
+              <div className="flex items-center h-12 rounded-lg border border-[#ECECEC] px-3 gap-2">
+                <span className="text-[14px] font-medium">+91</span>
+                <span className="text-muted-foreground">|</span>
+                <input
+                  id="checkout-phone-input"
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="Enter Mobile Number"
+                  value={phone}
+                  onChange={(e) =>
+                    setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && valid && !submitting) submit();
+                  }}
+                  className="flex-1 bg-transparent outline-none text-[14px]"
+                  autoComplete="tel-national"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
 
-          {storeName && (
-            <p className="mt-3 text-[11px] opacity-50">from {storeName}</p>
+        {/* Trust footer */}
+        <div className="pt-6 pb-2 text-center">
+          <div className="text-[11px] text-muted-foreground mb-1">
+            Powered by
+          </div>
+          <div className="text-[14px] font-bold tracking-tight">
+            {storeName || "Storivo"}
+          </div>
+          <div className="text-[12px] text-muted-foreground mt-3">
+            Powering secure checkout for 10,000+ brands
+          </div>
+          <div className="flex items-center justify-center gap-4 mt-3 text-muted-foreground">
+            <div className="flex items-center gap-1 text-[11px]">
+              <ShieldCheck className="h-4 w-4" /> PCI DSS
+              <br />
+              Certified
+            </div>
+            <div className="flex items-center gap-1 text-[11px]">
+              <Lock className="h-4 w-4" /> Secured
+              <br />
+              Payments
+            </div>
+            <div className="flex items-center gap-1 text-[11px]">
+              <CheckCircle2 className="h-4 w-4" /> Verified
+              <br />
+              Merchant
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sticky bottom: consent + Continue */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3">
+        <label className="flex items-center gap-2 pb-2 text-[12px]">
+          <Checkbox
+            checked={consent}
+            onCheckedChange={(v) => setConsent(v === true)}
+          />
+          <span>Send me order updates &amp; offers - (no spam)</span>
+        </label>
+        <Button
+          onClick={submit}
+          disabled={submitting || !valid}
+          className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white disabled:opacity-100 rounded-lg"
+        >
+          {submitting ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            "Continue"
           )}
-
-        </aside>
+        </Button>
+        <div className="text-[10px] text-center text-muted-foreground mt-1.5">
+          By proceeding, I agree to the store's Privacy Policy and T&amp;C
+        </div>
       </div>
     </div>
   );
+}
+
+// Local Label to avoid extra shadcn import weight
+function Label({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <label className={className}>{children}</label>;
 }
