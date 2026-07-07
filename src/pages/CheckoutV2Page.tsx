@@ -1925,7 +1925,18 @@ export default function CheckoutV2Page() {
                 <div className="flex items-start gap-3">
                   <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[14px] font-bold">Deliver To {fullName}</div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="text-[14px] font-bold">Deliver To {fullName}</div>
+                      {customer && savedAddresses && savedAddresses.length > 0 && (
+                        <button
+                          onClick={() => setShowAddressDialog(true)}
+                          className="relative bg-black text-white text-[11px] font-semibold px-2 py-1 rounded-md"
+                        >
+                          Tap To Edit Address
+                          <span className="absolute -bottom-1 left-4 w-2 h-2 bg-black rotate-45" />
+                        </button>
+                      )}
+                    </div>
                     <div className="text-[13px] text-foreground/80 mt-0.5">
                       {streetAddress}
                     </div>
@@ -2193,6 +2204,17 @@ export default function CheckoutV2Page() {
                   {intents.any.status === "loading" && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
                 </button>
               </div>
+              <button
+                onClick={() => tapUpiApp("any")}
+                disabled={intents.any.status !== "ready"}
+                className="mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] disabled:opacity-40"
+              >
+                <span className="text-[13px] font-semibold">All UPI Apps</span>
+                <span className="flex items-center gap-2 text-[12px] text-emerald-600 font-semibold">
+                  {UPI_APPS.length}+ Deals Available
+                  <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
+                </span>
+              </button>
             </div>
           )}
 
