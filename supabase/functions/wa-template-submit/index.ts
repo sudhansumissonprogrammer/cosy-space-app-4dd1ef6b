@@ -274,7 +274,45 @@ Deno.serve(async (req) => {
         .eq("name", templateName)
         .maybeSingle();
       const id = (row as any)?.meta_template_id;
-      if (!id) return j(400, { error: "Template has not been submitted to Meta yet. Use 'Submit' first." });
+      // Fallback: row exists in DB but was never submitted to Meta
+      // (meta_template_id is null — only saved as draft before). Treat this
+      // Save & Submit click as a first-time create instead of failing.
+      if (!id) {
+        if (!draft.name || !draft.body_text || !draft.category || !draft.language) {
+          return j(400, { error: "Missing required fields (name, body_text, category, language)" });
+        }
+        let hh: string | null = null;
+        if ((draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT") && draft.header_media_url) {
+          if (!APP_ID) return j(400, { error: "Meta App ID not configured — set it in Admin → WhatsApp → Meta credentials before submitting media-header templates." });
+          try { hh = await uploadHeaderMedia(draft.header_media_url, draft.header_type, APP_ID, TOKEN); }
+          catch (e: any) { await audit("create", "error", { error: sanitizeError(e.message) }); return j(400, { error: e.message }); }
+        }
+        const comps = draftToComponents(draft, hh);
+        const cResp = await fetch(`${GRAPH}/${WABA_ID}/message_templates`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ name: draft.name, language: draft.language, category: draft.category, components: comps }),
+        });
+        const cOut = await cResp.json();
+        if (!cResp.ok) {
+          await audit("create", "error", { error: sanitizeError(cOut) });
+          return j(cResp.status, { error: sanitizeError(cOut) });
+        }
+        const cStatus = (cOut?.status as string) || "PENDING";
+        await admin.from("platform_wa_templates").update({
+          buttons: draft.buttons || [],
+          meta_template_id: cOut?.id || null,
+          meta_status: cStatus,
+          meta_rejected_reason: null,
+          submitted_at: new Date().toISOString(),
+          paused: false,
+          pause_reason: null,
+        }).eq("name", draft.name);
+        await audit("create", cStatus, { id: cOut?.id, via: "edit-fallback" });
+        return j(200, { ok: true, meta_id: cOut?.id, meta_status: cStatus });
+      }
+
+
 
       let headerHandle: string | null = null;
       if ((draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT") && draft.header_media_url) {
