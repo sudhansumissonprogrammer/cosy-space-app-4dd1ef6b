@@ -57,8 +57,9 @@ interface PendingOrder {
 }
 
 const UPI_APPS: { key: UpiApp; label: string; icon: string; deeplinkScheme: string }[] = [
-  { key: "gpay", label: "Google Pay", icon: "/icons/gpay.svg", deeplinkScheme: "tez://" },
-  { key: "phonepe", label: "PhonePe", icon: "/icons/phonepe.svg", deeplinkScheme: "phonepe://" },
+  { key: "gpay", label: "G Pay", icon: "/icons/gpay-new.webp", deeplinkScheme: "tez://" },
+  { key: "phonepe", label: "PhonePe", icon: "/icons/phonepe-new.webp", deeplinkScheme: "phonepe://" },
+  { key: "bhim", label: "BHIM", icon: "/icons/bhim.webp", deeplinkScheme: "bhim://" },
   { key: "paytm", label: "Paytm", icon: "/icons/paytm.svg", deeplinkScheme: "paytmmp://" },
   { key: "any", label: "Any UPI app", icon: "/icons/upi.png", deeplinkScheme: "upi://" },
 ];
