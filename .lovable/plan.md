@@ -1,61 +1,164 @@
-# CheckoutV2 parity fixes
 
-After a deep diff against `src/pages/CheckoutPage.tsx` (the old, battle-tested checkout), CheckoutV2 is missing several revenue-critical and reliability pieces. It currently only computes `subtotal` and forwards a very thin `place-order` body. This causes:
+# V2 Checkout — Full Feature Parity with Old Checkout
 
-- **Undercharging** — no shipping, no tax, no coupons applied on the charged amount.
-- **Broken attribution & tracking** — no Pixel Purchase, no GA4 purchase, no storefront funnel event, no Meta CAPI signals (fbc/fbp/event_id/event_source_url), no visitor/session/UTM snapshot.
-- **Broken abandoned-cart recovery** — `abandoned_cart_id` is never passed to `place-order`, so recovered orders aren't marked.
-- **Broken account flow** — no `create-guest-account` call, no save-address-to-account, no `order-placed` event, no auto-applied coupon from `?coupon=` / `pending_coupon` storage.
-- **No order notifications** — `notify-order` (owner email + PWA push + customer email) never fires.
-- **Wrong partial advance** — advance math ignores shipping/tax/coupon.
+Goal: bring `CheckoutV2Page.tsx` to full parity with `CheckoutPage.tsx` so any store can switch to V2 with zero regressions in payments, Meta Ads attribution, analytics, and UX. All work happens inside V2 — old checkout is left untouched as a fallback.
 
-## What changes (single file: `src/pages/CheckoutV2Page.tsx`)
+## Scope
 
-### 1. Totals engine — mirror old checkout exactly
-- Fetch `store_shipping_config` + `store_tax_config` (React Query, same keys as CheckoutPage so cache is shared).
-- Compute `shippingCharge`, `taxAmount`, `couponDiscount`, and `total = subtotal + tax + shipping − discount`.
-- Rewrite `partialAdvanceTotal` to spread tax/shipping proportionally and subtract coupon share (same formula as `CheckoutPage.tsx` lines 683–695).
-- Order Summary panel: show line items for Shipping, Tax, Discount when non-zero.
-- CTA + waiting screen amounts use the correct `chargeAmount`.
+- 11 blockers + 15 important regressions from the gap report
+- No changes to edge functions themselves (they already work, V2 just needs to call them)
+- No changes to the DB schema
+- No changes to `CheckoutPage.tsx` (old stays as safety net until user removes it)
 
-### 2. Coupon auto-apply (no new UI)
-- On mount, read `?coupon=` from URL, else `sessionStorage.pending_coupon` / `localStorage.pending_coupon` (WhatsApp recovery flow).
-- Call `validate_store_coupon` RPC once, apply if valid; silent-fail otherwise.
-- Clean up on successful order.
+---
 
-### 3. Rich `place-order` body
-Extend the current body with the fields the old checkout sends:
-- `coupon_id`, `abandoned_cart_id`
-- `meta: { event_id, fbc, fbp, event_source_url }` (sanitized, preview-safe)
-- `visitor_id`, `session_id`, `attribution` (UTM + landing + referrer)
-- Persist `abandoned_cart_id` from URL or an `abandoned_cart_id_<storeId>` localStorage key just like the old code.
+## Phase 1 — Payment Gateways (blocker)
 
-### 4. Success-side plumbing (new `onOrderSuccess(orderId)` helper)
-Fires exactly once per order (Set-based idempotency):
-- Fire Pixel Purchase (sessionStorage dedupe key `meta_purchase_fired_<orderId>` — same as old).
-- Fire GA4 `purchase`.
-- Fire storefront funnel `purchase` event.
-- Dispatch `window` event `order-placed`.
-- Call `notify-order` (owner + customer email + owner push).
-- If no logged-in customer, call `create-guest-account` and hydrate session via `supabaseStorefront`.
-- If logged in, call `saveAddressToAccount` (same helper pattern as old file).
-- Clear cart, clear pending coupon storage, clear `checkout_phone`.
+1. **Fetch `get_store_payment_config` on mount**
+   - New React Query: `["payment-config", store.id]` calling the same RPC as old checkout
+   - Show skeleton while loading, "no payment methods configured" if empty
+   - Derive `hasCod / hasRazorpay / hasCashfree / hasPayu` flags
+   - Honor these flags everywhere: hide COD tile if disabled, only show online tiles for enabled gateways
 
-`onOrderSuccess` is invoked from every success path: UPI polling, manual "I've paid" recheck, COD, and QR-scan success.
+2. **Prewarm edge functions on mount** (`place-order`, `razorpay-order`, `store-cashfree-create-order/verify/status`, `payu-create-txn/verify/status`) — copy `prewarmEdgeFunction()` calls from old.
 
-### 5. Correct `payment_method` on order
-- Send `payment_method: "razorpay"` today is a placeholder → change to the actual gateway once `create-upi-intent` returns `pg`, via a follow-up `orders.update({ payment_method })` in the client (RLS-safe: `place-order` already exposes a small `update-order-gateway` path or we piggy-back on the existing `checkout-v2-cod`-style pattern). If none is safe, we leave as-is (cosmetic).
+3. **Razorpay modal path**
+   - Port `loadRazorpayScript()` + `openRazorpayForOrder()` from old
+   - Call `razorpay-order` → open Razorpay modal → on success call `razorpay-verify` → run existing `finishSuccess()`
+   - Handle modal-dismiss (`ondismiss`) → set `paymentFailed + pendingOrder`
 
-### 6. Safety guards kept
-- Single `create-upi-intent` call (already fixed).
-- Live PSP verify each poll tick + focus/visibility instant recheck (already fixed).
-- Cross-check that `create-upi-intent` uses `chargeAmount` from the DB order row (it already reads `dbOrder.total` + `advance_paid`, which is set by `place-order` from the enriched body), so shipping/tax/coupon flow to the gateway automatically.
+4. **Cashfree drop-in path**
+   - Port `loadCashfree()` + `openCashfreeForOrder()`
+   - Call `store-cashfree-create-order` → open drop-in → poll `store-cashfree-status` on return
+   - Handle Cashfree redirect-back (`?cf_order=` param) recovery on mount, mirroring PayU recovery already in V2
 
-## Files touched
-- `src/pages/CheckoutV2Page.tsx` — all of the above.
+5. **PayU Bolt path**
+   - Keep existing V2 PayU redirect-back recovery
+   - Add `openPayuForOrder()` calling `payu-create-txn`, opening Bolt/hosted checkout, verifying via `payu-verify-payment`
 
-No DB migrations, no edge function changes. All backend endpoints already exist and already accept these fields (they're what the old CheckoutPage sends today).
+6. **`checkout_token` idempotency**
+   - Generate one UUID per checkout session (ref, reused across retries)
+   - Pass in every `place-order` call so server dedupes double-tap orders
 
-## Out of scope (explicitly deferred)
-- Coupon **entry UI** (input box + apply button). Auto-apply from URL/storage is included so WhatsApp recovery works; the visible input can be a follow-up if you want it.
-- Rewriting the address form / theme.
+7. **`confirmingPayment` full-screen overlay** during gateway verification polling (Razorpay/Cashfree/PayU verify).
+
+8. **`paymentFailed + pendingOrder` retry banner** — if order was created but the gateway leg failed/cancelled, show retry button that re-opens the same gateway modal (no new order row).
+
+---
+
+## Phase 2 — Cart/Order Correctness (blocker)
+
+9. **Buy-Now single-product mode** (`?product=&variant=&qty=`)
+   - Detect params on mount → fetch product+variant → build a one-off `checkoutItems` array instead of using cart
+   - Skip `clearCart()` in buy-now mode
+   - `CheckoutSkeleton` while product loads
+
+10. **`variantId` in items payload** — include `variantId` for every line item sent to `place-order` (both cart mode and buy-now).
+
+11. **`customer_email` in `place-order`** order object — currently only sent to UPI intent.
+
+---
+
+## Phase 3 — Coupons & Address Book (blocker)
+
+12. **Coupon UI**
+    - Check `store_has_active_coupons` RPC → only render section if true
+    - Collapsible input with Apply/Remove buttons
+    - Call `validate_store_coupon` RPC → show discount / error inline
+    - Keep existing auto-apply from URL/storage but expose Remove
+    - Show strikethrough + discount line in order summary (already partially there)
+
+13. **Saved address book (logged-in customers)**
+    - Fetch `customer_addresses` for `storefront_customers.id`
+    - Auto-select default; render selected card with "Change" button
+    - Change → dialog with list + radio + "Add New Address" form (label, name, phone, street, city, state, pincode; first save sets `is_default = true`)
+    - On order success call existing `saveAddressToAccount()` path
+
+14. **Returning-guest 1-tap pre-fill** — lookup last `orders` row by phone for guests, pre-fill address fields with an "Is this you?" chip.
+
+---
+
+## Phase 4 — Meta/Analytics Parity (blocker + important)
+
+15. **`fireInitiateCheckoutOnce()`** — FB Pixel `InitiateCheckout` + Meta CAPI + GA4 `begin_checkout`, fired on real payment intent (Pay button click), deduped per session.
+
+16. **`fireAddPaymentInfoOnce()`** — FB Pixel `AddPaymentInfo` + Meta CAPI, fired when user picks a payment method, deduped per session.
+
+17. **`begin_checkout` storefront event** on mount.
+
+18. **`setCapiUser()`** — debounced Advanced Matching enrichment as user types name/email/phone/city/state/pincode.
+
+19. **`pay_click` + `checkout_field_error` + `payment_failed` storefront events** — mirror old event calls.
+
+20. **FB Pixel `Lead`** on valid email blur (nice-to-have but cheap).
+
+---
+
+## Phase 5 — UX Regressions (important)
+
+21. **`ensureCustomer()` on mount** — lazily create `storefront_customers` row for logged-in shoppers.
+
+22. **Auto-fill email from logged-in `customer.email`**.
+
+23. **WA consent checkbox** (`waConsent` state) → propagate to `capture_checkout_lead` `p_consent` param (currently hardcoded `true`).
+
+24. **`saveExpressInfo()`** — persist form to `express_checkout_{storeId}` localStorage after success (V2 already reads it on mount).
+
+25. **Zippopotam.us fallback** for pincode lookup + spinner indicator during resolve.
+
+26. **Geolocation "Use my location" button** → `reverse-geocode` edge function.
+
+27. **Hindi bilingual labels** — port `isHindi` flag + bilingual strings for stores using Hindi themes.
+
+28. **Partial-payment breakdown on thank-you screen** — show advance paid / balance on delivery box when `payment_type = "partial"`.
+
+29. **`PostPurchaseUpsell` component** — lazy-mount on success screen (same component old uses).
+
+---
+
+## Order of Implementation
+
+The plan is grouped so each phase can ship independently and be tested end-to-end before the next:
+
+1. Phase 1 (payments) — highest risk, biggest win
+2. Phase 2 (buy-now + variantId + email)
+3. Phase 3 (coupons + address book)
+4. Phase 4 (Meta/analytics parity)
+5. Phase 5 (UX regressions + upsell)
+
+After Phase 4, ads and payments are safe — old checkout can be removed.
+After Phase 5, V2 is a strict superset of old checkout.
+
+---
+
+## Files Touched
+
+- `src/pages/CheckoutV2Page.tsx` — main file (all phases)
+- Reuse existing helpers already imported by old checkout:
+  - `src/lib/payments/razorpay.ts`, `cashfree.ts`, `payu.ts` (loader + open helpers)
+  - `src/lib/analytics/fbPixel.ts`, `ga4.ts`, `metaCapi.ts`, `storefrontEvents.ts`
+  - `src/lib/checkout/*` (validation, address save, guest account, pincode lookup)
+  - `src/components/checkout/PostPurchaseUpsell.tsx`, `CheckoutSkeleton.tsx`, address-book dialog
+- No new edge functions, no new DB tables, no schema migrations
+
+---
+
+## Verification Plan
+
+For each phase, run through in preview on `imitationworld` (UPI) + a Razorpay/Cashfree/PayU test store:
+
+- Place order via each enabled gateway → confirm order row + `order_items` (with variantId) + payment_status = paid
+- Double-tap Pay → confirm only one order row created (checkout_token dedupe)
+- Apply/remove coupon → confirm discount math + `orders.discount_amount`
+- Logged-in: pick saved address → confirm shipping_address JSON matches
+- Buy-now URL from PDP → confirm single-item order, cart untouched
+- Meta Events Manager: confirm `InitiateCheckout`, `AddPaymentInfo`, `Purchase` all fire with matching `event_id` (browser + CAPI dedupe)
+- Cancel/fail a gateway → confirm retry banner appears and can re-pay same order
+
+---
+
+## Non-Goals (out of scope for this plan)
+
+- Removing/deleting `CheckoutPage.tsx` — user will flip the `checkout_v2_enabled` flag store-by-store after they've validated V2 in production
+- Nice-to-have items (trust strip, collapsible summary with images, ShopBanao footer, delivery-estimate inline text) — can be a follow-up polish pass
+- Any changes to edge functions, RPCs, or DB schema
