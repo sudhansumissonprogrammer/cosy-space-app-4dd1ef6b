@@ -1680,6 +1680,7 @@ export default function CheckoutV2Page() {
           const confirmed = await verifyAndFinalize({ attempts: ok ? 10 : 3, intervalMs: 2000, showConfirming: true });
           if (!confirmed) {
             setPendingOrder(order); setPaymentFailed(true);
+            try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
             try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { order_id: order.id, gateway: "payu" } as any }); } catch { /* noop */ }
             toast.error(ok ? "Payment not confirmed yet. You can retry below." : "Payment was not completed. You can retry below.");
           }
@@ -1687,14 +1688,15 @@ export default function CheckoutV2Page() {
         };
         timeoutId = window.setTimeout(async () => {
           if (settled) return;
-          const confirmed = await verifyAndFinalize({ attempts: 3, intervalMs: 2500, showConfirming: false });
+          const confirmed = await verifyAndFinalize({ attempts: 1, intervalMs: 0, showConfirming: false });
           if (confirmed) { settled = true; done(); return; }
           settled = true;
           setConfirmingPayment(false);
           setPendingOrder(order); setPaymentFailed(true);
-          toast.error("Payment not confirmed yet. If you paid, it will update automatically.");
+          try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
+          toast.error("Payment not completed. You can retry below.");
           done();
-        }, 12000);
+        }, 6000);
         const isCancelStatus = (s: string) =>
           s === "cancel" || s === "cancelled" || s === "canceled" ||
           s === "usercancelled" || s === "user_cancelled" ||
