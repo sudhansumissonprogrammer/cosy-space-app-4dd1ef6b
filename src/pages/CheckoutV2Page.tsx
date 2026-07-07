@@ -511,7 +511,7 @@ export default function CheckoutV2Page() {
       if (data) selectAddress(data);
       setShowAddAddress(false);
       setShowAddressDialog(false);
-      setNewAddr({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
+      setNewAddr({ label: "Home", full_name: "", phone: "", street_address: "", apartment: "", city: "", state: "", pincode: "" });
     } catch (e: any) {
       toast.error(e?.message || "Failed to save address");
     }
