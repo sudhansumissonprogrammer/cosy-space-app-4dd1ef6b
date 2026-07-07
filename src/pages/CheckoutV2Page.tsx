@@ -464,7 +464,9 @@ export default function CheckoutV2Page() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [showAddAddress, setShowAddAddress] = useState(false);
-  const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
+  const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", apartment: "", city: "", state: "", pincode: "" });
+  const [addrLabel, setAddrLabel] = useState<"Home" | "Work">("Home");
+  const [apartment, setApartment] = useState("");
 
   const selectAddress = (addr: any) => {
     setSelectedAddressId(addr.id);
@@ -509,7 +511,7 @@ export default function CheckoutV2Page() {
       if (data) selectAddress(data);
       setShowAddAddress(false);
       setShowAddressDialog(false);
-      setNewAddr({ label: "Home", full_name: "", phone: "", street_address: "", city: "", state: "", pincode: "" });
+      setNewAddr({ label: "Home", full_name: "", phone: "", street_address: "", apartment: "", city: "", state: "", pincode: "" });
     } catch (e: any) {
       toast.error(e?.message || "Failed to save address");
     }
@@ -1967,7 +1969,9 @@ export default function CheckoutV2Page() {
           )}
 
           {/* Offers & Rewards */}
-          {hasActiveCoupons && (
+          {/* Offers & Rewards — always visible */}
+          {(
+            true) && (
             <>
               <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-1">Offers & Rewards</div>
               <div className="bg-white rounded-xl border border-[#ECECEC] overflow-hidden">
@@ -2006,6 +2010,11 @@ export default function CheckoutV2Page() {
                       </button>
                     </div>
                   )}
+                </div>
+                {/* Beast Cash / rewards earning strip (cosmetic) */}
+                <div className="border-t border-[#ECECEC] px-3.5 py-2.5 flex items-center gap-2">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 7l1.5 3 3.3.5-2.4 2.3.6 3.3-3-1.6-3 1.6.6-3.3-2.4-2.3 3.3-.5z"/></svg>
+                  <div className="text-[12px] text-amber-800">You're earning <span className="font-bold">{Math.max(1, Math.round(total * 0.01))} {store?.name || "Store"} Cash</span> on this order</div>
                 </div>
               </div>
             </>
@@ -2054,7 +2063,12 @@ export default function CheckoutV2Page() {
 
                 <div>
                   <Label className="text-[12px] text-muted-foreground">Flat, House no. *</Label>
-                  <Input value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="Enter flat, house no., street, area" className="h-11 rounded-lg border-[#ECECEC]" />
+                  <Input value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="Enter flat, house no." className="h-11 rounded-lg border-[#ECECEC]" />
+                </div>
+
+                <div>
+                  <Label className="text-[12px] text-muted-foreground">Apartment, Area, Sector, Village</Label>
+                  <Input value={apartment} onChange={(e) => setApartment(e.target.value)} placeholder="Apartment, area, sector, village" className="h-11 rounded-lg border-[#ECECEC]" />
                 </div>
 
                 <div className="pt-2 border-t border-[#ECECEC]">
@@ -2074,6 +2088,42 @@ export default function CheckoutV2Page() {
                     </div>
                   </div>
                 </div>
+
+                {/* Save Address As */}
+                <div className="pt-2 border-t border-[#ECECEC]">
+                  <div className="text-[13px] font-semibold mb-2">Save Address As</div>
+                  <div className="flex gap-2">
+                    {(["Home", "Work"] as const).map((lbl) => (
+                      <button
+                        key={lbl}
+                        type="button"
+                        onClick={() => setAddrLabel(lbl)}
+                        className={`flex items-center gap-2 rounded-lg px-4 py-2 border ${addrLabel === lbl ? "border-black" : "border-[#ECECEC]"}`}
+                      >
+                        <span className="text-[13px] font-semibold">{lbl}</span>
+                        <span className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${addrLabel === lbl ? "border-black" : "border-muted-foreground/40"}`}>
+                          {addrLabel === lbl && <span className="h-2 w-2 rounded-full bg-black" />}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Shipping Method inline */}
+                {shippingActive && (
+                  <div className="pt-2 border-t border-[#ECECEC]">
+                    <div className="text-[13px] font-semibold mb-2">Shipping Method</div>
+                    <div className="rounded-lg border border-[#ECECEC] p-3 flex items-center justify-between">
+                      <div>
+                        <div className="text-[13px] font-semibold">{shippingCharge > 0 ? formatPrice(shippingCharge, currency) + " Shipping" : "Free Shipping"}</div>
+                        {shippingCharge === 0 && <span className="inline-block mt-1 px-1.5 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-bold">Free</span>}
+                      </div>
+                      <span className="h-4 w-4 rounded-full border-2 border-black flex items-center justify-center">
+                        <span className="h-2 w-2 rounded-full bg-black" />
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <label className="flex items-start gap-2 text-[12px] text-muted-foreground pt-1">
                   <Checkbox checked={waConsent} onCheckedChange={(v) => setWaConsent(v === true)} className="mt-0.5" />
@@ -2187,7 +2237,7 @@ export default function CheckoutV2Page() {
                       disabled={disabled}
                       className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 disabled:opacity-40 disabled:cursor-not-allowed min-h-[92px] relative`}
                     >
-                      <div className="absolute top-1 left-1 right-1 text-[8px] font-semibold text-emerald-700 bg-emerald-50 rounded px-1 py-0.5">Win Cashback</div>
+                      {(i === 0) && <div className="absolute top-1 left-1 right-1 text-[8px] font-semibold text-emerald-700 bg-emerald-50 rounded px-1 py-0.5">Win Cashback</div>}
                       <img src={app.icon} alt={app.label} className="h-8 w-8 mt-3 mb-1 object-contain" />
                       <div className="text-[11px] font-semibold">{app.label}</div>
                       {s.status === "loading" && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
@@ -2238,6 +2288,27 @@ export default function CheckoutV2Page() {
             </button>
           )}
 
+          {/* Pay Later / EMI cosmetic row */}
+          {hasOnline && total >= 500 && (
+            <button
+              onClick={startGatewayPayment}
+              disabled={openingGateway || confirmingPayment}
+              className="w-full bg-white rounded-xl border border-[#ECECEC] p-3.5 flex items-center justify-between active:scale-[0.99] transition-all disabled:opacity-40"
+            >
+              <div className="flex items-center gap-3">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <div className="text-left">
+                  <div className="text-[14px] font-bold">0% EMI on UPI & Cards</div>
+                  <div className="text-[11px] text-muted-foreground">{store?.name || "Store"} Pay Later · by Snapmint</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-[13px] font-bold">{formatPrice(Math.max(100, Math.round(total / 3)), currency)} now</div>
+                <div className="text-[10px] text-muted-foreground">+ 2 EMIs</div>
+              </div>
+            </button>
+          )}
+
           {hasOnline && (
             <button
               onClick={startGatewayPayment}
@@ -2284,6 +2355,7 @@ export default function CheckoutV2Page() {
               disabled={placingCod || confirmingPayment}
               className="relative w-full bg-white rounded-xl border border-[#ECECEC] p-3.5 flex items-center justify-between active:scale-[0.99] transition-all disabled:opacity-40"
             >
+              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded whitespace-nowrap">COD available</div>
               <div className="flex items-center gap-3">
                 <Banknote className="h-5 w-5" />
                 <div className="text-left">
