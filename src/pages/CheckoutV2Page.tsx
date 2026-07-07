@@ -1357,7 +1357,8 @@ export default function CheckoutV2Page() {
       return;
     }
     if (checkoutItems.length === 0) { toast.error("Your cart is empty"); return; }
-    if (!paymentConfigLoaded) { toast("Loading payment methods…"); return; }
+    // Note: intentionally NOT waiting on paymentConfigLoaded — server picks the gateway.
+
 
     setCreatingOrder(true);
     try {
@@ -1412,13 +1413,16 @@ export default function CheckoutV2Page() {
   // "Continue" tap needed). Guarded by a ref so it only fires once per fill.
   useEffect(() => {
     if (showPayment || creatingOrder) return;
-    if (!paymentConfigLoaded) return;
     const filled = !!(pincode && streetAddress && city && state && fullName);
     if (!filled) return;
+    // Kick off order + UPI intent creation immediately — server picks the
+    // gateway from store config, so we don't need the client `paymentConfig`
+    // query to resolve first. Payment-method tiles hydrate as the query lands.
     autoAdvancedRef.current = true;
     void createOrderAndIntents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pincode, streetAddress, city, state, fullName, paymentConfigLoaded, showPayment, creatingOrder]);
+  }, [pincode, streetAddress, city, state, fullName, showPayment, creatingOrder]);
+
 
   // Desktop QR: auto-start payment polling as soon as the UPI intent URL is
   // ready, so the moment the shopper scans + pays in any UPI app we detect it
@@ -1917,6 +1921,17 @@ export default function CheckoutV2Page() {
   }
 
   // ─── Empty cart guard (skip in buy-now single mode) ─────────────────────
+  // If the shopper removes the last item from the order-summary sheet, kick
+  // them back to the storefront — an empty cart cannot place an order.
+  useEffect(() => {
+    if (isSingleMode) return;
+    if (orderId || orderPlaced || waiting || confirmingPayment) return;
+    if (checkoutItems.length !== 0) return;
+    if (summaryOpen) setSummaryOpen(false);
+    toast("Your cart is empty — add items to continue");
+    navigate(storefrontPath(store.slug), { replace: true });
+  }, [checkoutItems.length, isSingleMode, orderId, orderPlaced, waiting, confirmingPayment, summaryOpen, navigate, store?.slug]);
+
   if (checkoutItems.length === 0 && !orderId && !isSingleMode) {
     return (
       <div className="mx-auto max-w-md p-8 text-center">
@@ -1925,6 +1940,7 @@ export default function CheckoutV2Page() {
       </div>
     );
   }
+
 
   // ─── Waiting screen (UPI intent flow) — mobile only ─────────────────────
   // On desktop we keep the QR inline (see the desktop UPI QR card below) and
