@@ -398,16 +398,27 @@ Deno.serve(async (req) => {
       const orderTotal = Number((o as any).total ?? 0);
       const unitPrice = Number(firstItem?.unit_price ?? 0);
       const productPrice = unitPrice > 0 ? `₹${unitPrice.toFixed(0)}` : `₹${orderTotal.toFixed(0)}`;
+      const basePrice = unitPrice > 0 ? unitPrice : orderTotal;
+      const discountedPrice = Math.max(basePrice - 100, 0);
+      const balanceDue = Math.max(discountedPrice - 100, 0);
       const firstProductId = firstItem?.product_id;
       const ctaToken = firstProductId ? `p-${firstProductId}` : `o-${(o as any).id}`;
       const customerName = String((o as any).customer_name || "there").trim() || "there";
       const s = (o as any).stores || {};
 
+      const { data: activeTpl2 } = await admin
+        .from("platform_wa_templates")
+        .select("name")
+        .like("name", "abandoned_cart_v%")
+        .eq("is_active", true).eq("paused", false).ilike("meta_status", "approved")
+        .order("name", { ascending: false }).limit(1).maybeSingle();
+      const chosenTemplate2 = (activeTpl2 as any)?.name || "abandoned_cart_v2";
+
       const { error: qErr } = await admin.from("wa_send_queue").insert({
         store_id: (o as any).store_id,
         recipient_phone: phone,
         recipient_name: customerName,
-        template_name: "abandoned_cart_v2",
+        template_name: chosenTemplate2,
         message_type: "abandoned_cart",
         params: [],
         template_vars: {
@@ -415,9 +426,13 @@ Deno.serve(async (req) => {
           product_title: firstTitle,
           store_name: (s as any).name || "our store",
           product_price: productPrice,
+          original_price: basePrice.toFixed(0),
+          discounted_price: discountedPrice.toFixed(0),
+          balance_due: balanceDue.toFixed(0),
           cta_token: ctaToken,
         },
         priority: 4, // slightly higher than cart-only (5) — these are hotter leads
+
         scheduled_at: new Date().toISOString(),
       } as any);
 
