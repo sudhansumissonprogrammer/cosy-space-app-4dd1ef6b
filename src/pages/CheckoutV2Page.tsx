@@ -2306,6 +2306,61 @@ export default function CheckoutV2Page() {
       {showPayment && (
         <div className="px-3 pb-3 space-y-3">
 
+          {/* Partial-payment mode selector — prominent, above tiles */}
+          {hasPartial && (
+            <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="text-[13px] font-bold">Choose payment plan</div>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Recommended</span>
+              </div>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setPayMode("partial")}
+                  className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${payMode === "partial" ? "border-black bg-black/5" : "border-[#ECECEC]"}`}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${payMode === "partial" ? "border-black bg-black" : "border-muted-foreground"}`}>
+                      {payMode === "partial" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-semibold">Pay {formatPrice(partialAdvanceTotal, currency)} advance now</div>
+                      <div className="text-[12px] text-muted-foreground mt-0.5">Balance {formatPrice(partialBalanceDue, currency)} on delivery (Cash)</div>
+                    </div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPayMode("full")}
+                  className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${payMode === "full" ? "border-black bg-black/5" : "border-[#ECECEC]"}`}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${payMode === "full" ? "border-black bg-black" : "border-muted-foreground"}`}>
+                      {payMode === "full" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-semibold">Pay full {formatPrice(total, currency)} online</div>
+                      <div className="text-[12px] text-muted-foreground mt-0.5">Nothing to pay on delivery</div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+              {isPartialOrder && (
+                <div className="mt-2.5 flex items-start gap-2 rounded-lg bg-emerald-50 px-2.5 py-2 text-[11px] text-emerald-800">
+                  <ShieldCheck className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                  <span>You'll pay only <strong>{formatPrice(partialAdvanceTotal, currency)}</strong> now to confirm this order. Remaining <strong>{formatPrice(partialBalanceDue, currency)}</strong> is paid in cash when delivered.</span>
+                </div>
+              )}
+              {(creatingOrder || intents.any.status === "loading") && (
+                <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Updating amount…
+                </div>
+              )}
+            </div>
+          )}
+
+
+
 
           {(() => {
             const allFailed = (["gpay","phonepe","paytm","any"] as UpiApp[]).every((k) => intents[k].status === "failed");
