@@ -2216,7 +2216,7 @@ export default function CheckoutV2Page() {
               />
               {/* Sheet — full-width on mobile, centered on desktop, slides up */}
               <div className="absolute inset-x-0 bottom-0 mx-auto w-full sm:max-w-md">
-                <div className="bg-white rounded-t-2xl shadow-2xl flex flex-col max-h-[92dvh] animate-in slide-in-from-bottom duration-300">
+                <div className="bg-white rounded-t-2xl shadow-2xl flex flex-col h-[92dvh] animate-in slide-in-from-bottom duration-300">
                   {/* Grab handle */}
                   <div className="pt-2.5 pb-1 flex justify-center flex-shrink-0">
                     <span className="h-1.5 w-10 rounded-full bg-gray-300" />
