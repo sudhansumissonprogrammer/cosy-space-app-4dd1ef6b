@@ -253,7 +253,7 @@ Deno.serve(async (req) => {
     const ctaToken = firstProductId ? `p-${firstProductId}` : `c-${(c as any).id}`;
 
     // Auto-pick the newest APPROVED + active abandoned_cart template. This lets
-    // us promote v4 by flipping is_active/meta_status in the DB — no code edit.
+    // us promote v4/v5 by flipping is_active/meta_status in the DB — no code edit.
     const { data: activeTpl } = await admin
       .from("platform_wa_templates")
       .select("name, variables")
@@ -264,7 +264,13 @@ Deno.serve(async (req) => {
       .order("name", { ascending: false })
       .limit(1)
       .maybeSingle();
-    const chosenTemplate = (activeTpl as any)?.name || "abandoned_cart_v2";
+    let chosenTemplate = (activeTpl as any)?.name || "abandoned_cart_v2";
+    // 🛡️ Offer-template guard: v4/v5 need MRP ≥ ₹300 or the copy reads broken
+    // (e.g. "Ab Sirf ₹0", "delivery ₹0"). Below the floor, fall back to v2.
+    const tplVars: string[] = ((activeTpl as any)?.variables) || [];
+    const needsOfferMath = tplVars.includes("discounted_price") || tplVars.includes("balance_due");
+    if (needsOfferMath && basePrice < 300) chosenTemplate = "abandoned_cart_v2";
+
 
     const { error: qErr } = await admin.from("wa_send_queue").insert({
       store_id: (c as any).store_id,
