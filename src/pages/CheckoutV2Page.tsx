@@ -42,7 +42,7 @@ const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurcha
 import { QRCodeSVG } from "qrcode.react";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
 
-type UpiApp = "gpay" | "phonepe" | "paytm" | "any";
+type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
 
 interface IntentState {
@@ -57,8 +57,9 @@ interface PendingOrder {
 }
 
 const UPI_APPS: { key: UpiApp; label: string; icon: string; deeplinkScheme: string }[] = [
-  { key: "gpay", label: "Google Pay", icon: "/icons/gpay.svg", deeplinkScheme: "tez://" },
-  { key: "phonepe", label: "PhonePe", icon: "/icons/phonepe.svg", deeplinkScheme: "phonepe://" },
+  { key: "gpay", label: "G Pay", icon: "/icons/gpay-new.webp", deeplinkScheme: "tez://" },
+  { key: "phonepe", label: "PhonePe", icon: "/icons/phonepe-new.webp", deeplinkScheme: "phonepe://" },
+  { key: "bhim", label: "BHIM", icon: "/icons/bhim.webp", deeplinkScheme: "bhim://" },
   { key: "paytm", label: "Paytm", icon: "/icons/paytm.svg", deeplinkScheme: "paytmmp://" },
   { key: "any", label: "Any UPI app", icon: "/icons/upi.png", deeplinkScheme: "upi://" },
 ];
@@ -80,6 +81,7 @@ function schemeFor(app: UpiApp, url: string): string {
   if (app === "gpay") return `tez://upi/pay?${query}`;
   if (app === "phonepe") return `phonepe://pay?${query}`;
   if (app === "paytm") return `paytmmp://pay?${query}`;
+  if (app === "bhim") return `bhim://pay?${query}`;
   return url;
 }
 
@@ -759,7 +761,7 @@ export default function CheckoutV2Page() {
 
   const [intents, setIntents] = useState<Record<UpiApp, IntentState>>({
     gpay: { status: "idle" }, phonepe: { status: "idle" },
-    paytm: { status: "idle" }, any: { status: "idle" },
+    paytm: { status: "idle" }, bhim: { status: "idle" }, any: { status: "idle" },
   });
   const gatewayRef = useRef<{
     pg?: "cashfree" | "razorpay" | "payu";
@@ -1364,7 +1366,7 @@ export default function CheckoutV2Page() {
       setShowPayment(true);
       try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { step: "continue_to_pay" } as any }); } catch { /* noop */ }
 
-      const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "any"];
+      const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
       setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "loading" }; }); return next; });
       // Fresh intent = fresh QR — allow the desktop auto-poll to arm again.
       desktopQrPollStartedRef.current = false;
@@ -1450,7 +1452,7 @@ export default function CheckoutV2Page() {
     setOrderNumber(null);
     setIntents({
       gpay: { status: "idle" }, phonepe: { status: "idle" },
-      paytm: { status: "idle" }, any: { status: "idle" },
+      paytm: { status: "idle" }, bhim: { status: "idle" }, any: { status: "idle" },
     });
     gatewayRef.current = {};
     autoAdvancedRef.current = false;
@@ -2421,7 +2423,7 @@ export default function CheckoutV2Page() {
 
 
           {(() => {
-            const allFailed = (["gpay","phonepe","paytm","any"] as UpiApp[]).every((k) => intents[k].status === "failed");
+            const allFailed = (["gpay","phonepe","paytm","bhim","any"] as UpiApp[]).every((k) => intents[k].status === "failed");
             if (!allFailed) return null;
             const firstErr = intents.any.error || intents.gpay.error || "UPI is temporarily unavailable";
             return (
@@ -2458,10 +2460,10 @@ export default function CheckoutV2Page() {
                 <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
               </div>
               <div className="grid grid-cols-4 gap-2">
-                {UPI_APPS.slice(0, 3).map((app, i) => {
+                {UPI_APPS.slice(0, 4).map((app, i) => {
                   const s = intents[app.key];
                   const disabled = s.status !== "ready";
-                  const bg = ["bg-sky-50", "bg-purple-50", "bg-rose-50"][i] || "bg-gray-50";
+                  const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
                   return (
                     <button
                       key={app.key}
@@ -2476,15 +2478,6 @@ export default function CheckoutV2Page() {
                     </button>
                   );
                 })}
-                <button
-                  onClick={() => tapUpiApp("any")}
-                  disabled={intents.any.status !== "ready"}
-                  className="flex flex-col items-center justify-center rounded-lg bg-gray-50 active:scale-95 transition-all p-2.5 disabled:opacity-40 min-h-[92px]"
-                >
-                  <div className="h-8 w-8 mt-3 mb-1 rounded-full bg-black flex items-center justify-center text-white text-[10px] font-bold">UPI</div>
-                  <div className="text-[11px] font-semibold">Any App</div>
-                  {intents.any.status === "loading" && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
-                </button>
               </div>
               <button
                 onClick={() => tapUpiApp("any")}
