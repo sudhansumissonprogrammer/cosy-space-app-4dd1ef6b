@@ -2245,20 +2245,10 @@ export default function CheckoutV2Page() {
         </div>
       )}
 
-      {/* ═══════ PAYMENT STEP ═══════ */}
+      {/* ═══════ PAYMENT STEP (inline, below address) ═══════ */}
       {showPayment && (
-        <div className="px-3 py-3 space-y-3">
-          {/* Compact delivery recap */}
-          <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
-            <div className="flex items-start gap-2">
-              <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-bold">{fullName} · +91 {phone}</div>
-                <div className="text-[12px] text-muted-foreground truncate">{streetAddress}, {city}, {state} - {pincode}</div>
-              </div>
-              <button className="text-[13px] font-semibold border border-[#111] rounded-md px-3 py-1" onClick={() => setShowPayment(false)}>Change</button>
-            </div>
-          </div>
+        <div className="px-3 pb-3 space-y-3">
+
 
           {(() => {
             const allFailed = (["gpay","phonepe","paytm","any"] as UpiApp[]).every((k) => intents[k].status === "failed");
