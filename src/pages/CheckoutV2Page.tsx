@@ -65,7 +65,9 @@ const UPI_APPS: { key: UpiApp; label: string; icon: string; deeplinkScheme: stri
 
 function isMobile(): boolean {
   if (typeof navigator === "undefined") return false;
-  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
+  if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 767px)").matches) return true;
+  return false;
 }
 
 /** Rewrite `upi://pay?...` to app-specific deeplink so target app opens directly. */
