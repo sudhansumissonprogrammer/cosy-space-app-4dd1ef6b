@@ -50,6 +50,8 @@ function BottomTabBar({ store }: { store: StoreData }) {
 }
 
 export default function StorefrontLayoutV3({ slugOverride }: { slugOverride?: string } = {}) {
+  const location = useLocation();
+  const isCheckout = location.pathname.includes("/checkout");
   return (
     <StorefrontShell
       slugOverride={slugOverride}
@@ -66,7 +68,7 @@ export default function StorefrontLayoutV3({ slugOverride }: { slugOverride?: st
           <main className="pb-24 md:pb-0">
             <Suspense fallback={null}><Outlet context={store} /></Suspense>
           </main>
-          <div className="pb-24 md:pb-0"><StorefrontFooter store={store} /></div>
+          {!isCheckout && <div className="pb-24 md:pb-0"><StorefrontFooter store={store} /></div>}
           <BottomTabBar store={store} />
         </>
       )}

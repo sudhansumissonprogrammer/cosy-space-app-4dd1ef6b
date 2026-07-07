@@ -1,5 +1,5 @@
 import { useState, Suspense } from "react";
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Store, ShoppingCart, Heart, User, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -137,17 +137,21 @@ function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boole
 export default function StorefrontLayoutV2({ slugOverride }: { slugOverride?: string } = {}) {
   return (
     <StorefrontShell slugOverride={slugOverride} defaultPrimary="#004643">
-      {({ store }) => (
-        <>
-          <DesktopNavBar store={store} />
-          <div className="md:hidden"><TransparentNav store={store} scrolled={false} /></div>
-          <main className="pb-20 md:pb-0"><Suspense fallback={null}><Outlet context={store} /></Suspense></main>
-          <StorefrontFooter store={store} />
-          <div className="md:hidden">
-            <MobileBottomNav store={store} />
-          </div>
-        </>
-      )}
+      {({ store }) => {
+        const location = useLocation();
+        const isCheckout = location.pathname.includes("/checkout");
+        return (
+          <>
+            <DesktopNavBar store={store} />
+            <div className="md:hidden"><TransparentNav store={store} scrolled={false} /></div>
+            <main className="pb-20 md:pb-0"><Suspense fallback={null}><Outlet context={store} /></Suspense></main>
+            {!isCheckout && <StorefrontFooter store={store} />}
+            <div className="md:hidden">
+              <MobileBottomNav store={store} />
+            </div>
+          </>
+        );
+      }}
     </StorefrontShell>
   );
 }
