@@ -1,164 +1,81 @@
 
-# V2 Checkout — Full Feature Parity with Old Checkout
+# Redesign CheckoutV2 UI → GoKwik-style flow
 
-Goal: bring `CheckoutV2Page.tsx` to full parity with `CheckoutPage.tsx` so any store can switch to V2 with zero regressions in payments, Meta Ads attribution, analytics, and UX. All work happens inside V2 — old checkout is left untouched as a fallback.
+Modify the existing new checkout (`src/pages/CheckoutV2Page.tsx`, 2292 lines — the one behind the current toggle) to match the GoKwik screenshots. **UI only.** Every existing hook, edge function, order-create call, payment launcher, coupon, address, COD, UPI-intent path stays exactly as-is — we only restructure JSX, styling, and section ordering.
 
-## Scope
+Do NOT touch: `checkout-v2-cod`, `create-upi-intent`, `place-order`, `order-payment-status`, `cashfree-webhook`, `useStoreData`, DB schema, `stores.checkout_style` toggle logic. No new route, no new page, no new edge function.
 
-- 11 blockers + 15 important regressions from the gap report
-- No changes to edge functions themselves (they already work, V2 just needs to call them)
-- No changes to the DB schema
-- No changes to `CheckoutPage.tsx` (old stays as safety net until user removes it)
+## Target visual system
 
----
+- Page bg `#F5F5F5`, white cards `rounded-xl` with `border-[#ECECEC]`, mobile-first max-width ~480px centered on desktop.
+- Sticky top header: back arrow • store logo • right-aligned muted "100% Secured Payment 🔒".
+- Sticky black announcement bar under header, message swaps with step:
+  - login → "Unlock Extra Discount In Next Step"
+  - address → "Re-check the delivery address"
+  - payment → "Get Extra ₹50 Discount on UPI" (only if a UPI offer exists, else generic)
+- Sticky bottom bar: full-width black `Continue` button (disabled = gray), fine legal line under it.
+- Section labels uppercase muted (`DELIVERY DETAILS`, `OFFERS & REWARDS`, `PAYMENT OPTIONS`).
 
-## Phase 1 — Payment Gateways (blocker)
+## Section-by-section changes inside CheckoutV2Page
 
-1. **Fetch `get_store_payment_config` on mount**
-   - New React Query: `["payment-config", store.id]` calling the same RPC as old checkout
-   - Show skeleton while loading, "no payment methods configured" if empty
-   - Derive `hasCod / hasRazorpay / hasCashfree / hasPayu` flags
-   - Honor these flags everywhere: hide COD tile if disabled, only show online tiles for enabled gateways
+### 1. Login step (screens 1–3)
+- **Order Summary card**: cart icon, title, green pill "₹X saved so far" (from existing discount total), right side strikethrough MRP + final + chevron to expand line items (reuse current cart items list, just restyled).
+- **Offers card**: green header "You saved ₹X" → coupon input → applied coupon row (green check, code, "View all coupons ›", `Remove`). Loyalty earn line only if store has loyalty configured — else hide.
+- **Login card**: pale-yellow header strip, phone input `+91 | Enter Mobile Number`, numeric keypad (`inputMode="numeric"`). Reuse existing OTP send/verify handlers.
+- Consent checkbox "Send me order updates & offers - (no spam)".
 
-2. **Prewarm edge functions on mount** (`place-order`, `razorpay-order`, `store-cashfree-create-order/verify/status`, `payu-create-txn/verify/status`) — copy `prewarmEdgeFunction()` calls from old.
+### 2. Address step (screens 4–5, 7, 8)
+- If no saved address → open bottom-sheet "Add Delivery Address":
+  - Pincode* (triggers existing city/state lookup, both fields become readonly).
+  - Flat/House no.*, Apartment/Area/Sector/Village*, Full Name*, Email*.
+  - Save Address As pill toggles: Home / Work.
+  - Shipping Method card (radio) — populated from existing shipping methods query; default "Free Shipping — Free".
+  - Inline red validation copy exactly like screen 6.
+- If saved addresses exist → "Select Delivery Address" sheet (screen 8): each card = name + Home/Work chip + edit pencil + address lines + email, black `Deliver Here` button. Top-right `+ Add New Address`.
+- Collapsed **Delivery Details** summary card (screen 7): pin icon, "Deliver To {name}", black "Tap To Edit Address" tooltip, address lines, phone | email, `Change` button. Free-shipping chip row below.
 
-3. **Razorpay modal path**
-   - Port `loadRazorpayScript()` + `openRazorpayForOrder()` from old
-   - Call `razorpay-order` → open Razorpay modal → on success call `razorpay-verify` → run existing `finishSuccess()`
-   - Handle modal-dismiss (`ondismiss`) → set `paymentFailed + pendingOrder`
+### 3. Payment step (screens 9–10)
+Wrapper `PAYMENT OPTIONS` label, cards in this order (only render methods the store has enabled — same source as today):
+- **UPI card**: red "Get ₹50 Off" ribbon (only if UPI discount configured), UPI logo left, amount right. 4 pastel app tiles (Paytm, PhonePe, GPay, Amazon Pay) with "Win Cashback" chip on eligible ones. Row: `All UPI Apps  N Deals Available  ›` → opens existing UPI-apps sheet.
+- **Debit/Credit Cards** row: amount + chevron → existing card form.
+- **0% EMI on UPI & Cards** row (Snapmint) — only if enabled today.
+- **EMI** row — only if enabled.
+- **Netbanking** row.
+- **Wallets** row with green "Get cashback" chip if applicable.
+- **Cash on Delivery** row: red "₹{fee} COD fee added" chip, price reflects COD fee (already computed today).
+- Logged-in strip: avatar + "Logged in using +91 …" + `Logout` (reuse existing logout).
+- Trust footer: our brand "Powered by" badge, "Powering secure checkout experiences for N+ brands", PCI DSS / Secured Payments / Verified Merchant badges row.
 
-4. **Cashfree drop-in path**
-   - Port `loadCashfree()` + `openCashfreeForOrder()`
-   - Call `store-cashfree-create-order` → open drop-in → poll `store-cashfree-status` on return
-   - Handle Cashfree redirect-back (`?cf_order=` param) recovery on mount, mirroring PayU recovery already in V2
+## Component extraction (new files, kept small)
 
-5. **PayU Bolt path**
-   - Keep existing V2 PayU redirect-back recovery
-   - Add `openPayuForOrder()` calling `payu-create-txn`, opening Bolt/hosted checkout, verifying via `payu-verify-payment`
+Create under `src/components/storefront/checkout-v2/`:
 
-6. **`checkout_token` idempotency**
-   - Generate one UUID per checkout session (ref, reused across retries)
-   - Pass in every `place-order` call so server dedupes double-tap orders
+```text
+CheckoutHeader.tsx
+AnnouncementBar.tsx
+StickyContinueBar.tsx
+OrderSummaryCard.tsx
+OffersCard.tsx
+LoginCard.tsx
+AddressSheet.tsx
+AddressListSheet.tsx
+DeliverySummaryCard.tsx
+ShippingMethodCard.tsx
+PaymentUpiCard.tsx
+PaymentRow.tsx
+TrustFooter.tsx
+```
 
-7. **`confirmingPayment` full-screen overlay** during gateway verification polling (Razorpay/Cashfree/PayU verify).
+CheckoutV2Page.tsx becomes the orchestrator: state machine `step: 'login' | 'address' | 'payment'` (derive from existing auth + address state), renders sections + sticky bars. All data/handlers passed as props — no new contexts.
 
-8. **`paymentFailed + pendingOrder` retry banner** — if order was created but the gateway leg failed/cancelled, show retry button that re-opens the same gateway modal (no new order row).
+## Non-goals
 
----
+- No Beast Cash loyalty engine, no real Snapmint integration, no new UPI deep-linking. Ribbons/chips are cosmetic and driven from a local config object; only shown when the underlying feature is already enabled on the store.
+- GoKwik logos replaced with our own brand.
+- No changes to pricing math, order creation, webhooks, or the toggle.
 
-## Phase 2 — Cart/Order Correctness (blocker)
+## Verification
 
-9. **Buy-Now single-product mode** (`?product=&variant=&qty=`)
-   - Detect params on mount → fetch product+variant → build a one-off `checkoutItems` array instead of using cart
-   - Skip `clearCart()` in buy-now mode
-   - `CheckoutSkeleton` while product loads
-
-10. **`variantId` in items payload** — include `variantId` for every line item sent to `place-order` (both cart mode and buy-now).
-
-11. **`customer_email` in `place-order`** order object — currently only sent to UPI intent.
-
----
-
-## Phase 3 — Coupons & Address Book (blocker)
-
-12. **Coupon UI**
-    - Check `store_has_active_coupons` RPC → only render section if true
-    - Collapsible input with Apply/Remove buttons
-    - Call `validate_store_coupon` RPC → show discount / error inline
-    - Keep existing auto-apply from URL/storage but expose Remove
-    - Show strikethrough + discount line in order summary (already partially there)
-
-13. **Saved address book (logged-in customers)**
-    - Fetch `customer_addresses` for `storefront_customers.id`
-    - Auto-select default; render selected card with "Change" button
-    - Change → dialog with list + radio + "Add New Address" form (label, name, phone, street, city, state, pincode; first save sets `is_default = true`)
-    - On order success call existing `saveAddressToAccount()` path
-
-14. **Returning-guest 1-tap pre-fill** — lookup last `orders` row by phone for guests, pre-fill address fields with an "Is this you?" chip.
-
----
-
-## Phase 4 — Meta/Analytics Parity (blocker + important)
-
-15. **`fireInitiateCheckoutOnce()`** — FB Pixel `InitiateCheckout` + Meta CAPI + GA4 `begin_checkout`, fired on real payment intent (Pay button click), deduped per session.
-
-16. **`fireAddPaymentInfoOnce()`** — FB Pixel `AddPaymentInfo` + Meta CAPI, fired when user picks a payment method, deduped per session.
-
-17. **`begin_checkout` storefront event** on mount.
-
-18. **`setCapiUser()`** — debounced Advanced Matching enrichment as user types name/email/phone/city/state/pincode.
-
-19. **`pay_click` + `checkout_field_error` + `payment_failed` storefront events** — mirror old event calls.
-
-20. **FB Pixel `Lead`** on valid email blur (nice-to-have but cheap).
-
----
-
-## Phase 5 — UX Regressions (important)
-
-21. **`ensureCustomer()` on mount** — lazily create `storefront_customers` row for logged-in shoppers.
-
-22. **Auto-fill email from logged-in `customer.email`**.
-
-23. **WA consent checkbox** (`waConsent` state) → propagate to `capture_checkout_lead` `p_consent` param (currently hardcoded `true`).
-
-24. **`saveExpressInfo()`** — persist form to `express_checkout_{storeId}` localStorage after success (V2 already reads it on mount).
-
-25. **Zippopotam.us fallback** for pincode lookup + spinner indicator during resolve.
-
-26. **Geolocation "Use my location" button** → `reverse-geocode` edge function.
-
-27. **Hindi bilingual labels** — port `isHindi` flag + bilingual strings for stores using Hindi themes.
-
-28. **Partial-payment breakdown on thank-you screen** — show advance paid / balance on delivery box when `payment_type = "partial"`.
-
-29. **`PostPurchaseUpsell` component** — lazy-mount on success screen (same component old uses).
-
----
-
-## Order of Implementation
-
-The plan is grouped so each phase can ship independently and be tested end-to-end before the next:
-
-1. Phase 1 (payments) — highest risk, biggest win
-2. Phase 2 (buy-now + variantId + email)
-3. Phase 3 (coupons + address book)
-4. Phase 4 (Meta/analytics parity)
-5. Phase 5 (UX regressions + upsell)
-
-After Phase 4, ads and payments are safe — old checkout can be removed.
-After Phase 5, V2 is a strict superset of old checkout.
-
----
-
-## Files Touched
-
-- `src/pages/CheckoutV2Page.tsx` — main file (all phases)
-- Reuse existing helpers already imported by old checkout:
-  - `src/lib/payments/razorpay.ts`, `cashfree.ts`, `payu.ts` (loader + open helpers)
-  - `src/lib/analytics/fbPixel.ts`, `ga4.ts`, `metaCapi.ts`, `storefrontEvents.ts`
-  - `src/lib/checkout/*` (validation, address save, guest account, pincode lookup)
-  - `src/components/checkout/PostPurchaseUpsell.tsx`, `CheckoutSkeleton.tsx`, address-book dialog
-- No new edge functions, no new DB tables, no schema migrations
-
----
-
-## Verification Plan
-
-For each phase, run through in preview on `imitationworld` (UPI) + a Razorpay/Cashfree/PayU test store:
-
-- Place order via each enabled gateway → confirm order row + `order_items` (with variantId) + payment_status = paid
-- Double-tap Pay → confirm only one order row created (checkout_token dedupe)
-- Apply/remove coupon → confirm discount math + `orders.discount_amount`
-- Logged-in: pick saved address → confirm shipping_address JSON matches
-- Buy-now URL from PDP → confirm single-item order, cart untouched
-- Meta Events Manager: confirm `InitiateCheckout`, `AddPaymentInfo`, `Purchase` all fire with matching `event_id` (browser + CAPI dedupe)
-- Cancel/fail a gateway → confirm retry banner appears and can re-pay same order
-
----
-
-## Non-Goals (out of scope for this plan)
-
-- Removing/deleting `CheckoutPage.tsx` — user will flip the `checkout_v2_enabled` flag store-by-store after they've validated V2 in production
-- Nice-to-have items (trust strip, collapsible summary with images, ShopBanao footer, delivery-estimate inline text) — can be a follow-up polish pass
-- Any changes to edge functions, RPCs, or DB schema
+- Toggle ON for a test store → walk login → address (new + saved) → payment on 628px preview.
+- Confirm PayU / Razorpay / Cashfree / UPI-intent / COD launchers still fire the same edge functions with the same payloads (compare network tab).
+- Confirm existing pricing (1000 → −100 coupon → 900 → 100 advance → 800 due) still renders correctly in Order Summary + Payment amounts.
