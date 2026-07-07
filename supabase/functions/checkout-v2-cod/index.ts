@@ -9,6 +9,7 @@
 // Safe: only mutates orders that are still `pending` AND belong to the given
 // store, and only if the store actually has COD enabled in payment_methods.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
