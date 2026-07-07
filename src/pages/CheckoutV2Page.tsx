@@ -1451,7 +1451,7 @@ export default function CheckoutV2Page() {
     setOrderNumber(null);
     setIntents({
       gpay: { status: "idle" }, phonepe: { status: "idle" },
-      paytm: { status: "idle" }, any: { status: "idle" },
+      paytm: { status: "idle" }, bhim: { status: "idle" }, any: { status: "idle" },
     });
     gatewayRef.current = {};
     autoAdvancedRef.current = false;
