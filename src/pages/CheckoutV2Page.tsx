@@ -1412,13 +1412,16 @@ export default function CheckoutV2Page() {
   // "Continue" tap needed). Guarded by a ref so it only fires once per fill.
   useEffect(() => {
     if (showPayment || creatingOrder) return;
-    if (!paymentConfigLoaded) return;
     const filled = !!(pincode && streetAddress && city && state && fullName);
     if (!filled) return;
+    // Kick off order + UPI intent creation immediately — server picks the
+    // gateway from store config, so we don't need the client `paymentConfig`
+    // query to resolve first. Payment-method tiles hydrate as the query lands.
     autoAdvancedRef.current = true;
     void createOrderAndIntents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pincode, streetAddress, city, state, fullName, paymentConfigLoaded, showPayment, creatingOrder]);
+  }, [pincode, streetAddress, city, state, fullName, showPayment, creatingOrder]);
+
 
   // Desktop QR: auto-start payment polling as soon as the UPI intent URL is
   // ready, so the moment the shopper scans + pays in any UPI app we detect it
