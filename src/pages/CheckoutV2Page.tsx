@@ -449,6 +449,22 @@ export default function CheckoutV2Page() {
     prewarmEdgeFunction("create-upi-intent");
   }, [paymentConfigLoaded, hasRazorpay, hasCashfree, hasPayu, paymentConfig?.cashfree_env, paymentConfig?.payu_env]);
 
+  // Auto-advance to payment options once the address is complete — the
+  // shopper sees UPI/Cards/COD tiles inline on the same page (no explicit
+  // "Continue" tap needed). Guarded by a ref so it only fires once per fill.
+  const autoAdvancedRef = useRef(false);
+  useEffect(() => {
+    if (autoAdvancedRef.current) return;
+    if (showPayment || creatingOrder) return;
+    if (!paymentConfigLoaded) return;
+    const filled = !!(pincode && streetAddress && city && state && fullName);
+    if (!filled) return;
+    autoAdvancedRef.current = true;
+    void createOrderAndIntents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pincode, streetAddress, city, state, fullName, paymentConfigLoaded, showPayment, creatingOrder]);
+
+
   // ─── Address book (logged-in customers) ─────────────────────────────────
   const { data: savedAddresses } = useQuery({
     queryKey: ["checkoutv2-saved-addresses", customer?.id],
