@@ -2112,9 +2112,16 @@ export default function CheckoutV2Page() {
 
           {/* Contact + Address form (only if not filled) — bottom-sheet popup */}
           {(!addressFilled || showAddressFormSheet) && (
-            <div className="fixed inset-0 z-50 mx-auto flex h-[100dvh] max-w-md flex-col justify-end overflow-hidden">
-              {/* Scrim */}
-              <div className="absolute inset-0 bg-black/50" aria-hidden />
+            <>
+              {/* Full-viewport scrim — covers everything, blocks scroll of page behind */}
+              <div
+                className="fixed inset-0 z-40 bg-black/50"
+                onClick={closeAddressFormSheet}
+                aria-hidden
+              />
+              {/* Sheet container — pinned to bottom, centered mobile column */}
+              <div className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[100dvh] max-w-md flex-col justify-end overflow-hidden pointer-events-none">
+                <div className="pointer-events-auto flex flex-col items-center">
               {/* Close chip above sheet */}
               <button
                 type="button"
