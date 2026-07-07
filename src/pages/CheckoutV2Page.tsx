@@ -2367,7 +2367,7 @@ export default function CheckoutV2Page() {
           {/* UPI card */}
           {mobile && (
             <div className="relative bg-white rounded-xl border border-[#ECECEC] p-3.5">
-              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[11px] font-bold px-2.5 py-0.5 rounded">Get {formatPrice(50, currency)} Off</div>
+
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 rounded bg-gradient-to-br from-orange-500 to-blue-600" />
@@ -2421,7 +2421,7 @@ export default function CheckoutV2Page() {
           {/* Desktop: UPI QR — scan with any UPI app to pay */}
           {!mobile && (
             <div className="relative bg-white rounded-xl border border-[#ECECEC] p-4">
-              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-red-500 text-white text-[11px] font-bold px-2.5 py-0.5 rounded">Get {formatPrice(50, currency)} Off</div>
+
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 rounded bg-gradient-to-br from-orange-500 to-blue-600" />
@@ -2480,7 +2480,7 @@ export default function CheckoutV2Page() {
             </div>
           )}
 
-          {/* Card / Netbanking / Wallet */}
+          {/* Cards / Netbanking / Wallets — single consolidated gateway tile */}
           {hasOnline && (
             <button
               onClick={startGatewayPayment}
@@ -2490,7 +2490,8 @@ export default function CheckoutV2Page() {
               <div className="flex items-center gap-3">
                 <CreditCard className="h-5 w-5" />
                 <div className="text-left">
-                  <div className="text-[14px] font-bold">Debit/Credit Cards</div>
+                  <div className="text-[14px] font-bold">Cards, Netbanking & Wallets</div>
+                  <div className="text-[11px] text-muted-foreground">Visa, Mastercard, RuPay, all major banks</div>
                 </div>
               </div>
               <div className="flex items-center gap-1 text-[14px] font-bold">
@@ -2500,64 +2501,6 @@ export default function CheckoutV2Page() {
             </button>
           )}
 
-          {/* Pay Later / EMI cosmetic row */}
-          {hasOnline && total >= 500 && (
-            <button
-              onClick={startGatewayPayment}
-              disabled={openingGateway || confirmingPayment}
-              className="w-full bg-white rounded-xl border border-[#ECECEC] p-3.5 flex items-center justify-between active:scale-[0.99] transition-all disabled:opacity-40"
-            >
-              <div className="flex items-center gap-3">
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                <div className="text-left">
-                  <div className="text-[14px] font-bold">0% EMI on UPI & Cards</div>
-                  <div className="text-[11px] text-muted-foreground">{store?.name || "Store"} Pay Later · by Snapmint</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-[13px] font-bold">{formatPrice(Math.max(100, Math.round(total / 3)), currency)} now</div>
-                <div className="text-[10px] text-muted-foreground">+ 2 EMIs</div>
-              </div>
-            </button>
-          )}
-
-          {hasOnline && (
-            <button
-              onClick={startGatewayPayment}
-              disabled={openingGateway || confirmingPayment}
-              className="w-full bg-white rounded-xl border border-[#ECECEC] p-3.5 flex items-center justify-between active:scale-[0.99] transition-all disabled:opacity-40"
-            >
-              <div className="flex items-center gap-3">
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 21h18M4 10h16v11H4zM6 10V6a6 6 0 0112 0v4"/></svg>
-                <div className="text-left">
-                  <div className="text-[14px] font-bold">Netbanking</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 text-[14px] font-bold">
-                {formatPrice(chargeAmount, currency)}
-                <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground ml-1" />
-              </div>
-            </button>
-          )}
-
-          {hasOnline && (
-            <button
-              onClick={startGatewayPayment}
-              disabled={openingGateway || confirmingPayment}
-              className="relative w-full bg-white rounded-xl border border-[#ECECEC] p-3.5 flex items-center justify-between active:scale-[0.99] transition-all disabled:opacity-40"
-            >
-              <div className="flex items-center gap-3">
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M16 12h2"/></svg>
-                <div className="text-left">
-                  <div className="text-[14px] font-bold">Cards / Netbanking / Wallets</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 text-[14px] font-bold">
-                {formatPrice(chargeAmount, currency)}
-                <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground ml-1" />
-              </div>
-            </button>
-          )}
 
           {/* COD */}
           {hasCod && effectiveMode === "full" && (
