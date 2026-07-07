@@ -81,7 +81,7 @@ function schemeFor(app: UpiApp, url: string): string {
   if (app === "gpay") return `tez://upi/pay?${query}`;
   if (app === "phonepe") return `phonepe://pay?${query}`;
   if (app === "paytm") return `paytmmp://pay?${query}`;
-  if (app === "bhim") return `bhim://pay?${query}`;
+  if (app === "bhim") return `upi://pay?${query}`;
   return url;
 }
 
