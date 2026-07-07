@@ -1944,15 +1944,16 @@ export default function CheckoutV2Page() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <div className="text-[14px] font-bold">Deliver To {fullName}</div>
-                      {customer && savedAddresses && savedAddresses.length > 0 && (
-                        <button
-                          onClick={() => setShowAddressDialog(true)}
-                          className="relative bg-black text-white text-[11px] font-semibold px-2 py-1 rounded-md"
-                        >
-                          Tap To Edit Address
-                          <span className="absolute -bottom-1 left-4 w-2 h-2 bg-black rotate-45" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => {
+                          if (savedAddresses && savedAddresses.length > 0) setShowAddressDialog(true);
+                          else setStreetAddress("");
+                        }}
+                        className="relative bg-black text-white text-[11px] font-semibold px-2 py-1 rounded-md"
+                      >
+                        Tap To Edit Address
+                        <span className="absolute -bottom-1 left-4 w-2 h-2 bg-black rotate-45" />
+                      </button>
                     </div>
                     <div className="text-[13px] text-foreground/80 mt-0.5">
                       {streetAddress}
@@ -1964,12 +1965,13 @@ export default function CheckoutV2Page() {
                       +91 {phone}{email ? <> &nbsp;|&nbsp; <span className="truncate">{email}</span></> : null}
                     </div>
                   </div>
-                  {customer && savedAddresses && savedAddresses.length > 0 ? (
-                    <button
-                      onClick={() => setShowAddressDialog(true)}
-                      className="text-[13px] font-semibold border border-[#111] rounded-md px-3 py-1.5"
-                    >Change</button>
-                  ) : null}
+                  <button
+                    onClick={() => {
+                      if (savedAddresses && savedAddresses.length > 0) setShowAddressDialog(true);
+                      else setStreetAddress("");
+                    }}
+                    className="text-[13px] font-semibold border border-[#111] rounded-md px-3 py-1.5"
+                  >Change</button>
                 </div>
                 {shippingActive && (
                   <div className="mt-3 pt-3 border-t border-[#ECECEC] bg-[#F9FAFB] -mx-3.5 -mb-3.5 px-3.5 py-2.5 rounded-b-xl">
