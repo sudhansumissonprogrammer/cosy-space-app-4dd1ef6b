@@ -1718,14 +1718,14 @@ function ImageGallery({
           )}
 
           {/* Counter (mobile) */}
-          {len > 1 && (
+          {showMultiUi && (
             <div className="absolute bottom-3 right-3 z-10 sm:hidden rounded-full bg-black/50 backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold text-white tabular-nums">
               {activeIndex + 1}/{len}
             </div>
           )}
 
           {/* Dots */}
-          {len > 1 && slides[activeIndex]?.kind !== "video" && (
+          {showMultiUi && slides[activeIndex]?.kind !== "video" && (
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5 rounded-full bg-black/30 backdrop-blur-sm px-2.5 py-1.5">
               {slides.map((_, i) => (
                 <button
@@ -1741,7 +1741,7 @@ function ImageGallery({
           )}
 
           {/* Desktop arrows */}
-          {len > 1 && (
+          {showMultiUi && (
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); scrollPrev(); }}
@@ -1760,7 +1760,7 @@ function ImageGallery({
         </div>
 
         {/* Thumbnail strip — mobile + desktop */}
-        {len > 1 && (
+        {showMultiUi && (
           <div className="flex gap-2 overflow-x-auto scrollbar-hide px-3 sm:px-0.5 py-2 sm:py-1">
             {slides.map((slide, i) => {
               const thumbSrc = slide.kind === "video" ? (slide.poster || "") : slide.url;
