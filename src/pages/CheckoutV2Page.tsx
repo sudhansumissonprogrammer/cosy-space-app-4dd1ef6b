@@ -2396,7 +2396,12 @@ export default function CheckoutV2Page() {
                     if (!/^\d{6}$/.test(pincode)) { toast.error("Enter a valid pincode"); return; }
                     if (!streetAddress.trim()) { toast.error("Enter Flat, House no."); return; }
                     if (!city.trim() || !state.trim()) { toast.error("Enter city and state"); return; }
-                    if (!customer && !email.trim()) { toast.error("Email address is required"); return; }
+                    // Merge apartment (line-2) into street_address so the full
+                    // address is persisted to customer_addresses / orders.
+                    const apt = apartment.trim();
+                    if (apt && !streetAddress.includes(apt)) {
+                      setStreetAddress(`${streetAddress.trim()}, ${apt}`);
+                    }
                     setShowAddressFormSheet(false);
                   }}
                 >
