@@ -275,16 +275,26 @@ export default function ProductDetail() {
     contentReadyRef.current = false;
   }, [productSlug]);
 
-  // Prefetch the checkout chunk as soon as the PDP is mounted so that
+  // Prefetch the checkout chunks as soon as the PDP is mounted so that
   // "Buy Now" navigation is instant on cold visits — no wait for the
   // CheckoutPage + CheckoutPhoneStep JS to download after the click.
   useEffect(() => {
-    const t = setTimeout(() => {
+    const kick = () => {
       import("./CheckoutPage").catch(() => {});
       import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
-    }, 300);
-    return () => clearTimeout(t);
+      import("@/pages/CheckoutV2Page").catch(() => {});
+    };
+    const ric = (window as any).requestIdleCallback;
+    if (ric) ric(kick, { timeout: 500 });
+    else setTimeout(kick, 0);
   }, []);
+
+  // Warm chunk on hover / pointerdown of any Buy Now button (belt-and-braces).
+  const prefetchCheckout = () => {
+    import("./CheckoutPage").catch(() => {});
+    import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
+  };
+
 
 
   useEffect(() => {
