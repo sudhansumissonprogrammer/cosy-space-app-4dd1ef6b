@@ -2387,8 +2387,10 @@ export default function CheckoutV2Page() {
                   Continue
                 </Button>
               </div>
+              </div>
             </div>,
             document.body
+
           )}
 
           {/* Partial-payment selector moved into payment section below */}
