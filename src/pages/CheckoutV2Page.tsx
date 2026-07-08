@@ -37,12 +37,10 @@ import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { loadCashfree } from "@/lib/loadCashfree";
 import { loadPayuBolt } from "@/lib/loadPayuBolt";
 import { createPortal } from "react-dom";
-import { useKeyboardOffset } from "@/hooks/useKeyboardOffset";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 import { QRCodeSVG } from "qrcode.react";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
-const PincodeSheet = lazy(() => import("@/components/storefront/PincodeSheet"));
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
@@ -487,20 +485,9 @@ export default function CheckoutV2Page() {
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [showAddressFormSheet, setShowAddressFormSheet] = useState(false);
-  // Keyboard-safe bottom sheets — lifts the address / pincode popups above
-  // the on-screen keyboard on Android/iOS.
-  const keyboardOffset = useKeyboardOffset();
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", apartment: "", city: "", state: "", pincode: "" });
   const [addrLabel, setAddrLabel] = useState<"Home" | "Work">("Home");
   const [apartment, setApartment] = useState("");
-
-  // Pincode step: gate address form until shopper confirms delivery pincode
-  // via the small PincodeSheet popup. Auto-confirmed if we already have a
-  // pincode from a saved address or from a returning session.
-  const [pincodeConfirmed, setPincodeConfirmed] = useState<boolean>(() => !!pincode);
-  useEffect(() => {
-    if (pincode && /^\d{6}$/.test(pincode)) setPincodeConfirmed(true);
-  }, [pincode]);
 
   const selectAddress = (addr: any) => {
     setSelectedAddressId(addr.id);
@@ -518,25 +505,21 @@ export default function CheckoutV2Page() {
     setShowAddressFormSheet(true);
   };
 
-  // X on the address form popup — just close the sheet. Never navigate away:
-  // the shopper stays on the checkout page with the pincode/city/state they
-  // already provided, and can reopen the form via the "Tap to add address" chip.
   const closeAddressFormSheet = () => {
-    setShowAddressFormSheet(false);
+    if (showAddressFormSheet) setShowAddressFormSheet(false);
+    else navigate(-1);
   };
 
-  // Only open the sheet when the shopper explicitly asks for it via a tap.
-  // Never auto-open due to missing fields — that used to swallow the page.
-  const addressSheetOpen = showAddressFormSheet;
+  const addressSheetOpen = showAddressFormSheet || !(pincode && streetAddress && city && state && fullName);
 
   // Lock body scroll while any address overlay is open so only the form scrolls.
   useEffect(() => {
-    const anySheetOpen = addressSheetOpen || showAddressDialog || !pincodeConfirmed;
+    const anySheetOpen = addressSheetOpen || showAddressDialog;
     if (!anySheetOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
-  }, [addressSheetOpen, showAddressDialog, pincodeConfirmed]);
+  }, [addressSheetOpen, showAddressDialog]);
 
   useEffect(() => {
     if (savedAddresses && savedAddresses.length > 0 && !selectedAddressId) {
@@ -2050,41 +2033,7 @@ export default function CheckoutV2Page() {
   const savedAmount = (appliedCoupon && couponDiscount > 0 ? couponDiscount : 0);
 
   return (
-    <div
-      className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-32 checkout-neutral-font"
-      style={{
-        // Neutralize the storefront theme font (Alegreya SC etc.) on the
-        // checkout — payments must feel like a trusted, standard checkout,
-        // not the store's decorative brand voice.
-        fontFamily:
-          "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-        fontVariant: "normal",
-        textTransform: "none",
-        letterSpacing: "normal",
-      }}
-    >
-
-      {/* Pincode step — small popup after phone. Auto-fetches city/state via
-          the pincode effect. Once submitted, we land on the checkout page
-          with a "Delivering to <pincode>" chip; payment methods stay hidden
-          until the full address form (name + street) is completed. */}
-      {!pincodeConfirmed && (
-        <Suspense fallback={null}>
-          <PincodeSheet
-            initial={pincode}
-            onSubmit={(pc) => {
-              setPincode(pc);
-              setPincodeConfirmed(true);
-            }}
-            onClose={() => {
-              // X on pincode sheet — go back to the previous page (PDP/cart).
-              // No pincode = no way to proceed with checkout.
-              try { navigate(-1); } catch { /* noop */ }
-            }}
-          />
-        </Suspense>
-      )}
-
+    <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-32">
 
       {/* Confirming payment overlay */}
       {confirmingPayment && (
@@ -2207,35 +2156,6 @@ export default function CheckoutV2Page() {
           </div>
 
 
-          {/* Pincode-only chip — after PincodeSheet closes but before full address
-              is entered. Tapping opens the address form popup so the shopper
-              can complete street/name. Payment methods stay hidden until full
-              address is filled (showPayment auto-advance is address-gated). */}
-          {pincodeConfirmed && !addressFilled && (
-            <button
-              type="button"
-              onClick={openAddressFormSheet}
-              className="w-full bg-white rounded-xl border border-dashed border-black/40 p-3.5 text-left"
-            >
-              <div className="flex items-start gap-3">
-                <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[14px] font-bold">
-                    Delivering to {pincode}
-                    {city ? ` · ${city}` : ""}
-                    {state ? `, ${state}` : ""}
-                  </div>
-                  <div className="text-[12px] text-muted-foreground mt-0.5">
-                    Tap to add delivery address (name, house / street) to continue.
-                  </div>
-                </div>
-                <div className="text-[12px] font-semibold border border-black rounded-md px-2.5 py-1 flex-shrink-0">
-                  Add
-                </div>
-              </div>
-            </button>
-          )}
-
           {/* Delivery Details (once address filled) */}
           {addressFilled && (
             <>
@@ -2329,14 +2249,8 @@ export default function CheckoutV2Page() {
           )}
 
           {/* Contact + Address form — bottom-sheet popup with scrim + close chip */}
-          {showAddressFormSheet && typeof document !== "undefined" && createPortal(
-            <div
-              className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Add delivery address"
-              style={{ paddingBottom: keyboardOffset }}
-            >
+          {(!addressFilled || showAddressFormSheet) && typeof document !== "undefined" && createPortal(
+            <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
               {/* Scrim */}
               <div className="absolute inset-0 bg-black/50" onClick={closeAddressFormSheet} aria-hidden />
               {/* Close chip above sheet */}
@@ -2344,19 +2258,16 @@ export default function CheckoutV2Page() {
                 type="button"
                 onClick={closeAddressFormSheet}
                 aria-label="Close"
-                className="relative mx-auto mb-3 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center flex-shrink-0"
+                className="relative mx-auto mb-3 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center"
               >
                 <X className="h-5 w-5" />
               </button>
               {/* Sheet */}
-              <div
-                className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden"
-                style={{ maxHeight: `calc(100dvh - ${keyboardOffset + 72}px)` }}
-              >
-                <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
-                  <div className="text-[16px] font-bold">Add Delivery Address</div>
-                  <span className="h-9 w-9" aria-hidden />
-                </div>
+              <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden max-h-[calc(100dvh-72px)]">
+              <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
+                <div className="text-[16px] font-bold">Add Delivery Address</div>
+                <span className="h-9 w-9" aria-hidden />
+              </div>
 
 
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-4 pb-5 space-y-3">
@@ -2779,19 +2690,10 @@ export default function CheckoutV2Page() {
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3">
           <Button
             className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
-            onClick={() => {
-              // If the full address isn't filled yet, open the address form
-              // popup instead of trying to create an order. Payment methods
-              // can never appear until the shopper completes the form.
-              if (!(pincode && streetAddress && city && state && fullName)) {
-                openAddressFormSheet();
-                return;
-              }
-              void createOrderAndIntents();
-            }}
+            onClick={createOrderAndIntents}
             disabled={creatingOrder || !paymentConfigLoaded}
           >
-            {creatingOrder ? <Loader2 className="h-5 w-5 animate-spin" /> : (pincode && streetAddress && city && state && fullName ? "Continue" : "Add delivery address")}
+            {creatingOrder ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
           </Button>
           <div className="text-[10px] text-center text-muted-foreground mt-1.5">
             By proceeding, I agree to the store's Privacy Policy and T&amp;C

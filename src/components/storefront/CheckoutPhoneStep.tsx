@@ -172,19 +172,7 @@ export default function CheckoutPhoneStep({
   }, []);
 
   return (
-    <div
-      className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-[220px] checkout-neutral-font"
-      style={{
-        // Break the storefront's decorative font (e.g. Alegreya SC small-caps)
-        // from bleeding into the checkout. Trust > brand voice on the
-        // payments screen.
-        fontFamily:
-          "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-        fontVariant: "normal",
-        textTransform: "none",
-        letterSpacing: "normal",
-      }}
-    >
+    <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-[220px]">
       {/* Sticky header */}
       <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-4 py-3 flex items-center gap-3">
         <button
@@ -342,17 +330,6 @@ export default function CheckoutPhoneStep({
                 />
               </div>
             </div>
-            <Button
-              onClick={submit}
-              disabled={submitting || !valid}
-              className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white disabled:opacity-100 rounded-lg"
-            >
-              {submitting ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                "Continue"
-              )}
-            </Button>
           </div>
         </div>
 
@@ -363,7 +340,7 @@ export default function CheckoutPhoneStep({
             Powered by
           </div>
           <div className="text-[14px] font-bold tracking-tight">
-            Shopbanao
+            {storeName || "Storivo"}
           </div>
           <div className="text-[12px] text-muted-foreground mt-3">
             Powering secure checkout for 10,000+ brands

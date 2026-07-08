@@ -275,26 +275,16 @@ export default function ProductDetail() {
     contentReadyRef.current = false;
   }, [productSlug]);
 
-  // Prefetch the checkout chunks as soon as the PDP is mounted so that
+  // Prefetch the checkout chunk as soon as the PDP is mounted so that
   // "Buy Now" navigation is instant on cold visits — no wait for the
   // CheckoutPage + CheckoutPhoneStep JS to download after the click.
   useEffect(() => {
-    const kick = () => {
+    const t = setTimeout(() => {
       import("./CheckoutPage").catch(() => {});
       import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
-      import("@/pages/CheckoutV2Page").catch(() => {});
-    };
-    const ric = (window as any).requestIdleCallback;
-    if (ric) ric(kick, { timeout: 500 });
-    else setTimeout(kick, 0);
+    }, 300);
+    return () => clearTimeout(t);
   }, []);
-
-  // Warm chunk on hover / pointerdown of any Buy Now button (belt-and-braces).
-  const prefetchCheckout = () => {
-    import("./CheckoutPage").catch(() => {});
-    import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
-  };
-
 
 
   useEffect(() => {
@@ -607,28 +597,28 @@ export default function ProductDetail() {
       return;
     }
 
-    // Navigate FIRST so the checkout route mounts instantly. addToCart runs
-    // in a microtask so React batches the state update with the route change
-    // rather than blocking the click handler with a full re-render of the PDP.
-    closeCart();
-    navigate(storefrontPath(store.slug, "checkout"));
-    queueMicrotask(() => {
-      addToCart({
-        productId: product.id,
-        variantId: selectedVariant?.id,
-        name: product.name,
-        variantName: selectedVariant?.name,
-        price: variantPrice,
-        image: product.image_url || undefined,
-        quantity,
-      });
+    // Add to cart first so it's available either way.
+    addToCart({
+      productId: product.id,
+      variantId: selectedVariant?.id,
+      name: product.name,
+      variantName: selectedVariant?.name,
+      price: variantPrice,
+      image: product.image_url || undefined,
+      quantity,
     });
+    closeCart();
 
     // NOTE: InitiateCheckout is intentionally NOT fired here. CheckoutPage
     // fires it once at payment-intent time (with full user identity for
     // CAPI dedup). Firing it here too would double-count IC in Meta.
-  };
 
+
+    // Phone capture now happens as Step 1 of the checkout page itself
+    // (no more popup). Just navigate — CheckoutPage renders the phone step
+    // when localStorage.checkout_phone is missing.
+    navigate(storefrontPath(store.slug, "checkout"));
+  };
 
 
 
@@ -893,7 +883,7 @@ export default function ProductDetail() {
                     <button
                       className="flex h-12 w-full items-center justify-center border text-sm font-bold uppercase tracking-widest transition-[transform,opacity,colors,box-shadow] active:scale-[0.97] hover:bg-white hover:text-black"
                       style={{ borderColor: "#ffffff", color: "#ffffff", ...v18Font }}
-                      onPointerDown={prefetchCheckout} onClick={handleBuyNow}
+                      onClick={handleBuyNow}
                     >
                       BUY IT NOW
                     </button>
@@ -925,7 +915,7 @@ export default function ProductDetail() {
                     <button
                       className="btn-press flex h-12 w-full items-center justify-center gap-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
                       style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
-                      onPointerDown={prefetchCheckout} onClick={handleBuyNow}
+                      onClick={handleBuyNow}
                     >
                       <span className="flex items-center gap-1.5">
                         <ShoppingBag className="h-4 w-4" />
@@ -1206,7 +1196,7 @@ export default function ProductDetail() {
                     <button
                       className="btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow]"
                       style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", fontFamily: "var(--storefront-heading-font, inherit)" }}
-                      onPointerDown={prefetchCheckout} onClick={handleBuyNow}
+                      onClick={handleBuyNow}
                     >
                       <span className="flex items-center gap-1.5">
                         <ShoppingBag className="h-3.5 w-3.5" />
