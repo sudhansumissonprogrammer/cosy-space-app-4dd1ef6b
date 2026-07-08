@@ -1480,10 +1480,17 @@ export default function CheckoutV2Page() {
   // or too little. Server is DB-authoritative, so a fresh mint is the only
   // safe way to change the amount.
   const createOrderIfNeeded = async (paymentMethodHint: string): Promise<PendingOrder> => {
-    if (orderIdRef.current && orderSnapshotRef.current === paymentSnapshot) {
+    // COD forces payment_type=full even when the shopper had "advance"
+    // pre-selected. Fold that into the snapshot so a stale partial-mode
+    // row minted for an earlier PayU attempt is discarded before we hit
+    // checkout-v2-cod (which rejects partial orders).
+    const resolvedType: "full" | "partial" =
+      paymentMethodHint === "cod" ? "full" : effectiveMode;
+    const effectiveSnapshot = `${paymentSnapshot}|pt:${resolvedType}|pm:${paymentMethodHint === "cod" ? "cod" : "online"}`;
+    if (orderIdRef.current && orderSnapshotRef.current === effectiveSnapshot) {
       return { id: orderIdRef.current, number: orderNumberRef.current };
     }
-    if (orderIdRef.current && orderSnapshotRef.current !== paymentSnapshot) {
+    if (orderIdRef.current && orderSnapshotRef.current !== effectiveSnapshot) {
       // Discard stale row before minting a fresh one with the new amount.
       orderIdRef.current = null;
       orderNumberRef.current = null;
@@ -1493,10 +1500,10 @@ export default function CheckoutV2Page() {
       checkoutTokenRef.current = nextToken;
       setCheckoutToken(nextToken);
     }
-    const created = await placeOrderRow(paymentMethodHint);
+    const created = await placeOrderRow(paymentMethodHint, resolvedType);
     orderIdRef.current = created.id;
     orderNumberRef.current = created.number;
-    orderSnapshotRef.current = paymentSnapshot;
+    orderSnapshotRef.current = effectiveSnapshot;
     setOrderId(created.id);
     setOrderNumber(created.number);
     return created;
