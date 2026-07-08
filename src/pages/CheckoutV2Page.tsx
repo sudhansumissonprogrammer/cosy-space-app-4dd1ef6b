@@ -745,21 +745,22 @@ export default function CheckoutV2Page() {
   // Applied only on FULL online payment (not COD, not partial). Server
   // recomputes and stamps the same discount at place-order time so the
   // gateway is always charged what the tile advertised.
-  const prepaidDiscount = useMemo(() => {
+  // Preview discount ignoring current payMode — used to show "save ₹X" on the
+  // Pay-Full option even while Partial is selected, so shoppers see the upside
+  // of switching.
+  const prepaidDiscountPreview = useMemo(() => {
     if (!paymentConfig?.prepaid_discount_enabled) return 0;
-    if (isPartialOrder) return 0;
-    // Guard: skip discount on tiny carts so a ₹5 order doesn't get flattened
-    // to ₹0 by a ₹100 prepaid discount. Store owners set the discount for
-    // regular carts, not sub-₹100 outliers.
     if (total < 100) return 0;
     const v = Number(paymentConfig.prepaid_discount_value || 0);
     if (v <= 0 || total <= 0) return 0;
     const d = paymentConfig.prepaid_discount_type === "percentage" ? (total * v) / 100 : v;
     return Math.max(0, Math.min(Math.round(d), total));
-  }, [paymentConfig, total, isPartialOrder]);
-
+  }, [paymentConfig, total]);
+  const prepaidDiscount = isPartialOrder ? 0 : prepaidDiscountPreview;
+  const prepaidTotalPreview = Math.max(0, total - prepaidDiscountPreview);
   const prepaidTotal = Math.max(0, total - prepaidDiscount);
   const chargeAmount = isPartialOrder ? partialAdvanceTotal : prepaidTotal;
+
 
 
 
@@ -2558,11 +2559,12 @@ export default function CheckoutV2Page() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-semibold">
-                        Pay full {formatPrice(prepaidTotal, currency)} online
-                        {prepaidDiscount > 0 && (
-                          <span className="ml-1 text-[11px] font-medium text-emerald-700">save {formatPrice(prepaidDiscount, currency)}</span>
+                        Pay full {formatPrice(prepaidTotalPreview, currency)} online
+                        {prepaidDiscountPreview > 0 && (
+                          <span className="ml-1 text-[11px] font-medium text-emerald-700">save {formatPrice(prepaidDiscountPreview, currency)}</span>
                         )}
                       </div>
+
                       <div className="text-[12px] text-muted-foreground mt-0.5">Nothing to pay on delivery</div>
                     </div>
                   </div>
