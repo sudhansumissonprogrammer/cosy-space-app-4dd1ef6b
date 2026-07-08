@@ -140,15 +140,6 @@ export default function CheckoutV2Page() {
   const qc = useQueryClient();
   const { items: cartItems, clearCart, removeFromCart } = useCart();
   const [summaryOpen, setSummaryOpen] = useState(false);
-  const goBack = useCallback(() => {
-    try {
-      if (typeof window !== "undefined" && window.history.length > 1) {
-        window.history.back();
-        return;
-      }
-    } catch { /* noop */ }
-    navigate("/");
-  }, [navigate]);
   const { customer, ensureCustomer } = useStorefrontAuth();
   const currency = store?.currency || "INR";
   const isHindi = store?.theme === "theme-16" || store?.theme === "theme-21";
@@ -585,8 +576,6 @@ export default function CheckoutV2Page() {
   const shippingActive = shippingConfig?.is_active;
   const flatShippingRate = shippingActive ? Number(shippingConfig?.flat_rate) || 0 : 0;
   const freeShippingThreshold = shippingActive ? Number(shippingConfig?.free_shipping_above) || 0 : 0;
-  const qualifiesForFreeShipping = shippingActive && freeShippingThreshold > 0 && subtotal >= freeShippingThreshold && flatShippingRate > 0;
-  const shippingCharge = shippingActive ? (qualifiesForFreeShipping ? 0 : flatShippingRate) : 0;
 
   const taxActive = !!(taxConfig?.is_active && Number(taxConfig?.tax_rate) > 0);
   const taxRate = taxActive ? Number(taxConfig.tax_rate) : 0;
@@ -665,6 +654,13 @@ export default function CheckoutV2Page() {
     if (d !== couponDiscount) setCouponDiscount(d);
   }, [subtotal, appliedCoupon]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Shipping is calculated after coupon discount, matching the backend order
+  // total. Otherwise a coupon can make the checkout display free shipping while
+  // the gateway/order is minted with paid shipping (or vice versa).
+  const shippingSubtotal = Math.max(0, subtotal - couponDiscount);
+  const qualifiesForFreeShipping = shippingActive && freeShippingThreshold > 0 && shippingSubtotal >= freeShippingThreshold && flatShippingRate > 0;
+  const shippingCharge = shippingActive ? (qualifiesForFreeShipping ? 0 : flatShippingRate) : 0;
+
   const total = Math.max(0, subtotal + (taxInclusive ? 0 : taxAmount) + shippingCharge - couponDiscount);
 
   // ─── Partial payment ────────────────────────────────────────────────────
@@ -677,10 +673,9 @@ export default function CheckoutV2Page() {
     if (!hasPartial) return total;
     let advance = 0;
     for (const it of checkoutItems) {
-      let itemAdv = partialType === "percentage"
+      const itemAdv = partialType === "percentage"
         ? Math.round(it.price * (Number(partialValue) / 100))
         : Math.min(Number(partialValue), it.price);
-      itemAdv = Math.max(itemAdv, 50);
       advance += itemAdv * it.quantity;
     }
     const ratio = subtotal > 0 ? advance / subtotal : 1;
@@ -765,6 +760,10 @@ export default function CheckoutV2Page() {
   // ─── Order + payment state ──────────────────────────────────────────────
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const orderIdRef = useRef<string | null>(null);
+  const orderNumberRef = useRef<string | null>(null);
+  useEffect(() => { orderIdRef.current = orderId; }, [orderId]);
+  useEffect(() => { orderNumberRef.current = orderNumber; }, [orderNumber]);
   const [creatingOrder, setCreatingOrder] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
@@ -772,6 +771,8 @@ export default function CheckoutV2Page() {
   const [paymentFailed, setPaymentFailed] = useState(false);
   const newCheckoutToken = () => (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `ct_${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const [checkoutToken, setCheckoutToken] = useState<string>(() => newCheckoutToken());
+  const checkoutTokenRef = useRef(checkoutToken);
+  useEffect(() => { checkoutTokenRef.current = checkoutToken; }, [checkoutToken]);
 
   const [intents, setIntents] = useState<Record<UpiApp, IntentState>>({
     gpay: { status: "idle" }, phonepe: { status: "idle" },
@@ -785,6 +786,17 @@ export default function CheckoutV2Page() {
   }>({});
   const purchaseEventIdRef = useRef<string>(generateEventId());
   const metaCookiesRef = useRef<{ fbc: string; fbp: string }>(getMetaCookies());
+  const paymentSnapshot = useMemo(() => JSON.stringify({
+    mode: effectiveMode,
+    total: Math.round(total * 100),
+    charge: Math.round(chargeAmount * 100),
+    coupon: appliedCoupon?.id || null,
+    couponDiscount: Math.round(couponDiscount * 100),
+    shipping: Math.round(shippingCharge * 100),
+    items: checkoutItems.map((i) => [i.productId, i.variantId || "", i.quantity, Math.round(i.price * 100)]),
+  }), [effectiveMode, total, chargeAmount, appliedCoupon?.id, couponDiscount, shippingCharge, checkoutItems]);
+  const lastPaymentSnapshotRef = useRef(paymentSnapshot);
+  const paymentAmountSyncing = (showPayment || !!orderId) && paymentSnapshot !== lastPaymentSnapshotRef.current;
 
   // ─── InitiateCheckout / AddPaymentInfo (fire at real intent only) ───────
   const initiateCheckoutFiredRef = useRef(false);
@@ -920,7 +932,7 @@ export default function CheckoutV2Page() {
     const { data, error } = await supabase.functions.invoke("place-order", {
       body: {
         store_id: store.id,
-        checkout_token: checkoutToken,
+          checkout_token: checkoutTokenRef.current,
         order: {
           total, currency, status: "pending",
           customer_name: fullName.trim(),
@@ -1090,6 +1102,18 @@ export default function CheckoutV2Page() {
   const [waitingApp, setWaitingApp] = useState<string>("");
   const [manualChecking, setManualChecking] = useState(false);
   const waitingCheckInFlightRef = useRef(false);
+
+  const goBack = useCallback(() => {
+    if (showAddressFormSheet && addressComplete) {
+      closeAddressFormSheet();
+      return;
+    }
+    if (showPayment && !waiting && !confirmingPayment) {
+      setShowPayment(false);
+      return;
+    }
+    navigate(storefrontPath(store?.slug || ""), { replace: true });
+  }, [addressComplete, confirmingPayment, navigate, showAddressFormSheet, showPayment, store?.slug, waiting]);
 
   const WAIT_KEY = `sf_wait_v2_${store?.id}`;
   const persistWaiting = (app: UpiApp, label: string, override?: { orderId?: string | null; orderNumber?: string | null }) => {
@@ -1296,6 +1320,7 @@ export default function CheckoutV2Page() {
 
 
   const tapUpiApp = (app: UpiApp) => {
+    if (creatingOrder || couponLoading || paymentAmountSyncing) return;
     const s = intents[app];
     if (s.status !== "ready" || !s.url) return;
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
@@ -1416,8 +1441,10 @@ export default function CheckoutV2Page() {
 
   // ─── Create order (single call, dedup with checkout_token) ──────────────
   const createOrderIfNeeded = async (paymentMethodHint: string): Promise<PendingOrder> => {
-    if (orderId) return { id: orderId, number: orderNumber };
+    if (orderIdRef.current) return { id: orderIdRef.current, number: orderNumberRef.current };
     const created = await placeOrderRow(paymentMethodHint);
+    orderIdRef.current = created.id;
+    orderNumberRef.current = created.number;
     setOrderId(created.id);
     setOrderNumber(created.number);
     return created;
@@ -1494,6 +1521,7 @@ export default function CheckoutV2Page() {
   useEffect(() => {
     if (showPayment || creatingOrder) return;
     if (!paymentConfigLoaded) return;
+    if (autoAdvancedRef.current) return;
     const filled = !!(pincode && streetAddress && city && state && fullName);
     if (!filled) return;
     autoAdvancedRef.current = true;
@@ -1520,20 +1548,22 @@ export default function CheckoutV2Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPayment, intents.any.status, intents.any.url, orderId, waiting]);
 
-  // Partial ↔ Full toggle (OR hasPartial flipping true after paymentConfig
-  // loads late): the previous order + UPI intent were minted for the old
-  // amount and stamped with the old payment_type. Reset everything AND
-  // immediately re-mint a fresh order + UPI intent for the new amount,
-  // otherwise the UPI tiles stay stuck in "idle" and — worse — the gateway
-  // would charge the wrong amount.
-  const lastEffectiveModeRef = useRef(effectiveMode);
+  // Any payable-amount change after an order is minted must re-mint the order +
+  // UPI intent. This covers Partial ↔ Full, late paymentConfig load, coupon
+  // apply/remove, free-shipping threshold flips, and cart quantity changes.
+  // Gateway functions use DB-authoritative order totals, so stale order rows are
+  // the #1 source of "checkout shows X, PhonePe/Razorpay shows Y" mismatches.
   useEffect(() => {
-    if (lastEffectiveModeRef.current === effectiveMode) return;
-    lastEffectiveModeRef.current = effectiveMode;
+    if (lastPaymentSnapshotRef.current === paymentSnapshot) return;
+    lastPaymentSnapshotRef.current = paymentSnapshot;
     if (!orderId && !showPayment) return; // nothing to reset yet
     if (waiting || confirmingPayment || orderPlaced) return; // don't disrupt an in-flight payment
+    orderIdRef.current = null;
+    orderNumberRef.current = null;
     setOrderId(null);
     setOrderNumber(null);
+    setPendingOrder(null);
+    setPaymentFailed(false);
     setIntents({
       gpay: { status: "idle" }, phonepe: { status: "idle" },
       paytm: { status: "idle" }, bhim: { status: "idle" }, any: { status: "idle" },
@@ -1541,12 +1571,14 @@ export default function CheckoutV2Page() {
     gatewayRef.current = {};
     autoAdvancedRef.current = false;
     desktopQrPollStartedRef.current = false;
-    setCheckoutToken(newCheckoutToken());
+    const nextToken = newCheckoutToken();
+    checkoutTokenRef.current = nextToken;
+    setCheckoutToken(nextToken);
     if (showPayment) {
       queueMicrotask(() => { void createOrderAndIntents(); });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveMode]);
+  }, [paymentSnapshot]);
 
 
   // ─── Full gateway modal paths (Razorpay / Cashfree / PayU) ──────────────
@@ -1863,7 +1895,7 @@ export default function CheckoutV2Page() {
   // ─── "Pay with card/wallet" (opens active gateway modal) ────────────────
   const [openingGateway, setOpeningGateway] = useState(false);
   const startGatewayPayment = async () => {
-    if (openingGateway) return;
+    if (openingGateway || creatingOrder || couponLoading || paymentAmountSyncing) return;
     setOpeningGateway(true);
     try {
       const order = await createOrderIfNeeded(activeGateway || "razorpay");
@@ -1896,7 +1928,7 @@ export default function CheckoutV2Page() {
   // ─── COD (goes through checkout-v2-cod edge fn to enforce partial rules) ─
   const [placingCod, setPlacingCod] = useState(false);
   const placeCod = async () => {
-    if (placingCod) return;
+    if (placingCod || creatingOrder || couponLoading || paymentAmountSyncing) return;
     const err = validateAddress();
     if (err) { toast.error(err); return; }
     setPlacingCod(true);
@@ -2055,6 +2087,7 @@ export default function CheckoutV2Page() {
       <Suspense fallback={<div className="min-h-[70vh]" />}>
         <CheckoutPhoneStep
           storeId={store?.id}
+            storeSlug={store?.slug}
           storeName={store?.name}
           storeLogo={store?.logo_url}
           cartItems={checkoutItems as any}
@@ -2560,7 +2593,7 @@ export default function CheckoutV2Page() {
                   <span>You'll pay only <strong>{formatPrice(partialAdvanceTotal, currency)}</strong> now to confirm this order. Remaining <strong>{formatPrice(partialBalanceDue, currency)}</strong> is paid in cash when delivered.</span>
                 </div>
               )}
-              {(creatingOrder || intents.any.status === "loading") && (
+              {(creatingOrder || couponLoading || paymentAmountSyncing || intents.any.status === "loading") && (
                 <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin" /> Updating amount…
                 </div>
@@ -2580,7 +2613,7 @@ export default function CheckoutV2Page() {
                 <div className="font-semibold mb-1">UPI apps unavailable</div>
                 <div className="mb-2 opacity-80">{firstErr}</div>
                 {hasOnline && (
-                  <Button size="sm" variant="outline" className="w-full" onClick={startGatewayPayment} disabled={openingGateway}>
+                  <Button size="sm" variant="outline" className="w-full" onClick={startGatewayPayment} disabled={openingGateway || creatingOrder || couponLoading || paymentAmountSyncing}>
                     {openingGateway ? <Loader2 className="h-4 w-4 animate-spin" /> : `Pay with ${activeGateway === "razorpay" ? "Card/Wallet" : activeGateway === "cashfree" ? "Cashfree" : "PayU"}`}
                   </Button>
                 )}
@@ -2611,7 +2644,7 @@ export default function CheckoutV2Page() {
               <div className="grid grid-cols-4 gap-2">
                 {UPI_APPS.slice(0, 4).map((app, i) => {
                   const s = intents[app.key];
-                  const disabled = s.status !== "ready";
+                  const disabled = s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing;
                   const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
                   return (
                     <button
@@ -2630,7 +2663,7 @@ export default function CheckoutV2Page() {
               </div>
               <button
                 onClick={() => tapUpiApp("any")}
-                disabled={intents.any.status !== "ready"}
+                disabled={intents.any.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing}
                 className="mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] disabled:opacity-40"
               >
                 <span className="text-[13px] font-semibold">All UPI Apps</span>
@@ -2685,7 +2718,7 @@ export default function CheckoutV2Page() {
                     <img src="/icons/paytm.svg" alt="Paytm" className="h-5 w-5 object-contain" />
                     <img src="/icons/upi.png" alt="UPI" className="h-5 w-auto object-contain" />
                   </div>
-                  {intents.any.status === "ready" && !waiting && (
+                  {intents.any.status === "ready" && !waiting && !creatingOrder && !couponLoading && !paymentAmountSyncing && (
                     <button
                       onClick={() => {
                         setWaitingApp("UPI QR");
@@ -2713,7 +2746,7 @@ export default function CheckoutV2Page() {
           {hasOnline && (
             <button
               onClick={startGatewayPayment}
-              disabled={openingGateway || confirmingPayment}
+              disabled={openingGateway || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
               className="w-full bg-white rounded-xl border border-[#ECECEC] p-3.5 flex items-center justify-between active:scale-[0.99] transition-all disabled:opacity-40"
             >
               <div className="flex items-center gap-3">
@@ -2735,7 +2768,7 @@ export default function CheckoutV2Page() {
           {hasCod && effectiveMode === "full" && (
             <button
               onClick={placeCod}
-              disabled={placingCod || confirmingPayment}
+              disabled={placingCod || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
               className="relative w-full bg-white rounded-xl border border-[#ECECEC] p-3.5 flex items-center justify-between active:scale-[0.99] transition-all disabled:opacity-40"
             >
               
@@ -2785,14 +2818,14 @@ export default function CheckoutV2Page() {
       )}
 
       {/* Sticky bottom Continue (contact step only) */}
-      {!showPayment && !(pincode && streetAddress && city && state && fullName) && (
+      {!showPayment && (
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3">
           <Button
             className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
             onClick={createOrderAndIntents}
-            disabled={creatingOrder || !paymentConfigLoaded}
+            disabled={creatingOrder || couponLoading || paymentAmountSyncing || !paymentConfigLoaded}
           >
-            {creatingOrder ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
+            {creatingOrder ? <Loader2 className="h-5 w-5 animate-spin" /> : addressFilled ? "Continue to Pay" : "Continue"}
           </Button>
           <div className="text-[10px] text-center text-muted-foreground mt-1.5">
             By proceeding, I agree to the store's Privacy Policy and T&amp;C
