@@ -242,7 +242,15 @@ export default function CheckoutV2Page() {
   useEffect(() => { ensureCustomer?.(); }, [ensureCustomer]);
   useEffect(() => {
     if (customer?.email && !email) setEmail(customer.email);
+    // Auto-fill phone from logged-in session so returning shoppers skip
+    // the phone gate entirely.
+    if (customer?.phone && !toCanonicalIndianPhone(phone)) {
+      const canon = toCanonicalIndianPhone(customer.phone) || String(customer.phone).replace(/\D/g, "").slice(-10);
+      if (canon) setPhone(canon);
+    }
+    if (customer?.name && !fullName) setFullName(customer.name);
   }, [customer]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // ─── Meta Advanced Matching (setCapiUser debounced on field change) ─────
   useEffect(() => {
@@ -623,6 +631,24 @@ export default function CheckoutV2Page() {
     setReturningUsed(true);
     toast.success("Welcome back! Address loaded ✨");
   };
+
+  // Auto-apply returning-order address the moment it's found so a shopper
+  // whose phone matches a prior order doesn't have to re-type anything.
+  // Only fires when the current address is blank, so we never overwrite
+  // something the shopper just typed.
+  useEffect(() => {
+    if (!returningOrder || returningUsed || returningDismissed) return;
+    if (fullName || streetAddress || pincode) return;
+    setFullName(returningOrder.customer_name || "");
+    setStreetAddress(returningOrder.street_address || "");
+    setCity(returningOrder.city || "");
+    setState(returningOrder.state || "");
+    setPincode(returningOrder.pincode || "");
+    setReturningUsed(true);
+    setAddressSheetDismissed(true);
+    setShowAddressFormSheet(false);
+  }, [returningOrder, returningUsed, returningDismissed, fullName, streetAddress, pincode]);
+
 
   // ─── Totals ─────────────────────────────────────────────────────────────
   const subtotal = useMemo(
