@@ -2754,10 +2754,19 @@ export default function CheckoutV2Page() {
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3">
           <Button
             className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
-            onClick={createOrderAndIntents}
+            onClick={() => {
+              // If the full address isn't filled yet, open the address form
+              // popup instead of trying to create an order. Payment methods
+              // can never appear until the shopper completes the form.
+              if (!(pincode && streetAddress && city && state && fullName)) {
+                openAddressFormSheet();
+                return;
+              }
+              void createOrderAndIntents();
+            }}
             disabled={creatingOrder || !paymentConfigLoaded}
           >
-            {creatingOrder ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
+            {creatingOrder ? <Loader2 className="h-5 w-5 animate-spin" /> : (pincode && streetAddress && city && state && fullName ? "Continue" : "Add delivery address")}
           </Button>
           <div className="text-[10px] text-center text-muted-foreground mt-1.5">
             By proceeding, I agree to the store's Privacy Policy and T&amp;C
