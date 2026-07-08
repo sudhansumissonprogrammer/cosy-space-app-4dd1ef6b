@@ -485,6 +485,7 @@ export default function CheckoutV2Page() {
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [showAddressFormSheet, setShowAddressFormSheet] = useState(false);
+  const [addressSheetDismissed, setAddressSheetDismissed] = useState(false);
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", apartment: "", city: "", state: "", pincode: "" });
   const [addrLabel, setAddrLabel] = useState<"Home" | "Work">("Home");
   const [apartment, setApartment] = useState("");
@@ -502,15 +503,19 @@ export default function CheckoutV2Page() {
   const openAddressFormSheet = () => {
     setShowAddressDialog(false);
     setShowAddAddress(false);
+    setAddressSheetDismissed(false);
     setShowAddressFormSheet(true);
   };
 
   const closeAddressFormSheet = () => {
-    if (showAddressFormSheet) setShowAddressFormSheet(false);
-    else navigate(-1);
+    // Stay on the checkout page — never navigate(-1) which pops back to the
+    // PDP and breaks the flow. Just dismiss the sheet; user can reopen via
+    // the "Add delivery address" CTA rendered when the address is missing.
+    setShowAddressFormSheet(false);
+    setAddressSheetDismissed(true);
   };
 
-  const addressSheetOpen = showAddressFormSheet || !(pincode && streetAddress && city && state && fullName);
+  const addressSheetOpen = showAddressFormSheet || (!(pincode && streetAddress && city && state && fullName) && !addressSheetDismissed);
 
   // Lock body scroll while any address overlay is open so only the form scrolls.
   useEffect(() => {
@@ -2249,7 +2254,22 @@ export default function CheckoutV2Page() {
           )}
 
           {/* Contact + Address form — bottom-sheet popup with scrim + close chip */}
-          {(!addressFilled || showAddressFormSheet) && typeof document !== "undefined" && createPortal(
+          {!addressFilled && addressSheetDismissed && !showAddressFormSheet && (
+            <button
+              onClick={openAddressFormSheet}
+              className="w-full bg-white rounded-xl border border-dashed border-[#111] p-4 flex items-center gap-3 text-left"
+            >
+              <MapPin className="h-5 w-5 text-foreground" />
+              <div className="flex-1">
+                <div className="text-[14px] font-bold">Add delivery address</div>
+                <div className="text-[12px] text-muted-foreground">Required to place your order</div>
+              </div>
+              <span className="text-[13px] font-semibold border border-[#111] rounded-md px-3 py-1.5">Add</span>
+            </button>
+          )}
+
+          {/* Contact + Address form — bottom-sheet popup with scrim + close chip */}
+          {(showAddressFormSheet || (!addressFilled && !addressSheetDismissed)) && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
               {/* Scrim */}
               <div className="absolute inset-0 bg-black/50" onClick={closeAddressFormSheet} aria-hidden />
