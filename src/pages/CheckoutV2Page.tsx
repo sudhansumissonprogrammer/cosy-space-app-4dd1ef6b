@@ -2028,17 +2028,6 @@ export default function CheckoutV2Page() {
     );
   }
 
-  // ─── Empty cart guard (skip in buy-now single mode) ─────────────────────
-  // If the shopper removes the last item from the order-summary sheet, kick
-  // them back to the storefront — an empty cart cannot place an order.
-  useEffect(() => {
-    if (isSingleMode) return;
-    if (orderId || orderPlaced || waiting || confirmingPayment) return;
-    if (checkoutItems.length !== 0) return;
-    if (summaryOpen) setSummaryOpen(false);
-    toast("Your cart is empty — add items to continue");
-    navigate(storefrontPath(store.slug), { replace: true });
-  }, [checkoutItems.length, isSingleMode, orderId, orderPlaced, waiting, confirmingPayment, summaryOpen, navigate, store?.slug]);
 
   if (checkoutItems.length === 0 && !orderId && !isSingleMode) {
     return (
