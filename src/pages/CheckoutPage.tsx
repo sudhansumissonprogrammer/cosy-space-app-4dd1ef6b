@@ -2669,8 +2669,23 @@ function CheckoutPageInner() {
               {paymentMethod === "razorpay" && <Check className="h-3 w-3 text-primary-foreground" />}
             </div>
             <CreditCard className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium text-foreground">{tCritical("Pay Online", "ऑनलाइन भुगतान")}</p>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-medium text-foreground">{tCritical("Pay Online", "ऑनलाइन भुगतान")}</p>
+                {(() => {
+                  const cfg: any = paymentConfig;
+                  if (!cfg?.prepaid_discount_enabled) return null;
+                  const v = Number(cfg.prepaid_discount_value || 0);
+                  if (v <= 0 || total <= 0) return null;
+                  const d = cfg.prepaid_discount_type === "percentage" ? Math.round((total * v) / 100) : Math.min(v, total);
+                  if (d <= 0) return null;
+                  return (
+                    <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px] dark:text-emerald-400">
+                      {t(`Save ${formatPrice(d, currency)}`, `${formatPrice(d, currency)} बचाएँ`)}
+                    </Badge>
+                  );
+                })()}
+              </div>
               <p className="text-xs text-muted-foreground">UPI, Cards, Net Banking, Wallets</p>
             </div>
           </button>
