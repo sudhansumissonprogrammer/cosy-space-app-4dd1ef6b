@@ -2050,7 +2050,19 @@ export default function CheckoutV2Page() {
   const savedAmount = (appliedCoupon && couponDiscount > 0 ? couponDiscount : 0);
 
   return (
-    <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-32">
+    <div
+      className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-32 checkout-neutral-font"
+      style={{
+        // Neutralize the storefront theme font (Alegreya SC etc.) on the
+        // checkout — payments must feel like a trusted, standard checkout,
+        // not the store's decorative brand voice.
+        fontFamily:
+          "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+        fontVariant: "normal",
+        textTransform: "none",
+        letterSpacing: "normal",
+      }}
+    >
 
       {/* Pincode step — small popup after phone. Auto-fetches city/state via
           the pincode effect. Once submitted, we land on the checkout page
