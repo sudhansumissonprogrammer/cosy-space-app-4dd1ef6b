@@ -487,6 +487,9 @@ export default function CheckoutV2Page() {
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [showAddressFormSheet, setShowAddressFormSheet] = useState(false);
+  // Keyboard-safe bottom sheets — lifts the address / pincode popups above
+  // the on-screen keyboard on Android/iOS.
+  const keyboardOffset = useKeyboardOffset();
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", apartment: "", city: "", state: "", pincode: "" });
   const [addrLabel, setAddrLabel] = useState<"Home" | "Work">("Home");
   const [apartment, setApartment] = useState("");
