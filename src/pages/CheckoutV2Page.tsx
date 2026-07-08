@@ -2309,6 +2309,12 @@ export default function CheckoutV2Page() {
                     <span>{formatPrice(taxAmount, currency)}</span>
                   </div>
                 )}
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between text-[12px] font-semibold text-emerald-700 pt-1 border-t border-[#ECECEC]">
+                    <span>Coupon{appliedCoupon?.code ? ` (${appliedCoupon.code})` : ""}</span>
+                    <span>−{formatPrice(couponDiscount, currency)}</span>
+                  </div>
+                )}
                 {!isPartialOrder && prepaidDiscount > 0 && (
                   <div className="flex justify-between text-[12px] font-semibold text-emerald-700 pt-1 border-t border-[#ECECEC]">
                     <span>Prepaid discount</span>
