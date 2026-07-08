@@ -2341,9 +2341,10 @@ export default function CheckoutV2Page() {
                 className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden"
                 style={{ maxHeight: `calc(100dvh - ${keyboardOffset + 72}px)` }}
               >
-                <div className="text-[16px] font-bold">Add Delivery Address</div>
-                <span className="h-9 w-9" aria-hidden />
-              </div>
+                <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
+                  <div className="text-[16px] font-bold">Add Delivery Address</div>
+                  <span className="h-9 w-9" aria-hidden />
+                </div>
 
 
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-4 pb-5 space-y-3">
