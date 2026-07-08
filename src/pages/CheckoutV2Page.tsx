@@ -295,8 +295,9 @@ export default function CheckoutV2Page() {
         try { result = await tryPrimary(); } catch { /* try fallback */ }
         if (!result) { try { result = await tryFallback(); } catch { /* silent */ } }
         if (cancelled || !result) return;
-        if (!city) setCity(result.city || "");
-        if (!state) setState(result.state || "");
+        // Always overwrite from a successful lookup so a stale value never blocks autofill
+        if (result.city) setCity(result.city);
+        if (result.state) setState(result.state);
       } finally { if (!cancelled) setPincodeLoading(false); }
     })();
     return () => { cancelled = true; };
