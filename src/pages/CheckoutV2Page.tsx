@@ -1068,7 +1068,6 @@ export default function CheckoutV2Page() {
     if (isPartialOrder) return total;
     return prepaidTotal;
   };
-  const lastPaidMethodRef = useRef<string>("");
 
   const onOrderSuccess = (ordId: string) => {
     if (finalizedOrderIdsRef.current.has(ordId)) return;
