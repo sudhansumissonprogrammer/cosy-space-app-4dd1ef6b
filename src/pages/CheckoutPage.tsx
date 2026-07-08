@@ -2678,7 +2678,7 @@ function CheckoutPageInner() {
                   const cfg: any = paymentConfig;
                   if (!cfg?.prepaid_discount_enabled) return null;
                   const v = Number(cfg.prepaid_discount_value || 0);
-                  if (v <= 0 || total <= 0) return null;
+                  if (v <= 0 || total <= 0 || total < 100) return null;
                   const d = cfg.prepaid_discount_type === "percentage" ? Math.round((total * v) / 100) : Math.min(v, total);
                   if (d <= 0) return null;
                   return (
