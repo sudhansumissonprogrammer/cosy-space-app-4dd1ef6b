@@ -351,7 +351,7 @@ export default function CheckoutPhoneStep({
             Powered by
           </div>
           <div className="text-[14px] font-bold tracking-tight">
-            {storeName || "Storivo"}
+            Shopbanao
           </div>
           <div className="text-[12px] text-muted-foreground mt-3">
             Powering secure checkout for 10,000+ brands
