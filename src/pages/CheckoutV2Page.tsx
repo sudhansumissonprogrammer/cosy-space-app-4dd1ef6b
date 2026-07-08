@@ -849,6 +849,15 @@ export default function CheckoutV2Page() {
     } catch { /* noop */ }
   };
 
+  // Fire InitiateCheckout once when checkout renders with a non-empty cart
+  // (Meta expects IC:Purchase ~3-5:1; firing only on pay-tap under-reports the funnel).
+  useEffect(() => {
+    if (!store?.id) return;
+    if (checkoutItems.length === 0) return;
+    fireInitiateCheckoutOnce();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id, checkoutItems.length]);
+
   const apiFiredRef = useRef<Set<string>>(new Set());
   const lastPaidMethodRef = useRef<string>("");
   const fireAddPaymentInfoOnce = (methodLabel: string, value: number) => {
