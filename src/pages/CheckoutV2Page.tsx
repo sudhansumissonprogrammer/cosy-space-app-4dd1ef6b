@@ -294,10 +294,18 @@ export default function CheckoutV2Page() {
         if (!p) throw new Error("no place");
         return { city: p["place name"] as string, state: p["state"] as string };
       };
+      const tryServerProxy = async () => {
+        const r = await fetch(`${SUPABASE_FUNCTIONS_URL}/pincode-lookup?pincode=${pincode}`);
+        if (!r.ok) throw new Error("proxy failed");
+        const j = await r.json();
+        if (!j?.ok) throw new Error("proxy no result");
+        return { city: j.city as string, state: j.state as string };
+      };
       try {
         let result: { city: string; state: string } | null = null;
         try { result = await tryPrimary(); } catch { /* try fallback */ }
-        if (!result) { try { result = await tryFallback(); } catch { /* silent */ } }
+        if (!result) { try { result = await tryFallback(); } catch { /* try proxy */ } }
+        if (!result) { try { result = await tryServerProxy(); } catch { /* silent */ } }
         if (cancelled || !result) return;
         // Always overwrite from a successful lookup so a stale value never blocks autofill
         if (result.city) setCity(result.city);
@@ -306,6 +314,7 @@ export default function CheckoutV2Page() {
     })();
     return () => { cancelled = true; };
   }, [pincode]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // ─── Store config queries ───────────────────────────────────────────────
   const { data: shippingConfig } = useQuery({
@@ -2555,6 +2564,19 @@ export default function CheckoutV2Page() {
                 )}
 
                 <div>
+                  <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
+                  <Input
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Your name"
+                    className={`h-11 rounded-lg ${addressAttempted && !fullName.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                  />
+                  {addressAttempted && !fullName.trim() && (
+                    <p className="mt-1 text-[12px] text-red-600">Full name required</p>
+                  )}
+                </div>
+
+                <div>
                   <Label className="text-[12px] text-muted-foreground">Pincode *</Label>
                   <div className="relative">
                     <Input
@@ -2611,23 +2633,6 @@ export default function CheckoutV2Page() {
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-[#ECECEC]">
-                  <div className="text-[14px] font-bold mb-2">Customer Information</div>
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
-                      <Input
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        placeholder="Your name"
-                        className={`h-11 rounded-lg ${addressAttempted && !fullName.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
-                      />
-                      {addressAttempted && !fullName.trim() && (
-                        <p className="mt-1 text-[12px] text-red-600">Full name required</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
 
 
 
