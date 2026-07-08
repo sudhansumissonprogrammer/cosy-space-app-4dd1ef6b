@@ -2197,8 +2197,18 @@ export default function CheckoutV2Page() {
                     <div className="text-[13px] text-foreground/80">
                       {city}, {state}, {pincode}
                     </div>
-                    <div className="text-[12px] text-muted-foreground mt-1">
-                      +91 {phone}{email ? <> &nbsp;|&nbsp; <span className="truncate">{email}</span></> : null}
+                    <div className="text-[12px] text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+                      <span>+91 {phone}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPhone("");
+                          try { localStorage.removeItem("checkout_phone"); } catch { /* noop */ }
+                        }}
+                        className="text-[12px] font-semibold text-primary underline underline-offset-2"
+                      >
+                        Change phone number
+                      </button>
                     </div>
                   </div>
                   <button
