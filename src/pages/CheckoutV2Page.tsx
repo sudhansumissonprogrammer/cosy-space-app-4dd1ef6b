@@ -2274,7 +2274,10 @@ export default function CheckoutV2Page() {
   const savedAmount = (appliedCoupon && couponDiscount > 0 ? couponDiscount : 0);
 
   return (
-    <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-32">
+    <div
+      className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-32"
+      style={{ fontFamily: "'Montserrat Alternates', system-ui, -apple-system, 'Segoe UI', sans-serif" }}
+    >
 
       {/* Confirming payment overlay */}
       {confirmingPayment && (
