@@ -1,4 +1,6 @@
+import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
+import { metaFetch } from '../_shared/wa-platform.ts'
 
 const GRAPH = 'https://graph.facebook.com/v21.0'
 
@@ -7,9 +9,31 @@ Deno.serve(async (req) => {
 
   try {
     const { phone_number_id } = await req.json().catch(() => ({}))
-    const pnid = phone_number_id || '1248148541706026'
+    if (!phone_number_id) {
+      return new Response(JSON.stringify({ ok: false, error: 'phone_number_id required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    const authHeader = req.headers.get('Authorization') || ''
+    if (!authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ ok: false, error: 'unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    const pnid = phone_number_id
     const token = Deno.env.get('WA_ACCESS_TOKEN')
     const pin = Deno.env.get('WA_PHONE_PIN')
+    const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+
+    const tokenOnly = authHeader.replace(/^Bearer\s+/i, '')
+    const { data: userData } = await admin.auth.getUser(tokenOnly)
+    const uid = userData?.user?.id
+    const { data: isAdmin } = uid ? await admin.rpc('has_role', { _user_id: uid, _role: 'admin' }) : { data: false } as any
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ ok: false, error: 'forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
 
     if (!token || !pin) {
       return new Response(JSON.stringify({ ok: false, error: 'Missing WA_ACCESS_TOKEN or WA_PHONE_PIN' }), {
@@ -18,18 +42,18 @@ Deno.serve(async (req) => {
     }
 
     // 1. Register the number on Cloud API
-    const regRes = await fetch(`${GRAPH}/${pnid}/register`, {
+    const regRes = await metaFetch(admin, `${GRAPH}/${pnid}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ messaging_product: 'whatsapp', pin }),
-    })
-    const regJson = await regRes.json()
+    }, { source: 'wa-register-number:register' })
+    const regJson = regRes.body
 
     // 2. Fetch status
-    const statusRes = await fetch(`${GRAPH}/${pnid}?fields=display_phone_number,verified_name,quality_rating,code_verification_status,name_status,status`, {
+    const statusRes = await metaFetch(admin, `${GRAPH}/${pnid}?fields=display_phone_number,verified_name,quality_rating,code_verification_status,name_status,status`, {
       headers: { Authorization: `Bearer ${token}` },
-    })
-    const statusJson = await statusRes.json()
+    }, { source: 'wa-register-number:status' })
+    const statusJson = statusRes.body
 
     return new Response(JSON.stringify({
       ok: regRes.ok,

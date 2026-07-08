@@ -1,6 +1,7 @@
 // Fetches phone-number quality/limits + template count directly from Meta Graph API.
 // Admin-only. Falls back gracefully if credentials are missing.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { metaFetch } from "../_shared/wa-platform.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -47,21 +48,22 @@ Deno.serve(async (req) => {
     const V = "v21.0";
 
     // Phone number details (quality, name status, throughput, verified name, limits)
-    const phoneRes = await fetch(
+    const phoneRes = await metaFetch(admin,
       `https://graph.facebook.com/${V}/${phoneId}?fields=verified_name,display_phone_number,quality_rating,name_status,platform_type,throughput,messaging_limit_tier,code_verification_status`,
       { headers: H },
+      { source: "wa-meta-insights:phone" },
     );
-    const phone = await phoneRes.json();
+    const phone = phoneRes.body;
 
     let templates: any = null;
     let waba: any = null;
     if (wabaId) {
       const [tRes, wRes] = await Promise.all([
-        fetch(`https://graph.facebook.com/${V}/${wabaId}/message_templates?fields=name,status,category,language&limit=200`, { headers: H }),
-        fetch(`https://graph.facebook.com/${V}/${wabaId}?fields=name,timezone_id,message_template_namespace,on_behalf_of_business_info`, { headers: H }),
+        metaFetch(admin, `https://graph.facebook.com/${V}/${wabaId}/message_templates?fields=name,status,category,language&limit=200`, { headers: H }, { source: "wa-meta-insights:templates" }),
+        metaFetch(admin, `https://graph.facebook.com/${V}/${wabaId}?fields=name,timezone_id,message_template_namespace,on_behalf_of_business_info`, { headers: H }, { source: "wa-meta-insights:waba" }),
       ]);
-      templates = await tRes.json();
-      waba = await wRes.json();
+      templates = tRes.body;
+      waba = wRes.body;
     }
 
     // Persist quality rating for platform_config so UI shows fresh number

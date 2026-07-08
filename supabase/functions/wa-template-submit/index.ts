@@ -3,6 +3,7 @@
 // to platform_wa_templates, and audits every action.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { metaFetch } from "../_shared/wa-platform.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -79,6 +80,7 @@ function draftToComponents(d: Draft, headerHandle?: string | null): any[] {
 // Meta Resumable Upload API — turns a public URL into a `h` handle usable as
 // header_handle for IMAGE/VIDEO/DOCUMENT template samples.
 async function uploadHeaderMedia(
+  admin: any,
   mediaUrl: string,
   headerType: "IMAGE" | "VIDEO" | "DOCUMENT",
   appId: string,
@@ -96,12 +98,12 @@ async function uploadHeaderMedia(
     (headerType === "IMAGE" ? "sample.jpg" : headerType === "VIDEO" ? "sample.mp4" : "sample.pdf");
 
   const startUrl = `${GRAPH}/${appId}/uploads?file_name=${encodeURIComponent(fileName)}&file_length=${fileLength}&file_type=${encodeURIComponent(contentType)}&access_token=${encodeURIComponent(token)}`;
-  const startResp = await fetch(startUrl, { method: "POST" });
-  const startJson = await startResp.json();
+  const startResp = await metaFetch(admin, startUrl, { method: "POST" }, { source: "wa-template-submit:upload-start" });
+  const startJson = startResp.body;
   if (!startResp.ok || !startJson?.id) throw new Error(`Upload session failed: ${sanitizeError(startJson)}`);
   const sessionId: string = startJson.id;
 
-  const putResp = await fetch(`${GRAPH}/${sessionId}`, {
+  const putResp = await metaFetch(admin, `${GRAPH}/${sessionId}`, {
     method: "POST",
     headers: {
       Authorization: `OAuth ${token}`,
@@ -109,8 +111,8 @@ async function uploadHeaderMedia(
       "Content-Type": contentType,
     },
     body: buf,
-  });
-  const putJson = await putResp.json();
+  }, { source: "wa-template-submit:upload-put" });
+  const putJson = putResp.body;
   if (!putResp.ok || !putJson?.h) throw new Error(`Upload failed: ${sanitizeError(putJson)}`);
   return putJson.h as string;
 }
@@ -178,6 +180,10 @@ function sanitizeError(s: any): string {
   ].filter(Boolean);
   const msg = parts.length ? parts.join(" · ") : JSON.stringify(s);
   return String(msg).slice(0, 800);
+}
+
+function metaStatus(resp: { status: number }) {
+  return resp.status >= 400 ? resp.status : 502;
 }
 
 Deno.serve(async (req) => {
@@ -248,11 +254,11 @@ Deno.serve(async (req) => {
       let headerHandle: string | null = null;
       if ((draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT") && draft.header_media_url) {
         if (!APP_ID) return j(400, { error: "Meta App ID not configured — set it in Admin → WhatsApp → Meta credentials before submitting media-header templates." });
-        try { headerHandle = await uploadHeaderMedia(draft.header_media_url, draft.header_type, APP_ID, TOKEN); }
+        try { headerHandle = await uploadHeaderMedia(admin, draft.header_media_url, draft.header_type, APP_ID, TOKEN); }
         catch (e: any) { await audit("create", "error", { error: sanitizeError(e.message) }); return j(400, { error: e.message }); }
       }
       const components = draftToComponents(draft, headerHandle);
-      const resp = await fetch(`${GRAPH}/${WABA_ID}/message_templates`, {
+      const resp = await metaFetch(admin, `${GRAPH}/${WABA_ID}/message_templates`, {
         method: "POST",
         headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -261,11 +267,11 @@ Deno.serve(async (req) => {
           category: draft.category,
           components,
         }),
-      });
-      const out = await resp.json();
+      }, { source: "wa-template-submit:create" });
+      const out = resp.body;
       if (!resp.ok) {
         await audit("create", "error", { error: sanitizeError(out) });
-        return j(resp.status, { error: sanitizeError(out) });
+        return j(metaStatus(resp), { error: sanitizeError(out) });
       }
       const status = (out?.status as string) || "PENDING";
       await admin.from("platform_wa_templates").update({
@@ -300,19 +306,19 @@ Deno.serve(async (req) => {
         let hh: string | null = null;
         if ((draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT") && draft.header_media_url) {
           if (!APP_ID) return j(400, { error: "Meta App ID not configured — set it in Admin → WhatsApp → Meta credentials before submitting media-header templates." });
-          try { hh = await uploadHeaderMedia(draft.header_media_url, draft.header_type, APP_ID, TOKEN); }
+          try { hh = await uploadHeaderMedia(admin, draft.header_media_url, draft.header_type, APP_ID, TOKEN); }
           catch (e: any) { await audit("create", "error", { error: sanitizeError(e.message) }); return j(400, { error: e.message }); }
         }
         const comps = draftToComponents(draft, hh);
-        const cResp = await fetch(`${GRAPH}/${WABA_ID}/message_templates`, {
+        const cResp = await metaFetch(admin, `${GRAPH}/${WABA_ID}/message_templates`, {
           method: "POST",
           headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
           body: JSON.stringify({ name: draft.name, language: draft.language, category: draft.category, components: comps }),
-        });
-        const cOut = await cResp.json();
+        }, { source: "wa-template-submit:create-fallback" });
+        const cOut = cResp.body;
         if (!cResp.ok) {
           await audit("create", "error", { error: sanitizeError(cOut) });
-          return j(cResp.status, { error: sanitizeError(cOut) });
+          return j(metaStatus(cResp), { error: sanitizeError(cOut) });
         }
         const cStatus = (cOut?.status as string) || "PENDING";
         await admin.from("platform_wa_templates").update({
@@ -333,19 +339,19 @@ Deno.serve(async (req) => {
       let headerHandle: string | null = null;
       if ((draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT") && draft.header_media_url) {
         if (!APP_ID) return j(400, { error: "Meta App ID not configured — set it in Admin → WhatsApp → Meta credentials before submitting media-header templates." });
-        try { headerHandle = await uploadHeaderMedia(draft.header_media_url, draft.header_type, APP_ID, TOKEN); }
+        try { headerHandle = await uploadHeaderMedia(admin, draft.header_media_url, draft.header_type, APP_ID, TOKEN); }
         catch (e: any) { await audit("edit", "error", { error: sanitizeError(e.message) }); return j(400, { error: e.message }); }
       }
       const components = draftToComponents(draft, headerHandle);
-      const resp = await fetch(`${GRAPH}/${id}`, {
+      const resp = await metaFetch(admin, `${GRAPH}/${id}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
         body: JSON.stringify({ components, category: draft.category }),
-      });
-      const out = await resp.json();
+      }, { source: "wa-template-submit:edit" });
+      const out = resp.body;
       if (!resp.ok) {
         await audit("edit", "error", { error: sanitizeError(out) });
-        return j(resp.status, { error: sanitizeError(out) });
+        return j(metaStatus(resp), { error: sanitizeError(out) });
       }
       await admin.from("platform_wa_templates").update({
         buttons: draft.buttons || [],
@@ -368,14 +374,14 @@ Deno.serve(async (req) => {
       const id = (row as any)?.meta_template_id;
       if (id) params.set("hsm_id", id);
 
-      const resp = await fetch(`${GRAPH}/${WABA_ID}/message_templates?${params}`, {
+      const resp = await metaFetch(admin, `${GRAPH}/${WABA_ID}/message_templates?${params}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${TOKEN}` },
-      });
-      const out = await resp.json().catch(() => ({}));
+      }, { source: "wa-template-submit:delete" });
+      const out = resp.body || {};
       if (!resp.ok) {
         await audit("delete", "error", { error: sanitizeError(out) });
-        return j(resp.status, { error: sanitizeError(out) });
+        return j(metaStatus(resp), { error: sanitizeError(out) });
       }
       await admin.from("platform_wa_templates").update({
         is_active: false,
@@ -389,11 +395,11 @@ Deno.serve(async (req) => {
     if (action === "refresh") {
       // Fetch by name filter
       const url = `${GRAPH}/${WABA_ID}/message_templates?name=${encodeURIComponent(templateName)}&fields=name,status,id,category,language,quality_score,rejected_reason`;
-      const resp = await fetch(url, { headers: { Authorization: `Bearer ${TOKEN}` } });
-      const out = await resp.json();
+      const resp = await metaFetch(admin, url, { headers: { Authorization: `Bearer ${TOKEN}` } }, { source: "wa-template-submit:refresh" });
+      const out = resp.body;
       if (!resp.ok) {
         await audit("refresh", "error", { error: sanitizeError(out) });
-        return j(resp.status, { error: sanitizeError(out) });
+        return j(metaStatus(resp), { error: sanitizeError(out) });
       }
       const row = (out?.data || []).find((r: any) => r?.name === templateName) || out?.data?.[0];
       if (!row) return j(404, { error: "Template not found on Meta" });
