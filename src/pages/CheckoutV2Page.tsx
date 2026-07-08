@@ -2659,7 +2659,8 @@ export default function CheckoutV2Page() {
               <div className="grid grid-cols-4 gap-2">
                 {UPI_APPS.slice(0, 4).map((app, i) => {
                   const s = intents[app.key];
-                  const disabled = s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing;
+                  const staleAmount = typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100);
+                  const disabled = s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount;
                   const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
                   return (
                     <button
@@ -2671,7 +2672,7 @@ export default function CheckoutV2Page() {
                       
                       <img src={app.icon} alt={app.label} className="h-8 w-8 mt-3 mb-1 object-contain" />
                       <div className="text-[11px] font-semibold">{app.label}</div>
-                      {s.status === "loading" && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
+                      {(s.status === "loading" || staleAmount) && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
                     </button>
                   );
                 })}
