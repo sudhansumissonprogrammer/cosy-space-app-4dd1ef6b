@@ -841,6 +841,96 @@ export default function StorePayments() {
         </Card>
       )}
 
+      {/* Section 3b: Prepaid Discount — reward customers who pay online in full */}
+      {showPaymentConfig && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <IndianRupee className="h-5 w-5" /> Prepaid Discount
+            </CardTitle>
+            <CardDescription>
+              Give an instant discount when customers pay online in full. Not applied on Cash on Delivery or partial payment.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!onlineEnabled && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                Turn on an online gateway (Razorpay / Cashfree / PayU) above so the prepaid discount can be applied at checkout.
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Enable Prepaid Discount</p>
+                <p className="text-xs text-muted-foreground">Encourages full online payment over COD</p>
+              </div>
+              <Switch checked={prepaidDiscountEnabled} onCheckedChange={setPrepaidDiscountEnabled} />
+            </div>
+
+            {prepaidDiscountEnabled && (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-sm">Discount Type</Label>
+                  <RadioGroup
+                    value={prepaidDiscountType}
+                    onValueChange={(v) => setPrepaidDiscountType(v as "fixed" | "percentage")}
+                    className="flex gap-4"
+                  >
+                    <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2.5 transition-[transform,opacity,colors,box-shadow] ${prepaidDiscountType === "fixed" ? "border-primary bg-primary/5" : "border-input"}`}>
+                      <RadioGroupItem value="fixed" />
+                      <IndianRupee className="h-4 w-4" />
+                      <span className="text-sm font-medium">Fixed ₹</span>
+                    </label>
+                    <label className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-4 py-2.5 transition-[transform,opacity,colors,box-shadow] ${prepaidDiscountType === "percentage" ? "border-primary bg-primary/5" : "border-input"}`}>
+                      <RadioGroupItem value="percentage" />
+                      <Percent className="h-4 w-4" />
+                      <span className="text-sm font-medium">Percentage</span>
+                    </label>
+                  </RadioGroup>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>
+                    {prepaidDiscountType === "percentage" ? "Discount Percentage (%)" : "Discount Amount (₹)"}
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder={prepaidDiscountType === "percentage" ? "e.g. 5" : "e.g. 100"}
+                    value={prepaidDiscountValue}
+                    onChange={(e) => setPrepaidDiscountValue(e.target.value)}
+                    min={1}
+                    max={prepaidDiscountType === "percentage" ? 50 : undefined}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {prepaidDiscountType === "percentage"
+                      ? "Recommended 2–10%. Applied on the order total (after coupon)."
+                      : "Flat rupees off when the customer pays online in full."}
+                  </p>
+                </div>
+
+                {prepaidDiscountValue && Number(prepaidDiscountValue) > 0 && (
+                  <div className="rounded-lg border bg-accent/30 p-3">
+                    <p className="text-xs font-medium text-foreground mb-1">Preview (₹1,000 order):</p>
+                    <p className="text-sm text-foreground">
+                      Pay online →{" "}
+                      <b>
+                        ₹
+                        {prepaidDiscountType === "percentage"
+                          ? Math.max(0, 1000 - Math.round(1000 * Number(prepaidDiscountValue) / 100))
+                          : Math.max(0, 1000 - Math.min(Number(prepaidDiscountValue), 1000))}
+                      </b>{" "}
+                      <span className="text-muted-foreground">(save ₹{prepaidDiscountType === "percentage"
+                        ? Math.round(1000 * Number(prepaidDiscountValue) / 100)
+                        : Math.min(Number(prepaidDiscountValue), 1000)})</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">COD stays at ₹1,000 — no discount.</p>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Section 4: Checkout V2 (Beta) — GoKwik-style one-page UPI checkout */}
       {showPaymentConfig && (
         <Card>
