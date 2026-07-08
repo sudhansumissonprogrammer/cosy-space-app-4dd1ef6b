@@ -320,11 +320,16 @@ Deno.serve(async (req) => {
       if (payCfg?.prepaid_discount_enabled) {
         const v = Number(payCfg.prepaid_discount_value || 0);
         const base = Math.max(0, serverSubtotal - serverDiscount + serverShipping);
-        let d = payCfg.prepaid_discount_type === "percentage"
-          ? (base * v) / 100
-          : v;
-        prepaidDiscount = Math.max(0, Math.min(d, base));
+        // Skip prepaid discount on sub-₹100 carts so a ₹5 item doesn't
+        // collapse to ₹0 when a fixed ₹100 discount is configured.
+        if (base >= 100) {
+          let d = payCfg.prepaid_discount_type === "percentage"
+            ? (base * v) / 100
+            : v;
+          prepaidDiscount = Math.max(0, Math.min(d, base));
+        }
       }
+
     }
 
     const serverTotal = Math.max(
