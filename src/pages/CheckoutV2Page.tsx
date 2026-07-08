@@ -2236,6 +2236,16 @@ export default function CheckoutV2Page() {
                     <span>{formatPrice(taxAmount, currency)}</span>
                   </div>
                 )}
+                {!isPartialOrder && prepaidDiscount > 0 && (
+                  <div className="flex justify-between text-[12px] font-semibold text-emerald-700 pt-1 border-t border-[#ECECEC]">
+                    <span>Prepaid discount</span>
+                    <span>−{formatPrice(prepaidDiscount, currency)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-[13px] font-bold pt-1 border-t border-[#ECECEC]">
+                  <span>Total payable {isPartialOrder ? "now" : ""}</span>
+                  <span>{formatPrice(chargeAmount, currency)}</span>
+                </div>
               </div>
             )}
           </div>
