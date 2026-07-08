@@ -9,6 +9,7 @@
  * Logic (capture_checkout_lead RPC + autoLoginByPhone) is unchanged.
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import {
   ArrowLeft,
   ChevronDown,
