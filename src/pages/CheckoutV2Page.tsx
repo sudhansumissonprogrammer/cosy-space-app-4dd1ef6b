@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote, LocateFixed, Tag, X, Plus, Check, CreditCard, ShoppingCart, ChevronDown, Trash2 } from "lucide-react";
+import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote, Tag, X, Plus, Check, CreditCard, ShoppingCart, ChevronDown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
@@ -278,7 +278,6 @@ export default function CheckoutV2Page() {
 
   // ─── Pincode auto-fill (postalpincode.in with zippopotam.us fallback) ───
   const [pincodeLoading, setPincodeLoading] = useState(false);
-  const [geoLoading, setGeoLoading] = useState(false);
   useEffect(() => {
     if (!/^\d{6}$/.test(pincode)) return;
     let cancelled = false;
@@ -310,81 +309,6 @@ export default function CheckoutV2Page() {
     })();
     return () => { cancelled = true; };
   }, [pincode]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const detectLocation = async () => {
-    if (!navigator?.geolocation) {
-      toast.error("Geolocation not supported on this browser");
-      return;
-    }
-    // Secure-context check (geolocation requires https or localhost)
-    if (typeof window !== "undefined" && !window.isSecureContext) {
-      toast.error("Location needs a secure (https) page");
-      return;
-    }
-    // Preflight the permission state so we can give a real error instead of a silent fail
-    try {
-      const perm: any = await (navigator as any).permissions?.query?.({ name: "geolocation" });
-      if (perm?.state === "denied") {
-        toast.error("Location blocked. Enable it in your browser site settings, then retry.");
-        return;
-      }
-    } catch { /* Permissions API not supported — continue */ }
-
-    setGeoLoading(true);
-    console.log("[UseMyLocation] requesting position…");
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        console.log("[UseMyLocation] got position", pos.coords.latitude, pos.coords.longitude);
-        try {
-          const { data, error } = await supabase.functions.invoke("reverse-geocode", {
-            body: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-          });
-          if (error) {
-            console.error("[UseMyLocation] edge fn error", error);
-            let detail = error.message;
-            try { if ((error as any).context?.text) detail = await (error as any).context.text(); } catch { /* noop */ }
-            throw new Error(detail || "Geocoding failed");
-          }
-          console.log("[UseMyLocation] response", data);
-          const addr = (data as any)?.address ?? {};
-          let filled = 0;
-          if (addr.pincode) { setPincode(String(addr.pincode)); filled++; }
-          if (addr.city) { setCity(String(addr.city)); filled++; }
-          if (addr.state) { setState(String(addr.state)); filled++; }
-          if (addr.street_address) { setStreetAddress(String(addr.street_address)); filled++; }
-          if (filled === 0) toast.error("No address found at your location — enter it manually");
-          else toast.success(`Filled ${filled} field${filled > 1 ? "s" : ""} from your location`);
-        } catch (e: any) {
-          console.error("[UseMyLocation] fetch failed", e);
-          toast.error(e?.message || "Could not detect location");
-        } finally {
-          setGeoLoading(false);
-        }
-      },
-      (err) => {
-        console.error("[UseMyLocation] getCurrentPosition failed", err?.code, err?.message);
-        setGeoLoading(false);
-        // 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
-        if (err?.code === 1) {
-          const inIframe = typeof window !== "undefined" && window.self !== window.top;
-          toast.error(
-            inIframe
-              ? "Location blocked in preview. Open the site in a new tab and allow location."
-              : "Please allow location permission and try again"
-          );
-        } else if (err?.code === 2) {
-          toast.error("Your device could not determine location. Please enter pincode manually.");
-        } else if (err?.code === 3) {
-          toast.error("Location request timed out. Please try again.");
-        } else {
-          toast.error(err?.message || "Could not get your location");
-        }
-      },
-      { timeout: 15000, enableHighAccuracy: true, maximumAge: 60000 }
-    );
-  };
-
-
 
   // ─── Store config queries ───────────────────────────────────────────────
   const { data: shippingConfig } = useQuery({
@@ -2453,10 +2377,6 @@ export default function CheckoutV2Page() {
                   {addressAttempted && !/^\d{6}$/.test(pincode) && (
                     <p className="mt-1 text-[12px] text-red-600">Enter a valid 6-digit pincode</p>
                   )}
-                  <button type="button" onClick={detectLocation} disabled={geoLoading} className="text-[11px] text-primary flex items-center gap-1 underline mt-1">
-                    {geoLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <LocateFixed className="h-3 w-3" />}
-                    Use my location
-                  </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
