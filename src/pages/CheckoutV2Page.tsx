@@ -491,8 +491,12 @@ export default function CheckoutV2Page() {
     style.setAttribute("data-checkout-font", "v2");
     style.textContent = `
       body[data-checkout-v2="1"],
-      body[data-checkout-v2="1"] *:not(i):not(svg):not([class*="lucide"]) {
+      body[data-checkout-v2="1"] *:not(i):not(svg):not([class*="lucide"]):not([data-checkout-marquee]):not([data-checkout-marquee] *) {
         font-family: 'Montserrat Alternates', system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+      }
+      body[data-checkout-v2="1"] [data-checkout-marquee],
+      body[data-checkout-v2="1"] [data-checkout-marquee] * {
+        font-family: 'Alegreya SC', Georgia, serif !important;
       }
     `;
     document.head.appendChild(style);
@@ -2312,24 +2316,27 @@ export default function CheckoutV2Page() {
       )}
 
       {/* Header: back • logo • Secured payment */}
-      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-4 py-3 flex items-center gap-3">
-        <button onClick={goBack} aria-label="Back" className="p-1 -ml-1">
+      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-3 flex items-center gap-2">
+        <button onClick={goBack} aria-label="Back" className="p-1 -ml-1 shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </button>
         {store?.logo_url ? (
-          <img src={store.logo_url} alt={store.name} className="h-8 w-auto max-w-[100px] object-contain" />
+          <img src={store.logo_url} alt={store.name} className="h-8 w-auto max-w-[110px] object-contain shrink-0" />
         ) : (
-          <div className="text-sm font-bold truncate max-w-[140px]">{store?.name || "Store"}</div>
+          <div className="text-sm font-bold truncate min-w-0 flex-1">{store?.name || "Store"}</div>
         )}
-        <div className="flex-1" />
-        <div className="text-[13px] text-muted-foreground flex items-center gap-1">
-          100% Secured Payment <Lock className="h-3.5 w-3.5" />
+        <div className="flex-1 min-w-0" />
+        <div className="text-[11.5px] text-muted-foreground flex items-center gap-1 whitespace-nowrap shrink-0">
+          100% Secured Payment <Lock className="h-3 w-3" />
         </div>
       </div>
 
       {/* Announcement marquee — same component + dashboard-controlled text/gradient as storefront */}
       {marqueeEnabled && (
-        <div className="sticky top-[57px] z-10">
+        <div
+          data-checkout-marquee
+          className="sticky top-[57px] z-10"
+        >
           <StorefrontMarquee text={themeConfig?.marquee_text} />
         </div>
       )}
