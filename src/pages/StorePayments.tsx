@@ -86,11 +86,9 @@ export default function StorePayments() {
     enabled: !!storeId && (isAdminView || !!user),
   });
 
-  // Settings pages must always reflect the live DB row — never a stale cache.
-  // useStoreData has a 10-min staleTime for fast dashboard navigation, but on
-  // this page any drift would show the wrong toggle state (e.g. Fast Checkout
-  // enabled on the storefront but the dashboard toggle showing OFF). Force a
-  // background refetch on mount so the form syncs to DB truth every visit.
+  // Payment settings must always reflect the live backend row — never a stale
+  // dashboard/admin cache. Clear sibling cache keys on entry so other dashboard
+  // components also re-sync after this page opens.
   useEffect(() => {
     if (!storeId) return;
     // Invalidate BOTH keys: ["store", id] is what useStoreData reads, but in
