@@ -865,6 +865,7 @@ export default function CheckoutV2Page() {
   };
 
   const apiFiredRef = useRef<Set<string>>(new Set());
+  const lastPaidMethodRef = useRef<string>("");
   const fireAddPaymentInfoOnce = (methodLabel: string, value: number) => {
     // Remember the method the user actually paid with so the Purchase pixel/CAPI
     // in onOrderSuccess can pick the right total (COD/partial → full order value,
