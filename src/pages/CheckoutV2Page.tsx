@@ -940,10 +940,18 @@ export default function CheckoutV2Page() {
     } catch { /* noop */ }
   };
 
-  const placeOrderRow = async (paymentMethodHint: string): Promise<PendingOrder> => {
+  const placeOrderRow = async (
+    paymentMethodHint: string,
+    paymentTypeOverride?: "full" | "partial",
+  ): Promise<PendingOrder> => {
     const orderNotes = appliedCoupon
       ? `Coupon: ${appliedCoupon.code} (-${formatPrice(couponDiscount, currency)})`
       : undefined;
+    // COD can never be partial — server rejects that combo. Force full so a
+    // shopper who has "Pay ₹100 advance" pre-selected can still tap COD to
+    // pay everything on delivery.
+    const resolvedPaymentType: "full" | "partial" =
+      paymentTypeOverride ?? (paymentMethodHint === "cod" ? "full" : effectiveMode);
     const { data, error } = await supabase.functions.invoke("place-order", {
       body: {
         store_id: store.id,
@@ -958,7 +966,7 @@ export default function CheckoutV2Page() {
           payment_method: paymentMethodHint,
           notes: orderNotes,
           storefront_customer_id: customer?.id ?? null,
-          payment_type: effectiveMode,
+          payment_type: resolvedPaymentType,
         },
         items: checkoutItems.map((it) => ({
           productId: it.productId,
@@ -1472,10 +1480,17 @@ export default function CheckoutV2Page() {
   // or too little. Server is DB-authoritative, so a fresh mint is the only
   // safe way to change the amount.
   const createOrderIfNeeded = async (paymentMethodHint: string): Promise<PendingOrder> => {
-    if (orderIdRef.current && orderSnapshotRef.current === paymentSnapshot) {
+    // COD forces payment_type=full even when the shopper had "advance"
+    // pre-selected. Fold that into the snapshot so a stale partial-mode
+    // row minted for an earlier PayU attempt is discarded before we hit
+    // checkout-v2-cod (which rejects partial orders).
+    const resolvedType: "full" | "partial" =
+      paymentMethodHint === "cod" ? "full" : effectiveMode;
+    const effectiveSnapshot = `${paymentSnapshot}|pt:${resolvedType}|pm:${paymentMethodHint === "cod" ? "cod" : "online"}`;
+    if (orderIdRef.current && orderSnapshotRef.current === effectiveSnapshot) {
       return { id: orderIdRef.current, number: orderNumberRef.current };
     }
-    if (orderIdRef.current && orderSnapshotRef.current !== paymentSnapshot) {
+    if (orderIdRef.current && orderSnapshotRef.current !== effectiveSnapshot) {
       // Discard stale row before minting a fresh one with the new amount.
       orderIdRef.current = null;
       orderNumberRef.current = null;
@@ -1485,10 +1500,10 @@ export default function CheckoutV2Page() {
       checkoutTokenRef.current = nextToken;
       setCheckoutToken(nextToken);
     }
-    const created = await placeOrderRow(paymentMethodHint);
+    const created = await placeOrderRow(paymentMethodHint, resolvedType);
     orderIdRef.current = created.id;
     orderNumberRef.current = created.number;
-    orderSnapshotRef.current = paymentSnapshot;
+    orderSnapshotRef.current = effectiveSnapshot;
     setOrderId(created.id);
     setOrderNumber(created.number);
     return created;
@@ -2857,7 +2872,10 @@ export default function CheckoutV2Page() {
 
 
           {/* COD */}
-          {hasCod && effectiveMode === "full" && (
+          {/* COD — always shown when the store enables it, even if the
+              shopper currently has the "Pay ₹X advance" plan selected.
+              Tapping COD downgrades the order to full COD server-side. */}
+          {hasCod && (
             <button
               onClick={placeCod}
               disabled={placingCod || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
@@ -2868,6 +2886,11 @@ export default function CheckoutV2Page() {
                 <Banknote className="h-5 w-5" />
                 <div className="text-left">
                   <div className="text-[14px] font-bold">{tCritical("Cash on Delivery", "डिलीवरी पर कैश")}</div>
+                  {isPartialOrder && (
+                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                      {tCritical("Pay full amount on delivery", "पूरी राशि डिलीवरी पर दें")}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-1 text-[14px] font-bold">
