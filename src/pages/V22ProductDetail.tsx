@@ -262,14 +262,23 @@ export default function V22ProductDetail() {
     contentReadyRef.current = false;
   }, [productSlug]);
 
-  // Prefetch checkout chunk so "Buy Now" is instant on cold visits.
+  // Prefetch checkout chunks immediately so "Buy Now" is instant on cold visits.
   useEffect(() => {
-    const t = setTimeout(() => {
+    const kick = () => {
       import("./CheckoutPage").catch(() => {});
       import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
-    }, 300);
-    return () => clearTimeout(t);
+      import("@/pages/CheckoutV2Page").catch(() => {});
+    };
+    const ric = (window as any).requestIdleCallback;
+    if (ric) ric(kick, { timeout: 500 });
+    else setTimeout(kick, 0);
   }, []);
+
+  const prefetchCheckout = () => {
+    import("./CheckoutPage").catch(() => {});
+    import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
+  };
+
 
 
   useEffect(() => {
