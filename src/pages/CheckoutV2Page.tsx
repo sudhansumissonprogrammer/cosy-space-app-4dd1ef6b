@@ -41,6 +41,7 @@ import { createPortal } from "react-dom";
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 import { QRCodeSVG } from "qrcode.react";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
+const PincodeSheet = lazy(() => import("@/components/storefront/PincodeSheet"));
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
