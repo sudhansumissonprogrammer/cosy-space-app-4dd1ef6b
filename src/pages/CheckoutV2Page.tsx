@@ -824,7 +824,7 @@ export default function CheckoutV2Page() {
       content_ids: checkoutItems.map((i) => i.productId),
       contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
       num_items: checkoutItems.reduce((s, i) => s + (i.quantity || 1), 0),
-      value: subtotal,
+      value: total,
       currency,
     };
     try { fbPixelTrack("InitiateCheckout", eventData, eid); } catch { /* noop */ }
@@ -841,7 +841,7 @@ export default function CheckoutV2Page() {
     } catch { /* noop */ }
     try {
       ga4Track("begin_checkout", {
-        currency, value: subtotal,
+        currency, value: total,
         items: checkoutItems.map((i) => ({
           item_id: i.productId, item_name: i.name, item_variant: i.variantId, price: i.price, quantity: i.quantity,
         })),
@@ -884,7 +884,7 @@ export default function CheckoutV2Page() {
     if (!fullName.trim()) return "Please enter your name";
     const nPhone = normalizePhone(phone);
     if (!isValidIndianPhone(nPhone)) return "Enter a valid 10-digit phone number";
-    if (!/^\d{6}$/.test(pincode)) return "Enter a valid 6-digit pincode";
+    if (!/^\d{6}$/.test((pincode || "").replace(/\D/g, ""))) return "Enter a valid 6-digit pincode";
     if (!streetAddress.trim()) return "Enter your street address";
     if (!city.trim()) return "Enter city";
     if (!state.trim()) return "Enter state";
