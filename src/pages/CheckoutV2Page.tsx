@@ -2531,26 +2531,39 @@ export default function CheckoutV2Page() {
                 onClick={addressFilled ? closeAddressFormSheet : undefined}
                 aria-hidden
               />
-              {/* Close chip — hidden when address is required (initial capture) */}
-              {addressFilled && (
-                <button
-                  type="button"
-                  onClick={closeAddressFormSheet}
-                  aria-label="Close"
-                  className="relative mx-auto mb-3 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              )}
-              {/* Sheet */}
-              <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden max-h-[calc(100dvh-72px)]">
+              {/* Sheet — nearly full-screen so keyboard doesn't crush the form */}
+              <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden h-[95dvh]">
               <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
                 <div className="text-[16px] font-bold">Add Delivery Address</div>
-                <span className="h-9 w-9" aria-hidden />
+                {addressFilled ? (
+                  <button
+                    type="button"
+                    onClick={closeAddressFormSheet}
+                    aria-label="Close"
+                    className="h-9 w-9 -mr-2 rounded-full flex items-center justify-center hover:bg-black/5 active:bg-black/10"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                ) : (
+                  <span className="h-9 w-9" aria-hidden />
+                )}
               </div>
 
 
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-4 pb-5 space-y-3">
+              <div
+                className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-3 pb-4 space-y-2.5"
+                onFocusCapture={(e) => {
+                  const t = e.target as HTMLElement;
+                  if (t?.tagName === "INPUT" || t?.tagName === "TEXTAREA") {
+                    // Wait for mobile keyboard to open, then scroll the focused
+                    // input into the visible area above it.
+                    setTimeout(() => {
+                      try { t.scrollIntoView({ block: "center", behavior: "smooth" }); } catch { /* ignore */ }
+                    }, 300);
+                  }
+                }}
+              >
+
                 {returningOrder && !returningUsed && (
                   <div className="rounded-lg border border-primary/40 bg-primary/5 p-2.5 flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-primary mt-0.5" />
