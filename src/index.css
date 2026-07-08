@@ -242,14 +242,29 @@
      storefront's decorative theme font (e.g. Alegreya SC small-caps, serif
      display fonts). Applied via `.checkout-neutral-font` on the CheckoutV2
      and CheckoutPhoneStep root containers.
-     NOTE: we intentionally do NOT override `text-transform` so Tailwind's
-     `.uppercase` on section headers still works. */
+     NOTE: we intentionally do NOT override `text-transform` on all elements
+     so Tailwind's `.uppercase` on section headers still works. But inputs
+     and their placeholders MUST render as-typed — otherwise a stray theme
+     rule turns "Enter Mobile Number" into "ENTER MOBILE NUMBER". */
   .checkout-neutral-font,
   .checkout-neutral-font * {
     font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto,
       'Helvetica Neue', Arial, sans-serif !important;
     font-variant: normal !important;
     font-feature-settings: normal !important;
+  }
+  .checkout-neutral-font input,
+  .checkout-neutral-font textarea,
+  .checkout-neutral-font input::placeholder,
+  .checkout-neutral-font textarea::placeholder {
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    font-variant: normal !important;
+  }
+  /* Coupon input opts back in to uppercase via the `.uppercase` utility. */
+  .checkout-neutral-font input.uppercase,
+  .checkout-neutral-font input.uppercase::placeholder {
+    text-transform: uppercase !important;
   }
 
   .animate-marquee {
