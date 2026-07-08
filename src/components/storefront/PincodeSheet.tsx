@@ -2,6 +2,11 @@
  * PincodeSheet — Step 1.5 bottom-sheet after phone capture.
  * Collects only the 6-digit delivery pincode. On submit, parent hydrates
  * city/state via the pincode autofill effect and advances to the address form.
+ *
+ * Keyboard-safe: uses window.visualViewport to keep the sheet + input above
+ * the on-screen keyboard on Android/iOS. Without this the sheet stays glued
+ * to the *layout* viewport bottom (which the keyboard covers) so the input
+ * and Continue button disappear the moment the shopper starts typing.
  */
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
@@ -15,7 +20,9 @@ interface Props {
 
 export default function PincodeSheet({ initial = "", onSubmit, onClose }: Props) {
   const [pc, setPc] = useState(initial.replace(/\D/g, "").slice(0, 6));
+  const [kbOffset, setKbOffset] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
   const valid = /^\d{6}$/.test(pc);
 
   useEffect(() => {
@@ -23,8 +30,37 @@ export default function PincodeSheet({ initial = "", onSubmit, onClose }: Props)
     return () => clearTimeout(t);
   }, []);
 
+  // Track the visual viewport so the sheet lifts above the keyboard.
+  useEffect(() => {
+    const vv = (window as any).visualViewport as VisualViewport | undefined;
+    if (!vv) return;
+    const update = () => {
+      const bottomInset = window.innerHeight - vv.height - vv.offsetTop;
+      setKbOffset(Math.max(0, bottomInset));
+    };
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
+
+  // When the keyboard opens, scroll the input into view inside the sheet.
+  useEffect(() => {
+    if (kbOffset <= 0) return;
+    const t = setTimeout(() => {
+      inputRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 120);
+    return () => clearTimeout(t);
+  }, [kbOffset]);
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end pointer-events-auto">
+    <div
+      className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto"
+      style={{ paddingBottom: kbOffset }}
+    >
       {/* Scrim */}
       <div
         className="absolute inset-0 bg-black/50"
@@ -36,12 +72,16 @@ export default function PincodeSheet({ initial = "", onSubmit, onClose }: Props)
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="relative mx-auto mb-4 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center"
+        className="relative mx-auto mb-3 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center flex-shrink-0"
       >
         <X className="h-5 w-5" />
       </button>
       {/* Sheet */}
-      <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl px-5 pt-5 pb-6">
+      <div
+        ref={sheetRef}
+        className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl px-5 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-y-auto overscroll-contain"
+        style={{ maxHeight: `calc(100dvh - ${kbOffset + 72}px)` }}
+      >
         <div className="text-[16px] font-semibold">Add Delivery Address</div>
 
         <div className="relative mt-6">

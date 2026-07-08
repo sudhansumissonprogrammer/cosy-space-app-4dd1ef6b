@@ -37,6 +37,7 @@ import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { loadCashfree } from "@/lib/loadCashfree";
 import { loadPayuBolt } from "@/lib/loadPayuBolt";
 import { createPortal } from "react-dom";
+import { useKeyboardOffset } from "@/hooks/useKeyboardOffset";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 import { QRCodeSVG } from "qrcode.react";
@@ -486,6 +487,9 @@ export default function CheckoutV2Page() {
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [showAddressFormSheet, setShowAddressFormSheet] = useState(false);
+  // Keyboard-safe bottom sheets — lifts the address / pincode popups above
+  // the on-screen keyboard on Android/iOS.
+  const keyboardOffset = useKeyboardOffset();
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", apartment: "", city: "", state: "", pincode: "" });
   const [addrLabel, setAddrLabel] = useState<"Home" | "Work">("Home");
   const [apartment, setApartment] = useState("");
@@ -2314,7 +2318,13 @@ export default function CheckoutV2Page() {
 
           {/* Contact + Address form — bottom-sheet popup with scrim + close chip */}
           {showAddressFormSheet && typeof document !== "undefined" && createPortal(
-            <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
+            <div
+              className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Add delivery address"
+              style={{ paddingBottom: keyboardOffset }}
+            >
               {/* Scrim */}
               <div className="absolute inset-0 bg-black/50" onClick={closeAddressFormSheet} aria-hidden />
               {/* Close chip above sheet */}
@@ -2322,16 +2332,19 @@ export default function CheckoutV2Page() {
                 type="button"
                 onClick={closeAddressFormSheet}
                 aria-label="Close"
-                className="relative mx-auto mb-3 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center"
+                className="relative mx-auto mb-3 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center flex-shrink-0"
               >
                 <X className="h-5 w-5" />
               </button>
               {/* Sheet */}
-              <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden max-h-[calc(100dvh-72px)]">
-              <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
-                <div className="text-[16px] font-bold">Add Delivery Address</div>
-                <span className="h-9 w-9" aria-hidden />
-              </div>
+              <div
+                className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden"
+                style={{ maxHeight: `calc(100dvh - ${keyboardOffset + 72}px)` }}
+              >
+                <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
+                  <div className="text-[16px] font-bold">Add Delivery Address</div>
+                  <span className="h-9 w-9" aria-hidden />
+                </div>
 
 
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-4 pb-5 space-y-3">
