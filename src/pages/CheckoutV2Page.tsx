@@ -767,6 +767,12 @@ export default function CheckoutV2Page() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const orderIdRef = useRef<string | null>(null);
   const orderNumberRef = useRef<string | null>(null);
+  /** paymentSnapshot value at the moment the current orderId was minted.
+   *  Any later payment launch (UPI tap, Razorpay/Cashfree/PayU open, COD)
+   *  compares this against the live paymentSnapshot: if they diverge, the
+   *  order row is stale (plan/coupon/qty changed) and must be re-minted so
+   *  the gateway is never called with the wrong charge amount. */
+  const orderSnapshotRef = useRef<string | null>(null);
   useEffect(() => { orderIdRef.current = orderId; }, [orderId]);
   useEffect(() => { orderNumberRef.current = orderNumber; }, [orderNumber]);
   const [creatingOrder, setCreatingOrder] = useState(false);
