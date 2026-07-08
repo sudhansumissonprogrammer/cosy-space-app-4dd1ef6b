@@ -143,6 +143,7 @@ function prewarmEdgeFunction(fnName: string) {
 
 export default function CheckoutV2Page() {
   const store = useOutletContext<StoreData>();
+  const themeConfig = useStorefrontThemeConfig(store?.id);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const qc = useQueryClient();
