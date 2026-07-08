@@ -109,6 +109,7 @@ export async function isValidCronHeader(admin: any, headerValue: string): Promis
 
 const BREAKER_THRESHOLD = 3;
 const BREAKER_OPEN_MS = 30 * 60 * 1000; // 30 min
+const ACCESS_BLOCKED_OPEN_MS = 2 * 60 * 60 * 1000; // 2h security-cooldown for Meta checkpoint locks
 
 export type MetaBreakerState = {
   failures: number;
@@ -198,15 +199,17 @@ export async function metaFetch(
 
   // Failure path — count non-rate-limit errors toward breaker
   const metaCode = body?.error?.code;
+  const metaMessage = String(body?.error?.message ?? "");
   const isRateLimit = metaCode === 4 || metaCode === 17 || metaCode === 32 || metaCode === 613 || r.status === 429;
+  const isAccessBlocked = metaCode === 200 && /access blocked/i.test(metaMessage);
   const next = {
     ...state,
-    failures: state.failures + 1,
-    last_error: `${r.status}:${metaCode ?? "-"}:${body?.error?.message ?? ""}`.slice(0, 500),
+    failures: isAccessBlocked ? BREAKER_THRESHOLD : state.failures + 1,
+    last_error: `${r.status}:${metaCode ?? "-"}:${metaMessage}`.slice(0, 500),
     last_usage: appUsage,
   };
-  if (!isRateLimit && next.failures >= BREAKER_THRESHOLD) {
-    next.open_until = new Date(Date.now() + BREAKER_OPEN_MS).toISOString();
+  if (!isRateLimit && (isAccessBlocked || next.failures >= BREAKER_THRESHOLD)) {
+    next.open_until = new Date(Date.now() + (isAccessBlocked ? ACCESS_BLOCKED_OPEN_MS : BREAKER_OPEN_MS)).toISOString();
     await logHealth(admin, { event: "meta_breaker_opened", source: opts.source, code: metaCode, message: body?.error?.message, until: next.open_until });
   }
   await saveMetaBreaker(admin, next);

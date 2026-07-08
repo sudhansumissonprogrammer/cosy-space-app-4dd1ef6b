@@ -290,7 +290,10 @@ Deno.serve(async (req) => {
     } else {
       errMsg = JSON.stringify(res.body?.error ?? res.body);
       const code = Number(res.body?.error?.code ?? 0);
-      errCls = PERMANENT_META_CODES.has(code) ? "permanent" : "transient";
+      const msg = String(res.body?.error?.message ?? "");
+      errCls = code === 200 && /access blocked/i.test(msg)
+        ? "transient"
+        : PERMANENT_META_CODES.has(code) ? "permanent" : "transient";
     }
   } catch (e) {
     errMsg = (e as Error).message;

@@ -1,10 +1,15 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { metaFetch } from "../_shared/wa-platform.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+function metaStatus(resp: { status: number }) {
+  return resp.status >= 400 ? resp.status : 502;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -91,18 +96,19 @@ Deno.serve(async (req) => {
 
     // ─── SYNC: Fetch all templates from Meta ───
     if (action === "sync") {
-      const metaRes = await fetch(
+      const metaRes = await metaFetch(adminClient,
         `https://graph.facebook.com/v21.0/${waba_id}/message_templates?limit=250`,
         {
           headers: { Authorization: `Bearer ${access_token}` },
-        }
+        },
+        { source: "whatsapp-templates:sync" },
       );
-      const metaData = await metaRes.json();
+      const metaData = metaRes.body;
 
       if (!metaRes.ok) {
         return new Response(
           JSON.stringify({ error: "Failed to fetch templates from Meta", details: metaData }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: metaStatus(metaRes), headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
@@ -143,7 +149,7 @@ Deno.serve(async (req) => {
       if (!template_name || !template_body) {
         return new Response(
           JSON.stringify({ error: "template_name and template_body are required" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: metaStatus(metaRes), headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
@@ -166,7 +172,7 @@ Deno.serve(async (req) => {
         ],
       };
 
-      const metaRes = await fetch(
+      const metaRes = await metaFetch(adminClient,
         `https://graph.facebook.com/v21.0/${waba_id}/message_templates`,
         {
           method: "POST",
@@ -175,10 +181,11 @@ Deno.serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(metaPayload),
-        }
+        },
+        { source: "whatsapp-templates:submit" },
       );
 
-      const metaData = await metaRes.json();
+      const metaData = metaRes.body;
 
       if (!metaRes.ok) {
         return new Response(
@@ -218,15 +225,16 @@ Deno.serve(async (req) => {
         );
       }
 
-      const metaRes = await fetch(
+      const metaRes = await metaFetch(adminClient,
         `https://graph.facebook.com/v21.0/${waba_id}/message_templates?name=${template_name}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${access_token}` },
-        }
+        },
+        { source: "whatsapp-templates:delete" },
       );
 
-      const metaData = await metaRes.json();
+      const metaData = metaRes.body;
 
       // Also delete from our DB
       await adminClient

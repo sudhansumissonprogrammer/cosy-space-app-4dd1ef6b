@@ -169,6 +169,8 @@ Deno.serve(async (req) => {
       await admin.from("wa_send_queue").update({
         status: "sent",
         sent_message_id: j?.message_id ?? null,
+        last_error: null,
+        last_error_class: null,
         locked_until: null,
       } as any).eq("id", row.id);
       await markAbandonedCartSent(admin, row, j?.message_id ?? null, sentAt);
