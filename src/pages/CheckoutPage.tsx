@@ -2814,7 +2814,7 @@ function CheckoutPageInner() {
               ) : (
                 <span>
                   {paymentMethod === "razorpay"
-                    ? `${t("Pay Securely", "सुरक्षित भुगतान करें")} ${currencySymbol}${total.toFixed(0)}`
+                    ? `${t("Pay Securely", "सुरक्षित भुगतान करें")} ${currencySymbol}${prepaidTotal.toFixed(0)}`
                     : `${t("Place Order", "ऑर्डर करें")} · ${currencySymbol}${total.toFixed(0)}`}
                 </span>
               )}
