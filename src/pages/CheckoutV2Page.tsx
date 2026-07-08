@@ -2295,7 +2295,6 @@ export default function CheckoutV2Page() {
 
   const savedAddr = savedAddresses?.find((a: any) => a.id === selectedAddressId);
   const addressFilled = !!(pincode && streetAddress && city && state && fullName);
-  const themeConfig = useStorefrontThemeConfig(store?.id);
   const marqueeEnabled = themeConfig?.marquee_enabled ?? true;
   const savedAmount = (appliedCoupon && couponDiscount > 0 ? couponDiscount : 0);
 
