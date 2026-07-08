@@ -8,7 +8,7 @@
  * UI matches the GoKwik-style checkout (Order Summary → Offers → Login card).
  * Logic (capture_checkout_lead RPC + autoLoginByPhone) is unchanged.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   ChevronDown,
@@ -17,7 +17,6 @@ import {
   ShieldCheck,
   CheckCircle2,
   Trash2,
-  UserCircle2,
   ShoppingCart,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -431,6 +430,6 @@ export default function CheckoutPhoneStep({
 }
 
 // Local Label to avoid extra shadcn import weight
-function Label({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+function Label({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <label className={className}>{children}</label>;
 }
