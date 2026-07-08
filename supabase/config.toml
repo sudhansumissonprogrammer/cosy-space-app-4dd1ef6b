@@ -66,3 +66,6 @@ verify_jwt = false
 
 [functions.checkout-v2-cod]
 verify_jwt = false
+
+[functions.pincode-lookup]
+verify_jwt = false
