@@ -2459,13 +2459,16 @@ export default function CheckoutV2Page() {
                 </div>
 
                 <div>
-                  <Label className="text-[12px] text-muted-foreground">Flat, House no. *</Label>
-                  <Input value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="Enter flat, house no." className="h-11 rounded-lg border-[#ECECEC]" />
-                </div>
-
-                <div>
-                  <Label className="text-[12px] text-muted-foreground">Apartment, Area, Sector, Village</Label>
-                  <Input value={apartment} onChange={(e) => setApartment(e.target.value)} placeholder="Apartment, area, sector, village" className="h-11 rounded-lg border-[#ECECEC]" />
+                  <Label className="text-[12px] text-muted-foreground">Complete Address *</Label>
+                  <Input
+                    value={streetAddress}
+                    onChange={(e) => setStreetAddress(e.target.value)}
+                    placeholder="House no, area, village, landmark"
+                    className={`h-11 rounded-lg ${addressAttempted && !streetAddress.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                  />
+                  {addressAttempted && !streetAddress.trim() && (
+                    <p className="mt-1 text-[12px] text-red-600">Enter Complete Address</p>
+                  )}
                 </div>
 
                 <div className="pt-2 border-t border-[#ECECEC]">
@@ -2473,10 +2476,19 @@ export default function CheckoutV2Page() {
                   <div className="space-y-3">
                     <div>
                       <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
-                      <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" className="h-11 rounded-lg border-[#ECECEC]" />
+                      <Input
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Your name"
+                        className={`h-11 rounded-lg ${addressAttempted && !fullName.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                      />
+                      {addressAttempted && !fullName.trim() && (
+                        <p className="mt-1 text-[12px] text-red-600">Full name required</p>
+                      )}
                     </div>
                   </div>
                 </div>
+
 
 
                 {shippingActive && (
