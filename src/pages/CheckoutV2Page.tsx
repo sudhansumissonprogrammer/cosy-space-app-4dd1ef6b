@@ -2327,10 +2327,12 @@ export default function CheckoutV2Page() {
         </div>
       </div>
 
-      {/* Announcement bar */}
-      <div className="sticky top-[57px] z-10 bg-black text-white text-[13px] font-semibold text-center py-2.5 px-4">
-        {announcement}
-      </div>
+      {/* Announcement marquee — same component + dashboard-controlled text/gradient as storefront */}
+      {marqueeEnabled && (
+        <div className="sticky top-[57px] z-10">
+          <StorefrontMarquee text={themeConfig?.marquee_text} />
+        </div>
+      )}
 
       {/* Payment retry banner */}
       {paymentFailed && pendingOrder && (
