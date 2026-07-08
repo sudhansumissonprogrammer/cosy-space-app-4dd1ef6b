@@ -2861,79 +2861,73 @@ export default function CheckoutV2Page() {
                   void createOrderAndIntents();
                 };
                 return (
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 rounded-lg border border-[#ECECEC] p-3 bg-white">
-                  {showReady ? (
-                    <QRCodeSVG value={anyS.url!} size={168} level="M" includeMargin={false} />
-                  ) : (
-                    <div className="h-[168px] w-[168px] flex flex-col items-center justify-center bg-[#F5F5F5] rounded gap-2">
-                      {showFailed ? (
-                        <>
-                          <span className="text-[11px] text-destructive text-center px-2">
-                            {anyS.error || "QR unavailable"}
-                          </span>
-                          <button
-                            onClick={retryIntent}
-                            className="text-[11px] font-semibold text-primary underline"
-                          >
-                            Retry
-                          </button>
-                        </>
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 rounded-lg border border-[#ECECEC] p-3 bg-white">
+                      {showReady ? (
+                        <QRCodeSVG value={anyS.url!} size={168} level="M" includeMargin={false} />
                       ) : (
-                        <>
-                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                          {staleAny && (
-                            <span className="text-[10px] text-muted-foreground">Updating amount…</span>
+                        <div className="h-[168px] w-[168px] flex flex-col items-center justify-center bg-[#F5F5F5] rounded gap-2">
+                          {showFailed ? (
+                            <>
+                              <span className="text-[11px] text-destructive text-center px-2">
+                                {anyS.error || "QR unavailable"}
+                              </span>
+                              <button onClick={retryIntent} className="text-[11px] font-semibold text-primary underline">
+                                Retry
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                              {staleAny && (
+                                <span className="text-[10px] text-muted-foreground">Updating amount…</span>
+                              )}
+                            </>
                           )}
-                        </>
+                        </div>
+                      )}
+                      {showReady && !/^upi:/i.test(anyS.url!) && (
+                        <div className="mt-2 text-[10px] text-muted-foreground text-center max-w-[168px]">
+                          Scanning opens the secure payment page
+                        </div>
                       )}
                     </div>
-                  )}
-                  {showReady && !/^upi:/i.test(anyS.url!) && (
-                    <div className="mt-2 text-[10px] text-muted-foreground text-center max-w-[168px]">
-                      Scanning opens the secure payment page
+                    <div className="flex-1 min-w-0 text-[13px] space-y-2">
+                      <div className="font-semibold text-[14px]">Scan & Pay from any UPI app</div>
+                      <ol className="list-decimal ml-4 space-y-1 text-muted-foreground text-[12px]">
+                        <li>Open GPay, PhonePe, Paytm, or any UPI app</li>
+                        <li>Scan this QR code</li>
+                        <li>Complete the payment — we'll confirm automatically</li>
+                      </ol>
+                      <div className="flex items-center gap-2 pt-1">
+                        <img src="/icons/gpay.svg" alt="GPay" className="h-5 w-5 object-contain" />
+                        <img src="/icons/phonepe.svg" alt="PhonePe" className="h-5 w-5 object-contain" />
+                        <img src="/icons/paytm.svg" alt="Paytm" className="h-5 w-5 object-contain" />
+                        <img src="/icons/upi.png" alt="UPI" className="h-5 w-auto object-contain" />
+                      </div>
+                      {showReady && !waiting && !creatingOrder && !couponLoading && !paymentAmountSyncing && (
+                        <button
+                          onClick={() => {
+                            setWaitingApp("UPI QR");
+                            setWaiting(true);
+                            persistWaiting("any", "UPI QR");
+                            try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
+                          }}
+                          className="mt-1 text-[12px] font-semibold text-primary underline"
+                        >
+                          I've scanned — waiting for confirmation
+                        </button>
+                      )}
+                      {waiting && (
+                        <div className="mt-1 flex items-center gap-2 text-[12px] text-emerald-700">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Waiting for payment confirmation…
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              );})()}
-              <div className="flex items-start gap-4" style={{display: 'none'}}>
-                <div className="flex-shrink-0 rounded-lg border border-[#ECECEC] p-3 bg-white">
-                  {/* legacy anchor - replaced above */}
-                </div>
-                <div className="flex-1 min-w-0 text-[13px] space-y-2">
-                  <div className="font-semibold text-[14px]">Scan & Pay from any UPI app</div>
-                  <ol className="list-decimal ml-4 space-y-1 text-muted-foreground text-[12px]">
-                    <li>Open GPay, PhonePe, Paytm, or any UPI app</li>
-                    <li>Scan this QR code</li>
-                    <li>Complete the payment — we'll confirm automatically</li>
-                  </ol>
-                  <div className="flex items-center gap-2 pt-1">
-                    <img src="/icons/gpay.svg" alt="GPay" className="h-5 w-5 object-contain" />
-                    <img src="/icons/phonepe.svg" alt="PhonePe" className="h-5 w-5 object-contain" />
-                    <img src="/icons/paytm.svg" alt="Paytm" className="h-5 w-5 object-contain" />
-                    <img src="/icons/upi.png" alt="UPI" className="h-5 w-auto object-contain" />
                   </div>
-                  {intents.any.status === "ready" && !waiting && !creatingOrder && !couponLoading && !paymentAmountSyncing && (
-                    <button
-                      onClick={() => {
-                        setWaitingApp("UPI QR");
-                        setWaiting(true);
-                        persistWaiting("any", "UPI QR");
-                        try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
-                      }}
-                      className="mt-1 text-[12px] font-semibold text-primary underline"
-                    >
-                      I've scanned — waiting for confirmation
-                    </button>
-                  )}
-                  {waiting && (
-                    <div className="mt-1 flex items-center gap-2 text-[12px] text-emerald-700">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Waiting for payment confirmation…
-                    </div>
-                  )}
-                </div>
-              </div>
+                );
+              })()}
             </div>
           )}
 
