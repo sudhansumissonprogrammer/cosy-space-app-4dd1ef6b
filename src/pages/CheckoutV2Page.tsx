@@ -2440,9 +2440,19 @@ export default function CheckoutV2Page() {
                 <div>
                   <Label className="text-[12px] text-muted-foreground">Pincode *</Label>
                   <div className="relative">
-                    <Input value={pincode} onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit pincode" inputMode="numeric" maxLength={6} className="h-11 rounded-lg border-[#ECECEC]" />
+                    <Input
+                      value={pincode}
+                      onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="6-digit pincode"
+                      inputMode="numeric"
+                      maxLength={6}
+                      className={`h-11 rounded-lg ${addressAttempted && !/^\d{6}$/.test(pincode) ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                    />
                     {pincodeLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
                   </div>
+                  {addressAttempted && !/^\d{6}$/.test(pincode) && (
+                    <p className="mt-1 text-[12px] text-red-600">Enter a valid 6-digit pincode</p>
+                  )}
                   <button type="button" onClick={detectLocation} disabled={geoLoading} className="text-[11px] text-primary flex items-center gap-1 underline mt-1">
                     {geoLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <LocateFixed className="h-3 w-3" />}
                     Use my location
@@ -2452,13 +2462,28 @@ export default function CheckoutV2Page() {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label className="text-[12px] text-muted-foreground">City *</Label>
-                    <Input value={city} onChange={(e) => setCity(e.target.value)} className="h-11 rounded-lg border-[#ECECEC]" />
+                    <Input
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      className={`h-11 rounded-lg ${addressAttempted && !city.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                    />
+                    {addressAttempted && !city.trim() && (
+                      <p className="mt-1 text-[12px] text-red-600">Required</p>
+                    )}
                   </div>
                   <div>
                     <Label className="text-[12px] text-muted-foreground">State *</Label>
-                    <Input value={state} onChange={(e) => setState(e.target.value)} className="h-11 rounded-lg border-[#ECECEC]" />
+                    <Input
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                      className={`h-11 rounded-lg ${addressAttempted && !state.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                    />
+                    {addressAttempted && !state.trim() && (
+                      <p className="mt-1 text-[12px] text-red-600">Required</p>
+                    )}
                   </div>
                 </div>
+
 
                 <div>
                   <Label className="text-[12px] text-muted-foreground">Complete Address *</Label>
