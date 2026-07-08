@@ -866,6 +866,10 @@ export default function CheckoutV2Page() {
 
   const apiFiredRef = useRef<Set<string>>(new Set());
   const fireAddPaymentInfoOnce = (methodLabel: string, value: number) => {
+    // Remember the method the user actually paid with so the Purchase pixel/CAPI
+    // in onOrderSuccess can pick the right total (COD/partial → full order value,
+    // full online → prepaid-discounted value).
+    lastPaidMethodRef.current = methodLabel;
     if (!store?.id || checkoutItems.length === 0) return;
     if (apiFiredRef.current.has(methodLabel)) return;
     apiFiredRef.current.add(methodLabel);
