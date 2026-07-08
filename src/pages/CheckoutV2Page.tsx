@@ -632,6 +632,24 @@ export default function CheckoutV2Page() {
     toast.success("Welcome back! Address loaded ✨");
   };
 
+  // Auto-apply returning-order address the moment it's found so a shopper
+  // whose phone matches a prior order doesn't have to re-type anything.
+  // Only fires when the current address is blank, so we never overwrite
+  // something the shopper just typed.
+  useEffect(() => {
+    if (!returningOrder || returningUsed || returningDismissed) return;
+    if (fullName || streetAddress || pincode) return;
+    setFullName(returningOrder.customer_name || "");
+    setStreetAddress(returningOrder.street_address || "");
+    setCity(returningOrder.city || "");
+    setState(returningOrder.state || "");
+    setPincode(returningOrder.pincode || "");
+    setReturningUsed(true);
+    setAddressSheetDismissed(true);
+    setShowAddressFormSheet(false);
+  }, [returningOrder, returningUsed, returningDismissed, fullName, streetAddress, pincode]);
+
+
   // ─── Totals ─────────────────────────────────────────────────────────────
   const subtotal = useMemo(
     () => checkoutItems.reduce((s, i) => s + i.price * i.quantity, 0),
