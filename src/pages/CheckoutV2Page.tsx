@@ -1441,6 +1441,21 @@ export default function CheckoutV2Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store?.id]);
 
+  // ─── Empty cart guard (skip in buy-now single mode) ─────────────────────
+  // Must be declared unconditionally BEFORE any early returns below,
+  // otherwise flipping orderPlaced/waiting after a payment-return would
+  // change the hook count and crash the page ("Rendered fewer hooks…").
+  useEffect(() => {
+    if (isSingleMode) return;
+    if (orderId || orderPlaced || waiting || confirmingPayment) return;
+    if (checkoutItems.length !== 0) return;
+    if (summaryOpen) setSummaryOpen(false);
+    toast("Your cart is empty — add items to continue");
+    navigate(storefrontPath(store.slug), { replace: true });
+  }, [checkoutItems.length, isSingleMode, orderId, orderPlaced, waiting, confirmingPayment, summaryOpen, navigate, store?.slug]);
+
+
+
   // ─── Create order (single call, dedup with checkout_token) ──────────────
   const createOrderIfNeeded = async (paymentMethodHint: string): Promise<PendingOrder> => {
     if (orderId) return { id: orderId, number: orderNumber };
@@ -2028,17 +2043,6 @@ export default function CheckoutV2Page() {
     );
   }
 
-  // ─── Empty cart guard (skip in buy-now single mode) ─────────────────────
-  // If the shopper removes the last item from the order-summary sheet, kick
-  // them back to the storefront — an empty cart cannot place an order.
-  useEffect(() => {
-    if (isSingleMode) return;
-    if (orderId || orderPlaced || waiting || confirmingPayment) return;
-    if (checkoutItems.length !== 0) return;
-    if (summaryOpen) setSummaryOpen(false);
-    toast("Your cart is empty — add items to continue");
-    navigate(storefrontPath(store.slug), { replace: true });
-  }, [checkoutItems.length, isSingleMode, orderId, orderPlaced, waiting, confirmingPayment, summaryOpen, navigate, store?.slug]);
 
   if (checkoutItems.length === 0 && !orderId && !isSingleMode) {
     return (
