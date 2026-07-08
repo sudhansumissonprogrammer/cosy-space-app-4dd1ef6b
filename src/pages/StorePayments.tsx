@@ -3,7 +3,6 @@ import { useStoreSlugParam } from "@/hooks/useStoreSlugParam";
 import { useStorePurge } from "@/hooks/useStorePurge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { useStoreData } from "@/hooks/useStoreData";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +21,7 @@ type OrderMode = "whatsapp" | "website" | "both";
 type OnlineGateway = "none" | "razorpay" | "cashfree" | "payu";
 
 export default function StorePayments() {
-  const { storeId } = useStoreSlugParam();
+  const { storeId, isAdminView } = useStoreSlugParam();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const purgeStore = useStorePurge(storeId);
@@ -63,7 +62,29 @@ export default function StorePayments() {
   // Checkout V2 (GoKwik-style one-page UPI intent checkout) — off by default
   const [checkoutV2Enabled, setCheckoutV2Enabled] = useState(false);
 
-  const { data: store, isLoading: storeLoading } = useStoreData(storeId);
+  const { data: store, isLoading: storeLoading } = useQuery({
+    queryKey: ["payment-store-settings", storeId, isAdminView],
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: "always",
+    queryFn: async () => {
+      if (isAdminView) {
+        const { data, error } = await supabase.rpc("get_store_as_admin", { _slug: storeId! });
+        if (error) throw error;
+        return data as any;
+      }
+
+      const { data, error } = await (supabase as any)
+        .from("stores")
+        .select("id, owner_id, name, slug, order_mode, billing_mode, partial_payment_enabled, partial_payment_type, partial_payment_value, checkout_v2_enabled")
+        .eq("id", storeId!)
+        .eq("owner_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!storeId && (isAdminView || !!user),
+  });
 
   // Settings pages must always reflect the live DB row — never a stale cache.
   // useStoreData has a 10-min staleTime for fast dashboard navigation, but on
@@ -267,6 +288,7 @@ export default function StorePayments() {
       }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payment-store-settings", storeId] });
       queryClient.invalidateQueries({ queryKey: ["store", storeId] });
       queryClient.invalidateQueries({ queryKey: ["admin-store-view"] });
       queryClient.invalidateQueries({ queryKey: ["payment-config", storeId] });
