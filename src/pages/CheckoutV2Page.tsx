@@ -2845,24 +2845,60 @@ export default function CheckoutV2Page() {
                 </div>
                 <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
               </div>
+              {(() => {
+                // Stale = QR was minted for a different amount than what's
+                // currently selected (e.g. shopper toggled Partial↔Full).
+                // Never render an out-of-date QR — the shopper would pay the
+                // wrong price. Show spinner while the fresh intent mints.
+                const anyS = intents.any;
+                const staleAny = anyS.status === "ready" && typeof anyS.amount === "number"
+                  && Math.round(anyS.amount * 100) !== Math.round(chargeAmount * 100);
+                const showReady = anyS.status === "ready" && !!anyS.url && !staleAny;
+                const showFailed = anyS.status === "failed" && !staleAny;
+                const retryIntent = () => {
+                  desktopQrPollStartedRef.current = false;
+                  autoAdvancedRef.current = false;
+                  void createOrderAndIntents();
+                };
+                return (
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 rounded-lg border border-[#ECECEC] p-3 bg-white">
-                  {intents.any.status === "ready" && intents.any.url ? (
-                    <QRCodeSVG value={intents.any.url} size={168} level="M" includeMargin={false} />
+                  {showReady ? (
+                    <QRCodeSVG value={anyS.url!} size={168} level="M" includeMargin={false} />
                   ) : (
-                    <div className="h-[168px] w-[168px] flex items-center justify-center bg-[#F5F5F5] rounded">
-                      {intents.any.status === "failed" ? (
-                        <span className="text-[11px] text-destructive text-center px-2">QR unavailable — try another method</span>
+                    <div className="h-[168px] w-[168px] flex flex-col items-center justify-center bg-[#F5F5F5] rounded gap-2">
+                      {showFailed ? (
+                        <>
+                          <span className="text-[11px] text-destructive text-center px-2">
+                            {anyS.error || "QR unavailable"}
+                          </span>
+                          <button
+                            onClick={retryIntent}
+                            className="text-[11px] font-semibold text-primary underline"
+                          >
+                            Retry
+                          </button>
+                        </>
                       ) : (
-                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        <>
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                          {staleAny && (
+                            <span className="text-[10px] text-muted-foreground">Updating amount…</span>
+                          )}
+                        </>
                       )}
                     </div>
                   )}
-                  {intents.any.status === "ready" && intents.any.url && !/^upi:/i.test(intents.any.url) && (
+                  {showReady && !/^upi:/i.test(anyS.url!) && (
                     <div className="mt-2 text-[10px] text-muted-foreground text-center max-w-[168px]">
                       Scanning opens the secure payment page
                     </div>
                   )}
+                </div>
+              );})()}
+              <div className="flex items-start gap-4" style={{display: 'none'}}>
+                <div className="flex-shrink-0 rounded-lg border border-[#ECECEC] p-3 bg-white">
+                  {/* legacy anchor - replaced above */}
                 </div>
                 <div className="flex-1 min-w-0 text-[13px] space-y-2">
                   <div className="font-semibold text-[14px]">Scan & Pay from any UPI app</div>
