@@ -865,7 +865,12 @@ export default function CheckoutV2Page() {
   };
 
   const apiFiredRef = useRef<Set<string>>(new Set());
+  const lastPaidMethodRef = useRef<string>("");
   const fireAddPaymentInfoOnce = (methodLabel: string, value: number) => {
+    // Remember the method the user actually paid with so the Purchase pixel/CAPI
+    // in onOrderSuccess can pick the right total (COD/partial → full order value,
+    // full online → prepaid-discounted value).
+    lastPaidMethodRef.current = methodLabel;
     if (!store?.id || checkoutItems.length === 0) return;
     if (apiFiredRef.current.has(methodLabel)) return;
     apiFiredRef.current.add(methodLabel);
@@ -1049,6 +1054,21 @@ export default function CheckoutV2Page() {
       .catch((err) => console.error("notify-order invoke error:", err));
   };
 
+  // Purchase value semantics for pixels/CAPI: the total order value committed
+  // to (matches what place-order writes to the DB `orders.total`), NOT the
+  // amount charged now.
+  //   • Full online paid  → prepaidTotal (discount applied, server recomputes to this)
+  //   • Partial (COD+adv) → full `total` (advance is only what's charged now)
+  //   • COD               → full `total` (no prepaid discount for COD)
+  // chargeAmount alone is wrong for partial (undercounts) and for COD when a
+  // prepaid discount is configured (undercounts by the discount amount).
+  const computePurchaseValue = (method: string): number => {
+    const m = (method || "").toLowerCase();
+    if (m === "cod" || m.startsWith("partial_cod")) return total;
+    if (isPartialOrder) return total;
+    return prepaidTotal;
+  };
+
   const onOrderSuccess = (ordId: string) => {
     if (finalizedOrderIdsRef.current.has(ordId)) return;
     finalizedOrderIdsRef.current.add(ordId);
@@ -1060,6 +1080,8 @@ export default function CheckoutV2Page() {
 
     if (!isSingleMode) clearCart();
     window.dispatchEvent(new CustomEvent("order-placed"));
+
+    const purchaseValue = computePurchaseValue(lastPaidMethodRef.current);
 
     // Pixel Purchase — dedupe per order.
     const purchaseDedupKey = `meta_purchase_fired_${ordId}`;
@@ -1073,7 +1095,7 @@ export default function CheckoutV2Page() {
           contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
           content_type: "product",
           content_name: checkoutItems.map((i) => i.name).join(", "),
-          value: chargeAmount, currency,
+          value: purchaseValue, currency,
           num_items: checkoutItems.reduce((s, i) => s + (i.quantity || 1), 0),
         }, purchaseEventIdRef.current);
       } catch { /* noop */ }
@@ -1081,7 +1103,7 @@ export default function CheckoutV2Page() {
 
     try {
       ga4Track("purchase", {
-        transaction_id: ordId, value: chargeAmount, currency,
+        transaction_id: ordId, value: purchaseValue, currency,
         items: checkoutItems.map((i) => ({
           item_id: i.productId, item_name: i.name, item_variant: i.variantId, price: i.price, quantity: i.quantity,
         })),
@@ -1091,7 +1113,7 @@ export default function CheckoutV2Page() {
     try {
       fireStorefrontEvent({
         storeId: store.id, eventName: "purchase",
-        value: chargeAmount, currency,
+        value: purchaseValue, currency,
         metadata: { order_id: ordId, items: checkoutItems.length },
       });
     } catch { /* noop */ }
@@ -1523,9 +1545,10 @@ export default function CheckoutV2Page() {
   }, [showPayment, intents.any.status, intents.any.url, orderId, waiting]);
 
   // Partial ↔ Full toggle: the previous order + UPI intent were minted for the
-  // old amount and stamped with the old payment_type. Reset everything so the
-  // next auto-advance recreates a fresh order (new checkout_token, new
-  // advance_paid on the DB row, new intent URL with the correct amount).
+  // old amount and stamped with the old payment_type. Reset everything AND
+  // immediately re-mint a fresh order + UPI intent for the new amount, otherwise
+  // the UPI tiles stay stuck in "idle" (disabled/blurred) — the auto-advance
+  // effect won't re-fire because its deps didn't change.
   const lastPayModeRef = useRef(payMode);
   useEffect(() => {
     if (lastPayModeRef.current === payMode) return;
@@ -1542,6 +1565,11 @@ export default function CheckoutV2Page() {
     autoAdvancedRef.current = false;
     desktopQrPollStartedRef.current = false;
     setCheckoutToken(newCheckoutToken());
+    // Re-mint order + UPI intents for the new amount so the tiles come back to life.
+    // Fire on the next tick so the state resets above have committed.
+    if (showPayment) {
+      queueMicrotask(() => { void createOrderAndIntents(); });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [payMode]);
 
@@ -2158,8 +2186,10 @@ export default function CheckoutV2Page() {
               <div className="text-right">
                 <div className="text-[11px] text-muted-foreground">{checkoutItems.length} item{checkoutItems.length !== 1 ? "s" : ""}</div>
                 <div className="flex items-center gap-1 justify-end">
-                  {savedAmount > 0 && <span className="text-[12px] text-muted-foreground line-through">{formatPrice(subtotal, currency)}</span>}
-                  <span className="text-[15px] font-bold">{formatPrice(total, currency)}</span>
+                  {(savedAmount > 0 || (!isPartialOrder && prepaidDiscount > 0)) && (
+                    <span className="text-[12px] text-muted-foreground line-through">{formatPrice(isPartialOrder ? subtotal : total, currency)}</span>
+                  )}
+                  <span className="text-[15px] font-bold">{formatPrice(isPartialOrder ? total : prepaidTotal, currency)}</span>
                   <ChevronDown className={`h-4 w-4 transition-transform ${summaryOpen ? "rotate-180" : ""}`} />
                 </div>
               </div>
@@ -2206,6 +2236,16 @@ export default function CheckoutV2Page() {
                     <span>{formatPrice(taxAmount, currency)}</span>
                   </div>
                 )}
+                {!isPartialOrder && prepaidDiscount > 0 && (
+                  <div className="flex justify-between text-[12px] font-semibold text-emerald-700 pt-1 border-t border-[#ECECEC]">
+                    <span>Prepaid discount</span>
+                    <span>−{formatPrice(prepaidDiscount, currency)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-[13px] font-bold pt-1 border-t border-[#ECECEC]">
+                  <span>Total payable {isPartialOrder ? "now" : ""}</span>
+                  <span>{formatPrice(chargeAmount, currency)}</span>
+                </div>
               </div>
             )}
           </div>
