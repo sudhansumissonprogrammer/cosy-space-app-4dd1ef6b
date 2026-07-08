@@ -1769,6 +1769,12 @@ export default function CheckoutV2Page() {
         && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100);
     });
     if (!anyStale) return;
+    if (isDesktopQrWait) {
+      clearWaiting();
+      setWaiting(false);
+      try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+      desktopQrPollStartedRef.current = false;
+    }
     orderIdRef.current = null;
     orderNumberRef.current = null;
     orderSnapshotRef.current = null;
