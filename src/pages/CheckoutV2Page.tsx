@@ -824,7 +824,7 @@ export default function CheckoutV2Page() {
       content_ids: checkoutItems.map((i) => i.productId),
       contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
       num_items: checkoutItems.reduce((s, i) => s + (i.quantity || 1), 0),
-      value: subtotal,
+      value: total,
       currency,
     };
     try { fbPixelTrack("InitiateCheckout", eventData, eid); } catch { /* noop */ }
@@ -841,13 +841,22 @@ export default function CheckoutV2Page() {
     } catch { /* noop */ }
     try {
       ga4Track("begin_checkout", {
-        currency, value: subtotal,
+        currency, value: total,
         items: checkoutItems.map((i) => ({
           item_id: i.productId, item_name: i.name, item_variant: i.variantId, price: i.price, quantity: i.quantity,
         })),
       });
     } catch { /* noop */ }
   };
+
+  // Fire InitiateCheckout once when checkout renders with a non-empty cart
+  // (Meta expects IC:Purchase ~3-5:1; firing only on pay-tap under-reports the funnel).
+  useEffect(() => {
+    if (!store?.id) return;
+    if (checkoutItems.length === 0) return;
+    fireInitiateCheckoutOnce();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id, checkoutItems.length]);
 
   const apiFiredRef = useRef<Set<string>>(new Set());
   const lastPaidMethodRef = useRef<string>("");
@@ -884,7 +893,7 @@ export default function CheckoutV2Page() {
     if (!fullName.trim()) return "Please enter your name";
     const nPhone = normalizePhone(phone);
     if (!isValidIndianPhone(nPhone)) return "Enter a valid 10-digit phone number";
-    if (!/^\d{6}$/.test(pincode)) return "Enter a valid 6-digit pincode";
+    if (!/^\d{6}$/.test((pincode || "").replace(/\D/g, ""))) return "Enter a valid 6-digit pincode";
     if (!streetAddress.trim()) return "Enter your street address";
     if (!city.trim()) return "Enter city";
     if (!state.trim()) return "Enter state";
