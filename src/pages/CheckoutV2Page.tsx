@@ -49,6 +49,11 @@ interface IntentState {
   status: "idle" | "loading" | "ready" | "failed";
   url?: string;
   error?: string;
+  /** chargeAmount (in rupees) captured at intent creation. Used to detect
+   *  stale intents when the shopper switches payment plan or coupon after
+   *  the UPI URL was minted — prevents "chose Full but UPI opened for 100"
+   *  race by refusing to launch a URL whose amount no longer matches. */
+  amount?: number;
 }
 
 interface PendingOrder {
@@ -1323,6 +1328,15 @@ export default function CheckoutV2Page() {
     if (creatingOrder || couponLoading || paymentAmountSyncing) return;
     const s = intents[app];
     if (s.status !== "ready" || !s.url) return;
+    // Stale-intent guard: the minted URL encodes a fixed amount. If the
+    // shopper toggled Partial/Full (or coupon/shipping shifted the total)
+    // between mint and tap, refuse the launch and force a re-mint so the
+    // UPI app never opens for the wrong amount.
+    if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) {
+      toast.info("Updating amount…");
+      void createOrderAndIntents();
+      return;
+    }
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
     setWaitingApp(label);
     setWaiting(true);
@@ -1495,7 +1509,8 @@ export default function CheckoutV2Page() {
               payu_txnid: payload.payu_txnid, razorpay_payment_id: payload.razorpay_payment_id,
             };
           }
-          setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "ready", url: schemeFor(a, url) }; }); return next; });
+          const stamp = chargeAmount;
+          setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "ready", url: schemeFor(a, url), amount: stamp }; }); return next; });
         }
       } catch (e: any) {
         const msg = e?.message || "Failed";
@@ -1579,6 +1594,35 @@ export default function CheckoutV2Page() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentSnapshot]);
+
+  // Safety-net: if any ready intent's stamped amount no longer matches the
+  // current chargeAmount (e.g. the snapshot reset effect bailed out because
+  // `waiting` was briefly true), automatically re-mint. This guarantees a
+  // shopper who switched Partial↔Full can never launch a stale UPI URL.
+  useEffect(() => {
+    if (!showPayment) return;
+    if (waiting || confirmingPayment || orderPlaced) return;
+    if (creatingOrder) return;
+    const anyStale = (Object.keys(intents) as UpiApp[]).some((k) => {
+      const s = intents[k];
+      return s.status === "ready" && typeof s.amount === "number"
+        && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100);
+    });
+    if (!anyStale) return;
+    orderIdRef.current = null;
+    orderNumberRef.current = null;
+    setOrderId(null);
+    setOrderNumber(null);
+    setIntents({
+      gpay: { status: "idle" }, phonepe: { status: "idle" },
+      paytm: { status: "idle" }, bhim: { status: "idle" }, any: { status: "idle" },
+    });
+    const nextToken = newCheckoutToken();
+    checkoutTokenRef.current = nextToken;
+    setCheckoutToken(nextToken);
+    queueMicrotask(() => { void createOrderAndIntents(); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intents, chargeAmount, showPayment, waiting, confirmingPayment, orderPlaced, creatingOrder]);
 
 
   // ─── Full gateway modal paths (Razorpay / Cashfree / PayU) ──────────────
@@ -2644,7 +2688,8 @@ export default function CheckoutV2Page() {
               <div className="grid grid-cols-4 gap-2">
                 {UPI_APPS.slice(0, 4).map((app, i) => {
                   const s = intents[app.key];
-                  const disabled = s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing;
+                  const staleAmount = typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100);
+                  const disabled = s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount;
                   const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
                   return (
                     <button
@@ -2656,22 +2701,28 @@ export default function CheckoutV2Page() {
                       
                       <img src={app.icon} alt={app.label} className="h-8 w-8 mt-3 mb-1 object-contain" />
                       <div className="text-[11px] font-semibold">{app.label}</div>
-                      {s.status === "loading" && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
+                      {(s.status === "loading" || staleAmount) && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
                     </button>
                   );
                 })}
               </div>
-              <button
-                onClick={() => tapUpiApp("any")}
-                disabled={intents.any.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing}
-                className="mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] disabled:opacity-40"
-              >
-                <span className="text-[13px] font-semibold">All UPI Apps</span>
-                <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
-                  Pay with any UPI app
-                  <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
-                </span>
-              </button>
+              {(() => {
+                const anyS = intents.any;
+                const staleAny = typeof anyS.amount === "number" && Math.round(anyS.amount * 100) !== Math.round(chargeAmount * 100);
+                return (
+                  <button
+                    onClick={() => tapUpiApp("any")}
+                    disabled={anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny}
+                    className="mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] disabled:opacity-40"
+                  >
+                    <span className="text-[13px] font-semibold">All UPI Apps</span>
+                    <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
+                      Pay with any UPI app
+                      <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
+                    </span>
+                  </button>
+                );
+              })()}
             </div>
           )}
 
