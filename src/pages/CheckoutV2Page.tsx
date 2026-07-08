@@ -485,6 +485,7 @@ export default function CheckoutV2Page() {
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [showAddressFormSheet, setShowAddressFormSheet] = useState(false);
+  const [addressSheetDismissed, setAddressSheetDismissed] = useState(false);
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", apartment: "", city: "", state: "", pincode: "" });
   const [addrLabel, setAddrLabel] = useState<"Home" | "Work">("Home");
   const [apartment, setApartment] = useState("");
@@ -502,15 +503,19 @@ export default function CheckoutV2Page() {
   const openAddressFormSheet = () => {
     setShowAddressDialog(false);
     setShowAddAddress(false);
+    setAddressSheetDismissed(false);
     setShowAddressFormSheet(true);
   };
 
   const closeAddressFormSheet = () => {
-    if (showAddressFormSheet) setShowAddressFormSheet(false);
-    else navigate(-1);
+    // Stay on the checkout page — never navigate(-1) which pops back to the
+    // PDP and breaks the flow. Just dismiss the sheet; user can reopen via
+    // the "Add delivery address" CTA rendered when the address is missing.
+    setShowAddressFormSheet(false);
+    setAddressSheetDismissed(true);
   };
 
-  const addressSheetOpen = showAddressFormSheet || !(pincode && streetAddress && city && state && fullName);
+  const addressSheetOpen = showAddressFormSheet || (!(pincode && streetAddress && city && state && fullName) && !addressSheetDismissed);
 
   // Lock body scroll while any address overlay is open so only the form scrolls.
   useEffect(() => {
