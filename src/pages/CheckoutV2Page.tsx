@@ -500,6 +500,8 @@ export default function CheckoutV2Page() {
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", apartment: "", city: "", state: "", pincode: "" });
   const [addrLabel, setAddrLabel] = useState<"Home" | "Work">("Home");
   const [apartment, setApartment] = useState("");
+  const [addressAttempted, setAddressAttempted] = useState(false);
+
 
   const selectAddress = (addr: any) => {
     setSelectedAddressId(addr.id);
@@ -2438,9 +2440,19 @@ export default function CheckoutV2Page() {
                 <div>
                   <Label className="text-[12px] text-muted-foreground">Pincode *</Label>
                   <div className="relative">
-                    <Input value={pincode} onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit pincode" inputMode="numeric" maxLength={6} className="h-11 rounded-lg border-[#ECECEC]" />
+                    <Input
+                      value={pincode}
+                      onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="6-digit pincode"
+                      inputMode="numeric"
+                      maxLength={6}
+                      className={`h-11 rounded-lg ${addressAttempted && !/^\d{6}$/.test(pincode) ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                    />
                     {pincodeLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
                   </div>
+                  {addressAttempted && !/^\d{6}$/.test(pincode) && (
+                    <p className="mt-1 text-[12px] text-red-600">Enter a valid 6-digit pincode</p>
+                  )}
                   <button type="button" onClick={detectLocation} disabled={geoLoading} className="text-[11px] text-primary flex items-center gap-1 underline mt-1">
                     {geoLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <LocateFixed className="h-3 w-3" />}
                     Use my location
@@ -2450,22 +2462,40 @@ export default function CheckoutV2Page() {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label className="text-[12px] text-muted-foreground">City *</Label>
-                    <Input value={city} onChange={(e) => setCity(e.target.value)} className="h-11 rounded-lg border-[#ECECEC]" />
+                    <Input
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      className={`h-11 rounded-lg ${addressAttempted && !city.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                    />
+                    {addressAttempted && !city.trim() && (
+                      <p className="mt-1 text-[12px] text-red-600">Required</p>
+                    )}
                   </div>
                   <div>
                     <Label className="text-[12px] text-muted-foreground">State *</Label>
-                    <Input value={state} onChange={(e) => setState(e.target.value)} className="h-11 rounded-lg border-[#ECECEC]" />
+                    <Input
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                      className={`h-11 rounded-lg ${addressAttempted && !state.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                    />
+                    {addressAttempted && !state.trim() && (
+                      <p className="mt-1 text-[12px] text-red-600">Required</p>
+                    )}
                   </div>
                 </div>
 
-                <div>
-                  <Label className="text-[12px] text-muted-foreground">Flat, House no. *</Label>
-                  <Input value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="Enter flat, house no." className="h-11 rounded-lg border-[#ECECEC]" />
-                </div>
 
                 <div>
-                  <Label className="text-[12px] text-muted-foreground">Apartment, Area, Sector, Village</Label>
-                  <Input value={apartment} onChange={(e) => setApartment(e.target.value)} placeholder="Apartment, area, sector, village" className="h-11 rounded-lg border-[#ECECEC]" />
+                  <Label className="text-[12px] text-muted-foreground">Complete Address *</Label>
+                  <Input
+                    value={streetAddress}
+                    onChange={(e) => setStreetAddress(e.target.value)}
+                    placeholder="House no, area, village, landmark"
+                    className={`h-11 rounded-lg ${addressAttempted && !streetAddress.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                  />
+                  {addressAttempted && !streetAddress.trim() && (
+                    <p className="mt-1 text-[12px] text-red-600">Enter Complete Address</p>
+                  )}
                 </div>
 
                 <div className="pt-2 border-t border-[#ECECEC]">
@@ -2473,10 +2503,19 @@ export default function CheckoutV2Page() {
                   <div className="space-y-3">
                     <div>
                       <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
-                      <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" className="h-11 rounded-lg border-[#ECECEC]" />
+                      <Input
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Your name"
+                        className={`h-11 rounded-lg ${addressAttempted && !fullName.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                      />
+                      {addressAttempted && !fullName.trim() && (
+                        <p className="mt-1 text-[12px] text-red-600">Full name required</p>
+                      )}
                     </div>
                   </div>
                 </div>
+
 
 
                 {shippingActive && (
@@ -2506,17 +2545,14 @@ export default function CheckoutV2Page() {
                 <Button
                   className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
                   onClick={() => {
-                    if (!fullName.trim()) { toast.error("Full name required"); return; }
-                    if (!/^\d{6}$/.test(pincode)) { toast.error("Enter a valid pincode"); return; }
-                    if (!streetAddress.trim()) { toast.error("Enter Flat, House no."); return; }
-                    if (!city.trim() || !state.trim()) { toast.error("Enter city and state"); return; }
-                    // Merge apartment (line-2) into street_address so the full
-                    // address is persisted to customer_addresses / orders.
-                    const apt = apartment.trim();
-                    if (apt && !streetAddress.includes(apt)) {
-                      setStreetAddress(`${streetAddress.trim()}, ${apt}`);
+                    const valid = fullName.trim() && /^\d{6}$/.test(pincode) && streetAddress.trim() && city.trim() && state.trim();
+                    if (!valid) {
+                      setAddressAttempted(true);
+                      return;
                     }
+                    setAddressAttempted(false);
                     setShowAddressFormSheet(false);
+
                   }}
                 >
                   Continue
