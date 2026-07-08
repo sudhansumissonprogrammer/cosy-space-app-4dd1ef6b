@@ -2377,10 +2377,6 @@ export default function CheckoutV2Page() {
                   {addressAttempted && !/^\d{6}$/.test(pincode) && (
                     <p className="mt-1 text-[12px] text-red-600">Enter a valid 6-digit pincode</p>
                   )}
-                  <button type="button" onClick={detectLocation} disabled={geoLoading} className="text-[11px] text-primary flex items-center gap-1 underline mt-1">
-                    {geoLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <LocateFixed className="h-3 w-3" />}
-                    Use my location
-                  </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
