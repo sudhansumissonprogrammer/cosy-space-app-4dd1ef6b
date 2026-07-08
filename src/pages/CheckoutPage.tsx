@@ -653,10 +653,6 @@ function CheckoutPageInner() {
   const shippingActive = shippingConfig?.is_active;
   const flatShippingRate = shippingActive ? Number(shippingConfig?.flat_rate) || 0 : 0;
   const freeShippingThreshold = shippingActive ? Number(shippingConfig?.free_shipping_above) || 0 : 0;
-  const qualifiesForFreeShipping = shippingActive && freeShippingThreshold > 0 && subtotal >= freeShippingThreshold && flatShippingRate > 0;
-  const shippingCharge = shippingActive
-    ? (qualifiesForFreeShipping ? 0 : flatShippingRate)
-    : 0;
 
   // Tax calculation
   const taxActive = taxConfig?.is_active && Number(taxConfig?.tax_rate) > 0;
@@ -671,6 +667,12 @@ function CheckoutPageInner() {
       taxAmount = (subtotal * taxRate) / 100;
     }
   }
+
+  const shippingSubtotal = Math.max(0, subtotal - couponDiscount);
+  const qualifiesForFreeShipping = shippingActive && freeShippingThreshold > 0 && shippingSubtotal >= freeShippingThreshold && flatShippingRate > 0;
+  const shippingCharge = shippingActive
+    ? (qualifiesForFreeShipping ? 0 : flatShippingRate)
+    : 0;
 
   const total = Math.max(0, subtotal + (taxInclusive ? 0 : taxAmount) + shippingCharge - couponDiscount);
 
@@ -1317,6 +1319,7 @@ function CheckoutPageInner() {
         },
         items: checkoutItems.map((item) => ({
           productId: item.productId,
+          variantId: item.variantId,
           name: item.name,
           price: item.price,
           quantity: item.quantity,
