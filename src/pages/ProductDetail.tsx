@@ -1514,6 +1514,15 @@ function ImageGallery({
   })();
 
   const len = slides.length;
+  // A "duplicated single" is the special case above: exactly two image slides
+  // pointing at the same URL, no video. In that case we keep the carousel
+  // slideable but hide counter/dots/thumbs so it visually looks like one image.
+  const isDuplicatedSingle =
+    len === 2 &&
+    slides[0].kind === "image" &&
+    slides[1].kind === "image" &&
+    slides[0].url === slides[1].url;
+  const showMultiUi = len > 1 && !isDuplicatedSingle;
   const canLoop = len > 1;
 
   const [emblaRef, embla] = useEmblaCarousel({
