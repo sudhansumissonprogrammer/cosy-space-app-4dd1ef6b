@@ -971,7 +971,7 @@ export default function CheckoutV2Page() {
         .eq("storefront_customer_id", customer.id);
       await supabaseStorefront.from("customer_addresses").insert({
         storefront_customer_id: customer.id,
-        label: "Home",
+        label: addrLabel || "Home",
         full_name: fullName.trim(),
         phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
         street_address: streetAddress.trim(),
@@ -2197,8 +2197,18 @@ export default function CheckoutV2Page() {
                     <div className="text-[13px] text-foreground/80">
                       {city}, {state}, {pincode}
                     </div>
-                    <div className="text-[12px] text-muted-foreground mt-1">
-                      +91 {phone}{email ? <> &nbsp;|&nbsp; <span className="truncate">{email}</span></> : null}
+                    <div className="text-[12px] text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+                      <span>+91 {phone}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPhone("");
+                          try { localStorage.removeItem("checkout_phone"); } catch { /* noop */ }
+                        }}
+                        className="text-[12px] font-semibold text-primary underline underline-offset-2"
+                      >
+                        Change phone number
+                      </button>
                     </div>
                   </div>
                   <button
@@ -2351,31 +2361,9 @@ export default function CheckoutV2Page() {
                       <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
                       <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" className="h-11 rounded-lg border-[#ECECEC]" />
                     </div>
-                    <div>
-                      <Label className="text-[12px] text-muted-foreground">Email Address {customer ? "" : "*"}</Label>
-                      <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" type="email" className="h-11 rounded-lg border-[#ECECEC]" />
-                    </div>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-[#ECECEC]">
-                  <div className="text-[13px] font-semibold mb-2">Save Address As</div>
-                  <div className="flex gap-2">
-                    {(["Home", "Work"] as const).map((lbl) => (
-                      <button
-                        key={lbl}
-                        type="button"
-                        onClick={() => setAddrLabel(lbl)}
-                        className={`flex items-center gap-2 rounded-lg px-4 py-2 border ${addrLabel === lbl ? "border-black" : "border-[#ECECEC]"}`}
-                      >
-                        <span className="text-[13px] font-semibold">{lbl}</span>
-                        <span className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${addrLabel === lbl ? "border-black" : "border-muted-foreground/40"}`}>
-                          {addrLabel === lbl && <span className="h-2 w-2 rounded-full bg-black" />}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
                 {shippingActive && (
                   <div className="pt-2 border-t border-[#ECECEC]">
@@ -2408,7 +2396,12 @@ export default function CheckoutV2Page() {
                     if (!/^\d{6}$/.test(pincode)) { toast.error("Enter a valid pincode"); return; }
                     if (!streetAddress.trim()) { toast.error("Enter Flat, House no."); return; }
                     if (!city.trim() || !state.trim()) { toast.error("Enter city and state"); return; }
-                    if (!customer && !email.trim()) { toast.error("Email address is required"); return; }
+                    // Merge apartment (line-2) into street_address so the full
+                    // address is persisted to customer_addresses / orders.
+                    const apt = apartment.trim();
+                    if (apt && !streetAddress.includes(apt)) {
+                      setStreetAddress(`${streetAddress.trim()}, ${apt}`);
+                    }
                     setShowAddressFormSheet(false);
                   }}
                 >
