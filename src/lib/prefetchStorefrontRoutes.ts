@@ -9,6 +9,7 @@ const eagerImports = [
   () => import("@/pages/ProductDetail"),
   () => import("@/pages/CartPage"),
   () => import("@/pages/CheckoutPage"),
+  () => import("@/pages/CheckoutV2Page"),
   () => import("@/pages/CategoryDetail"),
   // Search overlay — used across every theme; prefetch so first click opens instantly
   () => import("@/components/storefront/StorefrontSearchOverlay"),
