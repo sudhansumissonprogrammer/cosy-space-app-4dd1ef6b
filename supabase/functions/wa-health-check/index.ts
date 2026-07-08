@@ -28,14 +28,9 @@ Deno.serve(async (req) => {
     out.name_status = data?.name_status ?? null;
   } catch (e) { out.phone_error = (e as Error).message; }
 
-  // Token validity (debug_token requires app_token; fall back to a cheap call)
-  try {
-    const r2 = await metaFetch(admin, `https://graph.facebook.com/v21.0/me?fields=id`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }, { source: "wa-health-check:token" });
-    out.token_valid = r2.ok;
-    if (!r2.ok) out.token_error = JSON.stringify(r2.body || {});
-  } catch { out.token_valid = false; }
+  // Treat the phone-number lookup as the token validity check. Avoid `/me` with
+  // a System User token; Meta can treat that as suspicious developer activity.
+  out.token_valid = !out.phone?.error && !out.phone_error;
 
   await admin.from("wa_health_log").insert({
     phone_number_id: phoneId,
