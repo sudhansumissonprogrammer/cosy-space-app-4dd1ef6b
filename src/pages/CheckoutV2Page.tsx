@@ -41,6 +41,7 @@ import { createPortal } from "react-dom";
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 import { QRCodeSVG } from "qrcode.react";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
+const PincodeSheet = lazy(() => import("@/components/storefront/PincodeSheet"));
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
@@ -489,6 +490,14 @@ export default function CheckoutV2Page() {
   const [addrLabel, setAddrLabel] = useState<"Home" | "Work">("Home");
   const [apartment, setApartment] = useState("");
 
+  // Pincode step: gate address form until shopper confirms delivery pincode
+  // via the small PincodeSheet popup. Auto-confirmed if we already have a
+  // pincode from a saved address or from a returning session.
+  const [pincodeConfirmed, setPincodeConfirmed] = useState<boolean>(() => !!pincode);
+  useEffect(() => {
+    if (pincode && /^\d{6}$/.test(pincode)) setPincodeConfirmed(true);
+  }, [pincode]);
+
   const selectAddress = (addr: any) => {
     setSelectedAddressId(addr.id);
     setFullName(addr.full_name || "");
@@ -505,21 +514,25 @@ export default function CheckoutV2Page() {
     setShowAddressFormSheet(true);
   };
 
+  // X on the address form popup — just close the sheet. Never navigate away:
+  // the shopper stays on the checkout page with the pincode/city/state they
+  // already provided, and can reopen the form via the "Tap to add address" chip.
   const closeAddressFormSheet = () => {
-    if (showAddressFormSheet) setShowAddressFormSheet(false);
-    else navigate(-1);
+    setShowAddressFormSheet(false);
   };
 
-  const addressSheetOpen = showAddressFormSheet || !(pincode && streetAddress && city && state && fullName);
+  // Only open the sheet when the shopper explicitly asks for it via a tap.
+  // Never auto-open due to missing fields — that used to swallow the page.
+  const addressSheetOpen = showAddressFormSheet;
 
   // Lock body scroll while any address overlay is open so only the form scrolls.
   useEffect(() => {
-    const anySheetOpen = addressSheetOpen || showAddressDialog;
+    const anySheetOpen = addressSheetOpen || showAddressDialog || !pincodeConfirmed;
     if (!anySheetOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
-  }, [addressSheetOpen, showAddressDialog]);
+  }, [addressSheetOpen, showAddressDialog, pincodeConfirmed]);
 
   useEffect(() => {
     if (savedAddresses && savedAddresses.length > 0 && !selectedAddressId) {
@@ -2035,6 +2048,28 @@ export default function CheckoutV2Page() {
   return (
     <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-32">
 
+      {/* Pincode step — small popup after phone. Auto-fetches city/state via
+          the pincode effect. Once submitted, we land on the checkout page
+          with a "Delivering to <pincode>" chip; payment methods stay hidden
+          until the full address form (name + street) is completed. */}
+      {!pincodeConfirmed && (
+        <Suspense fallback={null}>
+          <PincodeSheet
+            initial={pincode}
+            onSubmit={(pc) => {
+              setPincode(pc);
+              setPincodeConfirmed(true);
+            }}
+            onClose={() => {
+              // X on pincode sheet — go back to the previous page (PDP/cart).
+              // No pincode = no way to proceed with checkout.
+              try { navigate(-1); } catch { /* noop */ }
+            }}
+          />
+        </Suspense>
+      )}
+
+
       {/* Confirming payment overlay */}
       {confirmingPayment && (
         <div className="fixed inset-0 z-50 bg-background/85 backdrop-blur-sm flex items-center justify-center">
@@ -2156,6 +2191,35 @@ export default function CheckoutV2Page() {
           </div>
 
 
+          {/* Pincode-only chip — after PincodeSheet closes but before full address
+              is entered. Tapping opens the address form popup so the shopper
+              can complete street/name. Payment methods stay hidden until full
+              address is filled (showPayment auto-advance is address-gated). */}
+          {pincodeConfirmed && !addressFilled && (
+            <button
+              type="button"
+              onClick={openAddressFormSheet}
+              className="w-full bg-white rounded-xl border border-dashed border-black/40 p-3.5 text-left"
+            >
+              <div className="flex items-start gap-3">
+                <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[14px] font-bold">
+                    Delivering to {pincode}
+                    {city ? ` · ${city}` : ""}
+                    {state ? `, ${state}` : ""}
+                  </div>
+                  <div className="text-[12px] text-muted-foreground mt-0.5">
+                    Tap to add delivery address (name, house / street) to continue.
+                  </div>
+                </div>
+                <div className="text-[12px] font-semibold border border-black rounded-md px-2.5 py-1 flex-shrink-0">
+                  Add
+                </div>
+              </div>
+            </button>
+          )}
+
           {/* Delivery Details (once address filled) */}
           {addressFilled && (
             <>
@@ -2249,7 +2313,7 @@ export default function CheckoutV2Page() {
           )}
 
           {/* Contact + Address form — bottom-sheet popup with scrim + close chip */}
-          {(!addressFilled || showAddressFormSheet) && typeof document !== "undefined" && createPortal(
+          {showAddressFormSheet && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
               {/* Scrim */}
               <div className="absolute inset-0 bg-black/50" onClick={closeAddressFormSheet} aria-hidden />
@@ -2690,10 +2754,19 @@ export default function CheckoutV2Page() {
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3">
           <Button
             className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
-            onClick={createOrderAndIntents}
+            onClick={() => {
+              // If the full address isn't filled yet, open the address form
+              // popup instead of trying to create an order. Payment methods
+              // can never appear until the shopper completes the form.
+              if (!(pincode && streetAddress && city && state && fullName)) {
+                openAddressFormSheet();
+                return;
+              }
+              void createOrderAndIntents();
+            }}
             disabled={creatingOrder || !paymentConfigLoaded}
           >
-            {creatingOrder ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
+            {creatingOrder ? <Loader2 className="h-5 w-5 animate-spin" /> : (pincode && streetAddress && city && state && fullName ? "Continue" : "Add delivery address")}
           </Button>
           <div className="text-[10px] text-center text-muted-foreground mt-1.5">
             By proceeding, I agree to the store's Privacy Policy and T&amp;C
