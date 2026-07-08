@@ -1483,6 +1483,26 @@ export default function CheckoutV2Page() {
     navigate(storefrontPath(store.slug), { replace: true });
   }, [checkoutItems.length, isSingleMode, orderId, orderPlaced, waiting, confirmingPayment, summaryOpen, navigate, store?.slug]);
 
+  // ─── Buy-Now: "just ordered this" guard ─────────────────────────────────
+  // If the shopper completed a Buy-Now order for THIS product and hits back
+  // from the order-detail page, the URL still carries ?product=<pid>. Without
+  // this guard the same product silently re-hydrates into checkout, tricking
+  // them into re-ordering. Redirect to home instead. Skipped while a payment
+  // flow / success screen is active on the SAME mount (orderPlaced/waiting).
+  useEffect(() => {
+    if (!isSingleMode || !productId || !store?.id) return;
+    if (orderId || orderPlaced || waiting || confirmingPayment) return;
+    try {
+      const key = `recent_order:${store.id}:${productId}${variantId ? `:${variantId}` : ""}`;
+      const recent = sessionStorage.getItem(key);
+      if (recent) {
+        toast("You've already placed this order");
+        navigate(storefrontPath(store.slug), { replace: true });
+      }
+    } catch { /* noop */ }
+  }, [isSingleMode, productId, variantId, store?.id, store?.slug, orderId, orderPlaced, waiting, confirmingPayment, navigate]);
+
+
 
 
   // ─── Create order (single call, dedup with checkout_token) ──────────────
