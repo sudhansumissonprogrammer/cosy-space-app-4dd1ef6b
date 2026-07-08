@@ -35,9 +35,11 @@ Deno.serve(async (req) => {
   if (!result) { try { result = await tryFallback(); } catch { /* silent */ } }
 
   if (!result || (!result.city && !result.state)) {
+    // Return 200 with ok:false — "pincode not found" is a normal negative
+    // result, not an error. Non-2xx here triggers global error handlers.
     return new Response(JSON.stringify({ ok: false, error: 'not_found' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 404,
+      status: 200,
     });
   }
 
