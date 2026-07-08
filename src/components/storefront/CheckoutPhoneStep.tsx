@@ -366,7 +366,7 @@ export default function CheckoutPhoneStep({
       </div>
 
       {/* Sticky bottom: consent + Continue */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3">
+      <div className="fixed bottom-0 left-0 right-0 z-40 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
         <label className="flex items-center gap-2 pb-2 text-[12px]">
           <Checkbox
             checked={consent}
