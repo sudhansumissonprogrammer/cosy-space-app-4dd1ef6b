@@ -588,25 +588,27 @@ export default function V22ProductDetail() {
       return;
     }
 
-    addToCart({
-      productId: product.id,
-      variantId: selectedVariant?.id,
-      name: product.name,
-      variantName: selectedVariant?.name,
-      price: variantPrice,
-      image: product.image_url || undefined,
-      quantity,
-    });
+    // Navigate first so the checkout mounts instantly; addToCart runs in a
+    // microtask so React batches the state change with the route change.
     closeCart();
+    navigate(storefrontPath(store.slug, "checkout"));
+    queueMicrotask(() => {
+      addToCart({
+        productId: product.id,
+        variantId: selectedVariant?.id,
+        name: product.name,
+        variantName: selectedVariant?.name,
+        price: variantPrice,
+        image: product.image_url || undefined,
+        quantity,
+      });
+    });
 
     // InitiateCheckout is fired once by CheckoutPage at payment-intent time
     // (with user identity for CAPI dedup). Don't fire from PDP — that would
     // double-count IC in Meta.
-
-
-    // Phone capture now happens as Step 1 of the checkout page (no popup).
-    navigate(storefrontPath(store.slug, "checkout"));
   };
+
 
 
   const handleWishlist = () => {
