@@ -743,6 +743,19 @@ export default function CheckoutV2Page() {
   const effectiveMode: "full" | "partial" = isPartialOrder ? "partial" : "full";
   const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
 
+  // ─── Prepaid discount (store setting) ──────────────────────────────────
+  // Applied only on FULL online payment (not COD, not partial).
+  const prepaidDiscount = useMemo(() => {
+    if (!paymentConfig?.prepaid_discount_enabled) return 0;
+    if (isPartialOrder) return 0;
+    const v = Number(paymentConfig.prepaid_discount_value || 0);
+    if (v <= 0 || total <= 0) return 0;
+    const d = paymentConfig.prepaid_discount_type === "percentage" ? (total * v) / 100 : v;
+    return Math.max(0, Math.min(Math.round(d), total));
+  }, [paymentConfig, total, isPartialOrder]);
+  const prepaidTotal = Math.max(0, total - prepaidDiscount);
+
+
   // ─── Abandoned cart (respects waConsent) ────────────────────────────────
   // NOTE: on first render `store?.id` is often undefined, so we intentionally
   // start `null` and hydrate from sessionStorage inside the effect below once
