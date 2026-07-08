@@ -940,10 +940,18 @@ export default function CheckoutV2Page() {
     } catch { /* noop */ }
   };
 
-  const placeOrderRow = async (paymentMethodHint: string): Promise<PendingOrder> => {
+  const placeOrderRow = async (
+    paymentMethodHint: string,
+    paymentTypeOverride?: "full" | "partial",
+  ): Promise<PendingOrder> => {
     const orderNotes = appliedCoupon
       ? `Coupon: ${appliedCoupon.code} (-${formatPrice(couponDiscount, currency)})`
       : undefined;
+    // COD can never be partial — server rejects that combo. Force full so a
+    // shopper who has "Pay ₹100 advance" pre-selected can still tap COD to
+    // pay everything on delivery.
+    const resolvedPaymentType: "full" | "partial" =
+      paymentTypeOverride ?? (paymentMethodHint === "cod" ? "full" : effectiveMode);
     const { data, error } = await supabase.functions.invoke("place-order", {
       body: {
         store_id: store.id,
@@ -958,7 +966,7 @@ export default function CheckoutV2Page() {
           payment_method: paymentMethodHint,
           notes: orderNotes,
           storefront_customer_id: customer?.id ?? null,
-          payment_type: effectiveMode,
+          payment_type: resolvedPaymentType,
         },
         items: checkoutItems.map((it) => ({
           productId: it.productId,
