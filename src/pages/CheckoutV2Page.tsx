@@ -684,11 +684,14 @@ export default function CheckoutV2Page() {
         : Math.min(Number(partialValue), it.price);
       advance += itemAdv * it.quantity;
     }
+    // Advance is what the shopper pays UP FRONT (typically ₹100/item as
+    // configured). Coupons reduce the *balance* (paid on delivery), not
+    // the advance — otherwise a ₹100 coupon on a ₹100 advance would drop
+    // it to ~₹69 and confuse the shopper. Shipping is charged up front.
     const ratio = subtotal > 0 ? advance / subtotal : 1;
     advance += (taxInclusive ? 0 : taxAmount) * ratio + shippingCharge;
-    advance -= couponDiscount * ratio;
     return Math.max(50, Math.min(total, Math.round(advance)));
-  }, [checkoutItems, hasPartial, partialType, partialValue, subtotal, taxAmount, taxInclusive, shippingCharge, couponDiscount, total]);
+  }, [checkoutItems, hasPartial, partialType, partialValue, subtotal, taxAmount, taxInclusive, shippingCharge, total]);
   const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
 
   const [payMode, setPayMode] = useState<"full" | "partial">("partial");
