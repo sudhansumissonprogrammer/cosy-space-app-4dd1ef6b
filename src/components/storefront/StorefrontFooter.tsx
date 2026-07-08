@@ -230,16 +230,10 @@ export default function StorefrontFooter({ store }: StorefrontFooterProps) {
           {!isCustomDomainHost() && (
             <p className="text-xs opacity-50 flex items-center justify-center gap-1">
               Powered by{" "}
-              <a
-                href="https://shopbanao.in"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 underline hover:opacity-100 transition-opacity"
-                style={{ color: "inherit" }}
-              >
+              <span className="inline-flex items-center gap-1">
                 <img src={shopbanaoLogo} alt="ShopBanao" className="h-5 w-auto inline-block" loading="lazy" />
                 ShopBanao
-              </a>
+              </span>
             </p>
           )}
         </div>
