@@ -1523,9 +1523,10 @@ export default function CheckoutV2Page() {
   }, [showPayment, intents.any.status, intents.any.url, orderId, waiting]);
 
   // Partial ↔ Full toggle: the previous order + UPI intent were minted for the
-  // old amount and stamped with the old payment_type. Reset everything so the
-  // next auto-advance recreates a fresh order (new checkout_token, new
-  // advance_paid on the DB row, new intent URL with the correct amount).
+  // old amount and stamped with the old payment_type. Reset everything AND
+  // immediately re-mint a fresh order + UPI intent for the new amount, otherwise
+  // the UPI tiles stay stuck in "idle" (disabled/blurred) — the auto-advance
+  // effect won't re-fire because its deps didn't change.
   const lastPayModeRef = useRef(payMode);
   useEffect(() => {
     if (lastPayModeRef.current === payMode) return;
@@ -1542,6 +1543,11 @@ export default function CheckoutV2Page() {
     autoAdvancedRef.current = false;
     desktopQrPollStartedRef.current = false;
     setCheckoutToken(newCheckoutToken());
+    // Re-mint order + UPI intents for the new amount so the tiles come back to life.
+    // Fire on the next tick so the state resets above have committed.
+    if (showPayment) {
+      queueMicrotask(() => { void createOrderAndIntents(); });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [payMode]);
 
