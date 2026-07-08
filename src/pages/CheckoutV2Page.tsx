@@ -971,7 +971,7 @@ export default function CheckoutV2Page() {
         .eq("storefront_customer_id", customer.id);
       await supabaseStorefront.from("customer_addresses").insert({
         storefront_customer_id: customer.id,
-        label: "Home",
+        label: addrLabel || "Home",
         full_name: fullName.trim(),
         phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
         street_address: streetAddress.trim(),
