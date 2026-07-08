@@ -2872,10 +2872,10 @@ export default function CheckoutV2Page() {
 
 
           {/* COD */}
-          {/* COD — always shown when the store enables it, even if the
-              shopper currently has the "Pay ₹X advance" plan selected.
-              Tapping COD downgrades the order to full COD server-side. */}
-          {hasCod && (
+          {/* COD is mutually exclusive with partial payment. When the store
+              has partial payment enabled, the ₹X advance IS the anti-fake-order
+              mechanism — offering pure COD alongside would defeat its purpose. */}
+          {hasCod && !partialEnabled && (
             <button
               onClick={placeCod}
               disabled={placingCod || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
