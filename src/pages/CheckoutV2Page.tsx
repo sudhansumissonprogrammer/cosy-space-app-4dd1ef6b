@@ -1328,6 +1328,15 @@ export default function CheckoutV2Page() {
     if (creatingOrder || couponLoading || paymentAmountSyncing) return;
     const s = intents[app];
     if (s.status !== "ready" || !s.url) return;
+    // Stale-intent guard: the minted URL encodes a fixed amount. If the
+    // shopper toggled Partial/Full (or coupon/shipping shifted the total)
+    // between mint and tap, refuse the launch and force a re-mint so the
+    // UPI app never opens for the wrong amount.
+    if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) {
+      toast.info("Updating amount…");
+      void createOrderAndIntents();
+      return;
+    }
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
     setWaitingApp(label);
     setWaiting(true);
