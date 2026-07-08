@@ -694,7 +694,20 @@ function CheckoutPageInner() {
   })();
   const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
   const isPartialOrder = hasAnyPartialPayment && partialPaymentMode === "partial" && hasOnline;
-  const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
+
+  // ─── Prepaid discount (store setting) — full online payment only ─
+  const prepaidDiscount = (() => {
+    const cfg: any = paymentConfig;
+    if (!cfg?.prepaid_discount_enabled) return 0;
+    if (isPartialOrder) return 0;
+    if (paymentMethod === "cod") return 0;
+    const v = Number(cfg.prepaid_discount_value || 0);
+    if (v <= 0 || total <= 0) return 0;
+    const d = cfg.prepaid_discount_type === "percentage" ? (total * v) / 100 : v;
+    return Math.max(0, Math.min(Math.round(d), total));
+  })();
+  const prepaidTotal = Math.max(0, total - prepaidDiscount);
+  const chargeAmount = isPartialOrder ? partialAdvanceTotal : prepaidTotal;
 
   // Coupon logic
   const applyCoupon = async (overrideCode?: string) => {
