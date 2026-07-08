@@ -741,10 +741,10 @@ export default function CheckoutV2Page() {
   const [payMode, setPayMode] = useState<"full" | "partial">("partial");
   const isPartialOrder = hasPartial && payMode === "partial";
   const effectiveMode: "full" | "partial" = isPartialOrder ? "partial" : "full";
-  const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
-
   // ─── Prepaid discount (store setting) ──────────────────────────────────
-  // Applied only on FULL online payment (not COD, not partial).
+  // Applied only on FULL online payment (not COD, not partial). Server
+  // recomputes and stamps the same discount at place-order time so the
+  // gateway is always charged what the tile advertised.
   const prepaidDiscount = useMemo(() => {
     if (!paymentConfig?.prepaid_discount_enabled) return 0;
     if (isPartialOrder) return 0;
@@ -754,6 +754,8 @@ export default function CheckoutV2Page() {
     return Math.max(0, Math.min(Math.round(d), total));
   }, [paymentConfig, total, isPartialOrder]);
   const prepaidTotal = Math.max(0, total - prepaidDiscount);
+  const chargeAmount = isPartialOrder ? partialAdvanceTotal : prepaidTotal;
+
 
 
   // ─── Abandoned cart (respects waConsent) ────────────────────────────────
