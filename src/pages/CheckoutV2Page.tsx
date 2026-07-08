@@ -1716,7 +1716,19 @@ export default function CheckoutV2Page() {
     if (lastPaymentSnapshotRef.current === paymentSnapshot) return;
     lastPaymentSnapshotRef.current = paymentSnapshot;
     if (!orderId && !showPayment) return; // nothing to reset yet
-    if (waiting || confirmingPayment || orderPlaced) return; // don't disrupt an in-flight payment
+    if (confirmingPayment || orderPlaced) return; // don't disrupt an in-flight confirm
+    // Desktop QR auto-polls (sets waiting=true) the moment a QR is ready. A
+    // Partial↔Full toggle after that must still re-mint — cancel the passive
+    // QR wait so the effect can rebuild an order for the new amount. A real
+    // UPI-app tap (waitingApp !== "UPI QR") should not be interrupted.
+    const isDesktopQrWait = waiting && waitingApp === "UPI QR" && !isMobile();
+    if (waiting && !isDesktopQrWait) return;
+    if (isDesktopQrWait) {
+      clearWaiting();
+      setWaiting(false);
+      try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+      desktopQrPollStartedRef.current = false;
+    }
     orderIdRef.current = null;
     orderNumberRef.current = null;
     orderSnapshotRef.current = null;
