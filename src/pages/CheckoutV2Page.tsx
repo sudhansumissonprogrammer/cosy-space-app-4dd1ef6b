@@ -2288,8 +2288,8 @@ export default function CheckoutV2Page() {
                   className="relative mx-auto mb-3 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center"
                 >
                   <X className="h-5 w-5" />
-
-              </button>
+                </button>
+              )}
               {/* Sheet */}
               <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden max-h-[calc(100dvh-72px)]">
               <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
