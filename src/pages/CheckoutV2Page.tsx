@@ -2677,17 +2677,23 @@ export default function CheckoutV2Page() {
                   );
                 })}
               </div>
-              <button
-                onClick={() => tapUpiApp("any")}
-                disabled={intents.any.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing}
-                className="mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] disabled:opacity-40"
-              >
-                <span className="text-[13px] font-semibold">All UPI Apps</span>
-                <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
-                  Pay with any UPI app
-                  <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
-                </span>
-              </button>
+              {(() => {
+                const anyS = intents.any;
+                const staleAny = typeof anyS.amount === "number" && Math.round(anyS.amount * 100) !== Math.round(chargeAmount * 100);
+                return (
+                  <button
+                    onClick={() => tapUpiApp("any")}
+                    disabled={anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny}
+                    className="mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] disabled:opacity-40"
+                  >
+                    <span className="text-[13px] font-semibold">All UPI Apps</span>
+                    <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
+                      Pay with any UPI app
+                      <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
+                    </span>
+                  </button>
+                );
+              })()}
             </div>
           )}
 
