@@ -225,6 +225,9 @@ export default function StorePayments() {
           cashfree_env: cashfreeEnv,
           payu_merchant_key: payuMerchantKey.trim() || null,
           payu_env: payuEnv,
+          prepaid_discount_enabled: prepaidDiscountEnabled && !!prepaidDiscountValue && Number(prepaidDiscountValue) > 0,
+          prepaid_discount_type: prepaidDiscountType,
+          prepaid_discount_value: prepaidDiscountValue ? Number(prepaidDiscountValue) : 0,
         };
         if (razorpayKeySecret.trim()) payload.razorpay_key_secret = razorpayKeySecret.trim();
         if (cashfreeSecretKey.trim()) payload.cashfree_secret_key = cashfreeSecretKey.trim();
