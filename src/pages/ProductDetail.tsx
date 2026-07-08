@@ -1504,6 +1504,12 @@ function ImageGallery({
     if (images[0]) out.push({ kind: "image", url: images[0] });
     if (video?.url) out.push({ kind: "video", url: video.url, poster: video.poster || images[0] || "" });
     for (let i = 1; i < images.length; i++) out.push({ kind: "image", url: images[i] });
+    // If the product only has a single image (no video, no extra images),
+    // duplicate it so the carousel is still slideable — matches legacy PDP.
+    // Multi-image / video products are left untouched.
+    if (out.length === 1 && out[0].kind === "image") {
+      out.push({ kind: "image", url: out[0].url });
+    }
     return out;
   })();
 
