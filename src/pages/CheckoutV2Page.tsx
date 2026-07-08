@@ -491,8 +491,12 @@ export default function CheckoutV2Page() {
     style.setAttribute("data-checkout-font", "v2");
     style.textContent = `
       body[data-checkout-v2="1"],
-      body[data-checkout-v2="1"] *:not(i):not(svg):not([class*="lucide"]) {
+      body[data-checkout-v2="1"] *:not(i):not(svg):not([class*="lucide"]):not([data-checkout-marquee]):not([data-checkout-marquee] *) {
         font-family: 'Montserrat Alternates', system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+      }
+      body[data-checkout-v2="1"] [data-checkout-marquee],
+      body[data-checkout-v2="1"] [data-checkout-marquee] * {
+        font-family: 'Alegreya SC', Georgia, serif !important;
       }
     `;
     document.head.appendChild(style);
