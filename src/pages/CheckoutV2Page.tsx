@@ -1567,19 +1567,36 @@ export default function CheckoutV2Page() {
       // Fresh intent = fresh QR — allow the desktop auto-poll to arm again.
       desktopQrPollStartedRef.current = false;
 
+      // Stamp the amount BEFORE invoking. If the shopper toggles Partial↔Full
+      // while the request is in flight, this captured value diverges from the
+      // live chargeAmount and we discard the stale response instead of
+      // rendering a QR for the wrong price.
+      const requestedAmount = chargeAmount;
       try {
-        const { data: intentData, error: intErr } = await supabase.functions.invoke("create-upi-intent", {
+        // Hard 15s timeout — supabase-js invoke has no default timeout, so a
+        // hung gateway upstream would leave the QR spinning forever. Race the
+        // invoke against an AbortError so we always resolve to ready/failed.
+        const invokePromise = supabase.functions.invoke("create-upi-intent", {
           body: {
             store_id: store.id, order_id: order.id, app: "any",
             customer_name: fullName.trim(), customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
             customer_email: email.trim() || undefined,
             return_url: buildPaymentReturnUrl(),
+            amount: requestedAmount,
           },
         });
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Payment gateway timed out. Please retry.")), 15000)
+        );
+        const { data: intentData, error: intErr } = await Promise.race([invokePromise, timeoutPromise]) as any;
+        // Discard if the shopper switched plans mid-flight — a fresh mint is already queued.
+        if (Math.round(requestedAmount * 100) !== Math.round(chargeAmount * 100)) {
+          return;
+        }
         const payload: any = intentData ?? (intErr as any)?.context?.body;
         const url: string | undefined = payload?.intent_url;
         if (!url) {
-          const errMsg: string = payload?.error || intErr?.message || "Failed";
+          const errMsg: string = payload?.error || intErr?.message || "UPI temporarily unavailable";
           setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: errMsg }; }); return next; });
         } else {
           if (payload?.pg) {
@@ -1588,11 +1605,12 @@ export default function CheckoutV2Page() {
               payu_txnid: payload.payu_txnid, razorpay_payment_id: payload.razorpay_payment_id,
             };
           }
-          const stamp = chargeAmount;
-          setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "ready", url: schemeFor(a, url), amount: stamp }; }); return next; });
+          setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "ready", url: schemeFor(a, url), amount: requestedAmount }; }); return next; });
         }
       } catch (e: any) {
-        const msg = e?.message || "Failed";
+        // Ignore late failures from a request that no longer matches the current amount.
+        if (Math.round(requestedAmount * 100) !== Math.round(chargeAmount * 100)) return;
+        const msg = e?.message || "UPI temporarily unavailable";
         setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: msg }; }); return next; });
       }
     } catch (e: any) {
