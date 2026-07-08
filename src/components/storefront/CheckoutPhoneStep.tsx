@@ -172,7 +172,7 @@ export default function CheckoutPhoneStep({
   }, []);
 
   return (
-    <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-32">
+    <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-[220px]">
       {/* Sticky header */}
       <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-4 py-3 flex items-center gap-3">
         <button
@@ -298,19 +298,16 @@ export default function CheckoutPhoneStep({
           </div>
         </div>
 
-        {/* Login card */}
+        {/* Mobile number card */}
         <div className="bg-white rounded-xl border border-[#ECECEC] overflow-hidden">
-          <div className="bg-amber-50 text-amber-800 text-[13px] font-semibold text-center py-2">
-            Login to continue securely
-          </div>
           <div className="p-3.5 space-y-3">
-            <div className="flex items-center gap-2">
-              <UserCircle2 className="h-6 w-6 text-muted-foreground" />
-              <div className="text-[14px] font-semibold">Login to continue</div>
+            <div className="text-[14px] font-semibold">Enter your mobile number</div>
+            <div className="text-[11px] text-muted-foreground -mt-2">
+              We'll use this to send order updates. No OTP required.
             </div>
             <div className="relative">
               <Label className="text-[11px] text-muted-foreground absolute -top-2 left-3 bg-white px-1">
-                Enter Mobile Number
+                Mobile Number
               </Label>
               <div className="flex items-center h-12 rounded-lg border border-[#ECECEC] px-3 gap-2">
                 <span className="text-[14px] font-medium">+91</span>
@@ -335,6 +332,7 @@ export default function CheckoutPhoneStep({
             </div>
           </div>
         </div>
+
 
         {/* Trust footer */}
         <div className="pt-6 pb-2 text-center">
@@ -368,7 +366,7 @@ export default function CheckoutPhoneStep({
       </div>
 
       {/* Sticky bottom: consent + Continue */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3">
+      <div className="fixed bottom-0 left-0 right-0 z-40 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
         <label className="flex items-center gap-2 pb-2 text-[12px]">
           <Checkbox
             checked={consent}

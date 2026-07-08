@@ -295,8 +295,9 @@ export default function CheckoutV2Page() {
         try { result = await tryPrimary(); } catch { /* try fallback */ }
         if (!result) { try { result = await tryFallback(); } catch { /* silent */ } }
         if (cancelled || !result) return;
-        if (!city) setCity(result.city || "");
-        if (!state) setState(result.state || "");
+        // Always overwrite from a successful lookup so a stale value never blocks autofill
+        if (result.city) setCity(result.city);
+        if (result.state) setState(result.state);
       } finally { if (!cancelled) setPincodeLoading(false); }
     })();
     return () => { cancelled = true; };
@@ -2247,20 +2248,27 @@ export default function CheckoutV2Page() {
             </>
           )}
 
-          {/* Contact + Address form — portaled full-screen editor to avoid half-open fixed-layout bugs */}
+          {/* Contact + Address form — bottom-sheet popup with scrim + close chip */}
           {(!addressFilled || showAddressFormSheet) && typeof document !== "undefined" && createPortal(
-            <div className="fixed inset-0 z-[100] h-[100dvh] min-h-[100svh] w-screen bg-white flex flex-col overflow-hidden" role="dialog" aria-modal="true" aria-label="Add delivery address">
+            <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
+              {/* Scrim */}
+              <div className="absolute inset-0 bg-black/50" onClick={closeAddressFormSheet} aria-hidden />
+              {/* Close chip above sheet */}
+              <button
+                type="button"
+                onClick={closeAddressFormSheet}
+                aria-label="Close"
+                className="relative mx-auto mb-3 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              {/* Sheet */}
+              <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden max-h-[calc(100dvh-72px)]">
               <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
                 <div className="text-[16px] font-bold">Add Delivery Address</div>
-                <button
-                  type="button"
-                  onClick={closeAddressFormSheet}
-                  aria-label="Close"
-                  className="h-9 w-9 rounded-full hover:bg-gray-100 flex items-center justify-center -mr-1"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <span className="h-9 w-9" aria-hidden />
               </div>
+
 
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-4 pb-5 space-y-3">
                 {returningOrder && !returningUsed && (
@@ -2379,8 +2387,10 @@ export default function CheckoutV2Page() {
                   Continue
                 </Button>
               </div>
+              </div>
             </div>,
             document.body
+
           )}
 
           {/* Partial-payment selector moved into payment section below */}
