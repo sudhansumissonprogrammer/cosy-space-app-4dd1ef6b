@@ -9,10 +9,31 @@ Deno.serve(async (req) => {
 
   try {
     const { phone_number_id } = await req.json().catch(() => ({}))
-    const pnid = phone_number_id || '1248148541706026'
+    if (!phone_number_id) {
+      return new Response(JSON.stringify({ ok: false, error: 'phone_number_id required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    const authHeader = req.headers.get('Authorization') || ''
+    if (!authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ ok: false, error: 'unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    const pnid = phone_number_id
     const token = Deno.env.get('WA_ACCESS_TOKEN')
     const pin = Deno.env.get('WA_PHONE_PIN')
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+
+    const tokenOnly = authHeader.replace(/^Bearer\s+/i, '')
+    const { data: userData } = await admin.auth.getUser(tokenOnly)
+    const uid = userData?.user?.id
+    const { data: isAdmin } = uid ? await admin.rpc('has_role', { _user_id: uid, _role: 'admin' }) : { data: false } as any
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ ok: false, error: 'forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
 
     if (!token || !pin) {
       return new Response(JSON.stringify({ ok: false, error: 'Missing WA_ACCESS_TOKEN or WA_PHONE_PIN' }), {
