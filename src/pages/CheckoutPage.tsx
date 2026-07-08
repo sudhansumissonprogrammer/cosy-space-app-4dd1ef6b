@@ -512,6 +512,9 @@ function CheckoutPageInner() {
         cashfree_env: string | null;
         payu_merchant_key: string | null;
         payu_env: string | null;
+        prepaid_discount_enabled?: boolean;
+        prepaid_discount_type?: "fixed" | "percentage";
+        prepaid_discount_value?: number;
       } | null;
     },
     staleTime: 30 * 60 * 1000,
@@ -691,7 +694,20 @@ function CheckoutPageInner() {
   })();
   const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
   const isPartialOrder = hasAnyPartialPayment && partialPaymentMode === "partial" && hasOnline;
-  const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
+
+  // ─── Prepaid discount (store setting) — full online payment only ─
+  const prepaidDiscount = (() => {
+    const cfg: any = paymentConfig;
+    if (!cfg?.prepaid_discount_enabled) return 0;
+    if (isPartialOrder) return 0;
+    if (paymentMethod === "cod") return 0;
+    const v = Number(cfg.prepaid_discount_value || 0);
+    if (v <= 0 || total <= 0) return 0;
+    const d = cfg.prepaid_discount_type === "percentage" ? (total * v) / 100 : v;
+    return Math.max(0, Math.min(Math.round(d), total));
+  })();
+  const prepaidTotal = Math.max(0, total - prepaidDiscount);
+  const chargeAmount = isPartialOrder ? partialAdvanceTotal : prepaidTotal;
 
   // Coupon logic
   const applyCoupon = async (overrideCode?: string) => {
@@ -2653,8 +2669,23 @@ function CheckoutPageInner() {
               {paymentMethod === "razorpay" && <Check className="h-3 w-3 text-primary-foreground" />}
             </div>
             <CreditCard className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium text-foreground">{tCritical("Pay Online", "ऑनलाइन भुगतान")}</p>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-medium text-foreground">{tCritical("Pay Online", "ऑनलाइन भुगतान")}</p>
+                {(() => {
+                  const cfg: any = paymentConfig;
+                  if (!cfg?.prepaid_discount_enabled) return null;
+                  const v = Number(cfg.prepaid_discount_value || 0);
+                  if (v <= 0 || total <= 0) return null;
+                  const d = cfg.prepaid_discount_type === "percentage" ? Math.round((total * v) / 100) : Math.min(v, total);
+                  if (d <= 0) return null;
+                  return (
+                    <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px] dark:text-emerald-400">
+                      {t(`Save ${formatPrice(d, currency)}`, `${formatPrice(d, currency)} बचाएँ`)}
+                    </Badge>
+                  );
+                })()}
+              </div>
               <p className="text-xs text-muted-foreground">UPI, Cards, Net Banking, Wallets</p>
             </div>
           </button>
@@ -2692,10 +2723,21 @@ function CheckoutPageInner() {
             <span className="text-primary font-medium">-{formatPrice(couponDiscount, currency)}</span>
           </div>
         )}
+        {prepaidDiscount > 0 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-emerald-700 dark:text-emerald-400">{t("Prepaid Discount", "प्रीपेड छूट")}</span>
+            <span className="font-medium text-emerald-700 dark:text-emerald-400">-{formatPrice(prepaidDiscount, currency)}</span>
+          </div>
+        )}
         <Separator />
         <div className="flex items-center justify-between">
           <span className="font-semibold text-foreground">{t("Total", "कुल")}</span>
-          <span className="text-lg font-bold text-foreground">{formatPrice(total, currency)}</span>
+          <span className="text-lg font-bold text-foreground">
+            {prepaidDiscount > 0 && (
+              <span className="mr-2 text-xs text-muted-foreground line-through font-medium">{formatPrice(total, currency)}</span>
+            )}
+            {formatPrice(prepaidTotal, currency)}
+          </span>
         </div>
         {isPartialOrder && (
           <div className="mt-2 rounded-xl border-2 border-primary/30 bg-primary/5 p-3 space-y-2">
@@ -2772,7 +2814,7 @@ function CheckoutPageInner() {
               ) : (
                 <span>
                   {paymentMethod === "razorpay"
-                    ? `${t("Pay Securely", "सुरक्षित भुगतान करें")} ${currencySymbol}${total.toFixed(0)}`
+                    ? `${t("Pay Securely", "सुरक्षित भुगतान करें")} ${currencySymbol}${prepaidTotal.toFixed(0)}`
                     : `${t("Place Order", "ऑर्डर करें")} · ${currencySymbol}${total.toFixed(0)}`}
                 </span>
               )}

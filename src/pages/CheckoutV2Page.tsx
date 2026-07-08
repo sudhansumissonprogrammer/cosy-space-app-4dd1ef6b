@@ -415,6 +415,9 @@ export default function CheckoutV2Page() {
         cashfree_env: string | null;
         payu_merchant_key: string | null;
         payu_env: string | null;
+        prepaid_discount_enabled?: boolean;
+        prepaid_discount_type?: "fixed" | "percentage";
+        prepaid_discount_value?: number;
       } | null;
     },
     staleTime: 30 * 60 * 1000,
@@ -738,7 +741,22 @@ export default function CheckoutV2Page() {
   const [payMode, setPayMode] = useState<"full" | "partial">("partial");
   const isPartialOrder = hasPartial && payMode === "partial";
   const effectiveMode: "full" | "partial" = isPartialOrder ? "partial" : "full";
-  const chargeAmount = isPartialOrder ? partialAdvanceTotal : total;
+  // ─── Prepaid discount (store setting) ──────────────────────────────────
+  // Applied only on FULL online payment (not COD, not partial). Server
+  // recomputes and stamps the same discount at place-order time so the
+  // gateway is always charged what the tile advertised.
+  const prepaidDiscount = useMemo(() => {
+    if (!paymentConfig?.prepaid_discount_enabled) return 0;
+    if (isPartialOrder) return 0;
+    const v = Number(paymentConfig.prepaid_discount_value || 0);
+    if (v <= 0 || total <= 0) return 0;
+    const d = paymentConfig.prepaid_discount_type === "percentage" ? (total * v) / 100 : v;
+    return Math.max(0, Math.min(Math.round(d), total));
+  }, [paymentConfig, total, isPartialOrder]);
+  const prepaidTotal = Math.max(0, total - prepaidDiscount);
+  const chargeAmount = isPartialOrder ? partialAdvanceTotal : prepaidTotal;
+
+
 
   // ─── Abandoned cart (respects waConsent) ────────────────────────────────
   // NOTE: on first render `store?.id` is often undefined, so we intentionally
@@ -2490,7 +2508,12 @@ export default function CheckoutV2Page() {
                       {payMode === "full" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold">Pay full {formatPrice(total, currency)} online</div>
+                      <div className="text-[13px] font-semibold">
+                        Pay full {formatPrice(prepaidTotal, currency)} online
+                        {prepaidDiscount > 0 && (
+                          <span className="ml-1 text-[11px] font-medium text-emerald-700">save {formatPrice(prepaidDiscount, currency)}</span>
+                        )}
+                      </div>
                       <div className="text-[12px] text-muted-foreground mt-0.5">Nothing to pay on delivery</div>
                     </div>
                   </div>

@@ -303,10 +303,41 @@ Deno.serve(async (req) => {
       }
     }
 
-    const serverTotal = Math.max(0, Math.round((serverSubtotal - serverDiscount + serverShipping) * 100) / 100);
+    // Prepaid discount (store-configured) — applies ONLY on full online payment.
+    // Never on COD, never on partial. Recomputed server-side so client cannot
+    // trick the total by pretending to pay online. Stored in `notes` line so
+    // owners see why the collected amount differs from the item subtotal.
+    let prepaidDiscount = 0;
+    const isFullOnline =
+      order.payment_type !== "partial" &&
+      order.payment_method !== "cod";
+    if (isFullOnline) {
+      const { data: payCfg } = await supabase
+        .from("store_payment_config")
+        .select("prepaid_discount_enabled, prepaid_discount_type, prepaid_discount_value")
+        .eq("store_id", store_id)
+        .maybeSingle();
+      if (payCfg?.prepaid_discount_enabled) {
+        const v = Number(payCfg.prepaid_discount_value || 0);
+        const base = Math.max(0, serverSubtotal - serverDiscount + serverShipping);
+        let d = payCfg.prepaid_discount_type === "percentage"
+          ? (base * v) / 100
+          : v;
+        prepaidDiscount = Math.max(0, Math.min(d, base));
+      }
+    }
+
+    const serverTotal = Math.max(
+      0,
+      Math.round((serverSubtotal - serverDiscount + serverShipping - prepaidDiscount) * 100) / 100,
+    );
     // Replace client-supplied total + coupon_id with server-verified values.
     order.total = serverTotal;
     coupon_id = validCouponId;
+    if (prepaidDiscount > 0) {
+      const note = `Prepaid discount: -${prepaidDiscount.toFixed(2)}`;
+      order.notes = order.notes ? `${order.notes}\n${note}` : note;
+    }
 
     // ────────────────────────────────────────────────────────────────
     // Server-side partial payment calculation (store-level).
