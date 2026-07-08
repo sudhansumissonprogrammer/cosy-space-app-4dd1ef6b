@@ -330,6 +330,17 @@ export default function CheckoutPhoneStep({
                 />
               </div>
             </div>
+            <Button
+              onClick={submit}
+              disabled={submitting || !valid}
+              className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white disabled:opacity-100 rounded-lg"
+            >
+              {submitting ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                "Continue"
+              )}
+            </Button>
           </div>
         </div>
 
