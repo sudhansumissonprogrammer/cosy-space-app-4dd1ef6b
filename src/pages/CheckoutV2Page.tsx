@@ -41,6 +41,8 @@ import { createPortal } from "react-dom";
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 import { QRCodeSVG } from "qrcode.react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
+import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
@@ -2288,11 +2290,8 @@ export default function CheckoutV2Page() {
 
   const savedAddr = savedAddresses?.find((a: any) => a.id === selectedAddressId);
   const addressFilled = !!(pincode && streetAddress && city && state && fullName);
-  const announcement = showPayment
-    ? "Get Extra Discount on UPI"
-    : addressFilled
-    ? "Re-check the delivery address"
-    : "Unlock Extra Discount In Next Step";
+  const themeConfig = useStorefrontThemeConfig(store?.id);
+  const marqueeEnabled = themeConfig?.marquee_enabled ?? true;
   const savedAmount = (appliedCoupon && couponDiscount > 0 ? couponDiscount : 0);
 
   return (
@@ -2328,10 +2327,12 @@ export default function CheckoutV2Page() {
         </div>
       </div>
 
-      {/* Announcement bar */}
-      <div className="sticky top-[57px] z-10 bg-black text-white text-[13px] font-semibold text-center py-2.5 px-4">
-        {announcement}
-      </div>
+      {/* Announcement marquee — same component + dashboard-controlled text/gradient as storefront */}
+      {marqueeEnabled && (
+        <div className="sticky top-[57px] z-10">
+          <StorefrontMarquee text={themeConfig?.marquee_text} />
+        </div>
+      )}
 
       {/* Payment retry banner */}
       {paymentFailed && pendingOrder && (
