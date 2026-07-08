@@ -1638,6 +1638,7 @@ export default function CheckoutV2Page() {
     if (!anyStale) return;
     orderIdRef.current = null;
     orderNumberRef.current = null;
+    orderSnapshotRef.current = null;
     setOrderId(null);
     setOrderNumber(null);
     setIntents({
