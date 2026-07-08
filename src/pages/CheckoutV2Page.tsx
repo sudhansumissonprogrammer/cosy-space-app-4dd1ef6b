@@ -2334,8 +2334,8 @@ export default function CheckoutV2Page() {
       {/* Announcement marquee — same component + dashboard-controlled text/gradient as storefront */}
       {marqueeEnabled && (
         <div
+          data-checkout-marquee
           className="sticky top-[57px] z-10"
-          style={{ fontFamily: "'Alegreya SC', serif" }}
         >
           <StorefrontMarquee text={themeConfig?.marquee_text} />
         </div>
