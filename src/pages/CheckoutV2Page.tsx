@@ -2262,7 +2262,6 @@ export default function CheckoutV2Page() {
           )}
 
           {/* Contact + Address form — bottom-sheet popup with scrim + close chip */}
-          {/* Contact + Address form — bottom-sheet popup with scrim + close chip */}
           {showAddressFormSheet && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
               {/* Scrim */}
