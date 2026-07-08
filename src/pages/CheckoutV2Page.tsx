@@ -1500,7 +1500,8 @@ export default function CheckoutV2Page() {
               payu_txnid: payload.payu_txnid, razorpay_payment_id: payload.razorpay_payment_id,
             };
           }
-          setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "ready", url: schemeFor(a, url) }; }); return next; });
+          const stamp = chargeAmount;
+          setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "ready", url: schemeFor(a, url), amount: stamp }; }); return next; });
         }
       } catch (e: any) {
         const msg = e?.message || "Failed";
