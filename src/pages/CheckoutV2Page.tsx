@@ -500,6 +500,8 @@ export default function CheckoutV2Page() {
   const [newAddr, setNewAddr] = useState({ label: "Home", full_name: "", phone: "", street_address: "", apartment: "", city: "", state: "", pincode: "" });
   const [addrLabel, setAddrLabel] = useState<"Home" | "Work">("Home");
   const [apartment, setApartment] = useState("");
+  const [addressAttempted, setAddressAttempted] = useState(false);
+
 
   const selectAddress = (addr: any) => {
     setSelectedAddressId(addr.id);
