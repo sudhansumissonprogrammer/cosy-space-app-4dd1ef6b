@@ -490,6 +490,14 @@ export default function CheckoutV2Page() {
   const [addrLabel, setAddrLabel] = useState<"Home" | "Work">("Home");
   const [apartment, setApartment] = useState("");
 
+  // Pincode step: gate address form until shopper confirms delivery pincode
+  // via the small PincodeSheet popup. Auto-confirmed if we already have a
+  // pincode from a saved address or from a returning session.
+  const [pincodeConfirmed, setPincodeConfirmed] = useState<boolean>(() => !!pincode);
+  useEffect(() => {
+    if (pincode && /^\d{6}$/.test(pincode)) setPincodeConfirmed(true);
+  }, [pincode]);
+
   const selectAddress = (addr: any) => {
     setSelectedAddressId(addr.id);
     setFullName(addr.full_name || "");
@@ -506,21 +514,25 @@ export default function CheckoutV2Page() {
     setShowAddressFormSheet(true);
   };
 
+  // X on the address form popup — just close the sheet. Never navigate away:
+  // the shopper stays on the checkout page with the pincode/city/state they
+  // already provided, and can reopen the form via the "Tap to add address" chip.
   const closeAddressFormSheet = () => {
-    if (showAddressFormSheet) setShowAddressFormSheet(false);
-    else navigate(-1);
+    setShowAddressFormSheet(false);
   };
 
-  const addressSheetOpen = showAddressFormSheet || !(pincode && streetAddress && city && state && fullName);
+  // Only open the sheet when the shopper explicitly asks for it via a tap.
+  // Never auto-open due to missing fields — that used to swallow the page.
+  const addressSheetOpen = showAddressFormSheet;
 
   // Lock body scroll while any address overlay is open so only the form scrolls.
   useEffect(() => {
-    const anySheetOpen = addressSheetOpen || showAddressDialog;
+    const anySheetOpen = addressSheetOpen || showAddressDialog || !pincodeConfirmed;
     if (!anySheetOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
-  }, [addressSheetOpen, showAddressDialog]);
+  }, [addressSheetOpen, showAddressDialog, pincodeConfirmed]);
 
   useEffect(() => {
     if (savedAddresses && savedAddresses.length > 0 && !selectedAddressId) {
