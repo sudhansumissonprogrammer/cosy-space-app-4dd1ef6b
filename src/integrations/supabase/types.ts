@@ -2388,6 +2388,9 @@ export type Database = {
           payu_env: string
           payu_merchant_key: string | null
           payu_merchant_salt: string | null
+          prepaid_discount_enabled: boolean
+          prepaid_discount_type: string
+          prepaid_discount_value: number
           razorpay_key_id: string | null
           razorpay_key_secret: string | null
           store_id: string
@@ -2403,6 +2406,9 @@ export type Database = {
           payu_env?: string
           payu_merchant_key?: string | null
           payu_merchant_salt?: string | null
+          prepaid_discount_enabled?: boolean
+          prepaid_discount_type?: string
+          prepaid_discount_value?: number
           razorpay_key_id?: string | null
           razorpay_key_secret?: string | null
           store_id: string
@@ -2418,6 +2424,9 @@ export type Database = {
           payu_env?: string
           payu_merchant_key?: string | null
           payu_merchant_salt?: string | null
+          prepaid_discount_enabled?: boolean
+          prepaid_discount_type?: string
+          prepaid_discount_value?: number
           razorpay_key_id?: string | null
           razorpay_key_secret?: string | null
           store_id?: string
