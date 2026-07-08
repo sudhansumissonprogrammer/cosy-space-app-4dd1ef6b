@@ -1758,8 +1758,11 @@ export default function CheckoutV2Page() {
   // shopper who switched Partial↔Full can never launch a stale UPI URL.
   useEffect(() => {
     if (!showPayment) return;
-    if (waiting || confirmingPayment || orderPlaced) return;
+    if (confirmingPayment || orderPlaced) return;
     if (creatingOrder) return;
+    // Desktop QR passive wait shouldn't block a re-mint (see snapshot effect above).
+    const isDesktopQrWait = waiting && waitingApp === "UPI QR" && !isMobile();
+    if (waiting && !isDesktopQrWait) return;
     const anyStale = (Object.keys(intents) as UpiApp[]).some((k) => {
       const s = intents[k];
       return s.status === "ready" && typeof s.amount === "number"
