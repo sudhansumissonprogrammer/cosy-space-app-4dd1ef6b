@@ -55,6 +55,11 @@ export default function StorePayments() {
   const [partialType, setPartialType] = useState<"percentage" | "fixed">("percentage");
   const [partialValue, setPartialValue] = useState("");
 
+  // Prepaid (full online payment) discount
+  const [prepaidDiscountEnabled, setPrepaidDiscountEnabled] = useState(false);
+  const [prepaidDiscountType, setPrepaidDiscountType] = useState<"fixed" | "percentage">("fixed");
+  const [prepaidDiscountValue, setPrepaidDiscountValue] = useState("");
+
   // Checkout V2 (GoKwik-style one-page UPI intent checkout) — off by default
   const [checkoutV2Enabled, setCheckoutV2Enabled] = useState(false);
 
