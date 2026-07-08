@@ -2321,11 +2321,10 @@ export default function CheckoutV2Page() {
           <ArrowLeft className="h-5 w-5" />
         </button>
         {store?.logo_url ? (
-          <img src={store.logo_url} alt={store.name} className="h-8 w-auto max-w-[110px] object-contain shrink-0" />
+          <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[110px] object-contain shrink-0" />
         ) : (
           <div className="text-sm font-bold truncate min-w-0 flex-1">{store?.name || "Store"}</div>
         )}
-        <div className="flex-1 min-w-0" />
         <div className="text-[11.5px] text-muted-foreground flex items-center gap-1 whitespace-nowrap shrink-0">
           100% Secured Payment <Lock className="h-3 w-3" />
         </div>
