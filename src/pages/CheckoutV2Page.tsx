@@ -767,6 +767,12 @@ export default function CheckoutV2Page() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const orderIdRef = useRef<string | null>(null);
   const orderNumberRef = useRef<string | null>(null);
+  /** paymentSnapshot value at the moment the current orderId was minted.
+   *  Any later payment launch (UPI tap, Razorpay/Cashfree/PayU open, COD)
+   *  compares this against the live paymentSnapshot: if they diverge, the
+   *  order row is stale (plan/coupon/qty changed) and must be re-minted so
+   *  the gateway is never called with the wrong charge amount. */
+  const orderSnapshotRef = useRef<string | null>(null);
   useEffect(() => { orderIdRef.current = orderId; }, [orderId]);
   useEffect(() => { orderNumberRef.current = orderNumber; }, [orderNumber]);
   const [creatingOrder, setCreatingOrder] = useState(false);
@@ -1454,11 +1460,31 @@ export default function CheckoutV2Page() {
 
 
   // ─── Create order (single call, dedup with checkout_token) ──────────────
+  // Also enforces that a reused orderId matches the CURRENT payment snapshot
+  // (plan, coupon, shipping, items). If the shopper toggled Partial↔Full or
+  // applied a coupon after the row was minted, the stored row is stale and
+  // must be discarded — otherwise the gateway (UPI/Razorpay/Cashfree/PayU)
+  // is called against the wrong `advance_paid`/`total` and charges too much
+  // or too little. Server is DB-authoritative, so a fresh mint is the only
+  // safe way to change the amount.
   const createOrderIfNeeded = async (paymentMethodHint: string): Promise<PendingOrder> => {
-    if (orderIdRef.current) return { id: orderIdRef.current, number: orderNumberRef.current };
+    if (orderIdRef.current && orderSnapshotRef.current === paymentSnapshot) {
+      return { id: orderIdRef.current, number: orderNumberRef.current };
+    }
+    if (orderIdRef.current && orderSnapshotRef.current !== paymentSnapshot) {
+      // Discard stale row before minting a fresh one with the new amount.
+      orderIdRef.current = null;
+      orderNumberRef.current = null;
+      setOrderId(null);
+      setOrderNumber(null);
+      const nextToken = newCheckoutToken();
+      checkoutTokenRef.current = nextToken;
+      setCheckoutToken(nextToken);
+    }
     const created = await placeOrderRow(paymentMethodHint);
     orderIdRef.current = created.id;
     orderNumberRef.current = created.number;
+    orderSnapshotRef.current = paymentSnapshot;
     setOrderId(created.id);
     setOrderNumber(created.number);
     return created;
@@ -1575,6 +1601,7 @@ export default function CheckoutV2Page() {
     if (waiting || confirmingPayment || orderPlaced) return; // don't disrupt an in-flight payment
     orderIdRef.current = null;
     orderNumberRef.current = null;
+    orderSnapshotRef.current = null;
     setOrderId(null);
     setOrderNumber(null);
     setPendingOrder(null);
@@ -1611,6 +1638,7 @@ export default function CheckoutV2Page() {
     if (!anyStale) return;
     orderIdRef.current = null;
     orderNumberRef.current = null;
+    orderSnapshotRef.current = null;
     setOrderId(null);
     setOrderNumber(null);
     setIntents({
