@@ -2265,35 +2265,31 @@ export default function CheckoutV2Page() {
             </>
           )}
 
-          {/* Contact + Address form — bottom-sheet popup with scrim + close chip */}
-          {!addressFilled && addressSheetDismissed && !showAddressFormSheet && (
-            <button
-              onClick={openAddressFormSheet}
-              className="w-full bg-white rounded-xl border border-dashed border-[#111] p-4 flex items-center gap-3 text-left"
-            >
-              <MapPin className="h-5 w-5 text-foreground" />
-              <div className="flex-1">
-                <div className="text-[14px] font-bold">Add delivery address</div>
-                <div className="text-[12px] text-muted-foreground">Required to place your order</div>
-              </div>
-              <span className="text-[13px] font-semibold border border-[#111] rounded-md px-3 py-1.5">Add</span>
-            </button>
-          )}
-
-          {/* Contact + Address form — bottom-sheet popup with scrim + close chip */}
-          {(showAddressFormSheet || (!addressFilled && !addressSheetDismissed)) && typeof document !== "undefined" && createPortal(
+          {/* Contact + Address form — bottom-sheet popup with scrim + close chip.
+              Only 2 checkout screens: (1) phone, (2) full checkout. When the
+              address is missing, this sheet is mandatory (no close chip, no
+              dismiss) so the shopper cannot land on an empty checkout. Once
+              the address is filled, tapping "Change" reopens it in editable
+              mode with a close chip. */}
+          {(showAddressFormSheet || !addressFilled) && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
-              {/* Scrim */}
-              <div className="absolute inset-0 bg-black/50" onClick={closeAddressFormSheet} aria-hidden />
-              {/* Close chip above sheet */}
-              <button
-                type="button"
-                onClick={closeAddressFormSheet}
-                aria-label="Close"
-                className="relative mx-auto mb-3 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              {/* Scrim — only dismissible when editing a filled address */}
+              <div
+                className="absolute inset-0 bg-black/50"
+                onClick={addressFilled ? closeAddressFormSheet : undefined}
+                aria-hidden
+              />
+              {/* Close chip — hidden when address is required (initial capture) */}
+              {addressFilled && (
+                <button
+                  type="button"
+                  onClick={closeAddressFormSheet}
+                  aria-label="Close"
+                  className="relative mx-auto mb-3 h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              )}
               {/* Sheet */}
               <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden max-h-[calc(100dvh-72px)]">
               <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
