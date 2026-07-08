@@ -1049,6 +1049,22 @@ export default function CheckoutV2Page() {
       .catch((err) => console.error("notify-order invoke error:", err));
   };
 
+  // Purchase value semantics for pixels/CAPI: the total order value committed
+  // to (matches what place-order writes to the DB `orders.total`), NOT the
+  // amount charged now.
+  //   • Full online paid  → prepaidTotal (discount applied, server recomputes to this)
+  //   • Partial (COD+adv) → full `total` (advance is only what's charged now)
+  //   • COD               → full `total` (no prepaid discount for COD)
+  // chargeAmount alone is wrong for partial (undercounts) and for COD when a
+  // prepaid discount is configured (undercounts by the discount amount).
+  const computePurchaseValue = (method: string): number => {
+    const m = (method || "").toLowerCase();
+    if (m === "cod" || m.startsWith("partial_cod")) return total;
+    if (isPartialOrder) return total;
+    return prepaidTotal;
+  };
+  const lastPaidMethodRef = useRef<string>("");
+
   const onOrderSuccess = (ordId: string) => {
     if (finalizedOrderIdsRef.current.has(ordId)) return;
     finalizedOrderIdsRef.current.add(ordId);
@@ -1060,6 +1076,8 @@ export default function CheckoutV2Page() {
 
     if (!isSingleMode) clearCart();
     window.dispatchEvent(new CustomEvent("order-placed"));
+
+    const purchaseValue = computePurchaseValue(lastPaidMethodRef.current);
 
     // Pixel Purchase — dedupe per order.
     const purchaseDedupKey = `meta_purchase_fired_${ordId}`;
@@ -1073,7 +1091,7 @@ export default function CheckoutV2Page() {
           contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
           content_type: "product",
           content_name: checkoutItems.map((i) => i.name).join(", "),
-          value: chargeAmount, currency,
+          value: purchaseValue, currency,
           num_items: checkoutItems.reduce((s, i) => s + (i.quantity || 1), 0),
         }, purchaseEventIdRef.current);
       } catch { /* noop */ }
@@ -1081,7 +1099,7 @@ export default function CheckoutV2Page() {
 
     try {
       ga4Track("purchase", {
-        transaction_id: ordId, value: chargeAmount, currency,
+        transaction_id: ordId, value: purchaseValue, currency,
         items: checkoutItems.map((i) => ({
           item_id: i.productId, item_name: i.name, item_variant: i.variantId, price: i.price, quantity: i.quantity,
         })),
@@ -1091,7 +1109,7 @@ export default function CheckoutV2Page() {
     try {
       fireStorefrontEvent({
         storeId: store.id, eventName: "purchase",
-        value: chargeAmount, currency,
+        value: purchaseValue, currency,
         metadata: { order_id: ordId, items: checkoutItems.length },
       });
     } catch { /* noop */ }
