@@ -40,6 +40,7 @@ import { createPortal } from "react-dom";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 import { QRCodeSVG } from "qrcode.react";
+import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
