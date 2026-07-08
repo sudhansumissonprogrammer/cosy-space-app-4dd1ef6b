@@ -8,7 +8,7 @@
  * UI matches the GoKwik-style checkout (Order Summary → Offers → Login card).
  * Logic (capture_checkout_lead RPC + autoLoginByPhone) is unchanged.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   ChevronDown,
@@ -17,7 +17,6 @@ import {
   ShieldCheck,
   CheckCircle2,
   Trash2,
-  UserCircle2,
   ShoppingCart,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -85,6 +84,7 @@ export default function CheckoutPhoneStep({
   const [submitting, setSubmitting] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [couponDraft, setCouponDraft] = useState<string>("");
+  const [keyboardInset, setKeyboardInset] = useState(0);
   const inFlight = useRef(false);
   const { removeFromCart } = useCart();
 
@@ -169,6 +169,27 @@ export default function CheckoutPhoneStep({
   useEffect(() => {
     const el = document.getElementById("checkout-phone-input");
     el?.focus();
+  }, []);
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const syncKeyboardInset = () => {
+      const inset = Math.max(
+        0,
+        window.innerHeight - viewport.height - viewport.offsetTop,
+      );
+      setKeyboardInset(inset > 24 ? Math.round(inset) : 0);
+    };
+
+    syncKeyboardInset();
+    viewport.addEventListener("resize", syncKeyboardInset);
+    viewport.addEventListener("scroll", syncKeyboardInset);
+    return () => {
+      viewport.removeEventListener("resize", syncKeyboardInset);
+      viewport.removeEventListener("scroll", syncKeyboardInset);
+    };
   }, []);
 
   return (
@@ -330,6 +351,18 @@ export default function CheckoutPhoneStep({
                 />
               </div>
             </div>
+
+            <Button
+              onClick={submit}
+              disabled={submitting || !valid}
+              className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white disabled:opacity-100 rounded-lg"
+            >
+              {submitting ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                "Continue"
+              )}
+            </Button>
           </div>
         </div>
 
@@ -366,7 +399,10 @@ export default function CheckoutPhoneStep({
       </div>
 
       {/* Sticky bottom: consent + Continue */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+      <div
+        className="fixed bottom-0 left-0 right-0 z-[1000] max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
+        style={{ bottom: keyboardInset ? `${keyboardInset}px` : undefined }}
+      >
         <label className="flex items-center gap-2 pb-2 text-[12px]">
           <Checkbox
             checked={consent}
@@ -394,6 +430,6 @@ export default function CheckoutPhoneStep({
 }
 
 // Local Label to avoid extra shadcn import weight
-function Label({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+function Label({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <label className={className}>{children}</label>;
 }
