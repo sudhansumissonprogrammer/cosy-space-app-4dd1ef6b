@@ -1601,6 +1601,7 @@ export default function CheckoutV2Page() {
     if (waiting || confirmingPayment || orderPlaced) return; // don't disrupt an in-flight payment
     orderIdRef.current = null;
     orderNumberRef.current = null;
+    orderSnapshotRef.current = null;
     setOrderId(null);
     setOrderNumber(null);
     setPendingOrder(null);
