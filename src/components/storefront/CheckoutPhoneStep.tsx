@@ -172,7 +172,7 @@ export default function CheckoutPhoneStep({
   }, []);
 
   return (
-    <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-32">
+    <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-[220px]">
       {/* Sticky header */}
       <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-4 py-3 flex items-center gap-3">
         <button
