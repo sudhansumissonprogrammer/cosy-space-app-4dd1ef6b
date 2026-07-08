@@ -1072,7 +1072,21 @@ export default function CheckoutV2Page() {
     saveExpressInfo();
 
     if (!isSingleMode) clearCart();
+    // Buy-Now guard: mark this product+variant as "just ordered" so if the
+    // shopper hits back after the success screen we don't drop them into the
+    // same checkout again with the same URL params. Also fold the ordered
+    // productIds into a session set so cart-mode back-navigation with a
+    // stale ?product= param (or a reloaded checkout URL) is protected too.
+    try {
+      const pid = checkoutItems[0]?.productId;
+      const vid = checkoutItems[0]?.variantId;
+      if (pid) {
+        const key = `recent_order:${store.id}:${pid}${vid ? `:${vid}` : ""}`;
+        sessionStorage.setItem(key, ordId);
+      }
+    } catch { /* noop */ }
     window.dispatchEvent(new CustomEvent("order-placed"));
+
 
     const purchaseValue = computePurchaseValue(lastPaidMethodRef.current);
 
@@ -1468,6 +1482,26 @@ export default function CheckoutV2Page() {
     toast("Your cart is empty — add items to continue");
     navigate(storefrontPath(store.slug), { replace: true });
   }, [checkoutItems.length, isSingleMode, orderId, orderPlaced, waiting, confirmingPayment, summaryOpen, navigate, store?.slug]);
+
+  // ─── Buy-Now: "just ordered this" guard ─────────────────────────────────
+  // If the shopper completed a Buy-Now order for THIS product and hits back
+  // from the order-detail page, the URL still carries ?product=<pid>. Without
+  // this guard the same product silently re-hydrates into checkout, tricking
+  // them into re-ordering. Redirect to home instead. Skipped while a payment
+  // flow / success screen is active on the SAME mount (orderPlaced/waiting).
+  useEffect(() => {
+    if (!isSingleMode || !productId || !store?.id) return;
+    if (orderId || orderPlaced || waiting || confirmingPayment) return;
+    try {
+      const key = `recent_order:${store.id}:${productId}${variantId ? `:${variantId}` : ""}`;
+      const recent = sessionStorage.getItem(key);
+      if (recent) {
+        toast("You've already placed this order");
+        navigate(storefrontPath(store.slug), { replace: true });
+      }
+    } catch { /* noop */ }
+  }, [isSingleMode, productId, variantId, store?.id, store?.slug, orderId, orderPlaced, waiting, confirmingPayment, navigate]);
+
 
 
 
