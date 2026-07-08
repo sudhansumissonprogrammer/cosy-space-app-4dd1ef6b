@@ -2361,31 +2361,9 @@ export default function CheckoutV2Page() {
                       <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
                       <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" className="h-11 rounded-lg border-[#ECECEC]" />
                     </div>
-                    <div>
-                      <Label className="text-[12px] text-muted-foreground">Email Address {customer ? "" : "*"}</Label>
-                      <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" type="email" className="h-11 rounded-lg border-[#ECECEC]" />
-                    </div>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-[#ECECEC]">
-                  <div className="text-[13px] font-semibold mb-2">Save Address As</div>
-                  <div className="flex gap-2">
-                    {(["Home", "Work"] as const).map((lbl) => (
-                      <button
-                        key={lbl}
-                        type="button"
-                        onClick={() => setAddrLabel(lbl)}
-                        className={`flex items-center gap-2 rounded-lg px-4 py-2 border ${addrLabel === lbl ? "border-black" : "border-[#ECECEC]"}`}
-                      >
-                        <span className="text-[13px] font-semibold">{lbl}</span>
-                        <span className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${addrLabel === lbl ? "border-black" : "border-muted-foreground/40"}`}>
-                          {addrLabel === lbl && <span className="h-2 w-2 rounded-full bg-black" />}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
                 {shippingActive && (
                   <div className="pt-2 border-t border-[#ECECEC]">
