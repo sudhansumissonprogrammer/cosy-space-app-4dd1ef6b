@@ -2121,19 +2121,14 @@ function V22CheckoutPageInner() {
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 text-green-600"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <span>{t("100% Secure Checkout · SSL Encrypted", "100% सुरक्षित चेकआउट · SSL एन्क्रिप्टेड")}</span>
           </div>
-          <a
-            href="https://shopbanao.in"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[11px] text-muted-foreground hover:text-foreground transition-colors inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5"
-          >
+          <div className="text-[11px] text-muted-foreground inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5">
             <span className="inline-flex items-center gap-0.5">
               <span className="mr-1">{t("Powered by", "द्वारा संचालित")}</span>
               <img src={shopbanaoLogo} alt="ShopBanao" className="h-5 w-5 inline-block align-middle object-contain" loading="lazy" width="20" height="20" />
-              <span className="font-semibold text-foreground">ShopBanao.in</span>
+              <span className="font-semibold text-foreground">ShopBanao</span>
             </span>
             <span className="opacity-70">{t("· India's Trusted Store Platform", "· भारत का भरोसेमंद स्टोर प्लेटफ़ॉर्म")}</span>
-          </a>
+          </div>
           <p className="text-[10px] text-muted-foreground/80 max-w-xs leading-snug">
             {t(
               "You may see 'ShopBanao' on your bank/UPI app — that's our verified payment partner.",
