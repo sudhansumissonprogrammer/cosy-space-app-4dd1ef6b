@@ -242,7 +242,15 @@ export default function CheckoutV2Page() {
   useEffect(() => { ensureCustomer?.(); }, [ensureCustomer]);
   useEffect(() => {
     if (customer?.email && !email) setEmail(customer.email);
+    // Auto-fill phone from logged-in session so returning shoppers skip
+    // the phone gate entirely.
+    if (customer?.phone && !toCanonicalIndianPhone(phone)) {
+      const canon = toCanonicalIndianPhone(customer.phone) || String(customer.phone).replace(/\D/g, "").slice(-10);
+      if (canon) setPhone(canon);
+    }
+    if (customer?.name && !fullName) setFullName(customer.name);
   }, [customer]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // ─── Meta Advanced Matching (setCapiUser debounced on field change) ─────
   useEffect(() => {
