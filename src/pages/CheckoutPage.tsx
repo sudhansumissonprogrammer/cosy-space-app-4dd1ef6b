@@ -2708,10 +2708,21 @@ function CheckoutPageInner() {
             <span className="text-primary font-medium">-{formatPrice(couponDiscount, currency)}</span>
           </div>
         )}
+        {prepaidDiscount > 0 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-emerald-700 dark:text-emerald-400">{t("Prepaid Discount", "प्रीपेड छूट")}</span>
+            <span className="font-medium text-emerald-700 dark:text-emerald-400">-{formatPrice(prepaidDiscount, currency)}</span>
+          </div>
+        )}
         <Separator />
         <div className="flex items-center justify-between">
           <span className="font-semibold text-foreground">{t("Total", "कुल")}</span>
-          <span className="text-lg font-bold text-foreground">{formatPrice(total, currency)}</span>
+          <span className="text-lg font-bold text-foreground">
+            {prepaidDiscount > 0 && (
+              <span className="mr-2 text-xs text-muted-foreground line-through font-medium">{formatPrice(total, currency)}</span>
+            )}
+            {formatPrice(prepaidTotal, currency)}
+          </span>
         </div>
         {isPartialOrder && (
           <div className="mt-2 rounded-xl border-2 border-primary/30 bg-primary/5 p-3 space-y-2">
