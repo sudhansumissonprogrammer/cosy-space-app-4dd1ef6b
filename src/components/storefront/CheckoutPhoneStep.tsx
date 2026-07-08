@@ -34,9 +34,11 @@ import {
 import { getOrCreateSessionId } from "@/lib/visitorSession";
 import { formatPrice } from "@/lib/productUtils";
 import { useCart, type CartItem } from "@/contexts/CartContext";
+import { storefrontPath } from "@/lib/subdomain";
 
 interface Props {
   storeId?: string;
+  storeSlug?: string;
   storeName?: string;
   storeLogo?: string;
   cartItems: CartItem[];
@@ -66,6 +68,7 @@ async function autoLoginByPhone(storeId: string | undefined, phone: string) {
 
 export default function CheckoutPhoneStep({
   storeId,
+  storeSlug,
   storeName,
   storeLogo,
   cartItems,
@@ -197,7 +200,15 @@ export default function CheckoutPhoneStep({
       {/* Sticky header */}
       <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-4 py-3 flex items-center gap-3">
         <button
-          onClick={() => window.history.back()}
+          onClick={() => {
+            try {
+              if (window.history.length > 1) {
+                window.history.back();
+                return;
+              }
+            } catch {}
+            window.location.href = storefrontPath(storeSlug || "");
+          }}
           aria-label="Back"
           className="p-1 -ml-1"
         >

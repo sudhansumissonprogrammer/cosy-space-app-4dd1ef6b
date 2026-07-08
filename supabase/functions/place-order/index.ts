@@ -11,6 +11,7 @@ const corsHeaders = {
 
 type CheckoutItem = {
   productId: string;
+  variantId?: string | null;
   name: string;
   price: number;
   quantity: number;
@@ -207,7 +208,7 @@ Deno.serve(async (req) => {
     // Attackers can otherwise place a ₹10,000 order at ₹1.
     // ────────────────────────────────────────────────────────────────
     const productIds = [...new Set(items.map((i) => i.productId).filter(Boolean))];
-    if (productIds.length !== items.length || productIds.length === 0) {
+    if (productIds.length === 0 || items.some((i) => !i.productId)) {
       return new Response(JSON.stringify({ error: "Invalid cart items" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -221,6 +222,7 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const productById = new Map<string, any>();
     const canonicalPrice = new Map<string, number>();
     const canonicalImage = new Map<string, string | null>();
     for (const p of dbProducts) {
@@ -229,6 +231,7 @@ Deno.serve(async (req) => {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      productById.set(p.id, p);
       const cp = p.sale_price != null ? Number(p.sale_price) : Number(p.price);
       if (!(cp >= 0)) {
         return new Response(JSON.stringify({ error: "Invalid product price" }), {
@@ -238,10 +241,38 @@ Deno.serve(async (req) => {
       canonicalPrice.set(p.id, cp);
       canonicalImage.set(p.id, (p as any).image_url ?? null);
     }
+    const variantIds = [...new Set(items.map((i) => i.variantId).filter(Boolean))] as string[];
+    const variantById = new Map<string, any>();
+    if (variantIds.length > 0) {
+      const { data: dbVariants, error: variantErr } = await supabase
+        .from("product_variants")
+        .select("id, product_id, name, price, is_active")
+        .in("id", variantIds);
+      if (variantErr || !dbVariants || dbVariants.length !== variantIds.length) {
+        return new Response(JSON.stringify({ error: "One or more variants not found" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      for (const v of dbVariants) {
+        if (!v.is_active || !productById.has(v.product_id)) {
+          return new Response(JSON.stringify({ error: "Variant unavailable" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        variantById.set(v.id, v);
+      }
+    }
     // Override every line-item price with the DB canonical price.
     let serverSubtotal = 0;
     for (const item of items) {
-      const cp = canonicalPrice.get(item.productId)!;
+      const variant = item.variantId ? variantById.get(item.variantId) : null;
+      if (variant && variant.product_id !== item.productId) {
+        return new Response(JSON.stringify({ error: "Variant/product mismatch" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const variantPrice = variant?.price != null ? Number(variant.price) : null;
+      const cp = variantPrice != null && variantPrice >= 0 ? variantPrice : canonicalPrice.get(item.productId)!;
       const qty = Math.max(1, Math.floor(Number(item.quantity) || 0));
       item.price = cp;
       item.quantity = qty;
@@ -290,6 +321,22 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Validate tax server-side; mirrors CheckoutV2. Inclusive tax is already in
+    // item prices, while exclusive tax is added to the payable amount.
+    let serverTax = 0;
+    const { data: taxConf } = await supabase
+      .from("store_tax_config")
+      .select("tax_rate, is_active, is_inclusive")
+      .eq("store_id", store_id)
+      .maybeSingle();
+    if (taxConf?.is_active && Number(taxConf.tax_rate) > 0) {
+      const rate = Number(taxConf.tax_rate);
+      serverTax = taxConf.is_inclusive
+        ? serverSubtotal - (serverSubtotal / (1 + rate / 100))
+        : (serverSubtotal * rate) / 100;
+    }
+    const serverTaxToAdd = taxConf?.is_inclusive ? 0 : serverTax;
+
     // C5: Atomically claim the coupon BEFORE inserting the order.
     // Prevents two concurrent checkouts from both consuming the last allowed use.
     if (validCouponId) {
@@ -319,7 +366,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (payCfg?.prepaid_discount_enabled) {
         const v = Number(payCfg.prepaid_discount_value || 0);
-        const base = Math.max(0, serverSubtotal - serverDiscount + serverShipping);
+        const base = Math.max(0, serverSubtotal - serverDiscount + serverShipping + serverTaxToAdd);
         // Skip prepaid discount on sub-₹100 carts so a ₹5 item doesn't
         // collapse to ₹0 when a fixed ₹100 discount is configured.
         if (base >= 100) {
@@ -334,7 +381,7 @@ Deno.serve(async (req) => {
 
     const serverTotal = Math.max(
       0,
-      Math.round((serverSubtotal - serverDiscount + serverShipping - prepaidDiscount) * 100) / 100,
+      Math.round((serverSubtotal - serverDiscount + serverShipping + serverTaxToAdd - prepaidDiscount) * 100) / 100,
     );
     // Replace client-supplied total + coupon_id with server-verified values.
     order.total = serverTotal;
@@ -347,8 +394,8 @@ Deno.serve(async (req) => {
     // ────────────────────────────────────────────────────────────────
     // Server-side partial payment calculation (store-level).
     // Must be the SINGLE source of truth — UI value is advisory only.
-    // Formula mirrors CheckoutV2Page: sum per-item advance, add full
-    // shipping + proportional discount subtraction, single ₹50 floor,
+    // Formula mirrors CheckoutV2Page: sum per-item advance, add full shipping
+    // + proportional tax/discount adjustment, single ₹50 floor,
     // cap at order total. Never applies a per-line-item ₹50 floor.
     // ────────────────────────────────────────────────────────────────
     let isPartial = order.payment_type === "partial";
@@ -381,8 +428,8 @@ Deno.serve(async (req) => {
           itemsAdvance += itemAdv * Number(item.quantity);
         }
         const ratio = serverSubtotal > 0 ? itemsAdvance / serverSubtotal : 1;
-        // shipping paid up-front; discount reduces advance proportionally
-        const raw = itemsAdvance + serverShipping - (serverDiscount * ratio);
+        // shipping paid up-front; tax/discount adjust advance proportionally
+        const raw = itemsAdvance + (serverTaxToAdd * ratio) + serverShipping - (serverDiscount * ratio);
         advancePaid = Math.max(50, Math.min(Number(order.total), Math.round(raw)));
         balanceDue = Math.max(0, Number(order.total) - advancePaid);
       } else {
