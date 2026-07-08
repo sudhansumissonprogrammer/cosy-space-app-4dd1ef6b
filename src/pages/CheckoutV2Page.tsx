@@ -690,6 +690,26 @@ export default function CheckoutV2Page() {
     applyCoupon(urlCoupon.toUpperCase());
   }, [urlCoupon, store?.id, subtotal, appliedCoupon]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Re-validate the applied coupon when the cart total changes. If the shopper
+  // removes items and drops below the coupon's minimum order value, or the
+  // discount would exceed the new subtotal, recompute or drop it so the totals
+  // stay in sync with what the backend will accept at place-order time.
+  useEffect(() => {
+    if (!appliedCoupon) return;
+    const min = Number(appliedCoupon.min_order_amount || 0);
+    if (subtotal <= 0 || subtotal < min) {
+      setAppliedCoupon(null);
+      setCouponDiscount(0);
+      if (subtotal > 0) toast.info(`Coupon "${appliedCoupon.code}" removed — minimum order not met`);
+      return;
+    }
+    let d = appliedCoupon.discount_type === "percentage"
+      ? (subtotal * Number(appliedCoupon.discount_value)) / 100
+      : Number(appliedCoupon.discount_value);
+    d = Math.min(d, subtotal);
+    if (d !== couponDiscount) setCouponDiscount(d);
+  }, [subtotal, appliedCoupon]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const total = Math.max(0, subtotal + (taxInclusive ? 0 : taxAmount) + shippingCharge - couponDiscount);
 
   // ─── Partial payment ────────────────────────────────────────────────────
