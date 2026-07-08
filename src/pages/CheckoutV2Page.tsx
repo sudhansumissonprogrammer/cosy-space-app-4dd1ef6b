@@ -2254,7 +2254,22 @@ export default function CheckoutV2Page() {
           )}
 
           {/* Contact + Address form — bottom-sheet popup with scrim + close chip */}
-          {(!addressFilled || showAddressFormSheet) && typeof document !== "undefined" && createPortal(
+          {!addressFilled && addressSheetDismissed && !showAddressFormSheet && (
+            <button
+              onClick={openAddressFormSheet}
+              className="w-full bg-white rounded-xl border border-dashed border-[#111] p-4 flex items-center gap-3 text-left"
+            >
+              <MapPin className="h-5 w-5 text-foreground" />
+              <div className="flex-1">
+                <div className="text-[14px] font-bold">Add delivery address</div>
+                <div className="text-[12px] text-muted-foreground">Required to place your order</div>
+              </div>
+              <span className="text-[13px] font-semibold border border-[#111] rounded-md px-3 py-1.5">Add</span>
+            </button>
+          )}
+
+          {/* Contact + Address form — bottom-sheet popup with scrim + close chip */}
+          {(showAddressFormSheet || (!addressFilled && !addressSheetDismissed)) && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
               {/* Scrim */}
               <div className="absolute inset-0 bg-black/50" onClick={closeAddressFormSheet} aria-hidden />
