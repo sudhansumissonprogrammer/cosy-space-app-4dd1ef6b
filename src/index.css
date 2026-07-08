@@ -257,9 +257,12 @@
   .checkout-neutral-font textarea,
   .checkout-neutral-font input::placeholder,
   .checkout-neutral-font textarea::placeholder {
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto,
+      'Helvetica Neue', Arial, sans-serif !important;
     text-transform: none !important;
     letter-spacing: normal !important;
     font-variant: normal !important;
+    font-feature-settings: normal !important;
   }
   /* Coupon input opts back in to uppercase via the `.uppercase` utility. */
   .checkout-neutral-font input.uppercase,
