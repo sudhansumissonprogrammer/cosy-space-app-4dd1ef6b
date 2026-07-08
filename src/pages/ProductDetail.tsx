@@ -607,28 +607,28 @@ export default function ProductDetail() {
       return;
     }
 
-    // Add to cart first so it's available either way.
-    addToCart({
-      productId: product.id,
-      variantId: selectedVariant?.id,
-      name: product.name,
-      variantName: selectedVariant?.name,
-      price: variantPrice,
-      image: product.image_url || undefined,
-      quantity,
-    });
+    // Navigate FIRST so the checkout route mounts instantly. addToCart runs
+    // in a microtask so React batches the state update with the route change
+    // rather than blocking the click handler with a full re-render of the PDP.
     closeCart();
+    navigate(storefrontPath(store.slug, "checkout"));
+    queueMicrotask(() => {
+      addToCart({
+        productId: product.id,
+        variantId: selectedVariant?.id,
+        name: product.name,
+        variantName: selectedVariant?.name,
+        price: variantPrice,
+        image: product.image_url || undefined,
+        quantity,
+      });
+    });
 
     // NOTE: InitiateCheckout is intentionally NOT fired here. CheckoutPage
     // fires it once at payment-intent time (with full user identity for
     // CAPI dedup). Firing it here too would double-count IC in Meta.
-
-
-    // Phone capture now happens as Step 1 of the checkout page itself
-    // (no more popup). Just navigate — CheckoutPage renders the phone step
-    // when localStorage.checkout_phone is missing.
-    navigate(storefrontPath(store.slug, "checkout"));
   };
+
 
 
 
