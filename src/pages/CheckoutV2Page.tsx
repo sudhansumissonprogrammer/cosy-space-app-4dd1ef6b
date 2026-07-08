@@ -1072,7 +1072,21 @@ export default function CheckoutV2Page() {
     saveExpressInfo();
 
     if (!isSingleMode) clearCart();
+    // Buy-Now guard: mark this product+variant as "just ordered" so if the
+    // shopper hits back after the success screen we don't drop them into the
+    // same checkout again with the same URL params. Also fold the ordered
+    // productIds into a session set so cart-mode back-navigation with a
+    // stale ?product= param (or a reloaded checkout URL) is protected too.
+    try {
+      const pid = checkoutItems[0]?.productId;
+      const vid = checkoutItems[0]?.variantId;
+      if (pid) {
+        const key = `recent_order:${store.id}:${pid}${vid ? `:${vid}` : ""}`;
+        sessionStorage.setItem(key, ordId);
+      }
+    } catch { /* noop */ }
     window.dispatchEvent(new CustomEvent("order-placed"));
+
 
     const purchaseValue = computePurchaseValue(lastPaidMethodRef.current);
 
