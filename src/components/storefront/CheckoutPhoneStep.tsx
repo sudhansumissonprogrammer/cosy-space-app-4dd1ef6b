@@ -384,9 +384,15 @@ export default function CheckoutPhoneStep({
           <div className="text-[11px] text-muted-foreground mb-1">
             Powered by
           </div>
-          <div className="text-[14px] font-bold tracking-tight">
-            {storeName || "Storivo"}
-          </div>
+          <a
+            href="https://shopbanao.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-1.5 text-[14px] font-bold tracking-tight hover:opacity-80 transition-opacity"
+          >
+            <img src={shopbanaoLogo} alt="ShopBanao" className="h-5 w-5 inline-block object-contain" loading="lazy" width="20" height="20" />
+            ShopBanao.in
+          </a>
           <div className="text-[12px] text-muted-foreground mt-3">
             Powering secure checkout for 10,000+ brands
           </div>
