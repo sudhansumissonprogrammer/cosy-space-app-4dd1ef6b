@@ -41,6 +41,8 @@ import { createPortal } from "react-dom";
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 import { QRCodeSVG } from "qrcode.react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
+import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
