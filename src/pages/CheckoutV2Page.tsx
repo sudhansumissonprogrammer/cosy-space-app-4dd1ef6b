@@ -1595,6 +1595,35 @@ export default function CheckoutV2Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentSnapshot]);
 
+  // Safety-net: if any ready intent's stamped amount no longer matches the
+  // current chargeAmount (e.g. the snapshot reset effect bailed out because
+  // `waiting` was briefly true), automatically re-mint. This guarantees a
+  // shopper who switched Partial↔Full can never launch a stale UPI URL.
+  useEffect(() => {
+    if (!showPayment) return;
+    if (waiting || confirmingPayment || orderPlaced) return;
+    if (creatingOrder) return;
+    const anyStale = (Object.keys(intents) as UpiApp[]).some((k) => {
+      const s = intents[k];
+      return s.status === "ready" && typeof s.amount === "number"
+        && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100);
+    });
+    if (!anyStale) return;
+    orderIdRef.current = null;
+    orderNumberRef.current = null;
+    setOrderId(null);
+    setOrderNumber(null);
+    setIntents({
+      gpay: { status: "idle" }, phonepe: { status: "idle" },
+      paytm: { status: "idle" }, bhim: { status: "idle" }, any: { status: "idle" },
+    });
+    const nextToken = newCheckoutToken();
+    checkoutTokenRef.current = nextToken;
+    setCheckoutToken(nextToken);
+    queueMicrotask(() => { void createOrderAndIntents(); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intents, chargeAmount, showPayment, waiting, confirmingPayment, orderPlaced, creatingOrder]);
+
 
   // ─── Full gateway modal paths (Razorpay / Cashfree / PayU) ──────────────
   const openRazorpay = async (order: PendingOrder) => {
