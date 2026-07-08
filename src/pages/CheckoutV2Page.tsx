@@ -415,6 +415,9 @@ export default function CheckoutV2Page() {
         cashfree_env: string | null;
         payu_merchant_key: string | null;
         payu_env: string | null;
+        prepaid_discount_enabled?: boolean;
+        prepaid_discount_type?: "fixed" | "percentage";
+        prepaid_discount_value?: number;
       } | null;
     },
     staleTime: 30 * 60 * 1000,
