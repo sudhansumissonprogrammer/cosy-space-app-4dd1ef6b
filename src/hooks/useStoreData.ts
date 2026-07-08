@@ -24,20 +24,19 @@ export function useStoreData(storeId?: string) {
     initialDataUpdatedAt: 0,
     queryFn: async () => {
       if (isAdminView) {
-        const cached = queryClient.getQueryData(["store", storeId!]);
-        if (cached) return cached as any;
-
-        // Admin view: fetch via admin RPC using store id
-        // First try to find the slug for this store id
+        // Admin view: use cached data only as initialData. The actual query must
+        // still hit the backend so settings pages don't keep showing stale
+        // toggles after a hard refresh or cache re-seed.
         const { data: adminData, error: adminError } = await supabase.rpc(
           "get_store_as_admin",
           { _slug: storeId! },
         );
         if (!adminError && adminData) return adminData as any;
 
-        // If slug lookup fails, the cache should have been seeded.
-        // Return null as last resort.
-        return null;
+        if (adminError) throw adminError;
+
+        // If lookup fails, keep any seeded cache as a last-resort fallback.
+        return (queryClient.getQueryData(["store", storeId!]) as any) ?? null;
       }
 
       const { data, error } = await supabase

@@ -268,6 +268,7 @@ export default function StorePayments() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store", storeId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-store-view"] });
       queryClient.invalidateQueries({ queryKey: ["payment-config", storeId] });
       queryClient.invalidateQueries({ queryKey: ["my-store"] });
       queryClient.invalidateQueries({ queryKey: ["store-payment-config"] });
