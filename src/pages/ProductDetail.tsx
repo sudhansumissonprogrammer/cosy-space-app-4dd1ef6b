@@ -597,6 +597,11 @@ export default function ProductDetail() {
       return;
     }
 
+    // Warm the checkout chunks *before* navigating so the target page renders
+    // immediately instead of showing a Suspense fallback while the JS downloads.
+    import("@/pages/CheckoutPage").catch(() => {});
+    import("@/pages/CheckoutV2Page").catch(() => {});
+
     // Add to cart first so it's available either way.
     addToCart({
       productId: product.id,
