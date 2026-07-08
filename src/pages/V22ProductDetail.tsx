@@ -262,14 +262,23 @@ export default function V22ProductDetail() {
     contentReadyRef.current = false;
   }, [productSlug]);
 
-  // Prefetch checkout chunk so "Buy Now" is instant on cold visits.
+  // Prefetch checkout chunks immediately so "Buy Now" is instant on cold visits.
   useEffect(() => {
-    const t = setTimeout(() => {
+    const kick = () => {
       import("./CheckoutPage").catch(() => {});
       import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
-    }, 300);
-    return () => clearTimeout(t);
+      import("@/pages/CheckoutV2Page").catch(() => {});
+    };
+    const ric = (window as any).requestIdleCallback;
+    if (ric) ric(kick, { timeout: 500 });
+    else setTimeout(kick, 0);
   }, []);
+
+  const prefetchCheckout = () => {
+    import("./CheckoutPage").catch(() => {});
+    import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
+  };
+
 
 
   useEffect(() => {
@@ -579,25 +588,27 @@ export default function V22ProductDetail() {
       return;
     }
 
-    addToCart({
-      productId: product.id,
-      variantId: selectedVariant?.id,
-      name: product.name,
-      variantName: selectedVariant?.name,
-      price: variantPrice,
-      image: product.image_url || undefined,
-      quantity,
-    });
+    // Navigate first so the checkout mounts instantly; addToCart runs in a
+    // microtask so React batches the state change with the route change.
     closeCart();
+    navigate(storefrontPath(store.slug, "checkout"));
+    queueMicrotask(() => {
+      addToCart({
+        productId: product.id,
+        variantId: selectedVariant?.id,
+        name: product.name,
+        variantName: selectedVariant?.name,
+        price: variantPrice,
+        image: product.image_url || undefined,
+        quantity,
+      });
+    });
 
     // InitiateCheckout is fired once by CheckoutPage at payment-intent time
     // (with user identity for CAPI dedup). Don't fire from PDP — that would
     // double-count IC in Meta.
-
-
-    // Phone capture now happens as Step 1 of the checkout page (no popup).
-    navigate(storefrontPath(store.slug, "checkout"));
   };
+
 
 
   const handleWishlist = () => {
@@ -853,7 +864,7 @@ export default function V22ProductDetail() {
                     <button
                       className="flex h-12 w-full items-center justify-center border text-sm font-bold uppercase tracking-widest transition-[transform,opacity,colors,box-shadow] active:scale-[0.97] hover:bg-white hover:text-black"
                       style={{ borderColor: "#ffffff", color: "#ffffff", ...v18Font }}
-                      onClick={handleBuyNow}
+                      onPointerDown={prefetchCheckout} onClick={handleBuyNow}
                     >
                       BUY IT NOW
                     </button>
@@ -885,7 +896,7 @@ export default function V22ProductDetail() {
                     <button
                       className="btn-press flex h-12 w-full items-center justify-center gap-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
                       style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
-                      onClick={handleBuyNow}
+                      onPointerDown={prefetchCheckout} onClick={handleBuyNow}
                     >
                       <span className="flex items-center gap-1.5">
                         <ShoppingBag className="h-4 w-4" />
@@ -1166,7 +1177,7 @@ export default function V22ProductDetail() {
                     <button
                       className="btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow]"
                       style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", fontFamily: "var(--storefront-heading-font, inherit)" }}
-                      onClick={handleBuyNow}
+                      onPointerDown={prefetchCheckout} onClick={handleBuyNow}
                     >
                       <span className="flex items-center gap-1.5">
                         <ShoppingBag className="h-3.5 w-3.5" />
