@@ -1716,7 +1716,19 @@ export default function CheckoutV2Page() {
     if (lastPaymentSnapshotRef.current === paymentSnapshot) return;
     lastPaymentSnapshotRef.current = paymentSnapshot;
     if (!orderId && !showPayment) return; // nothing to reset yet
-    if (waiting || confirmingPayment || orderPlaced) return; // don't disrupt an in-flight payment
+    if (confirmingPayment || orderPlaced) return; // don't disrupt an in-flight confirm
+    // Desktop QR auto-polls (sets waiting=true) the moment a QR is ready. A
+    // Partial↔Full toggle after that must still re-mint — cancel the passive
+    // QR wait so the effect can rebuild an order for the new amount. A real
+    // UPI-app tap (waitingApp !== "UPI QR") should not be interrupted.
+    const isDesktopQrWait = waiting && waitingApp === "UPI QR" && !isMobile();
+    if (waiting && !isDesktopQrWait) return;
+    if (isDesktopQrWait) {
+      clearWaiting();
+      setWaiting(false);
+      try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+      desktopQrPollStartedRef.current = false;
+    }
     orderIdRef.current = null;
     orderNumberRef.current = null;
     orderSnapshotRef.current = null;
@@ -1746,14 +1758,23 @@ export default function CheckoutV2Page() {
   // shopper who switched Partial↔Full can never launch a stale UPI URL.
   useEffect(() => {
     if (!showPayment) return;
-    if (waiting || confirmingPayment || orderPlaced) return;
+    if (confirmingPayment || orderPlaced) return;
     if (creatingOrder) return;
+    // Desktop QR passive wait shouldn't block a re-mint (see snapshot effect above).
+    const isDesktopQrWait = waiting && waitingApp === "UPI QR" && !isMobile();
+    if (waiting && !isDesktopQrWait) return;
     const anyStale = (Object.keys(intents) as UpiApp[]).some((k) => {
       const s = intents[k];
       return s.status === "ready" && typeof s.amount === "number"
         && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100);
     });
     if (!anyStale) return;
+    if (isDesktopQrWait) {
+      clearWaiting();
+      setWaiting(false);
+      try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+      desktopQrPollStartedRef.current = false;
+    }
     orderIdRef.current = null;
     orderNumberRef.current = null;
     orderSnapshotRef.current = null;
