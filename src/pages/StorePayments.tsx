@@ -72,7 +72,14 @@ export default function StorePayments() {
   // background refetch on mount so the form syncs to DB truth every visit.
   useEffect(() => {
     if (!storeId) return;
+    // Invalidate BOTH keys: ["store", id] is what useStoreData reads, but in
+    // admin-view mode useAdminStoreView re-seeds that key from its own cached
+    // ["admin-store-view", slug] row. If we only invalidate ["store", id],
+    // React Query refetches → useAdminStoreView's effect immediately overwrites
+    // with the 5-min-stale admin row → toggles (Partial Payment, Fast Checkout,
+    // Prepaid Discount) render OFF even though DB says ON.
     queryClient.invalidateQueries({ queryKey: ["store", storeId] });
+    queryClient.invalidateQueries({ queryKey: ["admin-store-view"] });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeId]);
 
