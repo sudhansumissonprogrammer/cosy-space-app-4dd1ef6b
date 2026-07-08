@@ -49,6 +49,11 @@ interface IntentState {
   status: "idle" | "loading" | "ready" | "failed";
   url?: string;
   error?: string;
+  /** chargeAmount (in rupees) captured at intent creation. Used to detect
+   *  stale intents when the shopper switches payment plan or coupon after
+   *  the UPI URL was minted — prevents "chose Full but UPI opened for 100"
+   *  race by refusing to launch a URL whose amount no longer matches. */
+  amount?: number;
 }
 
 interface PendingOrder {
