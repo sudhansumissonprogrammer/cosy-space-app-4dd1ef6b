@@ -2545,17 +2545,14 @@ export default function CheckoutV2Page() {
                 <Button
                   className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
                   onClick={() => {
-                    if (!fullName.trim()) { toast.error("Full name required"); return; }
-                    if (!/^\d{6}$/.test(pincode)) { toast.error("Enter a valid pincode"); return; }
-                    if (!streetAddress.trim()) { toast.error("Enter Flat, House no."); return; }
-                    if (!city.trim() || !state.trim()) { toast.error("Enter city and state"); return; }
-                    // Merge apartment (line-2) into street_address so the full
-                    // address is persisted to customer_addresses / orders.
-                    const apt = apartment.trim();
-                    if (apt && !streetAddress.includes(apt)) {
-                      setStreetAddress(`${streetAddress.trim()}, ${apt}`);
+                    const valid = fullName.trim() && /^\d{6}$/.test(pincode) && streetAddress.trim() && city.trim() && state.trim();
+                    if (!valid) {
+                      setAddressAttempted(true);
+                      return;
                     }
+                    setAddressAttempted(false);
                     setShowAddressFormSheet(false);
+
                   }}
                 >
                   Continue
