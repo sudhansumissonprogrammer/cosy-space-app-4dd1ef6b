@@ -481,6 +481,28 @@ export default function CheckoutV2Page() {
     return () => { document.body.style.overflow = prev; };
   }, [addressSheetOpen, showAddressDialog]);
 
+  // Force Montserrat Alternates across the entire new checkout — including
+  // early-return screens (order placed, waiting, phone step) and portaled
+  // components (dialogs, toasts, sheets) that render outside the page root.
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.setAttribute("data-checkout-font", "v2");
+    style.textContent = `
+      body[data-checkout-v2="1"],
+      body[data-checkout-v2="1"] *:not(i):not(svg):not([class*="lucide"]) {
+        font-family: 'Montserrat Alternates', system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+      }
+    `;
+    document.head.appendChild(style);
+    const prev = document.body.getAttribute("data-checkout-v2");
+    document.body.setAttribute("data-checkout-v2", "1");
+    return () => {
+      style.remove();
+      if (prev === null) document.body.removeAttribute("data-checkout-v2");
+      else document.body.setAttribute("data-checkout-v2", prev);
+    };
+  }, []);
+
   useEffect(() => {
     if (savedAddresses && savedAddresses.length > 0 && !selectedAddressId) {
       const def = savedAddresses.find((a: any) => a.is_default) || savedAddresses[0];
