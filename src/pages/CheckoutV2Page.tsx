@@ -517,6 +517,18 @@ export default function CheckoutV2Page() {
 
   const addressSheetOpen = showAddressFormSheet || (!(pincode && streetAddress && city && state && fullName) && !addressSheetDismissed);
 
+  // Auto-open the address form the moment the phone gate completes on a
+  // fresh checkout so the shopper sees the address collector immediately,
+  // not the (empty) checkout summary.
+  const phoneValid = !!toCanonicalIndianPhone(phone);
+  const addressComplete = !!(pincode && streetAddress && city && state && fullName);
+  useEffect(() => {
+    if (phoneValid && !addressComplete) {
+      setAddressSheetDismissed(false);
+      setShowAddressFormSheet(true);
+    }
+  }, [phoneValid, addressComplete]);
+
   // Lock body scroll while any address overlay is open so only the form scrolls.
   useEffect(() => {
     const anySheetOpen = addressSheetOpen || showAddressDialog;
