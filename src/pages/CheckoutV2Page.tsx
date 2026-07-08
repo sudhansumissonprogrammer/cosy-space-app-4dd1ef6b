@@ -2564,6 +2564,19 @@ export default function CheckoutV2Page() {
                 )}
 
                 <div>
+                  <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
+                  <Input
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Your name"
+                    className={`h-11 rounded-lg ${addressAttempted && !fullName.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                  />
+                  {addressAttempted && !fullName.trim() && (
+                    <p className="mt-1 text-[12px] text-red-600">Full name required</p>
+                  )}
+                </div>
+
+                <div>
                   <Label className="text-[12px] text-muted-foreground">Pincode *</Label>
                   <div className="relative">
                     <Input
@@ -2620,23 +2633,6 @@ export default function CheckoutV2Page() {
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-[#ECECEC]">
-                  <div className="text-[14px] font-bold mb-2">Customer Information</div>
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
-                      <Input
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        placeholder="Your name"
-                        className={`h-11 rounded-lg ${addressAttempted && !fullName.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
-                      />
-                      {addressAttempted && !fullName.trim() && (
-                        <p className="mt-1 text-[12px] text-red-600">Full name required</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
 
 
 
