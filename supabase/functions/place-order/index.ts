@@ -427,9 +427,12 @@ Deno.serve(async (req) => {
             : Math.min(partialValue, itemPrice);
           itemsAdvance += itemAdv * Number(item.quantity);
         }
+        // Advance = configured up-front amount (per-item) + full shipping,
+        // capped at order total. Coupons reduce the BALANCE (paid on
+        // delivery), never the advance — otherwise a ₹100 coupon on a
+        // ₹100 advance would drop it to ~₹69. Tax adjusts proportionally.
         const ratio = serverSubtotal > 0 ? itemsAdvance / serverSubtotal : 1;
-        // shipping paid up-front; tax/discount adjust advance proportionally
-        const raw = itemsAdvance + (serverTaxToAdd * ratio) + serverShipping - (serverDiscount * ratio);
+        const raw = itemsAdvance + (serverTaxToAdd * ratio) + serverShipping;
         advancePaid = Math.max(50, Math.min(Number(order.total), Math.round(raw)));
         balanceDue = Math.max(0, Number(order.total) - advancePaid);
       } else {
