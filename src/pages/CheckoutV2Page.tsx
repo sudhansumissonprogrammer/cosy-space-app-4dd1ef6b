@@ -2169,6 +2169,35 @@ export default function CheckoutV2Page() {
           </div>
 
 
+          {/* Pincode-only chip — after PincodeSheet closes but before full address
+              is entered. Tapping opens the address form popup so the shopper
+              can complete street/name. Payment methods stay hidden until full
+              address is filled (showPayment auto-advance is address-gated). */}
+          {pincodeConfirmed && !addressFilled && (
+            <button
+              type="button"
+              onClick={openAddressFormSheet}
+              className="w-full bg-white rounded-xl border border-dashed border-black/40 p-3.5 text-left"
+            >
+              <div className="flex items-start gap-3">
+                <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[14px] font-bold">
+                    Delivering to {pincode}
+                    {city ? ` · ${city}` : ""}
+                    {state ? `, ${state}` : ""}
+                  </div>
+                  <div className="text-[12px] text-muted-foreground mt-0.5">
+                    Tap to add delivery address (name, house / street) to continue.
+                  </div>
+                </div>
+                <div className="text-[12px] font-semibold border border-black rounded-md px-2.5 py-1 flex-shrink-0">
+                  Add
+                </div>
+              </div>
+            </button>
+          )}
+
           {/* Delivery Details (once address filled) */}
           {addressFilled && (
             <>
