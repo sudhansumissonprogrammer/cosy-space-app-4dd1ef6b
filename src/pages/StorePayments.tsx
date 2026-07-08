@@ -65,6 +65,17 @@ export default function StorePayments() {
 
   const { data: store, isLoading: storeLoading } = useStoreData(storeId);
 
+  // Settings pages must always reflect the live DB row — never a stale cache.
+  // useStoreData has a 10-min staleTime for fast dashboard navigation, but on
+  // this page any drift would show the wrong toggle state (e.g. Fast Checkout
+  // enabled on the storefront but the dashboard toggle showing OFF). Force a
+  // background refetch on mount so the form syncs to DB truth every visit.
+  useEffect(() => {
+    if (!storeId) return;
+    queryClient.invalidateQueries({ queryKey: ["store", storeId] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeId]);
+
   useEffect(() => {
     if (store) {
       setPartialEnabled((store as any).partial_payment_enabled ?? false);
