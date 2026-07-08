@@ -238,6 +238,23 @@
     filter: brightness(1.15);
   }
 
+  /* Force a neutral, trusted sans-serif on the checkout regardless of the
+     storefront's decorative theme font (e.g. Alegreya SC small-caps, serif
+     display fonts). Applied via `.checkout-neutral-font` on the CheckoutV2
+     and CheckoutPhoneStep root containers. */
+  .checkout-neutral-font,
+  .checkout-neutral-font * {
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto,
+      'Helvetica Neue', Arial, sans-serif !important;
+    font-variant: normal !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    font-feature-settings: normal !important;
+  }
+  .checkout-neutral-font [style*="text-transform"] {
+    text-transform: none !important;
+  }
+
   .animate-marquee {
     animation: marquee 20s linear infinite;
   }
