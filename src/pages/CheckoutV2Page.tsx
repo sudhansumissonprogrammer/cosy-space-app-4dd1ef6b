@@ -2508,7 +2508,12 @@ export default function CheckoutV2Page() {
                       {payMode === "full" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold">Pay full {formatPrice(total, currency)} online</div>
+                      <div className="text-[13px] font-semibold">
+                        Pay full {formatPrice(prepaidTotal, currency)} online
+                        {prepaidDiscount > 0 && (
+                          <span className="ml-1 text-[11px] font-medium text-emerald-700">save {formatPrice(prepaidDiscount, currency)}</span>
+                        )}
+                      </div>
                       <div className="text-[12px] text-muted-foreground mt-0.5">Nothing to pay on delivery</div>
                     </div>
                   </div>
