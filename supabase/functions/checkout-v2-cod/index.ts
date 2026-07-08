@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     // Fetch the order and validate ownership + pending state
     const { data: order, error: fetchErr } = await supabase
       .from("orders")
-      .select("id, store_id, status, payment_type")
+      .select("id, store_id, status, payment_type, total, notes")
       .eq("id", order_id)
       .maybeSingle();
     if (fetchErr || !order) return jsonRes({ error: "Order not found" }, 404);
@@ -84,12 +84,26 @@ Deno.serve(async (req) => {
       return jsonRes({ error: "Partial-payment orders cannot be finalized as COD" }, 400);
     }
 
+    // Roll back the prepaid discount (if any). place-order stamps it on the
+    // order when the shopper originally intended to pay online, but COD
+    // orders MUST NOT get that discount — otherwise the customer is charged
+    // ₹100 less on delivery than the store expects.
+    const rawNotes: string = String((order as any).notes || "");
+    const prepaidMatch = rawNotes.match(/^\s*Prepaid discount:\s*-?(\d+(?:\.\d+)?)\s*$/im);
+    const restoreAmount = prepaidMatch ? Number(prepaidMatch[1]) : 0;
+    const newTotal = Number((order as any).total || 0) + (restoreAmount > 0 ? restoreAmount : 0);
+    const newNotes = prepaidMatch
+      ? rawNotes.replace(prepaidMatch[0], "").replace(/\n{2,}/g, "\n").trim() || null
+      : (rawNotes || null);
+
     const { error: updErr } = await supabase
       .from("orders")
       .update({
         status: "confirmed",
         payment_method: "cod",
         payment_type: "full",
+        total: newTotal,
+        notes: newNotes,
       })
       .eq("id", order_id)
       .eq("store_id", store_id)
