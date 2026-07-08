@@ -748,11 +748,16 @@ export default function CheckoutV2Page() {
   const prepaidDiscount = useMemo(() => {
     if (!paymentConfig?.prepaid_discount_enabled) return 0;
     if (isPartialOrder) return 0;
+    // Guard: skip discount on tiny carts so a ₹5 order doesn't get flattened
+    // to ₹0 by a ₹100 prepaid discount. Store owners set the discount for
+    // regular carts, not sub-₹100 outliers.
+    if (total < 100) return 0;
     const v = Number(paymentConfig.prepaid_discount_value || 0);
     if (v <= 0 || total <= 0) return 0;
     const d = paymentConfig.prepaid_discount_type === "percentage" ? (total * v) / 100 : v;
     return Math.max(0, Math.min(Math.round(d), total));
   }, [paymentConfig, total, isPartialOrder]);
+
   const prepaidTotal = Math.max(0, total - prepaidDiscount);
   const chargeAmount = isPartialOrder ? partialAdvanceTotal : prepaidTotal;
 

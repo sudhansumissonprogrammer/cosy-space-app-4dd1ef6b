@@ -701,7 +701,9 @@ function CheckoutPageInner() {
     if (!cfg?.prepaid_discount_enabled) return 0;
     if (isPartialOrder) return 0;
     if (paymentMethod === "cod") return 0;
+    if (total < 100) return 0;
     const v = Number(cfg.prepaid_discount_value || 0);
+
     if (v <= 0 || total <= 0) return 0;
     const d = cfg.prepaid_discount_type === "percentage" ? (total * v) / 100 : v;
     return Math.max(0, Math.min(Math.round(d), total));
@@ -2676,7 +2678,7 @@ function CheckoutPageInner() {
                   const cfg: any = paymentConfig;
                   if (!cfg?.prepaid_discount_enabled) return null;
                   const v = Number(cfg.prepaid_discount_value || 0);
-                  if (v <= 0 || total <= 0) return null;
+                  if (v <= 0 || total <= 0 || total < 100) return null;
                   const d = cfg.prepaid_discount_type === "percentage" ? Math.round((total * v) / 100) : Math.min(v, total);
                   if (d <= 0) return null;
                   return (
