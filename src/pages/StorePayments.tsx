@@ -142,6 +142,11 @@ export default function StorePayments() {
       setPayuMerchantKey(paymentConfig.payu_merchant_key || "");
       setPayuMerchantSalt(paymentConfig.payu_merchant_salt || "");
       setPayuEnv((paymentConfig.payu_env as any) || "production");
+
+      setPrepaidDiscountEnabled(!!(paymentConfig as any).prepaid_discount_enabled);
+      setPrepaidDiscountType(((paymentConfig as any).prepaid_discount_type as any) || "fixed");
+      const pdv = (paymentConfig as any).prepaid_discount_value;
+      setPrepaidDiscountValue(pdv != null && Number(pdv) > 0 ? String(pdv) : "");
     }
   }, [paymentConfig]);
 
