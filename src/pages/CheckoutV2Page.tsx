@@ -1486,17 +1486,20 @@ export default function CheckoutV2Page() {
   // Auto-advance to payment options once the address is complete — the
   // shopper sees UPI/Cards/COD tiles inline on the same page (no explicit
   // "Continue" tap needed). Guarded by a ref so it only fires once per fill.
+  //
+  // IMPORTANT: wait for paymentConfig to load before creating the order.
+  // Otherwise `hasOnline` is false → `hasPartial` is false → effectiveMode
+  // stamps as "full" even though the shopper defaults to Partial, and the
+  // gateway later charges the full total instead of the ₹100 advance.
   useEffect(() => {
     if (showPayment || creatingOrder) return;
+    if (!paymentConfigLoaded) return;
     const filled = !!(pincode && streetAddress && city && state && fullName);
     if (!filled) return;
-    // Kick off order + UPI intent creation immediately — server picks the
-    // gateway from store config, so we don't need the client `paymentConfig`
-    // query to resolve first. Payment-method tiles hydrate as the query lands.
     autoAdvancedRef.current = true;
     void createOrderAndIntents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pincode, streetAddress, city, state, fullName, showPayment, creatingOrder]);
+  }, [pincode, streetAddress, city, state, fullName, showPayment, creatingOrder, paymentConfigLoaded]);
 
 
   // Desktop QR: auto-start payment polling as soon as the UPI intent URL is
@@ -1517,15 +1520,16 @@ export default function CheckoutV2Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPayment, intents.any.status, intents.any.url, orderId, waiting]);
 
-  // Partial ↔ Full toggle: the previous order + UPI intent were minted for the
-  // old amount and stamped with the old payment_type. Reset everything AND
-  // immediately re-mint a fresh order + UPI intent for the new amount, otherwise
-  // the UPI tiles stay stuck in "idle" (disabled/blurred) — the auto-advance
-  // effect won't re-fire because its deps didn't change.
-  const lastPayModeRef = useRef(payMode);
+  // Partial ↔ Full toggle (OR hasPartial flipping true after paymentConfig
+  // loads late): the previous order + UPI intent were minted for the old
+  // amount and stamped with the old payment_type. Reset everything AND
+  // immediately re-mint a fresh order + UPI intent for the new amount,
+  // otherwise the UPI tiles stay stuck in "idle" and — worse — the gateway
+  // would charge the wrong amount.
+  const lastEffectiveModeRef = useRef(effectiveMode);
   useEffect(() => {
-    if (lastPayModeRef.current === payMode) return;
-    lastPayModeRef.current = payMode;
+    if (lastEffectiveModeRef.current === effectiveMode) return;
+    lastEffectiveModeRef.current = effectiveMode;
     if (!orderId && !showPayment) return; // nothing to reset yet
     if (waiting || confirmingPayment || orderPlaced) return; // don't disrupt an in-flight payment
     setOrderId(null);
@@ -1538,13 +1542,11 @@ export default function CheckoutV2Page() {
     autoAdvancedRef.current = false;
     desktopQrPollStartedRef.current = false;
     setCheckoutToken(newCheckoutToken());
-    // Re-mint order + UPI intents for the new amount so the tiles come back to life.
-    // Fire on the next tick so the state resets above have committed.
     if (showPayment) {
       queueMicrotask(() => { void createOrderAndIntents(); });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [payMode]);
+  }, [effectiveMode]);
 
 
   // ─── Full gateway modal paths (Razorpay / Cashfree / PayU) ──────────────
