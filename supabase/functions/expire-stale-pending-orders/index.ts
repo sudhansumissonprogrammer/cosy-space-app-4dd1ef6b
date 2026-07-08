@@ -28,10 +28,13 @@ Deno.serve(async (req) => {
 
   const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
+  // NOTE: `orders_status_check` does not permit 'expired'. We mark the row
+  // 'cancelled' and record the reason in notes so dashboards + the recovery
+  // cron still treat it as a payment drop-off (cancelled + payment_verified=false).
   const { data, error } = await supabase
     .from("orders")
     .update({
-      status: "expired",
+      status: "cancelled",
       notes: "Auto-expired: no payment received within 30 min",
     })
     .eq("status", "pending")
