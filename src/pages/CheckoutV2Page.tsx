@@ -2048,6 +2048,28 @@ export default function CheckoutV2Page() {
   return (
     <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-32">
 
+      {/* Pincode step — small popup after phone. Auto-fetches city/state via
+          the pincode effect. Once submitted, we land on the checkout page
+          with a "Delivering to <pincode>" chip; payment methods stay hidden
+          until the full address form (name + street) is completed. */}
+      {!pincodeConfirmed && (
+        <Suspense fallback={null}>
+          <PincodeSheet
+            initial={pincode}
+            onSubmit={(pc) => {
+              setPincode(pc);
+              setPincodeConfirmed(true);
+            }}
+            onClose={() => {
+              // X on pincode sheet — go back to the previous page (PDP/cart).
+              // No pincode = no way to proceed with checkout.
+              try { navigate(-1); } catch { /* noop */ }
+            }}
+          />
+        </Suspense>
+      )}
+
+
       {/* Confirming payment overlay */}
       {confirmingPayment && (
         <div className="fixed inset-0 z-50 bg-background/85 backdrop-blur-sm flex items-center justify-center">
