@@ -2919,17 +2919,18 @@ export default function CheckoutV2Page() {
                   const disabled = s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount;
                   const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
                   return (
-                    <button
+                    <a
                       key={app.key}
-                      onClick={() => tapUpiApp(app.key)}
-                      disabled={disabled}
-                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 disabled:opacity-40 disabled:cursor-not-allowed min-h-[92px] relative`}
+                      href={disabled ? undefined : s.url}
+                      onClick={(e) => tapUpiApp(app.key, e)}
+                      aria-disabled={disabled}
+                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 min-h-[92px] relative ${disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
                     >
                       
                       <img src={app.icon} alt={app.label} className="h-8 w-8 mt-3 mb-1 object-contain" />
                       <div className="text-[11px] font-semibold">{app.label}</div>
                       {(s.status === "loading" || staleAmount) && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
-                    </button>
+                    </a>
                   );
                 })}
               </div>
@@ -2937,17 +2938,18 @@ export default function CheckoutV2Page() {
                 const anyS = intents.any;
                 const staleAny = typeof anyS.amount === "number" && Math.round(anyS.amount * 100) !== Math.round(chargeAmount * 100);
                 return (
-                  <button
-                    onClick={() => tapUpiApp("any")}
-                    disabled={anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny}
-                    className="mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] disabled:opacity-40"
+                  <a
+                    href={(anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny) ? undefined : anyS.url}
+                    onClick={(e) => tapUpiApp("any", e)}
+                    aria-disabled={anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny}
+                    className={`mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] ${(anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny) ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
                   >
                     <span className="text-[13px] font-semibold">All UPI Apps</span>
                     <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
                       Pay with any UPI app
                       <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
                     </span>
-                  </button>
+                  </a>
                 );
               })()}
             </div>
