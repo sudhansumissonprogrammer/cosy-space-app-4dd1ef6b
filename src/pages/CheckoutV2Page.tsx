@@ -10,7 +10,7 @@
 // zippopotam pincode fallback + geolocation, Hindi bilingual labels, and
 // checkout_token idempotency + payment-failed retry banner + confirmingPayment overlay.
 
-import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense, type MouseEvent } from "react";
 import { useOutletContext, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,13 +79,29 @@ function isMobile(): boolean {
   return false;
 }
 
-/** Rewrite `upi://pay?...` to app-specific deeplink so target app opens directly. */
+function isAndroid(): boolean {
+  return typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
+}
+
+const UPI_ANDROID_PACKAGES: Partial<Record<UpiApp, string>> = {
+  gpay: "com.google.android.apps.nbu.paisa.user",
+  phonepe: "com.phonepe.app",
+  paytm: "net.one97.paytm",
+};
+
+function androidIntentForUpi(query: string, packageName: string, fallbackUrl: string): string {
+  return `intent://pay?${query}#Intent;scheme=upi;package=${packageName};S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+}
+
+/** Rewrite `upi://pay?...` to the safest app launch URL for the shopper's device. */
 function schemeFor(app: UpiApp, url: string): string {
   if (!url) return url;
   if (app === "any") return url;
   const m = url.match(/^upi:\/\/[^?]*\?(.+)$/i);
   const query = m?.[1];
   if (!query) return url;
+  const packageName = UPI_ANDROID_PACKAGES[app];
+  if (packageName && isAndroid()) return androidIntentForUpi(query, packageName, `upi://pay?${query}`);
   if (app === "gpay") return `tez://upi/pay?${query}`;
   if (app === "phonepe") return `phonepe://pay?${query}`;
   if (app === "paytm") return `paytmmp://pay?${query}`;
