@@ -1672,6 +1672,20 @@ export default function CheckoutV2Page() {
   // is called against the wrong `advance_paid`/`total` and charges too much
   // or too little. Server is DB-authoritative, so a fresh mint is the only
   // safe way to change the amount.
+  // Fire-and-forget cancel of a stale pending order (see edge fn header).
+  // Never awaited: we don't want to slow the re-mint path on a slow network,
+  // and the server call is idempotent + scoped by checkout_token.
+  const cancelStalePendingOrder = (oid: string | null, token: string | null) => {
+    if (!oid || !token || !store?.id) return;
+    try {
+      void supabase.functions
+        .invoke("cancel-pending-order", {
+          body: { store_id: store.id, order_id: oid, checkout_token: token },
+        })
+        .catch(() => { /* swallow — non-critical cleanup */ });
+    } catch { /* noop */ }
+  };
+
   const createOrderIfNeeded = async (paymentMethodHint: string): Promise<PendingOrder> => {
     // COD forces payment_type=full even when the shopper had "advance"
     // pre-selected. Fold that into the snapshot so a stale partial-mode
