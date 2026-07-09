@@ -1,0 +1,22 @@
+[
+	{
+		"id":"14463206951",
+		"tbs_sha256":"7d90675bdcf54f8a546507df09820652cf7766815d8f3b31ca7b9d738188ba10",
+		"cert_sha256":"460b9fcb1546a6e4ccb2c3a7939d8eed624e513acd1d00ff2a30f3ee601aebcc",
+		"dns_names":["*.mart-24.com","mart-24.com"],
+		"pubkey_sha256":"e153bf688c9123fa6646fb93b20aaf9fe6a5d04ad9484de13743046b4367dc83",
+		"not_before":"2026-04-11T11:22:26Z",
+		"not_after":"2026-07-10T11:22:25Z",
+		"revoked":false
+	},
+	{
+		"id":"15068546487",
+		"tbs_sha256":"dc2c8de1edf9b36774d76fa1095f8b48c26c7b5516b78fadb2582f71c078da37",
+		"cert_sha256":"9b504d9e84f6c77e0330e72ff5ba8c4a3c621b960c1520605939594351c12f32",
+		"dns_names":["*.mart-24.com","mart-24.com"],
+		"pubkey_sha256":"5e0035044117ce14ea3b4746eba01a644a6276e305e86951a24125b224370dba",
+		"not_before":"2026-05-26T02:12:58Z",
+		"not_after":"2026-08-24T03:10:34Z",
+		"revoked":false
+	}
+]
