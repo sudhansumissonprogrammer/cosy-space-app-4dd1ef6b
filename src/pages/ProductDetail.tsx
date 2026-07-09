@@ -275,16 +275,30 @@ export default function ProductDetail() {
     contentReadyRef.current = false;
   }, [productSlug]);
 
-  // Prefetch the checkout chunk as soon as the PDP is mounted so that
-  // "Buy Now" navigation is instant on cold visits — no wait for the
-  // CheckoutPage + CheckoutPhoneStep JS to download after the click.
-  useEffect(() => {
-    const t = setTimeout(() => {
-      import("./CheckoutPage").catch(() => {});
-      import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
-    }, 300);
-    return () => clearTimeout(t);
+  // Prefetch the checkout chunks so "Buy Now" navigation feels instant.
+  // We kick off immediately on mount (idle-scheduled) AND expose a
+  // `prefetchCheckout` fn that we wire to onPointerDown of every Buy Now
+  // button — that captures shopper intent ~100-300ms before the click
+  // event, giving the JS a head start on slow networks.
+  const checkoutPrefetchedRef = useRef(false);
+  const prefetchCheckout = useCallback(() => {
+    if (checkoutPrefetchedRef.current) return;
+    checkoutPrefetchedRef.current = true;
+    import("./CheckoutPage").catch(() => { checkoutPrefetchedRef.current = false; });
+    import("./CheckoutV2Page").catch(() => {});
+    import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
   }, []);
+  useEffect(() => {
+    const ric = (window as any).requestIdleCallback as
+      | ((cb: () => void, opts?: { timeout?: number }) => number)
+      | undefined;
+    if (ric) {
+      const id = ric(prefetchCheckout, { timeout: 800 });
+      return () => (window as any).cancelIdleCallback?.(id);
+    }
+    const t = setTimeout(prefetchCheckout, 100);
+    return () => clearTimeout(t);
+  }, [prefetchCheckout]);
 
 
   useEffect(() => {
@@ -599,8 +613,7 @@ export default function ProductDetail() {
 
     // Warm the checkout chunks *before* navigating so the target page renders
     // immediately instead of showing a Suspense fallback while the JS downloads.
-    import("@/pages/CheckoutPage").catch(() => {});
-    import("@/pages/CheckoutV2Page").catch(() => {});
+    prefetchCheckout();
 
     // Add to cart first so it's available either way.
     addToCart({
@@ -888,6 +901,7 @@ export default function ProductDetail() {
                     <button
                       className="flex h-12 w-full items-center justify-center border text-sm font-bold uppercase tracking-widest transition-[transform,opacity,colors,box-shadow] active:scale-[0.97] hover:bg-white hover:text-black"
                       style={{ borderColor: "#ffffff", color: "#ffffff", ...v18Font }}
+                      onPointerDown={prefetchCheckout}
                       onClick={handleBuyNow}
                     >
                       BUY IT NOW
@@ -920,6 +934,7 @@ export default function ProductDetail() {
                     <button
                       className="btn-press flex h-12 w-full items-center justify-center gap-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] animate-[vibrate_0.8s_ease-in-out_infinite_3s]"
                       style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-bg, hsl(var(--primary-foreground)))" }}
+                      onPointerDown={prefetchCheckout}
                       onClick={handleBuyNow}
                     >
                       <span className="flex items-center gap-1.5">
@@ -1201,6 +1216,7 @@ export default function ProductDetail() {
                     <button
                       className="btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow]"
                       style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", fontFamily: "var(--storefront-heading-font, inherit)" }}
+                      onPointerDown={prefetchCheckout}
                       onClick={handleBuyNow}
                     >
                       <span className="flex items-center gap-1.5">
