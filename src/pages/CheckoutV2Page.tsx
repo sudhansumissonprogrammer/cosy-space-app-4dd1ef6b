@@ -1419,15 +1419,22 @@ export default function CheckoutV2Page() {
   };
 
 
-  const tapUpiApp = (app: UpiApp) => {
-    if (creatingOrder || couponLoading || paymentAmountSyncing) return;
+  const tapUpiApp = (app: UpiApp, event?: MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
+    if (creatingOrder || couponLoading || paymentAmountSyncing) {
+      event?.preventDefault();
+      return;
+    }
     const s = intents[app];
-    if (s.status !== "ready" || !s.url) return;
+    if (s.status !== "ready" || !s.url) {
+      event?.preventDefault();
+      return;
+    }
     // Stale-intent guard: the minted URL encodes a fixed amount. If the
     // shopper toggled Partial/Full (or coupon/shipping shifted the total)
     // between mint and tap, refuse the launch and force a re-mint so the
     // UPI app never opens for the wrong amount.
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) {
+      event?.preventDefault();
       toast.info("Updating amount…");
       void createOrderAndIntents();
       return;
@@ -1436,11 +1443,27 @@ export default function CheckoutV2Page() {
     setWaitingApp(label);
     setWaiting(true);
     persistWaiting(app, label);
-    try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}` } as any }); } catch { /* noop */ }
-    fireInitiateCheckoutOnce();
-    fireAddPaymentInfoOnce(`upi_${app}`, chargeAmount);
     try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
-    window.location.href = s.url;
+
+    // Keep the user gesture as clean as possible for low-end Android Chrome:
+    // the anchor href performs the actual UPI/intent navigation, while pixels
+    // and analytics run after the app launch has already been handed off.
+    window.setTimeout(() => {
+      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}` } as any }); } catch { /* noop */ }
+      fireInitiateCheckoutOnce();
+      fireAddPaymentInfoOnce(`upi_${app}`, chargeAmount);
+    }, 0);
+
+    const launchedAt = Date.now();
+    let pageHidden = false;
+    const markHidden = () => { if (document.visibilityState === "hidden") pageHidden = true; };
+    document.addEventListener("visibilitychange", markHidden, { once: true });
+    window.setTimeout(() => {
+      document.removeEventListener("visibilitychange", markHidden);
+      if (!pageHidden && document.visibilityState === "visible" && Date.now() - launchedAt >= 2200) {
+        toast.info(`If ${label} did not open, tap All UPI Apps or retry.`, { duration: 4500 });
+      }
+    }, 2500);
   };
 
   // ─── Restore waiting state on mount / PayU redirect-back ────────────────
