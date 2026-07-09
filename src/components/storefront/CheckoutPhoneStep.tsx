@@ -38,6 +38,8 @@ import { getOrCreateSessionId } from "@/lib/visitorSession";
 import { formatPrice } from "@/lib/productUtils";
 import type { CartItem } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
+import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 
 interface Props {
   storeId?: string;
