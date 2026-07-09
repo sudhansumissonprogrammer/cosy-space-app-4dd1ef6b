@@ -2360,12 +2360,10 @@ export default function CheckoutV2Page() {
 
 
   if (checkoutItems.length === 0 && !orderId && !isSingleMode) {
-    return (
-      <div className="mx-auto max-w-md p-8 text-center">
-        <p className="text-muted-foreground">Your cart is empty.</p>
-        <Button className="mt-4" onClick={() => navigate(storefrontPath(store.slug))}>Continue shopping</Button>
-      </div>
-    );
+    // Cart is empty (e.g. shopper removed the last item on the phone step) —
+    // send them straight back to the storefront home rather than a dead end.
+    navigate(storefrontPath(store.slug), { replace: true });
+    return null;
   }
 
 
@@ -2414,6 +2412,21 @@ export default function CheckoutV2Page() {
           storeName={store?.name}
           storeLogo={store?.logo_url}
           cartItems={checkoutItems as any}
+          isSingleMode={isSingleMode}
+          onQuantityChange={(item, nextQty) => {
+            if (isSingleMode) setBuyNowQty(nextQty);
+            else updateQuantity(item.productId, item.variantId, nextQty);
+          }}
+          onRemoveItem={(item) => {
+            if (isSingleMode) {
+              // Buy-now has no cart to fall back to — go straight home.
+              navigate(storefrontPath(store?.slug || ""), { replace: true });
+              return;
+            }
+            removeFromCart(item.productId, item.variantId);
+            // If that was the last item, the empty-cart guard above will
+            // redirect to the storefront home on the next render.
+          }}
           onComplete={(p) => {
             setPhone(p);
             try { localStorage.setItem("checkout_phone", toCanonicalIndianPhone(p) || p); } catch { /* noop */ }

@@ -5,8 +5,9 @@
  *   1. We seed the address form with an auto-created guest account.
  *   2. The number is stored as a lead + abandoned_carts row for WA recovery.
  *
- * UI matches the GoKwik-style checkout (Order Summary → Offers → Login card).
- * Logic (capture_checkout_lead RPC + autoLoginByPhone) is unchanged.
+ * Order Summary is expanded by default with qty +/- and Remove controls that
+ * mutate the real cart (or buy-now qty) so any change propagates through the
+ * whole checkout + payment gateway with no mismatch.
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
@@ -19,11 +20,12 @@ import {
   CheckCircle2,
   Trash2,
   ShoppingCart,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
@@ -34,7 +36,7 @@ import {
 } from "@/lib/phoneUtils";
 import { getOrCreateSessionId } from "@/lib/visitorSession";
 import { formatPrice } from "@/lib/productUtils";
-import { useCart, type CartItem } from "@/contexts/CartContext";
+import type { CartItem } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
 
 interface Props {
@@ -43,6 +45,12 @@ interface Props {
   storeName?: string;
   storeLogo?: string;
   cartItems: CartItem[];
+  /** True when in buy-now single mode — hides Remove (no cart to fall back to). */
+  isSingleMode?: boolean;
+  /** Called when the shopper taps +/- on a row. Parent decides cart vs buy-now qty. */
+  onQuantityChange?: (item: CartItem, nextQty: number) => void;
+  /** Called when the shopper taps Remove. Parent removes + navigates if cart empties. */
+  onRemoveItem?: (item: CartItem) => void;
   /** Fires with the canonical 10-digit phone once Step 1 succeeds. */
   onComplete: (phone: string) => void;
 }
@@ -73,6 +81,9 @@ export default function CheckoutPhoneStep({
   storeName,
   storeLogo,
   cartItems,
+  isSingleMode,
+  onQuantityChange,
+  onRemoveItem,
   onComplete,
 }: Props) {
   const [phone, setPhone] = useState<string>(() => {
@@ -86,11 +97,10 @@ export default function CheckoutPhoneStep({
   });
   const [consent, setConsent] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [summaryOpen, setSummaryOpen] = useState(false);
-  const [couponDraft, setCouponDraft] = useState<string>("");
+  // Open by default so the shopper sees exactly what they're paying for.
+  const [summaryOpen, setSummaryOpen] = useState(true);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const inFlight = useRef(false);
-  const { removeFromCart } = useCart();
 
   const digits = phone.replace(/\D/g, "");
   const valid = digits.length === 10 && /^[6-9]/.test(digits);
@@ -103,6 +113,12 @@ export default function CheckoutPhoneStep({
     (n, i) => n + (Number(i.quantity) || 1),
     0,
   );
+
+  const setQty = (item: CartItem, next: number) => {
+    const n = Math.max(1, Math.min(99, Math.floor(next)));
+    onQuantityChange?.(item, n);
+  };
+
   const submit = async () => {
     if (inFlight.current) return;
     const normalized = normalizePhone(digits);
@@ -121,9 +137,6 @@ export default function CheckoutPhoneStep({
     try {
       try {
         localStorage.setItem("checkout_phone", canon);
-        if (couponDraft.trim()) {
-          localStorage.setItem("checkout_coupon_draft", couponDraft.trim().toUpperCase());
-        }
       } catch {}
 
       const session_token = (() => {
@@ -238,7 +251,7 @@ export default function CheckoutPhoneStep({
       </div>
 
       <div className="px-3 py-3 space-y-3">
-        {/* Order Summary card */}
+        {/* Order Summary — expanded by default with qty controls */}
         <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
           <button
             type="button"
@@ -268,106 +281,105 @@ export default function CheckoutPhoneStep({
 
           {summaryOpen && (
             <div className="border-t border-[#ECECEC] mt-3 pt-3 space-y-3">
-              {cartItems.map((i, idx) => (
-                <div
-                  key={`${i.productId}-${i.variantId ?? "base"}-${idx}`}
-                  className="flex items-start gap-3"
-                >
-                  {i.image ? (
-                    <img
-                      src={i.image}
-                      alt={i.name}
-                      loading="lazy"
-                      className="h-14 w-14 flex-shrink-0 rounded-lg border object-cover"
-                    />
-                  ) : (
-                    <div className="h-14 w-14 flex-shrink-0 rounded-lg border bg-muted" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="line-clamp-2 text-[13px] font-semibold">
-                      {i.name || "Item"}
+              {cartItems.map((it, idx) => {
+                const qty = Number(it.quantity) || 1;
+                const canRemove = !isSingleMode && !!onRemoveItem;
+                return (
+                  <div
+                    key={`${it.productId}-${it.variantId ?? "base"}-${idx}`}
+                    className="flex items-start gap-3"
+                  >
+                    {it.image ? (
+                      <img
+                        src={it.image}
+                        alt={it.name}
+                        loading="lazy"
+                        className="h-14 w-14 flex-shrink-0 rounded-lg border object-cover"
+                      />
+                    ) : (
+                      <div className="h-14 w-14 flex-shrink-0 rounded-lg border bg-muted" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="line-clamp-2 text-[13px] font-semibold">
+                        {it.name || "Item"}
+                      </div>
+                      <div className="mt-1.5 inline-flex items-center gap-1 rounded-md border border-[#ECECEC] bg-white">
+                        <button
+                          type="button"
+                          onClick={() => setQty(it, qty - 1)}
+                          disabled={qty <= 1}
+                          aria-label="Decrease quantity"
+                          className="h-7 w-7 flex items-center justify-center text-muted-foreground disabled:opacity-40 active:bg-[#F5F5F5] rounded-l-md"
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                        <span className="min-w-[24px] text-center text-[12px] font-semibold tabular-nums">
+                          {qty}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setQty(it, qty + 1)}
+                          disabled={qty >= 99}
+                          aria-label="Increase quantity"
+                          className="h-7 w-7 flex items-center justify-center text-muted-foreground disabled:opacity-40 active:bg-[#F5F5F5] rounded-r-md"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="mt-0.5 text-[11px] text-muted-foreground">
-                      Qty: {i.quantity || 1}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1.5">
-                    <span className="text-[13px] font-semibold tabular-nums">
-                      {formatPrice(
-                        (Number(i.price) || 0) * (Number(i.quantity) || 1),
+                    <div className="flex flex-col items-end gap-1.5">
+                      <span className="text-[13px] font-semibold tabular-nums">
+                        {formatPrice(
+                          (Number(it.price) || 0) * qty,
+                        )}
+                      </span>
+                      {canRemove && (
+                        <button
+                          type="button"
+                          onClick={() => onRemoveItem?.(it)}
+                          className="flex items-center gap-1 text-[11px] text-muted-foreground transition hover:text-destructive"
+                          aria-label={`Remove ${it.name}`}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Remove
+                        </button>
                       )}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeFromCart(i.productId, i.variantId)}
-                      className="flex items-center gap-1 text-[11px] text-muted-foreground transition hover:text-destructive"
-                      aria-label={`Remove ${i.name}`}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      Remove
-                    </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Offers card */}
-        <div className="bg-white rounded-xl border border-[#ECECEC] overflow-hidden">
-          <div className="bg-emerald-50 text-emerald-700 text-[13px] font-semibold text-center py-2">
-            You save on next step
-          </div>
-          <div className="p-3.5">
-            <Input
-              value={couponDraft}
-              onChange={(e) => setCouponDraft(e.target.value.toUpperCase())}
-              placeholder="Enter coupon code"
-              className="h-11 rounded-lg border-[#ECECEC] uppercase"
-            />
-            <div className="mt-2 text-[11px] text-muted-foreground">
-              Coupons will be applied on the next step.
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile number card */}
+        {/* Mobile number card — single clear label, no clutter */}
         <div className="bg-white rounded-xl border border-[#ECECEC] overflow-hidden">
           <div className="p-3.5 space-y-3">
-            <div className="text-[14px] font-semibold">Enter your mobile number</div>
-            <div className="text-[11px] text-muted-foreground -mt-2">
-              We'll use this to send order updates. No OTP required.
-            </div>
-            <div className="relative">
-              <Label className="text-[11px] text-muted-foreground absolute -top-2 left-3 bg-white px-1">
-                Mobile Number
-              </Label>
-              <div className="flex items-center h-12 rounded-lg border border-[#ECECEC] px-3 gap-2">
-                <span className="text-[14px] font-medium">+91</span>
-                <span className="text-muted-foreground">|</span>
-                <input
-                  id="checkout-phone-input"
-                  type="tel"
-                  inputMode="numeric"
-                  maxLength={10}
-                  placeholder="Enter Mobile Number"
-                  value={phone}
-                  onChange={(e) =>
-                    setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && valid && !submitting) submit();
-                  }}
-                  className="flex-1 bg-transparent outline-none text-[14px]"
-                  autoComplete="tel-national"
-                />
-              </div>
+            <div className="flex items-center h-12 rounded-lg border border-[#ECECEC] px-3 gap-2 focus-within:border-black transition-colors">
+              <span className="text-[14px] font-medium">+91</span>
+              <span className="text-muted-foreground">|</span>
+              <input
+                id="checkout-phone-input"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder="Enter mobile number"
+                value={phone}
+                onChange={(e) =>
+                  setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && valid && !submitting) submit();
+                }}
+                className="flex-1 bg-transparent outline-none text-[14px]"
+                autoComplete="tel-national"
+              />
             </div>
 
             <Button
               onClick={submit}
               disabled={submitting || !valid}
-              className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white disabled:opacity-100 rounded-lg"
+              className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 text-white disabled:bg-black disabled:text-white disabled:opacity-100 rounded-lg"
             >
               {submitting ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -426,7 +438,7 @@ export default function CheckoutPhoneStep({
         <Button
           onClick={submit}
           disabled={submitting || !valid}
-          className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white disabled:opacity-100 rounded-lg"
+          className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 text-white disabled:bg-black disabled:text-white disabled:opacity-100 rounded-lg"
         >
           {submitting ? (
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -440,9 +452,4 @@ export default function CheckoutPhoneStep({
       </div>
     </div>
   );
-}
-
-// Local Label to avoid extra shadcn import weight
-function Label({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <label className={className}>{children}</label>;
 }
