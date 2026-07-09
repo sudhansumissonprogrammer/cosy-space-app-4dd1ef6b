@@ -1685,6 +1685,9 @@ export default function CheckoutV2Page() {
     }
     if (orderIdRef.current && orderSnapshotRef.current !== effectiveSnapshot) {
       // Discard stale row before minting a fresh one with the new amount.
+      // Also cancel the stale pending row server-side so we don't leave
+      // orphan pending orders behind on every Partial↔Full / qty change.
+      cancelStalePendingOrder(orderIdRef.current, checkoutTokenRef.current);
       orderIdRef.current = null;
       orderNumberRef.current = null;
       setOrderId(null);
