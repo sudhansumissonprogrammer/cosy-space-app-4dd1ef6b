@@ -103,6 +103,8 @@ export default function CheckoutPhoneStep({
   const [summaryOpen, setSummaryOpen] = useState(true);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const inFlight = useRef(false);
+  const themeConfig = useStorefrontThemeConfig(storeId);
+  const marqueeEnabled = themeConfig?.marquee_enabled ?? true;
 
   const digits = phone.replace(/\D/g, "");
   const valid = digits.length === 10 && /^[6-9]/.test(digits);
