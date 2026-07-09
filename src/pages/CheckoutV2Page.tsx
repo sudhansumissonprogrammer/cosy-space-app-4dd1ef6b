@@ -10,7 +10,7 @@
 // zippopotam pincode fallback + geolocation, Hindi bilingual labels, and
 // checkout_token idempotency + payment-failed retry banner + confirmingPayment overlay.
 
-import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense, type MouseEvent } from "react";
 import { useOutletContext, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,13 +79,29 @@ function isMobile(): boolean {
   return false;
 }
 
-/** Rewrite `upi://pay?...` to app-specific deeplink so target app opens directly. */
+function isAndroid(): boolean {
+  return typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
+}
+
+const UPI_ANDROID_PACKAGES: Partial<Record<UpiApp, string>> = {
+  gpay: "com.google.android.apps.nbu.paisa.user",
+  phonepe: "com.phonepe.app",
+  paytm: "net.one97.paytm",
+};
+
+function androidIntentForUpi(query: string, packageName: string, fallbackUrl: string): string {
+  return `intent://pay?${query}#Intent;scheme=upi;package=${packageName};S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+}
+
+/** Rewrite `upi://pay?...` to the safest app launch URL for the shopper's device. */
 function schemeFor(app: UpiApp, url: string): string {
   if (!url) return url;
   if (app === "any") return url;
   const m = url.match(/^upi:\/\/[^?]*\?(.+)$/i);
   const query = m?.[1];
   if (!query) return url;
+  const packageName = UPI_ANDROID_PACKAGES[app];
+  if (packageName && isAndroid()) return androidIntentForUpi(query, packageName, `upi://pay?${query}`);
   if (app === "gpay") return `tez://upi/pay?${query}`;
   if (app === "phonepe") return `phonepe://pay?${query}`;
   if (app === "paytm") return `paytmmp://pay?${query}`;
@@ -1403,15 +1419,22 @@ export default function CheckoutV2Page() {
   };
 
 
-  const tapUpiApp = (app: UpiApp) => {
-    if (creatingOrder || couponLoading || paymentAmountSyncing) return;
+  const tapUpiApp = (app: UpiApp, event?: MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
+    if (creatingOrder || couponLoading || paymentAmountSyncing) {
+      event?.preventDefault();
+      return;
+    }
     const s = intents[app];
-    if (s.status !== "ready" || !s.url) return;
+    if (s.status !== "ready" || !s.url) {
+      event?.preventDefault();
+      return;
+    }
     // Stale-intent guard: the minted URL encodes a fixed amount. If the
     // shopper toggled Partial/Full (or coupon/shipping shifted the total)
     // between mint and tap, refuse the launch and force a re-mint so the
     // UPI app never opens for the wrong amount.
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) {
+      event?.preventDefault();
       toast.info("Updating amount…");
       void createOrderAndIntents();
       return;
@@ -1420,11 +1443,27 @@ export default function CheckoutV2Page() {
     setWaitingApp(label);
     setWaiting(true);
     persistWaiting(app, label);
-    try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}` } as any }); } catch { /* noop */ }
-    fireInitiateCheckoutOnce();
-    fireAddPaymentInfoOnce(`upi_${app}`, chargeAmount);
     try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
-    window.location.href = s.url;
+
+    // Keep the user gesture as clean as possible for low-end Android Chrome:
+    // the anchor href performs the actual UPI/intent navigation, while pixels
+    // and analytics run after the app launch has already been handed off.
+    window.setTimeout(() => {
+      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}` } as any }); } catch { /* noop */ }
+      fireInitiateCheckoutOnce();
+      fireAddPaymentInfoOnce(`upi_${app}`, chargeAmount);
+    }, 0);
+
+    const launchedAt = Date.now();
+    let pageHidden = false;
+    const markHidden = () => { if (document.visibilityState === "hidden") pageHidden = true; };
+    document.addEventListener("visibilitychange", markHidden, { once: true });
+    window.setTimeout(() => {
+      document.removeEventListener("visibilitychange", markHidden);
+      if (!pageHidden && document.visibilityState === "visible" && Date.now() - launchedAt >= 2200) {
+        toast.info(`If ${label} did not open, tap All UPI Apps or retry.`, { duration: 4500 });
+      }
+    }, 2500);
   };
 
   // ─── Restore waiting state on mount / PayU redirect-back ────────────────
@@ -2880,17 +2919,18 @@ export default function CheckoutV2Page() {
                   const disabled = s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount;
                   const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
                   return (
-                    <button
+                    <a
                       key={app.key}
-                      onClick={() => tapUpiApp(app.key)}
-                      disabled={disabled}
-                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 disabled:opacity-40 disabled:cursor-not-allowed min-h-[92px] relative`}
+                      href={disabled ? undefined : s.url}
+                      onClick={(e) => tapUpiApp(app.key, e)}
+                      aria-disabled={disabled}
+                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 min-h-[92px] relative ${disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
                     >
                       
                       <img src={app.icon} alt={app.label} className="h-8 w-8 mt-3 mb-1 object-contain" />
                       <div className="text-[11px] font-semibold">{app.label}</div>
                       {(s.status === "loading" || staleAmount) && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
-                    </button>
+                    </a>
                   );
                 })}
               </div>
@@ -2898,17 +2938,18 @@ export default function CheckoutV2Page() {
                 const anyS = intents.any;
                 const staleAny = typeof anyS.amount === "number" && Math.round(anyS.amount * 100) !== Math.round(chargeAmount * 100);
                 return (
-                  <button
-                    onClick={() => tapUpiApp("any")}
-                    disabled={anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny}
-                    className="mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] disabled:opacity-40"
+                  <a
+                    href={(anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny) ? undefined : anyS.url}
+                    onClick={(e) => tapUpiApp("any", e)}
+                    aria-disabled={anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny}
+                    className={`mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] ${(anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny) ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
                   >
                     <span className="text-[13px] font-semibold">All UPI Apps</span>
                     <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
                       Pay with any UPI app
                       <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
                     </span>
-                  </button>
+                  </a>
                 );
               })()}
             </div>
