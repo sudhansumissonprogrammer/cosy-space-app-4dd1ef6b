@@ -8,7 +8,9 @@ export const corsHeaders = {
 };
 
 // Normalize to E.164 digits-only (no '+'). Bare 10-digit Indian numbers get '91' prefix.
-// Reject anything that can't be coerced to a plausible international number.
+// Reject anything that can't be coerced to a plausible international number, and
+// STRICTLY reject spam/fake patterns (all-same digits, sequential runs, invalid
+// Indian mobile prefixes) so we never spend Meta credits on obvious junk.
 export function normalizePhone(raw: string | null | undefined): string | null {
   if (!raw) return null;
   let digits = String(raw).replace(/[^\d]/g, "");
@@ -17,6 +19,38 @@ export function normalizePhone(raw: string | null | undefined): string | null {
   // Default to India country code when caller passed a bare 10-digit mobile
   if (digits.length === 10 && /^[6-9]/.test(digits)) digits = "91" + digits;
   if (digits.length < 11 || digits.length > 15) return null;
+
+  // ---- Spam / fake number guards ----
+  // Extract the subscriber portion (last 10 digits) for pattern checks.
+  const sub = digits.slice(-10);
+  if (sub.length !== 10) return null;
+
+  // All identical digits: 9999999999, 0000000000, 1111111111 ...
+  if (/^(\d)\1{9}$/.test(sub)) return null;
+
+  // Only 2 unique digits across the whole subscriber number (e.g. 9898989898,
+  // 1212121212, 9090909090) — real numbers virtually never look like this.
+  const uniq = new Set(sub.split("")).size;
+  if (uniq <= 2) return null;
+
+  // Strictly ascending / descending runs of length >= 7 anywhere in the number
+  // (1234567890, 9876543210, 12345678, etc.)
+  let asc = 1, desc = 1;
+  for (let i = 1; i < sub.length; i++) {
+    const d = sub.charCodeAt(i) - sub.charCodeAt(i - 1);
+    asc = d === 1 ? asc + 1 : 1;
+    desc = d === -1 ? desc + 1 : 1;
+    if (asc >= 7 || desc >= 7) return null;
+  }
+
+  // Same digit repeated 6+ times in a row (e.g. 9111111234)
+  if (/(\d)\1{5,}/.test(sub)) return null;
+
+  // Indian numbers (country code 91): mobile must start with 6-9.
+  if (digits.startsWith("91") && digits.length === 12) {
+    if (!/^[6-9]/.test(sub)) return null;
+  }
+
   return digits;
 }
 
