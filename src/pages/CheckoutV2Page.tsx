@@ -247,7 +247,7 @@ export default function CheckoutV2Page() {
         variantId: (buyNowVariant?.id as string | undefined),
         name: buyNowVariant ? `${buyNowProduct.name} (${buyNowVariant.name})` : buyNowProduct.name,
         price: (buyNowVariant?.price ?? (buyNowProduct.sale_price && buyNowProduct.sale_price < buyNowProduct.price ? buyNowProduct.sale_price : buyNowProduct.price)) as number,
-        quantity: 1,
+        quantity: buyNowQty,
         image: buyNowProduct.image_url as string | null,
       }];
     }
@@ -259,7 +259,7 @@ export default function CheckoutV2Page() {
       quantity: i.quantity,
       image: (i as any).image || null,
     }));
-  }, [isSingleMode, buyNowProduct, buyNowVariant, cartItems]);
+  }, [isSingleMode, buyNowProduct, buyNowVariant, buyNowQty, cartItems]);
 
   // ─── Form state (with express_checkout_ prefill) ────────────────────────
   const savedInfo = (() => {
