@@ -1858,6 +1858,9 @@ export default function CheckoutV2Page() {
       try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
       desktopQrPollStartedRef.current = false;
     }
+    // Cancel the stale pending row so it doesn't linger in the DB as an
+    // orphan while we mint the fresh one for the new amount.
+    cancelStalePendingOrder(orderIdRef.current, checkoutTokenRef.current);
     orderIdRef.current = null;
     orderNumberRef.current = null;
     orderSnapshotRef.current = null;
@@ -1904,6 +1907,8 @@ export default function CheckoutV2Page() {
       try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
       desktopQrPollStartedRef.current = false;
     }
+    // Same cleanup as the snapshot-reset effect above.
+    cancelStalePendingOrder(orderIdRef.current, checkoutTokenRef.current);
     orderIdRef.current = null;
     orderNumberRef.current = null;
     orderSnapshotRef.current = null;
