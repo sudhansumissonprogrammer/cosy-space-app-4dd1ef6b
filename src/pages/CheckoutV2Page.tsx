@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote, Tag, X, Plus, Check, CreditCard, ShoppingCart, ChevronDown, Trash2 } from "lucide-react";
+import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote, Tag, X, Plus, Minus, Check, CreditCard, ShoppingCart, ChevronDown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
