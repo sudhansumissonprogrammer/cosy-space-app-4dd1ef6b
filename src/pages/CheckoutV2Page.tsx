@@ -93,6 +93,30 @@ function androidIntentForUpi(query: string, packageName: string, fallbackUrl: st
   return `intent://pay?${query}#Intent;scheme=upi;package=${packageName};S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
 }
 
+function extractUpiQuery(url: string): string | null {
+  const upi = url.match(/^upi:\/\/[^?]*\?([^#]+)/i);
+  if (upi?.[1]) return upi[1];
+  const intent = url.match(/^intent:\/\/(?:upi\/)?pay\?([^#]+)/i);
+  if (intent?.[1]) return intent[1];
+  const native = url.match(/^(?:tez:\/\/upi\/pay|phonepe:\/\/(?:upi\/)?pay|paytmmp:\/\/pay|bhim:\/\/pay)\?([^#]+)/i);
+  return native?.[1] || null;
+}
+
+function nativeSchemeForUpiApp(app: UpiApp, url: string): string | null {
+  const query = extractUpiQuery(url);
+  if (!query) return null;
+  if (app === "gpay") return `tez://upi/pay?${query}`;
+  if (app === "phonepe") return `phonepe://pay?${query}`;
+  if (app === "paytm") return `paytmmp://pay?${query}`;
+  if (app === "bhim") return `upi://pay?${query}`;
+  return `upi://pay?${query}`;
+}
+
+function genericUpiUrl(url: string): string | null {
+  const query = extractUpiQuery(url);
+  return query ? `upi://pay?${query}` : null;
+}
+
 /** Rewrite `upi://pay?...` to the safest app launch URL for the shopper's device. */
 function schemeFor(app: UpiApp, url: string): string {
   if (!url) return url;
@@ -1420,13 +1444,12 @@ export default function CheckoutV2Page() {
 
 
   const tapUpiApp = (app: UpiApp, event?: MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
+    event?.preventDefault();
     if (creatingOrder || couponLoading || paymentAmountSyncing) {
-      event?.preventDefault();
       return;
     }
     const s = intents[app];
     if (s.status !== "ready" || !s.url) {
-      event?.preventDefault();
       return;
     }
     // Stale-intent guard: the minted URL encodes a fixed amount. If the
@@ -1434,20 +1457,67 @@ export default function CheckoutV2Page() {
     // between mint and tap, refuse the launch and force a re-mint so the
     // UPI app never opens for the wrong amount.
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) {
-      event?.preventDefault();
       toast.info("Updating amount…");
       void createOrderAndIntents();
       return;
     }
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
-    setWaitingApp(label);
-    setWaiting(true);
-    persistWaiting(app, label);
-    try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
+
+    let leftCheckout = false;
+    let waitingArmed = false;
+    const armWaiting = () => {
+      if (waitingArmed) return;
+      waitingArmed = true;
+      persistWaiting(app, label);
+      setWaitingApp(label);
+      setWaiting(true);
+      try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
+    };
+    const markLeft = () => {
+      leftCheckout = true;
+      armWaiting();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") markLeft();
+    };
+    const cleanupLaunchListeners = () => {
+      window.removeEventListener("blur", markLeft);
+      window.removeEventListener("pagehide", markLeft);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+    window.addEventListener("blur", markLeft, { once: true });
+    window.addEventListener("pagehide", markLeft, { once: true });
+    document.addEventListener("visibilitychange", onVisibility);
 
     // Keep the user gesture as clean as possible for low-end Android Chrome:
-    // the anchor href performs the actual UPI/intent navigation, while pixels
-    // and analytics run after the app launch has already been handed off.
+    // launch the app synchronously, then update React state only after the
+    // browser has had a chance to hand off to PhonePe/GPay/Paytm. Updating to
+    // the waiting screen before navigation unmounted the tapped anchor on old
+    // Android devices, so PhonePe silently failed to open.
+    try {
+      window.location.assign(s.url);
+    } catch {
+      try { window.location.href = s.url; } catch { /* noop */ }
+    }
+
+    if (isAndroid() && app !== "any") {
+      const nativeUrl = nativeSchemeForUpiApp(app, s.url);
+      const anyUpiUrl = genericUpiUrl(s.url);
+      window.setTimeout(() => {
+        if (leftCheckout || document.visibilityState !== "visible") return;
+        if (nativeUrl && nativeUrl !== s.url) {
+          try { window.location.assign(nativeUrl); } catch { /* noop */ }
+        }
+      }, 650);
+      window.setTimeout(() => {
+        if (leftCheckout || document.visibilityState !== "visible") return;
+        if (anyUpiUrl) {
+          try { window.location.assign(anyUpiUrl); } catch { /* noop */ }
+        }
+      }, 1350);
+    }
+
+    // Pixels and analytics run after the app launch has already been handed off.
     window.setTimeout(() => {
       try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}` } as any }); } catch { /* noop */ }
       fireInitiateCheckoutOnce();
@@ -1455,13 +1525,14 @@ export default function CheckoutV2Page() {
     }, 0);
 
     const launchedAt = Date.now();
-    let pageHidden = false;
-    const markHidden = () => { if (document.visibilityState === "hidden") pageHidden = true; };
-    document.addEventListener("visibilitychange", markHidden, { once: true });
     window.setTimeout(() => {
-      document.removeEventListener("visibilitychange", markHidden);
-      if (!pageHidden && document.visibilityState === "visible" && Date.now() - launchedAt >= 2200) {
-        toast.info(`If ${label} did not open, tap All UPI Apps or retry.`, { duration: 4500 });
+      cleanupLaunchListeners();
+      if (leftCheckout || document.visibilityState !== "visible") {
+        armWaiting();
+        return;
+      }
+      if (Date.now() - launchedAt >= 2200) {
+        toast.info(`${label} did not open. Tap All UPI Apps or retry.`, { duration: 4500 });
       }
     }, 2500);
   };
