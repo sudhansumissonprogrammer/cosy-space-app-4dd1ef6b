@@ -2412,6 +2412,21 @@ export default function CheckoutV2Page() {
           storeName={store?.name}
           storeLogo={store?.logo_url}
           cartItems={checkoutItems as any}
+          isSingleMode={isSingleMode}
+          onQuantityChange={(item, nextQty) => {
+            if (isSingleMode) setBuyNowQty(nextQty);
+            else updateQuantity(item.productId, item.variantId, nextQty);
+          }}
+          onRemoveItem={(item) => {
+            if (isSingleMode) {
+              // Buy-now has no cart to fall back to — go straight home.
+              navigate(storefrontPath(store?.slug || ""), { replace: true });
+              return;
+            }
+            removeFromCart(item.productId, item.variantId);
+            // If that was the last item, the empty-cart guard above will
+            // redirect to the storefront home on the next render.
+          }}
           onComplete={(p) => {
             setPhone(p);
             try { localStorage.setItem("checkout_phone", toCanonicalIndianPhone(p) || p); } catch { /* noop */ }
