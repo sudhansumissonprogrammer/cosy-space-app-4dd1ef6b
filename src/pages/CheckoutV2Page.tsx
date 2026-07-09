@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote, Tag, X, Plus, Check, CreditCard, ShoppingCart, ChevronDown, Trash2 } from "lucide-react";
+import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote, Tag, X, Plus, Minus, Check, CreditCard, ShoppingCart, ChevronDown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
@@ -187,8 +187,10 @@ export default function CheckoutV2Page() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const qc = useQueryClient();
-  const { items: cartItems, clearCart, removeFromCart } = useCart();
+  const { items: cartItems, clearCart, removeFromCart, updateQuantity } = useCart();
   const [summaryOpen, setSummaryOpen] = useState(false);
+  // Buy-now single-mode quantity (cart mode uses CartContext quantities directly)
+  const [buyNowQty, setBuyNowQty] = useState(1);
   const { customer, ensureCustomer } = useStorefrontAuth();
   const currency = store?.currency || "INR";
   const isHindi = store?.theme === "theme-16" || store?.theme === "theme-21";
@@ -245,7 +247,7 @@ export default function CheckoutV2Page() {
         variantId: (buyNowVariant?.id as string | undefined),
         name: buyNowVariant ? `${buyNowProduct.name} (${buyNowVariant.name})` : buyNowProduct.name,
         price: (buyNowVariant?.price ?? (buyNowProduct.sale_price && buyNowProduct.sale_price < buyNowProduct.price ? buyNowProduct.sale_price : buyNowProduct.price)) as number,
-        quantity: 1,
+        quantity: buyNowQty,
         image: buyNowProduct.image_url as string | null,
       }];
     }
@@ -257,7 +259,7 @@ export default function CheckoutV2Page() {
       quantity: i.quantity,
       image: (i as any).image || null,
     }));
-  }, [isSingleMode, buyNowProduct, buyNowVariant, cartItems]);
+  }, [isSingleMode, buyNowProduct, buyNowVariant, buyNowQty, cartItems]);
 
   // ─── Form state (with express_checkout_ prefill) ────────────────────────
   const savedInfo = (() => {
@@ -2518,7 +2520,15 @@ export default function CheckoutV2Page() {
 
             {summaryOpen && (
               <div className="border-t border-[#ECECEC] mt-3 pt-3 space-y-3">
-                {checkoutItems.map((it, idx) => (
+                {checkoutItems.map((it, idx) => {
+                  const qty = it.quantity || 1;
+                  const setQty = (next: number) => {
+                    const n = Math.max(1, Math.min(99, Math.floor(next)));
+                    if (isSingleMode) setBuyNowQty(n);
+                    else updateQuantity(it.productId, it.variantId, n);
+                  };
+                  const canRemove = !isSingleMode;
+                  return (
                   <div key={`${it.productId}-${it.variantId || ""}-${idx}`} className="flex items-start gap-3">
                     {(it as any).image ? (
                       <img src={(it as any).image} alt={it.name} loading="lazy" className="h-14 w-14 flex-shrink-0 rounded-lg border object-cover" />
@@ -2527,11 +2537,31 @@ export default function CheckoutV2Page() {
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="line-clamp-2 text-[13px] font-semibold">{it.name || "Item"}</div>
-                      <div className="mt-0.5 text-[11px] text-muted-foreground">Qty: {it.quantity || 1}</div>
+                      <div className="mt-1.5 inline-flex items-center gap-1 rounded-md border border-[#ECECEC] bg-white">
+                        <button
+                          type="button"
+                          onClick={() => setQty(qty - 1)}
+                          disabled={qty <= 1}
+                          aria-label="Decrease quantity"
+                          className="h-7 w-7 flex items-center justify-center text-muted-foreground disabled:opacity-40 active:bg-[#F5F5F5] rounded-l-md"
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                        <span className="min-w-[24px] text-center text-[12px] font-semibold tabular-nums">{qty}</span>
+                        <button
+                          type="button"
+                          onClick={() => setQty(qty + 1)}
+                          disabled={qty >= 99}
+                          aria-label="Increase quantity"
+                          className="h-7 w-7 flex items-center justify-center text-muted-foreground disabled:opacity-40 active:bg-[#F5F5F5] rounded-r-md"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
-                      <span className="text-[13px] font-semibold tabular-nums">{formatPrice(it.price * it.quantity, currency)}</span>
-                      {!isSingleMode && (
+                      <span className="text-[13px] font-semibold tabular-nums">{formatPrice(it.price * qty, currency)}</span>
+                      {canRemove && (
                         <button
                           type="button"
                           onClick={() => removeFromCart(it.productId, it.variantId)}
@@ -2544,7 +2574,8 @@ export default function CheckoutV2Page() {
                       )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
                 {shippingActive && (
                   <div className="flex justify-between text-[12px] text-muted-foreground pt-1 border-t border-[#ECECEC]">
                     <span>Shipping</span>
