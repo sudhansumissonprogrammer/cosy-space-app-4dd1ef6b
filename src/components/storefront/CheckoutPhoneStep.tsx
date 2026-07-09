@@ -38,6 +38,8 @@ import { getOrCreateSessionId } from "@/lib/visitorSession";
 import { formatPrice } from "@/lib/productUtils";
 import type { CartItem } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
+import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
+import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 
 interface Props {
   storeId?: string;
@@ -101,6 +103,8 @@ export default function CheckoutPhoneStep({
   const [summaryOpen, setSummaryOpen] = useState(true);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const inFlight = useRef(false);
+  const themeConfig = useStorefrontThemeConfig(storeId);
+  const marqueeEnabled = themeConfig?.marquee_enabled ?? true;
 
   const digits = phone.replace(/\D/g, "");
   const valid = digits.length === 10 && /^[6-9]/.test(digits);
@@ -245,10 +249,13 @@ export default function CheckoutPhoneStep({
         </div>
       </div>
 
-      {/* Announcement bar */}
-      <div className="sticky top-[57px] z-10 bg-black text-white text-[13px] font-semibold text-center py-2.5 px-4">
-        Unlock Extra Discount In Next Step
-      </div>
+      {/* Announcement marquee — same dashboard-controlled component as main checkout */}
+      {marqueeEnabled && (
+        <div data-checkout-marquee className="sticky top-[57px] z-10">
+          <StorefrontMarquee text={themeConfig?.marquee_text} />
+        </div>
+      )}
+
 
       <div className="px-3 py-3 space-y-3">
         {/* Order Summary — expanded by default with qty controls */}
