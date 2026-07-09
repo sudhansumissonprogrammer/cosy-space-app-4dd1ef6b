@@ -901,6 +901,7 @@ export default function ProductDetail() {
                     <button
                       className="flex h-12 w-full items-center justify-center border text-sm font-bold uppercase tracking-widest transition-[transform,opacity,colors,box-shadow] active:scale-[0.97] hover:bg-white hover:text-black"
                       style={{ borderColor: "#ffffff", color: "#ffffff", ...v18Font }}
+                      onPointerDown={prefetchCheckout}
                       onClick={handleBuyNow}
                     >
                       BUY IT NOW
