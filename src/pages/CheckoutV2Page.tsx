@@ -2360,12 +2360,10 @@ export default function CheckoutV2Page() {
 
 
   if (checkoutItems.length === 0 && !orderId && !isSingleMode) {
-    return (
-      <div className="mx-auto max-w-md p-8 text-center">
-        <p className="text-muted-foreground">Your cart is empty.</p>
-        <Button className="mt-4" onClick={() => navigate(storefrontPath(store.slug))}>Continue shopping</Button>
-      </div>
-    );
+    // Cart is empty (e.g. shopper removed the last item on the phone step) —
+    // send them straight back to the storefront home rather than a dead end.
+    navigate(storefrontPath(store.slug), { replace: true });
+    return null;
   }
 
 
