@@ -275,16 +275,30 @@ export default function ProductDetail() {
     contentReadyRef.current = false;
   }, [productSlug]);
 
-  // Prefetch the checkout chunk as soon as the PDP is mounted so that
-  // "Buy Now" navigation is instant on cold visits — no wait for the
-  // CheckoutPage + CheckoutPhoneStep JS to download after the click.
-  useEffect(() => {
-    const t = setTimeout(() => {
-      import("./CheckoutPage").catch(() => {});
-      import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
-    }, 300);
-    return () => clearTimeout(t);
+  // Prefetch the checkout chunks so "Buy Now" navigation feels instant.
+  // We kick off immediately on mount (idle-scheduled) AND expose a
+  // `prefetchCheckout` fn that we wire to onPointerDown of every Buy Now
+  // button — that captures shopper intent ~100-300ms before the click
+  // event, giving the JS a head start on slow networks.
+  const checkoutPrefetchedRef = useRef(false);
+  const prefetchCheckout = useCallback(() => {
+    if (checkoutPrefetchedRef.current) return;
+    checkoutPrefetchedRef.current = true;
+    import("./CheckoutPage").catch(() => { checkoutPrefetchedRef.current = false; });
+    import("./CheckoutV2Page").catch(() => {});
+    import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
   }, []);
+  useEffect(() => {
+    const ric = (window as any).requestIdleCallback as
+      | ((cb: () => void, opts?: { timeout?: number }) => number)
+      | undefined;
+    if (ric) {
+      const id = ric(prefetchCheckout, { timeout: 800 });
+      return () => (window as any).cancelIdleCallback?.(id);
+    }
+    const t = setTimeout(prefetchCheckout, 100);
+    return () => clearTimeout(t);
+  }, [prefetchCheckout]);
 
 
   useEffect(() => {
