@@ -187,8 +187,10 @@ export default function CheckoutV2Page() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const qc = useQueryClient();
-  const { items: cartItems, clearCart, removeFromCart } = useCart();
+  const { items: cartItems, clearCart, removeFromCart, updateQuantity } = useCart();
   const [summaryOpen, setSummaryOpen] = useState(false);
+  // Buy-now single-mode quantity (cart mode uses CartContext quantities directly)
+  const [buyNowQty, setBuyNowQty] = useState(1);
   const { customer, ensureCustomer } = useStorefrontAuth();
   const currency = store?.currency || "INR";
   const isHindi = store?.theme === "theme-16" || store?.theme === "theme-21";
