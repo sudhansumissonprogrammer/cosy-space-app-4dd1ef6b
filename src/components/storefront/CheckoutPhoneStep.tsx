@@ -249,10 +249,13 @@ export default function CheckoutPhoneStep({
         </div>
       </div>
 
-      {/* Announcement bar */}
-      <div className="sticky top-[57px] z-10 bg-black text-white text-[13px] font-semibold text-center py-2.5 px-4">
-        Unlock Extra Discount In Next Step
-      </div>
+      {/* Announcement marquee — same dashboard-controlled component as main checkout */}
+      {marqueeEnabled && (
+        <div data-checkout-marquee className="sticky top-[57px] z-10">
+          <StorefrontMarquee text={themeConfig?.marquee_text} />
+        </div>
+      )}
+
 
       <div className="px-3 py-3 space-y-3">
         {/* Order Summary — expanded by default with qty controls */}
