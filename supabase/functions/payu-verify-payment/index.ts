@@ -125,6 +125,9 @@ Deno.serve(async (req) => {
       }
       // Await to make sure CAPI fires before edge runtime kills the isolate
       await firePurchaseCapi(supabase, order_id, { source: "payu-verify" });
+      // Safety net: fire WhatsApp order_confirmation server-side. Browser may
+      // never invoke notify-order (tab closed / redirect lost).
+      await fireWaOrderEvent(supabase, order_id, "order_confirmation");
       return jsonRes({ success: true, status: "PAID" });
     }
 
