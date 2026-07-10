@@ -14,6 +14,7 @@ const SUPA_ANON =
 export type StorefrontEventName =
   // Core funnel (already tracked)
   | "view_product"
+  | "buy_now_click"
   | "add_to_cart"
   | "begin_checkout"
   | "pay_click"
