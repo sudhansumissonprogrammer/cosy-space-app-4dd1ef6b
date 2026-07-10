@@ -251,6 +251,7 @@ export default function StoreFunnel() {
   const steps: FunnelStep[] = [
     { key: "sess", label: "Sessions (visitors)", value: sessions, icon: Users, color: "hsl(220, 90%, 55%)" },
     { key: "pdp", label: "Viewed product", value: pdpViewSessions, icon: Eye, color: "hsl(190, 90%, 45%)" },
+    { key: "buy", label: "Clicked Buy Now", value: evCounts.sessCount.buy_now_click || 0, icon: MousePointerClick, color: "hsl(175, 80%, 42%)" },
     { key: "atc", label: "Added to cart", value: evCounts.sessCount.add_to_cart || 0, icon: ShoppingCart, color: "hsl(160, 70%, 40%)" },
     { key: "chk", label: "Began checkout", value: evCounts.sessCount.begin_checkout || 0, icon: MousePointerClick, color: "hsl(38, 92%, 50%)" },
     // pay_click undercounts on purpose — the insert races the payment-gateway
