@@ -3090,6 +3090,36 @@ export type Database = {
         }
         Relationships: []
       }
+      stores_tracking_audit: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          column_name: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          store_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          column_name: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          store_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          column_name?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          store_id?: string
+        }
+        Relationships: []
+      }
       stores_wa_settings: {
         Row: {
           created_at: string
