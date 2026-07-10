@@ -144,6 +144,15 @@ export default function CheckoutPhoneStep({
         localStorage.setItem("checkout_phone", canon);
       } catch {}
 
+      // EMQ lift: seed Meta Advanced Matching + CAPI registry with the
+      // phone RIGHT NOW so InitiateCheckout / AddPaymentInfo events fired
+      // moments later ship with hashed phone in user_data. Without this,
+      // step-1 users leave phone-less events → EMQ stuck at ~6.
+      try {
+        setCapiUser({ phone: canon });
+      } catch {}
+
+
       const session_token = (() => {
         try {
           return getOrCreateSessionId();
