@@ -611,6 +611,16 @@ export default function ProductDetail() {
       return;
     }
 
+    // Funnel: explicit Buy Now tap (separates real intent from generic ATC).
+    fireStorefrontEvent({
+      storeId: store.id,
+      eventName: "buy_now_click",
+      productId: product.id,
+      value: variantPrice,
+      currency: "INR",
+      metadata: { quantity, variant_id: selectedVariant?.id || null },
+    });
+
     // Warm the checkout chunks *before* navigating so the target page renders
     // immediately instead of showing a Suspense fallback while the JS downloads.
     prefetchCheckout();
