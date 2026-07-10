@@ -78,10 +78,10 @@ export default function StoreTracking() {
   });
 
   useEffect(() => {
-    if (store) {
+    if (store && !facebookPixelIdTouched) {
       setFacebookPixelId((store as any).facebook_pixel_id || "");
     }
-  }, [store]);
+  }, [store, facebookPixelIdTouched]);
 
   useEffect(() => {
     if (metaTokenFromDb !== undefined && !metaAccessTokenTouched) {
