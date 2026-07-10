@@ -147,6 +147,8 @@ Deno.serve(async (req) => {
 
     // Payment confirmed — fire Meta CAPI Purchase (server-to-server, idempotent).
     await firePurchaseCapi(supabase, order_id, { source: "razorpay" });
+    // Safety net WhatsApp confirmation (idempotent via wa_send_queue unique key).
+    await fireWaOrderEvent(supabase, order_id, "order_confirmation");
 
     return new Response(
       JSON.stringify({ success: true, payment_id: razorpay_payment_id }),
