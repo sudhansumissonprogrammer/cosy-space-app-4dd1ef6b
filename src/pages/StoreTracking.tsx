@@ -280,7 +280,10 @@ export default function StoreTracking() {
                 id="fb-pixel"
                 placeholder="e.g. 123456789012345"
                 value={facebookPixelId}
-                onChange={(e) => setFacebookPixelId(e.target.value)}
+                onChange={(e) => {
+                  setFacebookPixelIdTouched(true);
+                  setFacebookPixelId(e.target.value);
+                }}
                 maxLength={20}
               />
               <p className="text-xs text-muted-foreground">
