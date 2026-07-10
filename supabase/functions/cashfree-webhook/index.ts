@@ -163,6 +163,7 @@ Deno.serve(async (req) => {
           .eq("session_token", orderInfo.checkout_token);
       }
       await firePurchaseCapi(supabase, orderId, { source: "cashfree-webhook" });
+      await fireWaOrderEvent(supabase, orderId, "order_confirmation");
     }
 
     return new Response("OK", { status: 200 });
