@@ -249,6 +249,7 @@ export function fireMetaCAPI(params: CAPIEventParams) {
         state: state || undefined,
         zip_code: zipCode || undefined,
         custom_data: params.customData || undefined,
+        declared_client_ip: getDeclaredClientIp() || undefined,
       },
     })
     .then(({ data, error }) => {
