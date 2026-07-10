@@ -309,20 +309,32 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ZERO-BAN POLICY: Never attach client_ip_address from the browser-event path.
-    // Routing can change (Cloudflare bypass, direct *.supabase.co call, internal retry,
-    // preview slip-through) and any of those would leak a Supabase/AWS datacenter IP
-    // tagged as the buyer — the exact mismatch signal that triggered prior ad-account
-    // bans. Browser events already carry fbp/fbc/email/phone/user_agent, so dropping
-    // IP costs ~1-3% EMQ for permanent zero datacenter-IP-leak risk on every path.
-    // Server-side Purchase events still send the verified order.buyer_ip captured at
-    // checkout (see _shared/firePurchaseCapi.ts) — that path is unaffected.
+    // SAFE-IP POLICY (v8.70.0): previously we NEVER forwarded a client IP
+    // from the browser path (routing slip risk of leaking Supabase/AWS
+    // datacenter IPs → ad-account ban). Meta EMQ warned "IP missing → -14%
+    // conversions". New scheme: browser fetches its own public IP via
+    // api.ipify.org (declared_client_ip) and posts it here. We compare with
+    // cf-connecting-ip / x-forwarded-for; only forward to Meta when they
+    // match AND the IP is public IPv4/IPv6. Any mismatch → drop silently
+    // (same zero-leak guarantee as before, just without the free money).
+    const headerIp =
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "";
+    const declaredIp = typeof declared_client_ip === "string" ? declared_client_ip.trim() : "";
+    const safeClientIp =
+      declaredIp && headerIp && declaredIp === headerIp && !isPrivateIpV(declaredIp)
+        ? declaredIp
+        : undefined;
+
     const userData: CAPIEvent["user_data"] = {
       client_user_agent: user_agent || req.headers.get("user-agent") || undefined,
+      client_ip_address: safeClientIp,
       // v8.68.0 BAN-FIX P1-NEW-1: validate fb cookies before sending.
       fbc: sanitizeFb(fbc, FBC_RX),
       fbp: sanitizeFb(fbp, FBP_RX),
     };
+
 
     if (user_email) {
       userData.em = [await hashSHA256(normEmail(user_email))];
