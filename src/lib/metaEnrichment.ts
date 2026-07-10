@@ -78,12 +78,36 @@ export function ensureFbcPersisted(): void {
   try {
     const params = new URLSearchParams(window.location.search);
     const fbclid = params.get("fbclid");
-    if (!fbclid) return;
-    const fbc = `fb.1.${Date.now()}.${fbclid}`;
-    setCookie(FBC_COOKIE, fbc, FBC_TTL_DAYS);
+    const existing = getCookie(FBC_COOKIE);
+    if (fbclid) {
+      // Latest click wins per Meta spec — refresh cookie even if one exists,
+      // and keep a sessionStorage backup so iOS ITP / FB in-app WebView
+      // cookie loss doesn't tank fbc coverage on subsequent pageviews.
+      const fbc = `fb.1.${Date.now()}.${fbclid}`;
+      setCookie(FBC_COOKIE, fbc, FBC_TTL_DAYS);
+      try { sessionStorage.setItem("__sf_fbc__", fbc); } catch {}
+      return;
+    }
+    if (existing) {
+      try { sessionStorage.setItem("__sf_fbc__", existing); } catch {}
+    }
   } catch {
     /* noop */
   }
+}
+
+/**
+ * Read _fbc with sessionStorage fallback. Used by fireMetaCAPI / getMetaCookies
+ * so ITP cookie evictions don't drop fbc mid-session.
+ */
+export function readFbcWithFallback(): string {
+  const fromCookie = getCookie(FBC_COOKIE);
+  if (fromCookie) return fromCookie;
+  try {
+    const ss = sessionStorage.getItem("__sf_fbc__");
+    if (ss) return ss;
+  } catch {}
+  return "";
 }
 
 export function ensureFbpCookie(): void {
