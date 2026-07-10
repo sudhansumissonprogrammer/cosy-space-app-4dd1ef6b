@@ -23,6 +23,7 @@ export default function StoreTracking() {
   const queryClient = useQueryClient();
 
   const [facebookPixelId, setFacebookPixelId] = useState("");
+  const [facebookPixelIdTouched, setFacebookPixelIdTouched] = useState(false);
   const [metaAccessToken, setMetaAccessToken] = useState("");
   const [metaAccessTokenTouched, setMetaAccessTokenTouched] = useState(false);
 
