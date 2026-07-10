@@ -948,6 +948,24 @@ export default function CheckoutV2Page() {
     if (!store?.id || checkoutItems.length === 0) return;
     if (apiFiredRef.current.has(methodLabel)) return;
     apiFiredRef.current.add(methodLabel);
+
+    // FLUSH Advanced-Matching debounce: user may tap "Pay" <400ms after filling
+    // the last address field. Sync setCapiUser here so `__SF_CAPI_USER__` has
+    // full em/fn/ln/ct/st/zp/country BEFORE fireMetaCAPI reads the registry.
+    try {
+      const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
+      setCapiUser({
+        email: email.trim() || undefined,
+        phone: normalizePhone(phone) || undefined,
+        externalId: customer?.id || undefined,
+        firstName: parts[0],
+        lastName: parts.length > 1 ? parts.slice(1).join(" ") : undefined,
+        city: city.trim() || undefined,
+        state: state.trim() || undefined,
+        zipCode: pincode.trim() || undefined,
+      });
+    } catch { /* noop */ }
+
     const eid = generateEventId();
     const data = {
       payment_method: methodLabel,
