@@ -24,18 +24,12 @@ export function useStoreData(storeId?: string) {
     initialDataUpdatedAt: 0,
     queryFn: async () => {
       if (isAdminView) {
-        // Admin view: use cached data only as initialData. The actual query must
-        // still hit the backend so settings pages don't keep showing stale
-        // toggles after a hard refresh or cache re-seed.
         const { data: adminData, error: adminError } = await supabase.rpc(
           "get_store_as_admin",
           { _slug: storeId! },
         );
         if (!adminError && adminData) return adminData as any;
-
         if (adminError) throw adminError;
-
-        // If lookup fails, keep any seeded cache as a last-resort fallback.
         return (queryClient.getQueryData(["store", storeId!]) as any) ?? null;
       }
 
@@ -46,6 +40,16 @@ export function useStoreData(storeId?: string) {
         .eq("owner_id", user!.id)
         .maybeSingle();
       if (error) throw error;
+      // BAN-FIX: if the owner filter returned no row, the current signed-in
+      // user is not the owner (admin viewing another store, or context race
+      // before AdminViewContext flips). Never overwrite an already-hydrated
+      // cache entry with null — that wipes every form input on the settings
+      // pages (name, whatsapp, city, state, pixel, insta, meta_access_token
+      // display, etc.) and looks to the user like their data disappeared.
+      if (!data) {
+        const cached = queryClient.getQueryData(["store", storeId!]);
+        if (cached) return cached as any;
+      }
       return data ?? null;
     },
     enabled: !!storeId && (isAdminView || !!user),
