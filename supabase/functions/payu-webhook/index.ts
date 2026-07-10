@@ -13,6 +13,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 import { computePayuReverseHash, mapPayuStatus } from "../_shared/payuHelpers.ts";
 import { timingSafeEqual } from "../_shared/security.ts";
+import { fireWaOrderEvent } from "../_shared/wa-fire-order-event.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
