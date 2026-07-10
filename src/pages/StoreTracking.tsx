@@ -95,12 +95,27 @@ export default function StoreTracking() {
 
   const updateMutation = useMutation({
     mutationFn: async () => {
+      const trimmedPixel = facebookPixelId.trim();
+      if (trimmedPixel && !/^\d{6,20}$/.test(trimmedPixel)) {
+        throw new Error("Facebook Pixel ID must be 6–20 digits (numbers only). Copy it from Meta Events Manager.");
+      }
       const updatePayload: Record<string, any> = {
-        facebook_pixel_id: facebookPixelId.trim() || null,
+        facebook_pixel_id: trimmedPixel || null,
       };
       // Do not wipe a saved CAPI token if the secure token RPC has not loaded yet.
       if (metaTokenFromDb !== undefined || metaAccessTokenTouched) {
-        updatePayload.meta_access_token = metaAccessToken.trim() || null;
+        const trimmedToken = metaAccessToken.trim();
+        if (trimmedToken) {
+          // Meta System User CAPI tokens always start with "EAA" and are 150+ chars long.
+          // Reject passwords, short strings, and anything with spaces — this prevents
+          // accidental overwrite of a real token with a password-style value.
+          if (!/^EAA[A-Za-z0-9_-]{100,}$/.test(trimmedToken)) {
+            throw new Error(
+              "Invalid Meta CAPI token. It must start with 'EAA' and be 100+ characters. Generate it in Meta Events Manager → Settings → Conversions API → Generate access token."
+            );
+          }
+        }
+        updatePayload.meta_access_token = trimmedToken || null;
       }
       const { error } = await (supabase as any)
         .from("stores")
