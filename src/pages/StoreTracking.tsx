@@ -29,6 +29,28 @@ export default function StoreTracking() {
 
   const { data: store, isLoading } = useStoreData(storeId);
 
+  // Pixel is business-critical and must not depend on the wider store cache.
+  // Fetch it directly so the Tracking page never shows blank/"Not configured"
+  // when the saved backend value exists but the store settings cache is stale.
+  const { data: pixelFromDb } = useQuery({
+    queryKey: ["store-facebook-pixel", storeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("stores")
+        .select("facebook_pixel_id")
+        .eq("id", storeId!)
+        .maybeSingle();
+      if (error) throw error;
+      return ((data as any)?.facebook_pixel_id as string | null) || "";
+    },
+    enabled: !!storeId,
+    staleTime: 0,
+  });
+
+  const savedFacebookPixelId =
+    (pixelFromDb !== undefined ? pixelFromDb : (store as any)?.facebook_pixel_id) || "";
+  const effectiveFacebookPixelId = facebookPixelId.trim() || savedFacebookPixelId.trim();
+
   // Feed health check
   const { data: feedHealth } = useQuery({
     queryKey: ["feed-health", store?.slug],
@@ -78,10 +100,10 @@ export default function StoreTracking() {
   });
 
   useEffect(() => {
-    if (store && !facebookPixelIdTouched) {
-      setFacebookPixelId((store as any).facebook_pixel_id || "");
+    if (!facebookPixelIdTouched) {
+      setFacebookPixelId(savedFacebookPixelId);
     }
-  }, [store, facebookPixelIdTouched]);
+  }, [savedFacebookPixelId, facebookPixelIdTouched]);
 
   useEffect(() => {
     if (metaTokenFromDb !== undefined && !metaAccessTokenTouched) {
@@ -101,10 +123,10 @@ export default function StoreTracking() {
         throw new Error("Facebook Pixel ID must be 6–20 digits (numbers only). Copy it from Meta Events Manager.");
       }
       const updatePayload: Record<string, any> = {};
-      // Only write pixel if the user actually touched it, OR the store data has
-      // loaded (so we know the current DB value). Prevents wiping a saved pixel
-      // when the form renders before store data hydrates.
-      if (facebookPixelIdTouched || store) {
+      // Only write pixel if the user actually edited the Pixel ID field.
+      // This prevents wiping a saved pixel when any cache/RPC path is stale,
+      // slow, or returns a partial store object without facebook_pixel_id.
+      if (facebookPixelIdTouched) {
         updatePayload.facebook_pixel_id = trimmedPixel || null;
       }
       // Do not wipe a saved CAPI token if the secure token RPC has not loaded yet.
@@ -131,6 +153,7 @@ export default function StoreTracking() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["store", storeId] }),
+        queryClient.invalidateQueries({ queryKey: ["store-facebook-pixel", storeId] }),
         queryClient.invalidateQueries({ queryKey: ["store-meta-token", storeId] }),
       ]);
 
@@ -194,7 +217,7 @@ export default function StoreTracking() {
           // in-progress edit immediately after Save without waiting for a
           // react-query refetch. Prevents "Not configured" showing when the
           // pixel is actually saved but cache is stale.
-          const pixelOk = !!facebookPixelId.trim() || !!(store as any)?.facebook_pixel_id;
+          const pixelOk = !!effectiveFacebookPixelId;
           const capiOk = pixelOk && !!metaAccessToken.trim();
           const lastFiredAgo = lastCapiPurchase
             ? (() => {
@@ -295,7 +318,7 @@ export default function StoreTracking() {
                 Automatically tracks PageView, ViewContent, AddToCart, InitiateCheckout and Purchase events.
               </p>
             </div>
-            {facebookPixelId && (
+            {effectiveFacebookPixelId && (
               <div className="rounded-lg border bg-muted/50 p-3 space-y-1">
                 <p className="text-xs font-medium text-foreground">Events tracked automatically:</p>
                 <div className="flex flex-wrap gap-1.5">
@@ -311,14 +334,14 @@ export default function StoreTracking() {
         {/* Server-Side CAPI — Guided Setup Wizard */}
         <MetaCapiSetupWizard
           storeId={storeId!}
-          pixelId={facebookPixelId}
+          pixelId={effectiveFacebookPixelId}
           accessToken={metaAccessToken}
           tokenLoading={metaTokenLoading}
           onAccessTokenChange={handleMetaAccessTokenChange}
         />
 
         {/* CAPI Kill-Switch — keeps browser Pixel running, silences server events */}
-        {(facebookPixelId || (store as any)?.capi_disabled) && (
+        {(effectiveFacebookPixelId || (store as any)?.capi_disabled) && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
