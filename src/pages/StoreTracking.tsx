@@ -49,6 +49,7 @@ export default function StoreTracking() {
 
   const savedFacebookPixelId =
     (pixelFromDb !== undefined ? pixelFromDb : (store as any)?.facebook_pixel_id) || "";
+  const effectiveFacebookPixelId = facebookPixelId.trim() || savedFacebookPixelId.trim();
 
   // Feed health check
   const { data: feedHealth } = useQuery({
@@ -216,8 +217,7 @@ export default function StoreTracking() {
           // in-progress edit immediately after Save without waiting for a
           // react-query refetch. Prevents "Not configured" showing when the
           // pixel is actually saved but cache is stale.
-          const livePixelId = facebookPixelId.trim() || savedFacebookPixelId.trim();
-          const pixelOk = !!livePixelId;
+          const pixelOk = !!effectiveFacebookPixelId;
           const capiOk = pixelOk && !!metaAccessToken.trim();
           const lastFiredAgo = lastCapiPurchase
             ? (() => {
@@ -318,7 +318,7 @@ export default function StoreTracking() {
                 Automatically tracks PageView, ViewContent, AddToCart, InitiateCheckout and Purchase events.
               </p>
             </div>
-            {facebookPixelId && (
+            {effectiveFacebookPixelId && (
               <div className="rounded-lg border bg-muted/50 p-3 space-y-1">
                 <p className="text-xs font-medium text-foreground">Events tracked automatically:</p>
                 <div className="flex flex-wrap gap-1.5">
@@ -334,14 +334,14 @@ export default function StoreTracking() {
         {/* Server-Side CAPI — Guided Setup Wizard */}
         <MetaCapiSetupWizard
           storeId={storeId!}
-          pixelId={facebookPixelId}
+          pixelId={effectiveFacebookPixelId}
           accessToken={metaAccessToken}
           tokenLoading={metaTokenLoading}
           onAccessTokenChange={handleMetaAccessTokenChange}
         />
 
         {/* CAPI Kill-Switch — keeps browser Pixel running, silences server events */}
-        {(facebookPixelId || (store as any)?.capi_disabled) && (
+        {(effectiveFacebookPixelId || (store as any)?.capi_disabled) && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
