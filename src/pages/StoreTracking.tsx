@@ -189,8 +189,13 @@ export default function StoreTracking() {
       >
         {/* Marketing Health — Shopify-style status overview */}
         {(() => {
-          const pixelOk = !!(store as any)?.facebook_pixel_id;
-          const capiOk = pixelOk && !!metaAccessToken;
+          // Use the form-hydrated state as source of truth — it always mirrors
+          // the latest DB value (via useEffect on `store`) AND reflects an
+          // in-progress edit immediately after Save without waiting for a
+          // react-query refetch. Prevents "Not configured" showing when the
+          // pixel is actually saved but cache is stale.
+          const pixelOk = !!facebookPixelId.trim() || !!(store as any)?.facebook_pixel_id;
+          const capiOk = pixelOk && !!metaAccessToken.trim();
           const lastFiredAgo = lastCapiPurchase
             ? (() => {
                 const ms = Date.now() - new Date(lastCapiPurchase).getTime();
