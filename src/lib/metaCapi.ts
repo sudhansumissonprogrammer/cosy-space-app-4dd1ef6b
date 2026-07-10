@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getCapiUser, getOrCreateSfVid } from "@/lib/metaEnrichment";
+import { getCapiUser, getOrCreateSfVid, readFbcWithFallback } from "@/lib/metaEnrichment";
 
 /**
  * Returns true on Lovable preview/editor/dev hosts.
@@ -41,7 +41,45 @@ export function getMetaCookies() {
       fbc = `fb.1.${Date.now()}.${fbclid}`;
     }
   }
+  // Final fallback: sessionStorage backup (ITP / in-app WebView eviction).
+  if (!fbc) fbc = readFbcWithFallback();
   return { fbc, fbp };
+}
+
+/**
+ * Fetch the visitor's public IP once per session and cache it. We POST this
+ * to the CAPI edge fn as `declared_client_ip`; the server cross-validates it
+ * against cf-connecting-ip / x-forwarded-for before forwarding to Meta.
+ * Mismatch → server drops it silently (zero risk of leaking datacenter IPs).
+ */
+const CLIENT_IP_SS_KEY = "__sf_client_ip__";
+const CLIENT_IP_TTL_MS = 60 * 60 * 1000; // 1h
+let _clientIpInFlight: Promise<string> | null = null;
+export function getDeclaredClientIp(): string {
+  try {
+    const raw = sessionStorage.getItem(CLIENT_IP_SS_KEY);
+    if (raw) {
+      const [ip, exp] = raw.split("|");
+      if (ip && Number(exp) > Date.now()) return ip;
+    }
+  } catch {}
+  // Fire-and-forget refresh; don't block current event. Next event picks it up.
+  if (!_clientIpInFlight && typeof fetch !== "undefined") {
+    _clientIpInFlight = fetch("https://api.ipify.org?format=json", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j: any) => {
+        const ip = String(j?.ip || "").trim();
+        if (ip) {
+          try {
+            sessionStorage.setItem(CLIENT_IP_SS_KEY, `${ip}|${Date.now() + CLIENT_IP_TTL_MS}`);
+          } catch {}
+        }
+        return ip;
+      })
+      .catch(() => "")
+      .finally(() => { _clientIpInFlight = null; }) as Promise<string>;
+  }
+  return "";
 }
 
 interface CAPIEventParams {
@@ -211,6 +249,7 @@ export function fireMetaCAPI(params: CAPIEventParams) {
         state: state || undefined,
         zip_code: zipCode || undefined,
         custom_data: params.customData || undefined,
+        declared_client_ip: getDeclaredClientIp() || undefined,
       },
     })
     .then(({ data, error }) => {

@@ -40,6 +40,7 @@ import type { CartItem } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { setCapiUser } from "@/lib/metaEnrichment";
 
 interface Props {
   storeId?: string;
@@ -142,6 +143,15 @@ export default function CheckoutPhoneStep({
       try {
         localStorage.setItem("checkout_phone", canon);
       } catch {}
+
+      // EMQ lift: seed Meta Advanced Matching + CAPI registry with the
+      // phone RIGHT NOW so InitiateCheckout / AddPaymentInfo events fired
+      // moments later ship with hashed phone in user_data. Without this,
+      // step-1 users leave phone-less events → EMQ stuck at ~6.
+      try {
+        setCapiUser({ phone: canon });
+      } catch {}
+
 
       const session_token = (() => {
         try {
