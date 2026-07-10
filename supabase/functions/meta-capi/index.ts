@@ -52,6 +52,18 @@ const normZip = (v: string) => v.trim().toLowerCase().replace(/\s+/g, "");
 const normCountry = (v: string) => v.trim().toLowerCase().slice(0, 2);
 
 async function hashSHA256(value: string): Promise<string> {
+
+// Private / non-public IP guard for the SAFE-IP block. Rejects loopback,
+// RFC1918, link-local, ULA v6, and localhost. Any of these being forwarded
+// to Meta would be a hard "invalid client_ip_address" signal.
+function isPrivateIpV(ip: string): boolean {
+  if (!ip) return true;
+  const v = ip.trim().toLowerCase();
+  if (v === "unknown" || v === "::1" || v === "127.0.0.1") return true;
+  return /^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|::1$|fc|fd)/.test(v);
+}
+
+async function _hashSHA256_dup(value: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(value);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
