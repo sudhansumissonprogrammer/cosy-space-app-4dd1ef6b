@@ -12,6 +12,7 @@
 // Cashfree calls it independently, we confirm the order server-side.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
+import { fireWaOrderEvent } from "../_shared/wa-fire-order-event.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -162,6 +163,7 @@ Deno.serve(async (req) => {
           .eq("session_token", orderInfo.checkout_token);
       }
       await firePurchaseCapi(supabase, orderId, { source: "cashfree-webhook" });
+      await fireWaOrderEvent(supabase, orderId, "order_confirmation");
     }
 
     return new Response("OK", { status: 200 });

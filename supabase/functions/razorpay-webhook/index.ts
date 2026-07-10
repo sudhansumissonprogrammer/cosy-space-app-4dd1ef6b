@@ -11,6 +11,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { timingSafeEqual } from "../_shared/security.ts";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
+import { fireWaOrderEvent } from "../_shared/wa-fire-order-event.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -121,6 +122,7 @@ Deno.serve(async (req) => {
           .eq("session_token", order.checkout_token);
       }
       await firePurchaseCapi(supabase, order.id, { source: "razorpay-webhook" });
+      await fireWaOrderEvent(supabase, order.id, "order_confirmation");
     } else if (eventType === "payment.failed") {
       await supabase
         .from("orders")

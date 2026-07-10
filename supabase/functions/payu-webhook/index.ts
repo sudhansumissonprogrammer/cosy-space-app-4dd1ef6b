@@ -13,6 +13,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
 import { computePayuReverseHash, mapPayuStatus } from "../_shared/payuHelpers.ts";
 import { timingSafeEqual } from "../_shared/security.ts";
+import { fireWaOrderEvent } from "../_shared/wa-fire-order-event.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -148,6 +149,9 @@ Deno.serve(async (req) => {
         }
         // Already marked — still try CAPI in case the previous attempt failed (idempotent).
         await firePurchaseCapi(supabase, localOrderId, { source: "payu-webhook" });
+        // Safety net: fire WhatsApp order_confirmation. wa-order-event is
+        // idempotent-guarded downstream by wa_send_queue dedupe on order_id+template.
+        await fireWaOrderEvent(supabase, localOrderId, "order_confirmation");
         return new Response("OK (already paid)", { status: 200 });
       }
       const isPartial = orderRow.payment_type === "partial";
@@ -168,6 +172,7 @@ Deno.serve(async (req) => {
         .eq("id", localOrderId)
         .eq("store_id", storeId);
       await firePurchaseCapi(supabase, localOrderId, { source: "payu-webhook" });
+      await fireWaOrderEvent(supabase, localOrderId, "order_confirmation");
     } else if (verdict === "FAILED") {
       // Only mark fresh pending orders as cancelled — never overwrite a confirmed order.
       if (orderRow.status === "pending") {
