@@ -23,6 +23,7 @@ export default function StoreTracking() {
   const queryClient = useQueryClient();
 
   const [facebookPixelId, setFacebookPixelId] = useState("");
+  const [facebookPixelIdTouched, setFacebookPixelIdTouched] = useState(false);
   const [metaAccessToken, setMetaAccessToken] = useState("");
   const [metaAccessTokenTouched, setMetaAccessTokenTouched] = useState(false);
 
@@ -77,10 +78,10 @@ export default function StoreTracking() {
   });
 
   useEffect(() => {
-    if (store) {
+    if (store && !facebookPixelIdTouched) {
       setFacebookPixelId((store as any).facebook_pixel_id || "");
     }
-  }, [store]);
+  }, [store, facebookPixelIdTouched]);
 
   useEffect(() => {
     if (metaTokenFromDb !== undefined && !metaAccessTokenTouched) {
@@ -99,9 +100,13 @@ export default function StoreTracking() {
       if (trimmedPixel && !/^\d{6,20}$/.test(trimmedPixel)) {
         throw new Error("Facebook Pixel ID must be 6–20 digits (numbers only). Copy it from Meta Events Manager.");
       }
-      const updatePayload: Record<string, any> = {
-        facebook_pixel_id: trimmedPixel || null,
-      };
+      const updatePayload: Record<string, any> = {};
+      // Only write pixel if the user actually touched it, OR the store data has
+      // loaded (so we know the current DB value). Prevents wiping a saved pixel
+      // when the form renders before store data hydrates.
+      if (facebookPixelIdTouched || store) {
+        updatePayload.facebook_pixel_id = trimmedPixel || null;
+      }
       // Do not wipe a saved CAPI token if the secure token RPC has not loaded yet.
       if (metaTokenFromDb !== undefined || metaAccessTokenTouched) {
         const trimmedToken = metaAccessToken.trim();
@@ -275,7 +280,10 @@ export default function StoreTracking() {
                 id="fb-pixel"
                 placeholder="e.g. 123456789012345"
                 value={facebookPixelId}
-                onChange={(e) => setFacebookPixelId(e.target.value)}
+                onChange={(e) => {
+                  setFacebookPixelIdTouched(true);
+                  setFacebookPixelId(e.target.value);
+                }}
                 maxLength={20}
               />
               <p className="text-xs text-muted-foreground">
