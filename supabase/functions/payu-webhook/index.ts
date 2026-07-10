@@ -149,6 +149,9 @@ Deno.serve(async (req) => {
         }
         // Already marked — still try CAPI in case the previous attempt failed (idempotent).
         await firePurchaseCapi(supabase, localOrderId, { source: "payu-webhook" });
+        // Safety net: fire WhatsApp order_confirmation. wa-order-event is
+        // idempotent-guarded downstream by wa_send_queue dedupe on order_id+template.
+        await fireWaOrderEvent(supabase, localOrderId, "order_confirmation");
         return new Response("OK (already paid)", { status: 200 });
       }
       const isPartial = orderRow.payment_type === "partial";
@@ -169,6 +172,7 @@ Deno.serve(async (req) => {
         .eq("id", localOrderId)
         .eq("store_id", storeId);
       await firePurchaseCapi(supabase, localOrderId, { source: "payu-webhook" });
+      await fireWaOrderEvent(supabase, localOrderId, "order_confirmation");
     } else if (verdict === "FAILED") {
       // Only mark fresh pending orders as cancelled — never overwrite a confirmed order.
       if (orderRow.status === "pending") {
