@@ -40,6 +40,7 @@ import type { CartItem } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { setCapiUser } from "@/lib/metaEnrichment";
 
 interface Props {
   storeId?: string;
