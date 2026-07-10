@@ -212,7 +212,9 @@ Deno.serve(async (req) => {
       user_email,
       user_phone,
       user_agent,
-      // client_ip intentionally ignored — see zero-ban policy below
+      // Client-declared public IP. Cross-validated against edge headers below
+      // before ever being forwarded to Meta — see safe-IP block after userData.
+      declared_client_ip,
       fbc,
       fbp,
       external_id,
