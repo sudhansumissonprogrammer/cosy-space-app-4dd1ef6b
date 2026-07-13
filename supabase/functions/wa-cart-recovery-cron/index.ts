@@ -427,6 +427,16 @@ Deno.serve(async (req) => {
       const customerName = String((o as any).customer_name || "there").trim() || "there";
       const s = (o as any).stores || {};
 
+      // 🖼️ Fetch product image for v7_img IMAGE-header template.
+      let rawImg2: string | null = null;
+      if (firstProductId) {
+        const { data: p2 } = await admin.from("products").select("image_url").eq("id", firstProductId).maybeSingle();
+        rawImg2 = (p2 as any)?.image_url || null;
+      }
+      const headerMediaUrl2 = rawImg2
+        ? `https://wsrv.nl/?url=${encodeURIComponent(rawImg2)}&w=1080&h=1080&fit=cover&output=jpg&q=85`
+        : null;
+
       const { data: activeTpl2 } = await admin
         .from("platform_wa_templates")
         .select("name, variables")
