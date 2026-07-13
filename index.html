@@ -3,6 +3,36 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- ─── WhatsApp /r/ /cart/ /order/ INSTANT REDIRECT ───
+         Runs BEFORE any CSS/JS/React so /r/<token> never paints the
+         landing shell. If the Cloudflare Worker fast-path isn't
+         intercepting (worker not deployed on this apex), this inline
+         script hits the Supabase RPC in <10ms and window.location.replace
+         to the resolved product/cart/order URL. Falls back to wa-r edge fn
+         if RPC fails. Zero landing-page flash. -->
+    <script>
+      (function(){
+        try {
+          var p = location.pathname, tok = "";
+          if (p.indexOf("/r/") === 0) tok = p.slice(3).split("/")[0].split("?")[0];
+          else if (p.indexOf("/cart/") === 0) { var t = p.slice(6).split("/")[0].split("?")[0]; if (t) tok = "c-" + t; }
+          else if (p.indexOf("/order/") === 0) { var t2 = p.slice(7).split("/")[0].split("?")[0]; if (t2) tok = "o-" + t2; }
+          if (!tok) return;
+          document.documentElement.style.visibility = "hidden";
+          var API = "https://dqepeywgftbpxeeqfuwt.supabase.co";
+          var ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
+          var fb = function(){ location.replace(API + "/functions/v1/wa-r/" + encodeURIComponent(tok)); };
+          var timer = setTimeout(fb, 800);
+          fetch(API + "/rest/v1/rpc/get_wa_redirect", {
+            method: "POST", cache: "no-store", credentials: "omit",
+            headers: { apikey: ANON, Authorization: "Bearer " + ANON, "Content-Type": "application/json" },
+            body: JSON.stringify({ _token: tok })
+          }).then(function(r){ return r.ok ? r.json() : null; })
+            .then(function(d){ clearTimeout(timer); if (d && d.ok && d.target) location.replace(d.target); else fb(); })
+            .catch(fb);
+        } catch (_) {}
+      })();
+    </script>
     <!-- ─── Stale-shell self-heal ───
          When a new deploy lands, the Cloudflare Worker may still serve a
          previously cached HTML shell that references a JS bundle hash that
