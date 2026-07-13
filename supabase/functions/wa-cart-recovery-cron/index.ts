@@ -490,7 +490,7 @@ Deno.serve(async (req) => {
           product_title: firstTitle,
           store_name: (s as any).name || "our store",
           product_price: productPrice,
-          original_price: basePrice.toFixed(0),
+          original_price: mrpPrice2.toFixed(0),
           discounted_price: discountedPrice.toFixed(0),
           balance_due: balanceDue.toFixed(0),
           cta_token: ctaToken,
