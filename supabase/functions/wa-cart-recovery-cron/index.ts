@@ -464,6 +464,7 @@ Deno.serve(async (req) => {
           discounted_price: discountedPrice.toFixed(0),
           balance_due: balanceDue.toFixed(0),
           cta_token: ctaToken,
+          ...(headerMediaUrl2 ? { header_media_url: headerMediaUrl2 } : {}),
         },
         priority: 4, // slightly higher than cart-only (5) — these are hotter leads
 
