@@ -41,6 +41,21 @@ Deno.serve(async (req) => {
     raw: out,
   });
 
+  // 🛡️ Safety net: mirror quality → platform_config so marketing auto-throttles
+  // even when Meta's PHONE_NUMBER_QUALITY_UPDATE webhook is missed/delayed.
+  // Webhook remains the fast path; this poll is the fallback (every 6h).
+  const q = String(out.quality_rating || "").toUpperCase();
+  if (q) {
+    const patch: Record<string, any> = {
+      wa_quality_rating: q,
+      wa_quality_updated_at: new Date().toISOString(),
+    };
+    if (out.messaging_limit_tier) patch.wa_messaging_tier = String(out.messaging_limit_tier).toUpperCase();
+    if (q === "YELLOW" || q === "RED") patch.wa_throttle_marketing = true;
+    if (q === "GREEN" || q === "HIGH") patch.wa_throttle_marketing = false;
+    await admin.from("platform_config").update(patch).not("id", "is", null);
+  }
+
   return j({ ok: true, snapshot: out });
 });
 function j(b: unknown, s = 200) {
