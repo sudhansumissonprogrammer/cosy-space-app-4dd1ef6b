@@ -239,14 +239,6 @@ Deno.serve(async (req) => {
     const unitPrice = Number(firstItem?.price ?? 0);
     const productPrice = unitPrice > 0 ? `₹${unitPrice.toFixed(0)}` : `₹${total.toFixed(0)}`;
 
-    // 💰 abandoned_cart_v4 offer math — ₹100 flat off + ₹100 advance, rest COD.
-    // Uses the item's unit price (falls back to cart total when unit price missing).
-    const basePrice = unitPrice > 0 ? unitPrice : total;
-    const OFFER_DISCOUNT = 100;
-    const ADVANCE_AMOUNT = 100;
-    const discountedPrice = Math.max(basePrice - OFFER_DISCOUNT, 0);
-    const balanceDue = Math.max(discountedPrice - ADVANCE_AMOUNT, 0);
-
     // CTA opens the product page directly (p-<product_id>). Fallback to
     // cart-recovery link when no productId is present.
     const firstProductId = firstItem?.productId || firstItem?.product_id;
@@ -254,16 +246,39 @@ Deno.serve(async (req) => {
 
     // 🖼️ Header image for IMAGE-type templates (v7_img+). Route the product
     // photo through wsrv.nl to guarantee JPG output — Meta rejects WebP in
-    // template headers, and our R2 CDN serves WebP. Falls back to a product
-    // lookup when the cart snapshot didn't carry an image.
+    // template headers, and our R2 CDN serves WebP.
+    // Also fetch products.price (MRP) + sale_price so the template shows the
+    // *real* regular price crossed out, not the effective sale price.
     let rawImg: string | null = String((firstItem as any)?.image || (firstItem as any)?.image_url || "") || null;
-    if (!rawImg && firstProductId) {
-      const { data: p } = await admin.from("products").select("image_url").eq("id", firstProductId).maybeSingle();
-      rawImg = (p as any)?.image_url || null;
+    let productMrp: number | null = null;
+    let productSale: number | null = null;
+    if (firstProductId) {
+      const { data: p } = await admin
+        .from("products")
+        .select("image_url, price, sale_price")
+        .eq("id", firstProductId)
+        .maybeSingle();
+      if (!rawImg) rawImg = (p as any)?.image_url || null;
+      productMrp = Number((p as any)?.price ?? 0) || null;
+      productSale = Number((p as any)?.sale_price ?? 0) || null;
     }
     const headerMediaUrl = rawImg
       ? `https://wsrv.nl/?url=${encodeURIComponent(rawImg)}&w=1080&h=1080&fit=cover&output=jpg&q=85`
       : null;
+
+    // 💰 Offer math (v6/v8 IMAGE template) — MRP crossed out, ₹100 coupon off
+    // the effective sale price, then ₹100 advance, rest COD.
+    //  • MRP  = products.price (regular price)
+    //  • Sale = products.sale_price when > 0, else products.price, else cart unit price
+    const effectiveSale = productSale && productSale > 0
+      ? productSale
+      : (productMrp && productMrp > 0 ? productMrp : (unitPrice > 0 ? unitPrice : total));
+    const mrpPrice = productMrp && productMrp > 0 ? productMrp : effectiveSale;
+    const basePrice = effectiveSale;
+    const OFFER_DISCOUNT = 100;
+    const ADVANCE_AMOUNT = 100;
+    const discountedPrice = Math.max(effectiveSale - OFFER_DISCOUNT, 0);
+    const balanceDue = Math.max(discountedPrice - ADVANCE_AMOUNT, 0);
 
     // Auto-pick the newest APPROVED + active abandoned_cart template. This lets
     // us promote v4/v5 by flipping is_active/meta_status in the DB — no code edit.
@@ -300,7 +315,7 @@ Deno.serve(async (req) => {
         store_name: (s as any).name || "our store",
         product_price: productPrice,
         // v4 offer vars — resolved by wa-branding only if template asks for them
-        original_price: basePrice.toFixed(0),
+        original_price: mrpPrice.toFixed(0),
         discounted_price: discountedPrice.toFixed(0),
         balance_due: balanceDue.toFixed(0),
         cta_token: ctaToken,
@@ -419,23 +434,38 @@ Deno.serve(async (req) => {
       const orderTotal = Number((o as any).total ?? 0);
       const unitPrice = Number(firstItem?.unit_price ?? 0);
       const productPrice = unitPrice > 0 ? `₹${unitPrice.toFixed(0)}` : `₹${orderTotal.toFixed(0)}`;
-      const basePrice = unitPrice > 0 ? unitPrice : orderTotal;
-      const discountedPrice = Math.max(basePrice - 100, 0);
-      const balanceDue = Math.max(discountedPrice - 100, 0);
       const firstProductId = firstItem?.product_id;
       const ctaToken = firstProductId ? `p-${firstProductId}` : `o-${(o as any).id}`;
       const customerName = String((o as any).customer_name || "there").trim() || "there";
       const s = (o as any).stores || {};
 
-      // 🖼️ Fetch product image for v7_img IMAGE-header template.
+      // 🖼️ Fetch product image + real MRP/sale for the v8 IMAGE template.
       let rawImg2: string | null = null;
+      let productMrp2: number | null = null;
+      let productSale2: number | null = null;
       if (firstProductId) {
-        const { data: p2 } = await admin.from("products").select("image_url").eq("id", firstProductId).maybeSingle();
+        const { data: p2 } = await admin
+          .from("products")
+          .select("image_url, price, sale_price")
+          .eq("id", firstProductId)
+          .maybeSingle();
         rawImg2 = (p2 as any)?.image_url || null;
+        productMrp2 = Number((p2 as any)?.price ?? 0) || null;
+        productSale2 = Number((p2 as any)?.sale_price ?? 0) || null;
       }
       const headerMediaUrl2 = rawImg2
         ? `https://wsrv.nl/?url=${encodeURIComponent(rawImg2)}&w=1080&h=1080&fit=cover&output=jpg&q=85`
         : null;
+
+      // 💰 Offer math — MRP crossed out (products.price), sale = sale_price,
+      // then ₹100 coupon off, then ₹100 advance, rest COD.
+      const effectiveSale2 = productSale2 && productSale2 > 0
+        ? productSale2
+        : (productMrp2 && productMrp2 > 0 ? productMrp2 : (unitPrice > 0 ? unitPrice : orderTotal));
+      const mrpPrice2 = productMrp2 && productMrp2 > 0 ? productMrp2 : effectiveSale2;
+      const basePrice = effectiveSale2;
+      const discountedPrice = Math.max(effectiveSale2 - 100, 0);
+      const balanceDue = Math.max(discountedPrice - 100, 0);
 
       const { data: activeTpl2 } = await admin
         .from("platform_wa_templates")
@@ -460,7 +490,7 @@ Deno.serve(async (req) => {
           product_title: firstTitle,
           store_name: (s as any).name || "our store",
           product_price: productPrice,
-          original_price: basePrice.toFixed(0),
+          original_price: mrpPrice2.toFixed(0),
           discounted_price: discountedPrice.toFixed(0),
           balance_due: balanceDue.toFixed(0),
           cta_token: ctaToken,
