@@ -1,0 +1,1 @@
+UPDATE platform_wa_templates SET meta_status='APPROVED', last_synced_at=now() WHERE name='abandoned_cart_v8_img';
