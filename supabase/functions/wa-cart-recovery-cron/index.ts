@@ -315,7 +315,7 @@ Deno.serve(async (req) => {
         store_name: (s as any).name || "our store",
         product_price: productPrice,
         // v4 offer vars — resolved by wa-branding only if template asks for them
-        original_price: basePrice.toFixed(0),
+        original_price: mrpPrice.toFixed(0),
         discounted_price: discountedPrice.toFixed(0),
         balance_due: balanceDue.toFixed(0),
         cta_token: ctaToken,
