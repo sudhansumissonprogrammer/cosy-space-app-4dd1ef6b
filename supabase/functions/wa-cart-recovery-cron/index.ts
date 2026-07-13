@@ -457,12 +457,12 @@ Deno.serve(async (req) => {
         ? `https://wsrv.nl/?url=${encodeURIComponent(rawImg2)}&w=1080&h=1080&fit=cover&output=jpg&q=85`
         : null;
 
-      // 💰 Offer math — MRP crossed out (products.price), sale = sale_price,
-      // then ₹100 coupon off, then ₹100 advance, rest COD.
+      // 💰 Offer math — MRP shown = SALE PRICE (not inflated regular price),
+      // ₹100 coupon off, then ₹100 advance, rest COD.
       const effectiveSale2 = productSale2 && productSale2 > 0
         ? productSale2
         : (productMrp2 && productMrp2 > 0 ? productMrp2 : (unitPrice > 0 ? unitPrice : orderTotal));
-      const mrpPrice2 = productMrp2 && productMrp2 > 0 ? productMrp2 : effectiveSale2;
+      const mrpPrice2 = effectiveSale2; // ← sale price as crossed-out MRP
       const basePrice = effectiveSale2;
       const discountedPrice = Math.max(effectiveSale2 - 100, 0);
       const balanceDue = Math.max(discountedPrice - 100, 0);
