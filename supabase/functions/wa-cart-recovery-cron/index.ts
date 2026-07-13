@@ -434,23 +434,38 @@ Deno.serve(async (req) => {
       const orderTotal = Number((o as any).total ?? 0);
       const unitPrice = Number(firstItem?.unit_price ?? 0);
       const productPrice = unitPrice > 0 ? `₹${unitPrice.toFixed(0)}` : `₹${orderTotal.toFixed(0)}`;
-      const basePrice = unitPrice > 0 ? unitPrice : orderTotal;
-      const discountedPrice = Math.max(basePrice - 100, 0);
-      const balanceDue = Math.max(discountedPrice - 100, 0);
       const firstProductId = firstItem?.product_id;
       const ctaToken = firstProductId ? `p-${firstProductId}` : `o-${(o as any).id}`;
       const customerName = String((o as any).customer_name || "there").trim() || "there";
       const s = (o as any).stores || {};
 
-      // 🖼️ Fetch product image for v7_img IMAGE-header template.
+      // 🖼️ Fetch product image + real MRP/sale for the v8 IMAGE template.
       let rawImg2: string | null = null;
+      let productMrp2: number | null = null;
+      let productSale2: number | null = null;
       if (firstProductId) {
-        const { data: p2 } = await admin.from("products").select("image_url").eq("id", firstProductId).maybeSingle();
+        const { data: p2 } = await admin
+          .from("products")
+          .select("image_url, price, sale_price")
+          .eq("id", firstProductId)
+          .maybeSingle();
         rawImg2 = (p2 as any)?.image_url || null;
+        productMrp2 = Number((p2 as any)?.price ?? 0) || null;
+        productSale2 = Number((p2 as any)?.sale_price ?? 0) || null;
       }
       const headerMediaUrl2 = rawImg2
         ? `https://wsrv.nl/?url=${encodeURIComponent(rawImg2)}&w=1080&h=1080&fit=cover&output=jpg&q=85`
         : null;
+
+      // 💰 Offer math — MRP crossed out (products.price), sale = sale_price,
+      // then ₹100 coupon off, then ₹100 advance, rest COD.
+      const effectiveSale2 = productSale2 && productSale2 > 0
+        ? productSale2
+        : (productMrp2 && productMrp2 > 0 ? productMrp2 : (unitPrice > 0 ? unitPrice : orderTotal));
+      const mrpPrice2 = productMrp2 && productMrp2 > 0 ? productMrp2 : effectiveSale2;
+      const basePrice = effectiveSale2;
+      const discountedPrice = Math.max(effectiveSale2 - 100, 0);
+      const balanceDue = Math.max(discountedPrice - 100, 0);
 
       const { data: activeTpl2 } = await admin
         .from("platform_wa_templates")
