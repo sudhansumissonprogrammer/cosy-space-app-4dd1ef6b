@@ -266,14 +266,14 @@ Deno.serve(async (req) => {
       ? `https://wsrv.nl/?url=${encodeURIComponent(rawImg)}&w=1080&h=1080&fit=cover&output=jpg&q=85`
       : null;
 
-    // 💰 Offer math (v6/v8 IMAGE template) — MRP crossed out, ₹100 coupon off
-    // the effective sale price, then ₹100 advance, rest COD.
-    //  • MRP  = products.price (regular price)
-    //  • Sale = products.sale_price when > 0, else products.price, else cart unit price
+    // 💰 Offer math (v6/v8 IMAGE template) — MRP shown = SALE PRICE (not the
+    // inflated regular price). ₹100 coupon off, then ₹100 advance, rest COD.
+    //  • MRP  = products.sale_price (falls back to price/unit if missing)
+    //  • Sale = same effective sale price minus ₹100 coupon
     const effectiveSale = productSale && productSale > 0
       ? productSale
       : (productMrp && productMrp > 0 ? productMrp : (unitPrice > 0 ? unitPrice : total));
-    const mrpPrice = productMrp && productMrp > 0 ? productMrp : effectiveSale;
+    const mrpPrice = effectiveSale; // ← use sale price as the crossed-out MRP
     const basePrice = effectiveSale;
     const OFFER_DISCOUNT = 100;
     const ADVANCE_AMOUNT = 100;
@@ -457,12 +457,12 @@ Deno.serve(async (req) => {
         ? `https://wsrv.nl/?url=${encodeURIComponent(rawImg2)}&w=1080&h=1080&fit=cover&output=jpg&q=85`
         : null;
 
-      // 💰 Offer math — MRP crossed out (products.price), sale = sale_price,
-      // then ₹100 coupon off, then ₹100 advance, rest COD.
+      // 💰 Offer math — MRP shown = SALE PRICE (not inflated regular price),
+      // ₹100 coupon off, then ₹100 advance, rest COD.
       const effectiveSale2 = productSale2 && productSale2 > 0
         ? productSale2
         : (productMrp2 && productMrp2 > 0 ? productMrp2 : (unitPrice > 0 ? unitPrice : orderTotal));
-      const mrpPrice2 = productMrp2 && productMrp2 > 0 ? productMrp2 : effectiveSale2;
+      const mrpPrice2 = effectiveSale2; // ← sale price as crossed-out MRP
       const basePrice = effectiveSale2;
       const discountedPrice = Math.max(effectiveSale2 - 100, 0);
       const balanceDue = Math.max(discountedPrice - 100, 0);
