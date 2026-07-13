@@ -252,6 +252,19 @@ Deno.serve(async (req) => {
     const firstProductId = firstItem?.productId || firstItem?.product_id;
     const ctaToken = firstProductId ? `p-${firstProductId}` : `c-${(c as any).id}`;
 
+    // 🖼️ Header image for IMAGE-type templates (v7_img+). Route the product
+    // photo through wsrv.nl to guarantee JPG output — Meta rejects WebP in
+    // template headers, and our R2 CDN serves WebP. Falls back to a product
+    // lookup when the cart snapshot didn't carry an image.
+    let rawImg: string | null = String((firstItem as any)?.image || (firstItem as any)?.image_url || "") || null;
+    if (!rawImg && firstProductId) {
+      const { data: p } = await admin.from("products").select("image_url").eq("id", firstProductId).maybeSingle();
+      rawImg = (p as any)?.image_url || null;
+    }
+    const headerMediaUrl = rawImg
+      ? `https://wsrv.nl/?url=${encodeURIComponent(rawImg)}&w=1080&h=1080&fit=cover&output=jpg&q=85`
+      : null;
+
     // Auto-pick the newest APPROVED + active abandoned_cart template. This lets
     // us promote v4/v5 by flipping is_active/meta_status in the DB — no code edit.
     const { data: activeTpl } = await admin
@@ -291,6 +304,8 @@ Deno.serve(async (req) => {
         discounted_price: discountedPrice.toFixed(0),
         balance_due: balanceDue.toFixed(0),
         cta_token: ctaToken,
+        // v7_img — dynamic header image. Ignored by TEXT-header templates.
+        ...(headerMediaUrl ? { header_media_url: headerMediaUrl } : {}),
       },
       priority: 5,
       scheduled_at: new Date().toISOString(),
@@ -412,6 +427,16 @@ Deno.serve(async (req) => {
       const customerName = String((o as any).customer_name || "there").trim() || "there";
       const s = (o as any).stores || {};
 
+      // 🖼️ Fetch product image for v7_img IMAGE-header template.
+      let rawImg2: string | null = null;
+      if (firstProductId) {
+        const { data: p2 } = await admin.from("products").select("image_url").eq("id", firstProductId).maybeSingle();
+        rawImg2 = (p2 as any)?.image_url || null;
+      }
+      const headerMediaUrl2 = rawImg2
+        ? `https://wsrv.nl/?url=${encodeURIComponent(rawImg2)}&w=1080&h=1080&fit=cover&output=jpg&q=85`
+        : null;
+
       const { data: activeTpl2 } = await admin
         .from("platform_wa_templates")
         .select("name, variables")
@@ -439,6 +464,7 @@ Deno.serve(async (req) => {
           discounted_price: discountedPrice.toFixed(0),
           balance_due: balanceDue.toFixed(0),
           cta_token: ctaToken,
+          ...(headerMediaUrl2 ? { header_media_url: headerMediaUrl2 } : {}),
         },
         priority: 4, // slightly higher than cart-only (5) — these are hotter leads
 
