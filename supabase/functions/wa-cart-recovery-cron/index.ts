@@ -252,6 +252,19 @@ Deno.serve(async (req) => {
     const firstProductId = firstItem?.productId || firstItem?.product_id;
     const ctaToken = firstProductId ? `p-${firstProductId}` : `c-${(c as any).id}`;
 
+    // 🖼️ Header image for IMAGE-type templates (v7_img+). Route the product
+    // photo through wsrv.nl to guarantee JPG output — Meta rejects WebP in
+    // template headers, and our R2 CDN serves WebP. Falls back to a product
+    // lookup when the cart snapshot didn't carry an image.
+    let rawImg: string | null = String((firstItem as any)?.image || (firstItem as any)?.image_url || "") || null;
+    if (!rawImg && firstProductId) {
+      const { data: p } = await admin.from("products").select("image_url").eq("id", firstProductId).maybeSingle();
+      rawImg = (p as any)?.image_url || null;
+    }
+    const headerMediaUrl = rawImg
+      ? `https://wsrv.nl/?url=${encodeURIComponent(rawImg)}&w=1080&h=1080&fit=cover&output=jpg&q=85`
+      : null;
+
     // Auto-pick the newest APPROVED + active abandoned_cart template. This lets
     // us promote v4/v5 by flipping is_active/meta_status in the DB — no code edit.
     const { data: activeTpl } = await admin
