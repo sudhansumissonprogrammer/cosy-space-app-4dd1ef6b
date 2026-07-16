@@ -53,7 +53,24 @@ export async function uploadOptimizedImage(
     body: form,
   });
 
-  if (error) throw new Error(`Failed to upload image: ${error.message}`);
+  if (error) {
+    let message = error.message || "Upload failed";
+    const response = (error as any)?.context;
+    if (response && typeof response.clone === "function") {
+      try {
+        const payload = await response.clone().json();
+        if (payload?.error) message = payload.error;
+      } catch {
+        try {
+          const text = await response.clone().text();
+          if (text) message = text;
+        } catch {
+          // Keep the original SDK message.
+        }
+      }
+    }
+    throw new Error(`Failed to upload image: ${message}`);
+  }
   if (!data?.publicUrl) throw new Error("Upload failed: no URL returned");
 
   const mainUrl = data.publicUrl as string;

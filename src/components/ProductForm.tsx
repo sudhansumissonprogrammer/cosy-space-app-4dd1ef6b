@@ -155,7 +155,8 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       let image_url: string | null = null;
 
       if (categoryImageFile) {
-        const basePath = generateUploadPath(storeId!, "categories");
+        if (!user) throw new Error("You must be signed in to upload images");
+        const basePath = generateUploadPath(user.id, storeId!) + "-cat";
         const uploadResult = await uploadOptimizedImage(categoryImageFile, "product-images", basePath);
         if (uploadResult.compressionMessage) toast.success(uploadResult.compressionMessage);
         image_url = uploadResult.mainUrl;
