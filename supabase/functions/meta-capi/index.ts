@@ -244,6 +244,19 @@ Deno.serve(async (req) => {
     );
   }
 
+  // v8.71.0 BAN-FIX P0-NEW-2: Drop bot / crawler / headless traffic at the
+  // door. Uses the request UA (attacker can't spoof it away — an empty UA is
+  // also treated as bot). Returns 200+skipped so client-side JS doesn't retry.
+  const reqUa = req.headers.get("user-agent") || "";
+  if (isBotUA(reqUa)) {
+    return new Response(
+      JSON.stringify({ success: true, skipped: true, reason: "bot_ua" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+
+
   try {
     const {
       store_id,
