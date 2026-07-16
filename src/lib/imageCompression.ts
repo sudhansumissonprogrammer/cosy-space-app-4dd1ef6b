@@ -261,7 +261,7 @@ export async function processImage(
 
   for (const dim of dimensionsToTry) {
     const { width, height } = scaleDimensions(img.width, img.height, dim);
-    const canvas = renderToCanvas(img, width, height);
+    const canvas = renderToCanvas(img.source, width, height);
     const result = await walkQuality(canvas, startQuality, MAX_OUTPUT_KB);
 
     if (!bestResult || result.blob.size < bestResult.blob.size) {
@@ -271,7 +271,7 @@ export async function processImage(
     if (result.blob.size <= MAX_OUTPUT_KB * 1024) break;
   }
 
-  URL.revokeObjectURL(img.src);
+  img.cleanup();
 
   if (!bestResult) throw new Error("Image compression failed");
 
