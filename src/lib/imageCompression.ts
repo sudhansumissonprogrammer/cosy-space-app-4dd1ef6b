@@ -51,19 +51,85 @@ export function getCompressionMessage(result: CompressionResult): string | null 
   return `Image compressed: ${formatSize(result.originalSize)} → ${formatSize(result.compressedSize)} (${reduction}% smaller)`;
 }
 
-/** Load an image element from a File */
-function loadImage(file: File): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Failed to load image for compression"));
-    img.src = URL.createObjectURL(file);
-  });
+interface DecodedImage {
+  width: number;
+  height: number;
+  source: CanvasImageSource;
+  cleanup: () => void;
+}
+
+/** Detect HEIC/HEIF (iPhone default) — most browsers can't decode these. */
+function isHeic(file: File): boolean {
+  const name = (file.name || "").toLowerCase();
+  const type = (file.type || "").toLowerCase();
+  return (
+    type === "image/heic" ||
+    type === "image/heif" ||
+    type === "image/heic-sequence" ||
+    type === "image/heif-sequence" ||
+    name.endsWith(".heic") ||
+    name.endsWith(".heif")
+  );
+}
+
+/**
+ * Load a decodable image from a File. Tries HTMLImageElement first, then
+ * falls back to createImageBitmap (which supports more formats and works
+ * in some browsers where <img> URL loading is blocked, e.g. private mode).
+ * Throws a clear, user-actionable error on HEIC/HEIF or hard decode failure.
+ */
+async function loadImage(file: File): Promise<DecodedImage> {
+  if (isHeic(file)) {
+    throw new Error(
+      "HEIC/HEIF images from iPhone aren't supported. Please convert to JPG or PNG (iPhone: Settings → Camera → Formats → Most Compatible) and try again.",
+    );
+  }
+
+  // Attempt 1: HTMLImageElement via ObjectURL
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("img-load-failed"));
+      el.src = objectUrl;
+    });
+    if (img.width > 0 && img.height > 0) {
+      return {
+        width: img.width,
+        height: img.height,
+        source: img,
+        cleanup: () => URL.revokeObjectURL(objectUrl),
+      };
+    }
+  } catch {
+    // fall through to bitmap fallback
+  }
+  URL.revokeObjectURL(objectUrl);
+
+  // Attempt 2: createImageBitmap (native decoder, broader format support)
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(file);
+      return {
+        width: bitmap.width,
+        height: bitmap.height,
+        source: bitmap,
+        cleanup: () => bitmap.close?.(),
+      };
+    } catch {
+      /* fall through */
+    }
+  }
+
+  throw new Error(
+    `Couldn't read "${file.name}". The file may be corrupt or in an unsupported format — try re-saving as JPG or PNG.`,
+  );
 }
 
 /** Render image to canvas at target dimensions */
 function renderToCanvas(
-  img: HTMLImageElement,
+  source: CanvasImageSource,
   targetWidth: number,
   targetHeight: number,
 ): HTMLCanvasElement {
@@ -72,7 +138,7 @@ function renderToCanvas(
   canvas.height = targetHeight;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not create canvas context");
-  ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+  ctx.drawImage(source, 0, 0, targetWidth, targetHeight);
   return canvas;
 }
 
