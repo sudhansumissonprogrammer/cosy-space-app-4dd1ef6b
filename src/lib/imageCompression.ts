@@ -344,8 +344,8 @@ export async function processImageFromUrl(
 
   const img = await loadImage(file);
   const { width, height } = scaleDimensions(img.width, img.height, DEFAULT_MAX_DIMENSION);
-  const canvas = renderToCanvas(img, width, height);
-  URL.revokeObjectURL(img.src);
+  const canvas = renderToCanvas(img.source, width, height);
+  img.cleanup();
 
   // Start at high quality, iterate down to hit ~50% reduction
   const BULK_START_QUALITY = 0.92;
