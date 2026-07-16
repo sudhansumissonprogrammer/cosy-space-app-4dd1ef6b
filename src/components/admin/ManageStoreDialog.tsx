@@ -188,7 +188,9 @@ function OverviewTab({ store, owner, wallet, config }: any) {
 function CommissionConfigPanel({ storeId, config, onSaved }: any) {
   const [pct, setPct] = useState(String(config?.commission_percentage ?? 3));
   const [minR, setMinR] = useState(String(config?.min_recharge ?? 600));
-...
+  const [low, setLow] = useState(String(config?.low_balance_threshold ?? 100));
+  useEffect(() => {
+    setPct(String(config?.commission_percentage ?? 3));
     setMinR(String(config?.min_recharge ?? 600));
     setLow(String(config?.low_balance_threshold ?? 100));
   }, [config?.commission_percentage, config?.min_recharge, config?.low_balance_threshold]);
