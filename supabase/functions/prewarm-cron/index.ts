@@ -96,14 +96,27 @@ Deno.serve(async (req) => {
     .from("stores")
     .select("id, slug, custom_domain")
     .not("custom_domain", "is", null)
+    .eq("is_suspended", false)
     .limit(500);
 
   const { data: activeStores } = activeIds.length
-    ? await supabase.from("stores").select("id, slug, custom_domain").in("id", activeIds)
+    ? await supabase.from("stores").select("id, slug, custom_domain").in("id", activeIds).eq("is_suspended", false)
     : { data: [] as any[] };
 
+  // NEW-STORE WARMTH: keep stores created in the last 14 days hot even if
+  // they haven't received traffic yet. This is the onboarding + first-ads
+  // window — a cold KV lookup here (~1.5s TTFB) is the #1 reason new
+  // merchants convert worse than established stores whose cache is always hot.
+  const newSince = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: newStores } = await supabase
+    .from("stores")
+    .select("id, slug, custom_domain")
+    .gte("created_at", newSince)
+    .eq("is_suspended", false)
+    .limit(500);
+
   const map = new Map<string, { slug: string; custom_domain: string | null }>();
-  for (const s of [...(domainRows || []), ...(activeStores || [])]) {
+  for (const s of [...(domainRows || []), ...(activeStores || []), ...(newStores || [])]) {
     if (s?.slug) map.set(s.id, { slug: s.slug, custom_domain: s.custom_domain ?? null });
   }
   const stores = Array.from(map.values());
