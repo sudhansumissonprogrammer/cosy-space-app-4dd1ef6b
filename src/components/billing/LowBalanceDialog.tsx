@@ -18,7 +18,7 @@ interface LowBalanceDialogProps {
 /**
  * Wallet balance warning.
  *
- * - Balance below -150 → hard block with a light themed overlay.
+ * - Balance below -20 → hard block with a light themed overlay.
  * - Otherwise (balance below threshold but not blocked) → soft warning banner
  *   docked to the bottom of the viewport that does NOT dim the dashboard.
  *
@@ -35,7 +35,7 @@ export default function LowBalanceDialog({
   threshold = 0,
 }: LowBalanceDialogProps) {
   const navigate = useNavigate();
-  const isBlocked = balance < -150;
+  const isBlocked = balance <= -20;
   const storageKey = `low-balance-banner-dismissed-${storeSlug}`;
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -57,7 +57,7 @@ export default function LowBalanceDialog({
     ? "Wallet blocked — recharge required"
     : `Wallet balance is negative — recharge required`;
   const description = isBlocked
-    ? `Your wallet balance is ${formattedBalance}. Your balance has dropped below ₹−150. Access to your store dashboard is locked until you recharge. You can only access the wallet page to add funds.`
+    ? `Your wallet balance is ${formattedBalance}. Your balance has dropped to ₹−20 or below. Access to your store dashboard is locked until you recharge. You can only access the wallet page to add funds.`
     : `Your wallet balance is ${formattedBalance}. Recharge now to keep your store running smoothly and continue accepting orders without interruption.`;
 
   return (
