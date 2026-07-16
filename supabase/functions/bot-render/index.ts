@@ -169,7 +169,6 @@ ${product.description ? `<div class="description" itemprop="description">${esc(p
 
 function buildStoreHtml(
   store: any,
-  products: any[],
   categories: any[],
   canonical: string
 ): string {
@@ -180,6 +179,10 @@ function buildStoreHtml(
       store.description ||
       `Shop the best products at ${store.name}.`
   );
+  // Store homepage must remain store/brand focused. Do not fall back to a
+  // product image here: Meta ad review can treat a homepage whose preview/body
+  // is dominated by a single product as landing-page mismatch. Product imagery
+  // belongs on /product, /category, /shop, and /best-sellers only.
   const ogImage = store.og_image_url || store.banner_url || store.logo_url || "";
 
   const jsonLd = JSON.stringify({
@@ -190,24 +193,6 @@ function buildStoreHtml(
     url: canonical,
     image: ogImage,
   });
-
-  const productCards = products
-    .slice(0, 30)
-    .map((p: any) => {
-      const pPrice = formatPrice(
-        p.sale_price || p.price,
-        p.currency || store.currency || "INR"
-      );
-      const pSlug = p.slug || p.id;
-      return `<div class="card" itemscope itemtype="https://schema.org/Product">
-<a href="${esc(canonical)}/product/${esc(pSlug)}">
-${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(p.name)}" width="280" height="280" loading="lazy" itemprop="image">` : `<div style="width:280px;height:280px;background:#f0f0f0"></div>`}
-<h3 itemprop="name">${esc(p.name)}</h3>
-<p class="card-price">${pPrice}</p>
-</a>
-</div>`;
-    })
-    .join("\n");
 
   const categoryLinks = categories
     .map(
@@ -241,17 +226,15 @@ body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:0;color:#1a
 .header img{height:40px;width:40px;object-fit:contain;border-radius:8px}
 .header h2{margin:0;font-size:18px}
 .container{max-width:1200px;margin:0 auto;padding:24px}
-.hero{margin-bottom:24px}
+.hero{margin-bottom:24px;max-width:760px}
 .hero h1{font-size:32px;margin:0 0 8px}
 .hero p{color:#666;font-size:16px;margin:0}
 .categories{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
 .cat-link{padding:8px 16px;background:#f5f5f5;border-radius:20px;text-decoration:none;color:#333;font-size:14px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px}
-.card{border:1px solid #eee;border-radius:8px;overflow:hidden}
-.card a{text-decoration:none;color:inherit}
-.card img{width:100%;height:280px;object-fit:cover}
-.card h3{margin:12px 12px 4px;font-size:16px}
-.card-price{margin:4px 12px 12px;font-weight:700;color:#16a34a}
+.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:24px}
+.info-card{background:#f8f8f8;border:1px solid #eee;border-radius:8px;padding:16px}
+.info-card h2{font-size:16px;margin:0 0 8px}.info-card p{margin:0;color:#555;line-height:1.6}
+.cta{display:inline-block;margin-top:16px;padding:12px 20px;background:#1a1a1a;color:#fff;text-decoration:none;border-radius:6px;font-weight:600}
 .footer{margin-top:48px;padding:24px;border-top:1px solid #eee;text-align:center;color:#999;font-size:13px}
 </style>
 </head>
@@ -264,15 +247,16 @@ ${store.logo_url ? `<img src="${esc(store.logo_url)}" alt="${storeName} logo">` 
 <section class="hero">
 <h1>${storeName}</h1>
 ${store.description ? `<p>${esc(store.description)}</p>` : ""}
+<a class="cta" href="${esc(canonical)}/shop">Shop products</a>
 </section>
 ${categories.length > 0 ? `<nav class="categories">${categoryLinks}</nav>` : ""}
-<section class="grid">
-${productCards}
+<section class="info">
+<div class="info-card"><h2>About ${storeName}</h2><p>${esc(store.description || `${store.name} is an online store serving customers across India.`)}</p></div>
+${store.city || store.state ? `<div class="info-card"><h2>Location</h2><p>${esc([store.city, store.state].filter(Boolean).join(", "))}, India</p></div>` : ""}
+${store.whatsapp_number ? `<div class="info-card"><h2>Contact</h2><p>WhatsApp: <a href="https://wa.me/${esc(String(store.whatsapp_number).replace(/[^0-9]/g, ""))}">${esc(store.whatsapp_number)}</a></p></div>` : ""}
 </section>
-${products.length > 30 ? `<p style="text-align:center;color:#666;margin-top:24px">Showing 30 of ${products.length} products</p>` : ""}
 </main>
 <footer class="footer">&copy; ${new Date().getFullYear()} ${storeName}. All rights reserved.</footer>
-<script>window.location.replace(${JSON.stringify(canonical)});</script>
 </body>
 </html>`;
 }
@@ -380,8 +364,7 @@ ${store.logo_url ? `<img src="${esc(store.logo_url)}" alt="${storeName} logo">` 
 }
 
 function buildShellFooter(store: any, canonical: string): string {
-  return `<footer class="footer">&copy; ${new Date().getFullYear()} ${esc(store.name)}. All rights reserved.</footer>
-<script>window.location.replace(${JSON.stringify(canonical)});</script>`;
+  return `<footer class="footer">&copy; ${new Date().getFullYear()} ${esc(store.name)}. All rights reserved.</footer>`;
 }
 
 function buildCategoryHtml(
@@ -805,24 +788,6 @@ Deno.serve(async (req) => {
     });
   }
 
-  // og:image fallback chain: og_image_url → banner_url → logo_url → first product image.
-  // Backfill store.og_image_url so every downstream builder (categories, legal, contact,
-  // not-found) inherits the product fallback without per-callsite changes.
-  if (!store.og_image_url && !store.banner_url && !store.logo_url) {
-    const { data: firstProd } = await supabase
-      .from("products")
-      .select("image_url")
-      .eq("store_id", store.id)
-      .eq("is_active", true)
-      .not("image_url", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (firstProd?.image_url) {
-      (store as any).og_image_url = firstProd.image_url;
-    }
-  }
-
   // Build canonical URL
   // Sanitize domain to prevent injection
   const safeDomain = domain ? domain.replace(/[^a-zA-Z0-9.\-]/g, "") : null;
@@ -1006,22 +971,12 @@ Deno.serve(async (req) => {
     return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
   }
 
-  // Store home page (default)
-  const { data: products } = await supabase
-    .from("products")
-    .select("id, name, slug, price, sale_price, currency, image_url, stock_quantity, category")
-    .eq("store_id", store.id)
-    .eq("is_active", true)
-    .order("is_best_selling", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(50);
-
   const { data: categories } = await supabase
     .from("categories")
     .select("name, slug")
     .eq("store_id", store.id)
     .order("name");
 
-  const html = buildStoreHtml(store, products || [], categories || [], canonical);
+  const html = buildStoreHtml(store, categories || [], canonical);
   return new Response(html, { headers: { ...corsHeaders, ...HTML_CACHE_HEADERS } });
 });
