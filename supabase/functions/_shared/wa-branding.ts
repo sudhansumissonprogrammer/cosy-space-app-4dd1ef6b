@@ -6,7 +6,7 @@ export type BrandingExtras = Record<string, string | number | null | undefined>;
 
 const VAR_DEFAULTS: Record<string, (s: any) => string> = {
   store_name: (s) => s?.name || "Our store",
-  store_phone: (s) => s?.phone || "",
+  store_phone: (s) => s?.whatsapp_number || s?.secondary_phone || "",
   store_website: (s) => storeUrl(s),
   shop_url: (s) => storeUrl(s),
   customer_name: () => "there",
@@ -25,10 +25,12 @@ function storeUrl(s: any): string {
 export async function loadStore(admin: any, storeId: string | null | undefined) {
   if (!storeId) return null;
   // NOTE: `business_phone` lives on `whatsapp_configs`, NOT on `stores`.
-  // Selecting it here caused every WA send to fail with "column stores.business_phone does not exist".
+  // Same lesson applies to `phone` — it does NOT exist on stores. Only
+  // `whatsapp_number` and `secondary_phone` do. Selecting a missing column
+  // makes Postgres reject the whole query and every WA send loses branding.
   const { data } = await admin
     .from("stores")
-    .select("id, name, slug, custom_domain, phone")
+    .select("id, name, slug, custom_domain, whatsapp_number, secondary_phone")
     .eq("id", storeId)
     .maybeSingle();
   return data;
