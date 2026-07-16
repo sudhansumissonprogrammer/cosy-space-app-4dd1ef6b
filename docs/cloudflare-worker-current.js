@@ -1,5 +1,9 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.67.0 — Meta ban-risk round 3 + P0 cache cloaking fix
+ * SHOPBANAO PRODUCTION ROUTER v8.68.5 — Meta ban-risk round 4 + bot homepage parity
+ *
+ * v8.68.5 — Bot cache version bump for bot-render homepage parity fix:
+ *           store home bot HTML is store-detail only (no product grid/product
+ *           image fallback); product/category/shop routes keep product context.
  *
  * v8.67.0 — Ban-risk audit fixes (P0 + P1 batch):
  *           P0-1 Removed FacebookBot / Meta-ExternalAgent /
@@ -204,7 +208,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.68.4-payment-gateway-csp-hardening";
+const WORKER_VERSION = "8.68.5-bot-homepage-parity";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
