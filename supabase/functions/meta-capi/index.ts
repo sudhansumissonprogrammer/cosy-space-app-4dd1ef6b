@@ -129,6 +129,37 @@ const sanitizeFb = (v: unknown, rx: RegExp): string | undefined => {
   return rx.test(v) ? v : undefined;
 };
 
+// v8.71.0 BAN-FIX P0-NEW-2: Bot / headless / crawler UA filter.
+// Meta explicitly warns that bot traffic firing CAPI events tanks Event Match
+// Quality and inflates the top-of-funnel PageView / ViewContent count vs
+// Purchase, which trips their "low quality traffic" review. We already keep
+// Purchase off the browser endpoint; the leftover risk is scrapers / SEO
+// crawlers / uptime bots pretending to be normal browsers and firing PageView,
+// ViewContent, AddToCart. Anything matching these tokens is dropped silently
+// (200 skipped) so client code still "works" — we just don't pay Meta with
+// junk signal that would earn us a ban.
+const BOT_UA_RX = new RegExp(
+  [
+    "bot", "crawl", "spider", "slurp", "headlesschrome", "puppeteer",
+    "playwright", "phantomjs", "selenium", "webdriver", "http-?client",
+    "curl/", "wget/", "python-requests", "axios/", "go-http-client",
+    "okhttp", "libwww", "lighthouse", "pagespeed", "gtmetrix",
+    "facebookexternalhit", "twitterbot", "linkedinbot", "whatsapp",
+    "telegrambot", "discordbot", "slackbot", "embedly", "preview",
+    "monitoring", "uptime", "pingdom", "statuscake", "site24x7",
+    "ahrefsbot", "semrushbot", "mj12bot", "dotbot", "petalbot",
+    "yandexbot", "bingbot", "duckduckbot", "baiduspider", "applebot",
+    "googlebot", "gpt", "chatgpt-user", "claudebot",
+  ].join("|"),
+  "i",
+);
+function isBotUA(ua: string | null | undefined): boolean {
+  if (!ua || ua.length < 8) return true; // empty/tiny UA = almost always a bot
+  return BOT_UA_RX.test(ua);
+}
+
+
+
 type AllowedHost = { host: string; allowSubdomains?: boolean };
 
 function normalizeHost(host: string): string {
@@ -212,6 +243,19 @@ Deno.serve(async (req) => {
       { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
+
+  // v8.71.0 BAN-FIX P0-NEW-2: Drop bot / crawler / headless traffic at the
+  // door. Uses the request UA (attacker can't spoof it away — an empty UA is
+  // also treated as bot). Returns 200+skipped so client-side JS doesn't retry.
+  const reqUa = req.headers.get("user-agent") || "";
+  if (isBotUA(reqUa)) {
+    return new Response(
+      JSON.stringify({ success: true, skipped: true, reason: "bot_ua" }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+
 
   try {
     const {
