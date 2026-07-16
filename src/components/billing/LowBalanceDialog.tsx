@@ -35,7 +35,7 @@ export default function LowBalanceDialog({
   threshold = 0,
 }: LowBalanceDialogProps) {
   const navigate = useNavigate();
-  const isBlocked = balance < -150;
+  const isBlocked = balance <= -20;
   const storageKey = `low-balance-banner-dismissed-${storeSlug}`;
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
