@@ -18,7 +18,7 @@ interface LowBalanceDialogProps {
 /**
  * Wallet balance warning.
  *
- * - Balance below -150 → hard block with a light themed overlay.
+ * - Balance below -20 → hard block with a light themed overlay.
  * - Otherwise (balance below threshold but not blocked) → soft warning banner
  *   docked to the bottom of the viewport that does NOT dim the dashboard.
  *
