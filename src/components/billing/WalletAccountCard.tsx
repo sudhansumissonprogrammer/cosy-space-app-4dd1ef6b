@@ -100,7 +100,7 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
   const config =
     (data as any)?.config ?? {
       commission_percentage: 3,
-      min_recharge: 500,
+      min_recharge: 600,
       low_balance_threshold: 100,
     };
   const balanceNum = Number(wallet.balance);

@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       .select("min_recharge")
       .eq("store_id", storeId)
       .maybeSingle();
-    const minRecharge = Number(cfg?.min_recharge ?? 700);
+    const minRecharge = Number(cfg?.min_recharge ?? 600);
     if (!Number.isFinite(amount) || amount < minRecharge) {
       return j({ error: `Minimum recharge is ₹${minRecharge}` }, 400);
     }
