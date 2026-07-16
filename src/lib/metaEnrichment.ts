@@ -178,9 +178,16 @@ export function setCapiUser(user: CapiUser | null): void {
     delete window.__SF_CAPI_USER__;
     return;
   }
-  // Always-on external_id: default to anon visitor cookie if caller didn't supply one.
-  const externalId = user.externalId || getOrCreateSfVid() || undefined;
-  const merged: CapiUser = { ...user, externalId };
+  // MERGE, do not replace. Callers like CheckoutPhoneStep pass only { phone }
+  // to seed Advanced Matching mid-checkout — a full replace would wipe the
+  // signed-in shopper's email / name / customer-id (externalId) that
+  // StorefrontAuthContext had already registered, tanking EMQ for the exact
+  // events (InitiateCheckout / AddPaymentInfo) we're trying to lift.
+  const prev = window.__SF_CAPI_USER__ || {};
+  const combined: CapiUser = { ...prev, ...user };
+  // Preserve a previously-set customer externalId over the anon fallback.
+  const externalId = user.externalId || prev.externalId || getOrCreateSfVid() || undefined;
+  const merged: CapiUser = { ...combined, externalId };
   window.__SF_CAPI_USER__ = merged;
 
   // Mirror to Pixel Advanced Matching for the pixel-only path.

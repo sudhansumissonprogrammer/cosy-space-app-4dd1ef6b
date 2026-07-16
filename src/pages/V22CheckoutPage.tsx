@@ -34,7 +34,7 @@ const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPho
 
 function V22CheckoutPhoneGate({ children }: { children: React.ReactNode }) {
   const store = useOutletContext<StoreData>();
-  const { items: cartItems } = useCart();
+  const { items: cartItems, updateQuantity, removeFromCart } = useCart();
   const [searchParams] = useSearchParams();
   const productId = searchParams.get("product");
   const variantId = searchParams.get("variant");
@@ -98,12 +98,16 @@ function V22CheckoutPhoneGate({ children }: { children: React.ReactNode }) {
     if (productId && gateCartItems.length === 0 && buyNowLoading) {
       return <div className="min-h-[70vh]" />;
     }
+    const isSingleMode = cartItems.length === 0 && !!productId;
     return (
       <Suspense fallback={<div className="min-h-[70vh]" />}>
         <CheckoutPhoneStep
           storeId={store?.id}
           storeName={store?.name}
           cartItems={gateCartItems as any}
+          isSingleMode={isSingleMode}
+          onQuantityChange={isSingleMode ? undefined : (item, next) => updateQuantity(item.productId, item.variantId, next)}
+          onRemoveItem={isSingleMode ? undefined : (item) => removeFromCart(item.productId, item.variantId)}
           onComplete={(p) => setPhone(p)}
         />
       </Suspense>

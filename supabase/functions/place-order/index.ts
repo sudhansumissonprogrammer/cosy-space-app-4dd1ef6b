@@ -539,6 +539,29 @@ Deno.serve(async (req) => {
 
 
     if (orderErr || !createdOrder) {
+      // Idempotency race: shopper double-tapped Place Order (or the browser
+      // retried a slow response) — both requests passed the earlier
+      // checkout_token SELECT, one won the INSERT, the other hit the unique
+      // index (store_id, checkout_token). Return the winning order instead
+      // of a 500 so the shopper doesn't see "order failed" for an order
+      // that is actually in the merchant's dashboard.
+      if ((orderErr as any)?.code === "23505" && checkout_token) {
+        const { data: raced } = await supabase
+          .from("orders")
+          .select("id, order_number")
+          .eq("store_id", store_id)
+          .eq("checkout_token", checkout_token)
+          .maybeSingle();
+        if (raced) {
+          const racedNumber = raced.order_number
+            ? `#${1000 + raced.order_number}`
+            : `#${raced.id.slice(0, 8).toUpperCase()}`;
+          return new Response(
+            JSON.stringify({ success: true, order_id: raced.id, order_number: racedNumber, profit: null }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      }
       throw orderErr ?? new Error("Failed to create order");
     }
 

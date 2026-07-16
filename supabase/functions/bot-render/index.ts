@@ -848,7 +848,7 @@ Deno.serve(async (req) => {
   if (effectiveKind === "category" && routeSlug) {
     const { data: cat } = await supabase
       .from("categories")
-      .select("id, name, slug, description")
+      .select("id, name, slug, meta_description, meta_title, image_url")
       .eq("store_id", store.id)
       .eq("slug", routeSlug)
       .maybeSingle();
