@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsAdminView } from "@/contexts/AdminViewContext";
 
 const STORE_SETTINGS_COLUMNS =
-  "id, owner_id, name, slug, description, logo_url, created_at, updated_at, whatsapp_number, banner_url, is_suspended, business_hours, location, is_verified, city, state, currency, instagram_url, facebook_url, order_mode, theme, features, custom_domain, return_policy, shipping_policy, best_selling_carousel, mobile_hero_url, facebook_pixel_id, meta_title, meta_description, og_image_url, mobile_hero_images, domain_verified, about_us_text, about_us_image_url, partial_payment_enabled, partial_payment_type, partial_payment_value, billing_mode, checkout_v2_enabled" as const;
+  "id, owner_id, name, slug, description, logo_url, created_at, updated_at, whatsapp_number, banner_url, is_suspended, business_hours, location, is_verified, city, state, currency, instagram_url, facebook_url, order_mode, theme, features, custom_domain, return_policy, shipping_policy, best_selling_carousel, mobile_hero_url, facebook_pixel_id, meta_title, meta_description, og_image_url, mobile_hero_images, domain_verified, about_us_text, about_us_image_url, partial_payment_enabled, partial_payment_type, partial_payment_value, billing_mode, checkout_v2_enabled, capi_disabled" as const;
 
 async function fetchViaAdminRpc(storeId: string) {
   const { data, error } = await supabase.rpc("get_store_as_admin", { _slug: storeId });
