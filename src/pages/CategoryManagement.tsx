@@ -98,31 +98,68 @@ export default function CategoryManagement() {
     setDialogOpen(true);
   };
 
-  /** Center-crop an image to a 1:1 square via canvas */
-  const cropToSquare = (file: File): Promise<File> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const size = Math.min(img.width, img.height);
-        const sx = (img.width - size) / 2;
-        const sy = (img.height - size) / 2;
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d")!;
-        ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) return reject(new Error("Canvas export failed"));
-            resolve(new File([blob], file.name.replace(/\.\w+$/, ".webp"), { type: "image/webp" }));
-          },
-          "image/webp",
-          0.85
-        );
-      };
-      img.onerror = () => reject(new Error("Failed to load image"));
-      img.src = URL.createObjectURL(file);
-    });
+  /** Center-crop an image to a 1:1 square via canvas.
+   *  Handles HEIC/HEIF (iPhone) with a clear error, and falls back to
+   *  createImageBitmap when <img> decoding fails. Falls back to JPEG when
+   *  the browser can't encode WebP (older Safari / some Android WebViews). */
+  const cropToSquare = async (file: File): Promise<File> => {
+    const name = (file.name || "").toLowerCase();
+    const type = (file.type || "").toLowerCase();
+    if (type.startsWith("image/heic") || type.startsWith("image/heif") || name.endsWith(".heic") || name.endsWith(".heif")) {
+      throw new Error("HEIC/HEIF images from iPhone aren't supported. Convert to JPG or PNG and try again.");
+    }
+
+    // Try <img> first, then createImageBitmap.
+    let width = 0, height = 0;
+    let source: CanvasImageSource | null = null;
+    let cleanup = () => {};
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => reject(new Error("img-load-failed"));
+        el.src = url;
+      });
+      width = img.width; height = img.height; source = img;
+      cleanup = () => URL.revokeObjectURL(url);
+    } catch {
+      URL.revokeObjectURL(url);
+      if (typeof createImageBitmap === "function") {
+        try {
+          const bmp = await createImageBitmap(file);
+          width = bmp.width; height = bmp.height; source = bmp;
+          cleanup = () => bmp.close?.();
+        } catch {
+          throw new Error(`Couldn't read "${file.name}". Try re-saving as JPG or PNG.`);
+        }
+      } else {
+        throw new Error(`Couldn't read "${file.name}". Try re-saving as JPG or PNG.`);
+      }
+    }
+
+    const size = Math.min(width, height);
+    const sx = (width - size) / 2;
+    const sy = (height - size) / 2;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(source!, sx, sy, size, size, 0, 0, size, size);
+    cleanup();
+
+    // Try WebP; if the browser refuses, fall back to JPEG so the server-side
+    // WebP conversion in r2-upload picks it up.
+    const encode = (mime: string): Promise<Blob | null> =>
+      new Promise((res) => canvas.toBlob((b) => res(b), mime, 0.85));
+    let blob = await encode("image/webp");
+    let ext = "webp", outType = "image/webp";
+    if (!blob) {
+      blob = await encode("image/jpeg");
+      ext = "jpg"; outType = "image/jpeg";
+    }
+    if (!blob) throw new Error("Canvas export failed");
+    return new File([blob], file.name.replace(/\.\w+$/, `.${ext}`), { type: outType });
   };
 
   const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
