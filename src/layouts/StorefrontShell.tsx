@@ -145,6 +145,12 @@ export default function StorefrontShell({
   // browser has actually painted at least one frame of the real storefront
   // before the Worker kills the skeleton. This eliminates the white-blank
   // gap users saw between skeleton fade and product grid paint.
+  //
+  // BAN-FIX A6: also remove the Worker-injected `#seo-content` block AFTER
+  // React commits. That block ships an H1 identical to the React one, so
+  // leaving it in the DOM permanently creates a duplicate <h1> which Meta's
+  // ad-quality crawler compares against Googlebot's version → cross-crawler
+  // divergence → cloaking flag. React-hydrated content is now the sole H1.
   useEffect(() => {
     if (!store?.id) return;
     if ((window as any).__SF_READY_FIRED__) return;
@@ -155,6 +161,10 @@ export default function StorefrontShell({
         if (cancelled) return;
         (window as any).__SF_READY_FIRED__ = true;
         window.dispatchEvent(new Event("storefront:content-ready"));
+        try {
+          const seo = document.getElementById("seo-content");
+          if (seo && seo.parentNode) seo.parentNode.removeChild(seo);
+        } catch { /* non-fatal */ }
       });
     });
     return () => { cancelled = true; };
