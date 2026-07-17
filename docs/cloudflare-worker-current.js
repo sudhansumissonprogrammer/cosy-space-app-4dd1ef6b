@@ -6957,13 +6957,23 @@ async function _handleFetch(request, env, ctx) {
 
 
 
-  // ─── /cf-img — REMOVED in v8.48.0 ───
-  // Route is dead code. All storefront images now go through
-  // cdn.shopbanao.in (R2 direct) or Supabase render API directly
-  // (see _toRenderUrl, v8.5). No frontend code references /cf-img.
-  // Returning 410 Gone so any stale browser/CDN cache fails fast
-  // and visibly instead of silently 404-ing through the SPA shell.
+  // ─── /cf-img — legacy compat shim ───
+  // BAN-FIX A8: Old bot-render cache entries reference /cf-img?url=<encoded>.
+  // Returning 410 broke every Meta re-crawl of pre-v8.48 cached OG images →
+  // "landing page mismatch" ad-quality flag. Now we decode the URL and 302
+  // to it directly. Works for R2 (cdn.shopbanao.in) and Supabase render URLs
+  // that were baked into cached HTML. Malformed requests still 410.
   if (url.pathname === "/cf-img") {
+    try {
+      const target = url.searchParams.get("url");
+      if (target) {
+        const decoded = decodeURIComponent(target);
+        const t = new URL(decoded);
+        if (t.protocol === "https:") {
+          return Response.redirect(decoded, 302);
+        }
+      }
+    } catch { /* fall through */ }
     return new Response("Gone: /cf-img removed in worker v8.48.0", {
       status: 410,
       headers: { "Cache-Control": "public, max-age=86400" },
