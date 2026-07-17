@@ -2891,16 +2891,19 @@ export default function CheckoutV2Page() {
 
 
                 <div>
-                  <Label className="text-[12px] text-muted-foreground">Complete Address *</Label>
+                  <Label className="text-[12px] text-muted-foreground">Complete Address (House no, Street, Area) *</Label>
                   <Input
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
-                    placeholder="House no, area, village, landmark"
-                    className={`h-11 rounded-lg ${addressAttempted && !streetAddress.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                    placeholder="e.g. H.No 42, Gandhi Nagar, Near SBI Bank"
+                    minLength={10}
+                    className={`h-11 rounded-lg ${addressAttempted && !isValidStreetAddress(streetAddress) ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                   />
-                  {addressAttempted && !streetAddress.trim() && (
+                  {addressAttempted && !streetAddress.trim() ? (
                     <p className="mt-1 text-[12px] text-red-600">Enter Complete Address</p>
-                  )}
+                  ) : addressAttempted && !isValidStreetAddress(streetAddress) ? (
+                    <p className="mt-1 text-[12px] text-red-600">Please enter full address with house/flat number (min 10 characters)</p>
+                  ) : null}
                 </div>
 
 
