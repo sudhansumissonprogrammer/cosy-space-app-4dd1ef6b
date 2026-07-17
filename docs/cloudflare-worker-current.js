@@ -3406,9 +3406,12 @@ function _buildSeoBodyBlock(store, categories, products) {
     for (const p of prods.slice(0, 20)) {
       const pn = escapeHtml(p.name || "");
       const ps = escapeHtml(p.slug || p.id || "");
-      const pr = p.sale_price || p.price;
-      const priceBit = pr ? ` — ${escapeHtml(store.currency || "INR")} ${Number(pr).toFixed(2)}` : "";
-      if (pn && ps) html += `<li><a href="/product/${ps}">${pn}${priceBit}</a></li>`;
+      // BAN-FIX A4: price stripped from the hidden SEO block. bot-render's
+      // homepage HTML (search bots) shows brand-only content with no product
+      // prices; leaking prices here caused cross-crawler divergence between
+      // SPA-shell HTML and bot-render HTML → cloaking flag. Prices remain on
+      // /product/<slug> where they belong (JSON-LD + visible React render).
+      if (pn && ps) html += `<li><a href="/product/${ps}">${pn}</a></li>`;
     }
     html += `</ul>`;
   }
