@@ -259,7 +259,14 @@ Deno.serve(async (req) => {
     req.headers.get("cf-connecting-ip") ||
     req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
     "unknown";
-  if (rateLimited(rlIp)) {
+  let rlSupabase: ReturnType<typeof createClient> | null = null;
+  try {
+    rlSupabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+  } catch { /* fail-open */ }
+  if (await rateLimited(rlSupabase, rlIp)) {
     return new Response(
       JSON.stringify({ error: "rate_limited" }),
       { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
