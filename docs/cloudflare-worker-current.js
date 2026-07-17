@@ -5452,16 +5452,20 @@ async function handleBot(request, slug, url, isCustom) {
   if (!BOT_UA_REGEX.test(ua)) return null;
 
   const botIp = request.headers.get("cf-connecting-ip") || "unknown";
-  if (isRateLimited(`bot:${botIp}`, true)) {
+  // BAN-FIX A3: skip the coarse `bot:` bucket for verified Meta & Googlebot
+  // UAs — 429 to any Meta crawler UA became the direct trigger for
+  // `unverifiable_url` account bans. Anonymous scrapers still hit the 60/min
+  // cap via BLOCKED_BOT_REGEX or fall into the `anybot:` cap below.
+  const isMetaOrSearchUA = SOCIAL_BOT_REGEX.test(ua) || SEARCH_BOT_REGEX.test(ua);
+  if (!isMetaOrSearchUA && isRateLimited(`bot:${botIp}`, true)) {
     return new Response("Too Many Requests", { status: 429, headers: { "Retry-After": "60" } });
   }
 
-  // v7.4.0 LEAK FIX #4: Per-IP throttle for ALL bots (incl. Googlebot/
-  // facebookexternalhit/WhatsApp). Previously only "aggressive" bots were
-  // rate-limited; allowed bots crawled product URLs unrestricted, generating
-  // ~10k req/day. 30 req/min ceiling lets SEO + social previews work but
-  // caps abuse. Cached HTML still served from edge → SEO unaffected.
-  if (isRateLimited(`anybot:${botIp}`, 30)) {
+  // BAN-FIX A3: `anybot:` bucket raised 30 → 120 req/min AND completely
+  // exempted for Meta / Googlebot UAs. Meta re-crawls product URLs from
+  // multiple datacenters in bursts during ad review; 30/min was tripping
+  // every large campaign audit. Non-verified bots still hit the cap.
+  if (!isMetaOrSearchUA && isRateLimited(`anybot:${botIp}`, 120)) {
     return new Response("Rate limited", {
       status: 429,
       headers: { "Retry-After": "60", "Cache-Control": "no-store" },
