@@ -53,40 +53,54 @@ function isPrivateIp(ip: string | null | undefined): boolean {
   return /^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|::1$|fc|fd)/.test(v);
 }
 
+// BAN-FIX B3: reject obvious bot / scripted POSTs at the door. Fake COD
+// orders posted with crafted fbp/fbc were firing real Purchase CAPI events
+// (inflated conversions → Meta ad-quality flag). Bots almost never send a
+// full browser UA string.
+const BOT_UA_RX = /bot|crawler|spider|curl|wget|python-requests|Go-http-client|axios\/|node-fetch|HeadlessChrome|PhantomJS|Selenium|puppeteer/i;
+function isBotUA(ua: string | null | undefined): boolean {
+  if (!ua || ua.length < 20) return true;
+  return BOT_UA_RX.test(ua);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Rate limiting: max 5 orders per IP per 10 minutes
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("cf-connecting-ip") || "unknown";
-    const rateLimitKey = `order_rl:${clientIp}`;
-    const now = Date.now();
+    const clientIp = req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "unknown";
+    const reqUa = req.headers.get("user-agent") || "";
+    if (isBotUA(reqUa)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid request" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
-    // Use in-memory rate limiting (resets per cold start, lightweight)
-    if (!globalThis.__orderRateLimit) globalThis.__orderRateLimit = new Map();
-    const rlMap = globalThis.__orderRateLimit as Map<string, number[]>;
-    const timestamps = rlMap.get(rateLimitKey) || [];
-    const windowStart = now - 10 * 60 * 1000;
-    const recentTimestamps = timestamps.filter((t: number) => t > windowStart);
-
-    if (recentTimestamps.length >= 5) {
-      return new Response(JSON.stringify({ error: "Too many orders. Please try again later." }), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // BAN-FIX B4: persistent cross-isolate rate limit — 5 orders / 10 min per IP.
+    // Old in-memory Map reset every cold start so a slow ~3-order-per-minute
+    // burst never tripped it. Fail-open on RPC error to keep checkout resilient.
+    let rlSupabase: ReturnType<typeof createClient> | null = null;
+    try {
+      rlSupabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      const { data: limited } = await rlSupabase.rpc("hit_rate_limit", {
+        _key: `order_rl:${clientIp}`,
+        _max: 5,
+        _window_seconds: 600,
       });
-    }
-    recentTimestamps.push(now);
-    rlMap.set(rateLimitKey, recentTimestamps);
-
-    // Prune old entries periodically
-    if (rlMap.size > 1000) {
-      for (const [key, vals] of rlMap) {
-        if (vals.every((t: number) => t < windowStart)) rlMap.delete(key);
+      if (limited === true) {
+        return new Response(JSON.stringify({ error: "Too many orders. Please try again later." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-    }
+    } catch { /* fail-open */ }
 
     let {
       store_id,
