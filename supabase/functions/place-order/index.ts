@@ -471,10 +471,43 @@ Deno.serve(async (req) => {
       null;
     const buyerIp = isPrivateIp(rawBuyerIp) ? null : rawBuyerIp;
     const buyerUa = req.headers.get("user-agent") || null;
-    const buyerFbc = sanitizeFb(meta?.fbc, FBC_RX);
-    const buyerFbp = sanitizeFb(meta?.fbp, FBP_RX);
+    let buyerFbc = sanitizeFb(meta?.fbc, FBC_RX);
+    let buyerFbp = sanitizeFb(meta?.fbp, FBP_RX);
     const metaEventId = sanitizeMetaEventId(meta?.event_id);
     const metaEventSourceUrl = sanitizeMetaSourceUrl(meta?.event_source_url, store);
+
+    // BAN-FIX B3: for COD orders, only trust client-supplied fbc/fbp when the
+    // request ALSO carries a browser-generated event_id. Real storefront
+    // checkouts always attach one (InitiateCheckout mints it); scripted
+    // "fake COD Purchase" POSTs almost never bother. Stripping the tokens
+    // here means firePurchaseCapi's `isStorefrontOrder` gate rejects the fake
+    // order → no polluted Purchase CAPI → no inflated conversions/EMQ dip.
+    if (order.payment_method === "cod" && !metaEventId) {
+      buyerFbc = null;
+      buyerFbp = null;
+    }
+
+    // BAN-FIX B4: extra per-phone COD throttle — 3 confirmed COD orders per
+    // hour per normalized phone number. Same phone spamming COD orders is
+    // the classic fake-conversion signal Meta watches for.
+    if (order.payment_method === "cod" && rlSupabase) {
+      try {
+        const normPhoneForRl = String(order.customer_phone || "").replace(/\D/g, "").slice(-10);
+        if (normPhoneForRl.length >= 10) {
+          const { data: codLimited } = await rlSupabase.rpc("hit_rate_limit", {
+            _key: `cod_phone:${store_id}:${normPhoneForRl}`,
+            _max: 3,
+            _window_seconds: 3600,
+          });
+          if (codLimited === true) {
+            return new Response(
+              JSON.stringify({ error: "Too many COD orders from this phone. Please try again later." }),
+              { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            );
+          }
+        }
+      } catch { /* fail-open */ }
+    }
 
     // Compute new-vs-repeat: count prior PAID orders in this store for the
     // same storefront customer id (preferred) or the same normalized phone.
