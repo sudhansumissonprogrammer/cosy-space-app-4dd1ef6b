@@ -178,29 +178,43 @@ export default function StorefrontShell({
   useScrollRestoration();
 
   // SPA route-change PageView for Meta Pixel (Shopify-style).
-  // Dedup across StorefrontShell remounts (Suspense fallback/resolve, layout
-  // swap, dev StrictMode): sessionStorage holds the last fired path so a
-  // remount on the same URL doesn't refire PageView and inflate counts —
-  // which Meta's bot-detection treats as suspicious traffic.
+  // BAN-FIX B7: dedup uses `localStorage` (cross-tab) + a 3s TTL and a
+  // `BroadcastChannel` fan-out. Previous sessionStorage impl only deduped
+  // within a single tab, so two tabs opened simultaneously (WhatsApp shopper
+  // clicks a link twice) fired two initial PageViews per visit → Meta EMQ
+  // flagged the pixel as "anomalous dedup ratio".
   useEffect(() => {
     const pixelId = (store as any)?.facebook_pixel_id;
     if (!pixelId) return;
-    let last: string | null = null;
-    try { last = sessionStorage.getItem("__sf_last_pv_path__"); } catch {}
-    if (last === pathname) return;
-    try { sessionStorage.setItem("__sf_last_pv_path__", pathname); } catch {}
-    // Initial load is already covered by the inline pixel in index.html
-    // (which sets __SF_PV_EVENT_ID__) + useFacebookPixel CAPI mirror. Skip
-    // if this is the very first path we've seen this tab session.
-    if (last === null) return;
+    const storeId = store?.id;
+    if (!storeId) return;
+    const dedupKey = `__sf_pv_dedup_${storeId}_${pathname}`;
+    const now = Date.now();
+    let last = 0;
+    try {
+      const raw = localStorage.getItem(dedupKey);
+      if (raw) last = Number(raw) || 0;
+    } catch {}
+    if (now - last < 3000) return;
+    try { localStorage.setItem(dedupKey, String(now)); } catch {}
+    try {
+      const bc = new BroadcastChannel("sf-pv");
+      bc.postMessage({ k: dedupKey, t: now });
+      bc.close();
+    } catch {}
+    // Skip if the inline pixel (index.html) already fired the initial PageView
+    // for THIS path — it stamps __SF_PV_EVENT_ID__ once at boot.
+    const inlineFired = (window as any).__SF_PV_EVENT_ID__ && !(window as any).__SF_PV_SPA_STARTED__;
+    if (inlineFired) {
+      (window as any).__SF_PV_SPA_STARTED__ = true;
+      return;
+    }
     if (typeof window !== "undefined" && typeof window.fbq === "function") {
       const eid = generateEventId();
       try { window.fbq("track", "PageView", {}, { eventID: eid }); } catch {}
-      if (store?.id) {
-        import("@/lib/metaCapi").then((m) => {
-          m.fireMetaCAPI({ storeId: store.id, eventName: "PageView", eventId: eid });
-        }).catch(() => {});
-      }
+      import("@/lib/metaCapi").then((m) => {
+        m.fireMetaCAPI({ storeId, eventName: "PageView", eventId: eid });
+      }).catch(() => {});
     }
   }, [pathname, store?.id, (store as any)?.facebook_pixel_id]);
 
