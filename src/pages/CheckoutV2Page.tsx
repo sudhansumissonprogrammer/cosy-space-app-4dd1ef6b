@@ -2936,7 +2936,7 @@ export default function CheckoutV2Page() {
                 <Button
                   className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
                   onClick={() => {
-                    const valid = fullName.trim() && /^\d{6}$/.test(pincode) && streetAddress.trim() && city.trim() && state.trim();
+                    const valid = fullName.trim().length >= 2 && /^\d{6}$/.test(pincode) && isValidStreetAddress(streetAddress) && city.trim().length >= 2 && state.trim().length >= 2;
                     if (!valid) {
                       setAddressAttempted(true);
                       return;
