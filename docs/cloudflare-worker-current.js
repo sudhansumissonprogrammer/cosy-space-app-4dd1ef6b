@@ -5609,7 +5609,15 @@ function buildOgHtml(og, finalUrl) {
       ldJson = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>`;
     } catch {}
   }
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><meta name="description" content="${desc}"><meta property="og:title" content="${title}"><meta property="og:description" content="${desc}"><meta property="og:url" content="${safeUrl}"><meta property="og:type" content="website"><meta property="og:site_name" content="${siteName}">${img ? `<meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${title}"><meta name="twitter:description" content="${desc}">${img ? `<meta name="twitter:image" content="${img}">` : ""}<link rel="canonical" href="${safeUrl}">${ldJson}</head><body><h1>${title}</h1><p>${desc}</p>${img ? `<img src="${img}" alt="${title}" width="1200" height="630">` : ""}<p><a href="${safeUrl}">${siteName}</a></p></body></html>`;
+  // BAN-FIX A5: `og:type=product` when a price is present, and OpenGraph
+  // product-price meta so Meta's crawler sees the same signal it sees on the
+  // Googlebot HTML (parity across UAs kills the "cross-crawler divergence"
+  // cloaking flag). `og:title` uses the raw title verbatim to match bot-render.
+  const ogType = og.price != null && og.price !== "" && Number(og.price) > 0 ? "product" : "website";
+  const productPriceMeta = ogType === "product"
+    ? `<meta property="product:price:amount" content="${escapeHtml(String(og.price))}"><meta property="product:price:currency" content="${escapeHtml(og.currency || "INR")}"><meta property="og:price:amount" content="${escapeHtml(String(og.price))}"><meta property="og:price:currency" content="${escapeHtml(og.currency || "INR")}">`
+    : "";
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><meta name="description" content="${desc}"><meta property="og:title" content="${title}"><meta property="og:description" content="${desc}"><meta property="og:url" content="${safeUrl}"><meta property="og:type" content="${ogType}"><meta property="og:site_name" content="${siteName}">${productPriceMeta}${img ? `<meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${title}"><meta name="twitter:description" content="${desc}">${img ? `<meta name="twitter:image" content="${img}">` : ""}<link rel="canonical" href="${safeUrl}">${ldJson}</head><body><h1>${title}</h1><p>${desc}</p>${img ? `<img src="${img}" alt="${title}" width="1200" height="630">` : ""}<p><a href="${safeUrl}">${siteName}</a></p></body></html>`;
 }
 
 /* ============================================================
