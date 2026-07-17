@@ -526,6 +526,27 @@ export type Database = {
         }
         Relationships: []
       }
+      edge_rate_limits: {
+        Row: {
+          count: number
+          key: string
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          key: string
+          updated_at?: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -4565,6 +4586,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      hit_rate_limit: {
+        Args: { _key: string; _max: number; _window_seconds: number }
         Returns: boolean
       }
       is_order_owner: { Args: { _order_id: string }; Returns: boolean }

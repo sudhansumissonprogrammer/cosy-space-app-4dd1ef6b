@@ -53,40 +53,54 @@ function isPrivateIp(ip: string | null | undefined): boolean {
   return /^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|::1$|fc|fd)/.test(v);
 }
 
+// BAN-FIX B3: reject obvious bot / scripted POSTs at the door. Fake COD
+// orders posted with crafted fbp/fbc were firing real Purchase CAPI events
+// (inflated conversions → Meta ad-quality flag). Bots almost never send a
+// full browser UA string.
+const BOT_UA_RX = /bot|crawler|spider|curl|wget|python-requests|Go-http-client|axios\/|node-fetch|HeadlessChrome|PhantomJS|Selenium|puppeteer/i;
+function isBotUA(ua: string | null | undefined): boolean {
+  if (!ua || ua.length < 20) return true;
+  return BOT_UA_RX.test(ua);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Rate limiting: max 5 orders per IP per 10 minutes
-    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("cf-connecting-ip") || "unknown";
-    const rateLimitKey = `order_rl:${clientIp}`;
-    const now = Date.now();
+    const clientIp = req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "unknown";
+    const reqUa = req.headers.get("user-agent") || "";
+    if (isBotUA(reqUa)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid request" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
-    // Use in-memory rate limiting (resets per cold start, lightweight)
-    if (!globalThis.__orderRateLimit) globalThis.__orderRateLimit = new Map();
-    const rlMap = globalThis.__orderRateLimit as Map<string, number[]>;
-    const timestamps = rlMap.get(rateLimitKey) || [];
-    const windowStart = now - 10 * 60 * 1000;
-    const recentTimestamps = timestamps.filter((t: number) => t > windowStart);
-
-    if (recentTimestamps.length >= 5) {
-      return new Response(JSON.stringify({ error: "Too many orders. Please try again later." }), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // BAN-FIX B4: persistent cross-isolate rate limit — 5 orders / 10 min per IP.
+    // Old in-memory Map reset every cold start so a slow ~3-order-per-minute
+    // burst never tripped it. Fail-open on RPC error to keep checkout resilient.
+    let rlSupabase: ReturnType<typeof createClient> | null = null;
+    try {
+      rlSupabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      const { data: limited } = await rlSupabase.rpc("hit_rate_limit", {
+        _key: `order_rl:${clientIp}`,
+        _max: 5,
+        _window_seconds: 600,
       });
-    }
-    recentTimestamps.push(now);
-    rlMap.set(rateLimitKey, recentTimestamps);
-
-    // Prune old entries periodically
-    if (rlMap.size > 1000) {
-      for (const [key, vals] of rlMap) {
-        if (vals.every((t: number) => t < windowStart)) rlMap.delete(key);
+      if (limited === true) {
+        return new Response(JSON.stringify({ error: "Too many orders. Please try again later." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-    }
+    } catch { /* fail-open */ }
 
     let {
       store_id,
@@ -457,10 +471,43 @@ Deno.serve(async (req) => {
       null;
     const buyerIp = isPrivateIp(rawBuyerIp) ? null : rawBuyerIp;
     const buyerUa = req.headers.get("user-agent") || null;
-    const buyerFbc = sanitizeFb(meta?.fbc, FBC_RX);
-    const buyerFbp = sanitizeFb(meta?.fbp, FBP_RX);
+    let buyerFbc = sanitizeFb(meta?.fbc, FBC_RX);
+    let buyerFbp = sanitizeFb(meta?.fbp, FBP_RX);
     const metaEventId = sanitizeMetaEventId(meta?.event_id);
     const metaEventSourceUrl = sanitizeMetaSourceUrl(meta?.event_source_url, store);
+
+    // BAN-FIX B3: for COD orders, only trust client-supplied fbc/fbp when the
+    // request ALSO carries a browser-generated event_id. Real storefront
+    // checkouts always attach one (InitiateCheckout mints it); scripted
+    // "fake COD Purchase" POSTs almost never bother. Stripping the tokens
+    // here means firePurchaseCapi's `isStorefrontOrder` gate rejects the fake
+    // order → no polluted Purchase CAPI → no inflated conversions/EMQ dip.
+    if (order.payment_method === "cod" && !metaEventId) {
+      buyerFbc = null;
+      buyerFbp = null;
+    }
+
+    // BAN-FIX B4: extra per-phone COD throttle — 3 confirmed COD orders per
+    // hour per normalized phone number. Same phone spamming COD orders is
+    // the classic fake-conversion signal Meta watches for.
+    if (order.payment_method === "cod" && rlSupabase) {
+      try {
+        const normPhoneForRl = String(order.customer_phone || "").replace(/\D/g, "").slice(-10);
+        if (normPhoneForRl.length >= 10) {
+          const { data: codLimited } = await rlSupabase.rpc("hit_rate_limit", {
+            _key: `cod_phone:${store_id}:${normPhoneForRl}`,
+            _max: 3,
+            _window_seconds: 3600,
+          });
+          if (codLimited === true) {
+            return new Response(
+              JSON.stringify({ error: "Too many COD orders from this phone. Please try again later." }),
+              { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            );
+          }
+        }
+      } catch { /* fail-open */ }
+    }
 
     // Compute new-vs-repeat: count prior PAID orders in this store for the
     // same storefront customer id (preferred) or the same normalized phone.

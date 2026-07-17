@@ -208,7 +208,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.68.5-bot-homepage-parity";
+const WORKER_VERSION = "8.72.0-ban-fix-crawler-parity";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -457,15 +457,21 @@ const SEARCH_BOT_REGEX = /Googlebot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Ap
 // during the campaign. Returning 403 → cached 24h → Meta marks every storefront
 // as `unverifiable_url` → ad account banned without warning. NEVER re-add these
 // three UAs. ChatGPT/Claude/etc remain blocked — they have zero ad-policy impact.
+// BAN-FIX A7: dropped python-requests/Go-http-client/node-fetch/axios/ from
+// this list — they're used by Meta's ad-review sandboxes and legitimate
+// integration tests. Blocking them at the edge was a hidden ban vector.
 const BLOCKED_BOT_REGEX =
-  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|GPTBot|ClaudeBot|anthropic-ai|CCBot|Bytespider|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider|Amazonbot|PerplexityBot|OAI-SearchBot|DuckAssistBot|Google-Extended|GoogleOther|FriendlyCrawler|ImagesiftBot|Diffbot|magpie-crawler|TurnitinBot|grapeshot|linkfluence|proximic|trendictionbot|TweetmemeBot|Buck|webmeup-crawler|SiteAuditBot|VelenPublicWebCrawler|sentibot|EzoicBot|netEstate|coccocbot|YaK|Neevabot|admantx|cohere-ai|Bravebot|Timpibot|ChatGPT-User|cohere-training-data-crawler|ICC-Crawler|Webzio|YouBot|ISSCyberRiskCrawler|Sidetrade|news-please|Scrapy|python-requests|Go-http-client|node-fetch|axios\//i;
+  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|GPTBot|ClaudeBot|anthropic-ai|CCBot|Bytespider|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider|Amazonbot|PerplexityBot|OAI-SearchBot|DuckAssistBot|Google-Extended|GoogleOther|FriendlyCrawler|ImagesiftBot|Diffbot|magpie-crawler|TurnitinBot|grapeshot|linkfluence|proximic|trendictionbot|TweetmemeBot|Buck|webmeup-crawler|SiteAuditBot|VelenPublicWebCrawler|sentibot|EzoicBot|netEstate|coccocbot|YaK|Neevabot|admantx|cohere-ai|Bravebot|Timpibot|ChatGPT-User|cohere-training-data-crawler|ICC-Crawler|Webzio|YouBot|ISSCyberRiskCrawler|Sidetrade|news-please|Scrapy/i;
 
 // Common attack/probe paths — return 410 Gone with long cache so CF serves cached.
 const ATTACK_PATH_REGEX =
   /^\/(wp-admin|wp-login|wp-includes|wp-content|wp-json|xmlrpc\.php|\.env|\.git|\.well-known\/security|\.aws|admin\.php|phpmyadmin|administrator|drupal|joomla|magento|laravel|vendor\/phpunit|fckeditor|HNAP1|cgi-bin|webdav|owa\/|ecp\/|autodiscover|invokefunction|console\/|actuator|hudson|jenkins|solr\/|elasticsearch|server-status|server-info)/i;
 
+// BAN-FIX A2: added meta-externalagent, meta-externalfetcher, facebookcatalog.
+// Meta rotates crawler UAs; every missing one gets treated as generic-bot,
+// served weaker HTML → cross-UA divergence → cloaking flag.
 const SOCIAL_BOT_REGEX =
-  /facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Snapchat/i;
+  /facebookexternalhit|Facebot|FacebookBot|facebookcatalog|meta-externalagent|meta-externalfetcher|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Snapchat/i;
 
 const INSTAGRAM_CRAWLER_REGEX = /Instagram(?!.*Mozilla\/5\.0.*AppleWebKit)/i;
 
@@ -474,8 +480,10 @@ const INSTAGRAM_CRAWLER_REGEX = /Instagram(?!.*Mozilla\/5\.0.*AppleWebKit)/i;
 // "WhatsApp/x.y" in the UA. Marking those as bots silently zeroed Live
 // Visitors / Sessions for our biggest channel. Link-preview pings are
 // deduped by the 30-min visitor+path window in _pvDedup.
+// BAN-FIX A2: same Meta UA additions as SOCIAL_BOT_REGEX so handleBot()
+// actually intercepts them instead of falling through to the SPA shell.
 const BOT_UA_REGEX =
-  /bot|crawler|spider|facebookexternalhit|Facebot|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|Bingbot|YandexBot|Snapchat|Applebot|DuckDuckBot|Baiduspider|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot|curl|wget|HeadlessChrome/i;
+  /bot|crawler|spider|facebookexternalhit|Facebot|FacebookBot|facebookcatalog|meta-externalagent|meta-externalfetcher|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|Bingbot|YandexBot|Snapchat|Applebot|DuckDuckBot|Baiduspider|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot|curl|wget|HeadlessChrome/i;
 
 function isSocialInAppBrowser(ua) {
   return /Instagram|Snapchat/i.test(ua) && /Mozilla\/5\.0.*AppleWebKit/i.test(ua);
@@ -3398,9 +3406,12 @@ function _buildSeoBodyBlock(store, categories, products) {
     for (const p of prods.slice(0, 20)) {
       const pn = escapeHtml(p.name || "");
       const ps = escapeHtml(p.slug || p.id || "");
-      const pr = p.sale_price || p.price;
-      const priceBit = pr ? ` — ${escapeHtml(store.currency || "INR")} ${Number(pr).toFixed(2)}` : "";
-      if (pn && ps) html += `<li><a href="/product/${ps}">${pn}${priceBit}</a></li>`;
+      // BAN-FIX A4: price stripped from the hidden SEO block. bot-render's
+      // homepage HTML (search bots) shows brand-only content with no product
+      // prices; leaking prices here caused cross-crawler divergence between
+      // SPA-shell HTML and bot-render HTML → cloaking flag. Prices remain on
+      // /product/<slug> where they belong (JSON-LD + visible React render).
+      if (pn && ps) html += `<li><a href="/product/${ps}">${pn}</a></li>`;
     }
     html += `</ul>`;
   }
@@ -5444,16 +5455,20 @@ async function handleBot(request, slug, url, isCustom) {
   if (!BOT_UA_REGEX.test(ua)) return null;
 
   const botIp = request.headers.get("cf-connecting-ip") || "unknown";
-  if (isRateLimited(`bot:${botIp}`, true)) {
+  // BAN-FIX A3: skip the coarse `bot:` bucket for verified Meta & Googlebot
+  // UAs — 429 to any Meta crawler UA became the direct trigger for
+  // `unverifiable_url` account bans. Anonymous scrapers still hit the 60/min
+  // cap via BLOCKED_BOT_REGEX or fall into the `anybot:` cap below.
+  const isMetaOrSearchUA = SOCIAL_BOT_REGEX.test(ua) || SEARCH_BOT_REGEX.test(ua);
+  if (!isMetaOrSearchUA && isRateLimited(`bot:${botIp}`, true)) {
     return new Response("Too Many Requests", { status: 429, headers: { "Retry-After": "60" } });
   }
 
-  // v7.4.0 LEAK FIX #4: Per-IP throttle for ALL bots (incl. Googlebot/
-  // facebookexternalhit/WhatsApp). Previously only "aggressive" bots were
-  // rate-limited; allowed bots crawled product URLs unrestricted, generating
-  // ~10k req/day. 30 req/min ceiling lets SEO + social previews work but
-  // caps abuse. Cached HTML still served from edge → SEO unaffected.
-  if (isRateLimited(`anybot:${botIp}`, 30)) {
+  // BAN-FIX A3: `anybot:` bucket raised 30 → 120 req/min AND completely
+  // exempted for Meta / Googlebot UAs. Meta re-crawls product URLs from
+  // multiple datacenters in bursts during ad review; 30/min was tripping
+  // every large campaign audit. Non-verified bots still hit the cap.
+  if (!isMetaOrSearchUA && isRateLimited(`anybot:${botIp}`, 120)) {
     return new Response("Rate limited", {
       status: 429,
       headers: { "Retry-After": "60", "Cache-Control": "no-store" },
@@ -5499,7 +5514,7 @@ async function handleBot(request, slug, url, isCustom) {
           // v8.67.0 BAN-FIX P0-1: SWR slashed 604800→3600 so stale bot HTML
           // can't survive >1h after a fix deploys. Was masking the v8.61.0
           // doorway-redirect fix for up to 7 days = active cloaking signal.
-          "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600",
+          "Cache-Control": "public, max-age=3600, stale-while-revalidate=1800",
           "X-Bot-Cache": "MISS",
           ...SECURITY_HEADERS,
         },
@@ -5541,7 +5556,7 @@ async function handleBot(request, slug, url, isCustom) {
           headers: {
             "Content-Type": "text/html; charset=utf-8",
             // v8.67.0 BAN-FIX P0-1: SWR 604800→3600 (see bot-render branch above).
-            "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600",
+            "Cache-Control": "public, max-age=3600, stale-while-revalidate=1800",
             "X-Bot-Cache": "MISS",
             ...SECURITY_HEADERS,
           },
@@ -5597,7 +5612,15 @@ function buildOgHtml(og, finalUrl) {
       ldJson = `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>`;
     } catch {}
   }
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><meta name="description" content="${desc}"><meta property="og:title" content="${title}"><meta property="og:description" content="${desc}"><meta property="og:url" content="${safeUrl}"><meta property="og:type" content="website"><meta property="og:site_name" content="${siteName}">${img ? `<meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${title}"><meta name="twitter:description" content="${desc}">${img ? `<meta name="twitter:image" content="${img}">` : ""}<link rel="canonical" href="${safeUrl}">${ldJson}</head><body><h1>${title}</h1><p>${desc}</p>${img ? `<img src="${img}" alt="${title}" width="1200" height="630">` : ""}<p><a href="${safeUrl}">${siteName}</a></p></body></html>`;
+  // BAN-FIX A5: `og:type=product` when a price is present, and OpenGraph
+  // product-price meta so Meta's crawler sees the same signal it sees on the
+  // Googlebot HTML (parity across UAs kills the "cross-crawler divergence"
+  // cloaking flag). `og:title` uses the raw title verbatim to match bot-render.
+  const ogType = og.price != null && og.price !== "" && Number(og.price) > 0 ? "product" : "website";
+  const productPriceMeta = ogType === "product"
+    ? `<meta property="product:price:amount" content="${escapeHtml(String(og.price))}"><meta property="product:price:currency" content="${escapeHtml(og.currency || "INR")}"><meta property="og:price:amount" content="${escapeHtml(String(og.price))}"><meta property="og:price:currency" content="${escapeHtml(og.currency || "INR")}">`
+    : "";
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><meta name="description" content="${desc}"><meta property="og:title" content="${title}"><meta property="og:description" content="${desc}"><meta property="og:url" content="${safeUrl}"><meta property="og:type" content="${ogType}"><meta property="og:site_name" content="${siteName}">${productPriceMeta}${img ? `<meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">` : ""}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${title}"><meta name="twitter:description" content="${desc}">${img ? `<meta name="twitter:image" content="${img}">` : ""}<link rel="canonical" href="${safeUrl}">${ldJson}</head><body><h1>${title}</h1><p>${desc}</p>${img ? `<img src="${img}" alt="${title}" width="1200" height="630">` : ""}<p><a href="${safeUrl}">${siteName}</a></p></body></html>`;
 }
 
 /* ============================================================
@@ -6945,13 +6968,23 @@ async function _handleFetch(request, env, ctx) {
 
 
 
-  // ─── /cf-img — REMOVED in v8.48.0 ───
-  // Route is dead code. All storefront images now go through
-  // cdn.shopbanao.in (R2 direct) or Supabase render API directly
-  // (see _toRenderUrl, v8.5). No frontend code references /cf-img.
-  // Returning 410 Gone so any stale browser/CDN cache fails fast
-  // and visibly instead of silently 404-ing through the SPA shell.
+  // ─── /cf-img — legacy compat shim ───
+  // BAN-FIX A8: Old bot-render cache entries reference /cf-img?url=<encoded>.
+  // Returning 410 broke every Meta re-crawl of pre-v8.48 cached OG images →
+  // "landing page mismatch" ad-quality flag. Now we decode the URL and 302
+  // to it directly. Works for R2 (cdn.shopbanao.in) and Supabase render URLs
+  // that were baked into cached HTML. Malformed requests still 410.
   if (url.pathname === "/cf-img") {
+    try {
+      const target = url.searchParams.get("url");
+      if (target) {
+        const decoded = decodeURIComponent(target);
+        const t = new URL(decoded);
+        if (t.protocol === "https:") {
+          return Response.redirect(decoded, 302);
+        }
+      }
+    } catch { /* fall through */ }
     return new Response("Gone: /cf-img removed in worker v8.48.0", {
       status: 410,
       headers: { "Cache-Control": "public, max-age=86400" },
