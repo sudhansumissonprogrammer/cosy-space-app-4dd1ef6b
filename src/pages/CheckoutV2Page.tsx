@@ -987,24 +987,14 @@ export default function CheckoutV2Page() {
   };
 
   // ─── Validation ─────────────────────────────────────────────────────────
-  // Street address must be substantive — merchants were receiving orders with
-  // "O", "A", "B" as the whole address because shoppers rushed the field.
-  // Require ≥10 non-space chars AND at least one digit (house/flat number).
-  const isValidStreetAddress = (v: string): boolean => {
-    const t = (v || "").trim();
-    if (t.replace(/\s+/g, "").length < 10) return false;
-    if (!/\d/.test(t)) return false;
-    return true;
-  };
   const validateAddress = (): string | null => {
-    if (!fullName.trim() || fullName.trim().length < 2) return "Please enter your full name";
+    if (!fullName.trim()) return "Please enter your name";
     const nPhone = normalizePhone(phone);
     if (!isValidIndianPhone(nPhone)) return "Enter a valid 10-digit phone number";
     if (!/^\d{6}$/.test((pincode || "").replace(/\D/g, ""))) return "Enter a valid 6-digit pincode";
     if (!streetAddress.trim()) return "Enter your street address";
-    if (!isValidStreetAddress(streetAddress)) return "Enter full address with house/flat number (min 10 characters)";
-    if (!city.trim() || city.trim().length < 2) return "Enter city";
-    if (!state.trim() || state.trim().length < 2) return "Enter state";
+    if (!city.trim()) return "Enter city";
+    if (!state.trim()) return "Enter state";
     return null;
   };
 
@@ -2891,19 +2881,16 @@ export default function CheckoutV2Page() {
 
 
                 <div>
-                  <Label className="text-[12px] text-muted-foreground">Complete Address (House no, Street, Area) *</Label>
+                  <Label className="text-[12px] text-muted-foreground">Complete Address *</Label>
                   <Input
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
-                    placeholder="e.g. H.No 42, Gandhi Nagar, Near SBI Bank"
-                    minLength={10}
-                    className={`h-11 rounded-lg ${addressAttempted && !isValidStreetAddress(streetAddress) ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
+                    placeholder="House no, area, village, landmark"
+                    className={`h-11 rounded-lg ${addressAttempted && !streetAddress.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                   />
-                  {addressAttempted && !streetAddress.trim() ? (
+                  {addressAttempted && !streetAddress.trim() && (
                     <p className="mt-1 text-[12px] text-red-600">Enter Complete Address</p>
-                  ) : addressAttempted && !isValidStreetAddress(streetAddress) ? (
-                    <p className="mt-1 text-[12px] text-red-600">Please enter full address with house/flat number (min 10 characters)</p>
-                  ) : null}
+                  )}
                 </div>
 
 
@@ -2936,7 +2923,7 @@ export default function CheckoutV2Page() {
                 <Button
                   className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
                   onClick={() => {
-                    const valid = fullName.trim().length >= 2 && /^\d{6}$/.test(pincode) && isValidStreetAddress(streetAddress) && city.trim().length >= 2 && state.trim().length >= 2;
+                    const valid = fullName.trim() && /^\d{6}$/.test(pincode) && streetAddress.trim() && city.trim() && state.trim();
                     if (!valid) {
                       setAddressAttempted(true);
                       return;
