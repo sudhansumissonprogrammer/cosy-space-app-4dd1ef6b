@@ -5511,7 +5511,7 @@ async function handleBot(request, slug, url, isCustom) {
           // v8.67.0 BAN-FIX P0-1: SWR slashed 604800→3600 so stale bot HTML
           // can't survive >1h after a fix deploys. Was masking the v8.61.0
           // doorway-redirect fix for up to 7 days = active cloaking signal.
-          "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600",
+          "Cache-Control": "public, max-age=3600, stale-while-revalidate=1800",
           "X-Bot-Cache": "MISS",
           ...SECURITY_HEADERS,
         },
@@ -5553,7 +5553,7 @@ async function handleBot(request, slug, url, isCustom) {
           headers: {
             "Content-Type": "text/html; charset=utf-8",
             // v8.67.0 BAN-FIX P0-1: SWR 604800→3600 (see bot-render branch above).
-            "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600",
+            "Cache-Control": "public, max-age=3600, stale-while-revalidate=1800",
             "X-Bot-Cache": "MISS",
             ...SECURITY_HEADERS,
           },
