@@ -107,14 +107,16 @@ Deno.serve(async (req) => {
       ? `https://${String(store.custom_domain).replace(/^www\./, "")}/`
       : `https://${String(store.slug).toLowerCase()}.shopbanao.in/`;
 
-    // Use the standard "PageView" event — Meta recognizes it natively, so it
-    // never triggers the "confirm custom event" review flow that custom names
-    // (e.g. "TestEvent") do. test_event_code routes it to the Test Events tab
-    // so it doesn't pollute real analytics.
+    // BAN-FIX B6: env-configurable test_event_code + dedicated custom event
+    // name. The pixel-verify button must NEVER pollute a merchant's real
+    // Purchase / PageView analytics — using a fake PageView made verify runs
+    // show up in the merchant's dashboard as ghost pageviews. TestPixelVerify
+    // is scoped to Meta Events Manager's Test Events tab only.
+    const testEventCode = Deno.env.get("META_TEST_EVENT_CODE") || "TEST12345";
     const testEvent = {
       data: [
         {
-          event_name: "PageView",
+          event_name: "TestPixelVerify",
           event_time: Math.floor(Date.now() / 1000),
           event_id: `sb-verify-${crypto.randomUUID()}`,
           action_source: "website",
@@ -132,15 +134,15 @@ Deno.serve(async (req) => {
             client_user_agent:
               req.headers.get("user-agent") ||
               "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 ShopBanao-Verify/1.0",
-            // v8.61.0 BAN-FIX P1-5: removed fabricated `fbp: fb.1.<now>.<rand>`.
-            // Injecting synthetic browser-cookie values into a merchant's
-            // production pixel pollutes Meta's user-graph fingerprint and can
-            // trigger fraudulent-signal flags. fbp is optional — omit it.
           },
         },
       ],
-      test_event_code: "TEST12345",
+      test_event_code: testEventCode,
     };
+    // Belt-and-suspenders: never send a verify event without test_event_code.
+    if (!testEvent.test_event_code) {
+      return json({ ok: false, error: "Test verification is temporarily unavailable." }, 500);
+    }
 
     // Graph API v21.0 — v19.0 is past Meta's 2-year deprecation window and
     // returns deprecation warnings in fbtrace responses.
