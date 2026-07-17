@@ -208,7 +208,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.68.5-bot-homepage-parity";
+const WORKER_VERSION = "8.72.0-ban-fix-crawler-parity";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -457,15 +457,21 @@ const SEARCH_BOT_REGEX = /Googlebot|Bingbot|DuckDuckBot|YandexBot|Baiduspider|Ap
 // during the campaign. Returning 403 → cached 24h → Meta marks every storefront
 // as `unverifiable_url` → ad account banned without warning. NEVER re-add these
 // three UAs. ChatGPT/Claude/etc remain blocked — they have zero ad-policy impact.
+// BAN-FIX A7: dropped python-requests/Go-http-client/node-fetch/axios/ from
+// this list — they're used by Meta's ad-review sandboxes and legitimate
+// integration tests. Blocking them at the edge was a hidden ban vector.
 const BLOCKED_BOT_REGEX =
-  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|GPTBot|ClaudeBot|anthropic-ai|CCBot|Bytespider|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider|Amazonbot|PerplexityBot|OAI-SearchBot|DuckAssistBot|Google-Extended|GoogleOther|FriendlyCrawler|ImagesiftBot|Diffbot|magpie-crawler|TurnitinBot|grapeshot|linkfluence|proximic|trendictionbot|TweetmemeBot|Buck|webmeup-crawler|SiteAuditBot|VelenPublicWebCrawler|sentibot|EzoicBot|netEstate|coccocbot|YaK|Neevabot|admantx|cohere-ai|Bravebot|Timpibot|ChatGPT-User|cohere-training-data-crawler|ICC-Crawler|Webzio|YouBot|ISSCyberRiskCrawler|Sidetrade|news-please|Scrapy|python-requests|Go-http-client|node-fetch|axios\//i;
+  /AhrefsBot|SemrushBot|MJ12bot|DotBot|PetalBot|BLEXBot|DataForSeoBot|SeznamBot|GPTBot|ClaudeBot|anthropic-ai|CCBot|Bytespider|ZoominfoBot|MegaIndex|serpstatbot|SurdotlyBot|barkrowler|Mail\.RU_Bot|YisouSpider|Amazonbot|PerplexityBot|OAI-SearchBot|DuckAssistBot|Google-Extended|GoogleOther|FriendlyCrawler|ImagesiftBot|Diffbot|magpie-crawler|TurnitinBot|grapeshot|linkfluence|proximic|trendictionbot|TweetmemeBot|Buck|webmeup-crawler|SiteAuditBot|VelenPublicWebCrawler|sentibot|EzoicBot|netEstate|coccocbot|YaK|Neevabot|admantx|cohere-ai|Bravebot|Timpibot|ChatGPT-User|cohere-training-data-crawler|ICC-Crawler|Webzio|YouBot|ISSCyberRiskCrawler|Sidetrade|news-please|Scrapy/i;
 
 // Common attack/probe paths — return 410 Gone with long cache so CF serves cached.
 const ATTACK_PATH_REGEX =
   /^\/(wp-admin|wp-login|wp-includes|wp-content|wp-json|xmlrpc\.php|\.env|\.git|\.well-known\/security|\.aws|admin\.php|phpmyadmin|administrator|drupal|joomla|magento|laravel|vendor\/phpunit|fckeditor|HNAP1|cgi-bin|webdav|owa\/|ecp\/|autodiscover|invokefunction|console\/|actuator|hudson|jenkins|solr\/|elasticsearch|server-status|server-info)/i;
 
+// BAN-FIX A2: added meta-externalagent, meta-externalfetcher, facebookcatalog.
+// Meta rotates crawler UAs; every missing one gets treated as generic-bot,
+// served weaker HTML → cross-UA divergence → cloaking flag.
 const SOCIAL_BOT_REGEX =
-  /facebookexternalhit|Facebot|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Snapchat/i;
+  /facebookexternalhit|Facebot|FacebookBot|facebookcatalog|meta-externalagent|meta-externalfetcher|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Snapchat/i;
 
 const INSTAGRAM_CRAWLER_REGEX = /Instagram(?!.*Mozilla\/5\.0.*AppleWebKit)/i;
 
@@ -474,8 +480,10 @@ const INSTAGRAM_CRAWLER_REGEX = /Instagram(?!.*Mozilla\/5\.0.*AppleWebKit)/i;
 // "WhatsApp/x.y" in the UA. Marking those as bots silently zeroed Live
 // Visitors / Sessions for our biggest channel. Link-preview pings are
 // deduped by the 30-min visitor+path window in _pvDedup.
+// BAN-FIX A2: same Meta UA additions as SOCIAL_BOT_REGEX so handleBot()
+// actually intercepts them instead of falling through to the SPA shell.
 const BOT_UA_REGEX =
-  /bot|crawler|spider|facebookexternalhit|Facebot|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|Bingbot|YandexBot|Snapchat|Applebot|DuckDuckBot|Baiduspider|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot|curl|wget|HeadlessChrome/i;
+  /bot|crawler|spider|facebookexternalhit|Facebot|FacebookBot|facebookcatalog|meta-externalagent|meta-externalfetcher|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|Bingbot|YandexBot|Snapchat|Applebot|DuckDuckBot|Baiduspider|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot|curl|wget|HeadlessChrome/i;
 
 function isSocialInAppBrowser(ua) {
   return /Instagram|Snapchat/i.test(ua) && /Mozilla\/5\.0.*AppleWebKit/i.test(ua);
