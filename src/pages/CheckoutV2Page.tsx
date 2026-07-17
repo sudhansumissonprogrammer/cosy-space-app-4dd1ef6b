@@ -987,14 +987,24 @@ export default function CheckoutV2Page() {
   };
 
   // ─── Validation ─────────────────────────────────────────────────────────
+  // Street address must be substantive — merchants were receiving orders with
+  // "O", "A", "B" as the whole address because shoppers rushed the field.
+  // Require ≥10 non-space chars AND at least one digit (house/flat number).
+  const isValidStreetAddress = (v: string): boolean => {
+    const t = (v || "").trim();
+    if (t.replace(/\s+/g, "").length < 10) return false;
+    if (!/\d/.test(t)) return false;
+    return true;
+  };
   const validateAddress = (): string | null => {
-    if (!fullName.trim()) return "Please enter your name";
+    if (!fullName.trim() || fullName.trim().length < 2) return "Please enter your full name";
     const nPhone = normalizePhone(phone);
     if (!isValidIndianPhone(nPhone)) return "Enter a valid 10-digit phone number";
     if (!/^\d{6}$/.test((pincode || "").replace(/\D/g, ""))) return "Enter a valid 6-digit pincode";
     if (!streetAddress.trim()) return "Enter your street address";
-    if (!city.trim()) return "Enter city";
-    if (!state.trim()) return "Enter state";
+    if (!isValidStreetAddress(streetAddress)) return "Enter full address with house/flat number (min 10 characters)";
+    if (!city.trim() || city.trim().length < 2) return "Enter city";
+    if (!state.trim() || state.trim().length < 2) return "Enter state";
     return null;
   };
 
