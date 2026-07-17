@@ -69,13 +69,16 @@ async function hashSHA256(value: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// Simple in-memory rate limiter — 30 events per IP per minute.
-// Prevents bad actors from spamming garbage events at a store's pixel,
-// which would drop the EMQ score and trigger Meta scrutiny.
+// BAN-FIX B4: persistent cross-isolate rate limiter via `hit_rate_limit` RPC.
+// Old in-memory `Map` reset on every cold start, so a burst of garbage events
+// across multiple isolates trivially exceeded 30/min per pixel without ever
+// tripping the limiter — Meta EMQ then flagged the pixel. We still keep an
+// in-memory second-tier limiter (fail-open safety) so a temporary DB blip
+// can never break checkout / analytics.
 const RL_WINDOW_MS = 60_000;
 const RL_MAX = 30;
 const rlMap = new Map<string, { count: number; resetAt: number }>();
-function rateLimited(ip: string): boolean {
+function rateLimitedLocal(ip: string): boolean {
   const now = Date.now();
   const entry = rlMap.get(ip);
   if (!entry || entry.resetAt < now) {
@@ -84,6 +87,25 @@ function rateLimited(ip: string): boolean {
   }
   entry.count++;
   return entry.count > RL_MAX;
+}
+async function rateLimited(
+  supabase: ReturnType<typeof createClient> | null,
+  ip: string,
+): Promise<boolean> {
+  // Fast local check first — instant reject on obvious floods.
+  if (rateLimitedLocal(ip)) return true;
+  if (!supabase) return false;
+  try {
+    const { data, error } = await supabase.rpc("hit_rate_limit", {
+      _key: `capi:${ip}`,
+      _max: RL_MAX,
+      _window_seconds: 60,
+    });
+    if (error) return false; // fail-open
+    return data === true;
+  } catch {
+    return false; // fail-open
+  }
 }
 
 // v8.68.0 BAN-FIX P0-NEW-1: Per-pixel circuit breaker for HARD Meta config
