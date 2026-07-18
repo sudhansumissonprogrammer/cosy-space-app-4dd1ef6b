@@ -187,11 +187,11 @@ export default function CustomerLeads() {
 
 
   // Fetch abandoned-cart product interest per phone so we can show it in the
-  // Leads row even when the lead itself has no product_name.
+  // Leads row even when the lead itself has no product_name / product_id.
   const { data: cartProductByPhone } = useQuery({
     queryKey: ["leads-cart-products", storeId],
     queryFn: async () => {
-      const map = new Map<string, string>();
+      const map = new Map<string, { product_name: string | null; product_id: string | null }>();
       for (let from = 0; ; from += FETCH_PAGE_SIZE) {
         const to = from + FETCH_PAGE_SIZE - 1;
         const { data, error } = await (supabase as any)
@@ -206,7 +206,7 @@ export default function CustomerLeads() {
           const key = normalizePhone(c.customer_phone).replace(/\D/g, "").slice(-10);
           if (key.length !== 10 || map.has(key)) return; // newest wins
           const product = productFromCartItems(c.cart_items);
-          if (product.product_name) map.set(key, product.product_name);
+          if (product.product_name || product.product_id) map.set(key, product);
         });
         if (batch.length < FETCH_PAGE_SIZE) break;
       }
@@ -232,24 +232,20 @@ export default function CustomerLeads() {
   }, [leads, cartLeads]);
 
   // Annotate each lead with `hasOrdered` + product-of-interest, then filter.
-  // Hide a lead ONLY if a confirmed order was placed within 30 min AFTER that
-  // specific lead attempt. A later, unrelated successful order from the same
-  // phone must NOT erase earlier abandoned attempts (phone-only drops, cancelled,
-  // pending) — the store owner needs every recovery opportunity visible.
   const CONVERSION_WINDOW_MS = 30 * 60 * 1000;
   const enrichedLeads = useMemo(() => {
     return combinedLeads.map((l) => {
       const key = normalizePhone(l.phone).replace(/\D/g, "").slice(-10);
       const purchaseTimes = key.length === 10 ? purchasedOrderDatesByPhone?.get(key) : undefined;
       const leadTime = new Date(l.created_at).getTime();
-      // Find the earliest confirmed purchase at or after this lead's timestamp.
       const nextPurchase = purchaseTimes?.find((t) => t >= leadTime);
       const hasOrdered = !!(nextPurchase && nextPurchase - leadTime <= CONVERSION_WINDOW_MS);
-      const productFromCart = key.length === 10 ? cartProductByPhone?.get(key) : undefined;
+      const cartProduct = key.length === 10 ? cartProductByPhone?.get(key) : undefined;
       return {
         ...l,
         hasOrdered,
-        product_name: l.product_name || productFromCart || null,
+        product_name: l.product_name || cartProduct?.product_name || null,
+        product_id: l.product_id || cartProduct?.product_id || null,
       };
     });
   }, [combinedLeads, purchasedOrderDatesByPhone, cartProductByPhone]);
