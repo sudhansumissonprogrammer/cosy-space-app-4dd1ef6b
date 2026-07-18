@@ -208,7 +208,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.72.0-ban-fix-crawler-parity";
+const WORKER_VERSION = "8.72.1-whatsapp-bot-ua-fix";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
