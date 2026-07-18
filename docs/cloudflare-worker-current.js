@@ -208,7 +208,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.72.1-whatsapp-bot-ua-fix";
+const WORKER_VERSION = "8.72.2-whatsapp-scraper-precise";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -488,7 +488,14 @@ const BOT_UA_REGEX =
   /bot|crawler|spider|facebookexternalhit|Facebot|FacebookBot|facebookcatalog|meta-externalagent|meta-externalfetcher|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|Bingbot|YandexBot|Snapchat|Applebot|DuckDuckBot|Baiduspider|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot|curl|wget|HeadlessChrome/i;
 
 function isSocialInAppBrowser(ua) {
-  return /Instagram|Snapchat/i.test(ua) && /Mozilla\/5\.0.*AppleWebKit/i.test(ua);
+  // v8.72.2: WhatsApp in-app webview UA is a full Mozilla string that also
+  // contains "WhatsApp" — must be excluded from bot handling so real shoppers
+  // aren't served the OG-only bot HTML. Link-preview scraper UA is the bare
+  // "WhatsApp/2.xx …" with no Mozilla prefix, so that path still hits handleBot().
+  if (/Mozilla\/5\.0.*AppleWebKit/i.test(ua)) {
+    if (/Instagram|Snapchat|FBAN|FBAV|FB_IAB|WhatsApp/i.test(ua)) return true;
+  }
+  return false;
 }
 
 /* ============================================================
