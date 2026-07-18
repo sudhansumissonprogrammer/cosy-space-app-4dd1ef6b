@@ -6231,6 +6231,11 @@ async function _handleWaRedirectNative(token, request, env, ctx) {
   // 4. Build 302/301 with preconnect + preload headers.
   //    Cloudflare converts `Link: rel=preload/preconnect` into HTTP 103
   //    Early Hints when Early Hints is enabled on the zone.
+  //    v8.72.3: also emit `rel=prefetch; as=document` for the redirect
+  //    target so the WhatsApp in-app browser starts fetching the PDP
+  //    HTML *while* processing the 302 — collapses the second RTT.
+  //    Additionally, fire a `ctx.waitUntil` warmer to the destination so
+  //    the storefront's edge cache is hot by the time the user arrives.
   const status = payload.status === 301 ? 301 : 302;
   const ttl = Math.max(0, Math.min(payload.ttl || 0, 86400));
   const headers = new Headers({
@@ -6242,6 +6247,11 @@ async function _handleWaRedirectNative(token, request, env, ctx) {
     links.push(`<https://${payload.host}>; rel=preconnect; crossorigin`);
     links.push(`<https://${payload.host}>; rel=dns-prefetch`);
   }
+  // NEW: HTML prefetch of the destination — Chromium/Android WebView act on
+  // this during the redirect processing window (~100-400ms saving).
+  if (payload.target && /^https?:\/\//.test(payload.target)) {
+    links.push(`<${payload.target}>; rel=prefetch; as=document`);
+  }
   if (payload.hero && /^https?:\/\//.test(payload.hero)) {
     links.push(`<${payload.hero}>; rel=preload; as=image; fetchpriority=high`);
   }
@@ -6250,7 +6260,26 @@ async function _handleWaRedirectNative(token, request, env, ctx) {
     links.push(`<${pdpApi}>; rel=preload; as=fetch; crossorigin`);
   }
   if (links.length) headers.set("link", links.join(", "));
+
+  // Fire-and-forget destination warmer — heats CF edge cache + origin so the
+  // browser's follow-up GET (arriving 100-300ms later) hits a hot response.
+  if (payload.target && /^https?:\/\//.test(payload.target)) {
+    try {
+      ctx.waitUntil(
+        fetch(payload.target, {
+          method: "GET",
+          redirect: "manual",
+          headers: {
+            "user-agent": "shopbanao-wa-warmer/1.0",
+            "x-warmer": "wa-r",
+            "accept": "text/html",
+          },
+        }).catch(() => {})
+      );
+    } catch {}
+  }
   return new Response(null, { status, headers });
+
 }
 
 /* ============================================================
