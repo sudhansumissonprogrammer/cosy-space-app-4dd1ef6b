@@ -482,8 +482,10 @@ const INSTAGRAM_CRAWLER_REGEX = /Instagram(?!.*Mozilla\/5\.0.*AppleWebKit)/i;
 // deduped by the 30-min visitor+path window in _pvDedup.
 // BAN-FIX A2: same Meta UA additions as SOCIAL_BOT_REGEX so handleBot()
 // actually intercepts them instead of falling through to the SPA shell.
+// v8.72.1 — added `WhatsApp` (scraper UA is `WhatsApp/2.xx`, no "bot" substring,
+// so it was falling through and getting the SPA shell with no og:image).
 const BOT_UA_REGEX =
-  /bot|crawler|spider|facebookexternalhit|Facebot|FacebookBot|facebookcatalog|meta-externalagent|meta-externalfetcher|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|Bingbot|YandexBot|Snapchat|Applebot|DuckDuckBot|Baiduspider|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot|curl|wget|HeadlessChrome/i;
+  /bot|crawler|spider|facebookexternalhit|Facebot|FacebookBot|facebookcatalog|meta-externalagent|meta-externalfetcher|WhatsApp|Twitterbot|TelegramBot|LinkedInBot|Slackbot|Discordbot|Pinterest|Googlebot|Bingbot|YandexBot|Snapchat|Applebot|DuckDuckBot|Baiduspider|Sogou|Exabot|ia_archiver|AhrefsBot|MJ12bot|SemrushBot|PetalBot|curl|wget|HeadlessChrome/i;
 
 function isSocialInAppBrowser(ua) {
   return /Instagram|Snapchat/i.test(ua) && /Mozilla\/5\.0.*AppleWebKit/i.test(ua);
