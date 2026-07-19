@@ -2992,7 +2992,7 @@ export default function CheckoutV2Page() {
           {hasPartial && (
             <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
               <div className="flex items-center gap-2 mb-2">
-                <div className="text-[13px] font-bold">Choose payment plan</div>
+                <div className="text-[13px] font-bold">Choose payment method</div>
                 <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Recommended</span>
               </div>
               <div className="space-y-2">
