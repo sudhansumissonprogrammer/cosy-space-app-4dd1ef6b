@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote, Tag, X, Plus, Minus, Check, CreditCard, ShoppingCart, ChevronDown, Trash2, Info, Camera, Package, Truck, Wallet } from "lucide-react";
+import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote, Tag, X, Plus, Minus, Check, CreditCard, ShoppingCart, ChevronDown, Trash2, Info, Camera, Package, Truck, Wallet, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
@@ -3069,10 +3069,12 @@ export default function CheckoutV2Page() {
                       {payMode === "full" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold">
-                        Pay full {formatPrice(prepaidTotalPreview, currency)} online
+                      <div className="text-[13px] font-semibold flex items-center flex-wrap gap-1.5">
+                        <span>Pay full {formatPrice(prepaidTotalPreview, currency)} online</span>
                         {prepaidDiscountPreview > 0 && (
-                          <span className="ml-1 text-[11px] font-medium text-emerald-700">save {formatPrice(prepaidDiscountPreview, currency)}</span>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
+                            <Sparkles className="h-3 w-3" /> Discount {formatPrice(prepaidDiscountPreview, currency)}
+                          </span>
                         )}
                       </div>
 
