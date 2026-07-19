@@ -58,6 +58,10 @@ export default function StorePayments() {
   const [prepaidDiscountEnabled, setPrepaidDiscountEnabled] = useState(false);
   const [prepaidDiscountType, setPrepaidDiscountType] = useState<"fixed" | "percentage">("fixed");
   const [prepaidDiscountValue, setPrepaidDiscountValue] = useState("");
+  // Tier-2: bigger flat discount above a spend threshold (e.g. ₹200 off above ₹3000).
+  // Only applies when Discount Type = Fixed. Leave blank to disable the tier.
+  const [prepaidDiscountTier2Min, setPrepaidDiscountTier2Min] = useState("");
+  const [prepaidDiscountTier2Value, setPrepaidDiscountTier2Value] = useState("");
 
   // Checkout V2 (GoKwik-style one-page UPI intent checkout) — off by default
   const [checkoutV2Enabled, setCheckoutV2Enabled] = useState(false);
