@@ -2664,10 +2664,32 @@ export default function CheckoutV2Page() {
                       <span>−{formatPrice(prepaidDiscount, currency)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-[14px] font-bold pt-2 border-t border-[#ECECEC]">
-                    <span>Total payable {isPartialOrder ? "now" : ""}</span>
-                    <span>{formatPrice(chargeAmount, currency)}</span>
-                  </div>
+                  {isPartialOrder ? (
+                    <>
+                      <div className="flex justify-between text-[13px] pt-2 border-t border-[#ECECEC]">
+                        <span className="text-muted-foreground">Order total</span>
+                        <span className="tabular-nums">{formatPrice(total, currency)}</span>
+                      </div>
+                      <div className="flex justify-between text-[14px] font-bold text-emerald-700">
+                        <span>Advance now</span>
+                        <span className="tabular-nums">{formatPrice(partialAdvanceTotal, currency)}</span>
+                      </div>
+                      <div className="flex justify-between text-[13px]">
+                        <span className="text-muted-foreground">Cash on delivery</span>
+                        <span className="tabular-nums">{formatPrice(partialBalanceDue, currency)}</span>
+                      </div>
+                      <div className="flex justify-between text-[14px] font-bold pt-2 border-t border-[#ECECEC]">
+                        <span>Total payable now</span>
+                        <span className="tabular-nums">{formatPrice(chargeAmount, currency)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between text-[14px] font-bold pt-2 border-t border-[#ECECEC]">
+                      <span>Total payable</span>
+                      <span className="tabular-nums">{formatPrice(chargeAmount, currency)}</span>
+                    </div>
+                  )}
+
                 </div>
                 <div className="px-4 py-3 border-t border-[#ECECEC] flex-shrink-0">
                   <Button className="w-full h-11 bg-black hover:bg-black/90" onClick={() => setSummaryOpen(false)}>Done</Button>
