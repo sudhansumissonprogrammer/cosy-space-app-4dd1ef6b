@@ -2544,7 +2544,7 @@ export default function CheckoutV2Page() {
 
       {/* ═══════ CONTACT + ADDRESS STEP (always visible) ═══════ */}
       {true && (
-        <div className="px-3 py-3 space-y-3">
+        <div className="px-3 py-3 space-y-2.5">
 
           {/* Order Summary card — header opens a bottom sheet (parity w/ address sheet) */}
           <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
