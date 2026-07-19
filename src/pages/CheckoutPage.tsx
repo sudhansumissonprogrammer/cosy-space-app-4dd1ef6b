@@ -2452,8 +2452,8 @@ function CheckoutPageInner() {
       )}
 
       {/* 3. Delivery Details */}
-      <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-4">
-        <div className="text-sm font-medium text-foreground">{t("Delivery Details", "डिलीवरी विवरण")}</div>
+      <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-3">
+
 
         {/* Saved-address card (only when shopper is logged in with saved addresses) */}
         {savedAddresses && savedAddresses.length > 0 && selectedAddr ? (
