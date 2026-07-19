@@ -44,7 +44,7 @@ export interface WalletInvoiceInput {
 }
 
 function inr(n: number) {
-  return `Rs. ${n.toFixed(2)}`;
+  return `₹${n.toFixed(2)}`;
 }
 
 function shortId(id: string) {

@@ -27,7 +27,7 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
   const effectivePrice = getEffectivePrice(product.price, product.sale_price);
   const hasSale = product.sale_price && product.sale_price < product.price;
   const currency = store.currency || "INR";
-  const symbol = currency === "INR" ? "Rs." : currency === "USD" ? "$" : currency;
+  const symbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
 
   const formatAmount = (amt: number) => {
     return Number(amt).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

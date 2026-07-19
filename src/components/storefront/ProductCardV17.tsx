@@ -49,7 +49,8 @@ export default function ProductCardV17({ product, slug, store, priority = false,
   const images = resolveProductImages(product);
   const hasSecond = images.length > 1;
   const rating = getProductRating(product.id);
-  const currency = store?.currency || "Rs.";
+  const rawCurrency = store?.currency || "INR";
+  const currency = rawCurrency === "INR" ? "₹" : rawCurrency === "USD" ? "$" : rawCurrency;
   const price = Number(product.sale_price || product.price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const originalPrice = product.sale_price
     ? Number(product.price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
