@@ -303,8 +303,9 @@ async function handleSitemap(url: URL) {
       .limit(1000),
     supabase
       .from("categories")
-      .select("slug, name, updated_at")
+      .select("slug, name, created_at")
       .eq("store_id", store.id),
+
     supabase
       .from("store_pages")
       .select("slug, page_type, updated_at, is_active")
@@ -367,7 +368,7 @@ async function handleSitemap(url: URL) {
   if (categories) {
     for (const cat of categories) {
       if (!cat.slug) continue;
-      const catLastmod = (cat as any).updated_at?.split("T")[0] || storeUpdated;
+      const catLastmod = (cat as any).created_at?.split("T")[0] || storeUpdated;
       xml += `  <url>
     <loc>${baseUrl}/category/${escapeXml(cat.slug)}</loc>
     <lastmod>${catLastmod}</lastmod>
