@@ -962,6 +962,42 @@ export default function StorePayments() {
                   </p>
                 </div>
 
+                {prepaidDiscountType === "fixed" && (
+                  <div className="rounded-lg border border-input p-3 space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Bigger discount for larger orders (optional)</p>
+                      <p className="text-xs text-muted-foreground">
+                        Replaces the base discount above once the order value crosses your threshold. Example: base ₹100 off, but ₹200 off above ₹3,000.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Applies above (₹)</Label>
+                        <Input
+                          type="number"
+                          placeholder="e.g. 3000"
+                          value={prepaidDiscountTier2Min}
+                          onChange={(e) => setPrepaidDiscountTier2Min(e.target.value)}
+                          min={1}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Bigger discount (₹)</Label>
+                        <Input
+                          type="number"
+                          placeholder="e.g. 200"
+                          value={prepaidDiscountTier2Value}
+                          onChange={(e) => setPrepaidDiscountTier2Value(e.target.value)}
+                          min={1}
+                        />
+                      </div>
+                    </div>
+                    {(prepaidDiscountTier2Min && Number(prepaidDiscountTier2Min) > 0) !== (prepaidDiscountTier2Value && Number(prepaidDiscountTier2Value) > 0) && (
+                      <p className="text-xs text-amber-600">Set both fields to enable the bigger discount tier.</p>
+                    )}
+                  </div>
+                )}
+
                 {prepaidDiscountValue && Number(prepaidDiscountValue) > 0 && (
                   <div className="rounded-lg border bg-accent/30 p-3">
                     <p className="text-xs font-medium text-foreground mb-1">Preview (₹1,000 order):</p>
