@@ -187,7 +187,12 @@ export default function StorePayments() {
       setPrepaidDiscountEnabled(!!(paymentConfig as any).prepaid_discount_enabled);
       setPrepaidDiscountType(((paymentConfig as any).prepaid_discount_type as any) || "fixed");
       const pdv = (paymentConfig as any).prepaid_discount_value;
-      setPrepaidDiscountValue(pdv != null && Number(pdv) > 0 ? String(pdv) : "");
+      // Default the base amount to ₹100 when the discount is turned on for the first time.
+      setPrepaidDiscountValue(pdv != null && Number(pdv) > 0 ? String(pdv) : ((paymentConfig as any).prepaid_discount_enabled ? "100" : ""));
+      const t2m = (paymentConfig as any).prepaid_discount_tier2_min;
+      const t2v = (paymentConfig as any).prepaid_discount_tier2_value;
+      setPrepaidDiscountTier2Min(t2m != null && Number(t2m) > 0 ? String(t2m) : "");
+      setPrepaidDiscountTier2Value(t2v != null && Number(t2v) > 0 ? String(t2v) : "");
     }
   }, [paymentConfig]);
 
