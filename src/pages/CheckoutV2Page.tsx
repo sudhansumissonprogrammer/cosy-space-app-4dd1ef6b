@@ -790,9 +790,14 @@ export default function CheckoutV2Page() {
   const prepaidDiscountPreview = useMemo(() => {
     if (!paymentConfig?.prepaid_discount_enabled) return 0;
     if (total < 100) return 0;
-    const v = Number(paymentConfig.prepaid_discount_value || 0);
-    if (v <= 0 || total <= 0) return 0;
-    const d = paymentConfig.prepaid_discount_type === "percentage" ? (total * v) / 100 : v;
+    const baseVal = Number(paymentConfig.prepaid_discount_value || 0);
+    if (baseVal <= 0 || total <= 0) return 0;
+    // Tier-2: bigger flat discount above threshold (fixed-type only).
+    const t2Min = Number(paymentConfig.prepaid_discount_tier2_min || 0);
+    const t2Val = Number(paymentConfig.prepaid_discount_tier2_value || 0);
+    const useTier2 = paymentConfig.prepaid_discount_type !== "percentage" && t2Min > 0 && t2Val > 0 && total >= t2Min;
+    const flatVal = useTier2 ? t2Val : baseVal;
+    const d = paymentConfig.prepaid_discount_type === "percentage" ? (total * baseVal) / 100 : flatVal;
     return Math.max(0, Math.min(Math.round(d), total));
   }, [paymentConfig, total]);
   const prepaidDiscount = isPartialOrder ? 0 : prepaidDiscountPreview;
