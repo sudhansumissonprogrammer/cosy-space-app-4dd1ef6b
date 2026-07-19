@@ -375,21 +375,28 @@ Deno.serve(async (req) => {
     if (isFullOnline) {
       const { data: payCfg } = await supabase
         .from("store_payment_config")
-        .select("prepaid_discount_enabled, prepaid_discount_type, prepaid_discount_value")
+        .select("prepaid_discount_enabled, prepaid_discount_type, prepaid_discount_value, prepaid_discount_tier2_min, prepaid_discount_tier2_value")
         .eq("store_id", store_id)
         .maybeSingle();
       if (payCfg?.prepaid_discount_enabled) {
-        const v = Number(payCfg.prepaid_discount_value || 0);
+        const baseVal = Number(payCfg.prepaid_discount_value || 0);
         const base = Math.max(0, serverSubtotal - serverDiscount + serverShipping + serverTaxToAdd);
         // Skip prepaid discount on sub-₹100 carts so a ₹5 item doesn't
         // collapse to ₹0 when a fixed ₹100 discount is configured.
         if (base >= 100) {
+          // Tier-2 kicks in for FIXED discounts when the order value crosses the threshold.
+          const t2Min = Number(payCfg.prepaid_discount_tier2_min || 0);
+          const t2Val = Number(payCfg.prepaid_discount_tier2_value || 0);
+          const useTier2 = payCfg.prepaid_discount_type !== "percentage" && t2Min > 0 && t2Val > 0 && base >= t2Min;
+          const flatVal = useTier2 ? t2Val : baseVal;
           let d = payCfg.prepaid_discount_type === "percentage"
-            ? (base * v) / 100
-            : v;
+            ? (base * baseVal) / 100
+            : flatVal;
           prepaidDiscount = Math.max(0, Math.min(d, base));
         }
       }
+
+    }
 
     }
 
