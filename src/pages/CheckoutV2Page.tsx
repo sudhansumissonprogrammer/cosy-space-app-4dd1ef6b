@@ -2995,7 +2995,7 @@ export default function CheckoutV2Page() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-semibold">Pay {formatPrice(partialAdvanceTotal, currency)} advance now</div>
-                      <div className="text-[12px] text-muted-foreground mt-0.5">Balance {formatPrice(partialBalanceDue, currency)} on delivery (Cash)</div>
+                      <div className="text-[12px] text-muted-foreground mt-0.5">{formatPrice(partialBalanceDue, currency)} Cash on delivery</div>
                     </div>
                   </div>
                 </button>
@@ -3022,10 +3022,14 @@ export default function CheckoutV2Page() {
                 </button>
               </div>
               {isPartialOrder && (
-                <div className="mt-2.5 flex items-start gap-2 rounded-lg bg-emerald-50 px-2.5 py-2 text-[11px] text-emerald-800">
-                  <ShieldCheck className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                  <span>You'll pay only <strong>{formatPrice(partialAdvanceTotal, currency)}</strong> now to confirm this order. Remaining <strong>{formatPrice(partialBalanceDue, currency)}</strong> is paid in cash when delivered.</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setBreakupOpen(true)}
+                  className="mt-2.5 w-full flex items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] font-semibold text-emerald-800 active:bg-emerald-100"
+                >
+                  <Info className="h-3.5 w-3.5" />
+                  Know more · Why pay advance?
+                </button>
               )}
               {(creatingOrder || couponLoading || paymentAmountSyncing || intents.any.status === "loading") && (
                 <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -3033,6 +3037,104 @@ export default function CheckoutV2Page() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Payment breakup bottom sheet — trust + explanation */}
+          {breakupOpen && typeof document !== "undefined" && createPortal(
+            <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Payment breakup">
+              <div className="absolute inset-0 bg-black/50" onClick={() => setBreakupOpen(false)} aria-hidden />
+              <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden max-h-[88dvh]">
+                <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
+                  <div className="text-[16px] font-bold">Payment breakup</div>
+                  <button
+                    type="button"
+                    onClick={() => setBreakupOpen(false)}
+                    aria-label="Close"
+                    className="h-9 w-9 -mr-2 rounded-full flex items-center justify-center hover:bg-black/5 active:bg-black/10"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-3 pb-4 space-y-3">
+                  {/* Headline strip */}
+                  <div className="rounded-xl overflow-hidden border border-emerald-200">
+                    <div className="flex items-center gap-2 px-3.5 py-2.5 bg-emerald-600 text-white">
+                      <ShieldCheck className="h-4 w-4 shrink-0" strokeWidth={2.6} />
+                      <div className="text-[13px] font-extrabold leading-tight">
+                        Pay only {formatPrice(partialAdvanceTotal, currency)} now
+                        <span className="opacity-80"> · </span>
+                        {formatPrice(partialBalanceDue, currency)} on delivery
+                      </div>
+                    </div>
+                    {/* Numeric breakup */}
+                    <div className="bg-white px-3.5 py-3 space-y-2">
+                      <div className="flex items-center justify-between text-[12.5px]">
+                        <span className="flex items-center gap-1.5 text-muted-foreground"><ShoppingCart className="h-3.5 w-3.5" /> Order total</span>
+                        <span className="font-semibold tabular-nums">{formatPrice(total, currency)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[12.5px]">
+                        <span className="flex items-center gap-1.5 text-emerald-700"><Wallet className="h-3.5 w-3.5" /> Advance now (online)</span>
+                        <span className="font-bold text-emerald-700 tabular-nums">{formatPrice(partialAdvanceTotal, currency)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[12.5px] pt-2 border-t border-dashed border-emerald-100">
+                        <span className="flex items-center gap-1.5 text-gray-800"><Banknote className="h-3.5 w-3.5" /> Cash on delivery</span>
+                        <span className="font-bold text-gray-900 tabular-nums">{formatPrice(partialBalanceDue, currency)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Trust bullets */}
+                  <div className="rounded-xl border border-[#ECECEC] bg-white p-3.5 space-y-2.5">
+                    <div className="flex items-start gap-2.5">
+                      <div className="h-7 w-7 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                        <ShieldCheck className="h-4 w-4 text-emerald-700" strokeWidth={2.4} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[12.5px] font-semibold text-gray-900">Small advance confirms your order</div>
+                        <p className="text-[11.5px] leading-snug text-muted-foreground mt-0.5">
+                          Helps us reduce fake orders so genuine customers like you get faster delivery.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <div className="h-7 w-7 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                        <Camera className="h-4 w-4 text-emerald-700" strokeWidth={2.4} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[12.5px] font-semibold text-gray-900">Parcel photo on WhatsApp before dispatch</div>
+                        <p className="text-[11.5px] leading-snug text-muted-foreground mt-0.5">
+                          We'll send you a photo of your packed parcel so you know exactly what's coming.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <div className="h-7 w-7 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                        <Truck className="h-4 w-4 text-emerald-700" strokeWidth={2.4} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[12.5px] font-semibold text-gray-900">Pay {formatPrice(partialBalanceDue, currency)} in cash on delivery</div>
+                        <p className="text-[11.5px] leading-snug text-muted-foreground mt-0.5">
+                          Hand the remaining amount to the delivery agent when your parcel arrives.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom trust strip */}
+                  <div className="flex items-center justify-center gap-3 text-[11px] text-muted-foreground pt-1">
+                    <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Secure payment</span>
+                    <span className="w-1 h-1 rounded-full bg-muted-foreground/40" />
+                    <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Verified merchant</span>
+                  </div>
+                </div>
+                <div className="px-4 py-3 border-t border-[#ECECEC] flex-shrink-0">
+                  <Button className="w-full h-11 bg-black hover:bg-black/90" onClick={() => setBreakupOpen(false)}>
+                    <Check className="h-4 w-4 mr-1.5" /> Got it
+                  </Button>
+                </div>
+              </div>
+            </div>,
+            document.body
           )}
 
 
