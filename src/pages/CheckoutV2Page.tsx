@@ -2667,59 +2667,51 @@ export default function CheckoutV2Page() {
           </div>
 
 
-          {/* Delivery Details (once address filled) */}
+          {/* Delivery Details (once address filled) — compact single-card, no heading */}
           {addressFilled && (
-            <>
-              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-1">Delivery Details</div>
-              <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="text-[14px] font-bold">Deliver To {fullName}</div>
-                      <button
-                        onClick={openAddressFormSheet}
-                        className="relative bg-black text-white text-[11px] font-semibold px-2 py-1 rounded-md"
-                      >
-                        Tap To Edit Address
-                        <span className="absolute -bottom-1 left-4 w-2 h-2 bg-black rotate-45" />
-                      </button>
+            <div className="bg-white rounded-xl border border-[#ECECEC] p-3">
+              <div className="flex items-start gap-2.5">
+                <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
+                <div className="flex-1 min-w-0">
+                  {/* Line 1: Deliver to <first name> — one line, right-truncate */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="text-[14px] font-bold truncate min-w-0 flex-1">
+                      Deliver to {(fullName || "").trim().split(/\s+/)[0] || fullName}
                     </div>
-                    <div className="text-[13px] text-foreground/80 mt-0.5">
-                      {streetAddress}
-                    </div>
-                    <div className="text-[13px] text-foreground/80">
-                      {city}, {state}, {pincode}
-                    </div>
-                    <div className="text-[12px] text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-                      <span>+91 {phone}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPhone("");
-                          try { localStorage.removeItem("checkout_phone"); } catch { /* noop */ }
-                        }}
-                        className="text-[12px] font-semibold text-primary underline underline-offset-2"
-                      >
-                        Change phone number
-                      </button>
-                    </div>
+                    <button
+                      onClick={openAddressFormSheet}
+                      className="text-[12px] font-semibold border border-[#111] rounded-md px-2.5 py-1 flex-shrink-0"
+                    >Change</button>
                   </div>
-                  <button
-                    onClick={openAddressFormSheet}
-                    className="text-[13px] font-semibold border border-[#111] rounded-md px-3 py-1.5"
-                  >Change</button>
+                  {/* Line 2: full address in max 2 lines */}
+                  <div className="text-[12.5px] text-foreground/80 mt-1 line-clamp-2 leading-snug">
+                    {streetAddress}, {city}, {state} {pincode}
+                  </div>
+                  {/* Line 3: phone with inline change link */}
+                  <div className="text-[12px] text-muted-foreground mt-1 flex items-center gap-2 min-w-0">
+                    <span className="truncate">+91 {phone}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhone("");
+                        try { localStorage.removeItem("checkout_phone"); } catch { /* noop */ }
+                      }}
+                      className="text-[12px] font-semibold text-primary underline underline-offset-2 flex-shrink-0"
+                    >
+                      Change
+                    </button>
+                  </div>
                 </div>
-                {shippingActive && (
-                  <div className="mt-3 pt-3 border-t border-[#ECECEC] bg-[#F9FAFB] -mx-3.5 -mb-3.5 px-3.5 py-2.5 rounded-b-xl">
-                    <div className="text-[13px] font-semibold">
-                      {shippingCharge > 0 ? `Shipping ${formatPrice(shippingCharge, currency)}` : "Free Shipping"}
-                    </div>
-                    {shippingCharge === 0 && <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded-md bg-emerald-600 text-white text-[11px] font-semibold">Free</span>}
-                  </div>
-                )}
               </div>
-            </>
+              {shippingActive && (
+                <div className="mt-2.5 pt-2.5 border-t border-[#ECECEC] flex items-center gap-2">
+                  <div className="text-[12.5px] font-semibold">
+                    {shippingCharge > 0 ? `Shipping ${formatPrice(shippingCharge, currency)}` : "Free Shipping"}
+                  </div>
+                  {shippingCharge === 0 && <span className="px-1.5 py-0.5 rounded-md bg-emerald-600 text-white text-[11px] font-semibold">Free</span>}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Offers & Rewards */}
