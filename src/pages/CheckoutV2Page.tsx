@@ -2544,14 +2544,16 @@ export default function CheckoutV2Page() {
 
       {/* ═══════ CONTACT + ADDRESS STEP (always visible) ═══════ */}
       {true && (
-        <div className="px-3 py-3 space-y-3">
+        <div className="px-3 py-3 space-y-2.5">
 
-          {/* Order Summary card — matches CheckoutPhoneStep (collapsible w/ images) */}
+          {/* Order Summary card — header opens a bottom sheet (parity w/ address sheet) */}
           <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
             <button
               type="button"
-              onClick={() => setSummaryOpen((v) => !v)}
+              onClick={() => setSummaryOpen(true)}
               className="w-full flex items-start gap-3 text-left"
+              aria-haspopup="dialog"
+              aria-expanded={summaryOpen}
             >
               <div className="h-9 w-9 rounded-md bg-[#F5F5F5] flex items-center justify-center flex-shrink-0">
                 <ShoppingCart className="h-5 w-5" />
@@ -2571,155 +2573,168 @@ export default function CheckoutV2Page() {
                     <span className="text-[12px] text-muted-foreground line-through">{formatPrice(isPartialOrder ? subtotal : total, currency)}</span>
                   )}
                   <span className="text-[15px] font-bold">{formatPrice(isPartialOrder ? total : prepaidTotal, currency)}</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${summaryOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown className="h-4 w-4" />
                 </div>
               </div>
             </button>
-
-            {summaryOpen && (
-              <div className="border-t border-[#ECECEC] mt-3 pt-3 space-y-3">
-                {checkoutItems.map((it, idx) => {
-                  const qty = it.quantity || 1;
-                  const setQty = (next: number) => {
-                    const n = Math.max(1, Math.min(99, Math.floor(next)));
-                    if (isSingleMode) setBuyNowQty(n);
-                    else updateQuantity(it.productId, it.variantId, n);
-                  };
-                  const canRemove = !isSingleMode;
-                  return (
-                  <div key={`${it.productId}-${it.variantId || ""}-${idx}`} className="flex items-start gap-3">
-                    {(it as any).image ? (
-                      <img src={(it as any).image} alt={it.name} loading="lazy" className="h-14 w-14 flex-shrink-0 rounded-lg border object-cover" />
-                    ) : (
-                      <div className="h-14 w-14 flex-shrink-0 rounded-lg border bg-muted" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="line-clamp-2 text-[13px] font-semibold">{it.name || "Item"}</div>
-                      <div className="mt-1.5 inline-flex items-center gap-1 rounded-md border border-[#ECECEC] bg-white">
-                        <button
-                          type="button"
-                          onClick={() => setQty(qty - 1)}
-                          disabled={qty <= 1}
-                          aria-label="Decrease quantity"
-                          className="h-7 w-7 flex items-center justify-center text-muted-foreground disabled:opacity-40 active:bg-[#F5F5F5] rounded-l-md"
-                        >
-                          <Minus className="h-3.5 w-3.5" />
-                        </button>
-                        <span className="min-w-[24px] text-center text-[12px] font-semibold tabular-nums">{qty}</span>
-                        <button
-                          type="button"
-                          onClick={() => setQty(qty + 1)}
-                          disabled={qty >= 99}
-                          aria-label="Increase quantity"
-                          className="h-7 w-7 flex items-center justify-center text-muted-foreground disabled:opacity-40 active:bg-[#F5F5F5] rounded-r-md"
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1.5">
-                      <span className="text-[13px] font-semibold tabular-nums">{formatPrice(it.price * qty, currency)}</span>
-                      {canRemove && (
-                        <button
-                          type="button"
-                          onClick={() => removeFromCart(it.productId, it.variantId)}
-                          className="flex items-center gap-1 text-[11px] text-muted-foreground transition hover:text-destructive"
-                          aria-label={`Remove ${it.name}`}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  );
-                })}
-                {shippingActive && (
-                  <div className="flex justify-between text-[12px] text-muted-foreground pt-1 border-t border-[#ECECEC]">
-                    <span>Shipping</span>
-                    <span>{shippingCharge > 0 ? formatPrice(shippingCharge, currency) : "Free"}</span>
-                  </div>
-                )}
-                {taxActive && !taxInclusive && (
-                  <div className="flex justify-between text-[12px] text-muted-foreground">
-                    <span>{taxName} ({taxRate}%)</span>
-                    <span>{formatPrice(taxAmount, currency)}</span>
-                  </div>
-                )}
-                {couponDiscount > 0 && (
-                  <div className="flex justify-between text-[12px] font-semibold text-emerald-700 pt-1 border-t border-[#ECECEC]">
-                    <span>Coupon{appliedCoupon?.code ? ` (${appliedCoupon.code})` : ""}</span>
-                    <span>−{formatPrice(couponDiscount, currency)}</span>
-                  </div>
-                )}
-                {!isPartialOrder && prepaidDiscount > 0 && (
-                  <div className="flex justify-between text-[12px] font-semibold text-emerald-700 pt-1 border-t border-[#ECECEC]">
-                    <span>Prepaid discount</span>
-                    <span>−{formatPrice(prepaidDiscount, currency)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-[13px] font-bold pt-1 border-t border-[#ECECEC]">
-                  <span>Total payable {isPartialOrder ? "now" : ""}</span>
-                  <span>{formatPrice(chargeAmount, currency)}</span>
-                </div>
-              </div>
-            )}
           </div>
 
-
-          {/* Delivery Details (once address filled) */}
-          {addressFilled && (
-            <>
-              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-1">Delivery Details</div>
-              <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="text-[14px] font-bold">Deliver To {fullName}</div>
-                      <button
-                        onClick={openAddressFormSheet}
-                        className="relative bg-black text-white text-[11px] font-semibold px-2 py-1 rounded-md"
-                      >
-                        Tap To Edit Address
-                        <span className="absolute -bottom-1 left-4 w-2 h-2 bg-black rotate-45" />
-                      </button>
-                    </div>
-                    <div className="text-[13px] text-foreground/80 mt-0.5">
-                      {streetAddress}
-                    </div>
-                    <div className="text-[13px] text-foreground/80">
-                      {city}, {state}, {pincode}
-                    </div>
-                    <div className="text-[12px] text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-                      <span>+91 {phone}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPhone("");
-                          try { localStorage.removeItem("checkout_phone"); } catch { /* noop */ }
-                        }}
-                        className="text-[12px] font-semibold text-primary underline underline-offset-2"
-                      >
-                        Change phone number
-                      </button>
-                    </div>
-                  </div>
+          {/* Order Summary bottom sheet */}
+          {summaryOpen && typeof document !== "undefined" && createPortal(
+            <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Order summary">
+              <div className="absolute inset-0 bg-black/50" onClick={() => setSummaryOpen(false)} aria-hidden />
+              <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden max-h-[85dvh]">
+                <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
+                  <div className="text-[16px] font-bold">Order Summary</div>
                   <button
-                    onClick={openAddressFormSheet}
-                    className="text-[13px] font-semibold border border-[#111] rounded-md px-3 py-1.5"
-                  >Change</button>
+                    type="button"
+                    onClick={() => setSummaryOpen(false)}
+                    aria-label="Close"
+                    className="h-9 w-9 -mr-2 rounded-full flex items-center justify-center hover:bg-black/5 active:bg-black/10"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
-                {shippingActive && (
-                  <div className="mt-3 pt-3 border-t border-[#ECECEC] bg-[#F9FAFB] -mx-3.5 -mb-3.5 px-3.5 py-2.5 rounded-b-xl">
-                    <div className="text-[13px] font-semibold">
-                      {shippingCharge > 0 ? `Shipping ${formatPrice(shippingCharge, currency)}` : "Free Shipping"}
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-3 pb-4 space-y-3">
+                  {checkoutItems.map((it, idx) => {
+                    const qty = it.quantity || 1;
+                    const setQty = (next: number) => {
+                      const n = Math.max(1, Math.min(99, Math.floor(next)));
+                      if (isSingleMode) setBuyNowQty(n);
+                      else updateQuantity(it.productId, it.variantId, n);
+                    };
+                    const canRemove = !isSingleMode;
+                    return (
+                    <div key={`${it.productId}-${it.variantId || ""}-${idx}`} className="flex items-start gap-3">
+                      {(it as any).image ? (
+                        <img src={(it as any).image} alt={it.name} loading="lazy" className="h-14 w-14 flex-shrink-0 rounded-lg border object-cover" />
+                      ) : (
+                        <div className="h-14 w-14 flex-shrink-0 rounded-lg border bg-muted" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="line-clamp-2 text-[13px] font-semibold">{it.name || "Item"}</div>
+                        <div className="mt-1.5 inline-flex items-center gap-1 rounded-md border border-[#ECECEC] bg-white">
+                          <button
+                            type="button"
+                            onClick={() => setQty(qty - 1)}
+                            disabled={qty <= 1}
+                            aria-label="Decrease quantity"
+                            className="h-7 w-7 flex items-center justify-center text-muted-foreground disabled:opacity-40 active:bg-[#F5F5F5] rounded-l-md"
+                          >
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="min-w-[24px] text-center text-[12px] font-semibold tabular-nums">{qty}</span>
+                          <button
+                            type="button"
+                            onClick={() => setQty(qty + 1)}
+                            disabled={qty >= 99}
+                            aria-label="Increase quantity"
+                            className="h-7 w-7 flex items-center justify-center text-muted-foreground disabled:opacity-40 active:bg-[#F5F5F5] rounded-r-md"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span className="text-[13px] font-semibold tabular-nums">{formatPrice(it.price * qty, currency)}</span>
+                        {canRemove && (
+                          <button
+                            type="button"
+                            onClick={() => removeFromCart(it.productId, it.variantId)}
+                            className="flex items-center gap-1 text-[11px] text-muted-foreground transition hover:text-destructive"
+                            aria-label={`Remove ${it.name}`}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Remove
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    {shippingCharge === 0 && <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded-md bg-emerald-600 text-white text-[11px] font-semibold">Free</span>}
+                    );
+                  })}
+                  {shippingActive && (
+                    <div className="flex justify-between text-[12px] text-muted-foreground pt-1 border-t border-[#ECECEC]">
+                      <span>Shipping</span>
+                      <span>{shippingCharge > 0 ? formatPrice(shippingCharge, currency) : "Free"}</span>
+                    </div>
+                  )}
+                  {taxActive && !taxInclusive && (
+                    <div className="flex justify-between text-[12px] text-muted-foreground">
+                      <span>{taxName} ({taxRate}%)</span>
+                      <span>{formatPrice(taxAmount, currency)}</span>
+                    </div>
+                  )}
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between text-[12px] font-semibold text-emerald-700 pt-1 border-t border-[#ECECEC]">
+                      <span>Coupon{appliedCoupon?.code ? ` (${appliedCoupon.code})` : ""}</span>
+                      <span>−{formatPrice(couponDiscount, currency)}</span>
+                    </div>
+                  )}
+                  {!isPartialOrder && prepaidDiscount > 0 && (
+                    <div className="flex justify-between text-[12px] font-semibold text-emerald-700 pt-1 border-t border-[#ECECEC]">
+                      <span>Prepaid discount</span>
+                      <span>−{formatPrice(prepaidDiscount, currency)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-[14px] font-bold pt-2 border-t border-[#ECECEC]">
+                    <span>Total payable {isPartialOrder ? "now" : ""}</span>
+                    <span>{formatPrice(chargeAmount, currency)}</span>
                   </div>
-                )}
+                </div>
+                <div className="px-4 py-3 border-t border-[#ECECEC] flex-shrink-0">
+                  <Button className="w-full h-11 bg-black hover:bg-black/90" onClick={() => setSummaryOpen(false)}>Done</Button>
+                </div>
               </div>
-            </>
+            </div>,
+            document.body
+          )}
+
+
+          {/* Delivery Details (once address filled) — compact single-card, no heading */}
+          {addressFilled && (
+            <div className="bg-white rounded-xl border border-[#ECECEC] p-3">
+              <div className="flex items-start gap-2.5">
+                <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-1" />
+                <div className="flex-1 min-w-0">
+                  {/* Line 1: Deliver to <first name> — one line, right-truncate */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="text-[14px] font-bold truncate min-w-0 flex-1">
+                      Deliver to {(fullName || "").trim().split(/\s+/)[0] || fullName}
+                    </div>
+                    <button
+                      onClick={openAddressFormSheet}
+                      className="text-[12px] font-semibold border border-[#111] rounded-md px-2.5 py-1 flex-shrink-0"
+                    >Change</button>
+                  </div>
+                  {/* Line 2: full address in max 2 lines */}
+                  <div className="text-[12.5px] text-foreground/80 mt-1 line-clamp-2 leading-snug">
+                    {streetAddress}, {city}, {state} {pincode}
+                  </div>
+                  {/* Line 3: phone with inline change link */}
+                  <div className="text-[12px] text-muted-foreground mt-1 flex items-center gap-2 min-w-0">
+                    <span className="truncate">+91 {phone}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhone("");
+                        try { localStorage.removeItem("checkout_phone"); } catch { /* noop */ }
+                      }}
+                      className="text-[12px] font-semibold text-primary underline underline-offset-2 flex-shrink-0"
+                    >
+                      Change
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {shippingActive && (
+                <div className="mt-2.5 pt-2.5 border-t border-[#ECECEC] flex items-center gap-2">
+                  <div className="text-[12.5px] font-semibold">
+                    {shippingCharge > 0 ? `Shipping ${formatPrice(shippingCharge, currency)}` : "Free Shipping"}
+                  </div>
+                  {shippingCharge === 0 && <span className="px-1.5 py-0.5 rounded-md bg-emerald-600 text-white text-[11px] font-semibold">Free</span>}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Offers & Rewards */}
@@ -2977,7 +2992,7 @@ export default function CheckoutV2Page() {
           {hasPartial && (
             <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
               <div className="flex items-center gap-2 mb-2">
-                <div className="text-[13px] font-bold">Choose payment plan</div>
+                <div className="text-[13px] font-bold">Choose payment method</div>
                 <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Recommended</span>
               </div>
               <div className="space-y-2">
