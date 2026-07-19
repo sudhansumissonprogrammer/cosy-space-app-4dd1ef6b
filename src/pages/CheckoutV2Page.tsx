@@ -402,6 +402,8 @@ export default function CheckoutV2Page() {
         prepaid_discount_enabled?: boolean;
         prepaid_discount_type?: "fixed" | "percentage";
         prepaid_discount_value?: number;
+        prepaid_discount_tier2_min?: number | null;
+        prepaid_discount_tier2_value?: number | null;
       } | null;
     },
     staleTime: 30 * 60 * 1000,
