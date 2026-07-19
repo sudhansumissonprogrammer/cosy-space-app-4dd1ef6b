@@ -189,6 +189,7 @@ export default function CheckoutV2Page() {
   const qc = useQueryClient();
   const { items: cartItems, clearCart, removeFromCart, updateQuantity } = useCart();
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [breakupOpen, setBreakupOpen] = useState(false);
   // Buy-now single-mode quantity (cart mode uses CartContext quantities directly)
   const [buyNowQty, setBuyNowQty] = useState(1);
   const { customer, ensureCustomer } = useStorefrontAuth();
