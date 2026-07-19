@@ -3069,10 +3069,10 @@ export default function CheckoutV2Page() {
                       {payMode === "full" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold flex items-center flex-wrap gap-1.5">
-                        <span>Pay full {formatPrice(prepaidTotalPreview, currency)} online</span>
+                      <div className="text-[13px] font-semibold flex items-center justify-between gap-2">
+                        <span className="min-w-0">Pay full {formatPrice(prepaidTotalPreview, currency)} online</span>
                         {prepaidDiscountPreview > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm shrink-0 whitespace-nowrap">
                             <Sparkles className="h-3 w-3" /> Discount {formatPrice(prepaidDiscountPreview, currency)}
                           </span>
                         )}
