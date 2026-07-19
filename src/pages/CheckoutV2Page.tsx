@@ -1841,23 +1841,10 @@ export default function CheckoutV2Page() {
   }, [pincode, streetAddress, city, state, fullName, showPayment, creatingOrder, paymentConfigLoaded]);
 
 
-  // Desktop QR: auto-start payment polling as soon as the UPI intent URL is
-  // ready, so the moment the shopper scans + pays in any UPI app we detect it
-  // and advance to success without waiting for a button tap.
+  // Desktop QR has been removed — desktop shoppers now pay via the hosted
+  // gateway (PayU / Cashfree / Razorpay) directly. This ref is kept only so
+  // the snapshot-reset effects below compile without changes.
   const desktopQrPollStartedRef = useRef(false);
-  useEffect(() => {
-    if (desktopQrPollStartedRef.current) return;
-    if (isMobile()) return;
-    if (!showPayment || waiting) return;
-    if (!orderId) return;
-    if (intents.any.status !== "ready" || !intents.any.url) return;
-    desktopQrPollStartedRef.current = true;
-    setWaitingApp("UPI QR");
-    persistWaiting("any", "UPI QR");
-    setWaiting(true);
-    try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showPayment, intents.any.status, intents.any.url, orderId, waiting]);
 
   // Any payable-amount change after an order is minted must re-mint the order +
   // UPI intent. This covers Partial ↔ Full, late paymentConfig load, coupon
@@ -3130,102 +3117,10 @@ export default function CheckoutV2Page() {
             </div>
           )}
 
-          {/* Desktop: UPI QR — scan with any UPI app to pay */}
-          {!mobile && (
-            <div className="relative bg-white rounded-xl border border-[#ECECEC] p-4">
-
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded bg-gradient-to-br from-orange-500 to-blue-600" />
-                  <div className="text-[15px] font-bold">Pay via UPI QR</div>
-                </div>
-                <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
-              </div>
-              {(() => {
-                // Stale = QR was minted for a different amount than what's
-                // currently selected (e.g. shopper toggled Partial↔Full).
-                // Never render an out-of-date QR — the shopper would pay the
-                // wrong price. Show spinner while the fresh intent mints.
-                const anyS = intents.any;
-                const staleAny = anyS.status === "ready" && typeof anyS.amount === "number"
-                  && Math.round(anyS.amount * 100) !== Math.round(chargeAmount * 100);
-                const showReady = anyS.status === "ready" && !!anyS.url && !staleAny;
-                const showFailed = anyS.status === "failed" && !staleAny;
-                const retryIntent = () => {
-                  desktopQrPollStartedRef.current = false;
-                  autoAdvancedRef.current = false;
-                  void createOrderAndIntents();
-                };
-                return (
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 rounded-lg border border-[#ECECEC] p-3 bg-white">
-                      {showReady ? (
-                        <QRCodeSVG value={anyS.url!} size={168} level="M" includeMargin={false} />
-                      ) : (
-                        <div className="h-[168px] w-[168px] flex flex-col items-center justify-center bg-[#F5F5F5] rounded gap-2">
-                          {showFailed ? (
-                            <>
-                              <span className="text-[11px] text-destructive text-center px-2">
-                                {anyS.error || "QR unavailable"}
-                              </span>
-                              <button onClick={retryIntent} className="text-[11px] font-semibold text-primary underline">
-                                Retry
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                              {staleAny && (
-                                <span className="text-[10px] text-muted-foreground">Updating amount…</span>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      )}
-                      {showReady && !/^upi:/i.test(anyS.url!) && (
-                        <div className="mt-2 text-[10px] text-muted-foreground text-center max-w-[168px]">
-                          Scanning opens the secure payment page
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0 text-[13px] space-y-2">
-                      <div className="font-semibold text-[14px]">Scan & Pay from any UPI app</div>
-                      <ol className="list-decimal ml-4 space-y-1 text-muted-foreground text-[12px]">
-                        <li>Open GPay, PhonePe, Paytm, or any UPI app</li>
-                        <li>Scan this QR code</li>
-                        <li>Complete the payment — we'll confirm automatically</li>
-                      </ol>
-                      <div className="flex items-center gap-2 pt-1">
-                        <img src="/icons/gpay.svg" alt="GPay" className="h-5 w-5 object-contain" />
-                        <img src="/icons/phonepe.svg" alt="PhonePe" className="h-5 w-5 object-contain" />
-                        <img src="/icons/paytm.svg" alt="Paytm" className="h-5 w-5 object-contain" />
-                        <img src="/icons/upi.png" alt="UPI" className="h-5 w-auto object-contain" />
-                      </div>
-                      {showReady && !waiting && !creatingOrder && !couponLoading && !paymentAmountSyncing && (
-                        <button
-                          onClick={() => {
-                            setWaitingApp("UPI QR");
-                            setWaiting(true);
-                            persistWaiting("any", "UPI QR");
-                            try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
-                          }}
-                          className="mt-1 text-[12px] font-semibold text-primary underline"
-                        >
-                          I've scanned — waiting for confirmation
-                        </button>
-                      )}
-                      {waiting && (
-                        <div className="mt-1 flex items-center gap-2 text-[12px] text-emerald-700">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          Waiting for payment confirmation…
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
+          {/* Desktop: no UPI QR — desktop shoppers pay directly via the
+              hosted gateway (PayU / Cashfree / Razorpay) below, matching the
+              legacy checkout. QR was removed because desktop conversion
+              suffered from scan-then-approve friction. */}
 
           {/* Cards / Netbanking / Wallets — single consolidated gateway tile */}
           {hasOnline && (
