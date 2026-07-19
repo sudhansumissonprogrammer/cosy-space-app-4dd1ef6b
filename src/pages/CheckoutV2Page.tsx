@@ -1841,23 +1841,10 @@ export default function CheckoutV2Page() {
   }, [pincode, streetAddress, city, state, fullName, showPayment, creatingOrder, paymentConfigLoaded]);
 
 
-  // Desktop QR: auto-start payment polling as soon as the UPI intent URL is
-  // ready, so the moment the shopper scans + pays in any UPI app we detect it
-  // and advance to success without waiting for a button tap.
+  // Desktop QR has been removed — desktop shoppers now pay via the hosted
+  // gateway (PayU / Cashfree / Razorpay) directly. This ref is kept only so
+  // the snapshot-reset effects below compile without changes.
   const desktopQrPollStartedRef = useRef(false);
-  useEffect(() => {
-    if (desktopQrPollStartedRef.current) return;
-    if (isMobile()) return;
-    if (!showPayment || waiting) return;
-    if (!orderId) return;
-    if (intents.any.status !== "ready" || !intents.any.url) return;
-    desktopQrPollStartedRef.current = true;
-    setWaitingApp("UPI QR");
-    persistWaiting("any", "UPI QR");
-    setWaiting(true);
-    try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showPayment, intents.any.status, intents.any.url, orderId, waiting]);
 
   // Any payable-amount change after an order is minted must re-mint the order +
   // UPI intent. This covers Partial ↔ Full, late paymentConfig load, coupon
