@@ -133,7 +133,7 @@ async function buildInvoicePdf(order: any, store: any, ownerEmail?: string): Pro
 
   const items = order.order_items || [];
   const currency = order.currency || store?.currency || "INR";
-  const symbol = currency === "INR" ? "Rs." : currency === "USD" ? "$" : currency;
+  const symbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
   const subtotal = items.reduce((s: number, i: any) => s + Number(i.total || 0), 0);
   const orderShort = order.order_number ? `#${1000 + order.order_number}` : `#${order.id.slice(0, 8).toUpperCase()}`;
 
