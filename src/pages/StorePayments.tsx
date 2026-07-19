@@ -58,6 +58,10 @@ export default function StorePayments() {
   const [prepaidDiscountEnabled, setPrepaidDiscountEnabled] = useState(false);
   const [prepaidDiscountType, setPrepaidDiscountType] = useState<"fixed" | "percentage">("fixed");
   const [prepaidDiscountValue, setPrepaidDiscountValue] = useState("");
+  // Tier-2: bigger flat discount above a spend threshold (e.g. ₹200 off above ₹3000).
+  // Only applies when Discount Type = Fixed. Leave blank to disable the tier.
+  const [prepaidDiscountTier2Min, setPrepaidDiscountTier2Min] = useState("");
+  const [prepaidDiscountTier2Value, setPrepaidDiscountTier2Value] = useState("");
 
   // Checkout V2 (GoKwik-style one-page UPI intent checkout) — off by default
   const [checkoutV2Enabled, setCheckoutV2Enabled] = useState(false);
@@ -183,7 +187,12 @@ export default function StorePayments() {
       setPrepaidDiscountEnabled(!!(paymentConfig as any).prepaid_discount_enabled);
       setPrepaidDiscountType(((paymentConfig as any).prepaid_discount_type as any) || "fixed");
       const pdv = (paymentConfig as any).prepaid_discount_value;
-      setPrepaidDiscountValue(pdv != null && Number(pdv) > 0 ? String(pdv) : "");
+      // Default the base amount to ₹100 when the discount is turned on for the first time.
+      setPrepaidDiscountValue(pdv != null && Number(pdv) > 0 ? String(pdv) : ((paymentConfig as any).prepaid_discount_enabled ? "100" : ""));
+      const t2m = (paymentConfig as any).prepaid_discount_tier2_min;
+      const t2v = (paymentConfig as any).prepaid_discount_tier2_value;
+      setPrepaidDiscountTier2Min(t2m != null && Number(t2m) > 0 ? String(t2m) : "");
+      setPrepaidDiscountTier2Value(t2v != null && Number(t2v) > 0 ? String(t2v) : "");
     }
   }, [paymentConfig]);
 
@@ -265,6 +274,13 @@ export default function StorePayments() {
           prepaid_discount_enabled: prepaidDiscountEnabled && !!prepaidDiscountValue && Number(prepaidDiscountValue) > 0,
           prepaid_discount_type: prepaidDiscountType,
           prepaid_discount_value: prepaidDiscountValue ? Number(prepaidDiscountValue) : 0,
+          // Tier-2 is only meaningful for "fixed" and when both threshold + value are set.
+          prepaid_discount_tier2_min:
+            prepaidDiscountEnabled && prepaidDiscountType === "fixed" && prepaidDiscountTier2Min && Number(prepaidDiscountTier2Min) > 0
+              ? Number(prepaidDiscountTier2Min) : null,
+          prepaid_discount_tier2_value:
+            prepaidDiscountEnabled && prepaidDiscountType === "fixed" && prepaidDiscountTier2Value && Number(prepaidDiscountTier2Value) > 0
+              ? Number(prepaidDiscountTier2Value) : null,
         };
         if (razorpayKeySecret.trim()) payload.razorpay_key_secret = razorpayKeySecret.trim();
         if (cashfreeSecretKey.trim()) payload.cashfree_secret_key = cashfreeSecretKey.trim();
@@ -945,6 +961,42 @@ export default function StorePayments() {
                       : "Flat rupees off when the customer pays online in full."}
                   </p>
                 </div>
+
+                {prepaidDiscountType === "fixed" && (
+                  <div className="rounded-lg border border-input p-3 space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Bigger discount for larger orders (optional)</p>
+                      <p className="text-xs text-muted-foreground">
+                        Replaces the base discount above once the order value crosses your threshold. Example: base ₹100 off, but ₹200 off above ₹3,000.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Applies above (₹)</Label>
+                        <Input
+                          type="number"
+                          placeholder="e.g. 3000"
+                          value={prepaidDiscountTier2Min}
+                          onChange={(e) => setPrepaidDiscountTier2Min(e.target.value)}
+                          min={1}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Bigger discount (₹)</Label>
+                        <Input
+                          type="number"
+                          placeholder="e.g. 200"
+                          value={prepaidDiscountTier2Value}
+                          onChange={(e) => setPrepaidDiscountTier2Value(e.target.value)}
+                          min={1}
+                        />
+                      </div>
+                    </div>
+                    {(prepaidDiscountTier2Min && Number(prepaidDiscountTier2Min) > 0) !== (prepaidDiscountTier2Value && Number(prepaidDiscountTier2Value) > 0) && (
+                      <p className="text-xs text-amber-600">Set both fields to enable the bigger discount tier.</p>
+                    )}
+                  </div>
+                )}
 
                 {prepaidDiscountValue && Number(prepaidDiscountValue) > 0 && (
                   <div className="rounded-lg border bg-accent/30 p-3">

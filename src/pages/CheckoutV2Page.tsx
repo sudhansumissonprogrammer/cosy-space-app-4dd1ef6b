@@ -402,6 +402,8 @@ export default function CheckoutV2Page() {
         prepaid_discount_enabled?: boolean;
         prepaid_discount_type?: "fixed" | "percentage";
         prepaid_discount_value?: number;
+        prepaid_discount_tier2_min?: number | null;
+        prepaid_discount_tier2_value?: number | null;
       } | null;
     },
     staleTime: 30 * 60 * 1000,
@@ -788,9 +790,14 @@ export default function CheckoutV2Page() {
   const prepaidDiscountPreview = useMemo(() => {
     if (!paymentConfig?.prepaid_discount_enabled) return 0;
     if (total < 100) return 0;
-    const v = Number(paymentConfig.prepaid_discount_value || 0);
-    if (v <= 0 || total <= 0) return 0;
-    const d = paymentConfig.prepaid_discount_type === "percentage" ? (total * v) / 100 : v;
+    const baseVal = Number(paymentConfig.prepaid_discount_value || 0);
+    if (baseVal <= 0 || total <= 0) return 0;
+    // Tier-2: bigger flat discount above threshold (fixed-type only).
+    const t2Min = Number(paymentConfig.prepaid_discount_tier2_min || 0);
+    const t2Val = Number(paymentConfig.prepaid_discount_tier2_value || 0);
+    const useTier2 = paymentConfig.prepaid_discount_type !== "percentage" && t2Min > 0 && t2Val > 0 && total >= t2Min;
+    const flatVal = useTier2 ? t2Val : baseVal;
+    const d = paymentConfig.prepaid_discount_type === "percentage" ? (total * baseVal) / 100 : flatVal;
     return Math.max(0, Math.min(Math.round(d), total));
   }, [paymentConfig, total]);
   const prepaidDiscount = isPartialOrder ? 0 : prepaidDiscountPreview;
@@ -2760,20 +2767,7 @@ export default function CheckoutV2Page() {
                   </div>
                 )}
                 <div className="p-3.5">
-                  {!appliedCoupon ? (
-                    <div className="flex gap-2">
-                      <Input
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                        placeholder="Enter coupon code"
-                        className="h-11 rounded-lg border-[#ECECEC] uppercase"
-                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCoupon(); } }}
-                      />
-                      <Button size="sm" onClick={() => applyCoupon()} disabled={couponLoading || !couponCode.trim()} className="h-11 px-4 bg-black hover:bg-black/90">
-                        {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
-                      </Button>
-                    </div>
-                  ) : (
+                  {appliedCoupon ? (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="h-7 w-7 rounded-full bg-emerald-500 text-white flex items-center justify-center">
@@ -2781,12 +2775,56 @@ export default function CheckoutV2Page() {
                         </div>
                         <div>
                           <div className="text-[14px] font-bold">"{appliedCoupon.code}" applied</div>
-                          <div className="text-[12px] text-muted-foreground">View all coupons ›</div>
+                          <div className="text-[12px] text-muted-foreground">You save {formatPrice(couponDiscount, currency)}</div>
                         </div>
                       </div>
-                      <button onClick={removeCoupon} className="text-[13px] font-semibold">
+                      <button onClick={() => { removeCoupon(); setCouponOpen(false); }} className="text-[13px] font-semibold">
                         Remove
                       </button>
+                    </div>
+                  ) : !couponOpen ? (
+                    <button
+                      type="button"
+                      onClick={() => setCouponOpen(true)}
+                      className="w-full flex items-center justify-between text-left"
+                      aria-expanded={false}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                          <Tag className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <div className="text-[14px] font-semibold">Have a coupon?</div>
+                          <div className="text-[12px] text-muted-foreground">Tap to enter your code</div>
+                        </div>
+                      </div>
+                      <span className="text-[13px] font-semibold text-emerald-700">Apply ›</span>
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[13px] font-semibold">Enter coupon code</div>
+                        <button
+                          type="button"
+                          onClick={() => { setCouponOpen(false); setCouponCode(""); }}
+                          className="text-[12px] font-medium text-muted-foreground"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          autoFocus
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                          placeholder="ENTER CODE"
+                          className="h-11 rounded-lg border-[#ECECEC] uppercase tracking-wider"
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCoupon(); } }}
+                        />
+                        <Button size="sm" onClick={() => applyCoupon()} disabled={couponLoading || !couponCode.trim()} className="h-11 px-4 bg-black hover:bg-black/90">
+                          {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
