@@ -274,6 +274,13 @@ export default function StorePayments() {
           prepaid_discount_enabled: prepaidDiscountEnabled && !!prepaidDiscountValue && Number(prepaidDiscountValue) > 0,
           prepaid_discount_type: prepaidDiscountType,
           prepaid_discount_value: prepaidDiscountValue ? Number(prepaidDiscountValue) : 0,
+          // Tier-2 is only meaningful for "fixed" and when both threshold + value are set.
+          prepaid_discount_tier2_min:
+            prepaidDiscountEnabled && prepaidDiscountType === "fixed" && prepaidDiscountTier2Min && Number(prepaidDiscountTier2Min) > 0
+              ? Number(prepaidDiscountTier2Min) : null,
+          prepaid_discount_tier2_value:
+            prepaidDiscountEnabled && prepaidDiscountType === "fixed" && prepaidDiscountTier2Value && Number(prepaidDiscountTier2Value) > 0
+              ? Number(prepaidDiscountTier2Value) : null,
         };
         if (razorpayKeySecret.trim()) payload.razorpay_key_secret = razorpayKeySecret.trim();
         if (cashfreeSecretKey.trim()) payload.cashfree_secret_key = cashfreeSecretKey.trim();
