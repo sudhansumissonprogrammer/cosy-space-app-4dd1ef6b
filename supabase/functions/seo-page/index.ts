@@ -368,7 +368,7 @@ async function handleSitemap(url: URL) {
   if (categories) {
     for (const cat of categories) {
       if (!cat.slug) continue;
-      const catLastmod = (cat as any).updated_at?.split("T")[0] || storeUpdated;
+      const catLastmod = (cat as any).created_at?.split("T")[0] || storeUpdated;
       xml += `  <url>
     <loc>${baseUrl}/category/${escapeXml(cat.slug)}</loc>
     <lastmod>${catLastmod}</lastmod>
