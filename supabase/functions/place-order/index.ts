@@ -398,7 +398,6 @@ Deno.serve(async (req) => {
 
     }
 
-    }
 
     const serverTotal = Math.max(
       0,
