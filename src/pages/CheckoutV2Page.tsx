@@ -1509,6 +1509,11 @@ export default function CheckoutV2Page() {
     window.addEventListener("pagehide", markLeft, { once: true });
     document.addEventListener("visibilitychange", onVisibility);
 
+    // Suppress the checkout beforeunload guard BEFORE navigating to the UPI
+    // deep link — otherwise Chrome/WhatsApp in-app browser shows "Leave site?"
+    // as the intent:// / upi:// navigation is treated as a page unload.
+    try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
+
     // Keep the user gesture as clean as possible for low-end Android Chrome:
     // launch the app synchronously, then update React state only after the
     // browser has had a chance to hand off to PhonePe/GPay/Paytm. Updating to
