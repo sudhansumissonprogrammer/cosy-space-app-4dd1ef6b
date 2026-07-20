@@ -870,6 +870,15 @@ export default function CheckoutV2Page() {
   const [creatingOrder, setCreatingOrder] = useState(false);
   const createOrderPromiseRef = useRef<Promise<void> | null>(null);
   const remintAfterCurrentOrderRef = useRef(false);
+  // Throttle guards — prevent a feedback loop from hammering place-order.
+  // Real cause seen in prod: chargeAmount recomputes fractionally out of sync
+  // with the stamped intent amount (late paymentConfig, coupon reapply,
+  // partial↔full toggle mid-flight), effect flags "stale", triggers re-mint,
+  // new intents come back → still off by 1 paise → effect fires again → loop.
+  // 437 place-order hits from a single IP in 10 min is a symptom of this.
+  const lastMintAtRef = useRef<number>(0);
+  const mintCountRef = useRef<number>(0);
+  const mintLoopBlockedRef = useRef<boolean>(false);
   const [showPayment, setShowPayment] = useState(false);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [pendingOrder, setPendingOrder] = useState<PendingOrder | null>(null);
