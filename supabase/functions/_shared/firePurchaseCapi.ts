@@ -298,8 +298,6 @@ export async function firePurchaseCapi(
         // GoKwik, Shiprocket, Razorpay Magic). Meta's bidder is trained
         // on full cart value — sending only the advance for partial
         // payments would cripple ROAS reporting and destroy delivery.
-        // The 15-min settle delay + Refund reversal (fireRefundCapi)
-        // keeps the Pixel honest without under-reporting.
         value: Number(order.total) || 0,
         // Extra visibility in Events Manager (does not affect optimization).
         expected_total: Number(order.total) || 0,
