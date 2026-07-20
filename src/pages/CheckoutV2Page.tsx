@@ -1981,10 +1981,15 @@ export default function CheckoutV2Page() {
     // Desktop QR passive wait shouldn't block a re-mint (see snapshot effect above).
     const isDesktopQrWait = waiting && waitingApp === "UPI QR" && !isMobile();
     if (waiting && !isDesktopQrWait) return;
+    // Tolerance: only treat as stale if the difference is ≥ 1 rupee. Sub-rupee
+    // rounding noise between the stamped `requestedAmount` and the recomputed
+    // `chargeAmount` (late paymentConfig, discount recompute, etc.) used to
+    // ping-pong the mint effect forever — 437 place-order retries in one
+    // session in prod. 1 rupee is well below any legitimate plan change.
     const anyStale = (Object.keys(intents) as UpiApp[]).some((k) => {
       const s = intents[k];
       return s.status === "ready" && typeof s.amount === "number"
-        && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100);
+        && Math.abs(Math.round(s.amount * 100) - Math.round(chargeAmount * 100)) >= 100;
     });
     if (!anyStale) return;
     if (isDesktopQrWait) {
