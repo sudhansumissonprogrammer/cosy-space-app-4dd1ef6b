@@ -76,8 +76,9 @@ export default function OrderTrackingPage() {
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
 
-  const searchOrder = async () => {
-    if (!query.trim()) return;
+  const searchOrder = async (override?: string) => {
+    const raw = (override ?? query).trim();
+    if (!raw) return;
     setLoading(true);
     setError("");
     setOrder(null);
@@ -85,7 +86,7 @@ export default function OrderTrackingPage() {
     setSearched(true);
 
     try {
-      const q = query.trim();
+      const q = raw;
 
       // Try searching by order ID (partial match on first 8 chars)
       let { data, error: err } = await supabase
