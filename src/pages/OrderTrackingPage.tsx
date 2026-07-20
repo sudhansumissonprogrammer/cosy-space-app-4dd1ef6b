@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -129,6 +129,21 @@ export default function OrderTrackingPage() {
       setLoading(false);
     }
   };
+
+  // Auto-run when the WhatsApp "View Order" CTA lands here with ?id=<uuid>.
+  // Runs exactly once per id change; guards against re-fire while a search
+  // is in flight or after the user edits the input.
+  const autoSearchedFor = useRef<string | null>(null);
+  useEffect(() => {
+    const preset = searchParams.get("id");
+    if (!preset) return;
+    if (autoSearchedFor.current === preset) return;
+    autoSearchedFor.current = preset;
+    setQuery(preset);
+    // Defer to next tick so setQuery lands before searchOrder reads state.
+    setTimeout(() => { searchOrder(); }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // statusColors removed — use shared orderStatusBadgeClass()
 
