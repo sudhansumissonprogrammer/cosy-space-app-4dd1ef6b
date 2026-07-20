@@ -316,17 +316,6 @@ export async function firePurchaseCapi(
         num_items: (items || []).reduce((s, i) => s + (Number(i.quantity) || 0), 0),
         order_id: order.id,
       },
-
-        content_type: "product",
-        content_ids: contentIds,
-        contents: (items || []).map((i) => ({
-          id: i.product_id,
-          quantity: Number(i.quantity) || 1,
-          item_price: Number(i.unit_price) || 0,
-        })),
-        num_items: (items || []).reduce((s, i) => s + (Number(i.quantity) || 0), 0),
-        order_id: order.id,
-      },
     };
 
     // Atomic DB claim BEFORE sending to Meta. Webhook + browser verify can hit
