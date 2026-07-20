@@ -1913,9 +1913,11 @@ export default function CheckoutV2Page() {
     setOrderNumber(null);
     setPendingOrder(null);
     setPaymentFailed(false);
+    // Mark as loading (not idle) so the UPI tiles show a spinner instead of
+    // rendering as permanently-disabled faded buttons while the remint runs.
     setIntents({
-      gpay: { status: "idle" }, phonepe: { status: "idle" },
-      paytm: { status: "idle" }, bhim: { status: "idle" }, any: { status: "idle" },
+      gpay: { status: "loading" }, phonepe: { status: "loading" },
+      paytm: { status: "loading" }, bhim: { status: "loading" }, any: { status: "loading" },
     });
     gatewayRef.current = {};
     autoAdvancedRef.current = false;
