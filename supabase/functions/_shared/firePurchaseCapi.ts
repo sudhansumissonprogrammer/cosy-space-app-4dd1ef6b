@@ -66,11 +66,18 @@ async function sha256Hex(value: string): Promise<string> {
 }
 
 export interface FirePurchaseOpts {
-  /** Source: "cod" | "razorpay" | "cashfree" — for logging only. */
+  /** Source: "cod" | "razorpay" | "cashfree" | "cron" — for logging only. */
   source: string;
   /** Optional override for event_source_url if not stored on the order. */
   eventSourceUrl?: string;
+  /**
+   * Bypass the 15-minute settle delay. Used by the `capi-purchase-retry`
+   * cron once the deferral window has elapsed. Never set from a real-time
+   * webhook — it defeats the ban-safety guard.
+   */
+  allowImmediate?: boolean;
 }
+
 
 export async function firePurchaseCapi(
   supabase: SupabaseClient,
