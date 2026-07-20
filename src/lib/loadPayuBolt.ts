@@ -32,12 +32,30 @@ export async function loadPayuBolt(mode: "sandbox" | "production" = "production"
       s.async = true;
       s.dataset.payuBolt = mode;
       s.onload = () => resolve();
-      s.onerror = () => reject(new Error("PayU Bolt SDK load failed"));
+      s.onerror = () => {
+        try { s.remove(); } catch {}
+        reject(new Error("PayU Bolt SDK load failed"));
+      };
       document.head.appendChild(s);
     });
+    // Clear the cached rejected promise so the next caller retries fresh.
+    loadingPromise.catch(() => {
+      loadingPromise = null;
+      loadedMode = null;
+    });
   }
-  await loadingPromise;
+  try {
+    await loadingPromise;
+  } catch (err) {
+    loadingPromise = null;
+    loadedMode = null;
+    throw err;
+  }
   loadedMode = mode;
-  if (!window.bolt) throw new Error("PayU Bolt SDK not available after load");
+  if (!window.bolt) {
+    loadingPromise = null;
+    loadedMode = null;
+    throw new Error("PayU Bolt SDK not available after load");
+  }
   return window.bolt;
 }
