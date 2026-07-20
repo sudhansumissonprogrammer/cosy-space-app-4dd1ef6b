@@ -5417,7 +5417,10 @@ async function callEdgeFunction(name, params = {}) {
    ============================================================ */
 
 async function handleSeoFiles(url, slug, hostname) {
-  const domain = hostname || url.hostname;
+  // Lowercase the host so cache keys and downstream canonical URLs never
+  // drift on case (e.g. Serdiyajewellers.shop vs serdiyajewellers.shop) —
+  // Google treats them as one URL but our per-host cache would split them.
+  const domain = String(hostname || url.hostname || "").toLowerCase();
 
   // v8.31.0 cost-cut: edge-cache sitemap/robots/llms responses per hostname
   // for 24h. These are tiny static text files that change at most when the
