@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -76,8 +76,9 @@ export default function OrderTrackingPage() {
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
 
-  const searchOrder = async () => {
-    if (!query.trim()) return;
+  const searchOrder = async (override?: string) => {
+    const raw = (override ?? query).trim();
+    if (!raw) return;
     setLoading(true);
     setError("");
     setOrder(null);
@@ -85,7 +86,7 @@ export default function OrderTrackingPage() {
     setSearched(true);
 
     try {
-      const q = query.trim();
+      const q = raw;
 
       // Try searching by order ID (partial match on first 8 chars)
       let { data, error: err } = await supabase
@@ -130,6 +131,21 @@ export default function OrderTrackingPage() {
     }
   };
 
+  // Auto-run when the WhatsApp "View Order" CTA lands here with ?id=<uuid>.
+  // Runs exactly once per id change; guards against re-fire while a search
+  // is in flight or after the user edits the input.
+  const autoSearchedFor = useRef<string | null>(null);
+  useEffect(() => {
+    const preset = searchParams.get("id");
+    if (!preset) return;
+    if (autoSearchedFor.current === preset) return;
+    autoSearchedFor.current = preset;
+    setQuery(preset);
+    // Pass id directly so the fetch doesn't race the setQuery closure.
+    void searchOrder(preset);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   // statusColors removed — use shared orderStatusBadgeClass()
 
   return (
@@ -155,7 +171,7 @@ export default function OrderTrackingPage() {
                   placeholder="e.g. A1B2C3D4 or +919876543210"
                   onKeyDown={(e) => e.key === "Enter" && searchOrder()}
                 />
-                <Button onClick={searchOrder} disabled={loading || !query.trim()}>
+                <Button onClick={() => searchOrder()} disabled={loading || !query.trim()}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 </Button>
               </div>

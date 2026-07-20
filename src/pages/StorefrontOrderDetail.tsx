@@ -138,7 +138,11 @@ export default function StorefrontOrderDetail() {
     );
   }
 
-  if (!user) return <Navigate to={storefrontPath(store.slug, "login")} replace />;
+  // WhatsApp "View Order" CTA lands here without a session. Bouncing to /login
+  // (a bare form) is what merchants have been reporting as "goes to landing".
+  // Send unauthenticated shoppers to the public tracker with the order id
+  // prefilled so they see status immediately.
+  if (!user) return <Navigate to={`${storefrontPath(store.slug, "track-order")}?id=${encodeURIComponent(orderId || "")}`} replace />;
 
   if (!order) {
     return (
