@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
     }
     const { data: dbProducts, error: prodErr } = await supabase
       .from("products")
-      .select("id, price, sale_price, is_active, store_id, image_url")
+      .select("id, price, sale_price, is_active, store_id, image_url, stock_quantity")
       .in("id", productIds);
     if (prodErr || !dbProducts || dbProducts.length !== productIds.length) {
       return new Response(JSON.stringify({ error: "One or more products not found" }), {
@@ -260,7 +260,7 @@ Deno.serve(async (req) => {
     if (variantIds.length > 0) {
       const { data: dbVariants, error: variantErr } = await supabase
         .from("product_variants")
-        .select("id, product_id, name, price, is_active")
+        .select("id, product_id, name, price, is_active, stock_quantity")
         .in("id", variantIds);
       if (variantErr || !dbVariants || dbVariants.length !== variantIds.length) {
         return new Response(JSON.stringify({ error: "One or more variants not found" }), {
@@ -274,6 +274,42 @@ Deno.serve(async (req) => {
           });
         }
         variantById.set(v.id, v);
+      }
+    }
+
+    // ── Stock guard: aggregate requested qty per product / variant and reject
+    // any line that exceeds available stock. stock_quantity IS NULL means
+    // "untracked" and stays purchasable; 0 or below means sold out. This is
+    // the last line of defence — the storefront also hides sold-out CTAs, but
+    // direct-URL checkout attempts have to be blocked here.
+    const requestedByProduct = new Map<string, number>();
+    const requestedByVariant = new Map<string, number>();
+    for (const it of items) {
+      const q = Math.max(1, Math.floor(Number(it.quantity) || 0));
+      if (it.variantId) {
+        requestedByVariant.set(it.variantId, (requestedByVariant.get(it.variantId) || 0) + q);
+      } else {
+        requestedByProduct.set(it.productId, (requestedByProduct.get(it.productId) || 0) + q);
+      }
+    }
+    for (const [pid, want] of requestedByProduct) {
+      const p = productById.get(pid);
+      const stock = p?.stock_quantity;
+      if (stock != null && Number(stock) < want) {
+        return new Response(
+          JSON.stringify({ error: "Out of stock", detail: `Product ${p?.id} has ${stock} left, ${want} requested` }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+    for (const [vid, want] of requestedByVariant) {
+      const v = variantById.get(vid);
+      const stock = v?.stock_quantity;
+      if (stock != null && Number(stock) < want) {
+        return new Response(
+          JSON.stringify({ error: "Out of stock", detail: `Variant ${v?.id} has ${stock} left, ${want} requested` }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       }
     }
     // Override every line-item price with the DB canonical price.

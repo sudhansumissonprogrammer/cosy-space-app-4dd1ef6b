@@ -85,7 +85,7 @@ export async function firePurchaseCapi(
     const { data: order, error: orderErr } = await supabase
       .from("orders")
       .select(
-        "id, created_at, store_id, status, total, currency, customer_phone, customer_name, city, state, pincode, " +
+        "id, created_at, store_id, status, total, advance_paid, currency, customer_phone, customer_name, city, state, pincode, " +
         "storefront_customer_id, buyer_ip, buyer_user_agent, buyer_fbc, buyer_fbp, " +
         "meta_event_id, meta_event_source_url, meta_purchase_fired_at",
       )
@@ -290,7 +290,17 @@ export async function firePurchaseCapi(
       user_data: userData,
       custom_data: {
         currency: order.currency || "INR",
-        value: Number(order.total) || 0,
+        // BAN-FIX: report only money actually collected. For partial payments
+        // (₹100 advance, ₹1400 COD) reporting the full total inflates Meta's
+        // trust in this Pixel by 15× per order — a top Systems-Circumvention
+        // signal. `advance_paid` reflects the exact rupee amount that reached
+        // us; the full picture is preserved in expected_total/cod_balance.
+        value: Number((order as any).advance_paid ?? order.total) || 0,
+        expected_total: Number(order.total) || 0,
+        cod_balance: Math.max(
+          0,
+          (Number(order.total) || 0) - (Number((order as any).advance_paid) || 0),
+        ),
         content_type: "product",
         content_ids: contentIds,
         contents: (items || []).map((i) => ({

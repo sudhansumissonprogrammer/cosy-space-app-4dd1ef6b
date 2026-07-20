@@ -2328,6 +2328,41 @@ export default function CheckoutV2Page() {
     );
   }
 
+  // ─── Sold-out guard ─────────────────────────────────────────────────────
+  // Direct-URL /checkout?product=… must not let shoppers buy a sold-out item.
+  // Server also enforces this in place-order, but blocking here saves them
+  // filling in the address form only to see "Out of stock" on submit.
+  {
+    const outOfStockItem = (() => {
+      if (isSingleMode && buyNowProduct) {
+        const variantStock = (buyNowVariant as any)?.stock_quantity;
+        const productStock = (buyNowProduct as any)?.stock_quantity;
+        const stock = buyNowVariant ? variantStock : productStock;
+        if (stock != null && Number(stock) <= 0) return buyNowProduct.name as string;
+      }
+      return null;
+    })();
+    if (outOfStockItem) {
+      return (
+        <div className="mx-auto max-w-md p-6 text-center space-y-4">
+          <h1 className="text-xl font-bold text-foreground">
+            {tCritical("Sold out", "स्टॉक ख़त्म")}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {tCritical(
+              `“${outOfStockItem}” is currently out of stock. Please try another item.`,
+              `“${outOfStockItem}” अभी उपलब्ध नहीं है। कृपया कोई दूसरा प्रोडक्ट चुनें।`,
+            )}
+          </p>
+          <Button className="w-full" onClick={() => navigate(storefrontPath(store?.slug || ""))}>
+            {tCritical("Back to shop", "दुकान पर वापस")}
+          </Button>
+        </div>
+      );
+    }
+  }
+
+
   // ─── Thank-you screen ───────────────────────────────────────────────────
   if (orderPlaced) {
     return (
