@@ -838,7 +838,9 @@ export type Database = {
           is_repeat_customer: boolean
           meta_event_id: string | null
           meta_event_source_url: string | null
+          meta_purchase_deferred_until: string | null
           meta_purchase_fired_at: string | null
+          meta_refund_fired_at: string | null
           notes: string | null
           order_number: number
           payment_method: string
@@ -879,7 +881,9 @@ export type Database = {
           is_repeat_customer?: boolean
           meta_event_id?: string | null
           meta_event_source_url?: string | null
+          meta_purchase_deferred_until?: string | null
           meta_purchase_fired_at?: string | null
+          meta_refund_fired_at?: string | null
           notes?: string | null
           order_number?: number
           payment_method?: string
@@ -920,7 +924,9 @@ export type Database = {
           is_repeat_customer?: boolean
           meta_event_id?: string | null
           meta_event_source_url?: string | null
+          meta_purchase_deferred_until?: string | null
           meta_purchase_fired_at?: string | null
+          meta_refund_fired_at?: string | null
           notes?: string | null
           order_number?: number
           payment_method?: string

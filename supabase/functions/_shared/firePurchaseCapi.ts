@@ -66,11 +66,18 @@ async function sha256Hex(value: string): Promise<string> {
 }
 
 export interface FirePurchaseOpts {
-  /** Source: "cod" | "razorpay" | "cashfree" — for logging only. */
+  /** Source: "cod" | "razorpay" | "cashfree" | "cron" — for logging only. */
   source: string;
   /** Optional override for event_source_url if not stored on the order. */
   eventSourceUrl?: string;
+  /**
+   * Bypass the 15-minute settle delay. Used by the `capi-purchase-retry`
+   * cron once the deferral window has elapsed. Never set from a real-time
+   * webhook — it defeats the ban-safety guard.
+   */
+  allowImmediate?: boolean;
 }
+
 
 export async function firePurchaseCapi(
   supabase: SupabaseClient,
@@ -119,6 +126,40 @@ export async function firePurchaseCapi(
       // Already fired — idempotent no-op.
       return { ok: true, reason: "already_fired" };
     }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // 15-MIN SETTLE DELAY (industry-standard, matches GoKwik / Shiprocket).
+    // Reasons a paid order gets cancelled in the first 15 minutes:
+    //   • buyer's remorse / wrong item
+    //   • duplicate order (double-tap on Pay)
+    //   • wrong address realized immediately
+    //   • auto-cancel by expire-stale-pending-orders (COD unconfirmed)
+    // Firing Purchase → then Refund a minute later still counts as an
+    // insult to the Pixel. Waiting 15 minutes filters ~90% of these.
+    //
+    // The retry cron (`capi-purchase-retry`) picks up any order whose
+    // `meta_purchase_deferred_until` has elapsed and calls us again.
+    // Skip the delay for `opts.allowImmediate` (used by the cron itself,
+    // and by the "delivered"/"completed" flow where the shopper is far
+    // past the cancellation window).
+    // ─────────────────────────────────────────────────────────────────────
+    const SETTLE_DELAY_MS = 15 * 60 * 1000;
+    const orderAgeMs = Date.now() - new Date(order.created_at).getTime();
+    const isDeliveredOrCompleted = status === "delivered" || status === "completed";
+    if (!opts.allowImmediate && !isDeliveredOrCompleted && orderAgeMs < SETTLE_DELAY_MS) {
+      const deferUntil = new Date(
+        new Date(order.created_at).getTime() + SETTLE_DELAY_MS,
+      ).toISOString();
+      // Stamp when the retry cron should pick this up. Never sets
+      // meta_purchase_fired_at, so the cron will re-run this function.
+      await supabase
+        .from("orders")
+        .update({ meta_purchase_deferred_until: deferUntil })
+        .eq("id", orderId)
+        .is("meta_purchase_fired_at", null);
+      return { ok: true, reason: "deferred_settle_window" };
+    }
+
 
     // 🚫 Skip MANUAL / admin-created orders (Shopify-style behaviour).
     // A real storefront purchase always carries at least one browser signal:
@@ -290,17 +331,31 @@ export async function firePurchaseCapi(
       user_data: userData,
       custom_data: {
         currency: order.currency || "INR",
-        // BAN-FIX: report only money actually collected. For partial payments
-        // (₹100 advance, ₹1400 COD) reporting the full total inflates Meta's
-        // trust in this Pixel by 15× per order — a top Systems-Circumvention
-        // signal. `advance_paid` reflects the exact rupee amount that reached
-        // us; the full picture is preserved in expected_total/cod_balance.
-        value: Number((order as any).advance_paid ?? order.total) || 0,
+        // Industry-standard: report FULL order value (matches Shopify,
+        // GoKwik, Shiprocket, Razorpay Magic). Meta's bidder is trained
+        // on full cart value — sending only the advance for partial
+        // payments would cripple ROAS reporting and destroy delivery.
+        // The 15-min settle delay + Refund reversal (fireRefundCapi)
+        // keeps the Pixel honest without under-reporting.
+        value: Number(order.total) || 0,
+        // Extra visibility in Events Manager (does not affect optimization).
         expected_total: Number(order.total) || 0,
+        advance_paid: Number((order as any).advance_paid) || 0,
         cod_balance: Math.max(
           0,
           (Number(order.total) || 0) - (Number((order as any).advance_paid) || 0),
         ),
+        content_type: "product",
+        content_ids: contentIds,
+        contents: (items || []).map((i) => ({
+          id: i.product_id,
+          quantity: Number(i.quantity) || 1,
+          item_price: Number(i.unit_price) || 0,
+        })),
+        num_items: (items || []).reduce((s, i) => s + (Number(i.quantity) || 0), 0),
+        order_id: order.id,
+      },
+
         content_type: "product",
         content_ids: contentIds,
         contents: (items || []).map((i) => ({
