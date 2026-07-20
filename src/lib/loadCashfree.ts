@@ -23,11 +23,29 @@ export async function loadCashfree(mode: "sandbox" | "production" = "production"
       s.src = SDK_URL;
       s.async = true;
       s.onload = () => resolve(true);
-      s.onerror = () => reject(new Error("Cashfree SDK load failed"));
+      s.onerror = () => {
+        // Remove the failed <script> so a subsequent retry re-inserts it.
+        try { s.remove(); } catch {}
+        reject(new Error("Cashfree SDK load failed"));
+      };
       document.head.appendChild(s);
     });
+    // CRITICAL: on failure, clear the cached promise so the NEXT caller
+    // gets a fresh load attempt (previously a single flaky load stuck the
+    // user until full page reload).
+    loadingPromise.catch(() => {
+      loadingPromise = null;
+    });
   }
-  await loadingPromise;
-  if (!window.Cashfree) throw new Error("Cashfree SDK not available");
+  try {
+    await loadingPromise;
+  } catch (err) {
+    loadingPromise = null;
+    throw err;
+  }
+  if (!window.Cashfree) {
+    loadingPromise = null;
+    throw new Error("Cashfree SDK not available");
+  }
   return window.Cashfree({ mode });
 }
