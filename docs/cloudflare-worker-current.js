@@ -677,7 +677,12 @@ const SECURITY_HEADERS = {
   "X-Frame-Options": "SAMEORIGIN",
   "X-Content-Type-Options": "nosniff",
   // X-XSS-Protection removed — deprecated header, can introduce XSS in legacy browsers. CSP is the correct mitigation.
-  "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+  // HSTS scoped to the exact host only. Dropped `includeSubDomains` +
+  // `preload` — merchant custom domains sit next to us on Cloudflare; if
+  // any subdomain's SSL lapses (or a merchant points a subdomain at a
+  // non-HTTPS backend) preload would permanently lock users out with no
+  // recourse. Per-host 1y HSTS is still strong and safely reversible.
+  "Strict-Transport-Security": "max-age=31536000",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(self)",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Content-Security-Policy":
