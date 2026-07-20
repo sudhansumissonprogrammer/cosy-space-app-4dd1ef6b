@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
     }
     const { data: dbProducts, error: prodErr } = await supabase
       .from("products")
-      .select("id, price, sale_price, is_active, store_id, image_url")
+      .select("id, price, sale_price, is_active, store_id, image_url, stock_quantity")
       .in("id", productIds);
     if (prodErr || !dbProducts || dbProducts.length !== productIds.length) {
       return new Response(JSON.stringify({ error: "One or more products not found" }), {
