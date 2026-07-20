@@ -870,6 +870,15 @@ export default function CheckoutV2Page() {
   const [creatingOrder, setCreatingOrder] = useState(false);
   const createOrderPromiseRef = useRef<Promise<void> | null>(null);
   const remintAfterCurrentOrderRef = useRef(false);
+  // Throttle guards — prevent a feedback loop from hammering place-order.
+  // Real cause seen in prod: chargeAmount recomputes fractionally out of sync
+  // with the stamped intent amount (late paymentConfig, coupon reapply,
+  // partial↔full toggle mid-flight), effect flags "stale", triggers re-mint,
+  // new intents come back → still off by 1 paise → effect fires again → loop.
+  // 437 place-order hits from a single IP in 10 min is a symptom of this.
+  const lastMintAtRef = useRef<number>(0);
+  const mintCountRef = useRef<number>(0);
+  const mintLoopBlockedRef = useRef<boolean>(false);
   const [showPayment, setShowPayment] = useState(false);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [pendingOrder, setPendingOrder] = useState<PendingOrder | null>(null);
@@ -1759,6 +1768,36 @@ export default function CheckoutV2Page() {
       return createOrderPromiseRef.current;
     }
 
+    // Hard cap: if we've minted too many times or too rapidly for one
+    // checkout session, stop the loop. The shopper still has a working
+    // ready intent from the last successful mint; forcing another round
+    // would just DOS ourselves and burn rate-limit budget.
+    const now = Date.now();
+    if (mintLoopBlockedRef.current) {
+      return;
+    }
+    if (mintCountRef.current >= 8) {
+      mintLoopBlockedRef.current = true;
+      console.warn("[checkout] mint loop cap hit — halting re-mints for this session");
+      return;
+    }
+    if (now - lastMintAtRef.current < 2500) {
+      // Coalesce rapid triggers into a single deferred mint.
+      if (!remintAfterCurrentOrderRef.current) {
+        remintAfterCurrentOrderRef.current = true;
+        const delay = 2500 - (now - lastMintAtRef.current);
+        window.setTimeout(() => {
+          if (!createOrderPromiseRef.current && remintAfterCurrentOrderRef.current) {
+            remintAfterCurrentOrderRef.current = false;
+            void createOrderAndIntents();
+          }
+        }, Math.max(delay, 50));
+      }
+      return;
+    }
+    lastMintAtRef.current = now;
+    mintCountRef.current += 1;
+
     const run = (async () => {
       const err = validateAddress();
       if (err) {
@@ -1942,10 +1981,15 @@ export default function CheckoutV2Page() {
     // Desktop QR passive wait shouldn't block a re-mint (see snapshot effect above).
     const isDesktopQrWait = waiting && waitingApp === "UPI QR" && !isMobile();
     if (waiting && !isDesktopQrWait) return;
+    // Tolerance: only treat as stale if the difference is ≥ 1 rupee. Sub-rupee
+    // rounding noise between the stamped `requestedAmount` and the recomputed
+    // `chargeAmount` (late paymentConfig, discount recompute, etc.) used to
+    // ping-pong the mint effect forever — 437 place-order retries in one
+    // session in prod. 1 rupee is well below any legitimate plan change.
     const anyStale = (Object.keys(intents) as UpiApp[]).some((k) => {
       const s = intents[k];
       return s.status === "ready" && typeof s.amount === "number"
-        && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100);
+        && Math.abs(Math.round(s.amount * 100) - Math.round(chargeAmount * 100)) >= 100;
     });
     if (!anyStale) return;
     if (isDesktopQrWait) {
