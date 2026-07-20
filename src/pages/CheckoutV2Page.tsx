@@ -2354,7 +2354,7 @@ export default function CheckoutV2Page() {
               `“${outOfStockItem}” अभी उपलब्ध नहीं है। कृपया कोई दूसरा प्रोडक्ट चुनें।`,
             )}
           </p>
-          <Button className="w-full" onClick={() => nav(`/`)}>
+          <Button className="w-full" onClick={() => navigate(storefrontPath(store?.slug || ""))}>
             {tCritical("Back to shop", "दुकान पर वापस")}
           </Button>
         </div>
