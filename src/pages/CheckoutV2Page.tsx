@@ -1768,6 +1768,36 @@ export default function CheckoutV2Page() {
       return createOrderPromiseRef.current;
     }
 
+    // Hard cap: if we've minted too many times or too rapidly for one
+    // checkout session, stop the loop. The shopper still has a working
+    // ready intent from the last successful mint; forcing another round
+    // would just DOS ourselves and burn rate-limit budget.
+    const now = Date.now();
+    if (mintLoopBlockedRef.current) {
+      return;
+    }
+    if (mintCountRef.current >= 8) {
+      mintLoopBlockedRef.current = true;
+      console.warn("[checkout] mint loop cap hit — halting re-mints for this session");
+      return;
+    }
+    if (now - lastMintAtRef.current < 2500) {
+      // Coalesce rapid triggers into a single deferred mint.
+      if (!remintAfterCurrentOrderRef.current) {
+        remintAfterCurrentOrderRef.current = true;
+        const delay = 2500 - (now - lastMintAtRef.current);
+        window.setTimeout(() => {
+          if (!createOrderPromiseRef.current && remintAfterCurrentOrderRef.current) {
+            remintAfterCurrentOrderRef.current = false;
+            void createOrderAndIntents();
+          }
+        }, Math.max(delay, 50));
+      }
+      return;
+    }
+    lastMintAtRef.current = now;
+    mintCountRef.current += 1;
+
     const run = (async () => {
       const err = validateAddress();
       if (err) {
