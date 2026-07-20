@@ -267,7 +267,7 @@ function buildPrimaryDomainRedirect(
 
 async function handleSitemap(url: URL) {
   const slug = url.searchParams.get("slug");
-  const domain = url.searchParams.get("domain");
+  const domain = (url.searchParams.get("domain") || "").toLowerCase() || null;
 
   if (!slug) {
     return new Response("Missing slug parameter", { status: 400, headers: corsHeaders });
@@ -454,7 +454,7 @@ async function handleSitemap(url: URL) {
 
 async function handleRobots(url: URL) {
   const slug = url.searchParams.get("slug");
-  const domain = url.searchParams.get("domain");
+  const domain = (url.searchParams.get("domain") || "").toLowerCase() || null;
 
   if (!slug) {
     return new Response("Missing slug parameter", { status: 400, headers: corsHeaders });
@@ -618,7 +618,7 @@ Sitemap: ${sitemapUrl}
 
 async function handleLlms(url: URL) {
   const slug = url.searchParams.get("slug");
-  const domain = url.searchParams.get("domain");
+  const domain = (url.searchParams.get("domain") || "").toLowerCase() || null;
 
   if (!slug) {
     return new Response("Missing slug parameter", { status: 400, headers: corsHeaders });
