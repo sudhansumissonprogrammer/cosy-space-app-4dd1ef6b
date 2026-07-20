@@ -85,7 +85,7 @@ export async function firePurchaseCapi(
     const { data: order, error: orderErr } = await supabase
       .from("orders")
       .select(
-        "id, created_at, store_id, status, total, currency, customer_phone, customer_name, city, state, pincode, " +
+        "id, created_at, store_id, status, total, advance_paid, currency, customer_phone, customer_name, city, state, pincode, " +
         "storefront_customer_id, buyer_ip, buyer_user_agent, buyer_fbc, buyer_fbp, " +
         "meta_event_id, meta_event_source_url, meta_purchase_fired_at",
       )
