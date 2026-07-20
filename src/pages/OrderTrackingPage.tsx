@@ -141,8 +141,8 @@ export default function OrderTrackingPage() {
     if (autoSearchedFor.current === preset) return;
     autoSearchedFor.current = preset;
     setQuery(preset);
-    // Defer to next tick so setQuery lands before searchOrder reads state.
-    setTimeout(() => { searchOrder(); }, 0);
+    // Pass id directly so the fetch doesn't race the setQuery closure.
+    void searchOrder(preset);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
