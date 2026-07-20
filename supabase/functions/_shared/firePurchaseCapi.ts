@@ -120,6 +120,40 @@ export async function firePurchaseCapi(
       return { ok: true, reason: "already_fired" };
     }
 
+    // ─────────────────────────────────────────────────────────────────────
+    // 15-MIN SETTLE DELAY (industry-standard, matches GoKwik / Shiprocket).
+    // Reasons a paid order gets cancelled in the first 15 minutes:
+    //   • buyer's remorse / wrong item
+    //   • duplicate order (double-tap on Pay)
+    //   • wrong address realized immediately
+    //   • auto-cancel by expire-stale-pending-orders (COD unconfirmed)
+    // Firing Purchase → then Refund a minute later still counts as an
+    // insult to the Pixel. Waiting 15 minutes filters ~90% of these.
+    //
+    // The retry cron (`capi-purchase-retry`) picks up any order whose
+    // `meta_purchase_deferred_until` has elapsed and calls us again.
+    // Skip the delay for `opts.allowImmediate` (used by the cron itself,
+    // and by the "delivered"/"completed" flow where the shopper is far
+    // past the cancellation window).
+    // ─────────────────────────────────────────────────────────────────────
+    const SETTLE_DELAY_MS = 15 * 60 * 1000;
+    const orderAgeMs = Date.now() - new Date(order.created_at).getTime();
+    const isDeliveredOrCompleted = status === "delivered" || status === "completed";
+    if (!opts.allowImmediate && !isDeliveredOrCompleted && orderAgeMs < SETTLE_DELAY_MS) {
+      const deferUntil = new Date(
+        new Date(order.created_at).getTime() + SETTLE_DELAY_MS,
+      ).toISOString();
+      // Stamp when the retry cron should pick this up. Never sets
+      // meta_purchase_fired_at, so the cron will re-run this function.
+      await supabase
+        .from("orders")
+        .update({ meta_purchase_deferred_until: deferUntil })
+        .eq("id", orderId)
+        .is("meta_purchase_fired_at", null);
+      return { ok: true, reason: "deferred_settle_window" };
+    }
+
+
     // 🚫 Skip MANUAL / admin-created orders (Shopify-style behaviour).
     // A real storefront purchase always carries at least one browser signal:
     //   buyer_user_agent, buyer_fbp, buyer_fbc, or meta_event_id.
