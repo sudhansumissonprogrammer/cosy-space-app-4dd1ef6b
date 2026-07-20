@@ -868,6 +868,8 @@ export default function CheckoutV2Page() {
   useEffect(() => { orderIdRef.current = orderId; }, [orderId]);
   useEffect(() => { orderNumberRef.current = orderNumber; }, [orderNumber]);
   const [creatingOrder, setCreatingOrder] = useState(false);
+  const createOrderPromiseRef = useRef<Promise<void> | null>(null);
+  const remintAfterCurrentOrderRef = useRef(false);
   const [showPayment, setShowPayment] = useState(false);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [pendingOrder, setPendingOrder] = useState<PendingOrder | null>(null);
@@ -1751,82 +1753,101 @@ export default function CheckoutV2Page() {
   };
 
   // ─── UPI intent-based flow (mobile-first) ───────────────────────────────
-  const createOrderAndIntents = async () => {
-    const err = validateAddress();
-    if (err) {
-      toast.error(err);
-      try { fireStorefrontEvent({ storeId: store.id, eventName: "checkout_field_error" as any, metadata: { error: err } as any }); } catch { /* noop */ }
-      return;
+  const createOrderAndIntents = async (): Promise<void> => {
+    if (createOrderPromiseRef.current) {
+      remintAfterCurrentOrderRef.current = true;
+      return createOrderPromiseRef.current;
     }
-    if (checkoutItems.length === 0) { toast.error("Your cart is empty"); return; }
-    // Note: intentionally NOT waiting on paymentConfigLoaded — server picks the gateway.
 
+    const run = (async () => {
+      const err = validateAddress();
+      if (err) {
+        toast.error(err);
+        try { fireStorefrontEvent({ storeId: store.id, eventName: "checkout_field_error" as any, metadata: { error: err } as any }); } catch { /* noop */ }
+        return;
+      }
+      if (checkoutItems.length === 0) { toast.error("Your cart is empty"); return; }
+      // Note: intentionally NOT waiting on paymentConfigLoaded — server picks the gateway.
 
-    setCreatingOrder(true);
-    try {
-      saveExpressInfo();
-      const order = await createOrderIfNeeded("razorpay");
-      setShowPayment(true);
-      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { step: "continue_to_pay" } as any }); } catch { /* noop */ }
-
-      const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
-      setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "loading" }; }); return next; });
-      // Fresh intent = fresh QR — allow the desktop auto-poll to arm again.
-      desktopQrPollStartedRef.current = false;
-
-      // Stamp the amount BEFORE invoking. If the shopper toggles Partial↔Full
-      // while the request is in flight, this captured value diverges from the
-      // live chargeAmount and we discard the stale response instead of
-      // rendering a QR for the wrong price.
-      const requestedAmount = chargeAmount;
+      setCreatingOrder(true);
       try {
-        // Hard 15s timeout — supabase-js invoke has no default timeout, so a
-        // hung gateway upstream would leave the QR spinning forever. Race the
-        // invoke against an AbortError so we always resolve to ready/failed.
-        const invokePromise = supabase.functions.invoke("create-upi-intent", {
-          body: {
-            store_id: store.id, order_id: order.id, app: "any",
-            customer_name: fullName.trim(), customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
-            customer_email: email.trim() || undefined,
-            return_url: buildPaymentReturnUrl(),
-            amount: requestedAmount,
-          },
-        });
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Payment gateway timed out. Please retry.")), 15000)
-        );
-        const { data: intentData, error: intErr } = await Promise.race([invokePromise, timeoutPromise]) as any;
-        // Discard if the shopper switched plans mid-flight — a fresh mint is already queued.
-        if (Math.round(requestedAmount * 100) !== Math.round(chargeAmount * 100)) {
-          return;
-        }
-        const payload: any = intentData ?? (intErr as any)?.context?.body;
-        const url: string | undefined = payload?.intent_url;
-        if (!url) {
-          const errMsg: string = payload?.error || intErr?.message || "UPI temporarily unavailable";
-          setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: errMsg }; }); return next; });
-        } else {
-          if (payload?.pg) {
-            gatewayRef.current = {
-              pg: payload.pg, cf_order_id: payload.cf_order_id,
-              payu_txnid: payload.payu_txnid, razorpay_payment_id: payload.razorpay_payment_id,
-            };
+        saveExpressInfo();
+        const order = await createOrderIfNeeded("razorpay");
+        setShowPayment(true);
+        try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { step: "continue_to_pay" } as any }); } catch { /* noop */ }
+
+        const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
+        setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "loading" }; }); return next; });
+        // Fresh intent = fresh QR — allow the desktop auto-poll to arm again.
+        desktopQrPollStartedRef.current = false;
+
+        // Stamp the amount BEFORE invoking. If the shopper toggles Partial↔Full
+        // while the request is in flight, this captured value diverges from the
+        // live chargeAmount and we discard the stale response instead of
+        // rendering a QR for the wrong price.
+        const requestedAmount = chargeAmount;
+        try {
+          // Hard 15s timeout — supabase-js invoke has no default timeout, so a
+          // hung gateway upstream would leave the QR spinning forever. Race the
+          // invoke against an AbortError so we always resolve to ready/failed.
+          const invokePromise = supabase.functions.invoke("create-upi-intent", {
+            body: {
+              store_id: store.id, order_id: order.id, app: "any",
+              customer_name: fullName.trim(), customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
+              customer_email: email.trim() || undefined,
+              return_url: buildPaymentReturnUrl(),
+              amount: requestedAmount,
+            },
+          });
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Payment gateway timed out. Please retry.")), 15000)
+          );
+          const { data: intentData, error: intErr } = await Promise.race([invokePromise, timeoutPromise]) as any;
+          // Discard if the shopper switched plans mid-flight — a fresh mint is queued after this run finishes.
+          if (Math.round(requestedAmount * 100) !== Math.round(chargeAmount * 100)) {
+            remintAfterCurrentOrderRef.current = true;
+            return;
           }
-          setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "ready", url: schemeFor(a, url), amount: requestedAmount }; }); return next; });
+          const payload: any = intentData ?? (intErr as any)?.context?.body;
+          const url: string | undefined = payload?.intent_url;
+          if (!url) {
+            const errMsg: string = payload?.error || intErr?.message || "UPI temporarily unavailable";
+            setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: errMsg }; }); return next; });
+          } else {
+            if (payload?.pg) {
+              gatewayRef.current = {
+                pg: payload.pg, cf_order_id: payload.cf_order_id,
+                payu_txnid: payload.payu_txnid, razorpay_payment_id: payload.razorpay_payment_id,
+              };
+            }
+            setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "ready", url: schemeFor(a, url), amount: requestedAmount }; }); return next; });
+          }
+        } catch (e: any) {
+          // Ignore late failures from a request that no longer matches the current amount.
+          if (Math.round(requestedAmount * 100) !== Math.round(chargeAmount * 100)) {
+            remintAfterCurrentOrderRef.current = true;
+            return;
+          }
+          const msg = e?.message || "UPI temporarily unavailable";
+          setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: msg }; }); return next; });
         }
       } catch (e: any) {
-        // Ignore late failures from a request that no longer matches the current amount.
-        if (Math.round(requestedAmount * 100) !== Math.round(chargeAmount * 100)) return;
-        const msg = e?.message || "UPI temporarily unavailable";
-        setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: msg }; }); return next; });
+        toast.error(e.message || "Failed to create order");
+        // Do not reset autoAdvancedRef here: repeated automatic retries can hammer place-order and 429-lock real buyers.
+      } finally {
+        setCreatingOrder(false);
       }
-    } catch (e: any) {
-      toast.error(e.message || "Failed to create order");
-      // Allow the auto-advance effect to retry (and let the manual button work)
-      autoAdvancedRef.current = false;
-    } finally {
-      setCreatingOrder(false);
-    }
+    })();
+
+    createOrderPromiseRef.current = run.finally(() => {
+      createOrderPromiseRef.current = null;
+      if (remintAfterCurrentOrderRef.current && !confirmingPayment && !orderPlaced) {
+        remintAfterCurrentOrderRef.current = false;
+        window.setTimeout(() => { void createOrderAndIntents(); }, 0);
+      }
+    });
+
+    return createOrderPromiseRef.current;
   };
 
   // Auto-advance to payment options once the address is complete — the
