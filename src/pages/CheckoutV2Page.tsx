@@ -1833,6 +1833,12 @@ export default function CheckoutV2Page() {
         }
       } catch (e: any) {
         toast.error(e.message || "Failed to create order");
+        // Surface failure on UPI tiles so the shopper sees a retry state
+        // instead of buttons stuck in permanently-disabled "idle" (blue/faded)
+        // after rapid Partial↔Full toggles trigger a 429 or transient error.
+        const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
+        const msg = e?.message || "Payment temporarily unavailable. Tap retry.";
+        setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: msg }; }); return next; });
         // Do not reset autoAdvancedRef here: repeated automatic retries can hammer place-order and 429-lock real buyers.
       } finally {
         setCreatingOrder(false);
@@ -1907,9 +1913,11 @@ export default function CheckoutV2Page() {
     setOrderNumber(null);
     setPendingOrder(null);
     setPaymentFailed(false);
+    // Mark as loading (not idle) so the UPI tiles show a spinner instead of
+    // rendering as permanently-disabled faded buttons while the remint runs.
     setIntents({
-      gpay: { status: "idle" }, phonepe: { status: "idle" },
-      paytm: { status: "idle" }, bhim: { status: "idle" }, any: { status: "idle" },
+      gpay: { status: "loading" }, phonepe: { status: "loading" },
+      paytm: { status: "loading" }, bhim: { status: "loading" }, any: { status: "loading" },
     });
     gatewayRef.current = {};
     autoAdvancedRef.current = false;
@@ -1954,8 +1962,8 @@ export default function CheckoutV2Page() {
     setOrderId(null);
     setOrderNumber(null);
     setIntents({
-      gpay: { status: "idle" }, phonepe: { status: "idle" },
-      paytm: { status: "idle" }, bhim: { status: "idle" }, any: { status: "idle" },
+      gpay: { status: "loading" }, phonepe: { status: "loading" },
+      paytm: { status: "loading" }, bhim: { status: "loading" }, any: { status: "loading" },
     });
     const nextToken = newCheckoutToken();
     checkoutTokenRef.current = nextToken;
@@ -3400,32 +3408,6 @@ export default function CheckoutV2Page() {
             </div>
           )}
 
-          {/* Logged-in strip */}
-          {customer && (
-            <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-[#F5F5F5] flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
-                </div>
-                <div className="text-[13px]">Logged in using +91 {phone}</div>
-              </div>
-            </div>
-          )}
-
-          {/* Trust footer */}
-          <div className="pt-6 pb-2 text-center">
-            <div className="text-[11px] text-muted-foreground mb-1">Powered by</div>
-            <div className="inline-flex items-center justify-center gap-1.5 text-[14px] font-bold tracking-tight">
-              <img src={shopbanaoLogo} alt="ShopBanao" className="h-5 w-5 inline-block object-contain" loading="lazy" width="20" height="20" />
-              ShopBanao
-            </div>
-            <div className="text-[12px] text-muted-foreground mt-3">Powering secure checkout for 10,000+ brands</div>
-            <div className="flex items-center justify-center gap-4 mt-3 text-muted-foreground">
-              <div className="flex items-center gap-1 text-[11px]"><ShieldCheck className="h-4 w-4" /> PCI DSS<br/>Certified</div>
-              <div className="flex items-center gap-1 text-[11px]"><Lock className="h-4 w-4" /> Secured<br/>Payments</div>
-              <div className="flex items-center gap-1 text-[11px]"><CheckCircle2 className="h-4 w-4" /> Verified<br/>Merchant</div>
-            </div>
-          </div>
         </div>
       )}
 
