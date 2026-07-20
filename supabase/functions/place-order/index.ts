@@ -80,28 +80,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // BAN-FIX B4: persistent cross-isolate rate limit — 5 orders / 10 min per IP.
-    // Old in-memory Map reset every cold start so a slow ~3-order-per-minute
-    // burst never tripped it. Fail-open on RPC error to keep checkout resilient.
-    let rlSupabase: ReturnType<typeof createClient> | null = null;
-    try {
-      rlSupabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      );
-      const { data: limited } = await rlSupabase.rpc("hit_rate_limit", {
-        _key: `order_rl:${clientIp}`,
-        _max: 5,
-        _window_seconds: 600,
-      });
-      if (limited === true) {
-        return new Response(JSON.stringify({ error: "Too many orders. Please try again later." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    } catch { /* fail-open */ }
-
     let {
       store_id,
       order,
@@ -171,6 +149,27 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Persistent cross-isolate rate limit, scoped to the shopper identity
+    // instead of raw IP. Mobile carriers/Instagram often put many real buyers
+    // behind one NAT IP; IP-only limits caused unrelated shoppers to get 429s.
+    // Still blocks checkout loops because the same browser posts the same phone
+    // (or, before phone is present, the same checkout_token/session) repeatedly.
+    try {
+      const phoneDigits = String(order?.customer_phone || "").replace(/\D/g, "").slice(-10);
+      const identity = phoneDigits || checkout_token || session_id || visitor_id || clientIp;
+      const { data: limited } = await supabase.rpc("hit_rate_limit", {
+        _key: `order_rl:${store_id}:${identity}`,
+        _max: 8,
+        _window_seconds: 600,
+      });
+      if (limited === true) {
+        return new Response(JSON.stringify({ error: "Too many attempts. Please wait a moment and try again." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } catch { /* fail-open */ }
 
     const { data: store, error: storeErr } = await supabase
       .from("stores")
