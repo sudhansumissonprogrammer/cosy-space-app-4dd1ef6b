@@ -1833,6 +1833,12 @@ export default function CheckoutV2Page() {
         }
       } catch (e: any) {
         toast.error(e.message || "Failed to create order");
+        // Surface failure on UPI tiles so the shopper sees a retry state
+        // instead of buttons stuck in permanently-disabled "idle" (blue/faded)
+        // after rapid Partial↔Full toggles trigger a 429 or transient error.
+        const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
+        const msg = e?.message || "Payment temporarily unavailable. Tap retry.";
+        setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: msg }; }); return next; });
         // Do not reset autoAdvancedRef here: repeated automatic retries can hammer place-order and 429-lock real buyers.
       } finally {
         setCreatingOrder(false);
