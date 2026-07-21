@@ -53,6 +53,7 @@ const VideoSlide = lazy(() =>
 
 
 import DeliveryTimeline from "@/components/storefront/DeliveryTimeline";
+import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSection";
 
 interface Variant {
   id: string;
