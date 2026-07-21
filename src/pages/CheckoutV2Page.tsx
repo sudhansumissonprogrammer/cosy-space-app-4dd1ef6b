@@ -908,7 +908,21 @@ export default function CheckoutV2Page() {
     couponDiscount: Math.round(couponDiscount * 100),
     shipping: Math.round(shippingCharge * 100),
     items: checkoutItems.map((i) => [i.productId, i.variantId || "", i.quantity, Math.round(i.price * 100)]),
-  }), [effectiveMode, total, chargeAmount, appliedCoupon?.id, couponDiscount, shippingCharge, checkoutItems]);
+    // Shipping identity — if the shopper edits their address/name/phone AFTER
+    // the first UPI intent was minted, we must re-mint so the DB order carries
+    // the final address, not the partial one that existed at first mint.
+    // Without this, place-order's checkout_token idempotency returns the
+    // original row and the edit is silently dropped (root cause of orders
+    // landing in the dashboard with a 1-letter street_address).
+    ship: [
+      fullName.trim().toLowerCase(),
+      normalizePhone(phone),
+      streetAddress.trim().toLowerCase(),
+      city.trim().toLowerCase(),
+      state.trim().toLowerCase(),
+      (pincode || "").replace(/\D/g, ""),
+    ].join("|"),
+  }), [effectiveMode, total, chargeAmount, appliedCoupon?.id, couponDiscount, shippingCharge, checkoutItems, fullName, phone, streetAddress, city, state, pincode]);
   const lastPaymentSnapshotRef = useRef(paymentSnapshot);
   const paymentAmountSyncing = (showPayment || !!orderId) && paymentSnapshot !== lastPaymentSnapshotRef.current;
 
