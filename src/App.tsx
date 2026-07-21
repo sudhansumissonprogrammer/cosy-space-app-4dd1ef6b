@@ -417,6 +417,8 @@ const LoadingSpinner = () => {
 
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage"));
 const StorefrontCustomPage = lazy(() => import("./pages/StorefrontCustomPage"));
+const BundlesIndexPage = lazy(() => import("./components/storefront/apps/BundleBuilder/BundlesIndexPage"));
+const BundleBuilderPage = lazy(() => import("./components/storefront/apps/BundleBuilder/BundleBuilderPage"));
 
 /** Shared child routes for all layout themes */
 const storefrontChildRoutes = (theme: string) => {
@@ -451,6 +453,8 @@ const storefrontChildRoutes = (theme: string) => {
       <Route path="install" element={<InstallApp />} />
       <Route path="track-order" element={<OrderTrackingPage />} />
       <Route path="page/:pageSlug" element={<StorefrontCustomPage />} />
+      <Route path="bundles" element={<BundlesIndexPage />} />
+      <Route path="bundles/:bundleSlug" element={<BundleBuilderPage />} />
       {/* Catch-all: unknown storefront paths render NotFound (which sets
           <meta name=robots content="noindex,nofollow">) — prevents Googlebot
           from soft-indexing random URLs as 200/homepage. */}

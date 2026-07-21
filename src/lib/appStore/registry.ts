@@ -1,5 +1,5 @@
 import { lazy, type LazyExoticComponent, type ComponentType } from "react";
-import { Disc3, Gift, Timer, Heart, DownloadCloud, Film, type LucideIcon } from "lucide-react";
+import { Disc3, Gift, Timer, Heart, DownloadCloud, Film, Package, type LucideIcon } from "lucide-react";
 
 export type AppId =
   | "spin-wheel"
@@ -7,7 +7,8 @@ export type AppId =
   | "countdown-bar"
   | "wishlist-reminder"
   | "migrate-store"
-  | "shop-by-video";
+  | "shop-by-video"
+  | "bundle-builder";
 
 export interface StoreAppMeta {
   id: AppId;
@@ -125,6 +126,19 @@ export const APP_REGISTRY: StoreAppMeta[] = [
       show_cta: true,
       order: [] as string[],
     },
+  },
+  {
+    id: "bundle-builder",
+    name: "Bundle Builder",
+    tagline: "Pick-N, Fixed Combos & Frequently Bought Together",
+    description:
+      "Create combo offers — Pick N products for a flat price, curated Fixed Combos, or Frequently Bought Together strips. A Bundles menu appears on your storefront when at least one bundle is active.",
+    icon: Package,
+    category: "conversion",
+    status: "live",
+    accent: "from-amber-500 to-rose-500",
+    ConfigComponent: lazy(() => import("@/pages/appStore/BundleBuilderConfig")),
+    defaultConfig: { bundles: [] as any[] },
   },
 ];
 

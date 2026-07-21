@@ -6,6 +6,7 @@ import { useNavIcons } from "@/hooks/useNavIcons";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
+import { useBundleMenu } from "@/hooks/useBundleMenu";
 import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
@@ -36,6 +37,8 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
   const categories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]) ?? [];
   const customPages = queryClient.getQueryData<any[]>(["storefront-custom-pages", store.id]) ?? [];
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
+  const { data: bundles } = useBundleMenu(store.slug);
+  const bundleCount = bundles?.length ?? 0;
   const { cartCount, openCart, cartBounce } = useCart();
   const { wishlistCount } = useWishlist();
   const { user, loading: authLoading } = useStorefrontAuth();
@@ -150,6 +153,12 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
               About Us
               {activeDot("about")}
             </Link>
+            {bundleCount > 0 && (
+              <Link to={storefrontPath(store.slug, "bundles")} className={linkClass("bundles")}>
+                Bundles <span className="ml-1 opacity-70">({bundleCount})</span>
+                {activeDot("bundles")}
+              </Link>
+            )}
             {customPages.map((cp: any) => (
               <Link
                 key={cp.id}
