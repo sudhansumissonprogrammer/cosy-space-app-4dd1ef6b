@@ -2167,6 +2167,111 @@ export type Database = {
           },
         ]
       }
+      store_app_leads: {
+        Row: {
+          app_id: string
+          country_code: string
+          coupon_code: string | null
+          created_at: string
+          id: string
+          ip: string | null
+          marketing_opt_in: boolean
+          metadata: Json
+          phone: string
+          segment_label: string | null
+          store_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          app_id: string
+          country_code?: string
+          coupon_code?: string | null
+          created_at?: string
+          id?: string
+          ip?: string | null
+          marketing_opt_in?: boolean
+          metadata?: Json
+          phone?: string
+          segment_label?: string | null
+          store_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          app_id?: string
+          country_code?: string
+          coupon_code?: string | null
+          created_at?: string
+          id?: string
+          ip?: string | null
+          marketing_opt_in?: boolean
+          metadata?: Json
+          phone?: string
+          segment_label?: string | null
+          store_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_app_leads_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_app_leads_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_apps: {
+        Row: {
+          app_id: string
+          config: Json
+          created_at: string
+          enabled: boolean
+          id: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          app_id: string
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          app_id?: string
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_apps_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_apps_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_commission_config: {
         Row: {
           commission_percentage: number
@@ -4528,6 +4633,13 @@ export type Database = {
           image_url: string
           slug: string
           title: string
+        }[]
+      }
+      get_store_enabled_apps: {
+        Args: { _store_slug: string }
+        Returns: {
+          app_id: string
+          config: Json
         }[]
       }
       get_store_payment_config: { Args: { _store_id: string }; Returns: Json }
