@@ -817,6 +817,125 @@ export type Database = {
           },
         ]
       }
+      order_shipments: {
+        Row: {
+          awb: string | null
+          breadth_cm: number | null
+          cod_amount: number | null
+          courier_name: string | null
+          created_at: string
+          declared_value: number | null
+          height_cm: number | null
+          id: string
+          invoice_url: string | null
+          label_url: string | null
+          last_error: string | null
+          length_cm: number | null
+          manifest_url: string | null
+          order_id: string
+          payment_mode: string | null
+          pickup_address_id: string | null
+          provider: string
+          provider_order_id: string | null
+          provider_shipment_id: string | null
+          rate: number | null
+          raw_payload: Json | null
+          status: string
+          status_updated_at: string | null
+          store_id: string
+          tracking_url: string | null
+          updated_at: string
+          weight_grams: number | null
+        }
+        Insert: {
+          awb?: string | null
+          breadth_cm?: number | null
+          cod_amount?: number | null
+          courier_name?: string | null
+          created_at?: string
+          declared_value?: number | null
+          height_cm?: number | null
+          id?: string
+          invoice_url?: string | null
+          label_url?: string | null
+          last_error?: string | null
+          length_cm?: number | null
+          manifest_url?: string | null
+          order_id: string
+          payment_mode?: string | null
+          pickup_address_id?: string | null
+          provider: string
+          provider_order_id?: string | null
+          provider_shipment_id?: string | null
+          rate?: number | null
+          raw_payload?: Json | null
+          status?: string
+          status_updated_at?: string | null
+          store_id: string
+          tracking_url?: string | null
+          updated_at?: string
+          weight_grams?: number | null
+        }
+        Update: {
+          awb?: string | null
+          breadth_cm?: number | null
+          cod_amount?: number | null
+          courier_name?: string | null
+          created_at?: string
+          declared_value?: number | null
+          height_cm?: number | null
+          id?: string
+          invoice_url?: string | null
+          label_url?: string | null
+          last_error?: string | null
+          length_cm?: number | null
+          manifest_url?: string | null
+          order_id?: string
+          payment_mode?: string | null
+          pickup_address_id?: string | null
+          provider?: string
+          provider_order_id?: string | null
+          provider_shipment_id?: string | null
+          rate?: number | null
+          raw_payload?: Json | null
+          status?: string
+          status_updated_at?: string | null
+          store_id?: string
+          tracking_url?: string | null
+          updated_at?: string
+          weight_grams?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_shipments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_shipments_pickup_address_id_fkey"
+            columns: ["pickup_address_id"]
+            isOneToOne: false
+            referencedRelation: "store_pickup_addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_shipments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_shipments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           advance_paid: number
@@ -2566,6 +2685,78 @@ export type Database = {
         }
         Relationships: []
       }
+      store_pickup_addresses: {
+        Row: {
+          address_line1: string
+          address_line2: string | null
+          city: string
+          contact_name: string
+          country: string
+          created_at: string
+          email: string | null
+          id: string
+          is_default: boolean
+          nickname: string
+          phone: string
+          pincode: string
+          shiprocket_pickup_name: string | null
+          state: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          address_line1: string
+          address_line2?: string | null
+          city: string
+          contact_name: string
+          country?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_default?: boolean
+          nickname: string
+          phone: string
+          pincode: string
+          shiprocket_pickup_name?: string | null
+          state: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          address_line1?: string
+          address_line2?: string | null
+          city?: string
+          contact_name?: string
+          country?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_default?: boolean
+          nickname?: string
+          phone?: string
+          pincode?: string
+          shiprocket_pickup_name?: string | null
+          state?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_pickup_addresses_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_pickup_addresses_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_shipping_config: {
         Row: {
           created_at: string
@@ -2606,6 +2797,75 @@ export type Database = {
             foreignKeyName: "store_shipping_config_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: true
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_shipping_providers: {
+        Row: {
+          api_email: string | null
+          api_key: string | null
+          api_password: string | null
+          api_secret: string | null
+          cached_token: string | null
+          client_id: string | null
+          created_at: string
+          extra: Json
+          id: string
+          is_enabled: boolean
+          provider: string
+          sandbox: boolean
+          store_id: string
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_email?: string | null
+          api_key?: string | null
+          api_password?: string | null
+          api_secret?: string | null
+          cached_token?: string | null
+          client_id?: string | null
+          created_at?: string
+          extra?: Json
+          id?: string
+          is_enabled?: boolean
+          provider: string
+          sandbox?: boolean
+          store_id: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_email?: string | null
+          api_key?: string | null
+          api_password?: string | null
+          api_secret?: string | null
+          cached_token?: string | null
+          client_id?: string | null
+          created_at?: string
+          extra?: Json
+          id?: string
+          is_enabled?: boolean
+          provider?: string
+          sandbox?: boolean
+          store_id?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_shipping_providers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_shipping_providers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },

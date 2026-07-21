@@ -111,6 +111,7 @@ export function AppSidebar() {
         ...(isCommissionMode ? [{ title: "Wallet", url: `/dashboard/stores/${storeSlug}/wallet`, icon: Wallet, menuKey: "wallet" }] : []),
         ...(!isWhatsAppOnly ? [{ title: "Coupons", url: `/dashboard/stores/${storeSlug}/coupons`, icon: Tag, menuKey: "coupons" }] : []),
         { title: "Shipping", url: `/dashboard/stores/${storeSlug}/shipping`, icon: Truck, menuKey: "shipping" },
+        { title: "Shipping Integrations", url: `/dashboard/stores/${storeSlug}/shipping-integrations`, icon: Truck, menuKey: "shipping" },
         { title: "Tax / GST", url: `/dashboard/stores/${storeSlug}/tax`, icon: Receipt, menuKey: "tax_gst" },
       ].filter((i) => i.menuKey === "wallet" || isVisible(i.menuKey))
     : [];

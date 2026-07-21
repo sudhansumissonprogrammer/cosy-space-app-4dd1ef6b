@@ -77,6 +77,7 @@ const InstallApp = lazy(() => import("@/pages/InstallApp"));
 const Index = lazy(() => import("@/pages/Index"));
 const AppStoreBrowse = lazy(() => import("@/pages/appStore/AppStoreBrowse"));
 const AppRouter = lazy(() => import("@/pages/appStore/AppRouter"));
+const StoreShippingIntegrations = lazy(() => import("@/pages/StoreShippingIntegrations"));
 
 export default function AuthRoutes() {
   return (
@@ -157,6 +158,7 @@ export default function AuthRoutes() {
           <Route path="stores/:storeSlug/wallet" element={<StoreWallet />} />
           <Route path="stores/:storeSlug/coupons" element={<StoreCoupons />} />
           <Route path="stores/:storeSlug/shipping" element={<StoreShipping />} />
+          <Route path="stores/:storeSlug/shipping-integrations" element={<StoreShippingIntegrations />} />
           <Route path="stores/:storeSlug/tax" element={<StoreTaxSettings />} />
           <Route path="stores/:storeSlug/abandoned-carts" element={<StoreAbandonedCarts />} />
           <Route path="stores/:storeSlug/theme" element={<StoreThemeSettings />} />
