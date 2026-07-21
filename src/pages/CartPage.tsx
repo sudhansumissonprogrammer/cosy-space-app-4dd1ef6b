@@ -110,6 +110,25 @@ export default function CartPage() {
                 <div className="flex flex-1 flex-col min-w-0">
                   <p className="text-xs sm:text-sm font-semibold text-foreground truncate">{item.name}</p>
                   {item.variantName && <p className="text-[10px] sm:text-xs text-muted-foreground">{item.variantName}</p>}
+                  {item.meta?.kind === "bundle" && Array.isArray(item.meta.children) && (
+                    <div className="mt-1 space-y-0.5">
+                      {item.meta.children.slice(0, 4).map((c: any, idx: number) => (
+                        <p key={idx} className="text-[10px] sm:text-xs text-muted-foreground truncate">• {c.name}</p>
+                      ))}
+                      {item.meta.children.length > 4 && (
+                        <p className="text-[10px] text-muted-foreground">+{item.meta.children.length - 4} more</p>
+                      )}
+                      {item.meta.bundle_slug && (
+                        <Link
+                          to={storefrontPath(store.slug, `bundles/${item.meta.bundle_slug}`)}
+                          className="text-[10px] sm:text-xs font-medium underline underline-offset-2"
+                          style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}
+                        >
+                          Edit combo
+                        </Link>
+                      )}
+                    </div>
+                  )}
                   <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm font-bold text-foreground">{formatPrice(item.price, currency)}</p>
                   <div className="mt-auto flex items-center gap-1.5 sm:gap-2 pt-1.5 sm:pt-2">
                     <Button variant="outline" size="icon" aria-label="Decrease quantity" className="h-11 w-11 min-h-11 min-w-11" onClick={() => updateQuantity(item.productId, item.variantId, item.quantity - 1)}>

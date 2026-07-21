@@ -150,6 +150,109 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // ────────────────────────────────────────────────────────────────
+    // BUNDLE EXPANSION — resolve any `meta.kind === "bundle"` line into
+    // its real child products at server-authoritative combo prices.
+    // The client sends one synthetic "bundle:<uuid>" line so cart UX stays
+    // simple; the server rewrites it into N child order_items whose per-unit
+    // prices sum to the configured combo total. `__bundle_priced` tells the
+    // canonical-price loop below to skip its DB-price override for that row.
+    // ────────────────────────────────────────────────────────────────
+    try {
+      const bundleLines = (items || []).filter((it: any) =>
+        it && it.meta && it.meta.kind === "bundle" && Array.isArray(it.meta.children) && it.meta.children.length > 0,
+      );
+      if (bundleLines.length > 0) {
+        const { data: appRow } = await supabase
+          .from("store_apps")
+          .select("config")
+          .eq("store_id", store_id)
+          .eq("app_id", "bundle-builder")
+          .maybeSingle();
+        const bundles: any[] = (appRow?.config as any)?.bundles || [];
+        const bundlesById = new Map<string, any>(bundles.map((b: any) => [String(b.id), b]));
+        const childIds = Array.from(new Set(bundleLines.flatMap((bl: any) =>
+          bl.meta.children.map((c: any) => String(c.productId)).filter(Boolean),
+        )));
+        const childPriceById = new Map<string, number>();
+        const childNameById = new Map<string, string>();
+        if (childIds.length > 0) {
+          const { data: childProds } = await supabase
+            .from("products")
+            .select("id, name, price, sale_price, is_active, store_id")
+            .in("id", childIds);
+          for (const p of (childProds || [])) {
+            if (p.store_id !== store_id || !p.is_active) continue;
+            const cp = p.sale_price != null ? Number(p.sale_price) : Number(p.price);
+            if (cp >= 0) {
+              childPriceById.set(String(p.id), cp);
+              childNameById.set(String(p.id), p.name);
+            }
+          }
+        }
+        const expanded: any[] = [];
+        for (const it of items as any[]) {
+          const bl = it && it.meta && it.meta.kind === "bundle" ? it : null;
+          if (!bl) { expanded.push(it); continue; }
+          const bDef = bundlesById.get(String(bl.meta.bundle_id));
+          if (!bDef || bDef.is_active === false) {
+            return new Response(
+              JSON.stringify({ error: "Bundle no longer available. Please rebuild your combo." }),
+              { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            );
+          }
+          const rawChildren = (bl.meta.children as any[])
+            .map((c: any) => ({ productId: String(c.productId) }))
+            .filter((c) => childPriceById.has(c.productId));
+          if (rawChildren.length !== bl.meta.children.length) {
+            return new Response(
+              JSON.stringify({ error: "One or more bundle products are unavailable" }),
+              { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            );
+          }
+          const toPaise = (n: any) => Math.max(0, Math.round(Number(n || 0) * 100));
+          const mrpPaise = rawChildren.reduce((s, c) => s + toPaise(childPriceById.get(c.productId)), 0);
+          const mode = bDef.discount_mode || "flat";
+          const type = bDef.type || "pick_n";
+          let totalPaise = 0;
+          if (type === "fbt" || type === "fixed") {
+            if (mode === "percent_off") {
+              const pct = Math.max(0, Math.min(99, Number(bDef.discount_percent || 0)));
+              totalPaise = Math.round(mrpPaise * (1 - pct / 100));
+            } else if (mode === "amount_off") {
+              totalPaise = Math.max(0, mrpPaise - toPaise(bDef.discount_amount));
+            } else {
+              totalPaise = toPaise(bDef.bundle_price);
+            }
+          } else {
+            totalPaise = toPaise(bDef.bundle_price);
+          }
+          const N = Math.max(1, rawChildren.length);
+          const base = Math.floor(totalPaise / N);
+          const remainder = totalPaise - base * N;
+          const qty = Math.max(1, Math.floor(Number(bl.quantity) || 1));
+          for (let i = 0; i < rawChildren.length; i++) {
+            const finalPaise = base + (i === N - 1 ? remainder : 0);
+            expanded.push({
+              productId: rawChildren[i].productId,
+              variantId: null,
+              name: childNameById.get(rawChildren[i].productId) || "Combo item",
+              price: finalPaise / 100,
+              quantity: qty,
+              meta: { __bundle_priced: true, parent_bundle_id: bDef.id, bundle_slug: bDef.slug },
+            });
+          }
+        }
+        items = expanded;
+      }
+    } catch (e) {
+      console.error("bundle expansion failed:", e);
+      return new Response(
+        JSON.stringify({ error: "Failed to price bundle. Please try again." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // Persistent cross-isolate rate limit, scoped to the shopper identity
     // instead of raw IP. Mobile carriers/Instagram often put many real buyers
     // behind one NAT IP; IP-only limits caused unrelated shoppers to get 429s.
@@ -312,8 +415,18 @@ Deno.serve(async (req) => {
       }
     }
     // Override every line-item price with the DB canonical price.
+    // Bundle-expanded rows carry `__bundle_priced` — keep their per-unit price
+    // (which sums to the configured combo total) instead of resetting to MRP.
     let serverSubtotal = 0;
     for (const item of items) {
+      const qty = Math.max(1, Math.floor(Number(item.quantity) || 0));
+      if ((item as any).meta?.__bundle_priced) {
+        const cp = Math.max(0, Number(item.price) || 0);
+        item.price = cp;
+        item.quantity = qty;
+        serverSubtotal += cp * qty;
+        continue;
+      }
       const variant = item.variantId ? variantById.get(item.variantId) : null;
       if (variant && variant.product_id !== item.productId) {
         return new Response(JSON.stringify({ error: "Variant/product mismatch" }), {
@@ -322,7 +435,6 @@ Deno.serve(async (req) => {
       }
       const variantPrice = variant?.price != null ? Number(variant.price) : null;
       const cp = variantPrice != null && variantPrice >= 0 ? variantPrice : canonicalPrice.get(item.productId)!;
-      const qty = Math.max(1, Math.floor(Number(item.quantity) || 0));
       item.price = cp;
       item.quantity = qty;
       serverSubtotal += cp * qty;
