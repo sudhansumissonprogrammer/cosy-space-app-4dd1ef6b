@@ -8,6 +8,8 @@ export interface CartItem {
   price: number;
   image?: string;
   quantity: number;
+  /** Optional line-item metadata (e.g. bundle expansion payload, upsell offer snapshot). */
+  meta?: Record<string, any>;
 }
 
 interface CartContextType {
