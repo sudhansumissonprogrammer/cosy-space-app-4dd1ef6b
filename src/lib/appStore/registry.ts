@@ -1,5 +1,5 @@
 import { lazy, type LazyExoticComponent, type ComponentType } from "react";
-import { Disc3, Gift, Timer, Heart, DownloadCloud, Film, Package, type LucideIcon } from "lucide-react";
+import { Disc3, Gift, Timer, Heart, DownloadCloud, Film, Package, ShoppingBag, type LucideIcon } from "lucide-react";
 
 export type AppId =
   | "spin-wheel"
@@ -8,7 +8,8 @@ export type AppId =
   | "wishlist-reminder"
   | "migrate-store"
   | "shop-by-video"
-  | "bundle-builder";
+  | "bundle-builder"
+  | "upsell-crosssell";
 
 export interface StoreAppMeta {
   id: AppId;
@@ -139,6 +140,19 @@ export const APP_REGISTRY: StoreAppMeta[] = [
     accent: "from-amber-500 to-rose-500",
     ConfigComponent: lazy(() => import("@/pages/appStore/BundleBuilderConfig")),
     defaultConfig: { bundles: [] as any[] },
+  },
+  {
+    id: "upsell-crosssell",
+    name: "Upsell & Cross-sell",
+    tagline: "Recommend products on PDP, cart & pre-checkout with optional discounts",
+    description:
+      "Create Offers that trigger on any / product / category / cart-value / cart-qty and recommend products manually or automatically (best sellers, same category). Add a % / ₹ discount or a free gift. Analytics for views, adds and revenue are built-in.",
+    icon: ShoppingBag,
+    category: "conversion",
+    status: "beta",
+    accent: "from-violet-500 to-indigo-600",
+    ConfigComponent: lazy(() => import("@/pages/appStore/UpsellCrossSellConfig")),
+    defaultConfig: { offers: [] as any[] },
   },
 ];
 

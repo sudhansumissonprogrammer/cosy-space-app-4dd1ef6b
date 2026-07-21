@@ -10,6 +10,10 @@ import { Minus, Plus, Trash2, ShoppingCart, ShoppingBag, Package, X, Truck, Chec
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import CartUpsell from "@/components/storefront/CartUpsell";
+import UpsellStrip from "@/components/storefront/apps/Upsell/UpsellStrip";
+import { useUpsellOffers } from "@/hooks/useUpsellOffers";
+import { matchOffers } from "@/lib/appStore/upsell/matchEngine";
+import { useMemo } from "react";
 
 interface SideCartProps {
   store: StoreData;
@@ -40,6 +44,20 @@ export default function SideCart({ store }: SideCartProps) {
   const freeShippingThreshold = shippingConfig?.free_shipping_above;
   const shippingProgress = freeShippingThreshold ? Math.min(100, (cartTotal / freeShippingThreshold) * 100) : null;
   const shippingRemaining = freeShippingThreshold ? Math.max(0, freeShippingThreshold - cartTotal) : null;
+
+  const { data: upsellOffersAll } = useUpsellOffers(store.slug);
+  const cartUpsellOffers = useMemo(() => {
+    if (!upsellOffersAll?.length) return [];
+    return matchOffers(upsellOffersAll, {
+      placement: "cart_drawer",
+      cart: {
+        productIds: items.map((i) => i.productId),
+        totalValue: cartTotal,
+        totalQty: cartCount,
+      },
+    });
+  }, [upsellOffersAll, items, cartTotal, cartCount]);
+  const cartProductIds = useMemo(() => items.map((i) => i.productId), [items]);
 
 
 
