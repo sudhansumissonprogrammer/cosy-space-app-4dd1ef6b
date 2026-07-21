@@ -43,6 +43,7 @@ import { QRCodeSVG } from "qrcode.react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { pixelPayloadFromItems } from "@/lib/expandBundleForPixel";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
@@ -259,6 +260,7 @@ export default function CheckoutV2Page() {
       price: i.price,
       quantity: i.quantity,
       image: (i as any).image || null,
+      meta: (i as any).meta || null,
     }));
   }, [isSingleMode, buyNowProduct, buyNowVariant, buyNowQty, cartItems]);
 
@@ -934,9 +936,7 @@ export default function CheckoutV2Page() {
     initiateCheckoutFiredRef.current = true;
     const eid = generateEventId();
     const eventData = {
-      content_ids: checkoutItems.map((i) => i.productId),
-      contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
-      num_items: checkoutItems.reduce((s, i) => s + (i.quantity || 1), 0),
+      ...pixelPayloadFromItems(checkoutItems),
       value: total,
       currency,
     };
@@ -1002,9 +1002,7 @@ export default function CheckoutV2Page() {
     const eid = generateEventId();
     const data = {
       payment_method: methodLabel,
-      content_ids: checkoutItems.map((i) => i.productId),
-      contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
-      num_items: checkoutItems.reduce((s, i) => s + (i.quantity || 1), 0),
+      ...pixelPayloadFromItems(checkoutItems),
       value, currency,
     };
     try { fbPixelTrack("AddPaymentInfo", data, eid); } catch { /* noop */ }
@@ -1112,6 +1110,7 @@ export default function CheckoutV2Page() {
           productId: it.productId,
           variantId: it.variantId,
           name: it.name, price: it.price, quantity: it.quantity,
+          meta: (it as any).meta ?? undefined,
         })),
         coupon_id: appliedCoupon?.id ?? null,
         abandoned_cart_id: abandonedCartId ?? null,
@@ -1238,12 +1237,10 @@ export default function CheckoutV2Page() {
       try { sessionStorage.setItem(purchaseDedupKey, "1"); } catch { /* noop */ }
       try {
         fbPixelTrack("Purchase", {
-          content_ids: checkoutItems.map((i) => i.productId),
-          contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+          ...pixelPayloadFromItems(checkoutItems),
           content_type: "product",
           content_name: checkoutItems.map((i) => i.name).join(", "),
           value: purchaseValue, currency,
-          num_items: checkoutItems.reduce((s, i) => s + (i.quantity || 1), 0),
         }, purchaseEventIdRef.current);
       } catch { /* noop */ }
     }

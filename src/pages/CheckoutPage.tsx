@@ -30,6 +30,7 @@ import { loadCashfree } from "@/lib/loadCashfree";
 import { loadPayuBolt } from "@/lib/loadPayuBolt";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
+import { pixelPayloadFromItems } from "@/lib/expandBundleForPixel";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
@@ -649,6 +650,7 @@ function CheckoutPageInner() {
         originalPrice: i.price,
         quantity: i.quantity,
         image: i.image || null,
+        meta: (i as any).meta || null,
       }));
 
   const subtotal = checkoutItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
@@ -793,9 +795,7 @@ function CheckoutPageInner() {
     initiateCheckoutFiredRef.current = true;
     const eid = generateEventId();
     const eventData = {
-      content_ids: checkoutItems.map((i) => i.productId),
-      contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
-      num_items: checkoutItems.reduce((s, i) => s + (i.quantity || 1), 0),
+      ...pixelPayloadFromItems(checkoutItems),
       value: subtotal,
       currency,
     };
@@ -863,9 +863,7 @@ function CheckoutPageInner() {
     // `payment_method` field instead — Meta accepts arbitrary custom keys.
     const data = {
       payment_method: paymentMethodLabel,
-      content_ids: checkoutItems.map((i) => i.productId),
-      contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
-      num_items: checkoutItems.reduce((s, i) => s + (i.quantity || 1), 0),
+      ...pixelPayloadFromItems(checkoutItems),
       value,
       currency,
     };
@@ -1327,6 +1325,7 @@ function CheckoutPageInner() {
           name: item.name,
           price: item.price,
           quantity: item.quantity,
+          meta: (item as any).meta ?? undefined,
         })),
         // Intentionally NOT sending `lead` here. A customer who completes
         // checkout is no longer a "lead" — the BuyNow popup already saved
@@ -1595,13 +1594,11 @@ function CheckoutPageInner() {
       fbPixelTrack(
         "Purchase",
         {
-          content_ids: checkoutItems.map((i) => i.productId),
-          contents: checkoutItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+          ...pixelPayloadFromItems(checkoutItems),
           content_type: "product",
           content_name: checkoutItems.map((i) => i.name).join(", "),
           value: total,
           currency,
-          num_items: checkoutItems.reduce((s, i) => s + (i.quantity || 1), 0),
         },
         purchaseEventIdRef.current,
       );
