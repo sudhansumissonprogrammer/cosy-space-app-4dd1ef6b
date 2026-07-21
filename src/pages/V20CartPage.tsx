@@ -36,7 +36,9 @@ export default function V20CartPage() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const productIds = items.map((i) => i.productId).filter(Boolean);
+  // Filter out synthetic bundle:* IDs — they are not valid product UUIDs and
+  // would fail the .in("id", ...) query for the whole cart.
+  const productIds = items.map((i) => i.productId).filter((id): id is string => !!id && !id.startsWith("bundle:"));
   const { data: priceMap } = useQuery({
     queryKey: ["v20-cart-mrp", store?.id, productIds.sort().join(",")],
     enabled: !!store?.id && productIds.length > 0,
