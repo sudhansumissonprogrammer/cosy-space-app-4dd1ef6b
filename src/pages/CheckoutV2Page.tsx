@@ -251,6 +251,7 @@ export default function CheckoutV2Page() {
         price: (buyNowVariant?.price ?? (buyNowProduct.sale_price && buyNowProduct.sale_price < buyNowProduct.price ? buyNowProduct.sale_price : buyNowProduct.price)) as number,
         quantity: buyNowQty,
         image: buyNowProduct.image_url as string | null,
+        meta: null as any,
       }];
     }
     return cartItems.map((i) => ({
