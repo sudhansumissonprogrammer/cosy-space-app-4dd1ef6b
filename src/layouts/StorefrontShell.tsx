@@ -35,6 +35,7 @@ const BackToTop = lazy(() => import("@/components/storefront/BackToTop"));
 const CartPlusOneOverlay = lazy(() => import("@/components/storefront/CartPlusOneOverlay"));
 
 const OrderConfettiOverlay = lazy(() => import("@/components/storefront/OrderConfettiOverlay"));
+const StorefrontApps = lazy(() => import("@/components/storefront/apps/StorefrontApps"));
 
 /** Defers ExitIntentPopup mounting by 5 seconds to keep initial load fast */
 function DeferredExitIntent({ storeId, storeName }: { storeId: string; storeName: string }) {
@@ -381,6 +382,11 @@ export default function StorefrontShell({
       {overlaysReady && (
         <Suspense fallback={null}>
           <OrderConfettiOverlay />
+        </Suspense>
+      )}
+      {overlaysReady && (
+        <Suspense fallback={null}>
+          <StorefrontApps store={store} primaryColor={primaryColor} />
         </Suspense>
       )}
     </div>

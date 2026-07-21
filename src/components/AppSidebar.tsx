@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Settings, LogOut, Package, Upload, ShoppingBag,
   Users, UserCheck, Globe, Store, Plus, CreditCard, Tag, Truck, Receipt,
   ShoppingCart, Palette, BarChart3, MessageSquare, FolderOpen, Image as ImageIcon,
-  Clock, FileText, Star, Wallet, TrendingDown,
+  Clock, FileText, Star, Wallet, TrendingDown, Blocks,
 } from "lucide-react";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { NavLink } from "@/components/NavLink";
@@ -132,6 +132,10 @@ export function AppSidebar() {
       ].filter((i) => isVisible(i.menuKey))
     : [];
 
+  const addonsItems = storeSlug
+    ? [{ title: "App Store", url: `/dashboard/stores/${storeSlug}/apps`, icon: Blocks, menuKey: "apps" }]
+    : [];
+
   const renderGroup = (
     label: string,
     items: { title: string; url: string; icon: React.ElementType; badge?: number; menuKey?: string }[]
@@ -257,6 +261,7 @@ export function AppSidebar() {
             {renderGroup("Sales & Customers", salesItems)}
             {renderGroup("Payments & Shipping", paymentItems)}
             {renderGroup("Marketing", marketingItems)}
+            {renderGroup("Add-ons", addonsItems)}
             {renderGroup("Appearance & Settings", settingsItems)}
           </>
         ) : (

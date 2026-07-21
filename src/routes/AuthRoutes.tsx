@@ -75,6 +75,8 @@ const BestSellerManagement = lazy(() => import("@/pages/BestSellerManagement"));
 const SpacingCheck = lazy(() => import("@/pages/SpacingCheck"));
 const InstallApp = lazy(() => import("@/pages/InstallApp"));
 const Index = lazy(() => import("@/pages/Index"));
+const AppStoreBrowse = lazy(() => import("@/pages/appStore/AppStoreBrowse"));
+const AppRouter = lazy(() => import("@/pages/appStore/AppRouter"));
 
 export default function AuthRoutes() {
   return (
@@ -166,6 +168,8 @@ export default function AuthRoutes() {
           <Route path="stores/:storeSlug/funnel" element={<StoreFunnel />} />
           <Route path="stores/:storeSlug/best-sellers" element={<BestSellerManagement />} />
           <Route path="stores/:storeSlug/spacing-check" element={<SpacingCheck />} />
+          <Route path="stores/:storeSlug/apps" element={<AppStoreBrowse />} />
+          <Route path="stores/:storeSlug/apps/:appId" element={<AppRouter />} />
           
           <Route path="analytics" element={<StoreAnalytics />} />
           <Route path="settings" element={<UserSettings />} />
