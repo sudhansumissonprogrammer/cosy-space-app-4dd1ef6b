@@ -417,10 +417,11 @@ Deno.serve(async (req) => {
     // Override every line-item price with the DB canonical price.
     // Bundle-expanded rows carry `__bundle_priced` — keep their per-unit price
     // (which sums to the configured combo total) instead of resetting to MRP.
+    // Upsell rows carry `__upsell_priced` — same rationale (incentive already applied).
     let serverSubtotal = 0;
     for (const item of items) {
       const qty = Math.max(1, Math.floor(Number(item.quantity) || 0));
-      if ((item as any).meta?.__bundle_priced) {
+      if ((item as any).meta?.__bundle_priced || (item as any).__upsell_priced) {
         const cp = Math.max(0, Number(item.price) || 0);
         item.price = cp;
         item.quantity = qty;
