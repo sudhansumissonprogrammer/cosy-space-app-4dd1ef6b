@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Store as StoreIcon, Home, Tag, Mail, Heart, User, Info } from "lucide-react";
+import { Store as StoreIcon, Home, Tag, Mail, Heart, User, Info, Package } from "lucide-react";
+import { useBundleMenu } from "@/hooks/useBundleMenu";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -14,6 +15,8 @@ export default function HamburgerMenu({ store }: { store: StoreData }) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const customPages = queryClient.getQueryData<any[]>(["storefront-custom-pages", store.id]) ?? [];
+  const { data: bundles } = useBundleMenu(store.slug);
+  const bundleCount = bundles?.length ?? 0;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -38,6 +41,11 @@ export default function HamburgerMenu({ store }: { store: StoreData }) {
             <Link to={storefrontPath(store.slug, "shop")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}><StoreIcon className="h-5 w-5" />Shop All</Link>
             <Link to={storefrontPath(store.slug, "about")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}><Info className="h-5 w-5" />About Us</Link>
             <Link to={storefrontPath(store.slug, "contact")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}><Mail className="h-5 w-5" />Contact Us</Link>
+            {bundleCount > 0 && (
+              <Link to={storefrontPath(store.slug, "bundles")} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+                <Package className="h-5 w-5" />Bundles <span className="ml-1 text-xs opacity-70">({bundleCount})</span>
+              </Link>
+            )}
             {customPages.map((cp: any) => (
               <Link key={cp.id} to={storefrontPath(store.slug, `page/${cp.slug}`)} onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}><Tag className="h-5 w-5" />{cp.title}</Link>
             ))}
