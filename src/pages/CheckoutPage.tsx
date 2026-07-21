@@ -641,6 +641,7 @@ function CheckoutPageInner() {
         originalPrice: product.price,
         quantity: 1,
         image: product.image_url,
+        meta: null as any,
       }]
     : cartItems.map((i) => ({
         productId: i.productId,
