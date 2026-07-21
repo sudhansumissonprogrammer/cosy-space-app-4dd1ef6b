@@ -415,8 +415,18 @@ Deno.serve(async (req) => {
       }
     }
     // Override every line-item price with the DB canonical price.
+    // Bundle-expanded rows carry `__bundle_priced` — keep their per-unit price
+    // (which sums to the configured combo total) instead of resetting to MRP.
     let serverSubtotal = 0;
     for (const item of items) {
+      const qty = Math.max(1, Math.floor(Number(item.quantity) || 0));
+      if ((item as any).meta?.__bundle_priced) {
+        const cp = Math.max(0, Number(item.price) || 0);
+        item.price = cp;
+        item.quantity = qty;
+        serverSubtotal += cp * qty;
+        continue;
+      }
       const variant = item.variantId ? variantById.get(item.variantId) : null;
       if (variant && variant.product_id !== item.productId) {
         return new Response(JSON.stringify({ error: "Variant/product mismatch" }), {
@@ -425,7 +435,6 @@ Deno.serve(async (req) => {
       }
       const variantPrice = variant?.price != null ? Number(variant.price) : null;
       const cp = variantPrice != null && variantPrice >= 0 ? variantPrice : canonicalPrice.get(item.productId)!;
-      const qty = Math.max(1, Math.floor(Number(item.quantity) || 0));
       item.price = cp;
       item.quantity = qty;
       serverSubtotal += cp * qty;
