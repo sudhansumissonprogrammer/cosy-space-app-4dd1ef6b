@@ -41,7 +41,9 @@ export default function V19CartPage() {
 
   // ── Money math ──
   // Fetch MRP (regular price) for each cart product to compute true product savings.
-  const productIds = items.map((i) => i.productId).filter(Boolean);
+  // Filter out synthetic bundle:* IDs — they are not valid product UUIDs and
+  // would fail the .in("id", ...) query for the whole cart.
+  const productIds = items.map((i) => i.productId).filter((id): id is string => !!id && !id.startsWith("bundle:"));
   const { data: priceMap } = useQuery({
     queryKey: ["v19-cart-mrp", store?.id, productIds.sort().join(",")],
     enabled: !!store?.id && productIds.length > 0,
