@@ -455,6 +455,8 @@ export type Database = {
           name: string | null
           order_count: number
           phone: string | null
+          source_id: string | null
+          source_platform: string | null
           store_id: string
           updated_at: string
         }
@@ -467,6 +469,8 @@ export type Database = {
           name?: string | null
           order_count?: number
           phone?: string | null
+          source_id?: string | null
+          source_platform?: string | null
           store_id: string
           updated_at?: string
         }
@@ -479,6 +483,8 @@ export type Database = {
           name?: string | null
           order_count?: number
           phone?: string | null
+          source_id?: string | null
+          source_platform?: string | null
           store_id?: string
           updated_at?: string
         }
@@ -769,6 +775,116 @@ export type Database = {
           },
         ]
       }
+      migration_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          credentials: Json
+          cursor: Json
+          entities: string[]
+          error_log: Json
+          id: string
+          progress: Json
+          source_platform: string
+          source_url: string
+          started_at: string | null
+          status: string
+          store_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          credentials?: Json
+          cursor?: Json
+          entities?: string[]
+          error_log?: Json
+          id?: string
+          progress?: Json
+          source_platform: string
+          source_url: string
+          started_at?: string | null
+          status?: string
+          store_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          credentials?: Json
+          cursor?: Json
+          entities?: string[]
+          error_log?: Json
+          id?: string
+          progress?: Json
+          source_platform?: string
+          source_url?: string
+          started_at?: string | null
+          status?: string
+          store_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "migration_jobs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "migration_jobs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      migration_source_map: {
+        Row: {
+          created_at: string
+          entity_type: string
+          error: string | null
+          id: string
+          job_id: string
+          source_id: string
+          status: string
+          target_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_type: string
+          error?: string | null
+          id?: string
+          job_id: string
+          source_id: string
+          status?: string
+          target_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_type?: string
+          error?: string | null
+          id?: string
+          job_id?: string
+          source_id?: string
+          status?: string
+          target_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "migration_source_map_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "migration_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           id: string
@@ -954,6 +1070,7 @@ export type Database = {
           customer_order_index: number | null
           customer_phone: string | null
           id: string
+          is_migrated: boolean
           is_repeat_customer: boolean
           meta_event_id: string | null
           meta_event_source_url: string | null
@@ -967,6 +1084,8 @@ export type Database = {
           pincode: string | null
           razorpay_order_id: string | null
           session_id: string | null
+          source_id: string | null
+          source_platform: string | null
           state: string | null
           status: string
           store_id: string
@@ -995,6 +1114,7 @@ export type Database = {
           customer_order_index?: number | null
           customer_phone?: string | null
           id?: string
+          is_migrated?: boolean
           is_repeat_customer?: boolean
           meta_event_id?: string | null
           meta_event_source_url?: string | null
@@ -1008,6 +1128,8 @@ export type Database = {
           pincode?: string | null
           razorpay_order_id?: string | null
           session_id?: string | null
+          source_id?: string | null
+          source_platform?: string | null
           state?: string | null
           status?: string
           store_id: string
@@ -1036,6 +1158,7 @@ export type Database = {
           customer_order_index?: number | null
           customer_phone?: string | null
           id?: string
+          is_migrated?: boolean
           is_repeat_customer?: boolean
           meta_event_id?: string | null
           meta_event_source_url?: string | null
@@ -1049,6 +1172,8 @@ export type Database = {
           pincode?: string | null
           razorpay_order_id?: string | null
           session_id?: string | null
+          source_id?: string | null
+          source_platform?: string | null
           state?: string | null
           status?: string
           store_id?: string
@@ -2109,6 +2234,8 @@ export type Database = {
           sale_price: number | null
           sku: string | null
           slug: string | null
+          source_id: string | null
+          source_platform: string | null
           stock_quantity: number
           store_id: string
           updated_at: string
@@ -2141,6 +2268,8 @@ export type Database = {
           sale_price?: number | null
           sku?: string | null
           slug?: string | null
+          source_id?: string | null
+          source_platform?: string | null
           stock_quantity?: number
           store_id: string
           updated_at?: string
@@ -2173,6 +2302,8 @@ export type Database = {
           sale_price?: number | null
           sku?: string | null
           slug?: string | null
+          source_id?: string | null
+          source_platform?: string | null
           stock_quantity?: number
           store_id?: string
           updated_at?: string

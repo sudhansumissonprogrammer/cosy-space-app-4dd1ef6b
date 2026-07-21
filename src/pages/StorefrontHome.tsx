@@ -25,6 +25,8 @@ import SortDropdown from "@/components/storefront/SortDropdown";
 
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
+const ShopByVideoCarousel = lazy(() => import("@/components/storefront/ShopByVideoCarousel"));
+import { DeferUntilVisible } from "@/components/storefront/DeferUntilVisible";
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 
 const ABOVE_FOLD_COUNT = 4;
@@ -295,6 +297,12 @@ export default function StorefrontHome() {
             )}
           </Suspense>
         )}
+
+        <Suspense fallback={null}>
+          <DeferUntilVisible rootMargin="600px" minHeight={0}>
+            <ShopByVideoCarousel storeSlug={slug!} storeId={store.id} />
+          </DeferUntilVisible>
+        </Suspense>
 
         <section style={{ minHeight: 600, contain: "layout" }}>
           <div className="flex items-center justify-between gap-3 mb-5">

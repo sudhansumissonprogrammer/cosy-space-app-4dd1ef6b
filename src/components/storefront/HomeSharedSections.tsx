@@ -2,8 +2,10 @@ import { useMemo, lazy, Suspense } from "react";
 import type { Tables } from "@/integrations/supabase/types";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import SectionHeading from "@/components/storefront/SectionHeading";
+import { DeferUntilVisible } from "@/components/storefront/DeferUntilVisible";
 
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
+const ShopByVideoCarousel = lazy(() => import("@/components/storefront/ShopByVideoCarousel"));
 
 type StoreData = Tables<"stores">;
 
@@ -49,6 +51,19 @@ export function HomeBestSellingSection({ products, slug, store, cardStyle, bestS
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+/** Shop by Video section — mounted below Best Sellers on V10/V12 shared home. */
+export function HomeShopByVideoSection({ slug, store }: { slug: string; store: StoreData }) {
+  return (
+    <div className="py-4 px-4 lg:px-6">
+      <Suspense fallback={null}>
+        <DeferUntilVisible rootMargin="600px" minHeight={0}>
+          <ShopByVideoCarousel storeSlug={slug} storeId={store.id} />
+        </DeferUntilVisible>
+      </Suspense>
     </div>
   );
 }

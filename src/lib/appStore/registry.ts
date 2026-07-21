@@ -1,11 +1,13 @@
 import { lazy, type LazyExoticComponent, type ComponentType } from "react";
-import { Disc3, Gift, Timer, Heart, type LucideIcon } from "lucide-react";
+import { Disc3, Gift, Timer, Heart, DownloadCloud, Film, type LucideIcon } from "lucide-react";
 
 export type AppId =
   | "spin-wheel"
   | "scratch-card"
   | "countdown-bar"
-  | "wishlist-reminder";
+  | "wishlist-reminder"
+  | "migrate-store"
+  | "shop-by-video";
 
 export interface StoreAppMeta {
   id: AppId;
@@ -89,6 +91,40 @@ export const APP_REGISTRY: StoreAppMeta[] = [
     category: "retention",
     status: "coming-soon",
     accent: "from-pink-500 to-rose-500",
+  },
+  {
+    id: "migrate-store",
+    name: "Migrate My Store",
+    tagline: "Import products, images & categories from Shopify, WooCommerce & more",
+    description:
+      "One-tap importer. Paste your existing store URL and credentials, pick what to migrate, and we pull products, images, and categories straight into your store. Products land as drafts so you can review before publishing.",
+    icon: DownloadCloud,
+    category: "conversion",
+    status: "beta",
+    accent: "from-sky-500 to-indigo-600",
+    ConfigComponent: lazy(() => import("@/pages/appStore/MigrationConfig")),
+  },
+  {
+    id: "shop-by-video",
+    name: "Shop by Video",
+    tagline: "Auto Reels-style video carousel of products that already have a video",
+    description:
+      "Adds a Shop-by-Video section under Best Sellers on your storefront. Every product that has a video uploaded automatically shows up in a mobile-first, muted-autoplay carousel with the product title, price and a See details CTA. You control the sequence, section title and card style from here.",
+    icon: Film,
+    category: "conversion",
+    status: "live",
+    accent: "from-fuchsia-500 to-rose-500",
+    ConfigComponent: lazy(() => import("@/pages/appStore/ShopByVideoConfig")),
+    defaultConfig: {
+      title: "Shop by Video",
+      autoplay: true,
+      loop: true,
+      aspect_ratio: "9:16",
+      max_items: 10,
+      show_price: true,
+      show_cta: true,
+      order: [] as string[],
+    },
   },
 ];
 
