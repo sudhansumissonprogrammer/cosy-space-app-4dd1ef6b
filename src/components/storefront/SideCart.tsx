@@ -151,7 +151,17 @@ export default function SideCart({ store }: SideCartProps) {
               )}
 
               {/* Upsell */}
-              <CartUpsell storeId={store.id} currency={currency} />
+              {cartUpsellOffers.length > 0 ? (
+                <UpsellStrip
+                  storeId={store.id}
+                  currency={currency}
+                  offers={cartUpsellOffers}
+                  placement="cart_drawer"
+                  excludeProductIds={cartProductIds}
+                />
+              ) : (
+                <CartUpsell storeId={store.id} currency={currency} />
+              )}
             </div>
 
             {/* Footer / Checkout */}
