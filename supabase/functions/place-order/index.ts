@@ -253,6 +253,63 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ────────────────────────────────────────────────────────────────
+    // UPSELL EXPANSION — for lines with meta.kind === "upsell", look up
+    // the offer and re-derive the incentive price server-side.
+    // ────────────────────────────────────────────────────────────────
+    try {
+      const upsellLines = (items || []).filter((it: any) => it?.meta?.kind === "upsell");
+      if (upsellLines.length > 0) {
+        const { data: uRow } = await supabase
+          .from("store_apps")
+          .select("config, enabled")
+          .eq("store_id", store_id)
+          .eq("app_id", "upsell-crosssell")
+          .maybeSingle();
+        const enabledUpsell = !!uRow?.enabled;
+        const offers: any[] = (uRow?.config as any)?.offers || [];
+        const offerById = new Map<string, any>(offers.map((o: any) => [String(o.id), o]));
+        const upsellIds = Array.from(new Set(upsellLines.map((it: any) => String(it.productId)).filter(Boolean)));
+        const upsellPriceById = new Map<string, { price: number; sale: number | null }>();
+        if (upsellIds.length > 0) {
+          const { data: uProds } = await supabase
+            .from("products")
+            .select("id, price, sale_price, is_active, store_id")
+            .in("id", upsellIds);
+          for (const p of (uProds || [])) {
+            if (p.store_id !== store_id || !p.is_active) continue;
+            upsellPriceById.set(String(p.id), {
+              price: Number(p.price) || 0,
+              sale: p.sale_price != null ? Number(p.sale_price) : null,
+            });
+          }
+        }
+        for (const it of items as any[]) {
+          if (it?.meta?.kind !== "upsell") continue;
+          const offer = enabledUpsell ? offerById.get(String(it.meta.offer_id)) : null;
+          const p = upsellPriceById.get(String(it.productId));
+          if (!p) continue;
+          const base = p.sale != null && p.sale < p.price ? p.sale : p.price;
+          let finalPrice = base;
+          const inc = offer?.incentive;
+          if (offer && offer.active !== false && inc && inc.type && inc.type !== "none") {
+            if (inc.type === "percent_off") {
+              const v = Math.max(0, Math.min(100, Number(inc.value) || 0));
+              finalPrice = Math.max(0, Math.round(base * (100 - v)) / 100);
+            } else if (inc.type === "flat_off") {
+              finalPrice = Math.max(0, base - (Number(inc.value) || 0));
+            } else if (inc.type === "free_gift") {
+              finalPrice = 0;
+            }
+          }
+          it.price = finalPrice;
+          (it as any).__upsell_priced = true;
+        }
+      }
+    } catch (e) {
+      console.error("upsell expansion failed:", e);
+    }
+
     // Persistent cross-isolate rate limit, scoped to the shopper identity
     // instead of raw IP. Mobile carriers/Instagram often put many real buyers
     // behind one NAT IP; IP-only limits caused unrelated shoppers to get 429s.
