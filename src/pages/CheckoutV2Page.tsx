@@ -351,10 +351,11 @@ export default function CheckoutV2Page() {
         return { city: j.city as string, state: j.state as string };
       };
       try {
+        // Owned edge fn first — avoids CORS / rate-limits on public APIs.
         let result: { city: string; state: string } | null = null;
-        try { result = await tryPrimary(); } catch { /* try fallback */ }
-        if (!result) { try { result = await tryFallback(); } catch { /* try proxy */ } }
-        if (!result) { try { result = await tryServerProxy(); } catch { /* silent */ } }
+        try { result = await tryServerProxy(); } catch { /* try public primary */ }
+        if (!result) { try { result = await tryPrimary(); } catch { /* try public fallback */ } }
+        if (!result) { try { result = await tryFallback(); } catch { /* silent */ } }
         if (cancelled || !result) return;
         // Always overwrite from a successful lookup so a stale value never blocks autofill
         if (result.city) setCity(result.city);
