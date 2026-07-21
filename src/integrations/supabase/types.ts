@@ -3715,6 +3715,51 @@ export type Database = {
         }
         Relationships: []
       }
+      upsell_events: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          event_type: string
+          id: string
+          meta: Json | null
+          offer_id: string
+          order_id: string | null
+          placement: string
+          product_id: string | null
+          revenue_paise: number
+          session_id: string | null
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          event_type: string
+          id?: string
+          meta?: Json | null
+          offer_id: string
+          order_id?: string | null
+          placement: string
+          product_id?: string | null
+          revenue_paise?: number
+          session_id?: string | null
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          event_type?: string
+          id?: string
+          meta?: Json | null
+          offer_id?: string
+          order_id?: string | null
+          placement?: string
+          product_id?: string | null
+          revenue_paise?: number
+          session_id?: string | null
+          store_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
