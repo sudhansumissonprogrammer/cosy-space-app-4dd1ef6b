@@ -1064,7 +1064,15 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Frequently Bought Together — removed per user request */}
+          {/* Upsell / Cross-sell — PDP placement */}
+          <PdpUpsellSection
+            storeSlug={store.slug}
+            storeId={store.id}
+            currency={store.currency || "INR"}
+            productId={product.id}
+            categoryId={product.category || undefined}
+            price={Number(product.sale_price ?? product.price) || 0}
+          />
 
           {/* V18: SKU & Categories */}
           {isV18 && (
