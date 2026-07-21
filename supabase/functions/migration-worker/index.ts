@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
         .single();
       const totalDone = Number((current?.progress as any)?.products?.done ?? 0);
       if (totalDone === 0 && (current?.error_log as any[])?.length >= 3) {
-        await admin.from("migration_jobs").update({ status: "failed", completed_at: new Date().toISOString() }).eq("id", job.id);
+        await admin.from("migration_jobs").update({ status: "failed", completed_at: new Date().toISOString(), credentials: {} }).eq("id", job.id);
       }
       return json({ ok: false, error: "list failed" });
     }
