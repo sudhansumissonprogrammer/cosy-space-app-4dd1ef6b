@@ -90,8 +90,13 @@ export default function StoreCoupons() {
         auto_apply: autoApply,
       } as any);
       if (error) {
-        // Map duplicate-code constraint to a friendly message; otherwise show generic.
-        if ((error as any).code === "23505") throw new Error("A coupon with this code already exists");
+        const msg = String((error as any).message || "");
+        if ((error as any).code === "23505") {
+          if (msg.includes("coupons_one_auto_apply_per_store")) {
+            throw new Error("Only one auto-apply coupon allowed per store. Disable the existing one first.");
+          }
+          throw new Error("A coupon with this code already exists");
+        }
         throw new Error("Could not create coupon. Please try again.");
       }
     },
