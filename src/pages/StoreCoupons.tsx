@@ -161,6 +161,7 @@ export default function StoreCoupons() {
     setMaxUses("");
     setStartsAt(new Date().toISOString().slice(0, 16));
     setExpiresAt("");
+    setAutoApply(false);
   };
 
   const getCouponStatus = (c: any) => {
