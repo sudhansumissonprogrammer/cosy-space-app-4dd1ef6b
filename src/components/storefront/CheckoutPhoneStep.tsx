@@ -120,6 +120,45 @@ export default function CheckoutPhoneStep({
     0,
   );
 
+  // Store-owner auto-apply coupon — preview the reward BEFORE the shopper
+  // commits their phone so the discount feels earned, not surprise-applied
+  // on the next step. Same RPC + math the main checkout uses.
+  const [autoCoupon, setAutoCoupon] = useState<{
+    code: string;
+    discount_type: string;
+    discount_value: number;
+    min_order_amount?: number | null;
+  } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!storeId) return;
+    (async () => {
+      try {
+        const { data } = await (supabase as any).rpc(
+          "get_store_auto_apply_coupon",
+          { _store_id: storeId },
+        );
+        const row = Array.isArray(data) ? data[0] ?? null : data ?? null;
+        if (!cancelled) setAutoCoupon(row);
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [storeId]);
+
+  const autoCouponDiscount = useMemo(() => {
+    if (!autoCoupon || subtotal <= 0) return 0;
+    const min = Number(autoCoupon.min_order_amount || 0);
+    if (subtotal < min) return 0;
+    const raw =
+      autoCoupon.discount_type === "percentage"
+        ? (subtotal * Number(autoCoupon.discount_value || 0)) / 100
+        : Number(autoCoupon.discount_value || 0);
+    return Math.max(0, Math.min(raw, subtotal));
+  }, [autoCoupon, subtotal]);
+
+
   const setQty = (item: CartItem, next: number) => {
     const n = Math.max(1, Math.min(99, Math.floor(next)));
     onQuantityChange?.(item, n);
