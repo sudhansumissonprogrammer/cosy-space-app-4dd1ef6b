@@ -1817,11 +1817,17 @@ export default function CheckoutV2Page() {
     // would just DOS ourselves and burn rate-limit budget.
     const now = Date.now();
     if (mintLoopBlockedRef.current) {
+      // Surface a failed state on the UPI tiles so the shopper sees a retry
+      // affordance instead of a spinner that never resolves.
+      const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
+      setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: "Tap to retry" }; }); return next; });
       return;
     }
     if (mintCountRef.current >= 8) {
       mintLoopBlockedRef.current = true;
       console.warn("[checkout] mint loop cap hit — halting re-mints for this session");
+      const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
+      setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: "Tap to retry" }; }); return next; });
       return;
     }
     if (now - lastMintAtRef.current < 2500) {
