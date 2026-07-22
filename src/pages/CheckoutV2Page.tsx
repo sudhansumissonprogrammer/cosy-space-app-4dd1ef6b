@@ -2687,7 +2687,21 @@ export default function CheckoutV2Page() {
   const savedAddr = savedAddresses?.find((a: any) => a.id === selectedAddressId);
   const addressFilled = !!(pincode && streetAddress && city && state && fullName);
   const marqueeEnabled = themeConfig?.marquee_enabled ?? true;
-  const savedAmount = (appliedCoupon && couponDiscount > 0 ? couponDiscount : 0);
+  // One source of truth for discounts shown in the header:
+  //   • coupon always counts (applies to both plans)
+  //   • prepaid discount counts only when the shopper is on "Pay full"
+  // Keeps the "₹X saved so far" chip accurate as the shopper toggles plans.
+  const savedAmount =
+    (couponDiscount > 0 ? couponDiscount : 0) +
+    (!isPartialOrder && prepaidDiscount > 0 ? prepaidDiscount : 0);
+  // Fixed anchor = the cart's value BEFORE any discount, matching the
+  // Order Summary line items + shipping + tax. Prevents the strike-through
+  // total from jumping when the shopper toggles Partial↔Full.
+  const originalTotal = Math.max(
+    0,
+    subtotal + (taxInclusive ? 0 : taxAmount) + shippingCharge,
+  );
+  const finalTotal = isPartialOrder ? total : prepaidTotal;
 
   return (
     <div
