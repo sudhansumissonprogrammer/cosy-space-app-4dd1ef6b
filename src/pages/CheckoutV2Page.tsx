@@ -916,16 +916,28 @@ export default function CheckoutV2Page() {
   const shipIdentity = useMemo(() => [
     fullName.trim().toLowerCase(),
     normalizePhone(phone),
+    email.trim().toLowerCase(),
     streetAddress.trim().toLowerCase(),
     city.trim().toLowerCase(),
     state.trim().toLowerCase(),
     (pincode || "").replace(/\D/g, ""),
-  ].join("|"), [fullName, phone, streetAddress, city, state, pincode]);
+  ].join("|"), [fullName, phone, email, streetAddress, city, state, pincode]);
   const [debouncedShipIdentity, setDebouncedShipIdentity] = useState(shipIdentity);
+  const shipIdentityRef = useRef(shipIdentity);
+  useEffect(() => { shipIdentityRef.current = shipIdentity; }, [shipIdentity]);
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedShipIdentity(shipIdentity), 1800);
     return () => window.clearTimeout(t);
   }, [shipIdentity]);
+  // Force the debounced ship-identity to match the live one immediately.
+  // Called from pay-tile taps so a shopper who edits their address on the
+  // payment step and taps GPay/Cashfree/COD within the 1.8s debounce window
+  // does not launch a gateway that still references the pre-edit address.
+  const flushShipIdentity = () => {
+    if (debouncedShipIdentity !== shipIdentityRef.current) {
+      setDebouncedShipIdentity(shipIdentityRef.current);
+    }
+  };
   const paymentSnapshot = useMemo(() => JSON.stringify({
     mode: effectiveMode,
     total: Math.round(total * 100),
@@ -1521,6 +1533,15 @@ export default function CheckoutV2Page() {
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) {
       toast.info("Updating amount…");
       void createOrderAndIntents();
+      return;
+    }
+    // Stale-address guard: if the shopper edited address/name/phone/email
+    // within the 1.8s ship-identity debounce window, the minted order row
+    // still holds the pre-edit values. Flush + re-mint before launching so
+    // the delivery boy sees the corrected address.
+    if (shipIdentityRef.current !== debouncedShipIdentity) {
+      toast.info("Updating details…");
+      flushShipIdentity();
       return;
     }
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
@@ -2355,6 +2376,14 @@ export default function CheckoutV2Page() {
   const [openingGateway, setOpeningGateway] = useState(false);
   const startGatewayPayment = async () => {
     if (openingGateway || creatingOrder || couponLoading || paymentAmountSyncing) return;
+    // Flush any pending address/email edits into the snapshot so the order
+    // row minted here reflects the live-typed values, not the pre-debounce
+    // ones. See tapUpiApp for the same guard.
+    if (shipIdentityRef.current !== debouncedShipIdentity) {
+      flushShipIdentity();
+      toast.info("Updating details…");
+      return;
+    }
     setOpeningGateway(true);
     try {
       const order = await createOrderIfNeeded(activeGateway || "razorpay");
@@ -2390,6 +2419,14 @@ export default function CheckoutV2Page() {
     if (placingCod || creatingOrder || couponLoading || paymentAmountSyncing) return;
     const err = validateAddress();
     if (err) { toast.error(err); return; }
+    // Same stale-identity flush as UPI/gateway paths — a COD row minted with
+    // a half-typed address would leave the delivery boy without a real
+    // location. Force debounce to catch up before hitting the edge fn.
+    if (shipIdentityRef.current !== debouncedShipIdentity) {
+      flushShipIdentity();
+      toast.info("Updating details…");
+      return;
+    }
     setPlacingCod(true);
     try {
       saveExpressInfo();
