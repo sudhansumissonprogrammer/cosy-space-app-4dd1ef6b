@@ -125,8 +125,10 @@ Deno.serve(async (req) => {
       try {
         if (PAID_STATUSES.includes(String(o.status || "").toLowerCase())) {
           await firePurchaseCapi(supabase as any, o.id, { source: "payu-reconcile-paid-backfill" });
+          // Backfill: if a previous reconcile pass confirmed the order but
+          // wa-order-event was never called, enqueue it now. Idempotent.
+          await fireWaOrderEvent(supabase as any, o.id, "order_confirmation");
           continue;
-        }
 
         const txnid = txnidForOrder(o.id);
         const det = await verifyPayuTxn({ env, key: cfg.payu_merchant_key, salt: cfg.payu_merchant_salt, txnid });
