@@ -781,9 +781,20 @@ export default function CheckoutV2Page() {
   }, [checkoutItems, hasPartial, partialType, partialValue, subtotal, taxAmount, taxInclusive, shippingCharge, total]);
   const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
 
-  const [payMode, setPayMode] = useState<"full" | "partial">("partial");
+  const [payMode, setPayModeState] = useState<"full" | "partial">("partial");
   const isPartialOrder = hasPartial && payMode === "partial";
   const effectiveMode: "full" | "partial" = isPartialOrder ? "partial" : "full";
+  // Wrap setPayMode so a user-driven Partial↔Full toggle always resets the
+  // mint-loop guards. Otherwise a shopper who typed their address (7-8 mints)
+  // and then switches payment plan sees the UPI tiles stuck on "Updating
+  // amount…" forever — the snapshot changes, tiles flip to loading, but the
+  // remint is silently blocked by the 8-mint cap.
+  const setPayMode = (next: "full" | "partial") => {
+    mintCountRef.current = 0;
+    mintLoopBlockedRef.current = false;
+    lastMintAtRef.current = 0;
+    setPayModeState(next);
+  };
   // ─── Prepaid discount (store setting) ──────────────────────────────────
   // Applied only on FULL online payment (not COD, not partial). Server
   // recomputes and stamps the same discount at place-order time so the
