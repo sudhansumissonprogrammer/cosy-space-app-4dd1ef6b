@@ -904,6 +904,28 @@ export default function CheckoutV2Page() {
   }>({});
   const purchaseEventIdRef = useRef<string>(generateEventId());
   const metaCookiesRef = useRef<{ fbc: string; fbp: string }>(getMetaCookies());
+  // Debounced shipping-identity string. Address/name/phone changes must
+  // still invalidate the snapshot (otherwise place-order's checkout_token
+  // idempotency returns the original row and the edit is dropped — that's
+  // the "1-letter street_address" bug). But feeding every keystroke into the
+  // snapshot spawns a fresh cancelled order per ~2.5s of typing (throttled
+  // remint loop), which is how a single shopper produced 8 pending/cancelled
+  // orders in 15s. Debounce by 1.8s of idle typing so a burst collapses into
+  // one mint at the end. Pricing/plan/items are NOT debounced — those must
+  // invalidate instantly so the gateway is always charged the current amount.
+  const shipIdentity = useMemo(() => [
+    fullName.trim().toLowerCase(),
+    normalizePhone(phone),
+    streetAddress.trim().toLowerCase(),
+    city.trim().toLowerCase(),
+    state.trim().toLowerCase(),
+    (pincode || "").replace(/\D/g, ""),
+  ].join("|"), [fullName, phone, streetAddress, city, state, pincode]);
+  const [debouncedShipIdentity, setDebouncedShipIdentity] = useState(shipIdentity);
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedShipIdentity(shipIdentity), 1800);
+    return () => window.clearTimeout(t);
+  }, [shipIdentity]);
   const paymentSnapshot = useMemo(() => JSON.stringify({
     mode: effectiveMode,
     total: Math.round(total * 100),
@@ -912,21 +934,9 @@ export default function CheckoutV2Page() {
     couponDiscount: Math.round(couponDiscount * 100),
     shipping: Math.round(shippingCharge * 100),
     items: checkoutItems.map((i) => [i.productId, i.variantId || "", i.quantity, Math.round(i.price * 100)]),
-    // Shipping identity — if the shopper edits their address/name/phone AFTER
-    // the first UPI intent was minted, we must re-mint so the DB order carries
-    // the final address, not the partial one that existed at first mint.
-    // Without this, place-order's checkout_token idempotency returns the
-    // original row and the edit is silently dropped (root cause of orders
-    // landing in the dashboard with a 1-letter street_address).
-    ship: [
-      fullName.trim().toLowerCase(),
-      normalizePhone(phone),
-      streetAddress.trim().toLowerCase(),
-      city.trim().toLowerCase(),
-      state.trim().toLowerCase(),
-      (pincode || "").replace(/\D/g, ""),
-    ].join("|"),
-  }), [effectiveMode, total, chargeAmount, appliedCoupon?.id, couponDiscount, shippingCharge, checkoutItems, fullName, phone, streetAddress, city, state, pincode]);
+    ship: debouncedShipIdentity,
+  }), [effectiveMode, total, chargeAmount, appliedCoupon?.id, couponDiscount, shippingCharge, checkoutItems, debouncedShipIdentity]);
+
   const lastPaymentSnapshotRef = useRef(paymentSnapshot);
   const paymentAmountSyncing = (showPayment || !!orderId) && paymentSnapshot !== lastPaymentSnapshotRef.current;
 
