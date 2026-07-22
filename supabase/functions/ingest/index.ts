@@ -178,6 +178,13 @@ async function handleView(req: Request) {
     }
   }
 
+  // Second bot net: client's isLikelyBot() runs webdriver + expanded UA +
+  // headless-fingerprint checks the server regex can't see. If the client
+  // flagged this hit as a bot, drop it before it reaches page_views.
+  if (body.is_bot === true) {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
   // Capture full dimensions so dashboard analytics (sessions, unique visitors,
   // referrer/UTM/device breakdowns) work end-to-end. Sanitize/trim everything
   // the client sent — never trust raw beacon input.
@@ -190,7 +197,8 @@ async function handleView(req: Request) {
     path: cleanPath,
     visitor_id: str(body.visitor_id, 100),
     session_id: str(body.session_id, 100),
-    is_bot: body.is_bot === true,
+    is_bot: false,
+
     referrer: str(body.referrer, 500),
     utm_source: str(body.utm_source, 100),
     utm_medium: str(body.utm_medium, 100),
