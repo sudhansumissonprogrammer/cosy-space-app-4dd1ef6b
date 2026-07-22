@@ -765,23 +765,40 @@ function CheckoutPageInner() {
     }
   };
 
+  const dismissedAutoCouponRef = useRef(false);
   const removeCoupon = () => {
+    if (appliedCoupon?.auto_apply) dismissedAutoCouponRef.current = true;
     setAppliedCoupon(null);
     setCouponDiscount(0);
     setCouponCode("");
   };
 
-  // Auto-apply coupon from URL or sessionStorage (e.g. ?coupon=SAVE100 from WhatsApp recovery link)
+  // Owner-configured auto-apply coupon for this store
+  const { data: autoApplyCoupon } = useQuery({
+    queryKey: ["store-auto-apply-coupon", store?.id],
+    enabled: !!store?.id,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await (supabase as any).rpc("get_store_auto_apply_coupon", { _store_id: store.id });
+      return Array.isArray(data) ? data[0] ?? null : data ?? null;
+    },
+  });
+
+  // Auto-apply coupon from URL / sessionStorage / owner auto-apply.
   useEffect(() => {
-    if (!urlCoupon || autoAppliedCouponRef.current) return;
-    if (!store?.id || subtotal <= 0 || appliedCoupon) return;
+    if (autoAppliedCouponRef.current || appliedCoupon) return;
+    if (!store?.id || subtotal <= 0) return;
+    const codeToApply = urlCoupon
+      || (!dismissedAutoCouponRef.current && autoApplyCoupon?.code ? autoApplyCoupon.code : null);
+    if (!codeToApply) return;
+    if (autoApplyCoupon && codeToApply === autoApplyCoupon.code
+        && Number(autoApplyCoupon.min_order_amount || 0) > subtotal) return;
     autoAppliedCouponRef.current = true;
-    const code = urlCoupon.toUpperCase();
-    console.log("[coupon] auto-applying:", code, "subtotal:", subtotal);
+    const code = String(codeToApply).toUpperCase();
     setCouponCode(code);
     applyCoupon(code);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlCoupon, store?.id, subtotal, appliedCoupon, hasActiveCoupons]);
+  }, [urlCoupon, store?.id, subtotal, appliedCoupon, hasActiveCoupons, autoApplyCoupon]);
   // InitiateCheckout — fire ONLY at the moment of real payment intent:
   //   • COD          → when user clicks "Place Order" (after validation passes)
   //   • Razorpay     → just before rzp.open() — gateway about to actually load
