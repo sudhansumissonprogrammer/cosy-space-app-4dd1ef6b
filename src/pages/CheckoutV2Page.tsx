@@ -2783,10 +2783,10 @@ export default function CheckoutV2Page() {
               <div className="text-right">
                 <div className="text-[11px] text-muted-foreground">{checkoutItems.length} item{checkoutItems.length !== 1 ? "s" : ""}</div>
                 <div className="flex items-center gap-1 justify-end">
-                  {(savedAmount > 0 || (!isPartialOrder && prepaidDiscount > 0)) && (
-                    <span className="text-[12px] text-muted-foreground line-through">{formatPrice(isPartialOrder ? subtotal : total, currency)}</span>
+                  {savedAmount > 0 && originalTotal > finalTotal && (
+                    <span className="text-[12px] text-muted-foreground line-through">{formatPrice(originalTotal, currency)}</span>
                   )}
-                  <span className="text-[15px] font-bold">{formatPrice(isPartialOrder ? total : prepaidTotal, currency)}</span>
+                  <span className="text-[15px] font-bold">{formatPrice(finalTotal, currency)}</span>
                   <ChevronDown className="h-4 w-4" />
                 </div>
               </div>
