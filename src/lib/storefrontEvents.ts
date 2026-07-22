@@ -75,7 +75,12 @@ const DEDUP_MS = 30_000;
 
 export function fireStorefrontEvent(args: FireEventArgs): void {
   if (!args.storeId || !args.eventName) return;
+  // Bot gate: analytics dashboards must never count bot-driven funnel steps
+  // (view_product, add_to_cart, buy_now_click, etc). storefront_events has no
+  // is_bot column, so we filter at the source — same UA rules as pageviews.
+  if (isLikelyBot()) return;
   try {
+
     const sid = getOrCreateSessionId();
     const vid = getVisitorId();
     const purchaseOrderId = args.eventName === "purchase" ? String(args.metadata?.order_id || "") : "";
