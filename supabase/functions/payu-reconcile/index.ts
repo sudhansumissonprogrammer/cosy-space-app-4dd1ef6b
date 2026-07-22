@@ -129,6 +129,8 @@ Deno.serve(async (req) => {
           // wa-order-event was never called, enqueue it now. Idempotent.
           await fireWaOrderEvent(supabase as any, o.id, "order_confirmation");
           continue;
+        }
+
 
         const txnid = txnidForOrder(o.id);
         const det = await verifyPayuTxn({ env, key: cfg.payu_merchant_key, salt: cfg.payu_merchant_salt, txnid });
