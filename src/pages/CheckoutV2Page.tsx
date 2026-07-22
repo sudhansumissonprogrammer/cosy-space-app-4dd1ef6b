@@ -916,16 +916,28 @@ export default function CheckoutV2Page() {
   const shipIdentity = useMemo(() => [
     fullName.trim().toLowerCase(),
     normalizePhone(phone),
+    email.trim().toLowerCase(),
     streetAddress.trim().toLowerCase(),
     city.trim().toLowerCase(),
     state.trim().toLowerCase(),
     (pincode || "").replace(/\D/g, ""),
-  ].join("|"), [fullName, phone, streetAddress, city, state, pincode]);
+  ].join("|"), [fullName, phone, email, streetAddress, city, state, pincode]);
   const [debouncedShipIdentity, setDebouncedShipIdentity] = useState(shipIdentity);
+  const shipIdentityRef = useRef(shipIdentity);
+  useEffect(() => { shipIdentityRef.current = shipIdentity; }, [shipIdentity]);
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedShipIdentity(shipIdentity), 1800);
     return () => window.clearTimeout(t);
   }, [shipIdentity]);
+  // Force the debounced ship-identity to match the live one immediately.
+  // Called from pay-tile taps so a shopper who edits their address on the
+  // payment step and taps GPay/Cashfree/COD within the 1.8s debounce window
+  // does not launch a gateway that still references the pre-edit address.
+  const flushShipIdentity = () => {
+    if (debouncedShipIdentity !== shipIdentityRef.current) {
+      setDebouncedShipIdentity(shipIdentityRef.current);
+    }
+  };
   const paymentSnapshot = useMemo(() => JSON.stringify({
     mode: effectiveMode,
     total: Math.round(total * 100),
