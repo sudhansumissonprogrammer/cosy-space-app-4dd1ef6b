@@ -646,7 +646,15 @@ export default function ProductDetail() {
     // Phone capture now happens as Step 1 of the checkout page itself
     // (no more popup). Just navigate — CheckoutPage renders the phone step
     // when localStorage.checkout_phone is missing.
-    navigate(storefrontPath(store.slug, "checkout"));
+    //
+    // IMPORTANT: Buy Now must checkout ONLY this product, even when the
+    // shopper already has other items in their cart. Pass ?product=&variant=
+    // so CheckoutV2Page enters single-product mode (isSingleMode). Existing
+    // cart items are preserved for later, just excluded from this checkout.
+    const qs = new URLSearchParams();
+    qs.set("product", product.id);
+    if (selectedVariant?.id) qs.set("variant", selectedVariant.id);
+    navigate(storefrontPath(store.slug, `checkout?${qs.toString()}`));
   };
 
 
