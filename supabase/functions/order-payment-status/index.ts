@@ -112,6 +112,7 @@ Deno.serve(async (req) => {
                 notes: `Cashfree Order ID: ${cfId}`,
               });
               await firePurchaseCapi(supabase, order_id, { source: "order-payment-status-cashfree" });
+              await fireWaOrderEvent(supabase, order_id, "order_confirmation");
             }
           }
         }
@@ -148,6 +149,7 @@ Deno.serve(async (req) => {
                 });
               }
               await firePurchaseCapi(supabase, order_id, { source: "order-payment-status-razorpay" });
+              await fireWaOrderEvent(supabase, order_id, "order_confirmation");
             }
           }
         }
@@ -165,6 +167,7 @@ Deno.serve(async (req) => {
             notes: `PayU Txn ID: ${txnid}${det.mihpayid ? ` (mihpayid: ${det.mihpayid})` : ""}`,
           });
           await firePurchaseCapi(supabase, order_id, { source: "order-payment-status-payu" });
+          await fireWaOrderEvent(supabase, order_id, "order_confirmation");
         }
       }
     }
