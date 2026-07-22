@@ -10,6 +10,7 @@
 // stamped on orders.meta_purchase_fired_at.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
+import { fireWaOrderEvent } from "../_shared/wa-fire-order-event.ts";
 import { timingSafeEqual } from "../_shared/security.ts";
 import { mapPayuStatus, verifyPayuTxn, type PayuEnv } from "../_shared/payuHelpers.ts";
 
@@ -160,6 +161,9 @@ Deno.serve(async (req) => {
           if (upd && upd.length > 0) {
             confirmed++;
             await firePurchaseCapi(supabase as any, o.id, { source: "payu-reconcile" });
+            // Safety net: shopper's tab was gone, so notify-order never ran.
+            // Fire order_confirmation WhatsApp from the reconcile path too.
+            await fireWaOrderEvent(supabase as any, o.id, "order_confirmation");
           }
           continue;
         }

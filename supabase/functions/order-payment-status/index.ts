@@ -8,6 +8,7 @@
 // existing verify functions keep the DB fresh.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
+import { fireWaOrderEvent } from "../_shared/wa-fire-order-event.ts";
 import { mapPayuStatus, verifyPayuTxn, type PayuEnv } from "../_shared/payuHelpers.ts";
 
 const corsHeaders = {
