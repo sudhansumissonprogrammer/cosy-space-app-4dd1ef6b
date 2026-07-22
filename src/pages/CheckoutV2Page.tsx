@@ -2687,7 +2687,21 @@ export default function CheckoutV2Page() {
   const savedAddr = savedAddresses?.find((a: any) => a.id === selectedAddressId);
   const addressFilled = !!(pincode && streetAddress && city && state && fullName);
   const marqueeEnabled = themeConfig?.marquee_enabled ?? true;
-  const savedAmount = (appliedCoupon && couponDiscount > 0 ? couponDiscount : 0);
+  // One source of truth for discounts shown in the header:
+  //   • coupon always counts (applies to both plans)
+  //   • prepaid discount counts only when the shopper is on "Pay full"
+  // Keeps the "₹X saved so far" chip accurate as the shopper toggles plans.
+  const savedAmount =
+    (couponDiscount > 0 ? couponDiscount : 0) +
+    (!isPartialOrder && prepaidDiscount > 0 ? prepaidDiscount : 0);
+  // Fixed anchor = the cart's value BEFORE any discount, matching the
+  // Order Summary line items + shipping + tax. Prevents the strike-through
+  // total from jumping when the shopper toggles Partial↔Full.
+  const originalTotal = Math.max(
+    0,
+    subtotal + (taxInclusive ? 0 : taxAmount) + shippingCharge,
+  );
+  const finalTotal = isPartialOrder ? total : prepaidTotal;
 
   return (
     <div
@@ -2769,10 +2783,10 @@ export default function CheckoutV2Page() {
               <div className="text-right">
                 <div className="text-[11px] text-muted-foreground">{checkoutItems.length} item{checkoutItems.length !== 1 ? "s" : ""}</div>
                 <div className="flex items-center gap-1 justify-end">
-                  {(savedAmount > 0 || (!isPartialOrder && prepaidDiscount > 0)) && (
-                    <span className="text-[12px] text-muted-foreground line-through">{formatPrice(isPartialOrder ? subtotal : total, currency)}</span>
+                  {savedAmount > 0 && originalTotal > finalTotal && (
+                    <span className="text-[12px] text-muted-foreground line-through">{formatPrice(originalTotal, currency)}</span>
                   )}
-                  <span className="text-[15px] font-bold">{formatPrice(isPartialOrder ? total : prepaidTotal, currency)}</span>
+                  <span className="text-[15px] font-bold">{formatPrice(finalTotal, currency)}</span>
                   <ChevronDown className="h-4 w-4" />
                 </div>
               </div>
@@ -3294,6 +3308,11 @@ export default function CheckoutV2Page() {
                       </div>
 
                       <div className="text-[12px] text-muted-foreground mt-0.5">Nothing to pay on delivery</div>
+                      {payMode !== "full" && prepaidDiscountPreview > 0 && (
+                        <div className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
+                          <Sparkles className="h-3 w-3" /> Save {formatPrice(prepaidDiscountPreview, currency)} extra vs. advance
+                        </div>
+                      )}
                     </div>
                   </div>
                 </button>
