@@ -5246,6 +5246,7 @@ export type Database = {
       validate_store_coupon: {
         Args: { _code: string; _store_id: string }
         Returns: {
+          auto_apply: boolean
           code: string
           discount_type: string
           discount_value: number
