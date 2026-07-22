@@ -206,15 +206,19 @@ export default function StoreCoupons() {
                   <TableHead>Uses</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Active</TableHead>
+                  <TableHead>Auto-apply</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {coupons.map((c) => {
+                {coupons.map((c: any) => {
                   const status = getCouponStatus(c);
                   return (
                     <TableRow key={c.id}>
-                      <TableCell className="font-mono font-semibold">{c.code}</TableCell>
+                      <TableCell className="font-mono font-semibold">
+                        {c.code}
+                        {c.auto_apply && <Badge variant="outline" className="ml-2 text-[10px]">AUTO</Badge>}
+                      </TableCell>
                       <TableCell>
                         {c.discount_type === "percentage" ? `${c.discount_value}%` : `₹${c.discount_value}`}
                       </TableCell>
@@ -225,6 +229,12 @@ export default function StoreCoupons() {
                         <Switch
                           checked={c.is_active}
                           onCheckedChange={(val) => toggleMutation.mutate({ id: c.id, is_active: val })}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Switch
+                          checked={!!c.auto_apply}
+                          onCheckedChange={(val) => autoApplyMutation.mutate({ id: c.id, auto_apply: val })}
                         />
                       </TableCell>
                       <TableCell>
