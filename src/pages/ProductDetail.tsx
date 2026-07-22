@@ -904,7 +904,7 @@ export default function ProductDetail() {
           {/* Auto-apply coupon hint — "Get it for as low as ₹X" */}
           {!isOutOfStock && (
             <div className="mt-4">
-              <AutoCouponHint storeId={store?.id} basePrice={Number(basePrice) || 0} currency={currency} />
+              <AutoCouponHint storeId={store?.id} basePrice={Number(basePrice) || 0} currency={product.currency || store.currency || "INR"} />
             </div>
           )}
 
