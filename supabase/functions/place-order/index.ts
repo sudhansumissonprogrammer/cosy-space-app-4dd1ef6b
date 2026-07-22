@@ -344,22 +344,32 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Idempotency: if checkout_token already exists, return the existing order
+    // Idempotency: checkout_token represents ONE shopper checkout attempt.
+    // If the row is still mutable (pending/cancelled/failed), continue through
+    // price recomputation and UPDATE that same row. If it is already paid/COD
+    // confirmed, return it unchanged. This prevents payment-plan toggles from
+    // creating multiple pending orders for the same phone/session.
+    let reusableOrder: { id: string; order_number: number | null; status: string | null } | null = null;
     if (checkout_token) {
       const { data: existingOrder } = await supabase
         .from("orders")
-        .select("id, order_number")
+        .select("id, order_number, status")
         .eq("store_id", store_id)
         .eq("checkout_token", checkout_token)
         .maybeSingle();
 
       if (existingOrder) {
+        const reusableStatuses = new Set(["pending", "cancelled", "failed"]);
+        if (reusableStatuses.has(String(existingOrder.status || ""))) {
+          reusableOrder = existingOrder as typeof reusableOrder;
+        } else {
         const orderNumber = existingOrder.order_number
           ? `#${1000 + existingOrder.order_number}`
           : `#${existingOrder.id.slice(0, 8).toUpperCase()}`;
         return new Response(JSON.stringify({ success: true, order_id: existingOrder.id, order_number: orderNumber, profit: null }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+        }
       }
     }
 
@@ -569,9 +579,11 @@ Deno.serve(async (req) => {
     }
     const serverTaxToAdd = taxConf?.is_inclusive ? 0 : serverTax;
 
-    // C5: Atomically claim the coupon BEFORE inserting the order.
-    // Prevents two concurrent checkouts from both consuming the last allowed use.
-    if (validCouponId) {
+    // C5: Atomically claim the coupon BEFORE creating the order.
+    // Prevents two concurrent checkouts from both consuming the last allowed
+    // use. For a reusable pending order, do not claim again on every payment
+    // mode toggle; that would inflate used_count for one shopper.
+    if (validCouponId && !reusableOrder) {
       const { data: claimed, error: claimErr } = await supabase
         .rpc("claim_coupon", { _coupon_id: validCouponId, _store_id: store_id });
       if (claimErr || claimed !== true) {
@@ -773,9 +785,7 @@ Deno.serve(async (req) => {
       if (Object.keys(out).length) attributionClean = out;
     }
 
-    const { data: createdOrder, error: orderErr } = await supabase
-      .from("orders")
-      .insert({
+    const orderPayload = {
         store_id,
         total: Number(order.total),
         currency: order.currency,
@@ -804,9 +814,54 @@ Deno.serve(async (req) => {
         customer_order_index: priorOrderCount + 1,
         is_repeat_customer: priorOrderCount > 0,
         attribution: attributionClean,
-      })
-      .select("id")
-      .single();
+      };
+
+    let createdOrder: { id: string } | null = null;
+    let orderErr: any = null;
+    const reusedExistingOrder = !!reusableOrder;
+
+    if (reusableOrder) {
+      const { data: updatedOrder, error: updateErr } = await supabase
+        .from("orders")
+        .update(orderPayload)
+        .eq("id", reusableOrder.id)
+        .eq("store_id", store_id)
+        .eq("checkout_token", checkout_token)
+        .in("status", ["pending", "cancelled", "failed"])
+        .select("id")
+        .maybeSingle();
+      createdOrder = updatedOrder;
+      orderErr = updateErr;
+
+      // If a payment webhook won the race and made the order non-mutable while
+      // this request was running, return the now-current order instead of
+      // overwriting a paid row back to pending.
+      if (!updateErr && !updatedOrder) {
+        const { data: current } = await supabase
+          .from("orders")
+          .select("id, order_number")
+          .eq("id", reusableOrder.id)
+          .eq("store_id", store_id)
+          .maybeSingle();
+        if (current) {
+          const currentNumber = current.order_number
+            ? `#${1000 + current.order_number}`
+            : `#${current.id.slice(0, 8).toUpperCase()}`;
+          return new Response(
+            JSON.stringify({ success: true, order_id: current.id, order_number: currentNumber, profit: null }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      }
+    } else {
+      const { data: insertedOrder, error: insertErr } = await supabase
+        .from("orders")
+        .insert(orderPayload)
+        .select("id")
+        .single();
+      createdOrder = insertedOrder;
+      orderErr = insertErr;
+    }
 
 
     if (orderErr || !createdOrder) {
@@ -847,6 +902,14 @@ Deno.serve(async (req) => {
       image_url: canonicalImage.get(item.productId) ?? (item as any).image ?? null,
     }));
 
+    if (reusedExistingOrder) {
+      const { error: deleteItemsErr } = await supabase
+        .from("order_items")
+        .delete()
+        .eq("order_id", createdOrder.id);
+      if (deleteItemsErr) throw deleteItemsErr;
+    }
+
     const { error: itemsErr } = await supabase.from("order_items").insert(orderItems);
     if (itemsErr) throw itemsErr;
 
@@ -879,7 +942,7 @@ Deno.serve(async (req) => {
     // Parallelize independent post-insert operations
     const postInsertOps: Promise<any>[] = [];
 
-    if (lead) {
+    if (lead && !reusedExistingOrder) {
       postInsertOps.push(
         supabase.from("customer_leads").insert({
           store_id,

@@ -1781,17 +1781,11 @@ export default function CheckoutV2Page() {
 
 
 
-  // ─── Create order (single call, dedup with checkout_token) ──────────────
-  // Also enforces that a reused orderId matches the CURRENT payment snapshot
-  // (plan, coupon, shipping, items). If the shopper toggled Partial↔Full or
-  // applied a coupon after the row was minted, the stored row is stale and
-  // must be discarded — otherwise the gateway (UPI/Razorpay/Cashfree/PayU)
-  // is called against the wrong `advance_paid`/`total` and charges too much
-  // or too little. Server is DB-authoritative, so a fresh mint is the only
-  // safe way to change the amount.
-  // Fire-and-forget cancel of a stale pending order (see edge fn header).
-  // Never awaited: we don't want to slow the re-mint path on a slow network,
-  // and the server call is idempotent + scoped by checkout_token.
+  // ─── Create/update order (dedup with checkout_token) ────────────────────
+  // The checkout_token stays stable for the whole attempt. When plan/coupon/
+  // qty/address changes, place-order updates the SAME pending row instead of
+  // minting a new row. This prevents 4-5 pending orders from one shopper who
+  // toggles Partial↔Full while still keeping gateway amounts DB-authoritative.
   const cancelStalePendingOrder = (oid: string | null, token: string | null) => {
     if (!oid || !token || !store?.id) return;
     try {
@@ -1815,17 +1809,13 @@ export default function CheckoutV2Page() {
       return { id: orderIdRef.current, number: orderNumberRef.current };
     }
     if (orderIdRef.current && orderSnapshotRef.current !== effectiveSnapshot) {
-      // Discard stale row before minting a fresh one with the new amount.
-      // Also cancel the stale pending row server-side so we don't leave
-      // orphan pending orders behind on every Partial↔Full / qty change.
-      cancelStalePendingOrder(orderIdRef.current, checkoutTokenRef.current);
+      // Discard only the local payment intent/snapshot. Do NOT cancel the DB
+      // row or rotate checkout_token here — the backend will update that same
+      // pending row with the new payment type/amount/items.
       orderIdRef.current = null;
       orderNumberRef.current = null;
       setOrderId(null);
       setOrderNumber(null);
-      const nextToken = newCheckoutToken();
-      checkoutTokenRef.current = nextToken;
-      setCheckoutToken(nextToken);
     }
     const created = await placeOrderRow(paymentMethodHint, resolvedType);
     orderIdRef.current = created.id;
@@ -2023,9 +2013,8 @@ export default function CheckoutV2Page() {
       try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
       desktopQrPollStartedRef.current = false;
     }
-    // Cancel the stale pending row so it doesn't linger in the DB as an
-    // orphan while we mint the fresh one for the new amount.
-    cancelStalePendingOrder(orderIdRef.current, checkoutTokenRef.current);
+    // Invalidate local gateway intents only. Keep checkout_token stable so the
+    // backend updates the existing pending row instead of creating duplicates.
     orderIdRef.current = null;
     orderNumberRef.current = null;
     orderSnapshotRef.current = null;
@@ -2042,9 +2031,6 @@ export default function CheckoutV2Page() {
     gatewayRef.current = {};
     autoAdvancedRef.current = false;
     desktopQrPollStartedRef.current = false;
-    const nextToken = newCheckoutToken();
-    checkoutTokenRef.current = nextToken;
-    setCheckoutToken(nextToken);
     if (showPayment) {
       queueMicrotask(() => { void createOrderAndIntents(); });
     }
@@ -2079,8 +2065,8 @@ export default function CheckoutV2Page() {
       try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
       desktopQrPollStartedRef.current = false;
     }
-    // Same cleanup as the snapshot-reset effect above.
-    cancelStalePendingOrder(orderIdRef.current, checkoutTokenRef.current);
+    // Same local cleanup as the snapshot-reset effect above. Keep the token
+    // stable so place-order updates one pending row.
     orderIdRef.current = null;
     orderNumberRef.current = null;
     orderSnapshotRef.current = null;
@@ -2090,9 +2076,6 @@ export default function CheckoutV2Page() {
       gpay: { status: "loading" }, phonepe: { status: "loading" },
       paytm: { status: "loading" }, bhim: { status: "loading" }, any: { status: "loading" },
     });
-    const nextToken = newCheckoutToken();
-    checkoutTokenRef.current = nextToken;
-    setCheckoutToken(nextToken);
     queueMicrotask(() => { void createOrderAndIntents(); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [intents, chargeAmount, showPayment, waiting, confirmingPayment, orderPlaced, creatingOrder]);
