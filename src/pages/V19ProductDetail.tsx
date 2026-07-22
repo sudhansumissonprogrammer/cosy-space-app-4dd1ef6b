@@ -511,6 +511,9 @@ export default function V19ProductDetail() {
       <StockUrgencyStrip stock={product.stock_quantity} />
       <DeliveryEtaPill />
       <CouponTeaser storeId={store?.id || ""} orderTotal={effectivePrice} />
+      <div className="mx-4 mb-3">
+        <AutoCouponHint storeId={store?.id} basePrice={effectivePrice} currency={product.currency || store?.currency || "INR"} />
+      </div>
       <PartialPaymentTrustCard
         price={Number(product.price)}
         salePrice={product.sale_price ? Number(product.sale_price) : null}
