@@ -184,6 +184,7 @@ export type Database = {
       }
       coupons: {
         Row: {
+          auto_apply: boolean
           code: string
           created_at: string
           discount_type: string
@@ -198,6 +199,7 @@ export type Database = {
           used_count: number
         }
         Insert: {
+          auto_apply?: boolean
           code: string
           created_at?: string
           discount_type?: string
@@ -212,6 +214,7 @@ export type Database = {
           used_count?: number
         }
         Update: {
+          auto_apply?: boolean
           code?: string
           created_at?: string
           discount_type?: string
@@ -5038,6 +5041,21 @@ export type Database = {
         Returns: Json
       }
       get_store_as_admin: { Args: { _slug: string }; Returns: Json }
+      get_store_auto_apply_coupon: {
+        Args: { _store_id: string }
+        Returns: {
+          auto_apply: boolean
+          code: string
+          discount_type: string
+          discount_value: number
+          expires_at: string
+          id: string
+          max_uses: number
+          min_order_amount: number
+          starts_at: string
+          used_count: number
+        }[]
+      }
       get_store_coupon_teaser: {
         Args: { _store_id: string }
         Returns: {
@@ -5228,6 +5246,7 @@ export type Database = {
       validate_store_coupon: {
         Args: { _code: string; _store_id: string }
         Returns: {
+          auto_apply: boolean
           code: string
           discount_type: string
           discount_value: number

@@ -32,6 +32,7 @@ export default function StoreCoupons() {
   const [maxUses, setMaxUses] = useState("");
   const [startsAt, setStartsAt] = useState(new Date().toISOString().slice(0, 16));
   const [expiresAt, setExpiresAt] = useState("");
+  const [autoApply, setAutoApply] = useState(false);
 
   const { data: coupons, isLoading } = useQuery({
     queryKey: ["coupons", storeId],
@@ -86,10 +87,16 @@ export default function StoreCoupons() {
         max_uses: maxUsesNum,
         starts_at: startsAtDate.toISOString(),
         expires_at: expiresAtDate ? expiresAtDate.toISOString() : null,
-      });
+        auto_apply: autoApply,
+      } as any);
       if (error) {
-        // Map duplicate-code constraint to a friendly message; otherwise show generic.
-        if ((error as any).code === "23505") throw new Error("A coupon with this code already exists");
+        const msg = String((error as any).message || "");
+        if ((error as any).code === "23505") {
+          if (msg.includes("coupons_one_auto_apply_per_store")) {
+            throw new Error("Only one auto-apply coupon allowed per store. Disable the existing one first.");
+          }
+          throw new Error("A coupon with this code already exists");
+        }
         throw new Error("Could not create coupon. Please try again.");
       }
     },
@@ -110,6 +117,24 @@ export default function StoreCoupons() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["coupons", storeId] });
+      purgeStore();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const autoApplyMutation = useMutation({
+    mutationFn: async ({ id, auto_apply }: { id: string; auto_apply: boolean }) => {
+      const { error } = await (supabase as any).from("coupons").update({ auto_apply }).eq("id", id).eq("store_id", storeId!);
+      if (error) {
+        if ((error as any).code === "23505") {
+          throw new Error("Only one auto-apply coupon allowed per store. Disable the existing one first.");
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["coupons", storeId] });
+      toast.success("Updated");
       purgeStore();
     },
     onError: (e: any) => toast.error(e.message),
@@ -136,6 +161,7 @@ export default function StoreCoupons() {
     setMaxUses("");
     setStartsAt(new Date().toISOString().slice(0, 16));
     setExpiresAt("");
+    setAutoApply(false);
   };
 
   const getCouponStatus = (c: any) => {
@@ -180,15 +206,19 @@ export default function StoreCoupons() {
                   <TableHead>Uses</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Active</TableHead>
+                  <TableHead>Auto-apply</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {coupons.map((c) => {
+                {coupons.map((c: any) => {
                   const status = getCouponStatus(c);
                   return (
                     <TableRow key={c.id}>
-                      <TableCell className="font-mono font-semibold">{c.code}</TableCell>
+                      <TableCell className="font-mono font-semibold">
+                        {c.code}
+                        {c.auto_apply && <Badge variant="outline" className="ml-2 text-[10px]">AUTO</Badge>}
+                      </TableCell>
                       <TableCell>
                         {c.discount_type === "percentage" ? `${c.discount_value}%` : `₹${c.discount_value}`}
                       </TableCell>
@@ -199,6 +229,12 @@ export default function StoreCoupons() {
                         <Switch
                           checked={c.is_active}
                           onCheckedChange={(val) => toggleMutation.mutate({ id: c.id, is_active: val })}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Switch
+                          checked={!!c.auto_apply}
+                          onCheckedChange={(val) => autoApplyMutation.mutate({ id: c.id, auto_apply: val })}
                         />
                       </TableCell>
                       <TableCell>
@@ -268,6 +304,13 @@ export default function StoreCoupons() {
               <div className="space-y-2">
                 <Label>Expires At</Label>
                 <Input type="datetime-local" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
+              </div>
+            </div>
+            <div className="flex items-start gap-3 rounded-md border p-3">
+              <Switch checked={autoApply} onCheckedChange={setAutoApply} className="mt-0.5" />
+              <div className="flex-1">
+                <div className="text-sm font-semibold">Auto-apply at checkout</div>
+                <div className="text-xs text-muted-foreground">Shows as already applied for every shopper. They can still remove it. Only one auto-apply coupon per store.</div>
               </div>
             </div>
             <Button type="submit" className="w-full" disabled={createMutation.isPending}>

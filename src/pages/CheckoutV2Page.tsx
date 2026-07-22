@@ -718,14 +718,35 @@ export default function CheckoutV2Page() {
     } catch { toast.error("Failed to validate coupon"); }
     finally { setCouponLoading(false); }
   };
-  const removeCoupon = () => { setAppliedCoupon(null); setCouponDiscount(0); setCouponCode(""); autoAppliedCouponRef.current = false; };
+  const dismissedAutoCouponRef = useRef(false);
+  const removeCoupon = () => {
+    if (appliedCoupon?.auto_apply) dismissedAutoCouponRef.current = true;
+    setAppliedCoupon(null); setCouponDiscount(0); setCouponCode(""); autoAppliedCouponRef.current = false;
+  };
+
+  // Store-owner configured auto-apply coupon
+  const { data: autoApplyCoupon } = useQuery({
+    queryKey: ["store-auto-apply-coupon", store?.id],
+    enabled: !!store?.id,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await (supabase as any).rpc("get_store_auto_apply_coupon", { _store_id: store.id });
+      return Array.isArray(data) ? data[0] ?? null : data ?? null;
+    },
+  });
 
   useEffect(() => {
-    if (!urlCoupon || autoAppliedCouponRef.current) return;
-    if (!store?.id || subtotal <= 0 || appliedCoupon) return;
+    if (autoAppliedCouponRef.current || appliedCoupon) return;
+    if (!store?.id || subtotal <= 0) return;
+    // URL/session coupon has priority over the owner's auto-apply
+    const codeToApply = urlCoupon
+      || (!dismissedAutoCouponRef.current && autoApplyCoupon?.code ? autoApplyCoupon.code : null);
+    if (!codeToApply) return;
+    if (autoApplyCoupon && codeToApply === autoApplyCoupon.code
+        && Number(autoApplyCoupon.min_order_amount || 0) > subtotal) return;
     autoAppliedCouponRef.current = true;
-    applyCoupon(urlCoupon.toUpperCase());
-  }, [urlCoupon, store?.id, subtotal, appliedCoupon]); // eslint-disable-line react-hooks/exhaustive-deps
+    applyCoupon(String(codeToApply).toUpperCase());
+  }, [urlCoupon, store?.id, subtotal, appliedCoupon, autoApplyCoupon]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-validate the applied coupon when the cart total changes. If the shopper
   // removes items and drops below the coupon's minimum order value, or the
@@ -2958,7 +2979,10 @@ export default function CheckoutV2Page() {
                           <Check className="h-4 w-4" />
                         </div>
                         <div>
-                          <div className="text-[14px] font-bold">"{appliedCoupon.code}" applied</div>
+                          <div className="text-[14px] font-bold flex items-center gap-1.5">
+                            "{appliedCoupon.code}" applied
+                            {appliedCoupon.auto_apply && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 tracking-wide">AUTO</span>}
+                          </div>
                           <div className="text-[12px] text-muted-foreground">You save {formatPrice(couponDiscount, currency)}</div>
                         </div>
                       </div>

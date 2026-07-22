@@ -498,14 +498,27 @@ Deno.serve(async (req) => {
       serverSubtotal += cp * qty;
     }
 
-    // Validate coupon server-side.
+    // Validate coupon server-side. If client sent no coupon_id, fall back to the
+    // store's auto-apply coupon so the discount is honored even when the client
+    // skipped the fetch (stale cache, offline mint, etc).
     let serverDiscount = 0;
     let validCouponId: string | null = null;
-    if (coupon_id) {
+    let couponIdToCheck: string | null = coupon_id ?? null;
+    if (!couponIdToCheck) {
+      const { data: autoRow } = await supabase
+        .from("coupons")
+        .select("id")
+        .eq("store_id", store_id)
+        .eq("is_active", true)
+        .eq("auto_apply", true)
+        .maybeSingle();
+      if (autoRow?.id) couponIdToCheck = autoRow.id;
+    }
+    if (couponIdToCheck) {
       const { data: c } = await supabase
         .from("coupons")
         .select("id, store_id, discount_type, discount_value, min_order_amount, max_uses, used_count, is_active, starts_at, expires_at")
-        .eq("id", coupon_id)
+        .eq("id", couponIdToCheck)
         .maybeSingle();
       const nowD = new Date();
       const ok = c
