@@ -9,7 +9,7 @@
  * mutate the real cart (or buy-now qty) so any change propagates through the
  * whole checkout + payment gateway with no mismatch.
  */
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import {
   ArrowLeft,
@@ -22,6 +22,7 @@ import {
   ShoppingCart,
   Minus,
   Plus,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
