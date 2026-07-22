@@ -9,7 +9,7 @@
  * mutate the real cart (or buy-now qty) so any change propagates through the
  * whole checkout + payment gateway with no mismatch.
  */
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import {
   ArrowLeft,
@@ -22,6 +22,7 @@ import {
   ShoppingCart,
   Minus,
   Plus,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -118,6 +119,45 @@ export default function CheckoutPhoneStep({
     (n, i) => n + (Number(i.quantity) || 1),
     0,
   );
+
+  // Store-owner auto-apply coupon — preview the reward BEFORE the shopper
+  // commits their phone so the discount feels earned, not surprise-applied
+  // on the next step. Same RPC + math the main checkout uses.
+  const [autoCoupon, setAutoCoupon] = useState<{
+    code: string;
+    discount_type: string;
+    discount_value: number;
+    min_order_amount?: number | null;
+  } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!storeId) return;
+    (async () => {
+      try {
+        const { data } = await (supabase as any).rpc(
+          "get_store_auto_apply_coupon",
+          { _store_id: storeId },
+        );
+        const row = Array.isArray(data) ? data[0] ?? null : data ?? null;
+        if (!cancelled) setAutoCoupon(row);
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [storeId]);
+
+  const autoCouponDiscount = useMemo(() => {
+    if (!autoCoupon || subtotal <= 0) return 0;
+    const min = Number(autoCoupon.min_order_amount || 0);
+    if (subtotal < min) return 0;
+    const raw =
+      autoCoupon.discount_type === "percentage"
+        ? (subtotal * Number(autoCoupon.discount_value || 0)) / 100
+        : Number(autoCoupon.discount_value || 0);
+    return Math.max(0, Math.min(raw, subtotal));
+  }, [autoCoupon, subtotal]);
+
 
   const setQty = (item: CartItem, next: number) => {
     const n = Math.max(1, Math.min(99, Math.floor(next)));
@@ -268,6 +308,25 @@ export default function CheckoutPhoneStep({
 
 
       <div className="px-3 py-3 space-y-3">
+        {/* Auto-applied coupon reward banner — makes the discount feel earned
+            before the shopper commits their phone number. */}
+        {autoCouponDiscount > 0 && autoCoupon && (
+          <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white overflow-hidden">
+            <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-emerald-600 text-white">
+              <Sparkles className="h-4 w-4 shrink-0" strokeWidth={2.6} />
+              <div className="text-[12.5px] font-extrabold leading-tight tracking-tight flex-1">
+                You got {formatPrice(autoCouponDiscount)} off!
+              </div>
+              <span className="text-[10.5px] font-bold bg-white/20 px-2 py-0.5 rounded">
+                {autoCoupon.code}
+              </span>
+            </div>
+            <div className="px-3.5 py-2 text-[11.5px] leading-snug text-gray-700">
+              Coupon <span className="font-bold text-gray-900">{autoCoupon.code}</span> auto-applied · Enter your mobile number to claim
+            </div>
+          </div>
+        )}
+
         {/* Order Summary — expanded by default with qty controls */}
         <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5">
           <button
