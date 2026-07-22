@@ -3262,7 +3262,14 @@ export default function CheckoutV2Page() {
                       {payMode === "partial" && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold">Pay {formatPrice(partialAdvanceTotal, currency)} advance now</div>
+                      <div className="text-[13px] font-semibold flex items-center justify-between gap-2">
+                        <span className="min-w-0">Pay {formatPrice(partialAdvanceTotal, currency)} advance now</span>
+                        {couponDiscount > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm shrink-0 whitespace-nowrap">
+                            <Sparkles className="h-3 w-3" /> Discount {formatPrice(couponDiscount, currency)}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[12px] text-muted-foreground mt-0.5">{formatPrice(partialBalanceDue, currency)} Cash on delivery</div>
                     </div>
                   </div>
@@ -3279,9 +3286,9 @@ export default function CheckoutV2Page() {
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-semibold flex items-center justify-between gap-2">
                         <span className="min-w-0">Pay full {formatPrice(prepaidTotalPreview, currency)} online</span>
-                        {prepaidDiscountPreview > 0 && (
+                        {(prepaidDiscountPreview + couponDiscount) > 0 && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm shrink-0 whitespace-nowrap">
-                            <Sparkles className="h-3 w-3" /> Discount {formatPrice(prepaidDiscountPreview, currency)}
+                            <Sparkles className="h-3 w-3" /> Discount {formatPrice(prepaidDiscountPreview + couponDiscount, currency)}
                           </span>
                         )}
                       </div>
