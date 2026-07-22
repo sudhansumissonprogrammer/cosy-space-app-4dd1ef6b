@@ -781,9 +781,20 @@ export default function CheckoutV2Page() {
   }, [checkoutItems, hasPartial, partialType, partialValue, subtotal, taxAmount, taxInclusive, shippingCharge, total]);
   const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
 
-  const [payMode, setPayMode] = useState<"full" | "partial">("partial");
+  const [payMode, setPayModeState] = useState<"full" | "partial">("partial");
   const isPartialOrder = hasPartial && payMode === "partial";
   const effectiveMode: "full" | "partial" = isPartialOrder ? "partial" : "full";
+  // Wrap setPayMode so a user-driven Partial↔Full toggle always resets the
+  // mint-loop guards. Otherwise a shopper who typed their address (7-8 mints)
+  // and then switches payment plan sees the UPI tiles stuck on "Updating
+  // amount…" forever — the snapshot changes, tiles flip to loading, but the
+  // remint is silently blocked by the 8-mint cap.
+  const setPayMode = (next: "full" | "partial") => {
+    mintCountRef.current = 0;
+    mintLoopBlockedRef.current = false;
+    lastMintAtRef.current = 0;
+    setPayModeState(next);
+  };
   // ─── Prepaid discount (store setting) ──────────────────────────────────
   // Applied only on FULL online payment (not COD, not partial). Server
   // recomputes and stamps the same discount at place-order time so the
@@ -1817,11 +1828,17 @@ export default function CheckoutV2Page() {
     // would just DOS ourselves and burn rate-limit budget.
     const now = Date.now();
     if (mintLoopBlockedRef.current) {
+      // Surface a failed state on the UPI tiles so the shopper sees a retry
+      // affordance instead of a spinner that never resolves.
+      const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
+      setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: "Tap to retry" }; }); return next; });
       return;
     }
     if (mintCountRef.current >= 8) {
       mintLoopBlockedRef.current = true;
       console.warn("[checkout] mint loop cap hit — halting re-mints for this session");
+      const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
+      setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: "Tap to retry" }; }); return next; });
       return;
     }
     if (now - lastMintAtRef.current < 2500) {
