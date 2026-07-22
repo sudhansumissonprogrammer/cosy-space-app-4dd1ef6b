@@ -28,6 +28,7 @@ import {
   DeliveryEtaPill, CouponTeaser, TopReviewsStrip, BundleCard, StockUrgencyStrip, StickyAddInfo,
 } from "@/components/storefront/PdpEnhancements";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
+import AutoCouponHint from "@/components/storefront/AutoCouponHint";
 
 const ZoomableGallery = lazy(() => import("@/components/storefront/ZoomableGallery"));
 
