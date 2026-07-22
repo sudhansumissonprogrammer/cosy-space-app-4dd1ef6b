@@ -122,6 +122,24 @@ export default function StoreCoupons() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const autoApplyMutation = useMutation({
+    mutationFn: async ({ id, auto_apply }: { id: string; auto_apply: boolean }) => {
+      const { error } = await (supabase as any).from("coupons").update({ auto_apply }).eq("id", id).eq("store_id", storeId!);
+      if (error) {
+        if ((error as any).code === "23505") {
+          throw new Error("Only one auto-apply coupon allowed per store. Disable the existing one first.");
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["coupons", storeId] });
+      toast.success("Updated");
+      purgeStore();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("coupons").delete().eq("id", id).eq("store_id", storeId!);
