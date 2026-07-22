@@ -916,12 +916,11 @@ export default function CheckoutV2Page() {
   const shipIdentity = useMemo(() => [
     fullName.trim().toLowerCase(),
     normalizePhone(phone),
-    email.trim().toLowerCase(),
     streetAddress.trim().toLowerCase(),
     city.trim().toLowerCase(),
     state.trim().toLowerCase(),
     (pincode || "").replace(/\D/g, ""),
-  ].join("|"), [fullName, phone, email, streetAddress, city, state, pincode]);
+  ].join("|"), [fullName, phone, streetAddress, city, state, pincode]);
   const [debouncedShipIdentity, setDebouncedShipIdentity] = useState(shipIdentity);
   const shipIdentityRef = useRef(shipIdentity);
   useEffect(() => { shipIdentityRef.current = shipIdentity; }, [shipIdentity]);
