@@ -876,7 +876,7 @@ export default function V22ProductDetail() {
                     ) : (
                       <span className={`flex items-center gap-2 ${cartBounce ? "animate-bounce-once" : ""}`}>
                         <ShoppingCart className="h-4 w-4" />
-                        {bilingualCta ? "Add / जोड़ें" : "Add to Cart"}
+                        {bilingualCta ? "Add" : "Add to Cart"}
                       </span>
                     )}
                   </button>
@@ -889,7 +889,7 @@ export default function V22ProductDetail() {
                     >
                       <span className="flex items-center gap-1.5">
                         <ShoppingBag className="h-4 w-4" />
-                        {bilingualCta ? "Buy Now / अभी खरीदें" : "Buy Now"}
+                        {"Buy Now"}
                       </span>
                       <span className="flex items-center -space-x-1">
                         <img src="/icons/gpay-round.webp" alt="GPay" width={16} height={16} loading="lazy" decoding="async" className="h-4 w-4 rounded-full ring-1 ring-white bg-white object-contain" />
@@ -1159,7 +1159,7 @@ export default function V22ProductDetail() {
                       ) : (
                         <>
                           <ShoppingCart className="h-3.5 w-3.5" />
-                          {bilingualCta ? "Add / जोड़ें" : "Add to Cart"}
+                          {bilingualCta ? "Add" : "Add to Cart"}
                         </>
                       )}
                     </button>
@@ -1170,7 +1170,7 @@ export default function V22ProductDetail() {
                     >
                       <span className="flex items-center gap-1.5">
                         <ShoppingBag className="h-3.5 w-3.5" />
-                        {bilingualCta ? "Buy / खरीदें" : "Buy Now"}
+                        {"Buy Now"}
                       </span>
                       <span className="flex items-center -space-x-1">
                         <img src="/icons/gpay-round.webp" alt="GPay" width={14} height={14} loading="lazy" decoding="async" className="h-3.5 w-3.5 rounded-full ring-1 ring-white bg-white object-contain" />

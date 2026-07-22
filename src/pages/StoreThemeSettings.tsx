@@ -1826,7 +1826,7 @@ export default function StoreThemeSettings() {
             <AccordionContent className="pt-1 pb-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs text-muted-foreground">
-                  Shows "Add to Cart / कार्ट में जोड़ें" and "Buy Now / अभी खरीदें" on product cards.
+                  Shows "Add" and "Buy Now" on product cards.
                 </p>
                 <Switch
                   checked={!!config.bilingual_cta}
