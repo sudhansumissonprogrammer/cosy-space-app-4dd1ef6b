@@ -2376,6 +2376,14 @@ export default function CheckoutV2Page() {
   const [openingGateway, setOpeningGateway] = useState(false);
   const startGatewayPayment = async () => {
     if (openingGateway || creatingOrder || couponLoading || paymentAmountSyncing) return;
+    // Flush any pending address/email edits into the snapshot so the order
+    // row minted here reflects the live-typed values, not the pre-debounce
+    // ones. See tapUpiApp for the same guard.
+    if (shipIdentityRef.current !== debouncedShipIdentity) {
+      flushShipIdentity();
+      toast.info("Updating details…");
+      return;
+    }
     setOpeningGateway(true);
     try {
       const order = await createOrderIfNeeded(activeGateway || "razorpay");
