@@ -306,6 +306,13 @@ export default function StoreCoupons() {
                 <Input type="datetime-local" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
               </div>
             </div>
+            <div className="flex items-start gap-3 rounded-md border p-3">
+              <Switch checked={autoApply} onCheckedChange={setAutoApply} className="mt-0.5" />
+              <div className="flex-1">
+                <div className="text-sm font-semibold">Auto-apply at checkout</div>
+                <div className="text-xs text-muted-foreground">Shows as already applied for every shopper. They can still remove it. Only one auto-apply coupon per store.</div>
+              </div>
+            </div>
             <Button type="submit" className="w-full" disabled={createMutation.isPending}>
               {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Create Coupon
