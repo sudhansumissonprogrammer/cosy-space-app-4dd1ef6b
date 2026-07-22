@@ -43,6 +43,7 @@ import WarrantyBadge from "@/components/storefront/WarrantyBadge";
 import PdpTrustBadges from "@/components/storefront/PdpTrustBadges";
 // BuyNowPhoneModal deprecated — phone capture is now Step 1 of CheckoutPage.
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
+import AutoCouponHint from "@/components/storefront/AutoCouponHint";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
