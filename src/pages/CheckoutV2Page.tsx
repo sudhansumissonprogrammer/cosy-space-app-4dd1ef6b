@@ -1535,6 +1535,15 @@ export default function CheckoutV2Page() {
       void createOrderAndIntents();
       return;
     }
+    // Stale-address guard: if the shopper edited address/name/phone/email
+    // within the 1.8s ship-identity debounce window, the minted order row
+    // still holds the pre-edit values. Flush + re-mint before launching so
+    // the delivery boy sees the corrected address.
+    if (shipIdentityRef.current !== debouncedShipIdentity) {
+      toast.info("Updating details…");
+      flushShipIdentity();
+      return;
+    }
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
 
     let leftCheckout = false;
