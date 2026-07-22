@@ -2979,7 +2979,10 @@ export default function CheckoutV2Page() {
                           <Check className="h-4 w-4" />
                         </div>
                         <div>
-                          <div className="text-[14px] font-bold">"{appliedCoupon.code}" applied</div>
+                          <div className="text-[14px] font-bold flex items-center gap-1.5">
+                            "{appliedCoupon.code}" applied
+                            {appliedCoupon.auto_apply && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 tracking-wide">AUTO</span>}
+                          </div>
                           <div className="text-[12px] text-muted-foreground">You save {formatPrice(couponDiscount, currency)}</div>
                         </div>
                       </div>
