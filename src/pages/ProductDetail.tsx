@@ -901,6 +901,12 @@ export default function ProductDetail() {
             </div>
           )}
 
+          {/* Auto-apply coupon hint — "Get it for as low as ₹X" */}
+          {!isOutOfStock && (
+            <div className="mt-4">
+              <AutoCouponHint storeId={store?.id} basePrice={Number(basePrice) || 0} currency={currency} />
+            </div>
+          )}
 
           {/* CTA Buttons */}
           {!isOutOfStock && (
