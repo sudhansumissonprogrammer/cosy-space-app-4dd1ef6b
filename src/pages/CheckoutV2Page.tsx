@@ -3313,6 +3313,7 @@ export default function CheckoutV2Page() {
                           <Sparkles className="h-3 w-3" /> Save {formatPrice(prepaidDiscountPreview, currency)} extra vs. advance
                         </div>
                       )}
+                    </div>
                   </div>
                 </button>
               </div>
