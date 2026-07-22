@@ -3308,7 +3308,11 @@ export default function CheckoutV2Page() {
                       </div>
 
                       <div className="text-[12px] text-muted-foreground mt-0.5">Nothing to pay on delivery</div>
-                    </div>
+                      {payMode !== "full" && prepaidDiscountPreview > 0 && (
+                        <div className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
+                          <Sparkles className="h-3 w-3" /> Save {formatPrice(prepaidDiscountPreview, currency)} extra vs. advance
+                        </div>
+                      )}
                   </div>
                 </button>
               </div>
