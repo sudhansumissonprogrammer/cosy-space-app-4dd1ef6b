@@ -114,11 +114,18 @@ export function usePageviewBeacon(storeId: string | undefined | null) {
     if (lastPath.current === pathname) return;
     lastPath.current = pathname;
 
+    // Hard bot gate: don't send the beacon at all. Dashboard analytics never
+    // want bot rows; skipping the write saves egress + edge invocations and
+    // guarantees zero bot pollution even if a dashboard query forgets the
+    // is_bot=false filter. Server ingest keeps its own UA regex as a 2nd net.
+    if (isLikelyBot()) return;
+
     captureUtmAndLanding(pathname);
 
     const vid = getVisitorId();
     const sid = getOrCreateSessionId();
-    const bot = isLikelyBot();
+    const bot = false;
+
 
     try {
       const hourBucket = Math.floor(Date.now() / 3_600_000);

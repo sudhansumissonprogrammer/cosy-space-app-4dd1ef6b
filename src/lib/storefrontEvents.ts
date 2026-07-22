@@ -1,7 +1,8 @@
 // Storefront analytics events — fire-and-forget funnel tracking.
 // Writes to public.storefront_events. Never blocks UX; all errors swallowed.
 import { supabase } from "@/integrations/supabase/client";
-import { getOrCreateSessionId, getVisitorId } from "@/lib/visitorSession";
+import { getOrCreateSessionId, getVisitorId, isLikelyBot } from "@/lib/visitorSession";
+
 
 // Direct PostgREST endpoint — used for nav-racing events (pay_click, purchase,
 // begin_checkout) via keepalive fetch so the browser doesn't abort them on
@@ -74,7 +75,12 @@ const DEDUP_MS = 30_000;
 
 export function fireStorefrontEvent(args: FireEventArgs): void {
   if (!args.storeId || !args.eventName) return;
+  // Bot gate: analytics dashboards must never count bot-driven funnel steps
+  // (view_product, add_to_cart, buy_now_click, etc). storefront_events has no
+  // is_bot column, so we filter at the source — same UA rules as pageviews.
+  if (isLikelyBot()) return;
   try {
+
     const sid = getOrCreateSessionId();
     const vid = getVisitorId();
     const purchaseOrderId = args.eventName === "purchase" ? String(args.metadata?.order_id || "") : "";

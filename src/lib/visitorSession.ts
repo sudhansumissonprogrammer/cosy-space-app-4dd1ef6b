@@ -55,16 +55,25 @@ export function getVisitorId(): string | null {
 // out Live Visitors / Sessions for our biggest channel. Link-preview bots
 // from WhatsApp are deduped via the 30-min visitor+path window anyway.
 const BOT_UA_RE =
-  /bot|crawler|spider|crawling|facebookexternalhit|telegrambot|slackbot|discordbot|headlesschrome|phantomjs|puppeteer|playwright|lighthouse|pagespeed|gtmetrix|googleimageproxy|preview|monitor|uptime|pingdom|axios|curl|wget|python-requests|go-http-client|java\/|okhttp|httpclient/i;
+  /bot|crawler|spider|crawling|facebookexternalhit|telegrambot|slackbot|discordbot|headlesschrome|phantomjs|puppeteer|playwright|lighthouse|pagespeed|gtmetrix|googleimageproxy|preview|monitor|uptime|pingdom|axios|curl|wget|python-requests|go-http-client|java\/|okhttp|httpclient|bingbot|yandex|duckduckbot|applebot|semrush|ahrefs|mj12|dotbot|petalbot|bytespider|gptbot|claudebot|claude-web|perplexitybot|chrome-lighthouse|screaming frog|sitebulb|megaindex|serpstat|dataforseo|linkfluence|proximic|siteexplorer|linkedinbot|whatsapp\/|zoominfobot|amazonbot|coccocbot|censys|masscan|nikto|nuclei|zgrab|nmap|scrapy|scrapinghub|apachebench|siege|k6/i;
 
 export function isLikelyBot(): boolean {
   if (typeof navigator === "undefined") return false;
   try {
     if ((navigator as any).webdriver === true) return true;
     const ua = navigator.userAgent || "";
+    if (!ua) return true; // no UA is itself a strong bot signal
     if (BOT_UA_RE.test(ua)) return true;
+    // Headless heuristic: real browsers expose non-empty navigator.languages
+    // and (on desktop) at least one plugin. Combined-zero is a Puppeteer/PW
+    // fingerprint. Keep both conditions to avoid false-positives on stripped
+    // in-app browsers.
+    const langs = (navigator as any).languages;
+    const plugins = (navigator as any).plugins;
+    if (Array.isArray(langs) && langs.length === 0 && plugins && plugins.length === 0) return true;
     return false;
   } catch {
     return false;
   }
 }
+
