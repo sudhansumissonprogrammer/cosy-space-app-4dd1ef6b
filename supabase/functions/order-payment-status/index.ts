@@ -8,6 +8,7 @@
 // existing verify functions keep the DB fresh.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { firePurchaseCapi } from "../_shared/firePurchaseCapi.ts";
+import { fireWaOrderEvent } from "../_shared/wa-fire-order-event.ts";
 import { mapPayuStatus, verifyPayuTxn, type PayuEnv } from "../_shared/payuHelpers.ts";
 
 const corsHeaders = {
@@ -111,6 +112,7 @@ Deno.serve(async (req) => {
                 notes: `Cashfree Order ID: ${cfId}`,
               });
               await firePurchaseCapi(supabase, order_id, { source: "order-payment-status-cashfree" });
+              await fireWaOrderEvent(supabase, order_id, "order_confirmation");
             }
           }
         }
@@ -147,6 +149,7 @@ Deno.serve(async (req) => {
                 });
               }
               await firePurchaseCapi(supabase, order_id, { source: "order-payment-status-razorpay" });
+              await fireWaOrderEvent(supabase, order_id, "order_confirmation");
             }
           }
         }
@@ -164,6 +167,7 @@ Deno.serve(async (req) => {
             notes: `PayU Txn ID: ${txnid}${det.mihpayid ? ` (mihpayid: ${det.mihpayid})` : ""}`,
           });
           await firePurchaseCapi(supabase, order_id, { source: "order-payment-status-payu" });
+          await fireWaOrderEvent(supabase, order_id, "order_confirmation");
         }
       }
     }
