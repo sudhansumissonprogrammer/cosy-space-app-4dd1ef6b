@@ -87,7 +87,8 @@ export default function StoreCoupons() {
         max_uses: maxUsesNum,
         starts_at: startsAtDate.toISOString(),
         expires_at: expiresAtDate ? expiresAtDate.toISOString() : null,
-      });
+        auto_apply: autoApply,
+      } as any);
       if (error) {
         // Map duplicate-code constraint to a friendly message; otherwise show generic.
         if ((error as any).code === "23505") throw new Error("A coupon with this code already exists");
