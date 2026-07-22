@@ -1,7 +1,8 @@
 // Storefront analytics events — fire-and-forget funnel tracking.
 // Writes to public.storefront_events. Never blocks UX; all errors swallowed.
 import { supabase } from "@/integrations/supabase/client";
-import { getOrCreateSessionId, getVisitorId } from "@/lib/visitorSession";
+import { getOrCreateSessionId, getVisitorId, isLikelyBot } from "@/lib/visitorSession";
+
 
 // Direct PostgREST endpoint — used for nav-racing events (pay_click, purchase,
 // begin_checkout) via keepalive fetch so the browser doesn't abort them on
