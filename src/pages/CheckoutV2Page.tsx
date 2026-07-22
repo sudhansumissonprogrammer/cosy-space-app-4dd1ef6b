@@ -2419,6 +2419,14 @@ export default function CheckoutV2Page() {
     if (placingCod || creatingOrder || couponLoading || paymentAmountSyncing) return;
     const err = validateAddress();
     if (err) { toast.error(err); return; }
+    // Same stale-identity flush as UPI/gateway paths — a COD row minted with
+    // a half-typed address would leave the delivery boy without a real
+    // location. Force debounce to catch up before hitting the edge fn.
+    if (shipIdentityRef.current !== debouncedShipIdentity) {
+      flushShipIdentity();
+      toast.info("Updating details…");
+      return;
+    }
     setPlacingCod(true);
     try {
       saveExpressInfo();
