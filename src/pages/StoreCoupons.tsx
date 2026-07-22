@@ -32,6 +32,7 @@ export default function StoreCoupons() {
   const [maxUses, setMaxUses] = useState("");
   const [startsAt, setStartsAt] = useState(new Date().toISOString().slice(0, 16));
   const [expiresAt, setExpiresAt] = useState("");
+  const [autoApply, setAutoApply] = useState(false);
 
   const { data: coupons, isLoading } = useQuery({
     queryKey: ["coupons", storeId],
