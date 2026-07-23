@@ -305,16 +305,6 @@ export default function ShopByVideoConfig() {
         </Card>
       )}
 
-      <div className="flex justify-end pt-4">
-        <Button
-          onClick={() => upsert.mutate({ enabled, config: cfg })}
-          disabled={upsert.isPending}
-          className="gap-2"
-        >
-          {upsert.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Save changes
-        </Button>
-      </div>
-    </div>
+    </AppConfigShell>
   );
 }

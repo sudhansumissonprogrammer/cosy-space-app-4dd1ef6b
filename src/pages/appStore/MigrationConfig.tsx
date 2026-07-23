@@ -167,33 +167,30 @@ export default function MigrationConfig() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-4 md:p-8 space-y-6">
-      <header>
-        <div className="flex items-center gap-3">
-          <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 grid place-items-center text-white">
-            <DownloadCloud className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Migrate My Store</h1>
-            <p className="text-sm text-muted-foreground">
-              Import from your existing platform into <span className="font-semibold">{store?.name ?? storeSlug}</span>.
-            </p>
-          </div>
-        </div>
-
-        <ol className="mt-6 flex items-center gap-2 text-xs font-medium">
+    <AppConfigShell
+      storeSlug={storeSlug}
+      icon={<DownloadCloud className="h-4.5 w-4.5" />}
+      accent="from-sky-500 to-indigo-600"
+      title="Migrate My Store"
+      subtitle={`Import into ${store?.name ?? storeSlug}`}
+    >
+      <div className="px-4 md:px-0">
+        <ol className="scrollbar-none flex items-center gap-1.5 overflow-x-auto text-[11px] font-semibold">
           {["Platform", "Connect", "Select", "Run"].map((label, i) => {
             const n = i + 1;
             const active = step === n;
             const done = step > n;
             return (
-              <li key={label} className={`flex items-center gap-2 rounded-full px-3 py-1 ${active ? "bg-primary text-primary-foreground" : done ? "bg-emerald-100 text-emerald-800" : "bg-muted text-muted-foreground"}`}>
-                <span>{n}. {label}</span>
+              <li
+                key={label}
+                className={`shrink-0 rounded-full px-2.5 py-1 ${active ? "bg-primary text-primary-foreground" : done ? "bg-emerald-100 text-emerald-800" : "bg-muted text-muted-foreground"}`}
+              >
+                {n}. {label}
               </li>
             );
           })}
         </ol>
-      </header>
+      </div>
 
       {step === 1 && (
         <Card>
