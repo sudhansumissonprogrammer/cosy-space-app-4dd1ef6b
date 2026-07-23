@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { storefrontPath } from "@/lib/subdomain";
 import { ShoppingCart, Plus, Zap } from "lucide-react";
+import { useAppEnabled } from "@/hooks/useAppEnabled";
 
 interface Props {
   storeId: string;
@@ -22,6 +23,9 @@ export default function FrequentlyBoughtTogether({
   currency,
   addToCart,
 }: Props) {
+  // Gate on merchant enabling the Bundle Builder app — otherwise this
+  // "Frequently Bought Together" strip should not appear.
+  const { enabled: bundleAppEnabled } = useAppEnabled(storeSlug, "bundle-builder");
   const { data: bundleProducts } = useQuery({
     queryKey: ["bundle-products", storeId, currentProductId],
     queryFn: async () => {
@@ -55,10 +59,11 @@ export default function FrequentlyBoughtTogether({
       }
       return data.slice(0, 2);
     },
-    enabled: !!storeId && !!currentProductId,
+    enabled: !!storeId && !!currentProductId && bundleAppEnabled,
     staleTime: 5 * 60 * 1000,
   });
 
+  if (!bundleAppEnabled) return null;
   if (!bundleProducts || bundleProducts.length === 0) return null;
 
   const bundleTotal = bundleProducts.reduce((sum, p) => {

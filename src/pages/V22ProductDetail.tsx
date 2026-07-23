@@ -44,6 +44,7 @@ import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
 const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
+import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSection";
 
 
 import DeliveryTimeline from "@/components/storefront/DeliveryTimeline";
@@ -1068,7 +1069,16 @@ export default function V22ProductDetail() {
 
 
       <div className="px-4 sm:px-0">
-        {/* Complete the Look — deferred until near viewport */}
+        {/* Upsell / Cross-sell — PDP placement (App Store add-on) */}
+        <PdpUpsellSection
+          storeSlug={store.slug}
+          storeId={store.id}
+          currency={store.currency || "INR"}
+          productId={product.id}
+          categoryId={product.category || undefined}
+          price={Number(product.sale_price ?? product.price) || 0}
+        />
+
         <DeferUntilVisible rootMargin="600px" minHeight={320}>
           <Suspense fallback={null}>
             <RelatedProducts

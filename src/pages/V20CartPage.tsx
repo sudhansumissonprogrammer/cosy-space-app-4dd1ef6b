@@ -3,11 +3,16 @@
  */
 import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { ArrowLeft, Plus, Minus, ShoppingCart, Tag, Info, ChevronRight, Receipt, Trash2, Package, PartyPopper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import UpsellStrip from "@/components/storefront/apps/Upsell/UpsellStrip";
+import PreCheckoutModal from "@/components/storefront/apps/Upsell/PreCheckoutModal";
+import { useUpsellOffers } from "@/hooks/useUpsellOffers";
+import { matchOffers } from "@/lib/appStore/upsell/matchEngine";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import type { CSSProperties } from "react";
 
@@ -74,6 +79,22 @@ export default function V20CartPage() {
   const handlingFee = 0;
   const grandTotal = itemsTotal + deliveryFee + handlingFee;
   const totalSavings = productSavings + (qualifiesFree && flatRate > 0 ? flatRate : 0);
+
+  // ── Upsell (App Store add-on) ──
+  const cartProductIds = useMemo(
+    () => items.map((i) => i.productId).filter((id): id is string => !!id && !id.startsWith("bundle:")),
+    [items],
+  );
+  const { data: upsellOffersAll } = useUpsellOffers(store?.slug);
+  const pageOffers = useMemo(
+    () => (upsellOffersAll?.length ? matchOffers(upsellOffersAll, { placement: "cart_page", cart: { productIds: cartProductIds, totalValue: cartTotal, totalQty: cartCount } }) : []),
+    [upsellOffersAll, cartProductIds, cartTotal, cartCount],
+  );
+  const preOffers = useMemo(
+    () => (upsellOffersAll?.length ? matchOffers(upsellOffersAll, { placement: "pre_checkout", cart: { productIds: cartProductIds, totalValue: cartTotal, totalQty: cartCount } }) : []),
+    [upsellOffersAll, cartProductIds, cartTotal, cartCount],
+  );
+
 
   if (items.length === 0) {
     return (
@@ -184,6 +205,18 @@ export default function V20CartPage() {
           </Link>
         </div>
 
+        {/* Upsell / Cross-sell (App Store add-on) */}
+        {pageOffers.length > 0 && (
+          <UpsellStrip
+            storeId={store.id}
+            currency={store.currency || "INR"}
+            offers={pageOffers}
+            placement="cart_page"
+            excludeProductIds={cartProductIds}
+          />
+        )}
+
+
         <Link to={storefrontPath(slug, "checkout")} className="rounded-xl bg-white border border-gray-200 p-3.5 flex items-center gap-3">
           <div className="h-9 w-9 rounded-md flex items-center justify-center" style={{ background: "#FFF8E1" }}>
             <Tag className="h-4 w-4" style={{ color: "#F57C00" }} />
@@ -239,10 +272,18 @@ export default function V20CartPage() {
             <span className="text-[16px] font-black text-gray-900">₹{grandTotal.toFixed(0)}</span>
             <span className="text-[11px] font-bold" style={{ color: PRIMARY }}>TOTAL</span>
           </div>
-          <button onClick={() => navigate(storefrontPath(slug, "checkout"))} className="flex-1 h-12 rounded-lg flex items-center justify-between px-4 text-white text-[14px] font-extrabold active:scale-[0.98] transition-transform" style={{ background: PRIMARY }}>
-            <span>Click to pay</span>
-            <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
-          </button>
+          <PreCheckoutModal
+            offers={preOffers}
+            storeId={store.id}
+            currency={store.currency || "INR"}
+            excludeProductIds={cartProductIds}
+            onProceed={() => navigate(storefrontPath(slug, "checkout"))}
+          >
+            <button onClick={() => navigate(storefrontPath(slug, "checkout"))} className="flex-1 h-12 rounded-lg flex items-center justify-between px-4 text-white text-[14px] font-extrabold active:scale-[0.98] transition-transform" style={{ background: PRIMARY }}>
+              <span>Click to pay</span>
+              <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
+            </button>
+          </PreCheckoutModal>
         </div>
       </div>
     </div>

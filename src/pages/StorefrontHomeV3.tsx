@@ -12,7 +12,7 @@ import LazyRender from "@/components/storefront/LazyRender";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { getDiscountPercent } from "@/lib/productUtils";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
-import { HomeBestSellingSection } from "@/components/storefront/HomeSharedSections";
+import { HomeBestSellingSection, HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
 import { Skeleton } from "@/components/ui/skeleton";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import { storefrontPath } from "@/lib/subdomain";
@@ -321,6 +321,9 @@ export default function StorefrontHomeV3() {
       {products && (
         <HomeBestSellingSection products={products} slug={slug!} store={store} cardStyle={cardStyle} />
       )}
+
+      {/* Shop by Video (App Store add-on) */}
+      <HomeShopByVideoSection slug={slug!} store={store} />
 
       {/* Flash Deals */}
       {products && <FlashDeals products={products} slug={slug!} store={store} />}

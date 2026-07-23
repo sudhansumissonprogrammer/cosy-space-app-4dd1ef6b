@@ -29,6 +29,7 @@ import {
 } from "@/components/storefront/PdpEnhancements";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 import AutoCouponHint from "@/components/storefront/AutoCouponHint";
+import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSection";
 
 const ZoomableGallery = lazy(() => import("@/components/storefront/ZoomableGallery"));
 
@@ -653,6 +654,18 @@ export default function V19ProductDetail() {
           });
         }}
       />
+
+      {/* Upsell / Cross-sell — PDP placement (App Store add-on) */}
+      <div className="px-4">
+        <PdpUpsellSection
+          storeSlug={slug}
+          storeId={store.id}
+          currency={store.currency || "INR"}
+          productId={product.id}
+          categoryId={product.category || undefined}
+          price={effectivePrice}
+        />
+      </div>
 
       {/* Similar products carousel */}
       {similarProducts.length > 0 && (
