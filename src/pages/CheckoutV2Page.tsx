@@ -495,6 +495,22 @@ export default function CheckoutV2Page() {
     setPincode(addr.pincode || "");
   };
 
+  const applyPhoneLookupAddress = (addr: any) => {
+    if (!addr?.street_address || !addr?.pincode) return false;
+    setSelectedAddressId(addr.id || null);
+    setFullName(addr.full_name || "");
+    setPhone(toCanonicalIndianPhone(addr.phone) || addr.phone || phone);
+    setStreetAddress(addr.street_address || "");
+    setCity(addr.city || "");
+    setState(addr.state || "");
+    setPincode(String(addr.pincode || "").replace(/\D/g, "").slice(0, 6));
+    setReturningUsed(true);
+    setReturningDismissed(true);
+    setAddressSheetDismissed(true);
+    setShowAddressFormSheet(false);
+    return true;
+  };
+
   const openAddressFormSheet = () => {
     setShowAddressDialog(false);
     setShowAddAddress(false);
@@ -2681,6 +2697,10 @@ export default function CheckoutV2Page() {
           onComplete={(p) => {
             setPhone(p);
             try { localStorage.setItem("checkout_phone", toCanonicalIndianPhone(p) || p); } catch { /* noop */ }
+          onComplete={(p, savedAddress) => {
+            setPhone(p);
+            try { localStorage.setItem("checkout_phone", toCanonicalIndianPhone(p) || p); } catch { /* noop */ }
+            if (savedAddress) applyPhoneLookupAddress(savedAddress);
           }}
         />
       </Suspense>
