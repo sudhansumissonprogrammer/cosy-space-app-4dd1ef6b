@@ -102,21 +102,27 @@ export default function StorefrontLogin() {
           <form onSubmit={handlePhoneLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="phone">Mobile Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel"
-                pattern="[0-9]*"
-                maxLength={15}
-                placeholder="10-digit mobile number (+91 optional)"
-                value={phone}
-                onChange={handlePhoneChange}
-                aria-invalid={!!error}
-                aria-describedby={error ? "phone-error" : undefined}
-                required
-                autoFocus
-              />
+              <div className={`flex items-center h-10 rounded-md border px-3 gap-2 bg-background transition-colors ${error ? "border-destructive" : "border-input focus-within:border-primary"}`}>
+                <span className="text-[16px] leading-none" aria-hidden>🇮🇳</span>
+                <span className="text-sm font-medium text-muted-foreground">+91</span>
+                <span className="text-muted-foreground/60">|</span>
+                <input
+                  id="phone"
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  pattern="[0-9]*"
+                  maxLength={15}
+                  placeholder="10-digit mobile number"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  aria-invalid={!!error}
+                  aria-describedby={error ? "phone-error" : undefined}
+                  required
+                  autoFocus
+                  className="flex-1 bg-transparent outline-none text-sm"
+                />
+              </div>
               {error && (
                 <p id="phone-error" className="text-xs text-destructive">{error}</p>
               )}
