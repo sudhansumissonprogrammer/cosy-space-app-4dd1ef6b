@@ -115,6 +115,12 @@ function MobileMenu({
           ]),
         },
         {
+          title: "Add-ons",
+          items: [
+            { label: "App Store", icon: Blocks, path: `/dashboard/stores/${storeSlug}/apps` },
+          ],
+        },
+        {
           title: "Appearance & Settings",
           items: filterItems([
             { label: "Theme", icon: Palette, path: `/dashboard/stores/${storeSlug}/theme`, menuKey: "theme" },
