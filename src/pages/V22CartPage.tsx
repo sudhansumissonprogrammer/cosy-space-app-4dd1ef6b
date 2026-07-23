@@ -9,12 +9,39 @@ import { useCart } from "@/contexts/CartContext";
 import { ArrowLeft, Minus, Plus, ShoppingCart, Trash2, Package, ShoppingBag, Truck, Check } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
+import UpsellStrip from "@/components/storefront/apps/Upsell/UpsellStrip";
+import PreCheckoutModal from "@/components/storefront/apps/Upsell/PreCheckoutModal";
+import { useUpsellOffers } from "@/hooks/useUpsellOffers";
+import { matchOffers } from "@/lib/appStore/upsell/matchEngine";
+import { useMemo } from "react";
 
 export default function V22CartPage() {
   const store = useOutletContext<StoreData>();
   const navigate = useNavigate();
   const { items, updateQuantity, removeFromCart, clearCart, cartTotal, cartCount } = useCart();
   const currency = store.currency || "USD";
+
+  // Filter out synthetic bundle:* IDs before any product query.
+  const cartProductIds = useMemo(
+    () => items.map((i) => i.productId).filter((id): id is string => !!id && !id.startsWith("bundle:")),
+    [items]
+  );
+  const { data: upsellOffersAll } = useUpsellOffers(store.slug);
+  const pageOffers = useMemo(() => {
+    if (!upsellOffersAll?.length) return [];
+    return matchOffers(upsellOffersAll, {
+      placement: "cart_page",
+      cart: { productIds: cartProductIds, totalValue: cartTotal, totalQty: cartCount },
+    });
+  }, [upsellOffersAll, cartProductIds, cartTotal, cartCount]);
+  const preOffers = useMemo(() => {
+    if (!upsellOffersAll?.length) return [];
+    return matchOffers(upsellOffersAll, {
+      placement: "pre_checkout",
+      cart: { productIds: cartProductIds, totalValue: cartTotal, totalQty: cartCount },
+    });
+  }, [upsellOffersAll, cartProductIds, cartTotal, cartCount]);
+
 
   const { data: shippingConfig } = useQuery({
     queryKey: ["storefront-shipping-config", store.id],
