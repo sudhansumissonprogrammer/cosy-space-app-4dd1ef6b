@@ -184,16 +184,22 @@ export default function CheckoutPhoneStep({
 
   const submit = async () => {
     if (inFlight.current) return;
+    if (digits.length < 10) {
+      setInlineError("Please enter your full 10-digit mobile number");
+      document.getElementById("checkout-phone-input")?.focus();
+      return;
+    }
     const normalized = normalizePhone(digits);
     if (!isValidIndianPhone(normalized)) {
-      toast.error("Please enter a valid 10-digit mobile number");
+      setInlineError("Enter a valid Indian mobile number starting with 6-9");
       return;
     }
     const canon = toCanonicalIndianPhone(digits);
     if (!canon) {
-      toast.error("Please enter a valid Indian mobile number");
+      setInlineError("Enter a valid Indian mobile number");
       return;
     }
+    setInlineError(null);
 
     inFlight.current = true;
     setSubmitting(true);
