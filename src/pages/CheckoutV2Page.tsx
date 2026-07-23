@@ -495,6 +495,60 @@ export default function CheckoutV2Page() {
     setPincode(addr.pincode || "");
   };
 
+  const applyPhoneLookupAddress = (addr: any) => {
+    if (!addr?.street_address || !addr?.pincode) return false;
+    setSelectedAddressId(addr.id || null);
+    setFullName(addr.full_name || "");
+    setPhone(toCanonicalIndianPhone(addr.phone) || addr.phone || phone);
+    setStreetAddress(addr.street_address || "");
+    setCity(addr.city || "");
+    setState(addr.state || "");
+    setPincode(String(addr.pincode || "").replace(/\D/g, "").slice(0, 6));
+    setReturningUsed(true);
+    setReturningDismissed(true);
+    setAddressSheetDismissed(true);
+    setShowAddressFormSheet(false);
+    return true;
+  };
+
+  const phoneAddressLookupRef = useRef("");
+  useEffect(() => {
+    const canon = toCanonicalIndianPhone(phone);
+    if (!store?.id || !canon) return;
+    if (streetAddress && pincode && city && state && fullName) return;
+    const key = `${store.id}:${canon}`;
+    if (phoneAddressLookupRef.current === key) return;
+    phoneAddressLookupRef.current = key;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("create-guest-account", {
+          body: { phone: canon, store_id: store.id },
+        });
+        if (cancelled || error) return;
+        const result = data as {
+          session?: { access_token?: string; refresh_token?: string } | null;
+          address?: any;
+        } | null;
+        if (result?.session?.access_token && result?.session?.refresh_token) {
+          await supabaseStorefront.auth.setSession({
+            access_token: result.session.access_token,
+            refresh_token: result.session.refresh_token,
+          });
+        }
+        if (!cancelled && result?.address) applyPhoneLookupAddress(result.address);
+      } catch {
+        // Keep checkout usable; the shopper can still type a fresh address.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id, phone, streetAddress, pincode, city, state, fullName]);
+
   const openAddressFormSheet = () => {
     setShowAddressDialog(false);
     setShowAddAddress(false);
@@ -2678,9 +2732,10 @@ export default function CheckoutV2Page() {
             // If that was the last item, the empty-cart guard above will
             // redirect to the storefront home on the next render.
           }}
-          onComplete={(p) => {
+          onComplete={(p, savedAddress) => {
             setPhone(p);
             try { localStorage.setItem("checkout_phone", toCanonicalIndianPhone(p) || p); } catch { /* noop */ }
+            if (savedAddress) applyPhoneLookupAddress(savedAddress);
           }}
         />
       </Suspense>
