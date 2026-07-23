@@ -205,6 +205,18 @@ export default function V20CartPage() {
           </Link>
         </div>
 
+        {/* Upsell / Cross-sell (App Store add-on) */}
+        {pageOffers.length > 0 && (
+          <UpsellStrip
+            storeId={store.id}
+            currency={store.currency || "INR"}
+            offers={pageOffers}
+            placement="cart_page"
+            excludeProductIds={cartProductIds}
+          />
+        )}
+
+
         <Link to={storefrontPath(slug, "checkout")} className="rounded-xl bg-white border border-gray-200 p-3.5 flex items-center gap-3">
           <div className="h-9 w-9 rounded-md flex items-center justify-center" style={{ background: "#FFF8E1" }}>
             <Tag className="h-4 w-4" style={{ color: "#F57C00" }} />
