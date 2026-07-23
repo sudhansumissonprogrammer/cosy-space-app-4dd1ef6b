@@ -35,6 +35,7 @@ import { optimizeImageUrl } from "@/lib/imageOptimize";
 
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
+import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
 
 const ABOVE_FOLD_COUNT = 8;
 
