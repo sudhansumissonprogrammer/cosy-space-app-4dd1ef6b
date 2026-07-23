@@ -56,19 +56,32 @@ interface Props {
   /** Called when the shopper taps Remove. Parent removes + navigates if cart empties. */
   onRemoveItem?: (item: CartItem) => void;
   /** Fires with the canonical 10-digit phone once Step 1 succeeds. */
-  onComplete: (phone: string) => void;
+  onComplete: (phone: string, savedAddress?: CheckoutSavedAddress | null) => void;
+}
+
+export interface CheckoutSavedAddress {
+  id?: string | null;
+  label?: string | null;
+  full_name?: string | null;
+  phone?: string | null;
+  street_address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
+  is_default?: boolean | null;
 }
 
 async function autoLoginByPhone(storeId: string | undefined, phone: string) {
-  if (!storeId) return;
+  if (!storeId) return null;
   try {
     const { data, error } = await supabase.functions.invoke(
       "create-guest-account",
       { body: { phone, store_id: storeId } },
     );
-    if (error) return;
+    if (error) return null;
     const result = data as {
       session?: { access_token?: string; refresh_token?: string };
+      address?: CheckoutSavedAddress | null;
     } | null;
     if (result?.session?.access_token && result?.session?.refresh_token) {
       await supabaseStorefront.auth.setSession({
@@ -76,7 +89,10 @@ async function autoLoginByPhone(storeId: string | undefined, phone: string) {
         refresh_token: result.session.refresh_token,
       });
     }
-  } catch {}
+    return result;
+  } catch {
+    return null;
+  }
 }
 
 export default function CheckoutPhoneStep({
@@ -226,8 +242,8 @@ export default function CheckoutPhoneStep({
         }
       } catch {}
 
-      void autoLoginByPhone(storeId, canon);
-      onComplete(canon);
+      const loginResult = await autoLoginByPhone(storeId, canon);
+      onComplete(canon, loginResult?.address ?? null);
     } catch (err) {
       console.warn("[CheckoutPhoneStep] capture failed:", err);
       onComplete(canon);
