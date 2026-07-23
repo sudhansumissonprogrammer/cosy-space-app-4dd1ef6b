@@ -29,6 +29,7 @@ import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
+import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
 
 const BATCH_SIZE = 20;
 
