@@ -27,12 +27,27 @@
 //   keeps wa_link_clicks accurate. Stronger 301 for order links since
 //   order UUIDs never change destination.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { mintAutoLoginToken, canonicalPhone } from "../_shared/wa-autologin-token.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // Module-scope client → connection pool + TLS reuse across invocations.
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
+/**
+ * Append an HMAC-signed `?al=<token>` to a redirect target so the storefront
+ * lands the shopper already logged-in (consumed by wa-autologin).
+ * Returns the URL unchanged when phone is missing/invalid.
+ */
+async function withAutoLogin(url: string, rawPhone: string | null | undefined): Promise<string> {
+  const phone = canonicalPhone(rawPhone || "");
+  if (!phone) return url;
+  const token = await mintAutoLoginToken(phone, SERVICE_KEY);
+  if (!token) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}al=${encodeURIComponent(token)}`;
+}
 
 function storeBase(s: any): string {
   if (!s) return "https://shopbanao.in";
