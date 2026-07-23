@@ -17,6 +17,7 @@ import {
 import MediaLibraryPicker from "@/components/MediaLibraryPicker";
 import type { BundleDef, BundleAppConfig, BundleType, BundleDiscountMode } from "@/lib/appStore/bundle/types";
 import { BUNDLE_APP_ID, DEFAULT_BUNDLE_CONFIG, slugifyBundleName, bundleTypeOf } from "@/lib/appStore/bundle/types";
+import { AppConfigShell, AppLiveBadge, AppSectionCard } from "@/components/appStore/AppConfigShell";
 
 const APP_ID = BUNDLE_APP_ID;
 
@@ -203,60 +204,50 @@ export default function BundleBuilderConfig() {
   const bundlesPublicUrl = store?.slug ? `/store/${store.slug}/bundles` : null;
 
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-8 space-y-4">
-      <div className="flex items-center gap-2">
-        <Button asChild variant="ghost" size="sm">
-          <Link to={`/dashboard/stores/${storeSlug}/apps`}>
-            <ArrowLeft className="h-4 w-4 mr-1" /> App Store
-          </Link>
-        </Button>
-      </div>
-
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center">
-              <Package className="h-5 w-5 text-white" />
-            </div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Bundle Builder</h1>
-            {enabled ? <Badge className="bg-emerald-500">Live</Badge> : <Badge variant="secondary">Disabled</Badge>}
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground max-w-2xl">
-            Create combo offers — <strong>Pick N</strong> (any N for a flat price), <strong>Fixed Combo</strong> (curated set), or <strong>Frequently Bought Together</strong> (anchor + companions). A Bundles menu appears automatically in your storefront when at least one bundle is active.
-          </p>
-        </div>
-        <Button onClick={() => upsert.mutate()} disabled={upsert.isPending} className="gap-2">
-          {upsert.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Save changes
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-base">Enable on storefront</CardTitle>
-              <CardDescription>Turns on the Bundles menu and /bundles page for shoppers.</CardDescription>
-            </div>
-            <Switch checked={enabled} onCheckedChange={setEnabled} />
-          </div>
-        </CardHeader>
+    <AppConfigShell
+      storeSlug={storeSlug}
+      icon={<Package className="h-4.5 w-4.5" />}
+      accent="from-amber-500 to-rose-500"
+      title="Bundle Builder"
+      subtitle="Pick N, fixed combos & frequently bought together"
+      enabled={enabled}
+      onEnabledChange={setEnabled}
+      onSave={() => upsert.mutate()}
+      saving={upsert.isPending}
+      saveLabel="Save changes"
+      statusBadge={<AppLiveBadge enabled={enabled} />}
+      headerActions={
+        enabled && bundlesPublicUrl ? (
+          <a
+            href={bundlesPublicUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 rounded-lg border bg-card px-3 py-1.5 text-xs font-semibold text-primary hover:bg-muted"
+          >
+            <ExternalLink className="h-3 w-3" /> Preview
+          </a>
+        ) : null
+      }
+    >
+      <AppSectionCard
+        title="How Bundle Builder works"
+        description="Create combo offers — Pick N (any N for a flat price), Fixed Combo (curated set), or Frequently Bought Together (anchor + companions). A Bundles menu appears automatically in your storefront when at least one bundle is active."
+        icon={<Package className="h-4 w-4" />}
+      >
         {enabled && bundlesPublicUrl && (
-          <CardContent className="pt-0">
-            <a
-              href={bundlesPublicUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-            >
-              <ExternalLink className="h-3 w-3" /> Preview /bundles
-            </a>
-          </CardContent>
+          <a
+            href={bundlesPublicUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline md:hidden"
+          >
+            <ExternalLink className="h-3 w-3" /> Preview /bundles
+          </a>
         )}
-      </Card>
+      </AppSectionCard>
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">Your bundles ({cfg.bundles.length})</h2>
+      <div className="flex items-center justify-between px-4 md:px-0">
+        <h2 className="text-[15px] font-bold">Your bundles ({cfg.bundles.length})</h2>
         <Button onClick={addBundle} size="sm" className="gap-1">
           <Plus className="h-4 w-4" /> Add bundle
         </Button>
