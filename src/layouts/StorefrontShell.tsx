@@ -4,6 +4,7 @@ import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout.logic"
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider } from "@/contexts/StorefrontAuthContext";
+import StorefrontAutoLogin from "@/components/storefront/StorefrontAutoLogin";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -398,6 +399,7 @@ export default function StorefrontShell({
       <CartProvider slug={store.slug} storeId={store.id} currency={store.currency || "INR"}>
         <WishlistProvider slug={store.slug}>
           <StorefrontAuthProvider storeId={store.id}>
+            <StorefrontAutoLogin storeId={store.id} />
             {content}
           </StorefrontAuthProvider>
         </WishlistProvider>
@@ -409,6 +411,7 @@ export default function StorefrontShell({
   return (
     <CartProvider slug={store.slug} storeId={store.id} currency={store.currency || "INR"}>
       <StorefrontAuthProvider storeId={store.id}>
+        <StorefrontAutoLogin storeId={store.id} />
         {content}
       </StorefrontAuthProvider>
     </CartProvider>
