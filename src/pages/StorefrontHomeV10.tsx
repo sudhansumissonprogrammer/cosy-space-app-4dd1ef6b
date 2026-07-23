@@ -89,6 +89,7 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
       {(allBestSellers.length > 0 || (products && products.length > 0)) && (
         <HomeBestSellingSection products={products || []} slug={effectiveSlug} store={store} cardStyle={cardStyle} bestSellers={allBestSellers} />
       )}
+      <HomeShopByVideoSection slug={effectiveSlug} store={store} />
       <StorySection store={store} />
       <div className="py-4">
         <HomeSectionHeader title="Curated For You" slug={effectiveSlug} linkTo="shop" />
