@@ -468,7 +468,14 @@ export default function CheckoutPhoneStep({
         {/* Mobile number card — single clear label, no clutter */}
         <div className="bg-white rounded-xl border border-[#ECECEC] overflow-hidden">
           <div className="p-3.5 space-y-3">
-            <div className="flex items-center h-12 rounded-lg border border-[#ECECEC] px-3 gap-2 focus-within:border-black transition-colors">
+            <div
+              className={`flex items-center h-12 rounded-lg border px-3 gap-2 transition-colors ${
+                inlineError
+                  ? "border-red-500 focus-within:border-red-500"
+                  : "border-[#ECECEC] focus-within:border-black"
+              }`}
+            >
+              <span className="text-[16px] leading-none" aria-hidden>🇮🇳</span>
               <span className="text-[14px] font-medium">+91</span>
               <span className="text-muted-foreground">|</span>
               <input
@@ -478,20 +485,28 @@ export default function CheckoutPhoneStep({
                 maxLength={10}
                 placeholder="Enter mobile number"
                 value={phone}
-                onChange={(e) =>
-                  setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && valid && !submitting) submit();
+                onChange={(e) => {
+                  setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
+                  if (inlineError) setInlineError(null);
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !submitting) submit();
+                }}
+                aria-invalid={!!inlineError}
+                aria-describedby={inlineError ? "checkout-phone-error" : undefined}
                 className="flex-1 bg-transparent outline-none text-[14px]"
                 autoComplete="tel-national"
               />
             </div>
+            {inlineError && (
+              <p id="checkout-phone-error" className="text-[12px] font-medium text-red-600 -mt-1">
+                {inlineError}
+              </p>
+            )}
 
             <Button
               onClick={submit}
-              disabled={submitting || !valid}
+              disabled={submitting}
               className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 text-white disabled:bg-black disabled:text-white disabled:opacity-100 rounded-lg"
             >
               {submitting ? (
@@ -502,6 +517,7 @@ export default function CheckoutPhoneStep({
             </Button>
           </div>
         </div>
+
 
 
         {/* Trust footer */}
