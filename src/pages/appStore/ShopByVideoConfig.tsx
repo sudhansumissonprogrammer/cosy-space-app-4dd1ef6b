@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Loader2, Save, Film, Eye, GripVertical, ArrowUp, ArrowDown, VideoOff } from "lucide-react";
 import { getApp } from "@/lib/appStore/registry";
 import ShopByVideoCarousel from "@/components/storefront/ShopByVideoCarousel";
+import { AppConfigShell, AppLiveBadge } from "@/components/appStore/AppConfigShell";
 
 const APP_ID = "shop-by-video";
 
@@ -138,49 +139,19 @@ export default function ShopByVideoConfig() {
   const previewProducts = orderedProducts.slice(0, Math.max(2, Math.min(30, cfg.max_items || 10)));
 
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-8 space-y-4">
-      <div className="flex items-center gap-2">
-        <Button asChild variant="ghost" size="sm">
-          <Link to={`/dashboard/stores/${storeSlug}/apps`}>
-            <ArrowLeft className="h-4 w-4 mr-1" /> App Store
-          </Link>
-        </Button>
-      </div>
-
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-fuchsia-500 to-rose-500 flex items-center justify-center">
-              <Film className="h-5 w-5 text-white" />
-            </div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Shop by Video</h1>
-            {enabled ? <Badge className="bg-emerald-500">Live</Badge> : <Badge variant="secondary">Disabled</Badge>}
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground max-w-2xl">
-            Auto-picks every active product that has a video and shows them in a Reels-style carousel right below Best Sellers.
-          </p>
-        </div>
-        <Button
-          onClick={() => upsert.mutate({ enabled, config: cfg })}
-          disabled={upsert.isPending}
-          className="gap-2"
-        >
-          {upsert.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Save changes
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base">Enable on storefront</CardTitle>
-              <CardDescription>Shows the Shop by Video section under Best Sellers on your home page.</CardDescription>
-            </div>
-            <Switch checked={enabled} onCheckedChange={setEnabled} />
-          </div>
-        </CardHeader>
-      </Card>
+    <AppConfigShell
+      storeSlug={storeSlug}
+      icon={<Film className="h-4.5 w-4.5" />}
+      accent="from-fuchsia-500 to-rose-500"
+      title="Shop by Video"
+      subtitle="Reels-style carousel under Best Sellers"
+      enabled={enabled}
+      onEnabledChange={setEnabled}
+      onSave={() => upsert.mutate({ enabled, config: cfg })}
+      saving={upsert.isPending}
+      saveLabel="Save changes"
+      statusBadge={<AppLiveBadge enabled={enabled} />}
+    >
 
       <Card>
         <CardHeader className="pb-3">

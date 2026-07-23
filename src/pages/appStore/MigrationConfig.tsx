@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2, DownloadCloud, Loader2, ShoppingBag, Store, Package, Users, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { AppConfigShell } from "@/components/appStore/AppConfigShell";
 
 type Platform = "shopify" | "woocommerce" | "dukaan" | "bigcommerce" | "magento" | "generic";
 
