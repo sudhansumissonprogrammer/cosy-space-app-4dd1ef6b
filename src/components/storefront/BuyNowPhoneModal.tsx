@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { IndiaFlagIcon } from "@/components/ui/IndiaFlagIcon";
 import { Lock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
