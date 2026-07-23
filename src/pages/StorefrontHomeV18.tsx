@@ -199,6 +199,10 @@ export default function StorefrontHomeV18() {
         </LazyRender>
       )}
 
+      {slug && <HomeShopByVideoSection slug={slug} store={store} />}
+
+
+
       {/* ─── New Arrivals ─── */}
       {products.length > 0 && (
         <section style={{ backgroundColor: V18_BG }}>
