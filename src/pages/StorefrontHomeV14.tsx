@@ -259,6 +259,9 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
           </Suspense>
         )}
 
+        <HomeShopByVideoSection slug={slug!} store={store} />
+
+
         <section style={{ minHeight: 600, contain: "layout style" }}>
           <div className="mb-5 flex items-center justify-between gap-3" style={{ minHeight: 32 }}>
             <SectionHeading title="🔥 Popular Products" className="flex-1" />
