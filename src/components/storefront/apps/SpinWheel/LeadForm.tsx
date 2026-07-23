@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
+import { IndiaFlagIcon } from "@/components/ui/IndiaFlagIcon";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -71,7 +72,7 @@ export default function LeadForm({
 
       <div className="mt-4 flex items-center gap-2 rounded-xl border-2 border-slate-200 bg-white p-3 focus-within:border-slate-400 transition-colors">
         <span className="flex items-center gap-1 text-sm font-semibold text-slate-700 pr-2 border-r border-slate-200">
-          🇮🇳 <span>+91</span>
+          <IndiaFlagIcon className="h-3.5 w-5 rounded-[2px] shadow-[0_0_0_1px_rgba(0,0,0,0.08)]" /> <span>+91</span>
         </span>
         <Input
           type="tel"

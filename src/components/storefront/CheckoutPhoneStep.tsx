@@ -28,6 +28,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { IndiaFlagIcon } from "@/components/ui/IndiaFlagIcon";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
 import {
@@ -475,7 +476,7 @@ export default function CheckoutPhoneStep({
                   : "border-[#ECECEC] focus-within:border-black"
               }`}
             >
-              <span className="text-[16px] leading-none" aria-hidden>🇮🇳</span>
+              <IndiaFlagIcon className="h-3.5 w-5 rounded-[2px] shadow-[0_0_0_1px_rgba(0,0,0,0.06)]" />
               <span className="text-[14px] font-medium">+91</span>
               <span className="text-muted-foreground">|</span>
               <input

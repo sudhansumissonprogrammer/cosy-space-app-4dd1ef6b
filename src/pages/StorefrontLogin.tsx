@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, Phone } from "lucide-react";
+import { IndiaFlagIcon } from "@/components/ui/IndiaFlagIcon";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
@@ -103,7 +104,7 @@ export default function StorefrontLogin() {
             <div className="space-y-2">
               <Label htmlFor="phone">Mobile Number</Label>
               <div className={`flex items-center h-10 rounded-md border px-3 gap-2 bg-background transition-colors ${error ? "border-destructive" : "border-input focus-within:border-primary"}`}>
-                <span className="text-[16px] leading-none" aria-hidden>🇮🇳</span>
+                <IndiaFlagIcon className="h-3.5 w-5 rounded-[2px] shadow-[0_0_0_1px_rgba(0,0,0,0.06)]" />
                 <span className="text-sm font-medium text-muted-foreground">+91</span>
                 <span className="text-muted-foreground/60">|</span>
                 <input
