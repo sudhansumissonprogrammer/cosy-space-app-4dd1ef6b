@@ -511,6 +511,44 @@ export default function CheckoutV2Page() {
     return true;
   };
 
+  const phoneAddressLookupRef = useRef("");
+  useEffect(() => {
+    const canon = toCanonicalIndianPhone(phone);
+    if (!store?.id || !canon) return;
+    if (streetAddress && pincode && city && state && fullName) return;
+    const key = `${store.id}:${canon}`;
+    if (phoneAddressLookupRef.current === key) return;
+    phoneAddressLookupRef.current = key;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("create-guest-account", {
+          body: { phone: canon, store_id: store.id },
+        });
+        if (cancelled || error) return;
+        const result = data as {
+          session?: { access_token?: string; refresh_token?: string } | null;
+          address?: any;
+        } | null;
+        if (result?.session?.access_token && result?.session?.refresh_token) {
+          await supabaseStorefront.auth.setSession({
+            access_token: result.session.access_token,
+            refresh_token: result.session.refresh_token,
+          });
+        }
+        if (!cancelled && result?.address) applyPhoneLookupAddress(result.address);
+      } catch {
+        // Keep checkout usable; the shopper can still type a fresh address.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id, phone, streetAddress, pincode, city, state, fullName]);
+
   const openAddressFormSheet = () => {
     setShowAddressDialog(false);
     setShowAddAddress(false);
