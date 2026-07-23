@@ -26,6 +26,7 @@ import {
 } from "@/components/storefront/PdpEnhancements";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 import AutoCouponHint from "@/components/storefront/AutoCouponHint";
+import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSection";
 
 const ZoomableGallery = lazy(() => import("@/components/storefront/ZoomableGallery"));
 
