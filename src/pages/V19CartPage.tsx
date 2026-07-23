@@ -265,6 +265,18 @@ export default function V19CartPage() {
           </Link>
         </div>
 
+        {/* Upsell / Cross-sell (App Store add-on) */}
+        {pageOffers.length > 0 && (
+          <UpsellStrip
+            storeId={store.id}
+            currency={store.currency || "INR"}
+            offers={pageOffers}
+            placement="cart_page"
+            excludeProductIds={cartProductIds}
+          />
+        )}
+
+
         {/* Coupons / Offers row (visual only — applied at checkout) */}
         <Link
           to={storefrontPath(slug, "checkout")}
