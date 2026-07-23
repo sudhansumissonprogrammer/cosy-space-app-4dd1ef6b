@@ -1549,7 +1549,13 @@ export default function CheckoutV2Page() {
     // then approves in the UPI app. Full-modal gateways (Razorpay/PayU/Cashfree)
     // resolve much faster because we come back via redirect.
     const isDesktopQr = !isMobile() && waitingApp === "UPI QR";
-    const maxAttempts = isDesktopQr ? 120 : (gatewayRef.current.pg ? 6 : 8);
+    // Gateway redirect returns (PayU/Cashfree/Razorpay): PayU's verify_payment API
+    // frequently lags 15-45s behind the actual charge. Previously we gave up after
+    // ~10s and dropped the shopper on a "Payment not confirmed" screen even though
+    // the webhook / reconcile cron confirmed the order seconds later. Poll for ~90s
+    // (45 × 2s) — well beyond PayU's worst-case reflection window — and rely on the
+    // parallel webhook to flip DB status the moment it lands.
+    const maxAttempts = isDesktopQr ? 120 : (gatewayRef.current.pg ? 45 : 8);
     const checkNow = async (): Promise<boolean> => {
       if (waitingCheckInFlightRef.current) return false;
       waitingCheckInFlightRef.current = true;
@@ -1579,14 +1585,15 @@ export default function CheckoutV2Page() {
       if (attempts >= maxAttempts) {
         stopWaitingForPayment(isDesktopQr
           ? "Still not confirmed. If you completed payment, tap retry."
-          : "Payment not confirmed. If you paid, tap retry to check again.");
+          : "Still verifying with the bank. If you paid, tap retry — we'll confirm your order.");
         return;
       }
-      // QR: slow, steady cadence. Gateway redirect: fast for a few seconds.
-      const delay = isDesktopQr ? 2500 : (attempts < 5 ? 1500 : 2500);
+      // QR: slow, steady cadence. Gateway redirect: fast at first, then steady 2s
+      // so we ride out PayU's 15-45s reflection lag without hammering.
+      const delay = isDesktopQr ? 2500 : (attempts < 5 ? 1200 : 2000);
       setTimeout(poll, delay);
     };
-    setTimeout(poll, 800);
+    setTimeout(poll, 600);
     const onFocus = () => { void checkNow(); };
     const onVis = () => { if (document.visibilityState === "visible") void checkNow(); };
     window.addEventListener("focus", onFocus);
@@ -1786,6 +1793,16 @@ export default function CheckoutV2Page() {
       setWaitingApp("PayU");
       persistWaiting("any", "PayU", { orderId: returnedOrderId, orderNumber: null });
       setWaiting(true);
+      // Kick a strong server-side verify immediately (in parallel with the
+      // polling loop) so we don't wait a full poll-tick before asking PayU.
+      // Idempotent — if webhook already confirmed, this short-circuits.
+      try {
+        void supabase.functions
+          .invoke("payu-verify-payment", {
+            body: { store_id: store.id, order_id: returnedOrderId, txnid },
+          })
+          .catch(() => { /* polling will catch it */ });
+      } catch { /* noop */ }
     }
     try {
       const u = new URL(window.location.href);
