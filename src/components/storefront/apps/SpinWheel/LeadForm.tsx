@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
+import { IndiaFlagIcon } from "@/components/ui/IndiaFlagIcon";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
