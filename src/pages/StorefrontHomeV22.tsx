@@ -299,6 +299,10 @@ export default function StorefrontHomeV22() {
           {/* Best Sellers — first 12 on cold load, infinite scroll */}
           <BestSellersSection storeId={store.id} slug={slug!} store={store} cardStyle={cardStyle} isCarousel={isCarousel} />
 
+          <HomeShopByVideoSection slug={slug!} store={store} />
+
+
+
           {/* Per-category sections — lazy loaded via IntersectionObserver, each with infinite scroll */}
           {sortedCategories.map((cat: any) => (
             <CategorySection key={cat.id} category={cat} storeId={store.id} slug={slug!} store={store} cardStyle={cardStyle} />
