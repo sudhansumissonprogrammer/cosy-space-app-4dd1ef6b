@@ -513,16 +513,23 @@ export default function CheckoutV2Page() {
   const addressSheetOpen = showAddressFormSheet || (!(pincode && streetAddress && city && state && fullName) && !addressSheetDismissed);
 
   // Auto-open the address form the moment the phone gate completes on a
-  // fresh checkout so the shopper sees the address collector immediately,
-  // not the (empty) checkout summary.
+  // fresh checkout — BUT wait ~1.5s so saved-address / returning-order
+  // lookups can auto-fill first and skip the sheet entirely for repeat
+  // shoppers. Prevents a flash-of-form for anyone whose phone already has
+  // an address on file (same store OR any prior order platform-wide).
   const phoneValid = !!toCanonicalIndianPhone(phone);
   const addressComplete = !!(pincode && streetAddress && city && state && fullName);
   useEffect(() => {
-    if (phoneValid && !addressComplete) {
-      setAddressSheetDismissed(false);
-      setShowAddressFormSheet(true);
-    }
-  }, [phoneValid, addressComplete]);
+    if (!phoneValid || addressComplete) return;
+    const t = window.setTimeout(() => {
+      // Re-check inside the timer — a lookup may have filled it meanwhile.
+      if (!(pincode && streetAddress && city && state && fullName)) {
+        setAddressSheetDismissed(false);
+        setShowAddressFormSheet(true);
+      }
+    }, 1500);
+    return () => window.clearTimeout(t);
+  }, [phoneValid, addressComplete, pincode, streetAddress, city, state, fullName]);
 
   // Lock body scroll while any address overlay is open so only the form scrolls.
   useEffect(() => {
