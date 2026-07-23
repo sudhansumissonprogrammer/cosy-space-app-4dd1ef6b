@@ -456,7 +456,8 @@ Deno.serve(async (req) => {
       const unitPrice = Number(firstItem?.unit_price ?? 0);
       const productPrice = unitPrice > 0 ? `₹${unitPrice.toFixed(0)}` : `₹${orderTotal.toFixed(0)}`;
       const firstProductId = firstItem?.product_id;
-      const ctaToken = firstProductId ? `p-${firstProductId}` : `o-${(o as any).id}`;
+      const alSuffix2 = phone ? `~${phone}` : "";
+      const ctaToken = firstProductId ? `p-${firstProductId}${alSuffix2}` : `o-${(o as any).id}`;
       const customerName = String((o as any).customer_name || "there").trim() || "there";
       const s = (o as any).stores || {};
 
