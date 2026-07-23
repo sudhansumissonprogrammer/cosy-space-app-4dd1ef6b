@@ -110,13 +110,20 @@ export default function BuyNowPhoneModal({
 }: Props) {
   const navigate = useNavigate();
   const didSkip = useRef(false);
+  const autoSubmittedRef = useRef(false);
+  const inFlightRef = useRef(false);
   const [phone, setPhone] = useState(() => {
     try {
-      return localStorage.getItem("checkout_phone") || "";
+      const saved = localStorage.getItem("checkout_phone") || "";
+      return saved.replace(/\D/g, "").slice(0, 10);
     } catch {
       return "";
     }
   });
+  const [inlineError, setInlineError] = useState<string | null>(null);
+
+  const digits = phone.replace(/\D/g, "");
+  const valid = digits.length === 10 && /^[6-9]/.test(digits);
 
   // If phone already saved, skip modal and go direct to checkout
   useEffect(() => {
@@ -126,7 +133,6 @@ export default function BuyNowPhoneModal({
       const normalized = normalizePhone(saved);
       if (normalized && isValidIndianPhone(normalized)) {
         didSkip.current = true;
-        // Persist normalized version going forward
         try { localStorage.setItem("checkout_phone", normalized); } catch {}
         saveLead({ storeId, phone: normalized, productId, productName, source });
         void autoLoginByPhone(storeId, normalized);
@@ -139,27 +145,47 @@ export default function BuyNowPhoneModal({
 
   // Reset skip flag when modal closes
   useEffect(() => {
-    if (!open) didSkip.current = false;
+    if (!open) {
+      didSkip.current = false;
+      autoSubmittedRef.current = false;
+      setInlineError(null);
+    }
   }, [open]);
 
   const handleContinue = () => {
-    const normalized = normalizePhone(phone);
-    if (!isValidIndianPhone(normalized)) {
-      toast.error("Please enter a valid 10-digit mobile number");
+    if (inFlightRef.current) return;
+    if (digits.length < 10) {
+      setInlineError("Please enter your full 10-digit mobile number");
       return;
     }
+    const normalized = normalizePhone(digits);
+    if (!isValidIndianPhone(normalized)) {
+      setInlineError("Enter a valid Indian mobile number starting with 6-9");
+      return;
+    }
+    setInlineError(null);
+    inFlightRef.current = true;
 
     try { localStorage.setItem("checkout_phone", normalized); } catch {}
 
-    // Save lead immediately so it shows up in dashboard → Leads
     saveLead({ storeId, phone: normalized, productId, productName, source });
-    // Auto-login the shopper by phone so checkout sees a logged-in customer
     void autoLoginByPhone(storeId, normalized);
 
     onBeforeNavigate?.();
     onOpenChange(false);
     navigate(storefrontPath(storeSlug, "checkout"));
   };
+
+  // Auto-submit the moment a valid 10-digit number is entered (Gokwik-style).
+  useEffect(() => {
+    if (!open) return;
+    if (valid && !autoSubmittedRef.current) {
+      autoSubmittedRef.current = true;
+      const t = window.setTimeout(() => handleContinue(), 120);
+      return () => window.clearTimeout(t);
+    }
+    if (!valid) autoSubmittedRef.current = false;
+  }, [valid, open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -173,22 +199,36 @@ export default function BuyNowPhoneModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 pt-2">
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)" }}>
-              +91
-            </span>
+        <div className="space-y-3 pt-2">
+          <div
+            className={`flex items-center h-12 rounded-xl border-2 px-3 gap-2 transition-colors ${
+              inlineError ? "border-red-500" : "border-slate-200 focus-within:border-slate-400"
+            }`}
+          >
+            <span className="text-[18px] leading-none" aria-hidden>🇮🇳</span>
+            <span className="text-sm font-medium text-slate-700">+91</span>
+            <span className="text-slate-300">|</span>
             <Input
               type="tel"
               inputMode="numeric"
               maxLength={10}
               placeholder="Enter 10-digit number"
               value={phone}
-              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-              className="pl-12 h-12 text-base rounded-xl"
+              onChange={(e) => {
+                setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
+                if (inlineError) setInlineError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleContinue();
+              }}
+              aria-invalid={!!inlineError}
+              className="flex-1 border-0 shadow-none focus-visible:ring-0 px-0 h-8 text-base font-medium"
               autoFocus
             />
           </div>
+          {inlineError && (
+            <p className="text-[12px] font-medium text-red-600">{inlineError}</p>
+          )}
 
           <div className="flex items-center justify-center gap-4 text-xs" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)" }}>
             <span className="flex items-center gap-1">
@@ -203,7 +243,6 @@ export default function BuyNowPhoneModal({
 
           <Button
             onClick={handleContinue}
-            disabled={phone.replace(/\D/g, "").length !== 10}
             className="w-full h-12 rounded-xl text-sm font-bold uppercase tracking-wider"
           >
             Continue to Checkout
