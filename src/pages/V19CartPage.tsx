@@ -85,6 +85,27 @@ export default function V19CartPage() {
   const grandTotal = itemsTotal + deliveryFee + handlingFee;
   const totalSavings = productSavings + (qualifiesFree && flatRate > 0 ? flatRate : 0);
 
+  // ── Upsell (App Store add-on) ──
+  const cartProductIds = useMemo(
+    () => items.map((i) => i.productId).filter((id): id is string => !!id && !id.startsWith("bundle:")),
+    [items],
+  );
+  const { data: upsellOffersAll } = useUpsellOffers(store?.slug);
+  const pageOffers = useMemo(() => {
+    if (!upsellOffersAll?.length) return [];
+    return matchOffers(upsellOffersAll, {
+      placement: "cart_page",
+      cart: { productIds: cartProductIds, totalValue: cartTotal, totalQty: cartCount },
+    });
+  }, [upsellOffersAll, cartProductIds, cartTotal, cartCount]);
+  const preOffers = useMemo(() => {
+    if (!upsellOffersAll?.length) return [];
+    return matchOffers(upsellOffersAll, {
+      placement: "pre_checkout",
+      cart: { productIds: cartProductIds, totalValue: cartTotal, totalQty: cartCount },
+    });
+  }, [upsellOffersAll, cartProductIds, cartTotal, cartCount]);
+
   // ── Empty state ──
   if (items.length === 0) {
     return (
