@@ -206,7 +206,7 @@ export default function BuyNowPhoneModal({
               inlineError ? "border-red-500" : "border-slate-200 focus-within:border-slate-400"
             }`}
           >
-            <span className="text-[18px] leading-none" aria-hidden>🇮🇳</span>
+            <IndiaFlagIcon className="h-4 w-[22px] rounded-[2px] shadow-[0_0_0_1px_rgba(0,0,0,0.08)]" />
             <span className="text-sm font-medium text-slate-700">+91</span>
             <span className="text-slate-300">|</span>
             <Input
