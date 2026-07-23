@@ -1793,6 +1793,16 @@ export default function CheckoutV2Page() {
       setWaitingApp("PayU");
       persistWaiting("any", "PayU", { orderId: returnedOrderId, orderNumber: null });
       setWaiting(true);
+      // Kick a strong server-side verify immediately (in parallel with the
+      // polling loop) so we don't wait a full poll-tick before asking PayU.
+      // Idempotent — if webhook already confirmed, this short-circuits.
+      try {
+        void supabase.functions
+          .invoke("payu-verify-payment", {
+            body: { store_id: store.id, order_id: returnedOrderId, txnid },
+          })
+          .catch(() => { /* polling will catch it */ });
+      } catch { /* noop */ }
     }
     try {
       const u = new URL(window.location.href);
