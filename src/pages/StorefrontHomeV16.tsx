@@ -28,7 +28,9 @@ import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
+const ShopByVideoCarousel = lazy(() => import("@/components/storefront/ShopByVideoCarousel"));
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
+import { DeferUntilVisible } from "@/components/storefront/DeferUntilVisible";
 
 const BATCH_SIZE = 20;
 
@@ -301,6 +303,14 @@ export default function StorefrontHomeV16() {
         <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 pt-4 pb-8 space-y-8 min-h-[80vh]">
           {/* Best Sellers — first 12 on cold load, infinite scroll */}
           <BestSellersSection storeId={store.id} slug={slug!} store={store} cardStyle={cardStyle} isCarousel={isCarousel} />
+
+          {/* Shop by Video — App Store add-on (only renders when enabled + products have video_url) */}
+          <Suspense fallback={null}>
+            <DeferUntilVisible rootMargin="600px" minHeight={0}>
+              <ShopByVideoCarousel storeSlug={slug!} storeId={store.id} />
+            </DeferUntilVisible>
+          </Suspense>
+
 
           {/* Per-category sections — lazy loaded via IntersectionObserver, each with infinite scroll */}
           {sortedCategories.map((cat: any) => (
