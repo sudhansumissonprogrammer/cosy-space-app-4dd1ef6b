@@ -396,6 +396,7 @@ export default function StorefrontHomeV20() {
           </section>
         );
       })}
+      {slug && <HomeShopByVideoSection slug={slug} store={store} />}
     </div>
   );
 }
