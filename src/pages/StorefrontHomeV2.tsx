@@ -17,6 +17,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 const StorefrontTrustStrip = lazy(() => import("@/components/storefront/StorefrontTrustStrip"));
+import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
 
 /* ── Hero Carousel ── */
 function HeroCarousel({ store }: { store: StoreData }) {
@@ -373,6 +374,7 @@ export default function StorefrontHomeV2() {
           </div>
         )}
       </div>
+      {slug && <HomeShopByVideoSection slug={slug} store={store} />}
       <LazyRender rootMargin="300px" minHeight={100}>
         <Suspense fallback={null}>
           <StorefrontTrustStrip storeId={store.id} currency={store.currency} />

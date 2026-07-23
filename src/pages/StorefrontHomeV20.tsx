@@ -14,6 +14,7 @@ import { optimizeImageUrl } from "@/lib/imageOptimize";
 import MobileHeroCarousel from "@/components/storefront/MobileHeroCarousel";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { supabase } from "@/integrations/supabase/client";
+import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
 
 interface Category { id: string; name: string; slug: string; image_url: string | null; show_on_home?: boolean; }
 
@@ -395,6 +396,7 @@ export default function StorefrontHomeV20() {
           </section>
         );
       })}
+      {slug && <HomeShopByVideoSection slug={slug} store={store} />}
     </div>
   );
 }

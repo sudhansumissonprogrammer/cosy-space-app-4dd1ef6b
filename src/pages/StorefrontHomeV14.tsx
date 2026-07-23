@@ -24,6 +24,7 @@ import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import LazyRender from "@/components/storefront/LazyRender";
+import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
 
@@ -258,6 +259,9 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
             )}
           </Suspense>
         )}
+
+        <HomeShopByVideoSection slug={slug!} store={store} />
+
 
         <section style={{ minHeight: 600, contain: "layout style" }}>
           <div className="mb-5 flex items-center justify-between gap-3" style={{ minHeight: 32 }}>

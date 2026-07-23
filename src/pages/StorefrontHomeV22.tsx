@@ -29,6 +29,7 @@ import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
+import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
 
 const BATCH_SIZE = 20;
 
@@ -297,6 +298,10 @@ export default function StorefrontHomeV22() {
         <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 pt-4 pb-8 space-y-8 min-h-[80vh]">
           {/* Best Sellers — first 12 on cold load, infinite scroll */}
           <BestSellersSection storeId={store.id} slug={slug!} store={store} cardStyle={cardStyle} isCarousel={isCarousel} />
+
+          <HomeShopByVideoSection slug={slug!} store={store} />
+
+
 
           {/* Per-category sections — lazy loaded via IntersectionObserver, each with infinite scroll */}
           {sortedCategories.map((cat: any) => (

@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 const StorefrontTrustStrip = lazy(() => import("@/components/storefront/StorefrontTrustStrip"));
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
-import { ResponsiveHeroBanner, HomeBestSellingSection, HomeSectionHeader } from "@/components/storefront/HomeSharedSections";
+import { ResponsiveHeroBanner, HomeBestSellingSection, HomeSectionHeader, HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
 
 /* ── Announcement Strip ── */
 function AnnouncementStrip({ customText }: { customText?: string }) {
@@ -89,6 +89,7 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
       {(allBestSellers.length > 0 || (products && products.length > 0)) && (
         <HomeBestSellingSection products={products || []} slug={effectiveSlug} store={store} cardStyle={cardStyle} bestSellers={allBestSellers} />
       )}
+      <HomeShopByVideoSection slug={effectiveSlug} store={store} />
       <StorySection store={store} />
       <div className="py-4">
         <HomeSectionHeader title="Curated For You" slug={effectiveSlug} linkTo="shop" />

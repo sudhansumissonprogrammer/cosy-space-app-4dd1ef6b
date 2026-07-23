@@ -35,6 +35,7 @@ import { optimizeImageUrl } from "@/lib/imageOptimize";
 
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
+import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
 
 const ABOVE_FOLD_COUNT = 8;
 
@@ -322,6 +323,8 @@ export default function StorefrontHomeV17() {
           <V17BestSellersGrid bestSellers={bestSellers} slug={slug} store={store} />
         )
       )}
+      {slug && <HomeShopByVideoSection slug={slug} store={store} />}
+
 
       {/* ─── All Collection ─── */}
       <section style={{ padding: "40px 15px 20px" }}>
