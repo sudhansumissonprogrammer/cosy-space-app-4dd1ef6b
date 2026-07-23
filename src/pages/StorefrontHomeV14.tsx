@@ -24,6 +24,7 @@ import StorefrontMobileHero from "@/components/storefront/StorefrontMobileHero";
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import LazyRender from "@/components/storefront/LazyRender";
+import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
 import { useStoreJsonLd } from "@/hooks/useJsonLd";
 import { storefrontPath } from "@/lib/subdomain";
 
