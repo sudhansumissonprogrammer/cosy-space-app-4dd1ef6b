@@ -23,6 +23,9 @@ export default function FrequentlyBoughtTogether({
   currency,
   addToCart,
 }: Props) {
+  // Gate on merchant enabling the Bundle Builder app — otherwise this
+  // "Frequently Bought Together" strip should not appear.
+  const { enabled: bundleAppEnabled } = useAppEnabled(storeSlug, "bundle-builder");
   const { data: bundleProducts } = useQuery({
     queryKey: ["bundle-products", storeId, currentProductId],
     queryFn: async () => {
