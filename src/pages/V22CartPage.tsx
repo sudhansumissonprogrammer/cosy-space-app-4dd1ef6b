@@ -9,12 +9,39 @@ import { useCart } from "@/contexts/CartContext";
 import { ArrowLeft, Minus, Plus, ShoppingCart, Trash2, Package, ShoppingBag, Truck, Check } from "lucide-react";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
+import UpsellStrip from "@/components/storefront/apps/Upsell/UpsellStrip";
+import PreCheckoutModal from "@/components/storefront/apps/Upsell/PreCheckoutModal";
+import { useUpsellOffers } from "@/hooks/useUpsellOffers";
+import { matchOffers } from "@/lib/appStore/upsell/matchEngine";
+import { useMemo } from "react";
 
 export default function V22CartPage() {
   const store = useOutletContext<StoreData>();
   const navigate = useNavigate();
   const { items, updateQuantity, removeFromCart, clearCart, cartTotal, cartCount } = useCart();
   const currency = store.currency || "USD";
+
+  // Filter out synthetic bundle:* IDs before any product query.
+  const cartProductIds = useMemo(
+    () => items.map((i) => i.productId).filter((id): id is string => !!id && !id.startsWith("bundle:")),
+    [items]
+  );
+  const { data: upsellOffersAll } = useUpsellOffers(store.slug);
+  const pageOffers = useMemo(() => {
+    if (!upsellOffersAll?.length) return [];
+    return matchOffers(upsellOffersAll, {
+      placement: "cart_page",
+      cart: { productIds: cartProductIds, totalValue: cartTotal, totalQty: cartCount },
+    });
+  }, [upsellOffersAll, cartProductIds, cartTotal, cartCount]);
+  const preOffers = useMemo(() => {
+    if (!upsellOffersAll?.length) return [];
+    return matchOffers(upsellOffersAll, {
+      placement: "pre_checkout",
+      cart: { productIds: cartProductIds, totalValue: cartTotal, totalQty: cartCount },
+    });
+  }, [upsellOffersAll, cartProductIds, cartTotal, cartCount]);
+
 
   const { data: shippingConfig } = useQuery({
     queryKey: ["storefront-shipping-config", store.id],
@@ -153,16 +180,36 @@ export default function V22CartPage() {
                 <span className="text-base sm:text-lg font-bold text-foreground">{formatPrice(cartTotal, currency)}</span>
               </div>
 
+              {pageOffers.length > 0 && (
+                <div className="mt-2">
+                  <UpsellStrip
+                    storeId={store.id}
+                    currency={currency}
+                    offers={pageOffers}
+                    placement="cart_page"
+                    excludeProductIds={cartProductIds}
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
-                <button
-                  className="flex h-10 sm:h-12 w-full items-center justify-center gap-2 text-xs sm:text-sm font-bold btn-gold"
-                  style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
-                  onClick={() => navigate(storefrontPath(store.slug, "checkout"))}
+                <PreCheckoutModal
+                  offers={preOffers}
+                  storeId={store.id}
+                  currency={currency}
+                  excludeProductIds={cartProductIds}
+                  onProceed={() => navigate(storefrontPath(store.slug, "checkout"))}
                 >
-                  <ShoppingBag className="h-4 w-4" />
-                  Proceed to Checkout
-                </button>
+                  <button
+                    className="flex h-10 sm:h-12 w-full items-center justify-center gap-2 text-xs sm:text-sm font-bold btn-gold"
+                    style={{ borderRadius: "var(--storefront-button-radius, 0.5rem)" }}
+                  >
+                    <ShoppingBag className="h-4 w-4" />
+                    Proceed to Checkout
+                  </button>
+                </PreCheckoutModal>
               </div>
+
             </CardContent>
           </Card>
         </div>
