@@ -21,6 +21,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
+import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
 
 /* V18 dark theme vars */
 const V18_BG = "var(--storefront-bg, #0a0a0a)";
