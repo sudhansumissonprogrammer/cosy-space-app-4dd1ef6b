@@ -500,7 +500,7 @@ export default function SpinWheelConfigPage() {
           </Card>
         </div>
       </div>
-    </div>
+    </AppConfigShell>
   );
 }
 
