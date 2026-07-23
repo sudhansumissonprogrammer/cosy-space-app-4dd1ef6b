@@ -2694,9 +2694,6 @@ export default function CheckoutV2Page() {
             // If that was the last item, the empty-cart guard above will
             // redirect to the storefront home on the next render.
           }}
-          onComplete={(p) => {
-            setPhone(p);
-            try { localStorage.setItem("checkout_phone", toCanonicalIndianPhone(p) || p); } catch { /* noop */ }
           onComplete={(p, savedAddress) => {
             setPhone(p);
             try { localStorage.setItem("checkout_phone", toCanonicalIndianPhone(p) || p); } catch { /* noop */ }
