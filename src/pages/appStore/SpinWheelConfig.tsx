@@ -16,6 +16,7 @@ import { ArrowLeft, Disc3, Loader2, Plus, Trash2, Eye, Save } from "lucide-react
 import { getApp } from "@/lib/appStore/registry";
 import SpinWheelApp from "@/components/storefront/apps/SpinWheel/SpinWheelApp";
 import type { SpinWheelConfig, WheelSegment, WheelStyle } from "@/components/storefront/apps/SpinWheel/types";
+import { AppConfigShell, AppLiveBadge } from "@/components/appStore/AppConfigShell";
 
 const APP_ID = "spin-wheel";
 
@@ -175,45 +176,28 @@ export default function SpinWheelConfigPage() {
   const isInstalled = !!row;
 
   return (
-    <div className="mx-auto max-w-6xl p-4 md:p-6">
-      <Button asChild variant="ghost" size="sm" className="mb-3 gap-1">
-        <Link to={`/dashboard/stores/${storeSlug}/apps`}><ArrowLeft className="h-4 w-4" /> App Store</Link>
-      </Button>
-
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white">
-            <Disc3 className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-extrabold tracking-tight">{appMeta.name}</h1>
-            <p className="text-sm text-muted-foreground">{appMeta.tagline}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-xl border bg-card px-3 py-2">
-            <Label htmlFor="enabled-switch" className="text-xs font-semibold">Enabled</Label>
-            <Switch id="enabled-switch" checked={enabled} onCheckedChange={setEnabled} />
-          </div>
-          <Button
-            onClick={() => upsert.mutate({ enabled, config })}
-            disabled={upsert.isPending || totalWeight <= 0}
-            className="gap-1"
-          >
-            {upsert.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {isInstalled ? "Save" : "Install"}
-          </Button>
-        </div>
-      </div>
-
+    <AppConfigShell
+      storeSlug={storeSlug}
+      icon={<Disc3 className="h-4.5 w-4.5" />}
+      accent="from-indigo-500 to-fuchsia-500"
+      title={appMeta.name}
+      subtitle={appMeta.tagline}
+      enabled={enabled}
+      onEnabledChange={setEnabled}
+      onSave={() => upsert.mutate({ enabled, config })}
+      saving={upsert.isPending}
+      saveDisabled={totalWeight <= 0}
+      saveLabel={isInstalled ? "Save" : "Install"}
+      statusBadge={<AppLiveBadge enabled={enabled} />}
+    >
       {!enabled && (
-        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+        <div className="mx-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 md:mx-0">
           The wheel is not shown to shoppers until you toggle <strong>Enabled</strong> and click <strong>Save</strong>.
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid gap-3 md:gap-6 lg:grid-cols-3">
+        <div className="space-y-3 md:space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Wheel Segments</CardTitle>
