@@ -132,7 +132,12 @@ Deno.serve(async (req) => {
   if (!token || token === "wa-r") return redirect("https://shopbanao.in");
 
   const kind = token.slice(0, 2);
-  const id = token.slice(2);
+  // For `p-` marketing links, cart-recovery-cron appends `~<phone10>` so we
+  // can autologin the recipient (products carry no phone in the DB).
+  const rawId = token.slice(2);
+  const tildeIdx = rawId.indexOf("~");
+  const id = tildeIdx >= 0 ? rawId.slice(0, tildeIdx) : rawId;
+  const suffixPhone = tildeIdx >= 0 ? rawId.slice(tildeIdx + 1) : "";
 
   // Fire-and-forget click log. Never blocks the redirect.
   const ua = req.headers.get("user-agent") || "";
@@ -145,34 +150,42 @@ Deno.serve(async (req) => {
     if (kind === "o-" || kind === "t-") {
       const { data: o } = await admin
         .from("orders")
-        .select("id, tracking_url, stores:store_id(name, slug, custom_domain)")
+        .select("id, tracking_url, customer_phone, stores:store_id(name, slug, custom_domain)")
         .eq("id", id).maybeSingle();
       if (!o) return redirect("https://shopbanao.in");
       const storeRow = (o as any).stores;
       const base = storeBase(storeRow);
       const host = base.replace(/^https?:\/\//, "");
+      const phone = (o as any).customer_phone as string | null;
       if (kind === "t-" && (o as any).tracking_url) {
+        // Tracking URLs are usually external courier sites — no autologin.
         return redirect((o as any).tracking_url, { status: 302, maxAge: 60 });
       }
+      const target = await withAutoLogin(`${base}/account/orders/${(o as any).id}`, phone);
       // Preconnect to storefront so account page TLS is warm.
-      return redirect(`${base}/account/orders/${(o as any).id}`, {
-        status: 301,
-        maxAge: 86400,
+      // Downgraded to 302 (was 301) so a fresh signed token is minted on
+      // every click — 301s get cached forever by browsers.
+      return redirect(target, {
+        status: 302,
+        maxAge: 0,
         preconnectHosts: [host],
       });
     }
     if (kind === "c-") {
       const { data: c } = await admin
         .from("abandoned_carts")
-        .select("id, session_token, stores:store_id(name, slug, custom_domain)")
+        .select("id, session_token, customer_phone, stores:store_id(name, slug, custom_domain)")
         .eq("id", id).maybeSingle();
       if (!c) return redirect("https://shopbanao.in");
       const base = storeBase((c as any).stores);
       const host = base.replace(/^https?:\/\//, "");
       const t = (c as any).session_token || (c as any).id;
-      return redirect(`${base}/cart?recover=${encodeURIComponent(String(t))}`, {
-        preconnectHosts: [host],
-      });
+      const phone = (c as any).customer_phone as string | null;
+      const target = await withAutoLogin(
+        `${base}/cart?recover=${encodeURIComponent(String(t))}`,
+        phone,
+      );
+      return redirect(target, { preconnectHosts: [host] });
     }
     if (kind === "p-") {
       const { data: p } = await admin
@@ -193,9 +206,15 @@ Deno.serve(async (req) => {
       const hero = await heroPromise;
       const pdpApi = `${base}/api/pdp?slug=${encodeURIComponent(slug)}`;
 
-      return redirect(`${base}/product/${encodeURIComponent(slug)}`, {
+      const target = await withAutoLogin(
+        `${base}/product/${encodeURIComponent(slug)}`,
+        suffixPhone,
+      );
+      return redirect(target, {
         status: 302,
-        maxAge: 300,
+        // 0 when signed — every click must mint a fresh token. Retain the 300s
+        // browser cache for unsigned (no-phone) marketing links.
+        maxAge: suffixPhone ? 0 : 300,
         preconnectHosts: [host, "cdn.shopbanao.in"],
         preloadImages: hero ? [hero] : undefined,
         preloadFetches: [pdpApi],
