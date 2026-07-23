@@ -373,6 +373,7 @@ export default function StorefrontHomeV2() {
           </div>
         )}
       </div>
+      {slug && <HomeShopByVideoSection slug={slug} store={store} />}
       <LazyRender rootMargin="300px" minHeight={100}>
         <Suspense fallback={null}>
           <StorefrontTrustStrip storeId={store.id} currency={store.currency} />
