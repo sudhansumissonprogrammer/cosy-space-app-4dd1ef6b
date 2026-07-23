@@ -621,7 +621,8 @@ export default function CheckoutV2Page() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await supabase
+        // 1) Prefer an order in THIS store (most trusted — same brand/context).
+        const { data: sameStore } = await supabase
           .from("orders")
           .select("id, customer_name, customer_phone, street_address, city, state, pincode, created_at")
           .eq("store_id", store.id)
@@ -631,7 +632,22 @@ export default function CheckoutV2Page() {
           .limit(1)
           .maybeSingle();
         if (cancelled) return;
-        if (data && data.street_address && data.pincode) setReturningOrder(data);
+        if (sameStore?.street_address && sameStore?.pincode) {
+          setReturningOrder(sameStore);
+          return;
+        }
+        // 2) Cross-store fallback — customer typed same phone on ANY store.
+        //    Their address is universal, so pre-fill from platform history.
+        const { data: anyStore } = await supabase
+          .from("orders")
+          .select("id, customer_name, customer_phone, street_address, city, state, pincode, created_at")
+          .eq("customer_phone", canon)
+          .not("street_address", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (cancelled) return;
+        if (anyStore?.street_address && anyStore?.pincode) setReturningOrder(anyStore);
         else setReturningOrder(null);
       } catch { if (!cancelled) setReturningOrder(null); }
     })();
