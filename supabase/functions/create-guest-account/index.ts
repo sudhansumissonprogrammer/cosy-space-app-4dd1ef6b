@@ -192,35 +192,69 @@ Deno.serve(async (req) => {
         .from("orders")
         .update({ storefront_customer_id: customerId })
         .eq("id", order_id);
+    }
 
-      const { data: orderData } = await supabase
-        .from("orders")
-        .select("street_address, city, state, pincode, customer_name, customer_phone")
-        .eq("id", order_id)
-        .single();
+    // 4b) Seed customer_addresses from prior orders so returning shoppers
+    //     (even on a NEW browser / new store) skip the address form entirely.
+    //     Priority: address linked to the passed order_id, else the most recent
+    //     order (across ANY store) with a valid delivery address for this phone.
+    try {
+      const { data: existingAddr } = await supabase
+        .from("customer_addresses")
+        .select("id")
+        .eq("storefront_customer_id", customerId)
+        .limit(1)
+        .maybeSingle();
 
-      if (orderData?.street_address) {
-        const { data: existingAddr } = await supabase
-          .from("customer_addresses")
-          .select("id")
-          .eq("storefront_customer_id", customerId)
-          .limit(1)
-          .maybeSingle();
+      if (!existingAddr) {
+        let seedFrom: {
+          street_address: string;
+          city: string | null;
+          state: string | null;
+          pincode: string | null;
+          customer_name: string | null;
+          customer_phone: string | null;
+        } | null = null;
 
-        if (!existingAddr) {
+        if (order_id) {
+          const { data } = await supabase
+            .from("orders")
+            .select("street_address, city, state, pincode, customer_name, customer_phone")
+            .eq("id", order_id)
+            .maybeSingle();
+          if (data?.street_address) seedFrom = data as any;
+        }
+
+        if (!seedFrom) {
+          // Any prior order across any store for this phone. Confirmed/paid
+          // preferred (avoids junk from pending orders) — fall back to latest.
+          const { data } = await supabase
+            .from("orders")
+            .select("street_address, city, state, pincode, customer_name, customer_phone, created_at, status")
+            .eq("customer_phone", normalizedPhone)
+            .not("street_address", "is", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (data?.street_address) seedFrom = data as any;
+        }
+
+        if (seedFrom?.street_address && seedFrom?.pincode) {
           await supabase.from("customer_addresses").insert({
             storefront_customer_id: customerId,
             label: "Home",
-            full_name: orderData.customer_name || name || null,
-            phone: orderData.customer_phone || normalizedPhone || null,
-            street_address: orderData.street_address,
-            city: orderData.city,
-            state: orderData.state,
-            pincode: orderData.pincode,
+            full_name: seedFrom.customer_name || name || null,
+            phone: seedFrom.customer_phone || normalizedPhone || null,
+            street_address: seedFrom.street_address,
+            city: seedFrom.city,
+            state: seedFrom.state,
+            pincode: seedFrom.pincode,
             is_default: true,
           });
         }
       }
+    } catch (seedErr) {
+      console.warn("Address seed skipped:", seedErr);
     }
 
     // 5) Mint session WITHOUT rotating password.
