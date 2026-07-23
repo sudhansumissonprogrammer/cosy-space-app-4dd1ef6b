@@ -575,15 +575,12 @@ export default function CheckoutV2Page() {
   const addressComplete = !!(pincode && streetAddress && city && state && fullName);
   useEffect(() => {
     if (!phoneValid || addressComplete) return;
-    const t = window.setTimeout(() => {
-      // Re-check inside the timer — a lookup may have filled it meanwhile.
-      if (!(pincode && streetAddress && city && state && fullName)) {
-        setAddressSheetDismissed(false);
-        setShowAddressFormSheet(true);
-      }
-    }, 400);
-    return () => window.clearTimeout(t);
-  }, [phoneValid, addressComplete, pincode, streetAddress, city, state, fullName]);
+    // Saved-address lookup applies synchronously in the phone-step onComplete
+    // handler, so by the time this effect runs with no address, we know the
+    // shopper has none on file — open the form instantly, no timer.
+    setAddressSheetDismissed(false);
+    setShowAddressFormSheet(true);
+  }, [phoneValid, addressComplete]);
 
   // Lock body scroll while any address overlay is open so only the form scrolls.
   useEffect(() => {
