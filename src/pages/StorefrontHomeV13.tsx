@@ -527,6 +527,7 @@ export default function StorefrontHomeV13() {
       {products.length > 0 && (
         <HomeBestSellingSection products={products} slug={store?.slug || ""} store={store as any} cardStyle={cardStyle} />
       )}
+      {store?.slug && <HomeShopByVideoSection slug={store.slug} store={store as any} />}
 
 
       {/* Search + Filters */}
