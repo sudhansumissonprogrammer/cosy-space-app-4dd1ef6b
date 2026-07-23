@@ -655,6 +655,18 @@ export default function V19ProductDetail() {
         }}
       />
 
+      {/* Upsell / Cross-sell — PDP placement (App Store add-on) */}
+      <div className="px-4">
+        <PdpUpsellSection
+          storeSlug={slug}
+          storeId={store.id}
+          currency={store.currency || "INR"}
+          productId={product.id}
+          categoryId={product.category || undefined}
+          price={effectivePrice}
+        />
+      </div>
+
       {/* Similar products carousel */}
       {similarProducts.length > 0 && (
         <div className="border-t border-gray-100 pt-4 pb-4">
