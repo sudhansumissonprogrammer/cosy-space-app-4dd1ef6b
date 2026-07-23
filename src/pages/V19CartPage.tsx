@@ -5,11 +5,16 @@
  */
 import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { ArrowLeft, Plus, Minus, ShoppingCart, Tag, Info, ChevronRight, Receipt, Trash2, Package, PartyPopper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import UpsellStrip from "@/components/storefront/apps/Upsell/UpsellStrip";
+import PreCheckoutModal from "@/components/storefront/apps/Upsell/PreCheckoutModal";
+import { useUpsellOffers } from "@/hooks/useUpsellOffers";
+import { matchOffers } from "@/lib/appStore/upsell/matchEngine";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import type { CSSProperties } from "react";
 
