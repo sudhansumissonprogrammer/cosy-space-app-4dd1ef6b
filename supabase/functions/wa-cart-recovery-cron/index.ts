@@ -240,9 +240,11 @@ Deno.serve(async (req) => {
     const productPrice = unitPrice > 0 ? `₹${unitPrice.toFixed(0)}` : `₹${total.toFixed(0)}`;
 
     // CTA opens the product page directly (p-<product_id>). Fallback to
-    // cart-recovery link when no productId is present.
+    // cart-recovery link when no productId is present. `~<phone10>` suffix
+    // lets wa-r mint an autologin token for the marketing recipient.
     const firstProductId = firstItem?.productId || firstItem?.product_id;
-    const ctaToken = firstProductId ? `p-${firstProductId}` : `c-${(c as any).id}`;
+    const alSuffix = phone ? `~${phone}` : "";
+    const ctaToken = firstProductId ? `p-${firstProductId}${alSuffix}` : `c-${(c as any).id}`;
 
     // 🖼️ Header image for IMAGE-type templates (v7_img+). Route the product
     // photo through wsrv.nl to guarantee JPG output — Meta rejects WebP in
