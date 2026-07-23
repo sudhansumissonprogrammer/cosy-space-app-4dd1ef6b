@@ -513,16 +513,23 @@ export default function CheckoutV2Page() {
   const addressSheetOpen = showAddressFormSheet || (!(pincode && streetAddress && city && state && fullName) && !addressSheetDismissed);
 
   // Auto-open the address form the moment the phone gate completes on a
-  // fresh checkout so the shopper sees the address collector immediately,
-  // not the (empty) checkout summary.
+  // fresh checkout — BUT wait ~1.5s so saved-address / returning-order
+  // lookups can auto-fill first and skip the sheet entirely for repeat
+  // shoppers. Prevents a flash-of-form for anyone whose phone already has
+  // an address on file (same store OR any prior order platform-wide).
   const phoneValid = !!toCanonicalIndianPhone(phone);
   const addressComplete = !!(pincode && streetAddress && city && state && fullName);
   useEffect(() => {
-    if (phoneValid && !addressComplete) {
-      setAddressSheetDismissed(false);
-      setShowAddressFormSheet(true);
-    }
-  }, [phoneValid, addressComplete]);
+    if (!phoneValid || addressComplete) return;
+    const t = window.setTimeout(() => {
+      // Re-check inside the timer — a lookup may have filled it meanwhile.
+      if (!(pincode && streetAddress && city && state && fullName)) {
+        setAddressSheetDismissed(false);
+        setShowAddressFormSheet(true);
+      }
+    }, 1500);
+    return () => window.clearTimeout(t);
+  }, [phoneValid, addressComplete, pincode, streetAddress, city, state, fullName]);
 
   // Lock body scroll while any address overlay is open so only the form scrolls.
   useEffect(() => {
@@ -614,7 +621,8 @@ export default function CheckoutV2Page() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await supabase
+        // 1) Prefer an order in THIS store (most trusted — same brand/context).
+        const { data: sameStore } = await supabase
           .from("orders")
           .select("id, customer_name, customer_phone, street_address, city, state, pincode, created_at")
           .eq("store_id", store.id)
@@ -624,7 +632,22 @@ export default function CheckoutV2Page() {
           .limit(1)
           .maybeSingle();
         if (cancelled) return;
-        if (data && data.street_address && data.pincode) setReturningOrder(data);
+        if (sameStore?.street_address && sameStore?.pincode) {
+          setReturningOrder(sameStore);
+          return;
+        }
+        // 2) Cross-store fallback — customer typed same phone on ANY store.
+        //    Their address is universal, so pre-fill from platform history.
+        const { data: anyStore } = await supabase
+          .from("orders")
+          .select("id, customer_name, customer_phone, street_address, city, state, pincode, created_at")
+          .eq("customer_phone", canon)
+          .not("street_address", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (cancelled) return;
+        if (anyStore?.street_address && anyStore?.pincode) setReturningOrder(anyStore);
         else setReturningOrder(null);
       } catch { if (!cancelled) setReturningOrder(null); }
     })();
