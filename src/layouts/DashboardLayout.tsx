@@ -19,7 +19,7 @@ import {
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
   Receipt, ShoppingCart, Store, ChevronDown, ExternalLink, Palette,
   Search, User, Bell, X, BarChart3, MessageSquare, Clock, RefreshCw,
-  Grid3X3, FileText, Star, Wallet,
+  Grid3X3, FileText, Star, Wallet, Blocks,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -113,6 +113,12 @@ function MobileMenu({
             ...(!isWhatsAppOnly ? [{ label: "WhatsApp Marketing", icon: MessageSquare, path: `/dashboard/stores/${storeSlug}/whatsapp`, menuKey: "whatsapp_marketing" }] : []),
             { label: "Tracking & Analytics", icon: BarChart3, path: `/dashboard/stores/${storeSlug}/tracking`, menuKey: "tracking_analytics" },
           ]),
+        },
+        {
+          title: "Add-ons",
+          items: [
+            { label: "App Store", icon: Blocks, path: `/dashboard/stores/${storeSlug}/apps` },
+          ],
         },
         {
           title: "Appearance & Settings",
