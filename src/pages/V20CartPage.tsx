@@ -272,10 +272,18 @@ export default function V20CartPage() {
             <span className="text-[16px] font-black text-gray-900">₹{grandTotal.toFixed(0)}</span>
             <span className="text-[11px] font-bold" style={{ color: PRIMARY }}>TOTAL</span>
           </div>
-          <button onClick={() => navigate(storefrontPath(slug, "checkout"))} className="flex-1 h-12 rounded-lg flex items-center justify-between px-4 text-white text-[14px] font-extrabold active:scale-[0.98] transition-transform" style={{ background: PRIMARY }}>
-            <span>Click to pay</span>
-            <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
-          </button>
+          <PreCheckoutModal
+            offers={preOffers}
+            storeId={store.id}
+            currency={store.currency || "INR"}
+            excludeProductIds={cartProductIds}
+            onProceed={() => navigate(storefrontPath(slug, "checkout"))}
+          >
+            <button onClick={() => navigate(storefrontPath(slug, "checkout"))} className="flex-1 h-12 rounded-lg flex items-center justify-between px-4 text-white text-[14px] font-extrabold active:scale-[0.98] transition-transform" style={{ background: PRIMARY }}>
+              <span>Click to pay</span>
+              <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
+            </button>
+          </PreCheckoutModal>
         </div>
       </div>
     </div>
