@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Loader2, Plus, Save, Trash2, ShoppingBag, TrendingUp, Eye, MousePointerClick, DollarSign } from "lucide-react";
 import MultiProductPicker from "@/components/appStore/MultiProductPicker";
 import { toast } from "sonner";
+import { AppConfigShell, AppLiveBadge, AppSectionCard } from "@/components/appStore/AppConfigShell";
 import {
   UPSELL_APP_ID,
   DEFAULT_UPSELL_CONFIG,
@@ -168,72 +169,39 @@ export default function UpsellCrossSellConfig() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <Link
-            to="/apps"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" /> All apps
-          </Link>
-          <h1 className="text-2xl font-bold mt-2 flex items-center gap-2">
-            <ShoppingBag className="h-6 w-6" /> Upsell & Cross-sell
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Recommend products on PDP, cart, checkout &amp; thank-you page. Every offer
-            can layer on a discount and shows only to matching customers.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Label htmlFor="enabled" className="text-sm font-medium">Enabled</Label>
-          <Switch id="enabled" checked={enabled} onCheckedChange={setEnabled} />
-        </div>
-      </div>
-
+    <AppConfigShell
+      storeSlug={storeSlug}
+      icon={<ShoppingBag className="h-4.5 w-4.5" />}
+      accent="from-emerald-500 to-teal-600"
+      title="Upsell & Cross-sell"
+      subtitle="Layer discounts on PDP, cart, checkout & thank-you"
+      enabled={enabled}
+      onEnabledChange={setEnabled}
+      onSave={() => save.mutate()}
+      saving={save.isPending}
+      saveLabel="Save changes"
+      statusBadge={<AppLiveBadge enabled={enabled} />}
+    >
       {/* Analytics strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="p-3 flex items-center gap-2">
-            <Eye className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Views (30d)</p>
-              <p className="text-lg font-bold">{analytics?.views ?? 0}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 flex items-center gap-2">
-            <MousePointerClick className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Adds (30d)</p>
-              <p className="text-lg font-bold">{analytics?.adds ?? 0}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Revenue (30d)</p>
-              <p className="text-lg font-bold">₹{Math.round(analytics?.revenue ?? 0).toLocaleString("en-IN")}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Conv. rate</p>
-              <p className="text-lg font-bold">
-                {analytics?.views ? Math.round(((analytics.adds || 0) / analytics.views) * 100) : 0}%
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <AppSectionCard title="Performance" description="Last 30 days" padded={true}>
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+          <StatTile icon={<Eye className="h-4 w-4" />} label="Views" value={analytics?.views ?? 0} />
+          <StatTile icon={<MousePointerClick className="h-4 w-4" />} label="Adds" value={analytics?.adds ?? 0} />
+          <StatTile
+            icon={<DollarSign className="h-4 w-4" />}
+            label="Revenue"
+            value={`₹${Math.round(analytics?.revenue ?? 0).toLocaleString("en-IN")}`}
+          />
+          <StatTile
+            icon={<TrendingUp className="h-4 w-4" />}
+            label="Conv."
+            value={`${analytics?.views ? Math.round(((analytics.adds || 0) / analytics.views) * 100) : 0}%`}
+          />
+        </div>
+      </AppSectionCard>
 
-      <div className="space-y-4">
+
+      <div className="space-y-3 px-0 md:px-0">
         {offers.length === 0 && (
           <Card>
             <CardContent className="p-8 text-center">
