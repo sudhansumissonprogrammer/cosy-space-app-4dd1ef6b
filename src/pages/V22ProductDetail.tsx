@@ -44,6 +44,7 @@ import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
 const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
+import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSection";
 
 
 import DeliveryTimeline from "@/components/storefront/DeliveryTimeline";
