@@ -566,7 +566,7 @@ export default function CheckoutPhoneStep({
         </label>
         <Button
           onClick={submit}
-          disabled={submitting || !valid}
+          disabled={submitting}
           className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 text-white disabled:bg-black disabled:text-white disabled:opacity-100 rounded-lg"
         >
           {submitting ? (
