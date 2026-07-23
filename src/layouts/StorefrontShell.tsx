@@ -399,6 +399,7 @@ export default function StorefrontShell({
       <CartProvider slug={store.slug} storeId={store.id} currency={store.currency || "INR"}>
         <WishlistProvider slug={store.slug}>
           <StorefrontAuthProvider storeId={store.id}>
+            <StorefrontAutoLogin storeId={store.id} />
             {content}
           </StorefrontAuthProvider>
         </WishlistProvider>
@@ -410,6 +411,7 @@ export default function StorefrontShell({
   return (
     <CartProvider slug={store.slug} storeId={store.id} currency={store.currency || "INR"}>
       <StorefrontAuthProvider storeId={store.id}>
+        <StorefrontAutoLogin storeId={store.id} />
         {content}
       </StorefrontAuthProvider>
     </CartProvider>
