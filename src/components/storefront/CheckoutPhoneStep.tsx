@@ -117,10 +117,12 @@ export default function CheckoutPhoneStep({
   });
   const [consent, setConsent] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
   // Open by default so the shopper sees exactly what they're paying for.
   const [summaryOpen, setSummaryOpen] = useState(true);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const inFlight = useRef(false);
+  const autoSubmittedRef = useRef(false);
   const themeConfig = useStorefrontThemeConfig(storeId);
   const marqueeEnabled = themeConfig?.marquee_enabled ?? true;
 
