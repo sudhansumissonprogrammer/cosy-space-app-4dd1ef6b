@@ -194,27 +194,83 @@ Deno.serve(async (req) => {
         .eq("id", order_id);
     }
 
-    // 4b) Seed customer_addresses from prior orders so returning shoppers
+    // 4b) Hydrate + seed customer_addresses so returning shoppers
     //     (even on a NEW browser / new store) skip the address form entirely.
-    //     Priority: address linked to the passed order_id, else the most recent
-    //     order (across ANY store) with a valid delivery address for this phone.
+    //     Priority:
+    //       1) current-store saved address,
+    //       2) ANY saved address attached to this phone across all stores,
+    //       3) latest paid/confirmed order address across all stores,
+    //       4) latest order address as a last resort.
+    let hydratedAddress: {
+      id?: string | null;
+      label?: string | null;
+      full_name: string | null;
+      phone: string | null;
+      street_address: string;
+      city: string | null;
+      state: string | null;
+      pincode: string;
+      is_default?: boolean | null;
+    } | null = null;
+
+    const toAddressPayload = (row: any) => {
+      if (!row?.street_address || !row?.pincode) return null;
+      return {
+        id: row.id ?? null,
+        label: row.label ?? "Home",
+        full_name: row.full_name ?? row.customer_name ?? name ?? null,
+        phone: row.phone ?? row.customer_phone ?? normalizedPhone ?? null,
+        street_address: row.street_address,
+        city: row.city ?? null,
+        state: row.state ?? null,
+        pincode: row.pincode,
+        is_default: row.is_default ?? true,
+      };
+    };
+
     try {
       const { data: existingAddr } = await supabase
         .from("customer_addresses")
-        .select("id")
+        .select("id, label, full_name, phone, street_address, city, state, pincode, is_default, created_at")
         .eq("storefront_customer_id", customerId)
+        .not("street_address", "is", null)
+        .not("pincode", "is", null)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (!existingAddr) {
-        let seedFrom: {
-          street_address: string;
-          city: string | null;
-          state: string | null;
-          pincode: string | null;
-          customer_name: string | null;
-          customer_phone: string | null;
-        } | null = null;
+      hydratedAddress = toAddressPayload(existingAddr);
+
+      if (!hydratedAddress) {
+        // Saved address in another store for the same canonical phone.
+        const { data: phoneCustomers } = await supabase
+          .from("storefront_customers")
+          .select("id")
+          .eq("phone", normalizedPhone)
+          .limit(50);
+
+        const customerIds = (phoneCustomers || [])
+          .map((c: any) => c.id)
+          .filter((id: string | null | undefined): id is string => !!id);
+
+        if (customerIds.length > 0) {
+          const { data: anySavedAddr } = await supabase
+            .from("customer_addresses")
+            .select("id, label, full_name, phone, street_address, city, state, pincode, is_default, created_at")
+            .in("storefront_customer_id", customerIds)
+            .not("street_address", "is", null)
+            .not("pincode", "is", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          hydratedAddress = toAddressPayload(anySavedAddr);
+        }
+      }
+
+      if (!hydratedAddress) {
+        let seedFrom: any | null = null;
 
         if (order_id) {
           const { data } = await supabase
@@ -226,32 +282,55 @@ Deno.serve(async (req) => {
         }
 
         if (!seedFrom) {
-          // Any prior order across any store for this phone. Confirmed/paid
-          // preferred (avoids junk from pending orders) — fall back to latest.
+          // Prefer paid/confirmed history so cancelled/pending test addresses
+          // don't overwrite a real delivery address.
+          const paidStatuses = ["paid", "confirmed", "partially_paid", "delivered", "completed", "shipped"];
           const { data } = await supabase
             .from("orders")
             .select("street_address, city, state, pincode, customer_name, customer_phone, created_at, status")
             .eq("customer_phone", normalizedPhone)
+            .in("status", paidStatuses)
             .not("street_address", "is", null)
+            .not("pincode", "is", null)
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
           if (data?.street_address) seedFrom = data as any;
         }
 
-        if (seedFrom?.street_address && seedFrom?.pincode) {
-          await supabase.from("customer_addresses").insert({
-            storefront_customer_id: customerId,
-            label: "Home",
-            full_name: seedFrom.customer_name || name || null,
-            phone: seedFrom.customer_phone || normalizedPhone || null,
-            street_address: seedFrom.street_address,
-            city: seedFrom.city,
-            state: seedFrom.state,
-            pincode: seedFrom.pincode,
-            is_default: true,
-          });
+        if (!seedFrom) {
+          const { data } = await supabase
+            .from("orders")
+            .select("street_address, city, state, pincode, customer_name, customer_phone, created_at, status")
+            .eq("customer_phone", normalizedPhone)
+            .not("street_address", "is", null)
+            .not("pincode", "is", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (data?.street_address) seedFrom = data as any;
         }
+
+        hydratedAddress = toAddressPayload(seedFrom);
+      }
+
+      if (!existingAddr && hydratedAddress?.street_address && hydratedAddress?.pincode) {
+        const { data: insertedAddress } = await supabase
+          .from("customer_addresses")
+          .insert({
+            storefront_customer_id: customerId,
+            label: hydratedAddress.label || "Home",
+            full_name: hydratedAddress.full_name || name || null,
+            phone: hydratedAddress.phone || normalizedPhone || null,
+            street_address: hydratedAddress.street_address,
+            city: hydratedAddress.city,
+            state: hydratedAddress.state,
+            pincode: hydratedAddress.pincode,
+            is_default: true,
+          })
+          .select("id, label, full_name, phone, street_address, city, state, pincode, is_default")
+          .maybeSingle();
+        hydratedAddress = toAddressPayload(insertedAddress) || hydratedAddress;
       }
     } catch (seedErr) {
       console.warn("Address seed skipped:", seedErr);
@@ -265,6 +344,7 @@ Deno.serve(async (req) => {
         success: true,
         customer_id: customerId,
         is_new_user: isNewUser,
+        address: hydratedAddress,
         session,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
