@@ -4,6 +4,7 @@ import { useStorefront, type StoreData } from "@/layouts/StorefrontLayout.logic"
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { StorefrontAuthProvider } from "@/contexts/StorefrontAuthContext";
+import StorefrontAutoLogin from "@/components/storefront/StorefrontAutoLogin";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
