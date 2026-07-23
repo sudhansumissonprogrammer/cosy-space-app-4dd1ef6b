@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 const StorefrontTrustStrip = lazy(() => import("@/components/storefront/StorefrontTrustStrip"));
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
-import { ResponsiveHeroBanner, HomeBestSellingSection, HomeSectionHeader } from "@/components/storefront/HomeSharedSections";
+import { ResponsiveHeroBanner, HomeBestSellingSection, HomeSectionHeader, HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
 
 /* ── Announcement Strip ── */
 function AnnouncementStrip({ customText }: { customText?: string }) {
