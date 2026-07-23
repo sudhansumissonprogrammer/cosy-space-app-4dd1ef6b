@@ -503,21 +503,6 @@ export default function UpsellCrossSellConfig() {
         )}
       </div>
 
-      <div className="sticky bottom-4 flex justify-end">
-        <Button
-          onClick={() => save.mutate()}
-          disabled={save.isPending}
-          size="lg"
-          className="shadow-lg"
-        >
-          {save.isPending ? (
-            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4 mr-1" />
-          )}
-          Save changes
-        </Button>
-      </div>
-    </div>
+    </AppConfigShell>
   );
 }
