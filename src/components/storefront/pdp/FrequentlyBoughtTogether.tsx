@@ -59,10 +59,11 @@ export default function FrequentlyBoughtTogether({
       }
       return data.slice(0, 2);
     },
-    enabled: !!storeId && !!currentProductId,
+    enabled: !!storeId && !!currentProductId && bundleAppEnabled,
     staleTime: 5 * 60 * 1000,
   });
 
+  if (!bundleAppEnabled) return null;
   if (!bundleProducts || bundleProducts.length === 0) return null;
 
   const bundleTotal = bundleProducts.reduce((sum, p) => {
