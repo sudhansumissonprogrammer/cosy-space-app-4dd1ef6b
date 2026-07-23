@@ -299,14 +299,14 @@ export default function BundleBuilderConfig() {
       </div>
 
       {cfg.bundles.length > 0 && (
-        <div className="flex justify-end pt-4">
+        <div className="hidden justify-end px-0 pt-2 md:flex">
           <Button onClick={() => upsert.mutate()} disabled={upsert.isPending} className="gap-2">
             {upsert.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save changes
           </Button>
         </div>
       )}
-    </div>
+    </AppConfigShell>
   );
 }
 
