@@ -322,6 +322,9 @@ export default function StorefrontHomeV3() {
         <HomeBestSellingSection products={products} slug={slug!} store={store} cardStyle={cardStyle} />
       )}
 
+      {/* Shop by Video (App Store add-on) */}
+      <HomeShopByVideoSection slug={slug!} store={store} />
+
       {/* Flash Deals */}
       {products && <FlashDeals products={products} slug={slug!} store={store} />}
 
