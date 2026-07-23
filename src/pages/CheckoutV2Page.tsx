@@ -581,7 +581,7 @@ export default function CheckoutV2Page() {
         setAddressSheetDismissed(false);
         setShowAddressFormSheet(true);
       }
-    }, 1500);
+    }, 400);
     return () => window.clearTimeout(t);
   }, [phoneValid, addressComplete, pincode, streetAddress, city, state, fullName]);
 
