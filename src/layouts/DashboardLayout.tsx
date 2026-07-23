@@ -104,6 +104,7 @@ function MobileMenu({
             ...(isCommissionMode ? [{ label: "Wallet", icon: Wallet, path: `/dashboard/stores/${storeSlug}/wallet`, menuKey: "wallet" }] : []),
             ...(!isWhatsAppOnly ? [{ label: "Coupons", icon: Tag, path: `/dashboard/stores/${storeSlug}/coupons`, menuKey: "coupons" }] : []),
             { label: "Shipping", icon: Truck, path: `/dashboard/stores/${storeSlug}/shipping`, menuKey: "shipping" },
+            { label: "Shipping Integrations", icon: Truck, path: `/dashboard/stores/${storeSlug}/shipping-integrations`, menuKey: "shipping" },
             { label: "Tax / GST", icon: Receipt, path: `/dashboard/stores/${storeSlug}/tax`, menuKey: "tax_gst" },
           ].filter((i) => i.menuKey === "wallet" || isVisible(i.menuKey)),
         },
@@ -111,6 +112,7 @@ function MobileMenu({
           title: "Marketing",
           items: filterItems([
             ...(!isWhatsAppOnly ? [{ label: "WhatsApp Marketing", icon: MessageSquare, path: `/dashboard/stores/${storeSlug}/whatsapp`, menuKey: "whatsapp_marketing" }] : []),
+            { label: "Sales Funnel", icon: TrendingDown, path: `/dashboard/stores/${storeSlug}/funnel`, menuKey: "sales_funnel" },
             { label: "Tracking & Analytics", icon: BarChart3, path: `/dashboard/stores/${storeSlug}/tracking`, menuKey: "tracking_analytics" },
           ]),
         },
