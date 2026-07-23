@@ -415,7 +415,7 @@ export default function MigrationConfig() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </AppConfigShell>
   );
 }
 
