@@ -1483,8 +1483,17 @@ export default function CheckoutV2Page() {
         const key = `recent_order:${store.id}:${pid}${vid ? `:${vid}` : ""}`;
         sessionStorage.setItem(key, ordId);
       }
+      // Cross-mount / IABB-safe guard: sessionStorage is wiped when Instagram/
+      // FB webviews background the tab (UPI redirect). Duplicate-order incidents
+      // (#2782→#2783, #2786→#2787) traced to a stale "partial" mint firing 5-70s
+      // AFTER a "full" order confirmed, same session_id + product. localStorage
+      // survives the IABB wipe, so any re-entry into createOrderIfNeeded within
+      // 3 minutes for this store is short-circuited.
+      const guardPayload = JSON.stringify({ ordId, at: Date.now() });
+      localStorage.setItem(`sb_last_order:${store.id}`, guardPayload);
     } catch { /* noop */ }
     window.dispatchEvent(new CustomEvent("order-placed"));
+
 
 
     const purchaseValue = computePurchaseValue(lastPaidMethodRef.current);
@@ -2049,6 +2058,28 @@ export default function CheckoutV2Page() {
   };
 
   const createOrderIfNeeded = async (paymentMethodHint: string): Promise<PendingOrder> => {
+    // Hard duplicate-order guard: if this store just completed an order in the
+    // last 3 minutes (persisted in localStorage by onOrderSuccess so it survives
+    // IABB sessionStorage wipes and popstate remounts), refuse to mint again.
+    // Root cause of #2782→#2783 and #2786→#2787 duplicate pairs: a stale mint
+    // effect fired after the success screen for the same session/product with a
+    // fresh checkout_token, producing an orphan "partial" pending order.
+    try {
+      const raw = localStorage.getItem(`sb_last_order:${store.id}`);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { ordId: string; at: number };
+        if (parsed?.ordId && Date.now() - Number(parsed.at) < 3 * 60 * 1000) {
+          if (orderIdRef.current === parsed.ordId) {
+            return { id: parsed.ordId, number: orderNumberRef.current };
+          }
+          throw new Error("recent_order_guard");
+        }
+      }
+    } catch (e) {
+      if (e instanceof Error && e.message === "recent_order_guard") throw e;
+      /* localStorage / JSON errors — non-fatal, fall through */
+    }
+
     // COD forces payment_type=full even when the shopper had "advance"
     // pre-selected. Fold that into the snapshot so a stale partial-mode
     // row minted for an earlier PayU attempt is discarded before we hit
@@ -2076,6 +2107,7 @@ export default function CheckoutV2Page() {
     setOrderNumber(created.number);
     return created;
   };
+
 
   // ─── UPI intent-based flow (mobile-first) ───────────────────────────────
   const createOrderAndIntents = async (): Promise<void> => {
