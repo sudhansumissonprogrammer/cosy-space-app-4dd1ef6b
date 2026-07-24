@@ -203,6 +203,8 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
 
     return () => {
       document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
       document.removeEventListener("click", onClick, { capture: true } as any);
     };
   }, []);
