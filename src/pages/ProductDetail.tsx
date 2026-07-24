@@ -189,7 +189,12 @@ export default function ProductDetail() {
       // Now: both fire simultaneously; edge usually wins on warm hits
       // (~30-80ms), RPC wins on cold edge (~200-400ms). Either way the
       // user sees the product as fast as the fastest backend can answer.
-      const edgePromise = fetchPdpEdge(canonicalProductSlug).catch(() => null);
+      // If the card's pointerdown already kicked off fetchPdpEdge for this
+      // slug (prefetchProductDetail), reuse that in-flight promise instead
+      // of starting a second identical request. Saves 200-700ms on cold
+      // clicks and doubles as a free dedupe when the user taps quickly.
+      const prefetched = pdpPrefetchCache.get(canonicalProductSlug);
+      const edgePromise = (prefetched ?? fetchPdpEdge(canonicalProductSlug)).catch(() => null);
       const rpcPromise = (supabase as any).rpc("get_product_page", {
         _store_slug: store.slug,
         _product_slug: canonicalProductSlug,
