@@ -500,21 +500,52 @@ export default function CheckoutV2Page() {
     setPincode(addr.pincode || "");
   };
 
+  // Tracks the canonical phone that the currently-displayed address was
+  // hydrated for. When the shopper edits the phone to a different number
+  // we clear the old address so we don't ship to the wrong person.
+  const addressHydratedForPhoneRef = useRef<string>("");
+
   const applyPhoneLookupAddress = (addr: any) => {
     if (!addr?.street_address || !addr?.pincode) return false;
     setSelectedAddressId(addr.id || null);
     setFullName(addr.full_name || "");
-    setPhone(toCanonicalIndianPhone(addr.phone) || addr.phone || phone);
+    const canonAddrPhone = toCanonicalIndianPhone(addr.phone) || addr.phone || phone;
+    setPhone(canonAddrPhone);
     setStreetAddress(addr.street_address || "");
     setCity(addr.city || "");
     setState(addr.state || "");
     setPincode(String(addr.pincode || "").replace(/\D/g, "").slice(0, 6));
+    addressHydratedForPhoneRef.current = toCanonicalIndianPhone(canonAddrPhone) || "";
     setReturningUsed(true);
     setReturningDismissed(true);
     setAddressSheetDismissed(true);
     setShowAddressFormSheet(false);
     return true;
   };
+
+  // When the shopper changes their phone number after an address was already
+  // hydrated (either from a returning-order or a phone-lookup for a different
+  // number), wipe the stale address so:
+  //   1. we don't ship to the wrong person, and
+  //   2. the phone→address lookup effect below re-runs for the new number.
+  useEffect(() => {
+    const canon = toCanonicalIndianPhone(phone);
+    const hydrated = addressHydratedForPhoneRef.current;
+    if (!hydrated) return;
+    if (!canon || canon === hydrated) return;
+    // Different number entered — clear the previous shopper's address.
+    addressHydratedForPhoneRef.current = "";
+    setSelectedAddressId(null);
+    setFullName("");
+    setStreetAddress("");
+    setApartment("");
+    setCity("");
+    setState("");
+    setPincode("");
+    setAddressSheetDismissed(false);
+    initialNudgeFiredRef.current = false;
+    phoneAddressLookupRef.current = "";
+  }, [phone]);
 
   const phoneAddressLookupRef = useRef("");
   // Tracks whether the async `create-guest-account` lookup for the current
