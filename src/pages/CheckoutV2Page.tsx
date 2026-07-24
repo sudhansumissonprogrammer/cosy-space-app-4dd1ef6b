@@ -3123,6 +3123,27 @@ export default function CheckoutV2Page() {
           )}
 
 
+          {/* PAYMENT-FIRST CTA — when the address is missing, show a tappable
+              card in-place so the shopper can see payment options underneath.
+              Tapping any payment tile also opens the sheet via
+              requireAddressOrPrompt() and resumes their exact tap on save. */}
+          {!addressFilled && (
+            <button
+              type="button"
+              onClick={openAddressFormSheet}
+              className="w-full bg-white rounded-xl border-2 border-dashed border-amber-400 p-3.5 flex items-center gap-3 active:scale-[0.99] transition-transform text-left"
+            >
+              <div className="h-9 w-9 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0">
+                <MapPin className="h-4.5 w-4.5 text-amber-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[14px] font-bold">Add delivery address</div>
+                <div className="text-[12px] text-muted-foreground">Needed to place your order</div>
+              </div>
+              <Plus className="h-5 w-5 text-amber-600 flex-shrink-0" />
+            </button>
+          )}
+
           {/* Delivery Details (once address filled) — compact single-card, no heading */}
           {addressFilled && (
             <div className="bg-white rounded-xl border border-[#ECECEC] p-3">
