@@ -1,7 +1,7 @@
 // Single entry point for order-related WhatsApp events.
 // Enqueues into wa_send_queue. Branding is resolved at send-time.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, normalizePhone, isValidCronHeader, loadPlatformConfig, platformConfigUsable } from "../_shared/wa-platform.ts";
+import { corsHeaders, normalizePhone, isValidCronHeader, loadPlatformConfig, platformConfigUsable, getCronSecret } from "../_shared/wa-platform.ts";
 import { formatExpectedDelivery, formatPaymentStatusLine, inferCourierName } from "../_shared/wa-content.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -178,13 +178,17 @@ Deno.serve(async (req) => {
   // gets their WhatsApp within seconds instead of waiting ≤1 min for the
   // pg_cron tick. The worker itself is idempotent + rate-limited.
   try {
-    const cronSecret = Deno.env.get("CRON_SECRET") || "";
+    // IMPORTANT: use DB-backed cron secret (env CRON_SECRET is often unset on
+    // this runtime). Without a valid secret the worker returns 401 and the
+    // message sits in the queue until the next pg_cron tick (up to 60s delay).
+    const cronSecret = (await getCronSecret(admin)) || Deno.env.get("CRON_SECRET") || "";
     const kick = fetch(`${SUPABASE_URL}/functions/v1/wa-queue-worker`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-cron-secret": cronSecret,
         Authorization: `Bearer ${SERVICE_KEY}`,
+        apikey: SERVICE_KEY,
       },
       body: "{}",
     }).catch((e) => console.warn("wa-queue-worker kick failed:", (e as Error).message));
