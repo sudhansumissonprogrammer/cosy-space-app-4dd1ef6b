@@ -32,7 +32,7 @@ function fmt(n: number, currency = "INR") {
  * a small popover explaining the discount. Coupon is applied
  * automatically at checkout — this is purely informational.
  */
-export function AutoCouponHint({ storeId, basePrice, currency = "INR", className }: Props) {
+export function AutoCouponHint({ storeId, storeSlug, basePrice, currency = "INR", className }: Props) {
   const [open, setOpen] = useState(false);
 
   const { data: coupon } = useQuery({
@@ -44,6 +44,15 @@ export function AutoCouponHint({ storeId, basePrice, currency = "INR", className
       return Array.isArray(data) ? data[0] ?? null : data ?? null;
     },
   });
+
+  // Store-specific gate: for serdiyajewellers the owner's auto-apply coupon is
+  // reserved for shoppers arriving via a WhatsApp marketing/recovery link
+  // (StorefrontAutoLogin sets `sf_wa_source` when consuming the `?al=` token).
+  const waGated = (() => {
+    if (storeSlug !== "serdiyajewellers") return true;
+    try { return sessionStorage.getItem("sf_wa_source") === "1"; } catch { return false; }
+  })();
+  if (!waGated) return null;
 
   if (!coupon || !basePrice || basePrice <= 0) return null;
 
