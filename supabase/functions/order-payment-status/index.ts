@@ -36,7 +36,6 @@ async function markRecovered(supabase: any, order: any, storeId: string, updates
     .update({ ...updates, payment_verified: true, payment_verified_at: new Date().toISOString() })
     .eq("id", order.id)
     .eq("store_id", storeId)
-    .eq("status", "pending")
     .select("status, payment_method, payment_verified")
     .maybeSingle();
 
@@ -51,6 +50,12 @@ async function markRecovered(supabase: any, order: any, storeId: string, updates
     order.status = updated.status;
     order.payment_method = updated.payment_method;
     order.payment_verified = updated.payment_verified;
+  } else if (updates.status) {
+    // The gateway has already reported PAID; make the polling response reflect
+    // that immediately even if another verifier/cron updated the row first.
+    order.status = updates.status;
+    order.payment_method = updates.payment_method ?? order.payment_method;
+    order.payment_verified = true;
   }
 }
 
