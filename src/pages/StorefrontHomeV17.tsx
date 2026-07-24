@@ -49,8 +49,8 @@ function V17CardWrapper({ product, slug, store, priority, index }: { product: an
     <div
       className="stagger-card"
       style={{ "--i": index } as React.CSSProperties}
-      onMouseEnter={prefetchProductDetail}
-      onTouchStart={prefetchProductDetail}
+      onMouseEnter={() => prefetchProductDetail({ slug: product?.slug, image: (product as any)?.image_url })}
+      onTouchStart={() => prefetchProductDetail({ slug: product?.slug, image: (product as any)?.image_url })}
     >
       <ProductCardV17
         product={product}
