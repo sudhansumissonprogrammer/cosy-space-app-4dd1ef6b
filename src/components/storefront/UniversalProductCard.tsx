@@ -23,6 +23,8 @@ const V20ProductCard = lazy(() => import("./v20/V20ProductCard"));
 // Lazy: variant picker only needed when shopper actually clicks add-to-cart on a variant product
 const VariantPickerDialog = lazy(() => import("./VariantPickerDialog"));
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
+import { setPdpPreload } from "@/lib/pdpPreload";
+import { resolveProductImages } from "@/lib/imageOptimize";
 import { useVariantCount } from "@/hooks/useVariantCounts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import WarrantyBadge from "./WarrantyBadge";
