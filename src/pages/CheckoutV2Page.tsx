@@ -1545,8 +1545,12 @@ export default function CheckoutV2Page() {
     setPendingOrder(null);
     setOrderPlaced(true);
     setShowUpsell(true);
+    // Order is paid — retire the checkout_token so the next checkout starts
+    // with a fresh idempotency key (IABB cookie fix).
+    clearCtCookie();
     try { window.scrollTo({ top: 0, behavior: "auto" }); } catch { /* noop */ }
   };
+
 
   const stopWaitingForPayment = (message?: string) => {
     clearWaiting();
