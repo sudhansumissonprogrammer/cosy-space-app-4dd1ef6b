@@ -514,7 +514,7 @@ export default function V19ProductDetail() {
       <DeliveryEtaPill />
       <CouponTeaser storeId={store?.id || ""} orderTotal={effectivePrice} />
       <div className="mx-4 mb-3">
-        <AutoCouponHint storeId={store?.id} basePrice={effectivePrice} currency={product.currency || store?.currency || "INR"} />
+        <AutoCouponHint storeId={store?.id} storeSlug={store?.slug} basePrice={effectivePrice} currency={product.currency || store?.currency || "INR"} />
       </div>
       <PartialPaymentTrustCard
         price={Number(product.price)}
