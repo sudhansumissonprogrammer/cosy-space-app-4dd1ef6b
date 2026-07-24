@@ -545,6 +545,17 @@ export default function CheckoutV2Page() {
     setAddressSheetDismissed(false);
     initialNudgeFiredRef.current = false;
     phoneAddressLookupRef.current = "";
+    // Rotate the checkout idempotency token so place-order creates a fresh
+    // pending row for the new shopper instead of UPDATE-in-place onto the
+    // previous number's order (which would cross-attribute the lead).
+    try {
+      const fresh = mintCheckoutToken();
+      setCheckoutToken(fresh);
+    } catch { /* noop */ }
+    // Reset any pending order state tied to the previous shopper.
+    setPendingOrder(null);
+    setOrderId(null);
+    orderSnapshotRef.current = null;
   }, [phone]);
 
   const phoneAddressLookupRef = useRef("");
