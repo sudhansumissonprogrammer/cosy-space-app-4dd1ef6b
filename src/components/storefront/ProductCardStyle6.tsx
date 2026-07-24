@@ -30,7 +30,6 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
   const currency = store.currency || "₹";
 
   const primePdp = () => {
-    prefetchProductDetail();
     try {
       const imgs = resolveProductImages(product);
       setPdpPreload({
@@ -41,6 +40,7 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
         salePrice: (product.sale_price as any) ?? null,
         currency,
       });
+      prefetchProductDetail({ slug: product.slug || product.id, image: imgs[0] });
     } catch {}
   };
 

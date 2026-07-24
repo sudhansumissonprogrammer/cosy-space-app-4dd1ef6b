@@ -85,6 +85,7 @@ const V19ProductDetail = lazy(() => import("./pages/V19ProductDetail"));
 const V20ProductDetail = lazy(() => import("./pages/V20ProductDetail"));
 const V22ProductDetail = lazy(() => import("./pages/V22ProductDetail"));
 import { getPdpPreload } from "@/lib/pdpPreload";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const ProductDetailSkeleton = () => {
@@ -96,12 +97,17 @@ const ProductDetailSkeleton = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
         <div className="relative aspect-square overflow-hidden rounded-xl bg-muted/40">
           {p?.image ? (
+            // Use the SAME optimised URL (w=800) the real PDP gallery will
+            // request, so the browser cache hit is 100% and the skeleton →
+            // gallery swap is invisible (no re-download, no re-decode flash).
+            // No fade animation — the identical URL means the pixels stay on
+            // screen through the DOM swap.
             <img
-              src={p.image}
+              src={optimizeImageUrl(p.image, 800)}
               alt={p.name}
               fetchPriority="high"
               decoding="sync"
-              className="absolute inset-0 h-full w-full object-cover animate-in fade-in duration-150"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           ) : null}
         </div>

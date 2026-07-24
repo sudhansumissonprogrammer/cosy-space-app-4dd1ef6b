@@ -37,6 +37,7 @@ import { fireMetaCAPI } from "@/lib/metaCapi";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
+import { pdpPrefetchCache } from "@/lib/prefetchProductDetail";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 import WarrantyBadge from "@/components/storefront/WarrantyBadge";
@@ -188,7 +189,12 @@ export default function ProductDetail() {
       // Now: both fire simultaneously; edge usually wins on warm hits
       // (~30-80ms), RPC wins on cold edge (~200-400ms). Either way the
       // user sees the product as fast as the fastest backend can answer.
-      const edgePromise = fetchPdpEdge(canonicalProductSlug).catch(() => null);
+      // If the card's pointerdown already kicked off fetchPdpEdge for this
+      // slug (prefetchProductDetail), reuse that in-flight promise instead
+      // of starting a second identical request. Saves 200-700ms on cold
+      // clicks and doubles as a free dedupe when the user taps quickly.
+      const prefetched = pdpPrefetchCache.get(canonicalProductSlug);
+      const edgePromise = (prefetched ?? fetchPdpEdge(canonicalProductSlug)).catch(() => null);
       const rpcPromise = (supabase as any).rpc("get_product_page", {
         _store_slug: store.slug,
         _product_slug: canonicalProductSlug,
@@ -1542,7 +1548,17 @@ function ImageGallery({
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
+  // Seed slide 0 as loaded when a matching preload exists — the skeleton
+  // already painted the same w=800 URL, so the browser has it cached and
+  // the gallery <img> will paint synchronously. Skipping the opacity-0 →
+  // opacity-100 fade removes the "flash then reload" the user reported.
+  const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = sessionStorage.getItem("__sf_pdp_preload__");
+      return raw ? { 0: true } : {};
+    } catch { return {}; }
+  });
   const [videoPlaying, setVideoPlaying] = useState(false);
 
   // Build slides: image #1, video (if present), then remaining images.
