@@ -558,6 +558,9 @@ export default function CheckoutV2Page() {
     setPendingOrder(null);
     setOrderId(null);
     orderSnapshotRef.current = null;
+    // Allow the UPI intents to re-mint for the new shopper's order once
+    // their address is filled (guard flag was one-shot per checkout).
+    intentsMintedForAddressRef.current = false;
   }, [phone]);
 
   const phoneAddressLookupRef = useRef("");
