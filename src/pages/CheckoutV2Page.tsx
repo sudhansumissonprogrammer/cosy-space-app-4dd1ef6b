@@ -3500,18 +3500,10 @@ export default function CheckoutV2Page() {
                     }
                     setAddressAttempted(false);
                     setShowAddressFormSheet(false);
-                    // PAYMENT-FIRST: if the shopper reached the address sheet by
-                    // tapping a payment tile, resume that exact tap the instant
-                    // they save. Delay one tick so the address state fully
-                    // commits before the pay handler re-runs its gate.
-                    const resume = pendingPayActionRef.current;
+                    // Do NOT auto-resume the payment. The shopper should
+                    // review the address on the summary and consciously tap
+                    // (or switch) the payment method themselves.
                     pendingPayActionRef.current = null;
-                    if (resume) {
-                      // One-shot bypass so the resumed handler's stale
-                      // addressComplete closure doesn't re-open the sheet.
-                      bypassAddressGateRef.current = true;
-                      window.setTimeout(resume, 50);
-                    }
                   }}
                 >
                   Continue
