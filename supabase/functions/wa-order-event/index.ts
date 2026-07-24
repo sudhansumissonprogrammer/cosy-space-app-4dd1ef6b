@@ -1,7 +1,7 @@
 // Single entry point for order-related WhatsApp events.
 // Enqueues into wa_send_queue. Branding is resolved at send-time.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, normalizePhone, isValidCronHeader, loadPlatformConfig, platformConfigUsable } from "../_shared/wa-platform.ts";
+import { corsHeaders, normalizePhone, isValidCronHeader, loadPlatformConfig, platformConfigUsable, getCronSecret } from "../_shared/wa-platform.ts";
 import { formatExpectedDelivery, formatPaymentStatusLine, inferCourierName } from "../_shared/wa-content.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
