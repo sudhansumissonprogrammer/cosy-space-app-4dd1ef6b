@@ -793,6 +793,7 @@ export default function CheckoutV2Page() {
     setState(returningOrder.state || "");
     setPincode(returningOrder.pincode || "");
     setReturningUsed(true);
+    addressHydratedForPhoneRef.current = toCanonicalIndianPhone(phone) || "";
     toast.success("Welcome back! Address loaded ✨");
   };
 
@@ -811,7 +812,8 @@ export default function CheckoutV2Page() {
     setReturningUsed(true);
     setAddressSheetDismissed(true);
     setShowAddressFormSheet(false);
-  }, [returningOrder, returningUsed, returningDismissed, fullName, streetAddress, pincode]);
+    addressHydratedForPhoneRef.current = toCanonicalIndianPhone(phone) || "";
+  }, [returningOrder, returningUsed, returningDismissed, fullName, streetAddress, pincode, phone]);
 
 
   // ─── Totals ─────────────────────────────────────────────────────────────
