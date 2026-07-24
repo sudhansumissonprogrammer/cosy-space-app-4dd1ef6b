@@ -710,10 +710,17 @@ export default function CheckoutV2Page() {
 
   useEffect(() => {
     if (savedAddresses && savedAddresses.length > 0 && !selectedAddressId) {
+      // Only auto-pick a saved address when the phone in the input matches
+      // the logged-in customer's phone. Otherwise the shopper just changed
+      // the number to check out for someone else and we'd re-populate the
+      // previous shopper's address (bug: cross-customer address leak).
+      const canonInput = toCanonicalIndianPhone(phone);
+      const canonCustomer = toCanonicalIndianPhone(customer?.phone || "");
+      if (canonInput && canonCustomer && canonInput !== canonCustomer) return;
       const def = savedAddresses.find((a: any) => a.is_default) || savedAddresses[0];
       if (def) selectAddress(def);
     }
-  }, [savedAddresses]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [savedAddresses, phone, customer?.phone]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveNewAddress = async () => {
     if (!customer?.id) return;
