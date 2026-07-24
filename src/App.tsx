@@ -85,6 +85,7 @@ const V19ProductDetail = lazy(() => import("./pages/V19ProductDetail"));
 const V20ProductDetail = lazy(() => import("./pages/V20ProductDetail"));
 const V22ProductDetail = lazy(() => import("./pages/V22ProductDetail"));
 import { getPdpPreload } from "@/lib/pdpPreload";
+import { optimizeImageUrl } from "@/lib/imageOptimize";
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const ProductDetailSkeleton = () => {
