@@ -23,6 +23,8 @@ const V20ProductCard = lazy(() => import("./v20/V20ProductCard"));
 // Lazy: variant picker only needed when shopper actually clicks add-to-cart on a variant product
 const VariantPickerDialog = lazy(() => import("./VariantPickerDialog"));
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
+import { setPdpPreload } from "@/lib/pdpPreload";
+import { resolveProductImages } from "@/lib/imageOptimize";
 import { useVariantCount } from "@/hooks/useVariantCounts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import WarrantyBadge from "./WarrantyBadge";
@@ -92,12 +94,30 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
     card
   );
 
+  const prime = useCallback(() => {
+    try {
+      const imgs = resolveProductImages(product);
+      const image = imgs[0] || (product as any)?.image_url || "";
+      const slugOrId = product?.slug || product?.id;
+      prefetchProductDetail({ slug: slugOrId, image });
+      setPdpPreload({
+        slug: slugOrId,
+        image,
+        name: product?.name,
+        price: (product?.price as any) ?? null,
+        salePrice: (product?.sale_price as any) ?? null,
+        currency: (store as any)?.currency || "INR",
+      });
+    } catch {}
+  }, [product, store]);
+
   return (
     <div
       className="stagger-card relative"
       style={{ "--i": index } as React.CSSProperties}
-      onMouseEnter={() => prefetchProductDetail({ slug: product?.slug, image: (product as any)?.image_url })}
-      onTouchStart={() => prefetchProductDetail({ slug: product?.slug, image: (product as any)?.image_url })}
+      onMouseEnter={prime}
+      onTouchStart={prime}
+      onPointerDown={prime}
     >
       {wrapped}
       {hasVariants && variantOpen && (
