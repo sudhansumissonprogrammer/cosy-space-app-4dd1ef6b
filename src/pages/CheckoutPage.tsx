@@ -1595,6 +1595,10 @@ function CheckoutPageInner() {
     }
     setShowUpsell(true);
     setOrderPlaced(true);
+    // Order is paid — retire the checkout_token so the next checkout on this
+    // device starts with a fresh idempotency key (IABB cookie fix).
+    clearCheckoutTokenCookie();
+
     try { sessionStorage.removeItem("pending_coupon"); localStorage.removeItem("pending_coupon"); } catch {}
     if (!isSingleMode) clearCart();
     saveExpressInfo();
