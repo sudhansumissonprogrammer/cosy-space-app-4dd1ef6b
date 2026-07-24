@@ -125,8 +125,16 @@ function findAnchorElement(anchor: AnchorInfo): HTMLElement | null {
       best = el;
     }
   }
-  const acceptableDelta = Math.max(window.innerHeight * 1.5, 900);
+  // Tighter tolerance than before (was 1.5 * innerHeight / 900px min): a
+  // product card that appears in two home sections (e.g. Best Selling AND its
+  // real category strip) sits ~800-1500px apart. The old loose bound accepted
+  // the wrong duplicate on POP → shopper landed on the top strip instead of
+  // the section they actually scrolled to. Anything further than ~half a
+  // viewport is a duplicate mismatch; skip and let the observer keep waiting
+  // for the real lazy section to mount.
+  const acceptableDelta = Math.max(window.innerHeight * 0.6, 400);
   return bestDelta <= acceptableDelta ? best : null;
+
 }
 
 export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
