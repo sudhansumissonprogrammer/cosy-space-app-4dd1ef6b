@@ -373,16 +373,44 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Resolve storefront_customer_id from the *entered phone*, not from a
+    // stale localStorage session. Attackers/testers who typed a different
+    // phone earlier would otherwise attach the new order to the wrong
+    // customer, hiding it from that shopper's "My Orders" list.
     let storefrontCustomerId: string | null = null;
+    const enteredPhoneDigits = String(order.customer_phone || "").replace(/\D/g, "");
+    const enteredPhone10 = enteredPhoneDigits.length >= 10 ? enteredPhoneDigits.slice(-10) : enteredPhoneDigits;
+
     if (order.storefront_customer_id) {
       const { data: customer } = await supabase
         .from("storefront_customers")
-        .select("id")
+        .select("id, phone")
         .eq("id", order.storefront_customer_id)
         .eq("store_id", store_id)
         .maybeSingle();
 
-      if (customer?.id) storefrontCustomerId = customer.id;
+      if (customer?.id) {
+        const cPhone = String((customer as any).phone || "").replace(/\D/g, "").slice(-10);
+        // Only trust the client-supplied id when its phone matches the
+        // phone actually being used to place this order.
+        if (cPhone && enteredPhone10 && cPhone === enteredPhone10) {
+          storefrontCustomerId = customer.id;
+        }
+      }
+    }
+
+    // Fallback / correction: look up by (store_id, entered phone) so the
+    // order always attaches to the correct shopper record.
+    if (!storefrontCustomerId && enteredPhone10) {
+      const { data: byPhone } = await supabase
+        .from("storefront_customers")
+        .select("id")
+        .eq("store_id", store_id)
+        .eq("phone", enteredPhone10)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if ((byPhone as any)?.id) storefrontCustomerId = (byPhone as any).id;
     }
 
     // ────────────────────────────────────────────────────────────────
