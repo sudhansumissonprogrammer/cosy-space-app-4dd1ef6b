@@ -1,0 +1,79 @@
+// Shared session-mint helper used by wa-r (pre-mint) and wa-autologin.
+// Mints a storefront supabase session for a canonical 10-digit phone using
+// the `<digits>@phone.guest` email convention (same as phone-login).
+//
+// Two admin API hops: generateLink (magiclink) → verifyOtp. Auto-creates the
+// auth user when the phone has never touched the platform. Returns access +
+// refresh tokens on success, `null` on any failure (caller must handle
+// gracefully — this is a best-effort speed optimisation).
+
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { canonicalPhone } from "./wa-autologin-token.ts";
+
+export type MintedSession = {
+  access_token: string;
+  refresh_token: string;
+  phone: string;
+  user_id: string;
+};
+
+export async function mintSessionForPhone(
+  rawPhone: string,
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  anonKey: string,
+): Promise<MintedSession | null> {
+  try {
+    const phone = canonicalPhone(rawPhone);
+    if (!phone) return null;
+    const phoneEmail = `${phone}@phone.guest`;
+
+    const admin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const anon = createClient(supabaseUrl, anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    // Look up existing auth user.
+    let userId: string | null = null;
+    try {
+      const { data } = await admin.rpc("get_auth_user_id_by_email", { _email: phoneEmail });
+      if (data && typeof data === "string") userId = data;
+    } catch { /* ignore */ }
+
+    if (!userId) {
+      const oneTime = crypto.randomUUID().slice(0, 16) + "Aa1!";
+      const { data: newUser } = await admin.auth.admin.createUser({
+        email: phoneEmail,
+        password: oneTime,
+        email_confirm: true,
+        user_metadata: { phone, user_type: "customer" },
+      });
+      userId = newUser?.user?.id ?? null;
+    }
+    if (!userId) return null;
+
+    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+      type: "magiclink",
+      email: phoneEmail,
+    });
+    const tokenHash = (linkData as any)?.properties?.hashed_token;
+    if (linkErr || !tokenHash) return null;
+
+    const { data: vData, error: vErr } = await anon.auth.verifyOtp({
+      type: "magiclink",
+      token_hash: tokenHash,
+    });
+    if (vErr || !vData?.session) return null;
+
+    return {
+      access_token: vData.session.access_token,
+      refresh_token: vData.session.refresh_token,
+      phone,
+      user_id: userId,
+    };
+  } catch {
+    return null;
+  }
+}
