@@ -30,7 +30,7 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
   const currency = store.currency || "₹";
 
   const primePdp = () => {
-    prefetchProductDetail();
+    prefetchProductDetail({ slug: product.slug || product.id, image: imgs[0] });
     try {
       const imgs = resolveProductImages(product);
       setPdpPreload({

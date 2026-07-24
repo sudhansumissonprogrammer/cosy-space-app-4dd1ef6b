@@ -53,7 +53,7 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
   const handleDecrement = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); updateQuantity(product.id, undefined, cartQty - 1); };
 
   const primePdp = () => {
-    prefetchProductDetail();
+    prefetchProductDetail({ slug: product.slug || product.id, image: imgs[0] });
     try {
       const imgs = _resolve(product);
       setPdpPreload({

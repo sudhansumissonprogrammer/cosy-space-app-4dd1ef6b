@@ -46,7 +46,7 @@ export default function ProductCardStyle7({ product, slug, store, priority = fal
   const handleDecrement = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); updateQuantity(product.id, undefined, cartQty - 1); };
 
   const primePdp = () => {
-    prefetchProductDetail();
+    prefetchProductDetail({ slug: product.slug || product.id, image: imgs[0] });
     try {
       const imgs = resolveProductImages(product);
       setPdpPreload({ slug: product.slug || product.id, image: imgs[0] || "", name: product.name, price: product.price as any, salePrice: (product.sale_price as any) ?? null, currency });
