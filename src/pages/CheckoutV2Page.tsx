@@ -816,15 +816,25 @@ export default function CheckoutV2Page() {
   useEffect(() => {
     if (autoAppliedCouponRef.current || appliedCoupon) return;
     if (!store?.id || subtotal <= 0) return;
+
+    // Store-specific gate: serdiyajewellers only rewards the owner's auto-apply
+    // coupon to shoppers who arrived via a WhatsApp marketing/recovery link
+    // (StorefrontAutoLogin sets `sf_wa_source` when consuming the `?al=` token).
+    // Explicit ?coupon=... URL codes always win regardless of source.
+    const isWaSource = (() => {
+      try { return sessionStorage.getItem("sf_wa_source") === "1"; } catch { return false; }
+    })();
+    const ownerAutoAllowed = store?.slug !== "serdiyajewellers" || isWaSource;
+
     // URL/session coupon has priority over the owner's auto-apply
     const codeToApply = urlCoupon
-      || (!dismissedAutoCouponRef.current && autoApplyCoupon?.code ? autoApplyCoupon.code : null);
+      || (ownerAutoAllowed && !dismissedAutoCouponRef.current && autoApplyCoupon?.code ? autoApplyCoupon.code : null);
     if (!codeToApply) return;
     if (autoApplyCoupon && codeToApply === autoApplyCoupon.code
         && Number(autoApplyCoupon.min_order_amount || 0) > subtotal) return;
     autoAppliedCouponRef.current = true;
     applyCoupon(String(codeToApply).toUpperCase());
-  }, [urlCoupon, store?.id, subtotal, appliedCoupon, autoApplyCoupon]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [urlCoupon, store?.id, store?.slug, subtotal, appliedCoupon, autoApplyCoupon]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-validate the applied coupon when the cart total changes. If the shopper
   // removes items and drops below the coupon's minimum order value, or the
