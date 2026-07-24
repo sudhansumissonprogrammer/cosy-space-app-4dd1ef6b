@@ -303,122 +303,132 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
   useEffect(() => {
     if (skipPatterns.some((re) => re.test(pathname))) return;
 
-    if (navType === "POP") {
-      const anchor = readAnchor();
-      const targetY = readScroll();
+    if (navType === "PUSH") {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+      return;
+    }
+    if (navType !== "POP") return; // REPLACE → no scroll change
 
-      const restorePixel = () => {
+    const anchor = readAnchor();
+    const targetY = readScroll();
+
+    const restorePixel = () => {
+      if (targetY == null || targetY <= 0) {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+        return;
+      }
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const y = Math.min(targetY, Math.max(0, max));
+      window.scrollTo({ top: y, left: 0, behavior: "instant" as ScrollBehavior });
+    };
+
+    // ── No anchor stored → pixel-Y polling with proper teardown ──
+    if (!anchor) {
+      let cancelled = false;
+      const start = performance.now();
+      const tickPixel = () => {
+        if (cancelled) return;
         if (targetY == null || targetY <= 0) {
           window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
           return;
         }
         const max = document.documentElement.scrollHeight - window.innerHeight;
-        const y = Math.min(targetY, Math.max(0, max));
-        window.scrollTo({ top: y, left: 0, behavior: "instant" as ScrollBehavior });
-      };
-
-      const tryAnchorRestore = (): boolean => {
-        if (!anchor) return false;
-        const el = findAnchorElement(anchor);
-        if (!el) return false;
-        const rect = el.getBoundingClientRect();
-        // Position the element at the same viewport offset it had when tapped
-        const desiredScrollY = window.scrollY + rect.top - anchor.viewportTop;
-        const max = document.documentElement.scrollHeight - window.innerHeight;
-        const y = Math.max(0, Math.min(desiredScrollY, max));
-        window.scrollTo({ top: y, left: 0, behavior: "instant" as ScrollBehavior });
-        return true;
-      };
-
-      // ── Sustained anchor restore ─────────────────────────────────
-      // Previously tryAnchorRestore() locked in on the FIRST DOM match
-      // and stopped observing. But images above the anchor (hero, category
-      // strip, lazy product imgs) finish decoding AFTER that first match,
-      // pushing the anchor card downward — leaving the viewport ~200-600px
-      // ABOVE the tapped product.
-      //
-      // Now we keep re-aligning until the anchor's resolved scrollY has
-      // been stable for ~300ms, capped at RESTORE_TIMEOUT_MS. We also
-      // listen for image `load` events (capture phase — `load` doesn't
-      // bubble) so each above-the-fold image paint triggers a re-anchor.
-      const start = performance.now();
-      let done = false;
-      let lastY = -1;
-      let stableSince = 0;
-      let anchored = false;
-      const STABLE_MS = 300;
-
-      const finish = () => {
-        if (done) return;
-        done = true;
-        observer.disconnect();
-        try { window.removeEventListener("storefront:content-ready", onReady); } catch {}
-        try { document.removeEventListener("load", onImgLoad, true); } catch {}
-      };
-      const realign = () => {
-        if (done) return;
-        if (!tryAnchorRestore()) return;
-        anchored = true;
-        const y = Math.round(window.scrollY);
-        const now = performance.now();
-        if (y === lastY) {
-          if (now - stableSince > STABLE_MS) finish();
-        } else {
-          lastY = y;
-          stableSince = now;
-        }
-      };
-      const onReady = () => realign();
-      const onImgLoad = (e: Event) => {
-        const t = e.target as HTMLElement | null;
-        if (t && t.tagName === "IMG") realign();
-      };
-      window.addEventListener("storefront:content-ready", onReady);
-      document.addEventListener("load", onImgLoad, true);
-      const observer = new MutationObserver(() => realign());
-      observer.observe(document.body, { childList: true, subtree: true });
-
-      if (targetY != null && targetY > 0) restorePixel();
-      realign(); // immediate attempt
-
-      const tick = () => {
-        if (done) return;
-        realign();
-        if (performance.now() - start > RESTORE_TIMEOUT_MS) {
-          if (!anchored) {
-            finish();
-            restorePixel();
-          } else {
-            finish();
-          }
+        if (max >= targetY || performance.now() - start > RESTORE_TIMEOUT_MS) {
+          window.scrollTo({ top: Math.min(targetY, Math.max(0, max)), left: 0, behavior: "instant" as ScrollBehavior });
           return;
         }
-        requestAnimationFrame(tick);
-      };
-
-      // If no anchor stored, run pixel-Y path with extended polling
-      if (!anchor) {
-        finish();
-        const tickPixel = () => {
-          if (targetY == null || targetY <= 0) {
-            window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
-            return;
-          }
-          const max = document.documentElement.scrollHeight - window.innerHeight;
-          if (max >= targetY || performance.now() - start > RESTORE_TIMEOUT_MS) {
-            window.scrollTo({ top: Math.min(targetY, Math.max(0, max)), left: 0, behavior: "instant" as ScrollBehavior });
-            return;
-          }
-          requestAnimationFrame(tickPixel);
-        };
         requestAnimationFrame(tickPixel);
+      };
+      requestAnimationFrame(tickPixel);
+      return () => { cancelled = true; };
+    }
+
+    // ── Sustained anchor restore ──
+    // Re-align until the anchor's resolved scrollY has been stable for
+    // ~300ms, capped at RESTORE_TIMEOUT_MS. Realign runs are coalesced
+    // per rAF so bursts of DOM mutations / image loads don't hammer
+    // querySelectorAll.
+    const start = performance.now();
+    let done = false;
+    let lastY = -1;
+    let stableSince = 0;
+    let anchored = false;
+    let realignScheduled = false;
+    const STABLE_MS = 300;
+
+    const tryAnchorRestore = (): boolean => {
+      const el = findAnchorElement(anchor);
+      if (!el) return false;
+      const rect = el.getBoundingClientRect();
+      const desiredScrollY = window.scrollY + rect.top - anchor.viewportTop;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const y = Math.max(0, Math.min(desiredScrollY, max));
+      window.scrollTo({ top: y, left: 0, behavior: "instant" as ScrollBehavior });
+      return true;
+    };
+
+    const finish = () => {
+      if (done) return;
+      done = true;
+      try { observer.disconnect(); } catch {}
+      try { window.removeEventListener("storefront:content-ready", onReady); } catch {}
+      try { document.removeEventListener("load", onImgLoad, true); } catch {}
+    };
+
+    const realign = () => {
+      if (done) return;
+      if (!tryAnchorRestore()) return;
+      anchored = true;
+      const y = Math.round(window.scrollY);
+      const now = performance.now();
+      if (y === lastY) {
+        if (now - stableSince > STABLE_MS) finish();
+      } else {
+        lastY = y;
+        stableSince = now;
+      }
+    };
+    const scheduleRealign = () => {
+      if (done || realignScheduled) return;
+      realignScheduled = true;
+      requestAnimationFrame(() => {
+        realignScheduled = false;
+        realign();
+      });
+    };
+    const onReady = () => scheduleRealign();
+    const onImgLoad = (e: Event) => {
+      const t = e.target as HTMLElement | null;
+      if (t && t.tagName === "IMG") scheduleRealign();
+    };
+    window.addEventListener("storefront:content-ready", onReady);
+    document.addEventListener("load", onImgLoad, true);
+    const observer = new MutationObserver(() => scheduleRealign());
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    if (targetY != null && targetY > 0) restorePixel();
+    realign(); // immediate attempt
+
+    const tick = () => {
+      if (done) return;
+      realign();
+      if (performance.now() - start > RESTORE_TIMEOUT_MS) {
+        if (!anchored) {
+          finish();
+          restorePixel();
+        } else {
+          finish();
+        }
         return;
       }
-
       requestAnimationFrame(tick);
-    } else if (navType === "PUSH") {
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
-    }
-    // REPLACE → no scroll change
+    };
+    requestAnimationFrame(tick);
+
+    // Critical: tear everything down if the user navigates again mid-restore.
+    // Otherwise the observer + tick loop keep calling scrollTo and hijack the
+    // next page.
+    return () => { finish(); };
   }, [pathname, navType]);
 }
+
