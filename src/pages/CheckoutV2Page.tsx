@@ -3699,12 +3699,18 @@ export default function CheckoutV2Page() {
                 {UPI_APPS.slice(0, 4).map((app, i) => {
                   const s = intents[app.key];
                   const staleAmount = typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100);
-                  const disabled = s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount;
+                  // PAYMENT-FIRST: when the address is missing, keep tiles
+                  // visually enabled so the shopper can tap them — the tap
+                  // opens the address sheet (via requireAddressOrPrompt) and
+                  // resumes this exact UPI launch on save. Only apply the
+                  // real disabled state once the address is complete.
+                  const addressReady = addressComplete;
+                  const disabled = addressReady && (s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount);
                   const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
                   return (
                     <a
                       key={app.key}
-                      href={disabled ? undefined : s.url}
+                      href={disabled || !addressReady ? undefined : s.url}
                       onClick={(e) => tapUpiApp(app.key, e)}
                       aria-disabled={disabled}
                       className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 min-h-[92px] relative ${disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
@@ -3712,7 +3718,7 @@ export default function CheckoutV2Page() {
                       
                       <img src={app.icon} alt={app.label} className="h-8 w-8 mt-3 mb-1 object-contain" />
                       <div className="text-[11px] font-semibold">{app.label}</div>
-                      {(s.status === "loading" || staleAmount) && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
+                      {addressReady && (s.status === "loading" || staleAmount) && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
                     </a>
                   );
                 })}
@@ -3720,12 +3726,14 @@ export default function CheckoutV2Page() {
               {(() => {
                 const anyS = intents.any;
                 const staleAny = typeof anyS.amount === "number" && Math.round(anyS.amount * 100) !== Math.round(chargeAmount * 100);
+                const addressReady = addressComplete;
+                const anyDisabled = addressReady && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
                 return (
                   <a
-                    href={(anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny) ? undefined : anyS.url}
+                    href={anyDisabled || !addressReady ? undefined : anyS.url}
                     onClick={(e) => tapUpiApp("any", e)}
-                    aria-disabled={anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny}
-                    className={`mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] ${(anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny) ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
+                    aria-disabled={anyDisabled}
+                    className={`mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] ${anyDisabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
                   >
                     <span className="text-[13px] font-semibold">All UPI Apps</span>
                     <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
