@@ -45,15 +45,6 @@ export function AutoCouponHint({ storeId, storeSlug, basePrice, currency = "INR"
     },
   });
 
-  // Store-specific gate: for serdiyajewellers the owner's auto-apply coupon is
-  // reserved for shoppers arriving via a WhatsApp marketing/recovery link
-  // (StorefrontAutoLogin sets `sf_wa_source` when consuming the `?al=` token).
-  const waGated = (() => {
-    if (storeSlug !== "serdiyajewellers") return true;
-    try { return sessionStorage.getItem("sf_wa_source") === "1"; } catch { return false; }
-  })();
-  if (!waGated) return null;
-
   if (!coupon || !basePrice || basePrice <= 0) return null;
 
   const minOrder = Number(coupon.min_order_amount || 0);
