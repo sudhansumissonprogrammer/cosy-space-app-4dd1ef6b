@@ -498,6 +498,8 @@ export default function CheckoutV2Page() {
     setCity(addr.city || "");
     setState(addr.state || "");
     setPincode(addr.pincode || "");
+    addressHydratedForPhoneRef.current =
+      toCanonicalIndianPhone(addr.phone || "") || "";
   };
 
   // Tracks the canonical phone that the currently-displayed address was
