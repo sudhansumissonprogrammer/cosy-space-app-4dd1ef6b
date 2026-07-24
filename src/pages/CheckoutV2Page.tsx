@@ -2647,6 +2647,9 @@ export default function CheckoutV2Page() {
   const [placingCod, setPlacingCod] = useState(false);
   const placeCod = async () => {
     if (placingCod || creatingOrder || couponLoading || paymentAmountSyncing) return;
+    // PAYMENT-FIRST address gate — open sheet + remember the COD tap so it
+    // auto-resumes after the shopper saves.
+    if (!requireAddressOrPrompt(() => { void placeCod(); })) return;
     const err = validateAddress();
     if (err) { toast.error(err); return; }
     // Same stale-identity flush as UPI/gateway paths — a COD row minted with
