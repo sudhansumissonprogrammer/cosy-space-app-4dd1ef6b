@@ -96,8 +96,8 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
     <div
       className="stagger-card relative"
       style={{ "--i": index } as React.CSSProperties}
-      onMouseEnter={prefetchProductDetail}
-      onTouchStart={prefetchProductDetail}
+      onMouseEnter={() => prefetchProductDetail({ slug: product?.slug, image: (product as any)?.image_url })}
+      onTouchStart={() => prefetchProductDetail({ slug: product?.slug, image: (product as any)?.image_url })}
     >
       {wrapped}
       {hasVariants && variantOpen && (
