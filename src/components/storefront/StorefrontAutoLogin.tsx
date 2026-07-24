@@ -29,6 +29,11 @@ export default function StorefrontAutoLogin({ storeId }: { storeId?: string }) {
         url.searchParams.delete("al");
         window.history.replaceState({}, "", url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : "") + url.hash);
 
+        // Mark this session as originating from a WhatsApp deep link so
+        // downstream flows (e.g. store-owner-gated auto-apply coupons) can
+        // reward only shoppers who arrived via the marketing/recovery link.
+        try { sessionStorage.setItem("sf_wa_source", "1"); } catch { /* noop */ }
+
         // Skip the round-trip when a session is already present for THIS
         // storefront (avoids double-mint on refresh with stale query).
         try {
