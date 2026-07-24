@@ -6,6 +6,8 @@ import { createPortal } from "react-dom";
 
 interface Props {
   storeId?: string;
+  /** Store slug — used to apply store-specific visibility gates. */
+  storeSlug?: string;
   basePrice: number;
   currency?: string;
   /** Optional wrapper class for the pill */
