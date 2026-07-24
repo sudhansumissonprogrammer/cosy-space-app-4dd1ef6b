@@ -37,6 +37,7 @@ import { fireMetaCAPI } from "@/lib/metaCapi";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { lazy, Suspense } from "react";
 import { fetchPdpEdge } from "@/lib/storefrontEdgeApi";
+import { pdpPrefetchCache } from "@/lib/prefetchProductDetail";
 import DeferUntilVisible from "@/components/storefront/DeferUntilVisible";
 import PartialPaymentTrustCard from "@/components/storefront/PartialPaymentTrustCard";
 import WarrantyBadge from "@/components/storefront/WarrantyBadge";
