@@ -589,15 +589,47 @@ export default function CheckoutV2Page() {
     showAddressFormSheet ||
     (phoneValid && addressLookupSettled && !addressComplete && !addressSheetDismissed);
 
-  // Auto-open the address form the moment the phone gate completes on a
-  // fresh checkout — but ONLY after the saved-address lookup has settled so
-  // returning shoppers with an address on file skip the sheet entirely.
+  // PAYMENT-FIRST FLOW: We no longer auto-open the address sheet for new
+  // shoppers. Instead the checkout renders payment tiles inline with a
+  // prominent "+ Add delivery address" CTA. Tapping any payment method
+  // (UPI intent / gateway / COD) without a filled address opens the sheet
+  // AND remembers the intent so the shopper resumes exactly where they left
+  // off. This matches Meesho/Gokwik and cuts the address-form drop-off that
+  // was inflating pending/cancelled orders.
+  //
+  // If the phone gate settles and there is no saved address, we still nudge
+  // shoppers by opening the sheet ONCE — but they can dismiss it and see
+  // the payment options underneath. On re-tap of any payment tile it
+  // re-opens with a toast.
+  const initialNudgeFiredRef = useRef(false);
   useEffect(() => {
     if (!phoneValid || addressComplete) return;
     if (!addressLookupSettled) return;
+    if (initialNudgeFiredRef.current) return;
+    initialNudgeFiredRef.current = true;
     setAddressSheetDismissed(false);
     setShowAddressFormSheet(true);
   }, [phoneValid, addressComplete, addressLookupSettled]);
+
+  // Pending pay-action: when the shopper taps a payment tile without an
+  // address, we remember what they wanted so we can resume it the instant
+  // they finish the address form.
+  const pendingPayActionRef = useRef<null | (() => void)>(null);
+
+  /**
+   * Address gate for every payment entry point (UPI intent tap, gateway
+   * button, COD button). Returns `true` when the shopper can proceed; when
+   * the address is missing it opens the sheet, stores the action for
+   * auto-resume, and returns `false`.
+   */
+  const requireAddressOrPrompt = useCallback((resume?: () => void): boolean => {
+    if (addressComplete) return true;
+    pendingPayActionRef.current = resume ?? null;
+    setAddressSheetDismissed(false);
+    setShowAddressFormSheet(true);
+    toast.info("Add your delivery address to continue");
+    return false;
+  }, [addressComplete]);
 
   // Lock body scroll while any address overlay is open so only the form scrolls.
   useEffect(() => {
