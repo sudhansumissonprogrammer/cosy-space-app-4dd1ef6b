@@ -2604,6 +2604,8 @@ export default function CheckoutV2Page() {
   const [openingGateway, setOpeningGateway] = useState(false);
   const startGatewayPayment = async () => {
     if (openingGateway || creatingOrder || couponLoading || paymentAmountSyncing) return;
+    // PAYMENT-FIRST address gate — same as UPI tap.
+    if (!requireAddressOrPrompt(() => { void startGatewayPayment(); })) return;
     // Flush any pending address/email edits into the snapshot so the order
     // row minted here reflects the live-typed values, not the pre-debounce
     // ones. See tapUpiApp for the same guard.
