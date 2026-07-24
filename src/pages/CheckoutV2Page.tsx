@@ -3506,7 +3506,12 @@ export default function CheckoutV2Page() {
                     // commits before the pay handler re-runs its gate.
                     const resume = pendingPayActionRef.current;
                     pendingPayActionRef.current = null;
-                    if (resume) window.setTimeout(resume, 50);
+                    if (resume) {
+                      // One-shot bypass so the resumed handler's stale
+                      // addressComplete closure doesn't re-open the sheet.
+                      bypassAddressGateRef.current = true;
+                      window.setTimeout(resume, 50);
+                    }
                   }}
                 >
                   Continue
