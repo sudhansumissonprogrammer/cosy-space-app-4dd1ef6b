@@ -3257,30 +3257,28 @@ export default function CheckoutV2Page() {
               dismiss) so the shopper cannot land on an empty checkout. Once
               the address is filled, tapping "Change" reopens it in editable
               mode with a close chip. */}
-          {(showAddressFormSheet || !addressFilled) && typeof document !== "undefined" && createPortal(
+          {showAddressFormSheet && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
-              {/* Scrim — only dismissible when editing a filled address */}
+              {/* Scrim — always dismissible in payment-first flow so the shopper
+                  can see the checkout underneath. If they try to pay without
+                  an address, requireAddressOrPrompt() re-opens the sheet. */}
               <div
                 className="absolute inset-0 bg-black/50"
-                onClick={addressFilled ? closeAddressFormSheet : undefined}
+                onClick={closeAddressFormSheet}
                 aria-hidden
               />
               {/* Sheet — nearly full-screen so keyboard doesn't crush the form */}
               <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden h-[95dvh]">
               <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
                 <div className="text-[16px] font-bold">Add Delivery Address</div>
-                {addressFilled ? (
-                  <button
-                    type="button"
-                    onClick={closeAddressFormSheet}
-                    aria-label="Close"
-                    className="h-9 w-9 -mr-2 rounded-full flex items-center justify-center hover:bg-black/5 active:bg-black/10"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                ) : (
-                  <span className="h-9 w-9" aria-hidden />
-                )}
+                <button
+                  type="button"
+                  onClick={closeAddressFormSheet}
+                  aria-label="Close"
+                  className="h-9 w-9 -mr-2 rounded-full flex items-center justify-center hover:bg-black/5 active:bg-black/10"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
 
 
