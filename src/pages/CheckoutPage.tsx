@@ -258,9 +258,13 @@ function CheckoutPageInner() {
   const [orderAdvancePaid, setOrderAdvancePaid] = useState(0);
   const [orderBalanceDue, setOrderBalanceDue] = useState(0);
 
-  // Idempotency token to prevent duplicate orders
-  const [checkoutToken] = useState(() => crypto.randomUUID());
+  // Idempotency token — persisted to a cookie so IABB (Instagram/Facebook
+  // in-app browser) rehydrations reuse it and avoid duplicate pending orders
+  // across every payment gateway (PayU, Cashfree, Razorpay, UPI intents).
+  const [checkoutToken] = useState(() => getOrCreateCheckoutToken());
+  useEffect(() => { writeCheckoutTokenCookie(checkoutToken); }, [checkoutToken]);
   // Payment retry state: store created order for retry
+
   const [pendingOrder, setPendingOrder] = useState<{ id: string; number: string | null; profit: number | null } | null>(null);
   const [paymentFailed, setPaymentFailed] = useState(false);
   // Confirming-payment state: shown while we wait for UPI/Cashfree to settle after user returns from GPay/PhonePe
