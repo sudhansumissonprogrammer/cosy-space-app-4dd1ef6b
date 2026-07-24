@@ -155,6 +155,27 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
     };
     document.addEventListener("visibilitychange", onHide);
 
+    // pagehide fires reliably on iOS Safari before bfcache eviction —
+    // visibilitychange alone misses some Safari cases. Persist scroll here too.
+    const onPageHide = () => saveScroll();
+    window.addEventListener("pagehide", onPageHide);
+
+    // bfcache restore: when the browser brings the page back from bfcache
+    // (Instagram/WhatsApp in-app browser back, iOS Safari back), the DOM,
+    // JS heap, and scroll position are already intact. React-router does NOT
+    // fire a navigation event, so our POP handler never runs — which is
+    // exactly what we want. But we DO want to notify the app that a fresh
+    // paint may be needed (e.g. re-run pixel PageView, refresh stale data).
+    // We also re-assert manual scrollRestoration in case Safari reset it.
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      try { window.history.scrollRestoration = "manual"; } catch {}
+      try {
+        window.dispatchEvent(new CustomEvent("storefront:bfcache-restore"));
+      } catch {}
+    };
+    window.addEventListener("pageshow", onPageShow);
+
     // ── Anchor capture: stash the clicked link for the CURRENT entry ──
     // Capture phase so we record BEFORE react-router navigates.
     const onClick = (e: MouseEvent) => {
