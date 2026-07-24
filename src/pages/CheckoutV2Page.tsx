@@ -1483,8 +1483,17 @@ export default function CheckoutV2Page() {
         const key = `recent_order:${store.id}:${pid}${vid ? `:${vid}` : ""}`;
         sessionStorage.setItem(key, ordId);
       }
+      // Cross-mount / IABB-safe guard: sessionStorage is wiped when Instagram/
+      // FB webviews background the tab (UPI redirect). Duplicate-order incidents
+      // (#2782→#2783, #2786→#2787) traced to a stale "partial" mint firing 5-70s
+      // AFTER a "full" order confirmed, same session_id + product. localStorage
+      // survives the IABB wipe, so any re-entry into createOrderIfNeeded within
+      // 3 minutes for this store is short-circuited.
+      const guardPayload = JSON.stringify({ ordId, at: Date.now() });
+      localStorage.setItem(`sb_last_order:${store.id}`, guardPayload);
     } catch { /* noop */ }
     window.dispatchEvent(new CustomEvent("order-placed"));
+
 
 
     const purchaseValue = computePurchaseValue(lastPaidMethodRef.current);
