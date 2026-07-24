@@ -35,7 +35,7 @@ import { setCapiUser } from "@/lib/metaEnrichment";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { loadCashfree } from "@/lib/loadCashfree";
-import { getOrCreateCheckoutToken, writeCheckoutTokenCookie, clearCheckoutTokenCookie } from "@/lib/checkoutTokenStore";
+import { getOrCreateCheckoutToken, writeCheckoutTokenCookie, clearCheckoutTokenCookie, mintCheckoutToken } from "@/lib/checkoutTokenStore";
 import { loadPayuBolt } from "@/lib/loadPayuBolt";
 import { createPortal } from "react-dom";
 
@@ -498,6 +498,8 @@ export default function CheckoutV2Page() {
     setCity(addr.city || "");
     setState(addr.state || "");
     setPincode(addr.pincode || "");
+    addressHydratedForPhoneRef.current =
+      toCanonicalIndianPhone(addr.phone || "") || "";
   };
 
   // Tracks the canonical phone that the currently-displayed address was
@@ -545,6 +547,17 @@ export default function CheckoutV2Page() {
     setAddressSheetDismissed(false);
     initialNudgeFiredRef.current = false;
     phoneAddressLookupRef.current = "";
+    // Rotate the checkout idempotency token so place-order creates a fresh
+    // pending row for the new shopper instead of UPDATE-in-place onto the
+    // previous number's order (which would cross-attribute the lead).
+    try {
+      const fresh = mintCheckoutToken();
+      setCheckoutToken(fresh);
+    } catch { /* noop */ }
+    // Reset any pending order state tied to the previous shopper.
+    setPendingOrder(null);
+    setOrderId(null);
+    orderSnapshotRef.current = null;
   }, [phone]);
 
   const phoneAddressLookupRef = useRef("");
@@ -699,10 +712,17 @@ export default function CheckoutV2Page() {
 
   useEffect(() => {
     if (savedAddresses && savedAddresses.length > 0 && !selectedAddressId) {
+      // Only auto-pick a saved address when the phone in the input matches
+      // the logged-in customer's phone. Otherwise the shopper just changed
+      // the number to check out for someone else and we'd re-populate the
+      // previous shopper's address (bug: cross-customer address leak).
+      const canonInput = toCanonicalIndianPhone(phone);
+      const canonCustomer = toCanonicalIndianPhone(customer?.phone || "");
+      if (canonInput && canonCustomer && canonInput !== canonCustomer) return;
       const def = savedAddresses.find((a: any) => a.is_default) || savedAddresses[0];
       if (def) selectAddress(def);
     }
-  }, [savedAddresses]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [savedAddresses, phone, customer?.phone]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveNewAddress = async () => {
     if (!customer?.id) return;
