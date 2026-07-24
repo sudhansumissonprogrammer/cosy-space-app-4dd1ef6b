@@ -192,7 +192,10 @@ export default function CheckoutV2Page() {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [breakupOpen, setBreakupOpen] = useState(false);
   // Buy-now single-mode quantity (cart mode uses CartContext quantities directly)
-  const [buyNowQty, setBuyNowQty] = useState(1);
+  const [buyNowQty, setBuyNowQty] = useState(() => {
+    const q = Number(searchParams.get("qty") || 1);
+    return Number.isFinite(q) ? Math.max(1, Math.min(99, Math.floor(q))) : 1;
+  });
   const { customer, ensureCustomer } = useStorefrontAuth();
   const currency = store?.currency || "INR";
   const isHindi = store?.theme === "theme-16" || store?.theme === "theme-21";
@@ -201,6 +204,7 @@ export default function CheckoutV2Page() {
   // ─── Buy-now (?product=&variant=) single-product mode ──────────────────
   const productId = searchParams.get("product");
   const variantId = searchParams.get("variant");
+  const isRecoveryRetry = searchParams.get("recover") === "order";
   const isSingleMode = !!productId;
 
   const { data: buyNowProduct, isLoading: buyNowProductLoading } = useQuery({
@@ -1858,7 +1862,7 @@ export default function CheckoutV2Page() {
   // them into re-ordering. Redirect to home instead. Skipped while a payment
   // flow / success screen is active on the SAME mount (orderPlaced/waiting).
   useEffect(() => {
-    if (!isSingleMode || !productId || !store?.id) return;
+    if (!isSingleMode || !productId || !store?.id || isRecoveryRetry) return;
     if (orderId || orderPlaced || waiting || confirmingPayment) return;
     try {
       const key = `recent_order:${store.id}:${productId}${variantId ? `:${variantId}` : ""}`;
@@ -1868,7 +1872,7 @@ export default function CheckoutV2Page() {
         navigate(storefrontPath(store.slug), { replace: true });
       }
     } catch { /* noop */ }
-  }, [isSingleMode, productId, variantId, store?.id, store?.slug, orderId, orderPlaced, waiting, confirmingPayment, navigate]);
+  }, [isSingleMode, productId, variantId, store?.id, store?.slug, isRecoveryRetry, orderId, orderPlaced, waiting, confirmingPayment, navigate]);
 
 
 
