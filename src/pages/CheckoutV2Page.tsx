@@ -35,6 +35,7 @@ import { setCapiUser } from "@/lib/metaEnrichment";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { loadCashfree } from "@/lib/loadCashfree";
+import { getOrCreateCheckoutToken, writeCheckoutTokenCookie, clearCheckoutTokenCookie } from "@/lib/checkoutTokenStore";
 import { loadPayuBolt } from "@/lib/loadPayuBolt";
 import { createPortal } from "react-dom";
 
@@ -1020,37 +1021,16 @@ export default function CheckoutV2Page() {
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [pendingOrder, setPendingOrder] = useState<PendingOrder | null>(null);
   const [paymentFailed, setPaymentFailed] = useState(false);
-  // IABB (Instagram/Facebook in-app browser) wipes sessionStorage when the tab
-  // is backgrounded (user opens PhonePe/GPay and returns). That used to spawn
-  // a fresh checkout_token → duplicate pending orders. Cookies survive that
-  // lifecycle, so we persist the token in a host-scoped cookie for 30 min.
-  const CT_COOKIE = "sb_ct";
-  const readCtCookie = (): string | null => {
-    try {
-      const m = document.cookie.match(/(?:^|;\s*)sb_ct=([^;]+)/);
-      return m ? decodeURIComponent(m[1]) : null;
-    } catch { return null; }
-  };
-  const writeCtCookie = (val: string) => {
-    try {
-      const secure = location.protocol === "https:" ? "; Secure" : "";
-      // 30 min TTL, SameSite=Lax so it survives the UPI-app round-trip
-      document.cookie = `sb_ct=${encodeURIComponent(val)}; Max-Age=1800; Path=/; SameSite=Lax${secure}`;
-    } catch { /* noop */ }
-  };
-  const clearCtCookie = () => {
-    try { document.cookie = `sb_ct=; Max-Age=0; Path=/; SameSite=Lax`; } catch { /* noop */ }
-  };
-  const newCheckoutToken = () => (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `ct_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-  const [checkoutToken, setCheckoutToken] = useState<string>(() => {
-    const existing = readCtCookie();
-    if (existing && existing.length >= 8) return existing;
-    const fresh = newCheckoutToken();
-    writeCtCookie(fresh);
-    return fresh;
-  });
+  // IABB (Instagram/Facebook in-app browser) wipes sessionStorage when the
+  // tab is backgrounded (user opens PhonePe/GPay and returns). Persist the
+  // idempotency token in a cookie via shared util — see checkoutTokenStore.
+  const [checkoutToken, setCheckoutToken] = useState<string>(() => getOrCreateCheckoutToken());
   const checkoutTokenRef = useRef(checkoutToken);
-  useEffect(() => { checkoutTokenRef.current = checkoutToken; writeCtCookie(checkoutToken); }, [checkoutToken]);
+  useEffect(() => {
+    checkoutTokenRef.current = checkoutToken;
+    writeCheckoutTokenCookie(checkoutToken);
+  }, [checkoutToken]);
+
 
 
   const [intents, setIntents] = useState<Record<UpiApp, IntentState>>({
@@ -1547,7 +1527,7 @@ export default function CheckoutV2Page() {
     setShowUpsell(true);
     // Order is paid — retire the checkout_token so the next checkout starts
     // with a fresh idempotency key (IABB cookie fix).
-    clearCtCookie();
+    clearCheckoutTokenCookie();
     try { window.scrollTo({ top: 0, behavior: "auto" }); } catch { /* noop */ }
   };
 
