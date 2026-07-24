@@ -8,6 +8,7 @@
 //   r-<order_uuid>      → /checkout?recover_order=<id> on store's domain (302 no-store)
 //   c-<cart_id_or_token>→ /cart?recover=<token> on store's domain (302 no-store)
 //   p-<product_uuid>    → /product/<slug> on store's domain       (302 + medium cache)
+//   r-<order_uuid>      → /checkout?product=<id> payment retry    (302 no-store)
 //
 // Speed engineering (v2):
 //   1. Redirect 302 carries `Link: rel=preconnect` + `rel=preload` headers.
@@ -204,6 +205,31 @@ Deno.serve(async (req) => {
         phone,
       );
       return redirect(target, { preconnectHosts: [host] });
+    }
+    if (kind === "r-") {
+      const { data: o } = await admin
+        .from("orders")
+        .select("id, customer_phone, stores:store_id(name, slug, custom_domain), order_items(product_id, quantity)")
+        .eq("id", id)
+        .maybeSingle();
+      if (!o) return redirect("https://shopbanao.in");
+
+      const base = storeBase((o as any).stores);
+      const host = base.replace(/^https?:\/\//, "");
+      const items = Array.isArray((o as any).order_items) ? (o as any).order_items : [];
+      const firstItem = items.find((it: any) => it?.product_id) || items[0];
+      const retryProductId = firstItem?.product_id;
+      if (!retryProductId) {
+        const fallback = await withAutoLogin(`${base}/account/orders/${encodeURIComponent(id)}`, (o as any).customer_phone || suffixPhone);
+        return redirect(fallback, { status: 302, maxAge: 0, preconnectHosts: [host] });
+      }
+
+      const qty = Math.max(1, Number(firstItem?.quantity || 1));
+      const target = await withAutoLogin(
+        `${base}/checkout?product=${encodeURIComponent(retryProductId)}&qty=${encodeURIComponent(String(qty))}&v2=1&recover=order`,
+        (o as any).customer_phone || suffixPhone,
+      );
+      return redirect(target, { status: 302, maxAge: 0, preconnectHosts: [host, "cdn.shopbanao.in"] });
     }
     if (kind === "p-") {
       const { data: p } = await admin
