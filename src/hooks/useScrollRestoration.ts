@@ -256,7 +256,12 @@ export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
       // Flush scroll under CURRENT key first
       saveScroll();
       const rect = link.getBoundingClientRect();
-      saveAnchor({ href: link.href, viewportTop: rect.top, documentTop: window.scrollY + rect.top });
+      saveAnchor({
+        href: link.href,
+        viewportTop: rect.top,
+        documentTop: window.scrollY + rect.top,
+        path: pathFingerprint(link),
+      });
     };
     document.addEventListener("click", onClick, { capture: true });
 
