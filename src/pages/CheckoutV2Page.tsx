@@ -589,15 +589,47 @@ export default function CheckoutV2Page() {
     showAddressFormSheet ||
     (phoneValid && addressLookupSettled && !addressComplete && !addressSheetDismissed);
 
-  // Auto-open the address form the moment the phone gate completes on a
-  // fresh checkout — but ONLY after the saved-address lookup has settled so
-  // returning shoppers with an address on file skip the sheet entirely.
+  // PAYMENT-FIRST FLOW: We no longer auto-open the address sheet for new
+  // shoppers. Instead the checkout renders payment tiles inline with a
+  // prominent "+ Add delivery address" CTA. Tapping any payment method
+  // (UPI intent / gateway / COD) without a filled address opens the sheet
+  // AND remembers the intent so the shopper resumes exactly where they left
+  // off. This matches Meesho/Gokwik and cuts the address-form drop-off that
+  // was inflating pending/cancelled orders.
+  //
+  // If the phone gate settles and there is no saved address, we still nudge
+  // shoppers by opening the sheet ONCE — but they can dismiss it and see
+  // the payment options underneath. On re-tap of any payment tile it
+  // re-opens with a toast.
+  const initialNudgeFiredRef = useRef(false);
   useEffect(() => {
     if (!phoneValid || addressComplete) return;
     if (!addressLookupSettled) return;
+    if (initialNudgeFiredRef.current) return;
+    initialNudgeFiredRef.current = true;
     setAddressSheetDismissed(false);
     setShowAddressFormSheet(true);
   }, [phoneValid, addressComplete, addressLookupSettled]);
+
+  // Pending pay-action: when the shopper taps a payment tile without an
+  // address, we remember what they wanted so we can resume it the instant
+  // they finish the address form.
+  const pendingPayActionRef = useRef<null | (() => void)>(null);
+
+  /**
+   * Address gate for every payment entry point (UPI intent tap, gateway
+   * button, COD button). Returns `true` when the shopper can proceed; when
+   * the address is missing it opens the sheet, stores the action for
+   * auto-resume, and returns `false`.
+   */
+  const requireAddressOrPrompt = useCallback((resume?: () => void): boolean => {
+    if (addressComplete) return true;
+    pendingPayActionRef.current = resume ?? null;
+    setAddressSheetDismissed(false);
+    setShowAddressFormSheet(true);
+    toast.info("Add your delivery address to continue");
+    return false;
+  }, [addressComplete]);
 
   // Lock body scroll while any address overlay is open so only the form scrolls.
   useEffect(() => {
@@ -1694,6 +1726,9 @@ export default function CheckoutV2Page() {
     if (creatingOrder || couponLoading || paymentAmountSyncing) {
       return;
     }
+    // PAYMENT-FIRST address gate — if no address, open the sheet and remember
+    // this tap so we auto-resume the UPI launch after the shopper saves.
+    if (!requireAddressOrPrompt(() => tapUpiApp(app))) return;
     const s = intents[app];
     if (s.status !== "ready" || !s.url) {
       return;
@@ -2130,12 +2165,33 @@ export default function CheckoutV2Page() {
     if (showPayment || creatingOrder) return;
     if (!paymentConfigLoaded) return;
     if (autoAdvancedRef.current) return;
+    // PAYMENT-FIRST: reveal the payment tiles as soon as the phone gate
+    // clears, even if the address is still blank. Tiles remain interactive;
+    // tapping any without an address opens the address sheet via
+    // requireAddressOrPrompt(). Intents mint themselves later, once the
+    // address is filled (see the effect below).
+    if (!phoneValid) return;
+    autoAdvancedRef.current = true;
+    setShowPayment(true);
+    const filled = !!(pincode && streetAddress && city && state && fullName);
+    if (filled) void createOrderAndIntents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phoneValid, pincode, streetAddress, city, state, fullName, showPayment, creatingOrder, paymentConfigLoaded]);
+
+  // When the address gets filled *after* showPayment has been revealed
+  // (payment-first flow), mint the UPI intents so the tiles activate.
+  const intentsMintedForAddressRef = useRef(false);
+  useEffect(() => {
+    if (!showPayment) return;
+    if (!paymentConfigLoaded) return;
     const filled = !!(pincode && streetAddress && city && state && fullName);
     if (!filled) return;
-    autoAdvancedRef.current = true;
+    if (intentsMintedForAddressRef.current) return;
+    if (orderId) return; // createOrderAndIntents already ran (auto-advance branch)
+    intentsMintedForAddressRef.current = true;
     void createOrderAndIntents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pincode, streetAddress, city, state, fullName, showPayment, creatingOrder, paymentConfigLoaded]);
+  }, [showPayment, paymentConfigLoaded, pincode, streetAddress, city, state, fullName, orderId]);
 
 
   // Desktop QR has been removed — desktop shoppers now pay via the hosted
@@ -2548,6 +2604,8 @@ export default function CheckoutV2Page() {
   const [openingGateway, setOpeningGateway] = useState(false);
   const startGatewayPayment = async () => {
     if (openingGateway || creatingOrder || couponLoading || paymentAmountSyncing) return;
+    // PAYMENT-FIRST address gate — same as UPI tap.
+    if (!requireAddressOrPrompt(() => { void startGatewayPayment(); })) return;
     // Flush any pending address/email edits into the snapshot so the order
     // row minted here reflects the live-typed values, not the pre-debounce
     // ones. See tapUpiApp for the same guard.
@@ -2589,6 +2647,9 @@ export default function CheckoutV2Page() {
   const [placingCod, setPlacingCod] = useState(false);
   const placeCod = async () => {
     if (placingCod || creatingOrder || couponLoading || paymentAmountSyncing) return;
+    // PAYMENT-FIRST address gate — open sheet + remember the COD tap so it
+    // auto-resumes after the shopper saves.
+    if (!requireAddressOrPrompt(() => { void placeCod(); })) return;
     const err = validateAddress();
     if (err) { toast.error(err); return; }
     // Same stale-identity flush as UPI/gateway paths — a COD row minted with
@@ -3062,6 +3123,27 @@ export default function CheckoutV2Page() {
           )}
 
 
+          {/* PAYMENT-FIRST CTA — when the address is missing, show a tappable
+              card in-place so the shopper can see payment options underneath.
+              Tapping any payment tile also opens the sheet via
+              requireAddressOrPrompt() and resumes their exact tap on save. */}
+          {!addressFilled && (
+            <button
+              type="button"
+              onClick={openAddressFormSheet}
+              className="w-full bg-white rounded-xl border-2 border-dashed border-amber-400 p-3.5 flex items-center gap-3 active:scale-[0.99] transition-transform text-left"
+            >
+              <div className="h-9 w-9 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0">
+                <MapPin className="h-4.5 w-4.5 text-amber-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[14px] font-bold">Add delivery address</div>
+                <div className="text-[12px] text-muted-foreground">Needed to place your order</div>
+              </div>
+              <Plus className="h-5 w-5 text-amber-600 flex-shrink-0" />
+            </button>
+          )}
+
           {/* Delivery Details (once address filled) — compact single-card, no heading */}
           {addressFilled && (
             <div className="bg-white rounded-xl border border-[#ECECEC] p-3">
@@ -3196,30 +3278,28 @@ export default function CheckoutV2Page() {
               dismiss) so the shopper cannot land on an empty checkout. Once
               the address is filled, tapping "Change" reopens it in editable
               mode with a close chip. */}
-          {(showAddressFormSheet || !addressFilled) && typeof document !== "undefined" && createPortal(
+          {showAddressFormSheet && typeof document !== "undefined" && createPortal(
             <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
-              {/* Scrim — only dismissible when editing a filled address */}
+              {/* Scrim — always dismissible in payment-first flow so the shopper
+                  can see the checkout underneath. If they try to pay without
+                  an address, requireAddressOrPrompt() re-opens the sheet. */}
               <div
                 className="absolute inset-0 bg-black/50"
-                onClick={addressFilled ? closeAddressFormSheet : undefined}
+                onClick={closeAddressFormSheet}
                 aria-hidden
               />
               {/* Sheet — nearly full-screen so keyboard doesn't crush the form */}
               <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden h-[95dvh]">
               <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
                 <div className="text-[16px] font-bold">Add Delivery Address</div>
-                {addressFilled ? (
-                  <button
-                    type="button"
-                    onClick={closeAddressFormSheet}
-                    aria-label="Close"
-                    className="h-9 w-9 -mr-2 rounded-full flex items-center justify-center hover:bg-black/5 active:bg-black/10"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                ) : (
-                  <span className="h-9 w-9" aria-hidden />
-                )}
+                <button
+                  type="button"
+                  onClick={closeAddressFormSheet}
+                  aria-label="Close"
+                  className="h-9 w-9 -mr-2 rounded-full flex items-center justify-center hover:bg-black/5 active:bg-black/10"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
 
 
@@ -3356,7 +3436,13 @@ export default function CheckoutV2Page() {
                     }
                     setAddressAttempted(false);
                     setShowAddressFormSheet(false);
-
+                    // PAYMENT-FIRST: if the shopper reached the address sheet by
+                    // tapping a payment tile, resume that exact tap the instant
+                    // they save. Delay one tick so the address state fully
+                    // commits before the pay handler re-runs its gate.
+                    const resume = pendingPayActionRef.current;
+                    pendingPayActionRef.current = null;
+                    if (resume) window.setTimeout(resume, 50);
                   }}
                 >
                   Continue
@@ -3613,12 +3699,18 @@ export default function CheckoutV2Page() {
                 {UPI_APPS.slice(0, 4).map((app, i) => {
                   const s = intents[app.key];
                   const staleAmount = typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100);
-                  const disabled = s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount;
+                  // PAYMENT-FIRST: when the address is missing, keep tiles
+                  // visually enabled so the shopper can tap them — the tap
+                  // opens the address sheet (via requireAddressOrPrompt) and
+                  // resumes this exact UPI launch on save. Only apply the
+                  // real disabled state once the address is complete.
+                  const addressReady = addressComplete;
+                  const disabled = addressReady && (s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount);
                   const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
                   return (
                     <a
                       key={app.key}
-                      href={disabled ? undefined : s.url}
+                      href={disabled || !addressReady ? undefined : s.url}
                       onClick={(e) => tapUpiApp(app.key, e)}
                       aria-disabled={disabled}
                       className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 min-h-[92px] relative ${disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
@@ -3626,7 +3718,7 @@ export default function CheckoutV2Page() {
                       
                       <img src={app.icon} alt={app.label} className="h-8 w-8 mt-3 mb-1 object-contain" />
                       <div className="text-[11px] font-semibold">{app.label}</div>
-                      {(s.status === "loading" || staleAmount) && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
+                      {addressReady && (s.status === "loading" || staleAmount) && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
                     </a>
                   );
                 })}
@@ -3634,12 +3726,14 @@ export default function CheckoutV2Page() {
               {(() => {
                 const anyS = intents.any;
                 const staleAny = typeof anyS.amount === "number" && Math.round(anyS.amount * 100) !== Math.round(chargeAmount * 100);
+                const addressReady = addressComplete;
+                const anyDisabled = addressReady && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
                 return (
                   <a
-                    href={(anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny) ? undefined : anyS.url}
+                    href={anyDisabled || !addressReady ? undefined : anyS.url}
                     onClick={(e) => tapUpiApp("any", e)}
-                    aria-disabled={anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny}
-                    className={`mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] ${(anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny) ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
+                    aria-disabled={anyDisabled}
+                    className={`mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] ${anyDisabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
                   >
                     <span className="text-[13px] font-semibold">All UPI Apps</span>
                     <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
