@@ -149,6 +149,23 @@ Deno.serve(async (req) => {
   try {
     if (kind === "o-" || kind === "t-") {
       const { data: o } = await admin
+    if (kind === "r-") {
+      const { data: o } = await admin
+        .from("orders")
+        .select("id, customer_phone, stores:store_id(name, slug, custom_domain)")
+        .eq("id", id).maybeSingle();
+      if (!o) return redirect("https://shopbanao.in");
+      const storeRow = (o as any).stores;
+      const base = storeBase(storeRow);
+      const host = base.replace(/^https?:\/\//, "");
+      const phone = (o as any).customer_phone as string | null;
+      const target = await withAutoLogin(`${base}/checkout?recover_order=${(o as any).id}`, phone);
+      return redirect(target, {
+        status: 302,
+        maxAge: 0,
+        preconnectHosts: [host],
+      });
+    }
         .from("orders")
         .select("id, tracking_url, customer_phone, stores:store_id(name, slug, custom_domain)")
         .eq("id", id).maybeSingle();
