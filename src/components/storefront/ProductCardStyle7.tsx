@@ -49,6 +49,7 @@ export default function ProductCardStyle7({ product, slug, store, priority = fal
     try {
       const imgs = resolveProductImages(product);
       setPdpPreload({ slug: product.slug || product.id, image: imgs[0] || "", name: product.name, price: product.price as any, salePrice: (product.sale_price as any) ?? null, currency });
+      prefetchProductDetail({ slug: product.slug || product.id, image: imgs[0] });
     } catch {}
   };
 
