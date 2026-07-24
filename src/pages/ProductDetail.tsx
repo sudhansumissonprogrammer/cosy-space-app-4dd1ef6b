@@ -1542,7 +1542,17 @@ function ImageGallery({
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
+  // Seed slide 0 as loaded when a matching preload exists — the skeleton
+  // already painted the same w=800 URL, so the browser has it cached and
+  // the gallery <img> will paint synchronously. Skipping the opacity-0 →
+  // opacity-100 fade removes the "flash then reload" the user reported.
+  const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = sessionStorage.getItem("__sf_pdp_preload__");
+      return raw ? { 0: true } : {};
+    } catch { return {}; }
+  });
   const [videoPlaying, setVideoPlaying] = useState(false);
 
   // Build slides: image #1, video (if present), then remaining images.
