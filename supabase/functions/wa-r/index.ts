@@ -208,27 +208,8 @@ Deno.serve(async (req) => {
         // Tracking URLs are usually external courier sites — no autologin.
         return redirect((o as any).tracking_url, { status: 302, maxAge: 60 });
       }
-      const target = await withAutoLogin(`${base}/account/orders/${(o as any).id}`, phone);
-      // Preconnect to storefront so account page TLS is warm.
-      // Downgraded to 302 (was 301) so a fresh signed token is minted on
-      // every click — 301s get cached forever by browsers.
-      return redirect(target, {
-        status: 302,
-        maxAge: 0,
-        preconnectHosts: [host],
-      });
-    }
-    if (kind === "r-") {
-      const { data: o } = await admin
-        .from("orders")
-        .select("id, customer_phone, stores:store_id(name, slug, custom_domain)")
-        .eq("id", id).maybeSingle();
-      if (!o) return redirect("https://shopbanao.in");
-      const storeRow = (o as any).stores;
-      const base = storeBase(storeRow);
-      const host = base.replace(/^https?:\/\//, "");
-      const phone = (o as any).customer_phone as string | null;
-      const target = await withAutoLogin(`${base}/checkout?recover_order=${(o as any).id}`, phone);
+      const mintP = startPreMint(phone);
+      const target = await withAutoLogin(`${base}/account/orders/${(o as any).id}`, phone, mintP);
       return redirect(target, {
         status: 302,
         maxAge: 0,
@@ -245,12 +226,15 @@ Deno.serve(async (req) => {
       const host = base.replace(/^https?:\/\//, "");
       const t = (c as any).session_token || (c as any).id;
       const phone = (c as any).customer_phone as string | null;
+      const mintP = startPreMint(phone);
       const target = await withAutoLogin(
         `${base}/cart?recover=${encodeURIComponent(String(t))}`,
         phone,
+        mintP,
       );
       return redirect(target, { preconnectHosts: [host] });
     }
+    // Payment-retry / order-recover deep link. Handles the "r-" prefix.
     if (kind === "r-") {
       const { data: o } = await admin
         .from("orders")
@@ -264,19 +248,28 @@ Deno.serve(async (req) => {
       const items = Array.isArray((o as any).order_items) ? (o as any).order_items : [];
       const firstItem = items.find((it: any) => it?.product_id) || items[0];
       const retryProductId = firstItem?.product_id;
+      const effectivePhone = (o as any).customer_phone || suffixPhone;
+      const mintP = startPreMint(effectivePhone);
       if (!retryProductId) {
-        const fallback = await withAutoLogin(`${base}/account/orders/${encodeURIComponent(id)}`, (o as any).customer_phone || suffixPhone);
+        const fallback = await withAutoLogin(`${base}/account/orders/${encodeURIComponent(id)}`, effectivePhone, mintP);
         return redirect(fallback, { status: 302, maxAge: 0, preconnectHosts: [host] });
       }
 
       const qty = Math.max(1, Number(firstItem?.quantity || 1));
       const target = await withAutoLogin(
         `${base}/checkout?product=${encodeURIComponent(retryProductId)}&qty=${encodeURIComponent(String(qty))}&v2=1&recover=order`,
-        (o as any).customer_phone || suffixPhone,
+        effectivePhone,
+        mintP,
       );
       return redirect(target, { status: 302, maxAge: 0, preconnectHosts: [host, "cdn.shopbanao.in"] });
     }
     if (kind === "p-") {
+      // Fire pre-mint IMMEDIATELY (parallel with products lookup) — the phone
+      // is already known from the token suffix, so there's no dependency on
+      // the DB. This is the highest-value optimisation: on a warm auth API
+      // the mint finishes before the products query, adding zero latency.
+      const mintP = startPreMint(suffixPhone);
+
       const { data: p } = await admin
         .from("products")
         .select("id, slug, stores:store_id(name, slug, custom_domain)")
@@ -298,6 +291,7 @@ Deno.serve(async (req) => {
       const target = await withAutoLogin(
         `${base}/product/${encodeURIComponent(slug)}`,
         suffixPhone,
+        mintP,
       );
       return redirect(target, {
         status: 302,
@@ -309,6 +303,5 @@ Deno.serve(async (req) => {
         preloadFetches: [pdpApi],
       });
     }
-  } catch { /* fallthrough */ }
   return redirect("https://shopbanao.in");
 });
