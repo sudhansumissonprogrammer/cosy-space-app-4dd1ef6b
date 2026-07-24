@@ -5261,6 +5261,10 @@ export type Database = {
       }
       verify_cron_secret: { Args: { _secret: string }; Returns: boolean }
       verify_phone_account_integrity: { Args: never; Returns: undefined }
+      wa_autologin_bundle: {
+        Args: { _phone: string; _store_id: string }
+        Returns: Json
+      }
       wa_billing_summary: {
         Args: { _since?: string; _store_id: string }
         Returns: {

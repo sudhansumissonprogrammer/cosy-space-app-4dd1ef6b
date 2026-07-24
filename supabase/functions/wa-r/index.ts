@@ -30,25 +30,70 @@
 //   order UUIDs never change destination.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { mintAutoLoginToken, canonicalPhone } from "../_shared/wa-autologin-token.ts";
+import { mintSessionForPhone, type MintedSession } from "../_shared/wa-mint-session.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 // Module-scope client → connection pool + TLS reuse across invocations.
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
 /**
- * Append an HMAC-signed `?al=<token>` to a redirect target so the storefront
- * lands the shopper already logged-in (consumed by wa-autologin).
- * Returns the URL unchanged when phone is missing/invalid.
+ * Kick off a pre-mint as early as possible (in parallel with the DB lookup)
+ * so the storefront lands with a full session already in-hand, skipping the
+ * wa-autologin round-trip entirely on the client. Falls back gracefully to
+ * the signed `?al=` token when mint fails or phone is missing.
  */
-async function withAutoLogin(url: string, rawPhone: string | null | undefined): Promise<string> {
+function startPreMint(rawPhone: string | null | undefined): Promise<MintedSession | null> {
+  const p = canonicalPhone(rawPhone || "");
+  if (!p) return Promise.resolve(null);
+  // Fire immediately — do NOT await here. Caller awaits at redirect-emit time.
+  return mintSessionForPhone(p, SUPABASE_URL, SERVICE_KEY, ANON_KEY);
+}
+
+/**
+ * Append a pre-minted session (fragment, no server leak) + fallback signed
+ * `?al=` token to the redirect target. Fragment format:
+ *   `#als=<access_token>|<refresh_token>|<phone10>`
+ * StorefrontAutoLogin consumes the fragment first and skips wa-autologin.
+ * Fragment is stripped by history.replaceState immediately after consumption.
+ */
+async function withAutoLogin(
+  url: string,
+  rawPhone: string | null | undefined,
+  mintPromise?: Promise<MintedSession | null>,
+): Promise<string> {
   const phone = canonicalPhone(rawPhone || "");
   if (!phone) return url;
-  const token = await mintAutoLoginToken(phone, SERVICE_KEY);
-  if (!token) return url;
-  const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}al=${encodeURIComponent(token)}`;
+
+  // Race pre-mint against a small budget so a slow auth API never blocks the
+  // redirect longer than ~800ms. If mint misses, we still ship the signed
+  // fallback token and the client will hit wa-autologin as before.
+  const budgeted = mintPromise
+    ? Promise.race([
+        mintPromise,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 800)),
+      ])
+    : Promise.resolve(null);
+
+  const [minted, token] = await Promise.all([
+    budgeted,
+    mintAutoLoginToken(phone, SERVICE_KEY),
+  ]);
+
+  let out = url;
+  if (token) {
+    const sep = out.includes("?") ? "&" : "?";
+    out = `${out}${sep}al=${encodeURIComponent(token)}`;
+  }
+  if (minted?.access_token && minted?.refresh_token) {
+    // Fragment placement — after any existing #hash the caller supplied
+    // (rare for our routes). Encode phone for good measure.
+    const frag = `als=${encodeURIComponent(minted.access_token)}|${encodeURIComponent(minted.refresh_token)}|${minted.phone}`;
+    out += (out.includes("#") ? "&" : "#") + frag;
+  }
+  return out;
 }
 
 function storeBase(s: any): string {
@@ -163,27 +208,8 @@ Deno.serve(async (req) => {
         // Tracking URLs are usually external courier sites — no autologin.
         return redirect((o as any).tracking_url, { status: 302, maxAge: 60 });
       }
-      const target = await withAutoLogin(`${base}/account/orders/${(o as any).id}`, phone);
-      // Preconnect to storefront so account page TLS is warm.
-      // Downgraded to 302 (was 301) so a fresh signed token is minted on
-      // every click — 301s get cached forever by browsers.
-      return redirect(target, {
-        status: 302,
-        maxAge: 0,
-        preconnectHosts: [host],
-      });
-    }
-    if (kind === "r-") {
-      const { data: o } = await admin
-        .from("orders")
-        .select("id, customer_phone, stores:store_id(name, slug, custom_domain)")
-        .eq("id", id).maybeSingle();
-      if (!o) return redirect("https://shopbanao.in");
-      const storeRow = (o as any).stores;
-      const base = storeBase(storeRow);
-      const host = base.replace(/^https?:\/\//, "");
-      const phone = (o as any).customer_phone as string | null;
-      const target = await withAutoLogin(`${base}/checkout?recover_order=${(o as any).id}`, phone);
+      const mintP = startPreMint(phone);
+      const target = await withAutoLogin(`${base}/account/orders/${(o as any).id}`, phone, mintP);
       return redirect(target, {
         status: 302,
         maxAge: 0,
@@ -200,12 +226,15 @@ Deno.serve(async (req) => {
       const host = base.replace(/^https?:\/\//, "");
       const t = (c as any).session_token || (c as any).id;
       const phone = (c as any).customer_phone as string | null;
+      const mintP = startPreMint(phone);
       const target = await withAutoLogin(
         `${base}/cart?recover=${encodeURIComponent(String(t))}`,
         phone,
+        mintP,
       );
       return redirect(target, { preconnectHosts: [host] });
     }
+    // Payment-retry / order-recover deep link. Handles the "r-" prefix.
     if (kind === "r-") {
       const { data: o } = await admin
         .from("orders")
@@ -219,19 +248,28 @@ Deno.serve(async (req) => {
       const items = Array.isArray((o as any).order_items) ? (o as any).order_items : [];
       const firstItem = items.find((it: any) => it?.product_id) || items[0];
       const retryProductId = firstItem?.product_id;
+      const effectivePhone = (o as any).customer_phone || suffixPhone;
+      const mintP = startPreMint(effectivePhone);
       if (!retryProductId) {
-        const fallback = await withAutoLogin(`${base}/account/orders/${encodeURIComponent(id)}`, (o as any).customer_phone || suffixPhone);
+        const fallback = await withAutoLogin(`${base}/account/orders/${encodeURIComponent(id)}`, effectivePhone, mintP);
         return redirect(fallback, { status: 302, maxAge: 0, preconnectHosts: [host] });
       }
 
       const qty = Math.max(1, Number(firstItem?.quantity || 1));
       const target = await withAutoLogin(
         `${base}/checkout?product=${encodeURIComponent(retryProductId)}&qty=${encodeURIComponent(String(qty))}&v2=1&recover=order`,
-        (o as any).customer_phone || suffixPhone,
+        effectivePhone,
+        mintP,
       );
       return redirect(target, { status: 302, maxAge: 0, preconnectHosts: [host, "cdn.shopbanao.in"] });
     }
     if (kind === "p-") {
+      // Fire pre-mint IMMEDIATELY (parallel with products lookup) — the phone
+      // is already known from the token suffix, so there's no dependency on
+      // the DB. This is the highest-value optimisation: on a warm auth API
+      // the mint finishes before the products query, adding zero latency.
+      const mintP = startPreMint(suffixPhone);
+
       const { data: p } = await admin
         .from("products")
         .select("id, slug, stores:store_id(name, slug, custom_domain)")
@@ -253,6 +291,7 @@ Deno.serve(async (req) => {
       const target = await withAutoLogin(
         `${base}/product/${encodeURIComponent(slug)}`,
         suffixPhone,
+        mintP,
       );
       return redirect(target, {
         status: 302,
@@ -264,6 +303,5 @@ Deno.serve(async (req) => {
         preloadFetches: [pdpApi],
       });
     }
-  } catch { /* fallthrough */ }
   return redirect("https://shopbanao.in");
 });

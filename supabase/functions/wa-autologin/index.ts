@@ -1,13 +1,16 @@
 // POST /functions/v1/wa-autologin  { token: string, store_id?: string }
 //
 // Verifies an HMAC-signed WhatsApp autologin token (issued by wa-r) and mints
-// a storefront supabase session for the phone number it carries — same session
-// shape phone-login returns, so the client just calls
-// `supabaseStorefront.auth.setSession(...)`.
+// a storefront supabase session for the phone it carries.
 //
-// This is the mechanism that lets a shopper click a WA link (order confirm,
-// abandoned-cart, marketing) and land already logged-in — no OTP, no phone
-// gate, and the checkout form auto-fills from their saved profile / address.
+// Consolidated data hop:
+//   `wa_autologin_bundle(_phone, _store_id)` returns { user_id, address,
+//   ensured_customer } in ONE round trip — collapses the previous 3 sequential
+//   queries (user lookup → customer upsert → address fetch).
+//
+// This function is the FALLBACK path: wa-r now pre-mints the session and
+// passes it via URL fragment for zero-RTT autologin. wa-autologin still runs
+// when the pre-mint budget expired (slow auth API) or for older link formats.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { verifyAutoLoginToken } from "../_shared/wa-autologin-token.ts";
@@ -46,14 +49,25 @@ Deno.serve(async (req) => {
     });
 
     const phoneEmail = `${phone}@phone.guest`;
+    const storeIdArg = (store_id && /^[0-9a-f-]{36}$/i.test(store_id)) ? store_id : null;
 
-    // Look up the auth user (created by any prior order / phone-login).
+    // Single-hop bundle: user_id + address + upsert customer row.
     let userId: string | null = null;
-    const { data: existingId } = await admin.rpc("get_auth_user_id_by_email", { _email: phoneEmail });
-    if (existingId && typeof existingId === "string") userId = existingId;
+    let address: any = null;
+    try {
+      const { data: bundle } = await admin.rpc("wa_autologin_bundle", {
+        _phone: phone,
+        _store_id: storeIdArg,
+      });
+      const b = bundle as any;
+      if (b && typeof b === "object") {
+        userId = b.user_id ?? null;
+        address = b.address ?? null;
+      }
+    } catch { /* fall through — bundle may not exist on old deployments */ }
 
-    // Auto-create if this phone has never touched the platform (rare — a WA
-    // recipient by definition has been captured by us before).
+    // Auto-create the auth user if this phone has never touched the platform.
+    // Rare — a WA recipient by definition has been captured by us before.
     if (!userId) {
       const oneTime = crypto.randomUUID().slice(0, 16) + "Aa1!";
       const { data: newUser } = await admin.auth.admin.createUser({
@@ -63,45 +77,24 @@ Deno.serve(async (req) => {
         user_metadata: { phone, user_type: "customer" },
       });
       userId = newUser?.user?.id ?? null;
+
+      // Re-run the bundle so we upsert the customer row + get the address for
+      // this brand-new user. Address will typically be null (new shopper).
+      if (userId && storeIdArg) {
+        try {
+          const { data: bundle2 } = await admin.rpc("wa_autologin_bundle", {
+            _phone: phone,
+            _store_id: storeIdArg,
+          });
+          const b2 = bundle2 as any;
+          if (b2?.address) address = b2.address;
+        } catch { /* non-fatal */ }
+      }
     }
     if (!userId) {
       return new Response(JSON.stringify({ error: "Could not resolve user" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-
-    // Ensure storefront_customers row exists for this store so the client's
-    // customer fetch resolves on the first tick (skips the phone gate).
-    if (store_id && /^[0-9a-f-]{36}$/i.test(store_id)) {
-      const { data: existing } = await admin.from("storefront_customers")
-        .select("id").eq("user_id", userId).eq("store_id", store_id).maybeSingle();
-      if (!existing) {
-        await admin.from("storefront_customers").upsert(
-          { user_id: userId, store_id, phone },
-          { onConflict: "user_id,store_id" },
-        );
-      }
-    }
-
-    // Best-effort look up a saved address so the client can skip the sheet
-    // even before its own lookup fires.
-    let address: any = null;
-    try {
-      const { data: custRows } = await admin
-        .from("storefront_customers")
-        .select("id")
-        .eq("user_id", userId)
-        .limit(50);
-      const custIds = (custRows || []).map((c: any) => c.id);
-      if (custIds.length) {
-        const { data: addrRows } = await admin
-          .from("customer_addresses")
-          .select("id, full_name, phone, street_address, city, state, pincode, is_default")
-          .in("storefront_customer_id", custIds)
-          .order("is_default", { ascending: false })
-          .limit(1);
-        address = addrRows?.[0] ?? null;
-      }
-    } catch { /* non-fatal */ }
 
     // Mint session via magiclink → verifyOtp (no password rotation, so the
     // user's other devices stay signed in). Mirrors phone-login.
@@ -109,7 +102,7 @@ Deno.serve(async (req) => {
       type: "magiclink",
       email: phoneEmail,
     });
-    const tokenHash = linkData?.properties?.hashed_token;
+    const tokenHash = (linkData as any)?.properties?.hashed_token;
     if (linkErr || !tokenHash) {
       return new Response(JSON.stringify({ error: "Could not mint session" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
