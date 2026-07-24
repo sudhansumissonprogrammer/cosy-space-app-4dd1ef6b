@@ -885,13 +885,55 @@ Deno.serve(async (req) => {
         }
       }
     } else {
-      const { data: insertedOrder, error: insertErr } = await supabase
-        .from("orders")
-        .insert(orderPayload)
-        .select("id")
-        .single();
-      createdOrder = insertedOrder;
-      orderErr = insertErr;
+      // ─── Session-level dedup fallback ─────────────────────────────────
+      // Some in-app browsers (Instagram/FB WebView, Android Chrome tabs
+      // after PayU redirect) blow away React state when the shopper comes
+      // back to /checkout. That mints a *fresh* checkout_token for the
+      // same shopper and this branch would INSERT a second pending order
+      // — the exact "two orders 27s apart, same phone/total/session" bug.
+      //
+      // Before inserting, look for a recent pending order from the same
+      // shopper (same store + same normalized phone + same session_id or
+      // visitor_id) in the last 15 minutes. Reuse it by rewriting its
+      // checkout_token so downstream gateway calls stay attached.
+      let dedupOrder: { id: string; order_number: number | null } | null = null;
+      if (checkout_token && enteredPhone10 && (session_id || visitor_id)) {
+        const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+        let dq = supabase
+          .from("orders")
+          .select("id, order_number")
+          .eq("store_id", store_id)
+          .eq("customer_phone", order.customer_phone)
+          .eq("status", "pending")
+          .gte("created_at", fifteenMinAgo)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (session_id) dq = dq.eq("session_id", session_id);
+        else if (visitor_id) dq = dq.eq("visitor_id", visitor_id);
+        const { data: recent } = await dq.maybeSingle();
+        if (recent) dedupOrder = recent as any;
+      }
+
+      if (dedupOrder) {
+        const { data: updatedOrder, error: updateErr } = await supabase
+          .from("orders")
+          .update(orderPayload)
+          .eq("id", dedupOrder.id)
+          .eq("store_id", store_id)
+          .eq("status", "pending")
+          .select("id")
+          .maybeSingle();
+        createdOrder = updatedOrder;
+        orderErr = updateErr;
+      } else {
+        const { data: insertedOrder, error: insertErr } = await supabase
+          .from("orders")
+          .insert(orderPayload)
+          .select("id")
+          .single();
+        createdOrder = insertedOrder;
+        orderErr = insertErr;
+      }
     }
 
 
