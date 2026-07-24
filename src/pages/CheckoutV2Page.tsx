@@ -1462,9 +1462,14 @@ export default function CheckoutV2Page() {
     try { localStorage.removeItem(WAIT_KEY); } catch { /* noop */ }
   };
 
-  const normalizeGatewayResult = (payload: any): "success" | "pending" => {
+  const normalizeGatewayResult = (payload: any): "success" | "failed" | "pending" => {
     const raw = String(payload?.status || payload?.payment_status || payload?.order_status || "").toLowerCase();
     if (payload?.success === true || ["paid", "success", "captured", "authorized"].includes(raw)) return "success";
+    // PayU/Cashfree/Razorpay status APIs return a definitive FAILED verdict when
+    // the shopper cancelled inside the UPI app or the gateway dropped the txn.
+    // Surface that immediately instead of polling for 90s — matches the old
+    // checkout's "instant cancel" UX.
+    if (["failed", "failure", "cancelled", "canceled", "usercancelled", "user_cancelled", "dropped", "bounced", "expired", "timeout"].includes(raw)) return "failed";
     return "pending";
   };
 
