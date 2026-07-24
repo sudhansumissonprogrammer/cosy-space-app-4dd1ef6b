@@ -516,6 +516,13 @@ export default function CheckoutV2Page() {
   };
 
   const phoneAddressLookupRef = useRef("");
+  // Tracks whether the async `create-guest-account` lookup for the current
+  // phone has settled. While `pending`, we suppress auto-opening the address
+  // sheet so returning shoppers (address on file) don't see a flash-of-form
+  // that instantly disappears once the RPC hydrates their saved address.
+  const [phoneLookupState, setPhoneLookupState] = useState<
+    "idle" | "pending" | "done"
+  >("idle");
   useEffect(() => {
     const canon = toCanonicalIndianPhone(phone);
     if (!store?.id || !canon) return;
@@ -525,6 +532,7 @@ export default function CheckoutV2Page() {
     phoneAddressLookupRef.current = key;
 
     let cancelled = false;
+    setPhoneLookupState("pending");
     (async () => {
       try {
         const { data, error } = await supabase.functions.invoke("create-guest-account", {
@@ -544,6 +552,8 @@ export default function CheckoutV2Page() {
         if (!cancelled && result?.address) applyPhoneLookupAddress(result.address);
       } catch {
         // Keep checkout usable; the shopper can still type a fresh address.
+      } finally {
+        if (!cancelled) setPhoneLookupState("done");
       }
     })();
 
@@ -568,23 +578,25 @@ export default function CheckoutV2Page() {
     setAddressSheetDismissed(true);
   };
 
-  const addressSheetOpen = showAddressFormSheet || (!(pincode && streetAddress && city && state && fullName) && !addressSheetDismissed);
-
-  // Auto-open the address form the moment the phone gate completes on a
-  // fresh checkout — BUT wait ~1.5s so saved-address / returning-order
-  // lookups can auto-fill first and skip the sheet entirely for repeat
-  // shoppers. Prevents a flash-of-form for anyone whose phone already has
-  // an address on file (same store OR any prior order platform-wide).
   const phoneValid = !!toCanonicalIndianPhone(phone);
   const addressComplete = !!(pincode && streetAddress && city && state && fullName);
+  // Wait for the phone→address lookup to settle before deciding to show the
+  // form. Prevents the flash-of-form for WhatsApp autologin shoppers whose
+  // saved address arrives ~200-600ms after the checkout mounts.
+  const addressLookupSettled = phoneLookupState !== "pending";
+  const addressSheetOpen =
+    showAddressFormSheet ||
+    (phoneValid && addressLookupSettled && !addressComplete && !addressSheetDismissed);
+
+  // Auto-open the address form the moment the phone gate completes on a
+  // fresh checkout — but ONLY after the saved-address lookup has settled so
+  // returning shoppers with an address on file skip the sheet entirely.
   useEffect(() => {
     if (!phoneValid || addressComplete) return;
-    // Saved-address lookup applies synchronously in the phone-step onComplete
-    // handler, so by the time this effect runs with no address, we know the
-    // shopper has none on file — open the form instantly, no timer.
+    if (!addressLookupSettled) return;
     setAddressSheetDismissed(false);
     setShowAddressFormSheet(true);
-  }, [phoneValid, addressComplete]);
+  }, [phoneValid, addressComplete, addressLookupSettled]);
 
   // Lock body scroll while any address overlay is open so only the form scrolls.
   useEffect(() => {
