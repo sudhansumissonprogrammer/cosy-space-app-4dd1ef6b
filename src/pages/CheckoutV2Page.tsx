@@ -2162,12 +2162,33 @@ export default function CheckoutV2Page() {
     if (showPayment || creatingOrder) return;
     if (!paymentConfigLoaded) return;
     if (autoAdvancedRef.current) return;
+    // PAYMENT-FIRST: reveal the payment tiles as soon as the phone gate
+    // clears, even if the address is still blank. Tiles remain interactive;
+    // tapping any without an address opens the address sheet via
+    // requireAddressOrPrompt(). Intents mint themselves later, once the
+    // address is filled (see the effect below).
+    if (!phoneValid) return;
+    autoAdvancedRef.current = true;
+    setShowPayment(true);
+    const filled = !!(pincode && streetAddress && city && state && fullName);
+    if (filled) void createOrderAndIntents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phoneValid, pincode, streetAddress, city, state, fullName, showPayment, creatingOrder, paymentConfigLoaded]);
+
+  // When the address gets filled *after* showPayment has been revealed
+  // (payment-first flow), mint the UPI intents so the tiles activate.
+  const intentsMintedForAddressRef = useRef(false);
+  useEffect(() => {
+    if (!showPayment) return;
+    if (!paymentConfigLoaded) return;
     const filled = !!(pincode && streetAddress && city && state && fullName);
     if (!filled) return;
-    autoAdvancedRef.current = true;
+    if (intentsMintedForAddressRef.current) return;
+    if (orderId) return; // createOrderAndIntents already ran (auto-advance branch)
+    intentsMintedForAddressRef.current = true;
     void createOrderAndIntents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pincode, streetAddress, city, state, fullName, showPayment, creatingOrder, paymentConfigLoaded]);
+  }, [showPayment, paymentConfigLoaded, pincode, streetAddress, city, state, fullName, orderId]);
 
 
   // Desktop QR has been removed — desktop shoppers now pay via the hosted
