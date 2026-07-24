@@ -65,6 +65,12 @@ interface AnchorInfo {
   href: string;
   viewportTop: number;
   documentTop?: number;
+  /** Structural fingerprint of the clicked element (tag + nth-of-type chain up
+   *  to ~10 ancestors). Lets us disambiguate the SAME product link that appears
+   *  in multiple home sections (e.g. Best Selling carousel vs "Payal" category
+   *  strip). Distance-based matching is unreliable on mobile where sections
+   *  sit close together. */
+  path?: string;
 }
 
 function saveAnchor(info: AnchorInfo) {
@@ -83,6 +89,39 @@ function readAnchor(): AnchorInfo | null {
   } catch {
     return null;
   }
+}
+
+/** Build a structural fingerprint for an element: TAG[nth]>TAG[nth]>... up
+ *  to `maxDepth` ancestors or until BODY. Uses nth-of-type so that lazily
+ *  mounted siblings of different tags don't shift the index. */
+function pathFingerprint(el: Element | null, maxDepth = 10): string {
+  const parts: string[] = [];
+  let cur: Element | null = el;
+  let depth = 0;
+  while (cur && cur.tagName !== "BODY" && depth < maxDepth) {
+    const parent = cur.parentElement;
+    if (!parent) break;
+    const tag = cur.tagName;
+    let n = 1;
+    for (let sib = cur.previousElementSibling; sib; sib = sib.previousElementSibling) {
+      if (sib.tagName === tag) n++;
+    }
+    parts.push(`${tag}[${n}]`);
+    cur = parent;
+    depth++;
+  }
+  return parts.reverse().join(">");
+}
+
+/** Length of the shared prefix of two `>`-separated fingerprint strings. */
+function fingerprintOverlap(a: string, b: string): number {
+  if (!a || !b) return 0;
+  const A = a.split(">");
+  const B = b.split(">");
+  const n = Math.min(A.length, B.length);
+  let i = 0;
+  while (i < n && A[i] === B[i]) i++;
+  return i;
 }
 
 /** Match by pathname + search (ignore origin/hash) — robust across hosts. */
@@ -107,13 +146,40 @@ function findAnchorElement(anchor: AnchorInfo): HTMLElement | null {
     }
   }
   if (candidates.length === 0) return null;
+  if (candidates.length === 1) return candidates[0];
+
+  // ── Prefer structural match ──────────────────────────────────────
+  // If we stored a fingerprint at click time, pick the candidate whose
+  // ancestor chain overlaps the most. An exact match short-circuits;
+  // otherwise the deepest shared prefix wins (same section, different
+  // grid position after re-render). This is far more reliable than
+  // distance-based matching for home pages where a product appears in
+  // Best Selling AND a category strip that may sit only ~200-800px
+  // apart on mobile.
+  if (anchor.path) {
+    let bestByPath: HTMLElement | null = null;
+    let bestOverlap = -1;
+    for (const el of candidates) {
+      const fp = pathFingerprint(el);
+      if (fp === anchor.path) return el;
+      const overlap = fingerprintOverlap(fp, anchor.path);
+      if (overlap > bestOverlap) {
+        bestOverlap = overlap;
+        bestByPath = el;
+      }
+    }
+    // Require at least 3 shared ancestors (e.g. same <section> subtree)
+    // before trusting the structural pick — otherwise fall through to
+    // distance heuristic.
+    if (bestByPath && bestOverlap >= 3) return bestByPath;
+  }
+
   if (!Number.isFinite(anchor.documentTop)) return candidates[0];
 
-  // Product links can appear more than once on the same home page
-  // (Best Selling + category section). Picking the first href match sends the
-  // shopper back to the wrong section, so choose the duplicate closest to the
-  // exact document position that was tapped. If only an implausibly far duplicate
-  // is mounted, return null and let pixel pre-scroll reveal the real lazy section.
+  // Fallback: closest to stored documentTop, with tight tolerance so
+  // sibling section duplicates on mobile (~200-800px apart) are rejected
+  // rather than picked incorrectly. Anything further than half a viewport
+  // is treated as a mismatch → wait for the correct lazy section to mount.
   const targetTop = anchor.documentTop as number;
   let best: HTMLElement | null = null;
   let bestDelta = Number.POSITIVE_INFINITY;
@@ -125,17 +191,10 @@ function findAnchorElement(anchor: AnchorInfo): HTMLElement | null {
       best = el;
     }
   }
-  // Tighter tolerance than before (was 1.5 * innerHeight / 900px min): a
-  // product card that appears in two home sections (e.g. Best Selling AND its
-  // real category strip) sits ~800-1500px apart. The old loose bound accepted
-  // the wrong duplicate on POP → shopper landed on the top strip instead of
-  // the section they actually scrolled to. Anything further than ~half a
-  // viewport is a duplicate mismatch; skip and let the observer keep waiting
-  // for the real lazy section to mount.
   const acceptableDelta = Math.max(window.innerHeight * 0.6, 400);
   return bestDelta <= acceptableDelta ? best : null;
-
 }
+
 
 export function useScrollRestoration(opts?: { skipPathPatterns?: RegExp[] }) {
   const { pathname, search } = useLocation();
