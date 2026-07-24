@@ -504,7 +504,7 @@ Deno.serve(async (req) => {
         store_id: (o as any).store_id,
         recipient_phone: phone,
         recipient_name: customerName,
-        template_name: chosenTemplate2,
+        template_name: chosenTemplate2, order_id: (o as any).id,
         message_type: "abandoned_cart",
         params: [],
         template_vars: {
