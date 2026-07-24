@@ -1684,10 +1684,11 @@ export default function CheckoutV2Page() {
     window.addEventListener("pagehide", markLeft, { once: true });
     document.addEventListener("visibilitychange", onVisibility);
 
-    // Suppress the checkout beforeunload guard BEFORE navigating to the UPI
-    // deep link — otherwise Chrome/WhatsApp in-app browser shows "Leave site?"
-    // as the intent:// / upi:// navigation is treated as a page unload.
-    try { window.dispatchEvent(new Event("payment-in-progress")); } catch { /* noop */ }
+    // Arm waiting BEFORE navigating. WhatsApp/Instagram in-app browsers can
+    // show their "leave site" prompt before blur/pagehide reliably fires; if
+    // we wait for blur, the shopper can return to a normal checkout with no
+    // polling active even though the bank payment succeeded.
+    armWaiting();
 
     // Keep the user gesture as clean as possible for low-end Android Chrome:
     // launch the app synchronously, then update React state only after the
