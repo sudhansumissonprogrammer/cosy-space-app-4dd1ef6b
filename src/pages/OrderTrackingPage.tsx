@@ -87,27 +87,34 @@ export default function OrderTrackingPage() {
 
     try {
       const q = raw;
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const PHONE_RE = /^\+?\d{7,15}$/;
+      const isUuid = UUID_RE.test(q);
+      const isPhone = PHONE_RE.test(q);
 
-      // Try searching by order ID (partial match on first 8 chars)
-      let { data, error: err } = await supabase
-        .from("orders")
-          .select("id, order_number, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method")
-        .or(`id.eq.${q},customer_phone.eq.${q}`)
-        .order("created_at", { ascending: false })
-        .limit(1);
+      const selectCols = "id, order_number, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method";
 
-      if (err) throw err;
+      let data: any[] | null = null;
 
-      if (!data?.length) {
-        // Try partial ID match
-        const { data: partialData } = await supabase
-          .from("orders")
-          .select("id, order_number, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method")
-          .ilike("id", `${q}%`)
-          .order("created_at", { ascending: false })
-          .limit(1);
-
-        data = partialData;
+      if (isUuid) {
+        const res = await supabase
+          .from("orders").select(selectCols).eq("id", q)
+          .order("created_at", { ascending: false }).limit(1);
+        if (res.error) throw res.error;
+        data = res.data;
+      } else if (isPhone) {
+        const res = await supabase
+          .from("orders").select(selectCols).eq("customer_phone", q)
+          .order("created_at", { ascending: false }).limit(1);
+        if (res.error) throw res.error;
+        data = res.data;
+      } else {
+        // Try order_number (human-readable) — id is uuid, ILIKE not supported
+        const res = await supabase
+          .from("orders").select(selectCols).ilike("order_number", `${q}%`)
+          .order("created_at", { ascending: false }).limit(1);
+        if (res.error) throw res.error;
+        data = res.data;
       }
 
       if (!data?.length) {

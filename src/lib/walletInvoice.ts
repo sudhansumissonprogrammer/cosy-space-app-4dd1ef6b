@@ -44,7 +44,8 @@ export interface WalletInvoiceInput {
 }
 
 function inr(n: number) {
-  return `₹${n.toFixed(2)}`;
+  // jsPDF built-in Helvetica lacks ₹ glyph — use "Rs." in PDF text.
+  return `Rs. ${n.toFixed(2)}`;
 }
 
 function shortId(id: string) {

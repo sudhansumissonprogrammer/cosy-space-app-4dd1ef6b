@@ -349,11 +349,11 @@ Deno.serve(async (req) => {
     // price recomputation and UPDATE that same row. If it is already paid/COD
     // confirmed, return it unchanged. This prevents payment-plan toggles from
     // creating multiple pending orders for the same phone/session.
-    let reusableOrder: { id: string; order_number: number | null; status: string | null } | null = null;
+    let reusableOrder: { id: string; order_number: number | null; status: string | null; applied_coupon_id: string | null } | null = null;
     if (checkout_token) {
       const { data: existingOrder } = await supabase
         .from("orders")
-        .select("id, order_number, status")
+        .select("id, order_number, status, applied_coupon_id")
         .eq("store_id", store_id)
         .eq("checkout_token", checkout_token)
         .maybeSingle();
@@ -581,9 +581,12 @@ Deno.serve(async (req) => {
 
     // C5: Atomically claim the coupon BEFORE creating the order.
     // Prevents two concurrent checkouts from both consuming the last allowed
-    // use. For a reusable pending order, do not claim again on every payment
-    // mode toggle; that would inflate used_count for one shopper.
-    if (validCouponId && !reusableOrder) {
+    // use. For a reusable pending order, only claim when the coupon actually
+    // changes (e.g. first mint had no coupon, remint now applies auto-apply).
+    // Skipping the claim unconditionally on remint let auto-apply coupons
+    // silently exceed their max_uses cap.
+    const alreadyClaimedForThisOrder = reusableOrder?.applied_coupon_id === validCouponId;
+    if (validCouponId && !alreadyClaimedForThisOrder) {
       const { data: claimed, error: claimErr } = await supabase
         .rpc("claim_coupon", { _coupon_id: validCouponId, _store_id: store_id });
       if (claimErr || claimed !== true) {
