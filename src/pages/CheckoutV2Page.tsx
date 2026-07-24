@@ -1726,6 +1726,9 @@ export default function CheckoutV2Page() {
     if (creatingOrder || couponLoading || paymentAmountSyncing) {
       return;
     }
+    // PAYMENT-FIRST address gate — if no address, open the sheet and remember
+    // this tap so we auto-resume the UPI launch after the shopper saves.
+    if (!requireAddressOrPrompt(() => tapUpiApp(app))) return;
     const s = intents[app];
     if (s.status !== "ready" || !s.url) {
       return;
