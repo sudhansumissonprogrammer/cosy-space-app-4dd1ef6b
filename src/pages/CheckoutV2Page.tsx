@@ -1462,9 +1462,14 @@ export default function CheckoutV2Page() {
     try { localStorage.removeItem(WAIT_KEY); } catch { /* noop */ }
   };
 
-  const normalizeGatewayResult = (payload: any): "success" | "pending" => {
+  const normalizeGatewayResult = (payload: any): "success" | "failed" | "pending" => {
     const raw = String(payload?.status || payload?.payment_status || payload?.order_status || "").toLowerCase();
     if (payload?.success === true || ["paid", "success", "captured", "authorized"].includes(raw)) return "success";
+    // PayU/Cashfree/Razorpay status APIs return a definitive FAILED verdict when
+    // the shopper cancelled inside the UPI app or the gateway dropped the txn.
+    // Surface that immediately instead of polling for 90s — matches the old
+    // checkout's "instant cancel" UX.
+    if (["failed", "failure", "cancelled", "canceled", "usercancelled", "user_cancelled", "dropped", "bounced", "expired", "timeout"].includes(raw)) return "failed";
     return "pending";
   };
 
@@ -1588,7 +1593,15 @@ export default function CheckoutV2Page() {
       waitingCheckInFlightRef.current = true;
       try {
         const gatewayResult = await forceGatewayVerify();
-        if (normalizeGatewayResult(gatewayResult) === "success") { finishSuccess(); return true; }
+        const verdict = normalizeGatewayResult(gatewayResult);
+        if (verdict === "success") { finishSuccess(); return true; }
+        if (verdict === "failed") {
+          toast.error("Payment was cancelled — please try again");
+          clearWaiting(); setWaiting(false); setPendingOrder({ id: orderId!, number: orderNumber }); setPaymentFailed(true);
+          try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+          try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { order_id: orderId, gateway: gatewayRef.current?.pg } as any }); } catch { /* noop */ }
+          return true;
+        }
         const { data } = await supabase.functions.invoke("order-payment-status", {
           body: { store_id: store.id, order_id: orderId },
         });
@@ -1596,7 +1609,8 @@ export default function CheckoutV2Page() {
         if (status === "success") { finishSuccess(); return true; }
         if (status === "failed") {
           toast.error("Payment failed — please try again");
-          clearWaiting(); setWaiting(false); try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+          clearWaiting(); setWaiting(false); setPendingOrder({ id: orderId!, number: orderNumber }); setPaymentFailed(true);
+          try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
           try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { order_id: orderId } as any }); } catch { /* noop */ }
           return true;
         }
@@ -1644,13 +1658,20 @@ export default function CheckoutV2Page() {
     setManualChecking(true);
     try {
       const gatewayResult = await forceGatewayVerify();
-      if (normalizeGatewayResult(gatewayResult) === "success") { finishSuccess(); return; }
+      const verdict = normalizeGatewayResult(gatewayResult);
+      if (verdict === "success") { finishSuccess(); return; }
+      if (verdict === "failed") {
+        toast.error("Payment was cancelled — please try again");
+        clearWaiting(); setWaiting(false); setPendingOrder({ id: orderId!, number: orderNumber }); setPaymentFailed(true);
+        try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+        return;
+      }
       const { data } = await supabase.functions.invoke("order-payment-status", {
         body: { store_id: store.id, order_id: orderId },
       });
       const status = (data as any)?.payment_status;
       if (status === "success") { finishSuccess(); return; }
-      if (status === "failed") { toast.error("Payment failed — please try again"); clearWaiting(); setWaiting(false); try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ } return; }
+      if (status === "failed") { toast.error("Payment failed — please try again"); clearWaiting(); setWaiting(false); setPendingOrder({ id: orderId!, number: orderNumber }); setPaymentFailed(true); try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ } return; }
       toast("Not confirmed yet — please complete the payment in your UPI app");
     } finally { setManualChecking(false); }
   };
