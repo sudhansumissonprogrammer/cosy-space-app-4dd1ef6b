@@ -662,6 +662,10 @@ export default function CheckoutV2Page() {
   // address, we remember what they wanted so we can resume it the instant
   // they finish the address form.
   const pendingPayActionRef = useRef<null | (() => void)>(null);
+  // One-shot bypass consumed by requireAddressOrPrompt after the shopper
+  // saves the address sheet. Without this, the resumed tap handler still
+  // holds a stale `addressComplete=false` closure and re-opens the sheet.
+  const bypassAddressGateRef = useRef(false);
 
   /**
    * Address gate for every payment entry point (UPI intent tap, gateway
@@ -670,6 +674,10 @@ export default function CheckoutV2Page() {
    * auto-resume, and returns `false`.
    */
   const requireAddressOrPrompt = useCallback((resume?: () => void): boolean => {
+    if (bypassAddressGateRef.current) {
+      bypassAddressGateRef.current = false;
+      return true;
+    }
     if (addressComplete) return true;
     pendingPayActionRef.current = resume ?? null;
     setAddressSheetDismissed(false);
@@ -3498,7 +3506,12 @@ export default function CheckoutV2Page() {
                     // commits before the pay handler re-runs its gate.
                     const resume = pendingPayActionRef.current;
                     pendingPayActionRef.current = null;
-                    if (resume) window.setTimeout(resume, 50);
+                    if (resume) {
+                      // One-shot bypass so the resumed handler's stale
+                      // addressComplete closure doesn't re-open the sheet.
+                      bypassAddressGateRef.current = true;
+                      window.setTimeout(resume, 50);
+                    }
                   }}
                 >
                   Continue
