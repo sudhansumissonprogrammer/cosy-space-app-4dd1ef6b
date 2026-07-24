@@ -30,25 +30,70 @@
 //   order UUIDs never change destination.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { mintAutoLoginToken, canonicalPhone } from "../_shared/wa-autologin-token.ts";
+import { mintSessionForPhone, type MintedSession } from "../_shared/wa-mint-session.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 // Module-scope client → connection pool + TLS reuse across invocations.
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
 /**
- * Append an HMAC-signed `?al=<token>` to a redirect target so the storefront
- * lands the shopper already logged-in (consumed by wa-autologin).
- * Returns the URL unchanged when phone is missing/invalid.
+ * Kick off a pre-mint as early as possible (in parallel with the DB lookup)
+ * so the storefront lands with a full session already in-hand, skipping the
+ * wa-autologin round-trip entirely on the client. Falls back gracefully to
+ * the signed `?al=` token when mint fails or phone is missing.
  */
-async function withAutoLogin(url: string, rawPhone: string | null | undefined): Promise<string> {
+function startPreMint(rawPhone: string | null | undefined): Promise<MintedSession | null> {
+  const p = canonicalPhone(rawPhone || "");
+  if (!p) return Promise.resolve(null);
+  // Fire immediately — do NOT await here. Caller awaits at redirect-emit time.
+  return mintSessionForPhone(p, SUPABASE_URL, SERVICE_KEY, ANON_KEY);
+}
+
+/**
+ * Append a pre-minted session (fragment, no server leak) + fallback signed
+ * `?al=` token to the redirect target. Fragment format:
+ *   `#als=<access_token>|<refresh_token>|<phone10>`
+ * StorefrontAutoLogin consumes the fragment first and skips wa-autologin.
+ * Fragment is stripped by history.replaceState immediately after consumption.
+ */
+async function withAutoLogin(
+  url: string,
+  rawPhone: string | null | undefined,
+  mintPromise?: Promise<MintedSession | null>,
+): Promise<string> {
   const phone = canonicalPhone(rawPhone || "");
   if (!phone) return url;
-  const token = await mintAutoLoginToken(phone, SERVICE_KEY);
-  if (!token) return url;
-  const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}al=${encodeURIComponent(token)}`;
+
+  // Race pre-mint against a small budget so a slow auth API never blocks the
+  // redirect longer than ~800ms. If mint misses, we still ship the signed
+  // fallback token and the client will hit wa-autologin as before.
+  const budgeted = mintPromise
+    ? Promise.race([
+        mintPromise,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 800)),
+      ])
+    : Promise.resolve(null);
+
+  const [minted, token] = await Promise.all([
+    budgeted,
+    mintAutoLoginToken(phone, SERVICE_KEY),
+  ]);
+
+  let out = url;
+  if (token) {
+    const sep = out.includes("?") ? "&" : "?";
+    out = `${out}${sep}al=${encodeURIComponent(token)}`;
+  }
+  if (minted?.access_token && minted?.refresh_token) {
+    // Fragment placement — after any existing #hash the caller supplied
+    // (rare for our routes). Encode phone for good measure.
+    const frag = `als=${encodeURIComponent(minted.access_token)}|${encodeURIComponent(minted.refresh_token)}|${minted.phone}`;
+    out += (out.includes("#") ? "&" : "#") + frag;
+  }
+  return out;
 }
 
 function storeBase(s: any): string {
