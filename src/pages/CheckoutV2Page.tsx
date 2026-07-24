@@ -1593,7 +1593,15 @@ export default function CheckoutV2Page() {
       waitingCheckInFlightRef.current = true;
       try {
         const gatewayResult = await forceGatewayVerify();
-        if (normalizeGatewayResult(gatewayResult) === "success") { finishSuccess(); return true; }
+        const verdict = normalizeGatewayResult(gatewayResult);
+        if (verdict === "success") { finishSuccess(); return true; }
+        if (verdict === "failed") {
+          toast.error("Payment was cancelled — please try again");
+          clearWaiting(); setWaiting(false); setPendingOrder({ id: orderId!, number: orderNumber }); setPaymentFailed(true);
+          try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+          try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { order_id: orderId, gateway: gatewayRef.current?.pg } as any }); } catch { /* noop */ }
+          return true;
+        }
         const { data } = await supabase.functions.invoke("order-payment-status", {
           body: { store_id: store.id, order_id: orderId },
         });
@@ -1601,7 +1609,8 @@ export default function CheckoutV2Page() {
         if (status === "success") { finishSuccess(); return true; }
         if (status === "failed") {
           toast.error("Payment failed — please try again");
-          clearWaiting(); setWaiting(false); try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+          clearWaiting(); setWaiting(false); setPendingOrder({ id: orderId!, number: orderNumber }); setPaymentFailed(true);
+          try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
           try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { order_id: orderId } as any }); } catch { /* noop */ }
           return true;
         }
