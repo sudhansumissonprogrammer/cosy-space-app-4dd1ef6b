@@ -146,7 +146,7 @@ export default function CheckoutAwareLayout({
   const showVerifiedTick = showPremiumBadge && !store.logo_url;
 
   const LogoElement = (
-    <Link to={storefrontPath(store.slug)} className="flex items-center gap-1.5 flex-shrink-0 min-w-0" aria-label={`${store.name} home`}>
+    <Link to={storefrontPath(store.slug)} className="flex items-center gap-1 flex-shrink-0 min-w-0" aria-label={`${store.name} home`}>
       {store.logo_url ? (
         <img src={store.logo_url} alt={store.name} width={200} height={56} className="h-12 sm:h-14 w-auto max-w-[160px] sm:max-w-[200px] object-contain" loading="eager" decoding="sync" fetchPriority="high" />
       ) : (
