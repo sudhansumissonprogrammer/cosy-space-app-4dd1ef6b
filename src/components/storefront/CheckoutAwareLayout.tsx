@@ -141,12 +141,19 @@ export default function CheckoutAwareLayout({
   const isCentered = headerLogoAlignment === "center";
   const isWithSearch = headerLogoAlignment === "left-with-search";
 
+  // Verified tick only renders when the store has NO uploaded logo (text logo),
+  // and the merchant enabled the "Verified badge" toggle in Theme Settings.
+  const showVerifiedTick = showPremiumBadge && !store.logo_url;
+
   const LogoElement = (
-    <Link to={storefrontPath(store.slug)} className="flex-shrink-0 min-w-0" aria-label={`${store.name} home`}>
+    <Link to={storefrontPath(store.slug)} className="flex items-center gap-1.5 flex-shrink-0 min-w-0" aria-label={`${store.name} home`}>
       {store.logo_url ? (
         <img src={store.logo_url} alt={store.name} width={200} height={56} className="h-12 sm:h-14 w-auto max-w-[160px] sm:max-w-[200px] object-contain" loading="eager" decoding="sync" fetchPriority="high" />
       ) : (
-        <StoreTextLogo storeName={store.name} size="text-lg" />
+        <>
+          <StoreTextLogo storeName={store.name} size="text-lg" />
+          {showVerifiedTick && <PremiumHeaderBadge />}
+        </>
       )}
     </Link>
   );
@@ -158,7 +165,6 @@ export default function CheckoutAwareLayout({
 
   const ActionButtons = !isCheckout ? (
     <div className="flex items-center gap-1 sm:gap-2" style={{ minHeight: 40, contain: "layout", ...(iconStyle || {}) }}>
-      {showPremiumBadge && <PremiumHeaderBadge className="mr-0.5" />}
       {useSearchInHeader ? (
         <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-opacity hover:opacity-70" aria-label="Search products" style={iconStyle}>
           <SearchIcon className={iconSize} />
