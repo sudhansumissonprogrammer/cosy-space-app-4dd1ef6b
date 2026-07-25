@@ -48,6 +48,8 @@ interface CheckoutAwareLayoutProps {
   headerBgOverride?: string;
   /** Override header icon color (e.g. "#ffffff" for dark themes) */
   headerIconColor?: string;
+  /** Show the golden "Premium Product · Guaranteed" trust medallion in the mobile header */
+  showPremiumBadge?: boolean;
 }
 
 export default function CheckoutAwareLayout({
