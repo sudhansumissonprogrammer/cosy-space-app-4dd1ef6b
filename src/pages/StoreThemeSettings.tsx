@@ -521,6 +521,7 @@ interface ThemeConfig {
   header_style: string;
   bilingual_cta?: boolean;
   show_warranty_badge?: boolean;
+  show_premium_header_badge?: boolean;
   show_trust_badges?: boolean;
   trust_badges?: { emoji: string; label: string }[];
   nav_icons?: Record<string, string>;
@@ -728,6 +729,7 @@ export default function StoreThemeSettings() {
         header_style: themeConfig.header_style || "normal",
         bilingual_cta: (themeConfig as any).bilingual_cta ?? false,
         show_warranty_badge: (themeConfig as any).show_warranty_badge ?? false,
+        show_premium_header_badge: (themeConfig as any).show_premium_header_badge ?? false,
         show_trust_badges: (themeConfig as any).show_trust_badges ?? false,
         trust_badges: (themeConfig as any).trust_badges ?? [
           { emoji: "🌙", label: "Daily Wear" },
@@ -1854,6 +1856,28 @@ export default function StoreThemeSettings() {
                 <Switch
                   checked={!!config.show_warranty_badge}
                   onCheckedChange={(checked) => updateField("show_warranty_badge" as any, checked)}
+                />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {(
+          <AccordionItem value="premium-header-badge" className="rounded-xl border border-border bg-card px-4">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex flex-col items-start text-left">
+                <span className="text-sm font-semibold">Premium Trust Badge in Header</span>
+                <span className="text-xs text-muted-foreground font-normal">Golden "Premium Product · Guaranteed" medallion shown in the mobile header to build trust</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-1 pb-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  Adds a small crisp golden badge next to the header icons on mobile. Off by default.
+                </p>
+                <Switch
+                  checked={!!config.show_premium_header_badge}
+                  onCheckedChange={(checked) => updateField("show_premium_header_badge" as any, checked)}
                 />
               </div>
             </AccordionContent>
