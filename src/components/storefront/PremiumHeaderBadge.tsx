@@ -11,11 +11,11 @@ export default function PremiumHeaderBadge({ className = "" }: { className?: str
     <img
       src={badgeAsset.url}
       alt="Verified store"
-      width={22}
-      height={22}
+      width={28}
+      height={28}
       loading="eager"
       decoding="async"
-      className={`h-[18px] w-[18px] sm:h-5 sm:w-5 object-contain shrink-0 select-none pointer-events-none ${className}`}
+      className={`h-[26px] w-[26px] sm:h-[30px] sm:w-[30px] object-contain shrink-0 select-none pointer-events-none ${className}`}
       draggable={false}
       title="Verified store"
     />
