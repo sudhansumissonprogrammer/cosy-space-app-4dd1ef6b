@@ -11,6 +11,7 @@ import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
 import { WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
+import PremiumHeaderBadge from "@/components/storefront/PremiumHeaderBadge";
 import { useNavIcons } from "@/hooks/useNavIcons";
 
 import { useSmartHeader } from "@/hooks/useSmartHeader";
@@ -48,6 +49,8 @@ interface CheckoutAwareLayoutProps {
   headerBgOverride?: string;
   /** Override header icon color (e.g. "#ffffff" for dark themes) */
   headerIconColor?: string;
+  /** Show the golden "Premium Product · Guaranteed" trust medallion in the mobile header */
+  showPremiumBadge?: boolean;
 }
 
 export default function CheckoutAwareLayout({
@@ -62,6 +65,7 @@ export default function CheckoutAwareLayout({
   customCartIcon,
   headerBgOverride,
   headerIconColor,
+  showPremiumBadge = false,
 }: CheckoutAwareLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -154,6 +158,7 @@ export default function CheckoutAwareLayout({
 
   const ActionButtons = !isCheckout ? (
     <div className="flex items-center gap-1 sm:gap-2" style={{ minHeight: 40, contain: "layout", ...(iconStyle || {}) }}>
+      {showPremiumBadge && <PremiumHeaderBadge className="mr-0.5" />}
       {useSearchInHeader ? (
         <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-opacity hover:opacity-70" aria-label="Search products" style={iconStyle}>
           <SearchIcon className={iconSize} />
