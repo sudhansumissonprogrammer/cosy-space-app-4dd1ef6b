@@ -1,4 +1,4 @@
-import badgeAsset from "@/assets/verified-badge.avif.asset.json";
+import badgeAsset from "@/assets/verified-badge.png.asset.json";
 
 /**
  * PremiumHeaderBadge — Blue "Verified" tick shown beside the store name
