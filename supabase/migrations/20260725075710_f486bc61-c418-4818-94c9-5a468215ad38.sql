@@ -1,0 +1,1 @@
+ALTER TABLE public.store_theme_config ADD COLUMN IF NOT EXISTS show_premium_header_badge boolean NOT NULL DEFAULT false;
