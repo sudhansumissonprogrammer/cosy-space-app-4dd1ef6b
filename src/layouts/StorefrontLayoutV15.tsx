@@ -33,6 +33,7 @@ export default function StorefrontLayoutV15({ slugOverride }: { slugOverride?: s
                 </Suspense>
               ) : undefined
             }
+            showPremiumBadge={(themeConfig as any)?.show_premium_header_badge === true}
             headerStyle={themeConfig?.header_style && themeConfig.header_style !== "normal" ? themeConfig.header_style : "transparent"}
           />
         );

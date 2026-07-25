@@ -41,6 +41,7 @@ export default function StorefrontLayout({ slugOverride }: { slugOverride?: stri
                 </Suspense>
               ) : undefined
             }
+            showPremiumBadge={(themeConfig as any)?.show_premium_header_badge === true}
             headerStyle={themeConfig?.header_style || "normal"}
           />
         );
