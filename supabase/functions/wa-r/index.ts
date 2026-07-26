@@ -303,5 +303,10 @@ Deno.serve(async (req) => {
         preloadFetches: [pdpApi],
       });
     }
+  } catch {
+
+    /* fallthrough — never leave a WhatsApp click without a destination */
+  }
   return redirect("https://shopbanao.in");
 });
+
