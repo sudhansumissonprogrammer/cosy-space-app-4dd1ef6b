@@ -317,10 +317,10 @@ export default function CheckoutPhoneStep({
         <img
           src={trustedSellerBadge.url}
           alt="Trusted Seller"
-          width={415}
-          height={200}
+          width={622}
+          height={300}
           decoding="async"
-          className="h-[26px] w-auto shrink-0 object-contain"
+          className="h-[39px] w-auto shrink-0 object-contain"
         />
         <img
           src={secureBadge.url}
