@@ -86,51 +86,26 @@ export default function OrderTrackingPage() {
     setSearched(true);
 
     try {
-      const q = raw;
-      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      const PHONE_RE = /^\+?\d{7,15}$/;
-      const isUuid = UUID_RE.test(q);
-      const isPhone = PHONE_RE.test(q);
+      // Shoppers arriving from a WhatsApp "View Order" link are usually NOT
+      // signed in, and RLS (correctly) hides `orders` from anon — the old
+      // direct table reads always came back empty, so this page showed
+      // "No order found" for everyone. `get_order_tracking` is a
+      // security-definer lookup that resolves an order by its private UUID,
+      // by phone, or by order number (which returns status only, no PII).
+      const { data: res, error: rpcErr } = await supabase.rpc("get_order_tracking", {
+        _query: raw,
+      });
+      if (rpcErr) throw rpcErr;
 
-      const selectCols = "id, order_number, status, total, currency, customer_name, customer_phone, created_at, updated_at, tracking_number, tracking_url, street_address, city, state, pincode, payment_method";
-
-      let data: any[] | null = null;
-
-      if (isUuid) {
-        const res = await supabase
-          .from("orders").select(selectCols).eq("id", q)
-          .order("created_at", { ascending: false }).limit(1);
-        if (res.error) throw res.error;
-        data = res.data;
-      } else if (isPhone) {
-        const res = await supabase
-          .from("orders").select(selectCols).eq("customer_phone", q)
-          .order("created_at", { ascending: false }).limit(1);
-        if (res.error) throw res.error;
-        data = res.data;
-      } else {
-        // Try order_number (human-readable) — id is uuid, ILIKE not supported
-        const res = await supabase
-          .from("orders").select(selectCols).ilike("order_number", `${q}%`)
-          .order("created_at", { ascending: false }).limit(1);
-        if (res.error) throw res.error;
-        data = res.data;
-      }
-
-      if (!data?.length) {
+      const payload = res as any;
+      if (!payload?.found || !payload?.order) {
         setError("No order found. Check your order ID or phone number.");
         return;
       }
 
-      setOrder(data[0]);
+      setOrder(payload.order);
+      setOrderItems(Array.isArray(payload.items) ? payload.items : []);
 
-      // Fetch items
-      const { data: items } = await supabase
-        .from("order_items")
-        .select("product_name, quantity, unit_price, total")
-        .eq("order_id", data[0].id);
-
-      setOrderItems(items || []);
     } catch (e: any) {
       setError(e.message || "Something went wrong");
     } finally {
