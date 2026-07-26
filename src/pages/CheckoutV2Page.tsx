@@ -136,6 +136,29 @@ function genericUpiUrl(url: string): string | null {
   return query ? `upi://pay?${query}` : null;
 }
 
+/**
+ * Launch a UPI/intent URL. Some Android Chrome + OEM WebView builds refuse
+ * `location.assign()` for non-http schemes but honour a real anchor
+ * activation, so click a synthetic <a> first and only fall back to
+ * location.assign if that throws.
+ */
+function launchUpiUrl(url: string): void {
+  try {
+    const a = document.createElement("a");
+    a.href = url;
+    a.rel = "noopener";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    window.setTimeout(() => { try { a.remove(); } catch { /* noop */ } }, 0);
+    return;
+  } catch { /* fall through */ }
+  try { window.location.assign(url); } catch {
+    try { window.location.href = url; } catch { /* noop */ }
+  }
+}
+
+
 /** Rewrite `upi://pay?...` to the safest app launch URL for the shopper's device. */
 function schemeFor(app: UpiApp, url: string): string {
   if (!url) return url;
