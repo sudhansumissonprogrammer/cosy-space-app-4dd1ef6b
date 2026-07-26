@@ -38,6 +38,7 @@ import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { loadCashfree } from "@/lib/loadCashfree";
 import { getOrCreateCheckoutToken, writeCheckoutTokenCookie, clearCheckoutTokenCookie, mintCheckoutToken } from "@/lib/checkoutTokenStore";
+import { purchaseEventIdFor, firePixelPurchase, stagePendingPurchase, clearPendingPurchase } from "@/lib/pixelOutbox";
 import { loadPayuBolt } from "@/lib/loadPayuBolt";
 import { createPortal } from "react-dom";
 
