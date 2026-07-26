@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import secureBadge from "@/assets/trust/secure-payment-badge.webp.asset.json";
 import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote, Tag, X, Plus, Minus, Check, CreditCard, ShoppingCart, ChevronDown, Trash2, Info, Camera, Package, Truck, Wallet, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { StoreData } from "@/layouts/StorefrontLayout";
@@ -3023,9 +3024,15 @@ export default function CheckoutV2Page() {
         ) : (
           <div className="text-sm font-bold truncate min-w-0 flex-1">{store?.name || "Store"}</div>
         )}
-        <div className="text-[11.5px] text-muted-foreground flex items-center gap-1 whitespace-nowrap shrink-0">
-          100% Secured Payment <Lock className="h-3 w-3" />
-        </div>
+        <div className="flex-1 min-w-0" />
+        <img
+          src={secureBadge.url}
+          alt="100% Secure Payment"
+          width={110}
+          height={50}
+          decoding="async"
+          className="h-[30px] w-auto shrink-0 object-contain"
+        />
       </div>
 
       {/* Announcement marquee — same component + dashboard-controlled text/gradient as storefront */}
