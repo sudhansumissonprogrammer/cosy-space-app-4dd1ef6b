@@ -38,10 +38,11 @@ Deno.serve(async (req) => {
     // Load order — server is the source of truth for amount.
     const { data: dbOrder, error: orderErr } = await supabase
       .from("orders")
-      .select("id, store_id, total, status, payment_type, advance_paid, order_number")
+      .select("id, store_id, total, status, payment_type, advance_paid, order_number, payu_txnids")
       .eq("id", order_id)
       .maybeSingle();
     if (orderErr || !dbOrder) return jsonRes({ error: "Order not found" }, 404);
+
     if (dbOrder.store_id !== store_id) return jsonRes({ error: "Order/store mismatch" }, 403);
     if (
       dbOrder.status === "confirmed" ||
