@@ -794,11 +794,23 @@ export default function StoreThemeSettings() {
     } catch {}
   }, [config, sendToIframe, store?.slug]);
 
-  const updateField = (key: keyof ThemeConfig, value: string | boolean | Record<string, string>) => {
+  const updateField = (key: keyof ThemeConfig, value: string | boolean | string[] | Record<string, string>) => {
     const newConfig = { ...config, [key]: value };
     setConfig(newConfig);
     setDirty(true);
     sendToIframe(newConfig);
+  };
+
+  // PDP trust seals — which guarantee seals the storefront product page shows.
+  const selectedSealKeys: string[] = Array.isArray((config as any).pdp_trust_seals)
+    ? ((config as any).pdp_trust_seals as string[])
+    : DEFAULT_TRUST_SEAL_KEYS;
+
+  const toggleSeal = (key: string) => {
+    const next = selectedSealKeys.includes(key)
+      ? selectedSealKeys.filter((k) => k !== key)
+      : [...selectedSealKeys, key];
+    updateField("pdp_trust_seals" as any, next);
   };
 
   const [iframeKey, setIframeKey] = useState(0);
