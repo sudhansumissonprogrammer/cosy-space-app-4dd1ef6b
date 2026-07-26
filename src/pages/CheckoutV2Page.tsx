@@ -1643,6 +1643,19 @@ export default function CheckoutV2Page() {
             ...pixelPayloadFromItems(checkoutItems),
             content_name: checkoutItems.map((i) => i.name).join(", "),
           },
+          // Match keys snapshot so a replayed Purchase (tab died during the
+          // UPI hand-off) still carries phone/name/city/state/pincode.
+          user: Object.fromEntries(
+            Object.entries({
+              email: email.trim(),
+              phone: toCanonicalIndianPhone(phone) || normalizePhone(phone),
+              firstName: (fullName || "").trim().split(/\s+/)[0] || "",
+              lastName: (fullName || "").trim().split(/\s+/).slice(1).join(" "),
+              city: city.trim(),
+              state: state.trim(),
+              zipCode: pincode.trim(),
+            }).filter(([, v]) => !!v),
+          ) as Record<string, string>,
           at: Date.now(),
         });
       } catch { /* noop */ }

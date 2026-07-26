@@ -262,6 +262,7 @@ export async function flushPendingPurchases(storeId: string): Promise<void> {
         value: Number.isFinite(serverTotal) && serverTotal > 0 ? serverTotal : row.value,
         currency: res?.order?.currency || row.currency,
         payload: row.payload,
+        user: row.user,
       });
     } catch {
       keep.push(row);
