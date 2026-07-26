@@ -3968,10 +3968,11 @@ export default function CheckoutV2Page() {
                 const anyS = intents.any;
                 const staleAny = typeof anyS.amount === "number" && Math.round(anyS.amount * 100) !== Math.round(chargeAmount * 100);
                 const addressReady = addressComplete;
-                const anyDisabled = addressReady && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
+                const anyRetryable = anyS.status === "failed";
+                const anyDisabled = addressReady && !anyRetryable && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
                 return (
                   <a
-                    href={anyDisabled || !addressReady ? undefined : anyS.url}
+                    href={anyDisabled || anyRetryable || !addressReady ? undefined : anyS.url}
                     onClick={(e) => tapUpiApp("any", e)}
                     aria-disabled={anyDisabled}
                     className={`mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] ${anyDisabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
