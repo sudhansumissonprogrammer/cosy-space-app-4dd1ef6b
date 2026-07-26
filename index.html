@@ -392,11 +392,24 @@
               var pvid=(Date.now().toString(36))+'-'+Math.random().toString(36).slice(2,10);
               w.__SF_PV_EVENT_ID__=pvid;
               w.fbq('track','PageView',{},{eventID:pvid});
+              /* PERF: fbevents.js is ~110KB of parse+execute. Loading it at
+                 plain idle landed it at ~1.9s on throttled mobile — right in
+                 the middle of the render-critical chunk waterfall, delaying
+                 FCP. The fbq() queue buffers PageView until the SDK arrives,
+                 so waiting for first content costs no tracking accuracy.
+                 Hard 4s timeout guarantees it always loads. */
               var wrap=function(){loadSdk();};
-              if('requestIdleCallback' in w){w.requestIdleCallback(wrap,{timeout:4000});}else{setTimeout(wrap,2000);}
+              var armed=false;
+              var arm=function(){
+                if(armed)return;armed=true;
+                if('requestIdleCallback' in w){w.requestIdleCallback(wrap,{timeout:2500});}else{setTimeout(wrap,600);}
+              };
+              w.addEventListener('storefront:content-ready',arm,{once:true});
+              setTimeout(arm,4000);
               ['pointerdown','touchstart','keydown'].forEach(function(ev){
                 w.addEventListener(ev,wrap,{once:true,passive:true,capture:true});
               });
+
               return;
             }
             if(++tries<80)setTimeout(tryInit,100);
