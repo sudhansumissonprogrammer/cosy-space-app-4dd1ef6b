@@ -1,33 +1,30 @@
 /**
  * PdpTrustSeals — golden guarantee seals shown on the product page.
  *
- * Replaces the old 3-card (Free Shipping / 7 Days Return / Help Desk) grid.
- * Mobile: horizontal snap carousel with exactly 4 seals visible per screen,
- * the remaining 3 slide in. Desktop: all 7 in a single row.
+ * Which seals appear is controlled per-store by the merchant from
+ * Dashboard → Theme Settings → "Trust Seals on Product Page"
+ * (`store_theme_config.pdp_trust_seals`, a jsonb array of seal keys).
+ * When unset, a sensible default set is shown.
+ *
+ * Mobile: horizontal snap carousel with 4 seals visible per screen, the rest
+ * slide in. Desktop: single row. Images are lazy + async decoded, so extra
+ * seals never block PDP paint.
  */
 import { useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
-import premium from "@/assets/trust/premium-quality.webp.asset.json";
-import money from "@/assets/trust/money-back-guarantee.webp.asset.json";
-import shipping from "@/assets/trust/fast-free-shipping.webp.asset.json";
-import secure from "@/assets/trust/secure-payments.webp.asset.json";
-import support from "@/assets/trust/support-247.webp.asset.json";
-import satisfaction from "@/assets/trust/satisfaction-guarantee.webp.asset.json";
-import exchange from "@/assets/trust/easy-return-exchange.webp.asset.json";
+import { resolveTrustSeals } from "./trustSealCatalog";
 
-const SEALS = [
-  { src: exchange.url, alt: "Easy Return & Exchange" },
-  { src: premium.url, alt: "100% Premium Quality" },
-  { src: money.url, alt: "Money Back Guarantee" },
-  { src: shipping.url, alt: "Fast & Free Shipping" },
-  { src: secure.url, alt: "100% Secure Payments" },
-  { src: support.url, alt: "24/7 Customer Support" },
-  { src: satisfaction.url, alt: "100% Satisfaction Guarantee" },
-];
+interface Props {
+  /** Raw value of theme_config.pdp_trust_seals (array of keys, or undefined). */
+  seals?: unknown;
+}
 
-export default function PdpTrustSeals() {
+export default function PdpTrustSeals({ seals }: Props) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [showHint, setShowHint] = useState(true);
+
+  const items = resolveTrustSeals(seals);
+  if (!items.length) return null;
 
   return (
     <section className="mt-6 w-full max-w-full min-w-0 relative" aria-label="Store guarantees">
@@ -39,10 +36,10 @@ export default function PdpTrustSeals() {
         className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-1 md:overflow-visible md:justify-between md:gap-2 pdp-seals"
         style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
       >
-        {SEALS.map((s) => (
+        {items.map((s) => (
           <img
-            key={s.alt}
-            src={s.src}
+            key={s.key}
+            src={s.url}
             alt={s.alt}
             title={s.alt}
             width={160}
@@ -55,7 +52,7 @@ export default function PdpTrustSeals() {
         <style>{`.pdp-seals::-webkit-scrollbar{display:none}@keyframes pdpNudge{0%,100%{transform:translate(0,-50%)}50%{transform:translate(4px,-50%)}}`}</style>
       </div>
 
-      {showHint && (
+      {showHint && items.length > 4 && (
         <button
           type="button"
           aria-label="Scroll to see more guarantees"
