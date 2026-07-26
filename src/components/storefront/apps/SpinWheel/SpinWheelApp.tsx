@@ -178,8 +178,8 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
 
   useEffect(() => {
     if (!storeId || segments.length < 2) return;
-    const p = typeof window !== "undefined" ? window.location.pathname : "";
-    if (!previewMode && isBlockedPath(p)) return;
+    if (routeBlocked) return;
+    const p = routePath;
 
     const leadKey = `sf_spin_lead_${storeId}`;
     const timerKey = `sf_spin_shown_${storeId}`;
@@ -270,6 +270,8 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
     cfg.exit_intent_scope,
     segments.length,
     previewMode,
+    routeBlocked,
+    routePath,
   ]);
 
   const prefersReduced = useMemo(
