@@ -3076,6 +3076,7 @@ export type Database = {
           mobile_nav_enabled: boolean
           mobile_nav_style: string
           nav_icons: Json
+          pdp_trust_seals: Json | null
           primary_color: string
           product_card_style: string
           show_premium_header_badge: boolean
@@ -3105,6 +3106,7 @@ export type Database = {
           mobile_nav_enabled?: boolean
           mobile_nav_style?: string
           nav_icons?: Json
+          pdp_trust_seals?: Json | null
           primary_color?: string
           product_card_style?: string
           show_premium_header_badge?: boolean
@@ -3134,6 +3136,7 @@ export type Database = {
           mobile_nav_enabled?: boolean
           mobile_nav_style?: string
           nav_icons?: Json
+          pdp_trust_seals?: Json | null
           primary_color?: string
           product_card_style?: string
           show_premium_header_badge?: boolean

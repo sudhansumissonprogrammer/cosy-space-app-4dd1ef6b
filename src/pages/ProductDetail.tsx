@@ -1019,7 +1019,7 @@ export default function ProductDetail() {
 
 
           {/* Trust seals — hidden in V18 */}
-          {!isV18 && <PdpTrustSeals />}
+          {!isV18 && <PdpTrustSeals seals={(mainThemeConfig as any)?.pdp_trust_seals} />}
 
           {/* Upsell / Cross-sell — PDP placement */}
           <PdpUpsellSection

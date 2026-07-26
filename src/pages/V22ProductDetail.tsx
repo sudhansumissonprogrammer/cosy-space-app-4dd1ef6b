@@ -943,7 +943,7 @@ export default function V22ProductDetail() {
 
 
           {/* Trust seals — hidden in V18 */}
-          {!isV18 && <PdpTrustSeals />}
+          {!isV18 && <PdpTrustSeals seals={(mainThemeConfig as any)?.pdp_trust_seals} />}
 
           {/* Frequently Bought Together — removed per user request */}
 

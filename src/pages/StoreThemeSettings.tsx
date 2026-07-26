@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { TRUST_SEALS, DEFAULT_TRUST_SEAL_KEYS } from "@/components/storefront/trustSealCatalog";
 import { Check, Palette, Lock, ShoppingCart, Heart, User, Star, Tag, Monitor, Smartphone, Home, LayoutGrid, Layers, Type, LayoutList, MoreHorizontal, Store, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import ThemeSectionNav, { ThemeSectionId, ThemeSectionMeta } from "@/components/dashboard/theme/ThemeSectionNav";
@@ -525,6 +526,7 @@ interface ThemeConfig {
   show_trust_badges?: boolean;
   trust_badges?: { emoji: string; label: string }[];
   nav_icons?: Record<string, string>;
+  pdp_trust_seals?: string[];
 }
 
 const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
@@ -740,6 +742,9 @@ export default function StoreThemeSettings() {
           { emoji: "👰", label: "Wedding" },
         ],
         nav_icons: (themeConfig as any).nav_icons || {},
+        pdp_trust_seals: Array.isArray((themeConfig as any).pdp_trust_seals)
+          ? (themeConfig as any).pdp_trust_seals
+          : DEFAULT_TRUST_SEAL_KEYS,
       });
     } else {
       setConfig(defaults);
@@ -793,11 +798,23 @@ export default function StoreThemeSettings() {
     } catch {}
   }, [config, sendToIframe, store?.slug]);
 
-  const updateField = (key: keyof ThemeConfig, value: string | boolean | Record<string, string>) => {
+  const updateField = (key: keyof ThemeConfig, value: string | boolean | string[] | Record<string, string>) => {
     const newConfig = { ...config, [key]: value };
     setConfig(newConfig);
     setDirty(true);
     sendToIframe(newConfig);
+  };
+
+  // PDP trust seals — which guarantee seals the storefront product page shows.
+  const selectedSealKeys: string[] = Array.isArray((config as any).pdp_trust_seals)
+    ? ((config as any).pdp_trust_seals as string[])
+    : DEFAULT_TRUST_SEAL_KEYS;
+
+  const toggleSeal = (key: string) => {
+    const next = selectedSealKeys.includes(key)
+      ? selectedSealKeys.filter((k) => k !== key)
+      : [...selectedSealKeys, key];
+    updateField("pdp_trust_seals" as any, next);
   };
 
   const [iframeKey, setIframeKey] = useState(0);
@@ -1879,6 +1896,52 @@ export default function StoreThemeSettings() {
                   checked={!!config.show_premium_header_badge}
                   onCheckedChange={(checked) => updateField("show_premium_header_badge" as any, checked)}
                 />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {(
+          <AccordionItem value="pdp-trust-seals" className="rounded-xl border border-border bg-card px-4">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex flex-col items-start text-left">
+                <span className="text-sm font-semibold">Trust Seals on Product Page</span>
+                <span className="text-xs text-muted-foreground font-normal">
+                  Pick which guarantee seals appear under the product details
+                </span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-1 pb-4 space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Tap a seal to turn it on or off. Only selected seals are downloaded on the product page,
+                so fewer seals = faster page.
+              </p>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {TRUST_SEALS.map((s) => {
+                  const selected = selectedSealKeys.includes(s.key);
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => toggleSeal(s.key)}
+                      aria-pressed={selected}
+                      className={`relative flex flex-col items-center gap-1 rounded-xl border p-2 transition ${
+                        selected ? "border-primary bg-primary/5" : "border-border bg-muted/30 opacity-60"
+                      }`}
+                    >
+                      <img src={s.url} alt={s.alt} loading="lazy" decoding="async" className="h-12 w-auto object-contain" />
+                      <span className="text-[10px] leading-tight text-center text-muted-foreground line-clamp-2">{s.alt}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => updateField("pdp_trust_seals" as any, DEFAULT_TRUST_SEAL_KEYS as any)}>
+                  Reset to default
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => updateField("pdp_trust_seals" as any, [] as any)}>
+                  Turn all off
+                </Button>
               </div>
             </AccordionContent>
           </AccordionItem>
