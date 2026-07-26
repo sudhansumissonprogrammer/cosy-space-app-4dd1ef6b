@@ -303,9 +303,9 @@ export default function CheckoutPhoneStep({
   }, []);
 
   return (
-    <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-[220px]">
+    <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-10">
       {/* Sticky header */}
-      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-3 flex items-center gap-2">
+      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-3 flex items-center gap-1.5">
         <button
           onClick={() => {
             try {
@@ -322,24 +322,34 @@ export default function CheckoutPhoneStep({
           <ArrowLeft className="h-5 w-5" />
         </button>
         {storeLogo ? (
-          <img
-            src={storeLogo}
-            alt={storeName || "Store"}
-            className="h-8 w-auto max-w-[110px] object-contain shrink-0"
-          />
+          <>
+            <img
+              src={storeLogo}
+              alt={storeName || "Store"}
+              className="h-8 w-auto max-w-[100px] object-contain shrink-0"
+            />
+            <div className="flex-1 min-w-0" />
+          </>
         ) : (
-          <div className="text-sm font-bold truncate min-w-0 flex-1">
+          <div className="text-[13px] font-bold truncate min-w-0 flex-1 leading-tight">
             {storeName || "Store"}
           </div>
         )}
-        <div className="flex-1 min-w-0" />
+        <img
+          src={trustedSellerBadge.url}
+          alt="Trusted Seller"
+          width={251}
+          height={140}
+          decoding="async"
+          className="h-[26px] w-auto shrink-0 object-contain"
+        />
         <img
           src={secureBadge.url}
           alt="100% Secure Payment"
           width={110}
           height={50}
           decoding="async"
-          className="h-[30px] w-auto shrink-0 object-contain"
+          className="h-[28px] w-auto shrink-0 object-contain"
         />
       </div>
 
