@@ -284,7 +284,7 @@ export default function CheckoutPhoneStep({
   return (
     <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-10">
       {/* Sticky header */}
-      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-3 flex items-center gap-1.5">
+      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-1.5 flex items-center gap-1.5">
         <button
           onClick={() => {
             try {
@@ -314,22 +314,24 @@ export default function CheckoutPhoneStep({
             {storeName || "Store"}
           </div>
         )}
-        <img
-          src={trustedSellerBadge.url}
-          alt="Trusted Seller"
-          width={622}
-          height={300}
-          decoding="async"
-          className="h-[58px] w-auto shrink-0 object-contain"
-        />
-        <img
-          src={secureBadge.url}
-          alt="100% Secure Payment"
-          width={110}
-          height={50}
-          decoding="async"
-          className="h-[28px] w-auto shrink-0 object-contain"
-        />
+        <div className="flex items-center gap-0.5">
+          <img
+            src={trustedSellerBadge.url}
+            alt="Trusted Seller"
+            width={622}
+            height={300}
+            decoding="async"
+            className="h-[52px] w-auto shrink-0 object-contain"
+          />
+          <img
+            src={secureBadge.url}
+            alt="100% Secure Payment"
+            width={110}
+            height={50}
+            decoding="async"
+            className="h-[26px] w-auto shrink-0 object-contain"
+          />
+        </div>
       </div>
 
 
