@@ -13,7 +13,7 @@ export default function BestSellerBadge({ className = "" }: { className?: string
       height={271}
       loading="lazy"
       decoding="async"
-      className={`inline-block h-7 sm:h-8 lg:h-9 w-auto align-middle shrink-0 ${className}`}
+      className={`inline-block h-12 sm:h-14 lg:h-16 w-auto align-middle shrink-0 ${className}`}
     />
   );
 }
