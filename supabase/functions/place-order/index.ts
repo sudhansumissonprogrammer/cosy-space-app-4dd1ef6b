@@ -315,35 +315,6 @@ Deno.serve(async (req) => {
     // behind one NAT IP; IP-only limits caused unrelated shoppers to get 429s.
     // Still blocks checkout loops because the same browser posts the same phone
     // (or, before phone is present, the same checkout_token/session) repeatedly.
-    try {
-      const phoneDigits = String(order?.customer_phone || "").replace(/\D/g, "").slice(-10);
-      const identity = phoneDigits || checkout_token || session_id || visitor_id || clientIp;
-      const { data: limited } = await supabase.rpc("hit_rate_limit", {
-        _key: `order_rl:${store_id}:${identity}`,
-        _max: 8,
-        _window_seconds: 600,
-      });
-      if (limited === true) {
-        return new Response(JSON.stringify({ error: "Too many attempts. Please wait a moment and try again." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    } catch { /* fail-open */ }
-
-    const { data: store, error: storeErr } = await supabase
-      .from("stores")
-      .select("id, is_suspended, default_profit_margin, slug, custom_domain")
-      .eq("id", store_id)
-      .single();
-
-    if (storeErr || !store || store.is_suspended) {
-      return new Response(JSON.stringify({ error: "Store is not accepting orders" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     // Idempotency: checkout_token represents ONE shopper checkout attempt.
     // If the row is still mutable (pending/cancelled/failed), continue through
     // price recomputation and UPDATE that same row. If it is already paid/COD
@@ -371,6 +342,42 @@ Deno.serve(async (req) => {
         });
         }
       }
+    }
+
+    try {
+      const phoneDigits = String(order?.customer_phone || "").replace(/\D/g, "").slice(-10);
+      const identity = phoneDigits || checkout_token || session_id || visitor_id || clientIp;
+      // Updates to an order the shopper is ALREADY on are not abuse: reloading
+      // the checkout page, toggling Partial<->Full, editing the address or
+      // changing quantity all re-post here against the same checkout_token.
+      // Capping those at 8/10min dead-ended real buyers with "UPI apps
+      // unavailable" and no way to pay. Only brand-new order creation keeps
+      // the tight cap.
+      const isUpdate = !!reusableOrder;
+      const { data: limited } = await supabase.rpc("hit_rate_limit", {
+        _key: `order_rl:${store_id}:${identity}${isUpdate ? ":upd" : ""}`,
+        _max: isUpdate ? 60 : 8,
+        _window_seconds: 600,
+      });
+      if (limited === true) {
+        return new Response(JSON.stringify({ error: "Too many attempts. Please wait a moment and try again." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } catch { /* fail-open */ }
+
+    const { data: store, error: storeErr } = await supabase
+      .from("stores")
+      .select("id, is_suspended, default_profit_margin, slug, custom_domain")
+      .eq("id", store_id)
+      .single();
+
+    if (storeErr || !store || store.is_suspended) {
+      return new Response(JSON.stringify({ error: "Store is not accepting orders" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Resolve storefront_customer_id from the *entered phone*, not from a
