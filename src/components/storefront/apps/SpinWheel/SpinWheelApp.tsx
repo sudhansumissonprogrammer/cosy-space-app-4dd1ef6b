@@ -106,6 +106,17 @@ function confettiPaletteFor(style: WheelStyle, primary: string, accent: string):
   }
 }
 
+
+// Never interrupt a shopper who is paying. The old check only matched paths
+// that START with /checkout, so `/store/<slug>/checkout` (preview + path-based
+// storefronts) slipped through, and because the effect never re-ran on
+// client-side navigation the timer that started on the product page fired the
+// wheel *on top of* the payment screen — a full-screen overlay blocking UPI.
+const BLOCKED_SEGMENT_RX = /(^|\/)(checkout|order|order-success|orders|admin|dashboard|auth|login|signup|account)(\/|$)/i;
+export function isBlockedPath(pathname: string): boolean {
+  return BLOCKED_SEGMENT_RX.test(pathname || "");
+}
+
 export default function SpinWheelApp({ storeId, storeName, primaryColor, accentColor, config, previewMode = false }: Props) {
   const cfg: SpinWheelConfig = {
     trigger_delay_ms: 11000,
@@ -140,13 +151,35 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
   const lastVisibleAtRef = useRef<number | null>(null);
   const audio = useWheelAudio(cfg.sound_enabled !== false);
 
+  // Track the live route. The storefront is an SPA, so a shopper can move from
+  // a product page onto /checkout while the wheel timer is still counting.
+  // Keeping this in state lets us both cancel the pending trigger and unmount
+  // an already-open wheel the moment they reach a payment screen.
+  const [routePath, setRoutePath] = useState(
+    () => (typeof window !== "undefined" ? window.location.pathname : ""),
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sync = () => setRoutePath(window.location.pathname);
+    window.addEventListener("popstate", sync);
+    // pushState/replaceState don't emit events; a light poll is the only
+    // router-agnostic way to notice client-side navigation here.
+    const id = window.setInterval(sync, 700);
+    return () => {
+      window.removeEventListener("popstate", sync);
+      window.clearInterval(id);
+    };
+  }, []);
+  const routeBlocked = !previewMode && isBlockedPath(routePath);
+  useEffect(() => {
+    if (routeBlocked) setPhase("hidden");
+  }, [routeBlocked]);
+
+
   useEffect(() => {
     if (!storeId || segments.length < 2) return;
-    const p = typeof window !== "undefined" ? window.location.pathname : "";
-    if (!previewMode) {
-      const blocked = /^\/(checkout|order|admin|dashboard|auth|login|signup|account)(\/|$)/i.test(p);
-      if (blocked) return;
-    }
+    if (routeBlocked) return;
+    const p = routePath;
 
     const leadKey = `sf_spin_lead_${storeId}`;
     const timerKey = `sf_spin_shown_${storeId}`;
@@ -237,6 +270,8 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
     cfg.exit_intent_scope,
     segments.length,
     previewMode,
+    routeBlocked,
+    routePath,
   ]);
 
   const prefersReduced = useMemo(
