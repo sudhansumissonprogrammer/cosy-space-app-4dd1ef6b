@@ -1026,38 +1026,8 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Checkout Trust Block — hidden in V18 */}
-          {!isV18 && !isOutOfStock && (
-            <div className="mt-5 rounded-2xl border border-border overflow-hidden">
-              <div className="flex items-center justify-center gap-2 py-2.5 border-b border-border bg-muted/30">
-                <ShieldCheck className="h-4 w-4 text-foreground" />
-                <span className="text-[11px] font-bold text-foreground uppercase tracking-widest">Guaranteed Safe Checkout</span>
-              </div>
-              <div className="px-4 py-3"><RealPaymentLogos /></div>
-              <div className="border-t border-border px-4 py-3 space-y-2.5">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0"><Truck className="h-4 w-4 text-primary" /></div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-foreground">Estimated Delivery by {deliveryDate}</span>
-                    <span className="text-[10px] text-muted-foreground">Order within 2 hours for fastest delivery</span>
-                  </div>
-                </div>
-                {hasDiscount && (
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 shrink-0"><Timer className="h-4 w-4 text-amber-600" /></div>
-                    <div className="flex flex-col">
-                      <CountdownTimerInline productId={product.id} />
-                      <span className="text-[10px] text-muted-foreground">Limited time offer — don't miss out</span>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0"><CreditCard className="h-4 w-4 text-muted-foreground" /></div>
-                  <span className="text-xs text-muted-foreground">Inclusive of all taxes</span>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Checkout Trust Block — removed per user request */}
+
 
           {/* Wishlist — hidden in V18 */}
           {!isV18 && (
