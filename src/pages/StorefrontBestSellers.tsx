@@ -123,9 +123,11 @@ export default function StorefrontBestSellers() {
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <h1 className="text-xl font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+        <h1 className="text-xl font-bold inline-flex items-center gap-2" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+          {!showAll && <BestSellerBadge />}
           {pageTitle}
         </h1>
+
         {!isLoading && (
           <span className="text-sm" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>
             ({totalEstimate} products)
