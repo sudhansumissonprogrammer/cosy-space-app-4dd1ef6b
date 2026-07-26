@@ -1173,6 +1173,7 @@ export default function CheckoutV2Page() {
   const checkoutTokenRef = useRef(checkoutToken);
   useEffect(() => {
     checkoutTokenRef.current = checkoutToken;
+    purchaseEventIdRef.current = purchaseEventIdFor(checkoutToken);
     writeCheckoutTokenCookie(checkoutToken);
   }, [checkoutToken]);
 
