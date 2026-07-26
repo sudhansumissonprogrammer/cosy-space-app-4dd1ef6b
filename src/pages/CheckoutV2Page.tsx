@@ -121,15 +121,6 @@ function extractUpiQuery(url: string): string | null {
   return native?.[1] || null;
 }
 
-function nativeSchemeForUpiApp(app: UpiApp, url: string): string | null {
-  const query = extractUpiQuery(url);
-  if (!query) return null;
-  if (app === "gpay") return `tez://upi/pay?${query}`;
-  if (app === "phonepe") return `phonepe://pay?${query}`;
-  if (app === "paytm") return `paytmmp://pay?${query}`;
-  if (app === "bhim") return `upi://pay?${query}`;
-  return `upi://pay?${query}`;
-}
 
 function genericUpiUrl(url: string): string | null {
   const query = extractUpiQuery(url);
