@@ -28,6 +28,7 @@
  *    force-loads `fbevents.js` immediately instead of waiting for idle.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { setCapiUser } from "@/lib/metaEnrichment";
 
 export interface PendingPurchase {
   storeId: string;
@@ -36,6 +37,13 @@ export interface PendingPurchase {
   value: number;
   currency: string;
   payload: Record<string, any>;
+  /**
+   * Advanced Matching snapshot (plaintext; Meta hashes it in the browser).
+   * A replayed Purchase happens on a later pageload where the checkout form
+   * state is long gone — without this the replay would be an anonymous event
+   * with no phone/name/city, i.e. exactly the low-match signal we're fixing.
+   */
+  user?: Record<string, string>;
   at: number;
 }
 
@@ -110,6 +118,8 @@ export function firePixelPurchase(args: {
   value: number;
   currency: string;
   payload?: Record<string, any>;
+  /** Advanced Matching to (re)attach before firing — used by outbox replays. */
+  user?: Record<string, string>;
 }): boolean {
   if (typeof window === "undefined") return false;
   if (isNonProductionHost()) return false;
@@ -120,6 +130,16 @@ export function firePixelPurchase(args: {
   // Load the SDK immediately — a queued event is only delivered once
   // fbevents.js executes, and the shopper may close the tab any second.
   ensureFbSdkNow();
+
+  // Re-attach the shopper's match keys. On a replay the checkout state is gone,
+  // so without this Meta would receive an unmatched Purchase.
+  if (args.user && Object.keys(args.user).length) {
+    try {
+      setCapiUser(args.user as any);
+    } catch {
+      /* noop */
+    }
+  }
 
   const value = Number(args.value);
   const currency = /^[A-Za-z]{3}$/.test(String(args.currency || ""))
@@ -242,6 +262,7 @@ export async function flushPendingPurchases(storeId: string): Promise<void> {
         value: Number.isFinite(serverTotal) && serverTotal > 0 ? serverTotal : row.value,
         currency: res?.order?.currency || row.currency,
         payload: row.payload,
+        user: row.user,
       });
     } catch {
       keep.push(row);

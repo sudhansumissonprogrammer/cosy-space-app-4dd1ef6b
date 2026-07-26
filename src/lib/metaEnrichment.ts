@@ -198,13 +198,24 @@ export function setCapiUser(user: CapiUser | null): void {
     if (!pixelId || typeof (window as any).fbq !== "function") return;
     const am: Record<string, string> = {};
     if (merged.email) am.em = merged.email.trim().toLowerCase();
-    if (merged.phone) am.ph = merged.phone.replace(/\D/g, "");
+    if (merged.phone) {
+      // Meta matches on E.164-without-plus. A bare 10-digit Indian mobile
+      // hashes to a value Meta can never match (and it mismatched the server
+      // CAPI hash, which already prepends 91) → the whole browser event was
+      // counted as "unmatched". Normalize here so browser + server agree.
+      const digits = merged.phone.replace(/\D/g, "");
+      am.ph = digits.length === 10 && /^[6-9]/.test(digits) ? `91${digits}` : digits;
+    }
     if (merged.externalId) am.external_id = merged.externalId;
     if (merged.firstName) am.fn = merged.firstName.trim().toLowerCase();
     if (merged.lastName) am.ln = merged.lastName.trim().toLowerCase();
     if (merged.city) am.ct = merged.city.trim().toLowerCase().replace(/\s+/g, "");
     if (merged.state) am.st = merged.state.trim().toLowerCase().replace(/\s+/g, "");
     if (merged.zipCode) am.zp = merged.zipCode.trim().toLowerCase().replace(/\s+/g, "");
+    // Country is a free match key Meta expects alongside ct/st/zp. Server CAPI
+    // already sends it; the browser side was omitting it.
+    if (am.ct || am.st || am.zp || am.ph) am.country = "in";
+
     if (Object.keys(am).length === 0) return;
     // Dedup re-init: bootstrap already called fbq('init', pid, {external_id}).
     // If the new AM payload matches what we last sent (or is just the same

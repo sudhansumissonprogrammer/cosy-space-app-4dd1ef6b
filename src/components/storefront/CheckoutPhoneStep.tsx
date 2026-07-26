@@ -44,6 +44,8 @@ import type { CartItem } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { setCapiUser } from "@/lib/metaEnrichment";
+import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
+import { fireMetaCAPI } from "@/lib/metaCapi";
 
 interface Props {
   storeId?: string;
@@ -216,6 +218,34 @@ export default function CheckoutPhoneStep({
       try {
         setCapiUser({ phone: canon });
       } catch {}
+
+      // Lead — the new checkout never fired this (the legacy checkouts did),
+      // so Meta had no mid-funnel "identified shopper" signal between
+      // InitiateCheckout and Purchase. It is fired once per phone per session
+      // with a shared event_id so the browser and server events deduplicate.
+      try {
+        const leadKey = `sb_lead_fired:${storeId}:${canon}`;
+        const alreadyFired = (() => {
+          try { return sessionStorage.getItem(leadKey) === "1"; } catch { return false; }
+        })();
+        if (storeId && !alreadyFired) {
+          try { sessionStorage.setItem(leadKey, "1"); } catch {}
+          const leadValue = cartItems.reduce(
+            (s, i) => s + (Number(i.price) || 0) * (Number(i.quantity) || 1),
+            0,
+          );
+          const eid = generateEventId();
+          fbPixelTrack("Lead", { content_name: "checkout_phone", currency: "INR", value: leadValue }, eid);
+          fireMetaCAPI({
+            storeId,
+            eventName: "Lead",
+            eventId: eid,
+            userPhone: canon,
+            customData: { content_name: "checkout_phone", currency: "INR", value: leadValue },
+          });
+        }
+      } catch {}
+
 
 
       const session_token = (() => {
