@@ -93,8 +93,24 @@ const UPI_ANDROID_PACKAGES: Partial<Record<UpiApp, string>> = {
 };
 
 function androidIntentForUpi(query: string, packageName: string, fallbackUrl: string): string {
-  return `intent://pay?${query}#Intent;scheme=upi;package=${packageName};S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+  // Chrome only honours S.browser_fallback_url when it is http(s) — a `upi://`
+  // fallback is silently dropped, which is why a failed package-targeted
+  // intent used to leave the shopper on a blank/frozen page. Always pass the
+  // current checkout URL so Chrome has a legal fallback, and declare the
+  // VIEW action + BROWSABLE category that several OEM Chrome/WebView builds
+  // require before they will resolve the package.
+  const httpsFallback = /^https?:/i.test(fallbackUrl)
+    ? fallbackUrl
+    : (typeof window !== "undefined" ? window.location.href : "https://shopbanao.in");
+  return (
+    `intent://pay?${query}#Intent;scheme=upi;` +
+    `action=android.intent.action.VIEW;` +
+    `category=android.intent.category.BROWSABLE;` +
+    `package=${packageName};` +
+    `S.browser_fallback_url=${encodeURIComponent(httpsFallback)};end`
+  );
 }
+
 
 function extractUpiQuery(url: string): string | null {
   const upi = url.match(/^upi:\/\/[^?]*\?([^#]+)/i);
