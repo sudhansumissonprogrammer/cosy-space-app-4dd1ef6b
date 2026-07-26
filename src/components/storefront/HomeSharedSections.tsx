@@ -1,8 +1,9 @@
-import { useMemo, lazy, Suspense } from "react";
+import { useMemo, lazy, Suspense, type ReactNode } from "react";
 import type { Tables } from "@/integrations/supabase/types";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import { DeferUntilVisible } from "@/components/storefront/DeferUntilVisible";
+import BestSellerBadge from "@/components/storefront/BestSellerBadge";
 
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const ShopByVideoCarousel = lazy(() => import("@/components/storefront/ShopByVideoCarousel"));
@@ -10,7 +11,7 @@ const ShopByVideoCarousel = lazy(() => import("@/components/storefront/ShopByVid
 type StoreData = Tables<"stores">;
 
 /** Shared section header with optional "View All" link */
-export function HomeSectionHeader({ title, slug, linkTo }: { title: string; slug: string; linkTo?: string; fontFallback?: string }) {
+export function HomeSectionHeader({ title, slug, linkTo }: { title: ReactNode; slug: string; linkTo?: string; fontFallback?: string }) {
   return (
     <div className="px-4 lg:px-6">
       <SectionHeading title={title} slug={slug} linkTo={linkTo} />
@@ -28,7 +29,7 @@ export function HomeBestSellingSection({ products, slug, store, cardStyle, bestS
 
   return (
     <div className="py-4">
-      <HomeSectionHeader title="Best Selling" slug={slug} linkTo="shop" />
+      <HomeSectionHeader title={<><BestSellerBadge />Best Selling</>} slug={slug} linkTo="shop" />
       {useCarousel ? (
         <div className="px-4 lg:px-6">
           <Suspense fallback={null}>

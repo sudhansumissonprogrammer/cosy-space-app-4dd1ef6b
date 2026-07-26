@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
+import BestSellerBadge from "@/components/storefront/BestSellerBadge";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { useCallback, useEffect, useRef } from "react";
@@ -83,7 +84,7 @@ export default function StorefrontBestSellers() {
 
   const products = data?.pages.flatMap((p) => p.products) || [];
   const totalEstimate = hasNextPage ? `${products.length}+` : products.length;
-  const pageTitle = showAll ? "Shop All" : "🔥 Best Sellers";
+  const pageTitle = showAll ? "Shop All" : "Best Sellers";
 
   // Infinite scroll sentinel
   const sentinelElRef = useRef<HTMLDivElement | null>(null);
@@ -123,9 +124,11 @@ export default function StorefrontBestSellers() {
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <h1 className="text-xl font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+        <h1 className="text-xl font-bold inline-flex items-center gap-2" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+          {!showAll && <BestSellerBadge />}
           {pageTitle}
         </h1>
+
         {!isLoading && (
           <span className="text-sm" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>
             ({totalEstimate} products)

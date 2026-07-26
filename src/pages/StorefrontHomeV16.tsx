@@ -31,6 +31,7 @@ const StorefrontInstagramSection = lazy(() => import("@/components/storefront/St
 const ShopByVideoCarousel = lazy(() => import("@/components/storefront/ShopByVideoCarousel"));
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 import { DeferUntilVisible } from "@/components/storefront/DeferUntilVisible";
+import BestSellerBadge from "@/components/storefront/BestSellerBadge";
 
 const BATCH_SIZE = 20;
 
@@ -125,7 +126,7 @@ function BestSellersSection({ storeId, slug, store, cardStyle, isCarousel }: {
 
   return (
     <section>
-      <SectionHeading title="🔥 Best Selling" />
+      <SectionHeading title={<><BestSellerBadge />Best Selling</>} />
       <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
         {products.map((product: any, idx: number) => (
           <UniversalProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 2} cardStyle={cardStyle} />

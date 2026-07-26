@@ -33,6 +33,7 @@ const StorefrontInstagramSection = lazy(() => import("@/components/storefront/St
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 import SortDropdown from "@/components/storefront/SortDropdown";
+import BestSellerBadge from "@/components/storefront/BestSellerBadge";
 
 const ABOVE_FOLD_COUNT = 4;
 const POPULAR_LIMIT = 10;
@@ -239,7 +240,7 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
               <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} cardStyle={cardStyle} />
             ) : (
               <section>
-                <SectionHeading title="🔥 Best Selling" />
+                <SectionHeading title={<><BestSellerBadge />Best Selling</>} />
                 <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                   {bestSellingProducts.slice(0, ABOVE_FOLD_COUNT).map((product, idx) => (
                     <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 2} cardStyle={cardStyle} />
@@ -265,7 +266,7 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
 
         <section style={{ minHeight: 600, contain: "layout style" }}>
           <div className="mb-5 flex items-center justify-between gap-3" style={{ minHeight: 32 }}>
-            <SectionHeading title="🔥 Popular Products" className="flex-1" />
+            <SectionHeading title={<><BestSellerBadge />Popular Products</>} className="flex-1" />
             <SortDropdown value={sortBy} onChange={setSortBy} />
           </div>
 
