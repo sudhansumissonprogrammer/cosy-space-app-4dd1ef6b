@@ -28,6 +28,7 @@
  *    force-loads `fbevents.js` immediately instead of waiting for idle.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { setCapiUser } from "@/lib/metaEnrichment";
 
 export interface PendingPurchase {
   storeId: string;
@@ -134,7 +135,7 @@ export function firePixelPurchase(args: {
   // so without this Meta would receive an unmatched Purchase.
   if (args.user && Object.keys(args.user).length) {
     try {
-      import("@/lib/metaEnrichment").then((m) => m.setCapiUser(args.user as any)).catch(() => {});
+      setCapiUser(args.user as any);
     } catch {
       /* noop */
     }
