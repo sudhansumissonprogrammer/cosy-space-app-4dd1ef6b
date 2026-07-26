@@ -852,7 +852,7 @@ Deno.serve(async (req) => {
 
     let createdOrder: { id: string } | null = null;
     let orderErr: any = null;
-    const reusedExistingOrder = !!reusableOrder;
+    let reusedExistingOrder = !!reusableOrder;
 
     if (reusableOrder) {
       const { data: updatedOrder, error: updateErr } = await supabase
