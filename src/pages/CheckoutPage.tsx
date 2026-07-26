@@ -695,12 +695,15 @@ function CheckoutPageInner() {
   const partialAdvanceTotal = (() => {
     if (!hasAnyPartialPayment) return total;
     let itemsAdvance = 0;
-    for (const item of checkoutItems) {
-      const itemAdvance = storePartialType === "percentage"
-        ? Math.round(item.price * (storePartialValue / 100))
-        : Math.min(storePartialValue, item.price);
-      itemsAdvance += itemAdvance * item.quantity;
+    if (storePartialType === "percentage") {
+      for (const item of checkoutItems) {
+        itemsAdvance += Math.round(item.price * (storePartialValue / 100)) * item.quantity;
+      }
+    } else {
+      // Fixed advance is flat per ORDER, not per item.
+      itemsAdvance = Math.min(storePartialValue, subtotal);
     }
+
     // Shipping paid up-front; discount reduces advance proportionally.
     const ratio = subtotal > 0 ? itemsAdvance / subtotal : 1;
     const raw = itemsAdvance + (taxInclusive ? 0 : taxAmount) * ratio + shippingCharge - couponDiscount * ratio;
