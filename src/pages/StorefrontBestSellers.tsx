@@ -83,7 +83,7 @@ export default function StorefrontBestSellers() {
 
   const products = data?.pages.flatMap((p) => p.products) || [];
   const totalEstimate = hasNextPage ? `${products.length}+` : products.length;
-  const pageTitle = showAll ? "Shop All" : "🔥 Best Sellers";
+  const pageTitle = showAll ? "Shop All" : "Best Sellers";
 
   // Infinite scroll sentinel
   const sentinelElRef = useRef<HTMLDivElement | null>(null);

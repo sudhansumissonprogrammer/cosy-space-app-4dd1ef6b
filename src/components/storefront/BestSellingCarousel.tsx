@@ -13,6 +13,7 @@ import {
 import UniversalProductCard from "./UniversalProductCard";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
+import BestSellerBadge from "@/components/storefront/BestSellerBadge";
 
 interface BestSellingCarouselProps {
   products: any[];
