@@ -1187,7 +1187,12 @@ export default function CheckoutV2Page() {
     payu_txnid?: string;
     razorpay_payment_id?: string;
   }>({});
-  const purchaseEventIdRef = useRef<string>(generateEventId());
+  // Deterministic Purchase event_id derived from the checkout token. A remount
+  // (IABB tab wipe after the UPI hand-off, PayU redirect back, reload) reuses
+  // the same token, so the browser Purchase and the server CAPI Purchase always
+  // carry an identical event_id and Meta deduplicates them. Previously this was
+  // regenerated per mount, so a remount produced a second, undedupable Purchase.
+  const purchaseEventIdRef = useRef<string>(purchaseEventIdFor(checkoutTokenRef.current));
   const metaCookiesRef = useRef<{ fbc: string; fbp: string }>(getMetaCookies());
   // Debounced shipping-identity string. Address/name/phone changes must
   // still invalidate the snapshot (otherwise place-order's checkout_token
