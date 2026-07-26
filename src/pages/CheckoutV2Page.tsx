@@ -1118,6 +1118,7 @@ export default function CheckoutV2Page() {
   // re-mint, which used to run even when nothing about the amount changed —
   // burning a duplicate PayU UPI reference on every checkout.
   const lastMintedAmountRef = useRef<number | null>(null);
+  const rateLimitRetryRef = useRef(false);
   const mintCountRef = useRef<number>(0);
   const mintLoopBlockedRef = useRef<boolean>(false);
   const [showPayment, setShowPayment] = useState(false);
@@ -2233,12 +2234,34 @@ export default function CheckoutV2Page() {
           setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: msg }; }); return next; });
         }
       } catch (e: any) {
-        toast.error(e.message || "Failed to create order");
+        const rawMsg = String(e?.message || "");
+        const rateLimited = /too many attempts/i.test(rawMsg);
+        // A 429 here is almost always a shopper who reloaded / toggled plans a
+        // few times, not an attacker. Dead-ending them with a permanent error
+        // loses the sale, so schedule one automatic retry once the window has
+        // moved on, and tell them what is happening.
+        if (rateLimited) {
+          toast.error("Just a moment — reconnecting to the payment gateway…");
+          if (!rateLimitRetryRef.current) {
+            rateLimitRetryRef.current = true;
+            window.setTimeout(() => {
+              rateLimitRetryRef.current = false;
+              mintCountRef.current = 0;
+              mintLoopBlockedRef.current = false;
+              lastMintAtRef.current = 0;
+              void createOrderAndIntents();
+            }, 20000);
+          }
+        } else {
+          toast.error(rawMsg || "Failed to create order");
+        }
         // Surface failure on UPI tiles so the shopper sees a retry state
         // instead of buttons stuck in permanently-disabled "idle" (blue/faded)
         // after rapid Partial↔Full toggles trigger a 429 or transient error.
         const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
-        const msg = e?.message || "Payment temporarily unavailable. Tap retry.";
+        const msg = rateLimited
+          ? "Reconnecting… this will retry automatically in a few seconds."
+          : (rawMsg || "Payment temporarily unavailable. Tap retry.");
         setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: msg }; }); return next; });
         // Do not reset autoAdvancedRef here: repeated automatic retries can hammer place-order and 429-lock real buyers.
       } finally {
@@ -3781,6 +3804,23 @@ export default function CheckoutV2Page() {
               <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
                 <div className="font-semibold mb-1">UPI apps unavailable</div>
                 <div className="mb-2 opacity-80">{firstErr}</div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full mb-2"
+                  disabled={creatingOrder}
+                  onClick={() => {
+                    // Manual escape hatch: clears the mint caps so a shopper who
+                    // hit a transient gateway/rate-limit error can get a fresh
+                    // UPI intent instead of being stuck on this panel.
+                    mintCountRef.current = 0;
+                    mintLoopBlockedRef.current = false;
+                    lastMintAtRef.current = 0;
+                    void createOrderAndIntents();
+                  }}
+                >
+                  {creatingOrder ? <Loader2 className="h-4 w-4 animate-spin" /> : "Try again"}
+                </Button>
                 {hasOnline && (
                   <Button size="sm" variant="outline" className="w-full" onClick={startGatewayPayment} disabled={openingGateway || creatingOrder || couponLoading || paymentAmountSyncing}>
                     {openingGateway ? <Loader2 className="h-4 w-4 animate-spin" /> : `Pay with ${activeGateway === "razorpay" ? "Card/Wallet" : activeGateway === "cashfree" ? "Cashfree" : "PayU"}`}
