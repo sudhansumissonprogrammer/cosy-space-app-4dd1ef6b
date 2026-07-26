@@ -1851,6 +1851,17 @@ export default function CheckoutV2Page() {
     // this tap so we auto-resume the UPI launch after the shopper saves.
     if (!requireAddressOrPrompt(() => tapUpiApp(app))) return;
     const s = intents[app];
+    // A failed tile used to be a dead end (silent return + pointer-events-none),
+    // so a shopper who hit one transient gateway error could never pay by UPI
+    // again in that session. Treat the tap as an explicit retry.
+    if (s.status === "failed") {
+      mintCountRef.current = 0;
+      mintLoopBlockedRef.current = false;
+      lastMintAtRef.current = 0;
+      toast.info("Retrying…");
+      void createOrderAndIntents();
+      return;
+    }
     if (s.status !== "ready" || !s.url) {
       return;
     }
