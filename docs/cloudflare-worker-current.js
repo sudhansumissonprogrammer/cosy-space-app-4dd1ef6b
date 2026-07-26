@@ -1386,9 +1386,39 @@ const PREBUILT_HEAD_KV_KEY = `prebuilt-head:${WORKER_VERSION}`;
 const PREBUILT_HEAD_KV_TTL = 86400; // v8.1.0 cost-cut: 6h → 24h (purge bumps version)
 const PREBUILT_HEAD_CACHE_TTL = 300; // v7.7.0 Fix 4: 1m → 5m
 
+/* v8.73.0 STALE-PRELOAD FIX
+   The prebuilt head is a cache of <link rel=modulepreload> tags scraped from
+   the SPA shell. It was keyed ONLY by WORKER_VERSION with a 24h TTL, so a
+   frontend deploy (new /assets/*.js hashes) with no worker deploy left the
+   head pointing at DEAD chunk hashes for up to 24h. Result on every cold
+   storefront/category load:
+     - 5 wasted chunk downloads (404-free but unused old hashes)
+     - the REAL entry/App/shell chunks got NO preload → 3-deep JS waterfall
+   Fix: extract the entry hash from both the cached head and the live shell
+   HTML and reject the cache when they disagree. */
+function _extractEntryChunk(str) {
+  if (!str) return null;
+  const m = str.match(/\/assets\/(?:index|main)-[A-Za-z0-9_-]+\.js/);
+  return m ? m[0] : null;
+}
+
+// Returns `head` when it matches the shell currently being served, else null.
+function _validateHeadAgainstShell(head, html) {
+  if (!head || !html) return null;
+  const a = _extractEntryChunk(head);
+  const b = _extractEntryChunk(html);
+  if (!a || !b) return head; // can't tell — don't throw away a usable head
+  if (a === b) return head;
+  // Stale: drop every derived in-memory cache so this isolate rebuilds.
+  _memPrebuiltHead = null;
+  _memDeepChunks = null;
+  return null;
+}
+
 function _buildPrebuiltHead(html) {
   // FIX #7: Cache result in module-level variable — computed once per isolate
   if (_memPrebuiltHead) return _memPrebuiltHead;
+
 
   let head = "";
   // v8.32: removed shared-infra preconnect leak (was leaking same Supabase project ID across 100 stores)
