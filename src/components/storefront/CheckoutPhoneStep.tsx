@@ -304,7 +304,7 @@ export default function CheckoutPhoneStep({
   return (
     <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-[220px]">
       {/* Sticky header */}
-      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-4 py-3 flex items-center gap-3">
+      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-3 flex items-center gap-2">
         <button
           onClick={() => {
             try {
@@ -316,7 +316,7 @@ export default function CheckoutPhoneStep({
             window.location.href = storefrontPath(storeSlug || "");
           }}
           aria-label="Back"
-          className="p-1 -ml-1"
+          className="p-1 -ml-1 shrink-0"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -324,17 +324,22 @@ export default function CheckoutPhoneStep({
           <img
             src={storeLogo}
             alt={storeName || "Store"}
-            className="h-8 w-auto max-w-[100px] object-contain"
+            className="h-8 w-auto max-w-[110px] object-contain shrink-0"
           />
         ) : (
-          <div className="text-sm font-bold truncate max-w-[140px]">
+          <div className="text-sm font-bold truncate min-w-0 flex-1">
             {storeName || "Store"}
           </div>
         )}
-        <div className="flex-1" />
-        <div className="text-[13px] text-muted-foreground flex items-center gap-1">
-          100% Secured Payment <Lock className="h-3.5 w-3.5" />
-        </div>
+        <div className="flex-1 min-w-0" />
+        <img
+          src={secureBadge.url}
+          alt="100% Secure Payment"
+          width={110}
+          height={50}
+          decoding="async"
+          className="h-[30px] w-auto shrink-0 object-contain"
+        />
       </div>
 
       {/* Announcement marquee — same dashboard-controlled component as main checkout */}
