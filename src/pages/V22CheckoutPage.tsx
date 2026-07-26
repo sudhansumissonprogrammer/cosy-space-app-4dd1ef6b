@@ -620,16 +620,16 @@ function V22CheckoutPageInner() {
   // Partial payment calculation (store-level)
   const partialAdvanceTotal = (() => {
     if (!hasAnyPartialPayment) return total;
+    // Advance is charged PER PRODUCT UNIT as the store configured it.
     let advance = 0;
-    if (storePartialType === "percentage") {
-      for (const item of checkoutItems) {
-        advance += Math.round(item.price * (storePartialValue / 100)) * item.quantity;
-      }
-    } else {
-      // Fixed advance is flat per ORDER, not per item.
-      advance = Math.min(storePartialValue, subtotal);
+    for (const item of checkoutItems) {
+      const itemAdvance = storePartialType === "percentage"
+        ? Math.round(item.price * (storePartialValue / 100))
+        : Math.min(storePartialValue, item.price);
+      advance += itemAdvance * item.quantity;
     }
     advance = Math.max(advance, 50); // min ₹50
+
 
     // Add tax + shipping proportionally, subtract coupon
     const ratio = subtotal > 0 ? advance / subtotal : 1;
