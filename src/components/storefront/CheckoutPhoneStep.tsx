@@ -44,6 +44,8 @@ import type { CartItem } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { setCapiUser } from "@/lib/metaEnrichment";
+import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
+import { fireMetaCAPI } from "@/lib/metaCapi";
 
 interface Props {
   storeId?: string;
