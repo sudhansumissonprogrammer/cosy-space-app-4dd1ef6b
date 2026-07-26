@@ -36,6 +36,13 @@ export interface PendingPurchase {
   value: number;
   currency: string;
   payload: Record<string, any>;
+  /**
+   * Advanced Matching snapshot (plaintext; Meta hashes it in the browser).
+   * A replayed Purchase happens on a later pageload where the checkout form
+   * state is long gone — without this the replay would be an anonymous event
+   * with no phone/name/city, i.e. exactly the low-match signal we're fixing.
+   */
+  user?: Record<string, string>;
   at: number;
 }
 
