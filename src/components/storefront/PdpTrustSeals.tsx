@@ -14,13 +14,13 @@ import satisfaction from "@/assets/trust/satisfaction-guarantee.webp.asset.json"
 import exchange from "@/assets/trust/easy-return-exchange.webp.asset.json";
 
 const SEALS = [
+  { src: exchange.url, alt: "Easy Return & Exchange" },
   { src: premium.url, alt: "100% Premium Quality" },
   { src: money.url, alt: "Money Back Guarantee" },
   { src: shipping.url, alt: "Fast & Free Shipping" },
   { src: secure.url, alt: "100% Secure Payments" },
   { src: support.url, alt: "24/7 Customer Support" },
   { src: satisfaction.url, alt: "100% Satisfaction Guarantee" },
-  { src: exchange.url, alt: "Easy Return & Exchange" },
 ];
 
 export default function PdpTrustSeals() {
