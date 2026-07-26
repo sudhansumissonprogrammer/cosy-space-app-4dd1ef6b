@@ -598,7 +598,13 @@ export default function V22ProductDetail() {
 
 
     // Phone capture now happens as Step 1 of the checkout page (no popup).
-    navigate(storefrontPath(store.slug, "checkout"));
+    // Buy Now must check out ONLY this product even if the cart has others,
+    // so pass ?product=&variant=&qty= for single-product checkout mode.
+    const qs = new URLSearchParams();
+    qs.set("product", product.id);
+    if (selectedVariant?.id) qs.set("variant", selectedVariant.id);
+    if (quantity > 1) qs.set("qty", String(quantity));
+    navigate(storefrontPath(store.slug, `checkout?${qs.toString()}`));
   };
 
 

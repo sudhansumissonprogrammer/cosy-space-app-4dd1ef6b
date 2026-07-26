@@ -46,6 +46,9 @@ interface Props {
   /** Optional product context attached to the lead */
   productId?: string;
   productName?: string;
+  /** Variant + quantity so checkout can enter single-product mode */
+  variantId?: string;
+  quantity?: number;
   /** Source label saved in customer_leads.source (default: 'quick_buy') */
   source?: string;
   /** Called before navigating — lets parent add item to cart etc. */
@@ -58,6 +61,7 @@ async function saveLead(opts: {
   phone: string;
   productId?: string;
   productName?: string;
+
   source: string;
 }) {
   if (!opts.storeId) return;
@@ -107,6 +111,8 @@ export default function BuyNowPhoneModal({
   productId,
   productName,
   source = "quick_buy",
+  variantId,
+  quantity = 1,
   onBeforeNavigate,
 }: Props) {
   const navigate = useNavigate();
@@ -122,6 +128,17 @@ export default function BuyNowPhoneModal({
     }
   });
   const [inlineError, setInlineError] = useState<string | null>(null);
+
+
+  /** Buy Now must check out ONLY this product, never the whole cart. */
+  const checkoutHref = () => {
+    if (!productId) return storefrontPath(storeSlug, "checkout");
+    const qs = new URLSearchParams();
+    qs.set("product", productId);
+    if (variantId) qs.set("variant", variantId);
+    if (quantity > 1) qs.set("qty", String(quantity));
+    return storefrontPath(storeSlug, `checkout?${qs.toString()}`);
+  };
 
   const digits = phone.replace(/\D/g, "");
   const valid = digits.length === 10 && /^[6-9]/.test(digits);
@@ -139,7 +156,7 @@ export default function BuyNowPhoneModal({
         void autoLoginByPhone(storeId, normalized);
         onBeforeNavigate?.();
         onOpenChange(false);
-        navigate(storefrontPath(storeSlug, "checkout"));
+        navigate(checkoutHref());
       }
     } catch {}
   }, [open]);
@@ -174,7 +191,7 @@ export default function BuyNowPhoneModal({
 
     onBeforeNavigate?.();
     onOpenChange(false);
-    navigate(storefrontPath(storeSlug, "checkout"));
+    navigate(checkoutHref());
   };
 
   // Auto-submit the moment a valid 10-digit number is entered (Gokwik-style).
