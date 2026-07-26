@@ -580,34 +580,6 @@ export default function CheckoutPhoneStep({
           </div>
         </div>
       </div>
-
-      {/* Sticky bottom: consent + Continue */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-[1000] max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
-        style={{ bottom: keyboardInset ? `${keyboardInset}px` : undefined }}
-      >
-        <label className="flex items-center gap-2 pb-2 text-[12px]">
-          <Checkbox
-            checked={consent}
-            onCheckedChange={(v) => setConsent(v === true)}
-          />
-          <span>Send me order updates &amp; offers - (no spam)</span>
-        </label>
-        <Button
-          onClick={submit}
-          disabled={submitting}
-          className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 text-white disabled:bg-black disabled:text-white disabled:opacity-100 rounded-lg"
-        >
-          {submitting ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            "Continue"
-          )}
-        </Button>
-        <div className="text-[10px] text-center text-muted-foreground mt-1.5">
-          By proceeding, I agree to the store's Privacy Policy and T&amp;C
-        </div>
-      </div>
     </div>
   );
 }
