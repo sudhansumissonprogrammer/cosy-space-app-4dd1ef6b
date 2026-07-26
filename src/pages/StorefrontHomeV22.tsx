@@ -125,7 +125,7 @@ function BestSellersSection({ storeId, slug, store, cardStyle, isCarousel }: {
 
   return (
     <section>
-      <SectionHeading title={<><BestSellerBadge />Best Selling</>} />
+      <SectionHeading title={<BestSellerBadge />} />
       <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
         {products.map((product: any, idx: number) => (
           <UniversalProductCard key={product.id} product={product} slug={slug} store={store} priority={idx < 2} cardStyle={cardStyle} />

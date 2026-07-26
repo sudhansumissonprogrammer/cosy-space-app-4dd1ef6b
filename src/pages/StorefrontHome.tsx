@@ -277,7 +277,7 @@ export default function StorefrontHome() {
               <BestSellingCarousel products={bestSellingProducts} slug={slug!} store={store} cardStyle={cardStyle} />
             ) : (
               <section>
-                <SectionHeading title={<><BestSellerBadge />Best Selling</>} slug={slug} linkTo="best-sellers" />
+                <SectionHeading title={<BestSellerBadge />} slug={slug} linkTo="best-sellers" />
                 <div className="grid grid-cols-2 gap-1.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
                   {bestSellingProducts.slice(0, ABOVE_FOLD_COUNT).map((product, idx) => (
                     <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 2} cardStyle={cardStyle} />
