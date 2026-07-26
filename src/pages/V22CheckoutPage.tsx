@@ -621,16 +621,16 @@ function V22CheckoutPageInner() {
   const partialAdvanceTotal = (() => {
     if (!hasAnyPartialPayment) return total;
     let advance = 0;
-    for (const item of checkoutItems) {
-      let itemAdvance: number;
-      if (storePartialType === "percentage") {
-        itemAdvance = Math.round(item.price * (storePartialValue / 100));
-      } else {
-        itemAdvance = Math.min(storePartialValue, item.price);
+    if (storePartialType === "percentage") {
+      for (const item of checkoutItems) {
+        advance += Math.round(item.price * (storePartialValue / 100)) * item.quantity;
       }
-      itemAdvance = Math.max(itemAdvance, 50); // min ₹50
-      advance += itemAdvance * item.quantity;
+    } else {
+      // Fixed advance is flat per ORDER, not per item.
+      advance = Math.min(storePartialValue, subtotal);
     }
+    advance = Math.max(advance, 50); // min ₹50
+
     // Add tax + shipping proportionally, subtract coupon
     const ratio = subtotal > 0 ? advance / subtotal : 1;
     advance += (taxInclusive ? 0 : taxAmount) * ratio + shippingCharge;
