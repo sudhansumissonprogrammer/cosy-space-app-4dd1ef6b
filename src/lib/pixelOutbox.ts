@@ -117,6 +117,8 @@ export function firePixelPurchase(args: {
   value: number;
   currency: string;
   payload?: Record<string, any>;
+  /** Advanced Matching to (re)attach before firing — used by outbox replays. */
+  user?: Record<string, string>;
 }): boolean {
   if (typeof window === "undefined") return false;
   if (isNonProductionHost()) return false;
@@ -127,6 +129,16 @@ export function firePixelPurchase(args: {
   // Load the SDK immediately — a queued event is only delivered once
   // fbevents.js executes, and the shopper may close the tab any second.
   ensureFbSdkNow();
+
+  // Re-attach the shopper's match keys. On a replay the checkout state is gone,
+  // so without this Meta would receive an unmatched Purchase.
+  if (args.user && Object.keys(args.user).length) {
+    try {
+      import("@/lib/metaEnrichment").then((m) => m.setCapiUser(args.user as any)).catch(() => {});
+    } catch {
+      /* noop */
+    }
+  }
 
   const value = Number(args.value);
   const currency = /^[A-Za-z]{3}$/.test(String(args.currency || ""))
