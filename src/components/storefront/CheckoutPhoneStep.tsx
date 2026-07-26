@@ -12,6 +12,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import secureBadge from "@/assets/trust/secure-payment-badge.webp.asset.json";
+import trustedSellerBadge from "@/assets/trust/trusted-seller-badge.webp.asset.json";
 import {
   ArrowLeft,
   ChevronDown,
@@ -122,7 +123,7 @@ export default function CheckoutPhoneStep({
   const [inlineError, setInlineError] = useState<string | null>(null);
   // Open by default so the shopper sees exactly what they're paying for.
   const [summaryOpen, setSummaryOpen] = useState(true);
-  const [keyboardInset, setKeyboardInset] = useState(0);
+  
   const inFlight = useRef(false);
   const autoSubmittedRef = useRef(false);
   const themeConfig = useStorefrontThemeConfig(storeId);
@@ -281,31 +282,11 @@ export default function CheckoutPhoneStep({
     if (!valid) autoSubmittedRef.current = false;
   }, [valid, submitting]);
 
-  useEffect(() => {
-    const viewport = window.visualViewport;
-    if (!viewport) return;
-
-    const syncKeyboardInset = () => {
-      const inset = Math.max(
-        0,
-        window.innerHeight - viewport.height - viewport.offsetTop,
-      );
-      setKeyboardInset(inset > 24 ? Math.round(inset) : 0);
-    };
-
-    syncKeyboardInset();
-    viewport.addEventListener("resize", syncKeyboardInset);
-    viewport.addEventListener("scroll", syncKeyboardInset);
-    return () => {
-      viewport.removeEventListener("resize", syncKeyboardInset);
-      viewport.removeEventListener("scroll", syncKeyboardInset);
-    };
-  }, []);
 
   return (
-    <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-[220px]">
+    <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-10">
       {/* Sticky header */}
-      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-3 flex items-center gap-2">
+      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-3 flex items-center gap-1.5">
         <button
           onClick={() => {
             try {
@@ -322,24 +303,34 @@ export default function CheckoutPhoneStep({
           <ArrowLeft className="h-5 w-5" />
         </button>
         {storeLogo ? (
-          <img
-            src={storeLogo}
-            alt={storeName || "Store"}
-            className="h-8 w-auto max-w-[110px] object-contain shrink-0"
-          />
+          <>
+            <img
+              src={storeLogo}
+              alt={storeName || "Store"}
+              className="h-8 w-auto max-w-[100px] object-contain shrink-0"
+            />
+            <div className="flex-1 min-w-0" />
+          </>
         ) : (
-          <div className="text-sm font-bold truncate min-w-0 flex-1">
+          <div className="text-[13px] font-bold truncate min-w-0 flex-1 leading-tight">
             {storeName || "Store"}
           </div>
         )}
-        <div className="flex-1 min-w-0" />
+        <img
+          src={trustedSellerBadge.url}
+          alt="Trusted Seller"
+          width={251}
+          height={140}
+          decoding="async"
+          className="h-[26px] w-auto shrink-0 object-contain"
+        />
         <img
           src={secureBadge.url}
           alt="100% Secure Payment"
           width={110}
           height={50}
           decoding="async"
-          className="h-[30px] w-auto shrink-0 object-contain"
+          className="h-[28px] w-auto shrink-0 object-contain"
         />
       </div>
 
@@ -511,6 +502,14 @@ export default function CheckoutPhoneStep({
               </p>
             )}
 
+            <label className="flex items-center gap-2 text-[12px]">
+              <Checkbox
+                checked={consent}
+                onCheckedChange={(v) => setConsent(v === true)}
+              />
+              <span>Send me order updates &amp; offers - (no spam)</span>
+            </label>
+
             <Button
               onClick={submit}
               disabled={submitting}
@@ -522,6 +521,9 @@ export default function CheckoutPhoneStep({
                 "Continue"
               )}
             </Button>
+            <div className="text-[10px] text-center text-muted-foreground -mt-1">
+              By proceeding, I agree to the store's Privacy Policy and T&amp;C
+            </div>
           </div>
         </div>
 
@@ -556,34 +558,6 @@ export default function CheckoutPhoneStep({
               Merchant
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Sticky bottom: consent + Continue */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-[1000] max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
-        style={{ bottom: keyboardInset ? `${keyboardInset}px` : undefined }}
-      >
-        <label className="flex items-center gap-2 pb-2 text-[12px]">
-          <Checkbox
-            checked={consent}
-            onCheckedChange={(v) => setConsent(v === true)}
-          />
-          <span>Send me order updates &amp; offers - (no spam)</span>
-        </label>
-        <Button
-          onClick={submit}
-          disabled={submitting}
-          className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 text-white disabled:bg-black disabled:text-white disabled:opacity-100 rounded-lg"
-        >
-          {submitting ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            "Continue"
-          )}
-        </Button>
-        <div className="text-[10px] text-center text-muted-foreground mt-1.5">
-          By proceeding, I agree to the store's Privacy Policy and T&amp;C
         </div>
       </div>
     </div>
