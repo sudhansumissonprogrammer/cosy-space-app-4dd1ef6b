@@ -3046,15 +3046,7 @@ export default function CheckoutV2Page() {
         />
       </div>
 
-      {/* Announcement marquee — same component + dashboard-controlled text/gradient as storefront */}
-      {marqueeEnabled && (
-        <div
-          data-checkout-marquee
-          className="sticky top-[57px] z-10"
-        >
-          <StorefrontMarquee text={themeConfig?.marquee_text} />
-        </div>
-      )}
+
 
       {/* Payment retry banner */}
       {paymentFailed && pendingOrder && (

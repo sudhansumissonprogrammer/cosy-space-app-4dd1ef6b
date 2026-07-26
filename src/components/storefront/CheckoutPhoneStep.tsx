@@ -334,12 +334,7 @@ export default function CheckoutPhoneStep({
         />
       </div>
 
-      {/* Announcement marquee — same dashboard-controlled component as main checkout */}
-      {marqueeEnabled && (
-        <div data-checkout-marquee className="sticky top-[57px] z-10">
-          <StorefrontMarquee text={themeConfig?.marquee_text} />
-        </div>
-      )}
+
 
 
       <div className="px-3 py-3 space-y-3">
