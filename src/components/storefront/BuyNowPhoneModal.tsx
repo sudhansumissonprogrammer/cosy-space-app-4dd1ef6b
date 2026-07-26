@@ -61,9 +61,7 @@ async function saveLead(opts: {
   phone: string;
   productId?: string;
   productName?: string;
-  /** Variant + quantity so checkout can enter single-product mode */
-  variantId?: string;
-  quantity?: number;
+
   source: string;
 }) {
   if (!opts.storeId) return;
