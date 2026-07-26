@@ -1885,6 +1885,52 @@ export default function StoreThemeSettings() {
         )}
 
         {(
+          <AccordionItem value="pdp-trust-seals" className="rounded-xl border border-border bg-card px-4">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex flex-col items-start text-left">
+                <span className="text-sm font-semibold">Trust Seals on Product Page</span>
+                <span className="text-xs text-muted-foreground font-normal">
+                  Pick which guarantee seals appear under the product details
+                </span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-1 pb-4 space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Tap a seal to turn it on or off. Only selected seals are downloaded on the product page,
+                so fewer seals = faster page.
+              </p>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {TRUST_SEALS.map((s) => {
+                  const selected = selectedSealKeys.includes(s.key);
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => toggleSeal(s.key)}
+                      aria-pressed={selected}
+                      className={`relative flex flex-col items-center gap-1 rounded-xl border p-2 transition ${
+                        selected ? "border-primary bg-primary/5" : "border-border bg-muted/30 opacity-60"
+                      }`}
+                    >
+                      <img src={s.url} alt={s.alt} loading="lazy" decoding="async" className="h-12 w-auto object-contain" />
+                      <span className="text-[10px] leading-tight text-center text-muted-foreground line-clamp-2">{s.alt}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => updateField("pdp_trust_seals" as any, DEFAULT_TRUST_SEAL_KEYS as any)}>
+                  Reset to default
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => updateField("pdp_trust_seals" as any, [] as any)}>
+                  Turn all off
+                </Button>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {(
           <AccordionItem value="trust-badges" className="rounded-xl border border-border bg-card px-4">
             <AccordionTrigger className="hover:no-underline">
               <div className="flex flex-col items-start text-left">
