@@ -3014,7 +3014,7 @@ export default function CheckoutV2Page() {
       )}
 
       {/* Header: back • logo • Secured payment */}
-      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-1.5 flex items-center gap-1.5">
+      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-1 flex items-center gap-1.5">
         <button onClick={goBack} aria-label="Back" className="p-1 -ml-1 shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -3026,14 +3026,14 @@ export default function CheckoutV2Page() {
         ) : (
           <div className="text-[13px] font-bold truncate min-w-0 flex-1 leading-tight">{store?.name || "Store"}</div>
         )}
-        <div className="flex items-center -space-x-1">
+        <div className="flex items-center -space-x-2">
           <img
             src={trustedSellerBadge.url}
             alt="Trusted Seller"
             width={622}
             height={300}
             decoding="async"
-            className="h-[48px] w-auto shrink-0 object-contain -mr-1"
+            className="h-10 w-auto shrink-0 object-contain"
           />
           <img
             src={secureBadge.url}
@@ -3041,7 +3041,7 @@ export default function CheckoutV2Page() {
             width={110}
             height={50}
             decoding="async"
-            className="h-[24px] w-auto shrink-0 object-contain"
+            className="h-5 w-auto shrink-0 object-contain"
           />
         </div>
       </div>
