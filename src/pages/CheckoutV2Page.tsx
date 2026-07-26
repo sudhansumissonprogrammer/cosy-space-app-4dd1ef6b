@@ -92,16 +92,24 @@ const UPI_ANDROID_PACKAGES: Partial<Record<UpiApp, string>> = {
   paytm: "net.one97.paytm",
 };
 
-function androidIntentForUpi(query: string, packageName: string, fallbackUrl: string): string {
-  // Chrome only honours S.browser_fallback_url when it is http(s) — a `upi://`
-  // fallback is silently dropped, which is why a failed package-targeted
-  // intent used to leave the shopper on a blank/frozen page. Always pass the
-  // current checkout URL so Chrome has a legal fallback, and declare the
-  // VIEW action + BROWSABLE category that several OEM Chrome/WebView builds
-  // require before they will resolve the package.
-  const httpsFallback = /^https?:/i.test(fallbackUrl)
-    ? fallbackUrl
-    : (typeof window !== "undefined" ? window.location.href : "https://shopbanao.in");
+/** Marker appended to the checkout URL when Chrome cannot resolve a package
+ *  intent (app not installed). Fragment-only → same-document navigation, so
+ *  checkout state survives and we can instantly show the UPI app chooser. */
+const UPI_FALLBACK_HASH = "upi_fb";
+
+function androidIntentForUpi(query: string, packageName: string, _fallbackUrl: string): string {
+  // Chrome only honours S.browser_fallback_url when it is http(s). Pointing it
+  // at the full checkout URL caused a hard reload whenever the targeted app was
+  // missing — the shopper lost the page and never saw a chooser. Instead point
+  // it at the SAME url with a `#upi_fb` fragment: Chrome treats it as a legal
+  // https fallback but the browser performs a same-document navigation (no
+  // reload), and tapUpiApp listens for the hashchange to immediately launch the
+  // universal `upi://pay` chooser, which lists only the UPI apps actually
+  // installed on the device.
+  const base = typeof window !== "undefined"
+    ? window.location.href.split("#")[0]
+    : "https://shopbanao.in";
+  const httpsFallback = `${base}#${UPI_FALLBACK_HASH}`;
   return (
     `intent://pay?${query}#Intent;scheme=upi;` +
     `action=android.intent.action.VIEW;` +
