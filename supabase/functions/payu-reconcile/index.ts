@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
 
   let q = supabase
     .from("orders")
-    .select("id, store_id, status, payment_type, customer_phone, storefront_customer_id, created_at")
+    .select("id, store_id, status, payment_type, customer_phone, storefront_customer_id, created_at, payu_txnids")
     .eq("payment_method", "payu")
     .limit(200);
 
@@ -132,8 +132,24 @@ Deno.serve(async (req) => {
         }
 
 
-        const txnid = txnidForOrder(o.id);
-        const det = await verifyPayuTxn({ env, key: cfg.payu_merchant_key, salt: cfg.payu_merchant_salt, txnid });
+        // A single order can have several PayU attempts (payu-create-txn mints
+        // a fresh txnid per attempt so PayU never sees a duplicate id). Check
+        // every recorded attempt plus the legacy derived id, and let any PAID
+        // attempt win.
+        const attemptIds: string[] = Array.from(
+          new Set([...(Array.isArray(o.payu_txnids) ? o.payu_txnids : []), txnidForOrder(o.id)]),
+        );
+
+        let det: any = null;
+        let txnid = txnidForOrder(o.id);
+        for (const candidate of attemptIds) {
+          const res = await verifyPayuTxn({ env, key: cfg.payu_merchant_key, salt: cfg.payu_merchant_salt, txnid: candidate });
+          if (!res) continue;
+          const v = mapPayuStatus(res.status);
+          det = res;
+          txnid = candidate;
+          if (v === "PAID") break;
+        }
         if (!det) {
           notFound++;
           continue;

@@ -38,10 +38,11 @@ Deno.serve(async (req) => {
     // Load order — server is the source of truth for amount.
     const { data: dbOrder, error: orderErr } = await supabase
       .from("orders")
-      .select("id, store_id, total, status, payment_type, advance_paid, order_number")
+      .select("id, store_id, total, status, payment_type, advance_paid, order_number, payu_txnids")
       .eq("id", order_id)
       .maybeSingle();
     if (orderErr || !dbOrder) return jsonRes({ error: "Order not found" }, 404);
+
     if (dbOrder.store_id !== store_id) return jsonRes({ error: "Order/store mismatch" }, 403);
     if (
       dbOrder.status === "confirmed" ||
@@ -74,10 +75,36 @@ Deno.serve(async (req) => {
     }
 
     const env = (config.payu_env === "sandbox" ? "sandbox" : "production") as PayuEnv;
-    // txnid: deterministic + unique. Re-using the same txnid for the same order is intentional
-    // — PayU treats a second attempt with the same txnid as a new try without creating a ghost charge.
-    // We append the order_number for human-readable PayU dashboard rows.
-    const txnid = `sb_${order_id.replace(/-/g, "").slice(0, 16)}`;
+    // txnid MUST be unique per *attempt*.
+    //
+    // place-order now REUSES one pending order row across retries (checkout_token
+    // + session dedup), so a shopper who drops a UPI collect request and taps
+    // "Pay" again lands on the same order_id. The old deterministic
+    // `sb_<order16>` txnid meant attempt #2 re-sent a txnid PayU had already
+    // seen → PayU rejects it as a duplicate transaction and the shopper can
+    // never complete payment. The order then auto-expires as "no payment
+    // received", which is exactly the mass-drop pattern in the dashboard.
+    //
+    // First attempt keeps the legacy id (so already-open sessions and older
+    // reconcile rows still match); every later attempt gets a short suffix.
+    // PayU allows up to 25 chars — `sb_` + 16 + `x` + 4 = 24.
+    const baseTxnid = `sb_${order_id.replace(/-/g, "").slice(0, 16)}`;
+    const priorTxnids: string[] = Array.isArray(dbOrder.payu_txnids) ? dbOrder.payu_txnids : [];
+    const attempt = priorTxnids.length;
+    const txnid = attempt === 0
+      ? baseTxnid
+      : `${baseTxnid}x${Date.now().toString(36).slice(-4)}`;
+
+    // Persist the attempt so reconcile/status can verify *every* txnid this
+    // order ever used, not just the derived one.
+    if (!priorTxnids.includes(txnid)) {
+      await supabase
+        .from("orders")
+        .update({ payu_txnids: [...priorTxnids, txnid].slice(-8) })
+        .eq("id", order_id)
+        .eq("store_id", store_id);
+    }
+
 
     const amountStr = chargeAmount.toFixed(2);
     const productinfo = `Order ${dbOrder.order_number || order_id.slice(0, 8)}`;
