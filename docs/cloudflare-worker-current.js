@@ -208,7 +208,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.72.3-wa-redirect-html-prefetch";
+const WORKER_VERSION = "8.73.0-stale-preload-fix";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -1386,9 +1386,39 @@ const PREBUILT_HEAD_KV_KEY = `prebuilt-head:${WORKER_VERSION}`;
 const PREBUILT_HEAD_KV_TTL = 86400; // v8.1.0 cost-cut: 6h → 24h (purge bumps version)
 const PREBUILT_HEAD_CACHE_TTL = 300; // v7.7.0 Fix 4: 1m → 5m
 
+/* v8.73.0 STALE-PRELOAD FIX
+   The prebuilt head is a cache of <link rel=modulepreload> tags scraped from
+   the SPA shell. It was keyed ONLY by WORKER_VERSION with a 24h TTL, so a
+   frontend deploy (new /assets/*.js hashes) with no worker deploy left the
+   head pointing at DEAD chunk hashes for up to 24h. Result on every cold
+   storefront/category load:
+     - 5 wasted chunk downloads (404-free but unused old hashes)
+     - the REAL entry/App/shell chunks got NO preload → 3-deep JS waterfall
+   Fix: extract the entry hash from both the cached head and the live shell
+   HTML and reject the cache when they disagree. */
+function _extractEntryChunk(str) {
+  if (!str) return null;
+  const m = str.match(/\/assets\/(?:index|main)-[A-Za-z0-9_-]+\.js/);
+  return m ? m[0] : null;
+}
+
+// Returns `head` when it matches the shell currently being served, else null.
+function _validateHeadAgainstShell(head, html) {
+  if (!head || !html) return null;
+  const a = _extractEntryChunk(head);
+  const b = _extractEntryChunk(html);
+  if (!a || !b) return head; // can't tell — don't throw away a usable head
+  if (a === b) return head;
+  // Stale: drop every derived in-memory cache so this isolate rebuilds.
+  _memPrebuiltHead = null;
+  _memDeepChunks = null;
+  return null;
+}
+
 function _buildPrebuiltHead(html) {
   // FIX #7: Cache result in module-level variable — computed once per isolate
   if (_memPrebuiltHead) return _memPrebuiltHead;
+
 
   let head = "";
   // v8.32: removed shared-infra preconnect leak (was leaking same Supabase project ID across 100 stores)
@@ -1719,15 +1749,23 @@ function isLandingPath(pathname) {
 }
 
 async function getPrebuiltHead(html, env) {
-  // FIX #7: In-memory first
-  if (_memPrebuiltHead) return _memPrebuiltHead;
+  // FIX #7: In-memory first — v8.73.0: validated against the live shell.
+  if (_memPrebuiltHead) {
+    const ok = _validateHeadAgainstShell(_memPrebuiltHead, html);
+    if (ok) return ok;
+  }
 
   const headCacheKey = new Request(`https://cache/${PREBUILT_HEAD_KV_KEY}`);
   try {
     const cached = await cache.match(headCacheKey);
     if (cached) {
-      _memPrebuiltHead = await cached.text();
-      return _memPrebuiltHead;
+      const text = await cached.text();
+      const ok = _validateHeadAgainstShell(text, html);
+      if (ok) {
+        _memPrebuiltHead = ok;
+        return ok;
+      }
+      cache.delete(headCacheKey).catch(() => {});
     }
   } catch {}
 
@@ -1735,14 +1773,17 @@ async function getPrebuiltHead(html, env) {
     try {
       const cached = await env.STORE_KV.get(PREBUILT_HEAD_KV_KEY);
       if (cached) {
-        _memPrebuiltHead = cached;
-        cache
-          .put(
-            headCacheKey,
-            new Response(cached, { headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` } }),
-          )
-          .catch(() => {});
-        return _memPrebuiltHead;
+        const ok = _validateHeadAgainstShell(cached, html);
+        if (ok) {
+          _memPrebuiltHead = ok;
+          cache
+            .put(
+              headCacheKey,
+              new Response(ok, { headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` } }),
+            )
+            .catch(() => {});
+          return ok;
+        }
       }
     } catch {}
   }
@@ -1761,6 +1802,7 @@ async function getPrebuiltHead(html, env) {
 
   return prebuilt;
 }
+
 
 async function _getCachedPrebuiltHead(env) {
   // FIX #7: In-memory first — avoids all I/O on warm isolates
@@ -4171,7 +4213,8 @@ async function fetchAndInjectSlug(
     return { response, dataSource: "none" };
   }
 
-  let prebuiltHead = cachedHeadMem || (await getPrebuiltHead(shellResult.html, env));
+  let prebuiltHead =
+    _validateHeadAgainstShell(cachedHeadMem, shellResult.html) || (await getPrebuiltHead(shellResult.html, env));
   prebuiltHead = await enrichHeadWithDeepPreloads(prebuiltHead, new URL(request.url).origin, env);
   prebuiltHead = await enrichHeadWithThemeChunkPreloads(prebuiltHead, new URL(request.url).origin, env, themeLite?.th);
   if (_isPdpPath(new URL(request.url).pathname)) {
@@ -7417,7 +7460,8 @@ async function _handleFetch(request, env, ctx) {
       return addDiagnosticHeaders(response, { slug, cacheStatus: "MISS", dataSource: "none" });
     }
 
-    let prebuiltHead = cachedHead || (await getPrebuiltHead(shellResult.html, env));
+    let prebuiltHead =
+      _validateHeadAgainstShell(cachedHead, shellResult.html) || (await getPrebuiltHead(shellResult.html, env));
     prebuiltHead = await enrichHeadWithDeepPreloads(prebuiltHead, new URL(request.url).origin, env);
     prebuiltHead = await enrichHeadWithThemeChunkPreloads(prebuiltHead, new URL(request.url).origin, env, themeLite?.th);
     if (_isPdpPath(new URL(request.url).pathname)) {
@@ -7624,7 +7668,9 @@ async function _handleFetch(request, env, ctx) {
       return addDiagnosticHeaders(response, { slug: resolvedSlug, cacheStatus: "MISS", dataSource: "none" });
     }
 
-    let prebuiltHeadCD = cachedHeadCDReal || (await getPrebuiltHead(shellResultCD.html, env));
+    let prebuiltHeadCD =
+      _validateHeadAgainstShell(cachedHeadCDReal, shellResultCD.html) ||
+      (await getPrebuiltHead(shellResultCD.html, env));
     prebuiltHeadCD = await enrichHeadWithDeepPreloads(prebuiltHeadCD, new URL(request.url).origin, env);
     prebuiltHeadCD = await enrichHeadWithThemeChunkPreloads(prebuiltHeadCD, new URL(request.url).origin, env, themeLiteCD?.th);
     if (_isPdpPath(new URL(request.url).pathname)) {

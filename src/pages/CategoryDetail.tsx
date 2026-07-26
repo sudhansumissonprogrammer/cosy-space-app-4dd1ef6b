@@ -87,18 +87,34 @@ export default function CategoryDetail() {
             qKey,
             { pages: [{ products: inline.products, page: 0 }], pageParams: [0] }
           );
-          // Same pinned-product fix as above — inline HTML payload can be
-          // stale; invalidate to trigger a background refresh from the
-          // version-aware /api/products endpoint.
-          queryClient.invalidateQueries({ queryKey: qKey });
+          // PERF: the inline HTML payload can be stale, so we still refresh from
+          // the version-aware /api/products endpoint — but NOT synchronously.
+          // Invalidating during render queued the refetch inside the hydration
+          // burst, so on 4x-throttled mobile it landed at ~4.6s and competed
+          // with the render-critical chunks + hero images. Deferring it to idle
+          // keeps freshness while taking it off the first-paint critical path.
+          const refresh = () => queryClient.invalidateQueries({ queryKey: qKey });
+          if (typeof (window as any).requestIdleCallback === "function") {
+            (window as any).requestIdleCallback(refresh, { timeout: 3000 });
+          } else {
+            setTimeout(refresh, 1200);
+          }
         }
         return inline.category;
       }
       return undefined;
     },
 
+    // PERF: inline category comes from worker HTML that is itself version-purged
+    // and max-age=300. Treating it as fresh for 60s stops React Query from
+    // firing a duplicate category lookup the instant the route mounts.
+    initialDataUpdatedAt: () => Date.now(),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+
     enabled: !!store.id && !!store.slug && !!categorySlug,
   });
+
 
   const {
     data,
