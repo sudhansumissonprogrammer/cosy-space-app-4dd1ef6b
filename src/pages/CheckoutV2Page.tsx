@@ -157,6 +157,13 @@ function schemeFor(app: UpiApp, url: string): string {
   const m = url.match(/^upi:\/\/[^?]*\?(.+)$/i);
   const query = m?.[1];
   if (!query) return url;
+  // PhonePe is the one Android app where package-targeted intents fail on a
+  // small set of devices even when PhonePe is installed (dual-app/work-profile,
+  // disabled supported links, OEM browser quirks). Gateways that work on those
+  // phones usually launch the standard UPI chooser directly. So the PhonePe tile
+  // now uses the universal UPI handoff on Android; shoppers can select PhonePe
+  // immediately, and the payment/order URL + amount stay identical.
+  if (app === "phonepe" && isAndroid()) return `upi://pay?${query}`;
   const packageName = UPI_ANDROID_PACKAGES[app];
   if (packageName && isAndroid()) return androidIntentForUpi(query, packageName, `upi://pay?${query}`);
   if (app === "gpay") return `tez://upi/pay?${query}`;
