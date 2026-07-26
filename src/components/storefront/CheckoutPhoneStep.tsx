@@ -12,7 +12,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import secureBadge from "@/assets/trust/secure-payment-badge.webp.asset.json";
-import trustedSellerBadge from "@/assets/trust/trusted-seller-badge.webp.asset.json";
+import trustedSellerBadge from "@/assets/trust/trusted-seller-badge-v2.webp.asset.json";
 import {
   ArrowLeft,
   ChevronDown,
@@ -42,7 +42,6 @@ import { getOrCreateSessionId } from "@/lib/visitorSession";
 import { formatPrice } from "@/lib/productUtils";
 import type { CartItem } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
-import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { setCapiUser } from "@/lib/metaEnrichment";
 
@@ -127,7 +126,6 @@ export default function CheckoutPhoneStep({
   const inFlight = useRef(false);
   const autoSubmittedRef = useRef(false);
   const themeConfig = useStorefrontThemeConfig(storeId);
-  const marqueeEnabled = themeConfig?.marquee_enabled ?? true;
 
   const digits = phone.replace(/\D/g, "");
   const valid = digits.length === 10 && /^[6-9]/.test(digits);
@@ -319,10 +317,10 @@ export default function CheckoutPhoneStep({
         <img
           src={trustedSellerBadge.url}
           alt="Trusted Seller"
-          width={251}
-          height={140}
+          width={415}
+          height={200}
           decoding="async"
-          className="h-[26px] w-auto shrink-0 object-contain"
+          className="h-[34px] w-auto shrink-0 object-contain"
         />
         <img
           src={secureBadge.url}
@@ -334,12 +332,7 @@ export default function CheckoutPhoneStep({
         />
       </div>
 
-      {/* Announcement marquee — same dashboard-controlled component as main checkout */}
-      {marqueeEnabled && (
-        <div data-checkout-marquee className="sticky top-[57px] z-10">
-          <StorefrontMarquee text={themeConfig?.marquee_text} />
-        </div>
-      )}
+
 
 
       <div className="px-3 py-3 space-y-3">
