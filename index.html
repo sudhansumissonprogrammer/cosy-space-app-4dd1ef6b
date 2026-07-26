@@ -22,8 +22,13 @@
           var API = "https://dqepeywgftbpxeeqfuwt.supabase.co";
           var ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
           var fb = function(){ location.replace(API + "/functions/v1/wa-r/" + encodeURIComponent(tok)); };
+          // Signed marketing links carry `~<phone>` and need the edge function
+          // to mint the auto-login session — the RPC can't do that and always
+          // answers {ok:false}, so skip the wasted round-trip entirely.
+          if (tok.indexOf("~") >= 0) { fb(); return; }
           var timer = setTimeout(fb, 800);
           fetch(API + "/rest/v1/rpc/get_wa_redirect", {
+
             method: "POST", cache: "no-store", credentials: "omit",
             headers: { apikey: ANON, Authorization: "Bearer " + ANON, "Content-Type": "application/json" },
             body: JSON.stringify({ _token: tok })

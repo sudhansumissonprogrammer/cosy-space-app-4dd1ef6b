@@ -392,23 +392,33 @@ Deno.serve(async (req) => {
       );
     }
 
-    // SAFE-IP POLICY (v8.70.0): previously we NEVER forwarded a client IP
-    // from the browser path (routing slip risk of leaking Supabase/AWS
-    // datacenter IPs → ad-account ban). Meta EMQ warned "IP missing → -14%
-    // conversions". New scheme: browser fetches its own public IP via
-    // api.ipify.org (declared_client_ip) and posts it here. We compare with
-    // cf-connecting-ip / x-forwarded-for; only forward to Meta when they
-    // match AND the IP is public IPv4/IPv6. Any mismatch → drop silently
-    // (same zero-leak guarantee as before, just without the free money).
+    // SAFE-IP POLICY (v8.71.0): we must never forward a *server* IP to Meta
+    // (leaking a Supabase/AWS datacenter IP is a ban signal). The previous
+    // scheme asked the browser to self-report its IP via api.ipify.org and
+    // cross-checked it — but every storefront CSP blocks ipify, so the IP was
+    // always missing and Meta kept flagging "-14% conversions".
+    //
+    // A browser-originated request reaches this function DIRECTLY, so
+    // cf-connecting-ip here is already the shopper's real IP. We detect the
+    // browser path via the `Origin` header (browsers always send it on a
+    // cross-origin POST; our server-to-server relays never do) and forward
+    // the header IP only then. Any server-relayed call still gets no IP,
+    // and a browser-declared IP is still honoured when it matches.
     const headerIp =
       req.headers.get("cf-connecting-ip") ||
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       "";
     const declaredIp = typeof declared_client_ip === "string" ? declared_client_ip.trim() : "";
-    const safeClientIp =
-      declaredIp && headerIp && declaredIp === headerIp && !isPrivateIpV(declaredIp)
+    const browserOriginated = !!req.headers.get("origin");
+    const candidateIp =
+      declaredIp && headerIp && declaredIp === headerIp
         ? declaredIp
-        : undefined;
+        : browserOriginated
+          ? headerIp
+          : "";
+    const safeClientIp =
+      candidateIp && !isPrivateIpV(candidateIp) ? candidateIp : undefined;
+
 
     const userData: CAPIEvent["user_data"] = {
       client_user_agent: user_agent || req.headers.get("user-agent") || undefined,
