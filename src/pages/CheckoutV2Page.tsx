@@ -1553,21 +1553,22 @@ export default function CheckoutV2Page() {
 
     const purchaseValue = computePurchaseValue(lastPaidMethodRef.current);
 
-    // Pixel Purchase — dedupe per order.
-    const purchaseDedupKey = `meta_purchase_fired_${ordId}`;
-    let alreadyFired = false;
-    try { alreadyFired = sessionStorage.getItem(purchaseDedupKey) === "1"; } catch { /* noop */ }
-    if (!alreadyFired) {
-      try { sessionStorage.setItem(purchaseDedupKey, "1"); } catch { /* noop */ }
-      try {
-        fbPixelTrack("Purchase", {
-          ...pixelPayloadFromItems(checkoutItems),
-          content_type: "product",
-          content_name: checkoutItems.map((i) => i.name).join(", "),
-          value: purchaseValue, currency,
-        }, purchaseEventIdRef.current);
-      } catch { /* noop */ }
-    }
+    // Pixel Purchase — deduped in localStorage (survives the Instagram/FB
+    // in-app-browser sessionStorage wipe that used to let a remount fire a
+    // second Purchase) and force-loads fbevents.js so the event isn't stranded
+    // in the fbq shim queue when the shopper closes the tab.
+    firePixelPurchase({
+      orderId: ordId,
+      eventId: purchaseEventIdRef.current,
+      value: purchaseValue,
+      currency,
+      payload: {
+        ...pixelPayloadFromItems(checkoutItems),
+        content_name: checkoutItems.map((i) => i.name).join(", "),
+      },
+    });
+    clearPendingPurchase(ordId);
+
 
     try {
       ga4Track("purchase", {
