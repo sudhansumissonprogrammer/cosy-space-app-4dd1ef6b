@@ -93,8 +93,24 @@ const UPI_ANDROID_PACKAGES: Partial<Record<UpiApp, string>> = {
 };
 
 function androidIntentForUpi(query: string, packageName: string, fallbackUrl: string): string {
-  return `intent://pay?${query}#Intent;scheme=upi;package=${packageName};S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+  // Chrome only honours S.browser_fallback_url when it is http(s) — a `upi://`
+  // fallback is silently dropped, which is why a failed package-targeted
+  // intent used to leave the shopper on a blank/frozen page. Always pass the
+  // current checkout URL so Chrome has a legal fallback, and declare the
+  // VIEW action + BROWSABLE category that several OEM Chrome/WebView builds
+  // require before they will resolve the package.
+  const httpsFallback = /^https?:/i.test(fallbackUrl)
+    ? fallbackUrl
+    : (typeof window !== "undefined" ? window.location.href : "https://shopbanao.in");
+  return (
+    `intent://pay?${query}#Intent;scheme=upi;` +
+    `action=android.intent.action.VIEW;` +
+    `category=android.intent.category.BROWSABLE;` +
+    `package=${packageName};` +
+    `S.browser_fallback_url=${encodeURIComponent(httpsFallback)};end`
+  );
 }
+
 
 function extractUpiQuery(url: string): string | null {
   const upi = url.match(/^upi:\/\/[^?]*\?([^#]+)/i);
@@ -105,20 +121,34 @@ function extractUpiQuery(url: string): string | null {
   return native?.[1] || null;
 }
 
-function nativeSchemeForUpiApp(app: UpiApp, url: string): string | null {
-  const query = extractUpiQuery(url);
-  if (!query) return null;
-  if (app === "gpay") return `tez://upi/pay?${query}`;
-  if (app === "phonepe") return `phonepe://pay?${query}`;
-  if (app === "paytm") return `paytmmp://pay?${query}`;
-  if (app === "bhim") return `upi://pay?${query}`;
-  return `upi://pay?${query}`;
-}
 
 function genericUpiUrl(url: string): string | null {
   const query = extractUpiQuery(url);
   return query ? `upi://pay?${query}` : null;
 }
+
+/**
+ * Launch a UPI/intent URL. Some Android Chrome + OEM WebView builds refuse
+ * `location.assign()` for non-http schemes but honour a real anchor
+ * activation, so click a synthetic <a> first and only fall back to
+ * location.assign if that throws.
+ */
+function launchUpiUrl(url: string): void {
+  try {
+    const a = document.createElement("a");
+    a.href = url;
+    a.rel = "noopener";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    window.setTimeout(() => { try { a.remove(); } catch { /* noop */ } }, 0);
+    return;
+  } catch { /* fall through */ }
+  try { window.location.assign(url); } catch {
+    try { window.location.href = url; } catch { /* noop */ }
+  }
+}
+
 
 /** Rewrite `upi://pay?...` to the safest app launch URL for the shopper's device. */
 function schemeFor(app: UpiApp, url: string): string {
@@ -1867,32 +1897,25 @@ export default function CheckoutV2Page() {
     armWaiting();
 
     // Keep the user gesture as clean as possible for low-end Android Chrome:
-    // launch the app synchronously, then update React state only after the
-    // browser has had a chance to hand off to PhonePe/GPay/Paytm. Updating to
-    // the waiting screen before navigation unmounted the tapped anchor on old
-    // Android devices, so PhonePe silently failed to open.
-    try {
-      window.location.assign(s.url);
-    } catch {
-      try { window.location.href = s.url; } catch { /* noop */ }
-    }
+    // launch the app synchronously via a real anchor activation (some OEM
+    // Chrome/WebView builds ignore location.assign for non-http schemes),
+    // then update React state only after the browser has had a chance to hand
+    // off to PhonePe/GPay/Paytm.
+    launchUpiUrl(s.url);
 
     if (isAndroid() && app !== "any") {
-      const nativeUrl = nativeSchemeForUpiApp(app, s.url);
+      // Single fallback only. Chaining three navigations used to fire the
+      // app-private scheme (phonepe://, tez://) from a timer with no user
+      // activation left — Chrome blocks those, so the shopper saw nothing at
+      // all. `upi://pay` is the one scheme every UPI app registers and it
+      // shows the system app chooser, which is what other gateways rely on.
       const anyUpiUrl = genericUpiUrl(s.url);
       window.setTimeout(() => {
         if (leftCheckout || document.visibilityState !== "visible") return;
-        if (nativeUrl && nativeUrl !== s.url) {
-          try { window.location.assign(nativeUrl); } catch { /* noop */ }
-        }
-      }, 650);
-      window.setTimeout(() => {
-        if (leftCheckout || document.visibilityState !== "visible") return;
-        if (anyUpiUrl) {
-          try { window.location.assign(anyUpiUrl); } catch { /* noop */ }
-        }
-      }, 1350);
+        if (anyUpiUrl && anyUpiUrl !== s.url) launchUpiUrl(anyUpiUrl);
+      }, 900);
     }
+
 
     // Pixels and analytics run after the app launch has already been handed off.
     window.setTimeout(() => {
