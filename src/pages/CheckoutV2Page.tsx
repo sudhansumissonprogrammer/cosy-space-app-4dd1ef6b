@@ -1113,6 +1113,11 @@ export default function CheckoutV2Page() {
   // new intents come back → still off by 1 paise → effect fires again → loop.
   // 437 place-order hits from a single IP in 10 min is a symptom of this.
   const lastMintAtRef = useRef<number>(0);
+  // Amount of the last intent we successfully minted. Used to suppress a
+  // redundant second mint: rapid triggers get coalesced into a deferred
+  // re-mint, which used to run even when nothing about the amount changed —
+  // burning a duplicate PayU UPI reference on every checkout.
+  const lastMintedAmountRef = useRef<number | null>(null);
   const mintCountRef = useRef<number>(0);
   const mintLoopBlockedRef = useRef<boolean>(false);
   const [showPayment, setShowPayment] = useState(false);
@@ -2215,6 +2220,7 @@ export default function CheckoutV2Page() {
                 payu_txnid: payload.payu_txnid, razorpay_payment_id: payload.razorpay_payment_id,
               };
             }
+            lastMintedAmountRef.current = requestedAmount;
             setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "ready", url: schemeFor(a, url), amount: requestedAmount }; }); return next; });
           }
         } catch (e: any) {
@@ -2242,9 +2248,14 @@ export default function CheckoutV2Page() {
 
     createOrderPromiseRef.current = run.finally(() => {
       createOrderPromiseRef.current = null;
-      if (remintAfterCurrentOrderRef.current && !confirmingPayment && !orderPlaced) {
+      const mintedAmount = lastMintedAmountRef.current;
+      const amountStillMatches = mintedAmount != null &&
+        Math.round(mintedAmount * 100) === Math.round(chargeAmount * 100);
+      if (remintAfterCurrentOrderRef.current && !confirmingPayment && !orderPlaced && !amountStillMatches) {
         remintAfterCurrentOrderRef.current = false;
         window.setTimeout(() => { void createOrderAndIntents(); }, 0);
+      } else {
+        remintAfterCurrentOrderRef.current = false;
       }
     });
 
