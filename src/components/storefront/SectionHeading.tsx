@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 
 interface SectionHeadingProps {
-  title: string;
+  title: ReactNode;
   slug?: string;
   linkTo?: string;
   className?: string;
 }
+
 
 /**
  * Premium section heading with animated underline draw on viewport entry,
@@ -40,7 +41,7 @@ export default function SectionHeading({ title, slug, linkTo, className = "" }: 
         <div className="flex-1" />
         <h2
           ref={headingRef}
-          className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold tracking-wide whitespace-nowrap text-center"
+          className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold tracking-wide whitespace-nowrap text-center inline-flex items-center justify-center gap-2"
           style={{
             fontFamily: "var(--storefront-heading-font, 'Alegreya SC', serif)",
             color: "var(--storefront-text, hsl(var(--foreground)))",
@@ -48,6 +49,7 @@ export default function SectionHeading({ title, slug, linkTo, className = "" }: 
         >
           {title}
         </h2>
+
         <div className="flex-1 flex justify-end">
           {slug && linkTo && (
             <Link
