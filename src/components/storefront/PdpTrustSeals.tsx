@@ -36,8 +36,8 @@ export default function PdpTrustSeals() {
             src={s.src}
             alt={s.alt}
             title={s.alt}
-            width={256}
-            height={256}
+            width={160}
+            height={160}
             loading="lazy"
             decoding="async"
             className="shrink-0 snap-start h-auto object-contain w-[calc((100%-2.25rem)/4)] md:w-[13%] md:max-w-[74px]"
