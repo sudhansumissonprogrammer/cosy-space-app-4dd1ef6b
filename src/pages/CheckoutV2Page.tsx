@@ -92,16 +92,24 @@ const UPI_ANDROID_PACKAGES: Partial<Record<UpiApp, string>> = {
   paytm: "net.one97.paytm",
 };
 
-function androidIntentForUpi(query: string, packageName: string, fallbackUrl: string): string {
-  // Chrome only honours S.browser_fallback_url when it is http(s) — a `upi://`
-  // fallback is silently dropped, which is why a failed package-targeted
-  // intent used to leave the shopper on a blank/frozen page. Always pass the
-  // current checkout URL so Chrome has a legal fallback, and declare the
-  // VIEW action + BROWSABLE category that several OEM Chrome/WebView builds
-  // require before they will resolve the package.
-  const httpsFallback = /^https?:/i.test(fallbackUrl)
-    ? fallbackUrl
-    : (typeof window !== "undefined" ? window.location.href : "https://shopbanao.in");
+/** Marker appended to the checkout URL when Chrome cannot resolve a package
+ *  intent (app not installed). Fragment-only → same-document navigation, so
+ *  checkout state survives and we can instantly show the UPI app chooser. */
+const UPI_FALLBACK_HASH = "upi_fb";
+
+function androidIntentForUpi(query: string, packageName: string, _fallbackUrl: string): string {
+  // Chrome only honours S.browser_fallback_url when it is http(s). Pointing it
+  // at the full checkout URL caused a hard reload whenever the targeted app was
+  // missing — the shopper lost the page and never saw a chooser. Instead point
+  // it at the SAME url with a `#upi_fb` fragment: Chrome treats it as a legal
+  // https fallback but the browser performs a same-document navigation (no
+  // reload), and tapUpiApp listens for the hashchange to immediately launch the
+  // universal `upi://pay` chooser, which lists only the UPI apps actually
+  // installed on the device.
+  const base = typeof window !== "undefined"
+    ? window.location.href.split("#")[0]
+    : "https://shopbanao.in";
+  const httpsFallback = `${base}#${UPI_FALLBACK_HASH}`;
   return (
     `intent://pay?${query}#Intent;scheme=upi;` +
     `action=android.intent.action.VIEW;` +
@@ -1843,6 +1851,17 @@ export default function CheckoutV2Page() {
     // this tap so we auto-resume the UPI launch after the shopper saves.
     if (!requireAddressOrPrompt(() => tapUpiApp(app))) return;
     const s = intents[app];
+    // A failed tile used to be a dead end (silent return + pointer-events-none),
+    // so a shopper who hit one transient gateway error could never pay by UPI
+    // again in that session. Treat the tap as an explicit retry.
+    if (s.status === "failed") {
+      mintCountRef.current = 0;
+      mintLoopBlockedRef.current = false;
+      lastMintAtRef.current = 0;
+      toast.info("Retrying…");
+      void createOrderAndIntents();
+      return;
+    }
     if (s.status !== "ready" || !s.url) {
       return;
     }
@@ -1883,13 +1902,34 @@ export default function CheckoutV2Page() {
     const onVisibility = () => {
       if (document.visibilityState === "hidden") markLeft();
     };
+    // Universal chooser fallback: fired at most once per tap, either because
+    // Chrome bounced us to the `#upi_fb` fallback (app not installed) or
+    // because nothing happened at all after 2.6s.
+    let chooserFired = false;
+    const anyUpiUrl = genericUpiUrl(s.url);
+    const fireChooser = () => {
+      if (chooserFired || leftCheckout) return;
+      chooserFired = true;
+      if (anyUpiUrl && anyUpiUrl !== s.url) launchUpiUrl(anyUpiUrl);
+    };
+    const onHashFallback = () => {
+      if (!window.location.hash.includes(UPI_FALLBACK_HASH)) return;
+      try {
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      } catch { /* noop */ }
+      // The targeted app is not installed on this device — immediately open
+      // the system UPI chooser, which lists only the apps the shopper has.
+      fireChooser();
+    };
     const cleanupLaunchListeners = () => {
       window.removeEventListener("blur", markLeft);
       window.removeEventListener("pagehide", markLeft);
+      window.removeEventListener("hashchange", onHashFallback);
       document.removeEventListener("visibilitychange", onVisibility);
     };
     window.addEventListener("blur", markLeft, { once: true });
     window.addEventListener("pagehide", markLeft, { once: true });
+    window.addEventListener("hashchange", onHashFallback);
     document.addEventListener("visibilitychange", onVisibility);
 
     // Arm waiting BEFORE navigating. WhatsApp/Instagram in-app browsers can
@@ -1913,11 +1953,10 @@ export default function CheckoutV2Page() {
       // splash/spinner for several extra seconds. So wait long enough that a
       // slow-but-successful launch is never interrupted, and also require the
       // document to still hold focus (a launching app takes focus first).
-      const anyUpiUrl = genericUpiUrl(s.url);
       window.setTimeout(() => {
         if (leftCheckout || document.visibilityState !== "visible") return;
         try { if (!document.hasFocus()) return; } catch { /* noop */ }
-        if (anyUpiUrl && anyUpiUrl !== s.url) launchUpiUrl(anyUpiUrl);
+        fireChooser();
       }, 2600);
     }
 
@@ -2991,7 +3030,23 @@ export default function CheckoutV2Page() {
         <Button variant="outline" className="w-full" onClick={forceRecheck} disabled={manualChecking}>
           {manualChecking ? "Checking…" : "I've paid — check now"}
         </Button>
-        <button className="mt-3 text-xs text-muted-foreground underline" onClick={() => { clearWaiting(); setWaiting(false); setConfirmingPayment(false); try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ } }}>
+        <button className="mt-3 text-xs text-muted-foreground underline" onClick={() => {
+          clearWaiting(); setWaiting(false); setConfirmingPayment(false);
+          try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+          // The intent URL carries a single gateway payment reference. Once the
+          // shopper cancelled inside GPay/PhonePe that reference is burnt — a
+          // second app tap on the same URL fails ("transaction already
+          // processed"). Mint a fresh intent on the SAME order (checkout_token
+          // keeps it one pending row) so the next app opens cleanly.
+          mintCountRef.current = 0;
+          mintLoopBlockedRef.current = false;
+          lastMintAtRef.current = 0;
+          setIntents({
+            gpay: { status: "loading" }, phonepe: { status: "loading" },
+            paytm: { status: "loading" }, bhim: { status: "loading" }, any: { status: "loading" },
+          });
+          queueMicrotask(() => { void createOrderAndIntents(); });
+        }}>
           Cancel and choose another method
         </button>
       </div>
@@ -3888,19 +3943,22 @@ export default function CheckoutV2Page() {
                   // resumes this exact UPI launch on save. Only apply the
                   // real disabled state once the address is complete.
                   const addressReady = addressComplete;
-                  const disabled = addressReady && (s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount);
+                  // A `failed` tile must stay tappable — the tap is an explicit
+                  // retry (see tapUpiApp). Only block truly in-flight states.
+                  const retryable = s.status === "failed";
+                  const disabled = addressReady && !retryable && (s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount);
                   const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
                   return (
                     <a
                       key={app.key}
-                      href={disabled || !addressReady ? undefined : s.url}
+                      href={disabled || retryable || !addressReady ? undefined : s.url}
                       onClick={(e) => tapUpiApp(app.key, e)}
                       aria-disabled={disabled}
-                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 min-h-[92px] relative ${disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
+                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 min-h-[92px] relative ${disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""} ${retryable ? "opacity-70" : ""}`}
                     >
                       
                       <img src={app.icon} alt={app.label} className="h-8 w-8 mt-3 mb-1 object-contain" />
-                      <div className="text-[11px] font-semibold">{app.label}</div>
+                      <div className="text-[11px] font-semibold">{retryable ? "Retry" : app.label}</div>
                       {addressReady && (s.status === "loading" || staleAmount) && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
                     </a>
                   );
@@ -3910,10 +3968,11 @@ export default function CheckoutV2Page() {
                 const anyS = intents.any;
                 const staleAny = typeof anyS.amount === "number" && Math.round(anyS.amount * 100) !== Math.round(chargeAmount * 100);
                 const addressReady = addressComplete;
-                const anyDisabled = addressReady && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
+                const anyRetryable = anyS.status === "failed";
+                const anyDisabled = addressReady && !anyRetryable && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
                 return (
                   <a
-                    href={anyDisabled || !addressReady ? undefined : anyS.url}
+                    href={anyDisabled || anyRetryable || !addressReady ? undefined : anyS.url}
                     onClick={(e) => tapUpiApp("any", e)}
                     aria-disabled={anyDisabled}
                     className={`mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] ${anyDisabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
