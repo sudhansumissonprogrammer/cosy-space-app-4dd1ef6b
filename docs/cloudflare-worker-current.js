@@ -1749,15 +1749,23 @@ function isLandingPath(pathname) {
 }
 
 async function getPrebuiltHead(html, env) {
-  // FIX #7: In-memory first
-  if (_memPrebuiltHead) return _memPrebuiltHead;
+  // FIX #7: In-memory first — v8.73.0: validated against the live shell.
+  if (_memPrebuiltHead) {
+    const ok = _validateHeadAgainstShell(_memPrebuiltHead, html);
+    if (ok) return ok;
+  }
 
   const headCacheKey = new Request(`https://cache/${PREBUILT_HEAD_KV_KEY}`);
   try {
     const cached = await cache.match(headCacheKey);
     if (cached) {
-      _memPrebuiltHead = await cached.text();
-      return _memPrebuiltHead;
+      const text = await cached.text();
+      const ok = _validateHeadAgainstShell(text, html);
+      if (ok) {
+        _memPrebuiltHead = ok;
+        return ok;
+      }
+      cache.delete(headCacheKey).catch(() => {});
     }
   } catch {}
 
@@ -1765,14 +1773,17 @@ async function getPrebuiltHead(html, env) {
     try {
       const cached = await env.STORE_KV.get(PREBUILT_HEAD_KV_KEY);
       if (cached) {
-        _memPrebuiltHead = cached;
-        cache
-          .put(
-            headCacheKey,
-            new Response(cached, { headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` } }),
-          )
-          .catch(() => {});
-        return _memPrebuiltHead;
+        const ok = _validateHeadAgainstShell(cached, html);
+        if (ok) {
+          _memPrebuiltHead = ok;
+          cache
+            .put(
+              headCacheKey,
+              new Response(ok, { headers: { "Cache-Control": `public, max-age=${PREBUILT_HEAD_CACHE_TTL}` } }),
+            )
+            .catch(() => {});
+          return ok;
+        }
       }
     } catch {}
   }
@@ -1791,6 +1802,7 @@ async function getPrebuiltHead(html, env) {
 
   return prebuilt;
 }
+
 
 async function _getCachedPrebuiltHead(env) {
   // FIX #7: In-memory first — avoids all I/O on warm isolates
