@@ -852,7 +852,7 @@ Deno.serve(async (req) => {
 
     let createdOrder: { id: string } | null = null;
     let orderErr: any = null;
-    const reusedExistingOrder = !!reusableOrder;
+    let reusedExistingOrder = !!reusableOrder;
 
     if (reusableOrder) {
       const { data: updatedOrder, error: updateErr } = await supabase
@@ -918,6 +918,10 @@ Deno.serve(async (req) => {
       }
 
       if (dedupOrder) {
+        // Reusing an existing pending row → its old order_items MUST be
+        // replaced, not appended to (otherwise every retry duplicates the
+        // line items and the dashboard shows the same product 5-7 times).
+        reusedExistingOrder = true;
         const { data: updatedOrder, error: updateErr } = await supabase
           .from("orders")
           .update(orderPayload)
