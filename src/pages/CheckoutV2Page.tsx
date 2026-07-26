@@ -3030,7 +3030,23 @@ export default function CheckoutV2Page() {
         <Button variant="outline" className="w-full" onClick={forceRecheck} disabled={manualChecking}>
           {manualChecking ? "Checking…" : "I've paid — check now"}
         </Button>
-        <button className="mt-3 text-xs text-muted-foreground underline" onClick={() => { clearWaiting(); setWaiting(false); setConfirmingPayment(false); try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ } }}>
+        <button className="mt-3 text-xs text-muted-foreground underline" onClick={() => {
+          clearWaiting(); setWaiting(false); setConfirmingPayment(false);
+          try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+          // The intent URL carries a single gateway payment reference. Once the
+          // shopper cancelled inside GPay/PhonePe that reference is burnt — a
+          // second app tap on the same URL fails ("transaction already
+          // processed"). Mint a fresh intent on the SAME order (checkout_token
+          // keeps it one pending row) so the next app opens cleanly.
+          mintCountRef.current = 0;
+          mintLoopBlockedRef.current = false;
+          lastMintAtRef.current = 0;
+          setIntents({
+            gpay: { status: "loading" }, phonepe: { status: "loading" },
+            paytm: { status: "loading" }, bhim: { status: "loading" }, any: { status: "loading" },
+          });
+          queueMicrotask(() => { void createOrderAndIntents(); });
+        }}>
           Cancel and choose another method
         </button>
       </div>
