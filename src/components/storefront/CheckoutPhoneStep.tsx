@@ -12,7 +12,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import secureBadge from "@/assets/trust/secure-payment-badge.webp.asset.json";
-import trustedSellerBadge from "@/assets/trust/trusted-seller-badge-v2.webp.asset.json";
+import trustedSellerBadge from "@/assets/trust/trusted-seller-badge-v3.webp.asset.json";
 import {
   ArrowLeft,
   ChevronDown,
@@ -317,10 +317,10 @@ export default function CheckoutPhoneStep({
         <img
           src={trustedSellerBadge.url}
           alt="Trusted Seller"
-          width={415}
-          height={200}
+          width={622}
+          height={300}
           decoding="async"
-          className="h-[26px] w-auto shrink-0 object-contain"
+          className="h-[39px] w-auto shrink-0 object-contain"
         />
         <img
           src={secureBadge.url}
