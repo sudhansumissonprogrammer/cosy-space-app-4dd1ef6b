@@ -5024,6 +5024,7 @@ export type Database = {
         Returns: string[]
       }
       get_dashboard_stats: { Args: { _store_id: string }; Returns: Json }
+      get_order_tracking: { Args: { _query: string }; Returns: Json }
       get_own_cashfree_secret: { Args: { _store_id: string }; Returns: string }
       get_own_domain_token: { Args: { _store_id: string }; Returns: string }
       get_own_payment_secret: { Args: { _store_id: string }; Returns: string }
