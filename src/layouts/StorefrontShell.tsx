@@ -234,6 +234,24 @@ export default function StorefrontShell({
       .catch(() => {});
   }, [store?.id]);
 
+  // Durable Purchase outbox replay. Orders confirmed by the payment webhook
+  // after the shopper's tab died (Android UPI hand-off) never got a browser
+  // Purchase. On any later storefront visit we verify those staged orders and
+  // fire the pixel with the original event_id, so browser coverage matches CAPI.
+  useEffect(() => {
+    const storeId = store?.id;
+    if (!storeId) return;
+    const run = () => {
+      import("@/lib/pixelOutbox")
+        .then((m) => m.flushPendingPurchases(storeId))
+        .catch(() => {});
+    };
+    const t = window.setTimeout(run, 2500);
+    return () => window.clearTimeout(t);
+  }, [store?.id]);
+
+
+
   // GA4 tag — read measurement ID from store.features.ga4_measurement_id
   // (jsonb on stores). Stores without GA4 set up: hook is a no-op.
   const ga4Id = (store as any)?.features?.ga4_measurement_id || null;

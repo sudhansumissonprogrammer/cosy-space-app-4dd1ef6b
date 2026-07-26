@@ -38,6 +38,7 @@ import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { loadCashfree } from "@/lib/loadCashfree";
 import { getOrCreateCheckoutToken, writeCheckoutTokenCookie, clearCheckoutTokenCookie, mintCheckoutToken } from "@/lib/checkoutTokenStore";
+import { purchaseEventIdFor, firePixelPurchase, stagePendingPurchase, clearPendingPurchase } from "@/lib/pixelOutbox";
 import { loadPayuBolt } from "@/lib/loadPayuBolt";
 import { createPortal } from "react-dom";
 
@@ -1172,6 +1173,7 @@ export default function CheckoutV2Page() {
   const checkoutTokenRef = useRef(checkoutToken);
   useEffect(() => {
     checkoutTokenRef.current = checkoutToken;
+    purchaseEventIdRef.current = purchaseEventIdFor(checkoutToken);
     writeCheckoutTokenCookie(checkoutToken);
   }, [checkoutToken]);
 
@@ -1187,7 +1189,12 @@ export default function CheckoutV2Page() {
     payu_txnid?: string;
     razorpay_payment_id?: string;
   }>({});
-  const purchaseEventIdRef = useRef<string>(generateEventId());
+  // Deterministic Purchase event_id derived from the checkout token. A remount
+  // (IABB tab wipe after the UPI hand-off, PayU redirect back, reload) reuses
+  // the same token, so the browser Purchase and the server CAPI Purchase always
+  // carry an identical event_id and Meta deduplicates them. Previously this was
+  // regenerated per mount, so a remount produced a second, undedupable Purchase.
+  const purchaseEventIdRef = useRef<string>(purchaseEventIdFor(checkoutTokenRef.current));
   const metaCookiesRef = useRef<{ fbc: string; fbp: string }>(getMetaCookies());
   // Debounced shipping-identity string. Address/name/phone changes must
   // still invalidate the snapshot (otherwise place-order's checkout_token
@@ -1546,21 +1553,22 @@ export default function CheckoutV2Page() {
 
     const purchaseValue = computePurchaseValue(lastPaidMethodRef.current);
 
-    // Pixel Purchase — dedupe per order.
-    const purchaseDedupKey = `meta_purchase_fired_${ordId}`;
-    let alreadyFired = false;
-    try { alreadyFired = sessionStorage.getItem(purchaseDedupKey) === "1"; } catch { /* noop */ }
-    if (!alreadyFired) {
-      try { sessionStorage.setItem(purchaseDedupKey, "1"); } catch { /* noop */ }
-      try {
-        fbPixelTrack("Purchase", {
-          ...pixelPayloadFromItems(checkoutItems),
-          content_type: "product",
-          content_name: checkoutItems.map((i) => i.name).join(", "),
-          value: purchaseValue, currency,
-        }, purchaseEventIdRef.current);
-      } catch { /* noop */ }
-    }
+    // Pixel Purchase — deduped in localStorage (survives the Instagram/FB
+    // in-app-browser sessionStorage wipe that used to let a remount fire a
+    // second Purchase) and force-loads fbevents.js so the event isn't stranded
+    // in the fbq shim queue when the shopper closes the tab.
+    firePixelPurchase({
+      orderId: ordId,
+      eventId: purchaseEventIdRef.current,
+      value: purchaseValue,
+      currency,
+      payload: {
+        ...pixelPayloadFromItems(checkoutItems),
+        content_name: checkoutItems.map((i) => i.name).join(", "),
+      },
+    });
+    clearPendingPurchase(ordId);
+
 
     try {
       ga4Track("purchase", {
@@ -1608,15 +1616,37 @@ export default function CheckoutV2Page() {
 
   const WAIT_KEY = `sf_wait_v2_${store?.id}`;
   const persistWaiting = (app: UpiApp, label: string, override?: { orderId?: string | null; orderNumber?: string | null }) => {
+    const waitOrderId = override?.orderId ?? orderId;
     try {
       const payload = JSON.stringify({
-        orderId: override?.orderId ?? orderId,
+        orderId: waitOrderId,
         orderNumber: override?.orderNumber ?? orderNumber,
         app, label, gateway: gatewayRef.current, ts: Date.now(),
       });
       sessionStorage.setItem(WAIT_KEY, payload);
       localStorage.setItem(WAIT_KEY, payload);
     } catch { /* noop */ }
+    // Durable Purchase outbox: the shopper is leaving for a UPI app / gateway
+    // page. If the tab never comes back (very common on Android UPI hand-offs)
+    // the browser Purchase would be lost entirely. Stage it now — the next
+    // storefront pageload verifies the order status and fires the pixel then,
+    // with the SAME event_id the server already stored, so nothing double-counts.
+    if (waitOrderId && store?.id) {
+      try {
+        stagePendingPurchase({
+          storeId: store.id,
+          orderId: waitOrderId,
+          eventId: purchaseEventIdRef.current,
+          value: computePurchaseValue(lastPaidMethodRef.current),
+          currency,
+          payload: {
+            ...pixelPayloadFromItems(checkoutItems),
+            content_name: checkoutItems.map((i) => i.name).join(", "),
+          },
+          at: Date.now(),
+        });
+      } catch { /* noop */ }
+    }
   };
   const clearWaiting = () => {
     try { sessionStorage.removeItem(WAIT_KEY); } catch { /* noop */ }
