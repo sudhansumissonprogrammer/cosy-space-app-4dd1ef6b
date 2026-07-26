@@ -3033,7 +3033,7 @@ export default function CheckoutV2Page() {
             width={622}
             height={300}
             decoding="async"
-            className="h-10 w-auto shrink-0 object-contain"
+            className="h-[60px] w-auto shrink-0 object-contain"
           />
           <img
             src={secureBadge.url}
@@ -3041,7 +3041,7 @@ export default function CheckoutV2Page() {
             width={110}
             height={50}
             decoding="async"
-            className="h-5 w-auto shrink-0 object-contain"
+            className="h-[30px] w-auto shrink-0 object-contain"
           />
         </div>
       </div>
