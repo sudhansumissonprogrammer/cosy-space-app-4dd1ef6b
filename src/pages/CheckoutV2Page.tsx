@@ -3015,23 +3015,33 @@ export default function CheckoutV2Page() {
       )}
 
       {/* Header: back • logo • Secured payment */}
-      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-3 flex items-center gap-2">
+      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-3 flex items-center gap-1.5">
         <button onClick={goBack} aria-label="Back" className="p-1 -ml-1 shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </button>
         {store?.logo_url ? (
-          <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[110px] object-contain shrink-0" />
+          <>
+            <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[100px] object-contain shrink-0" />
+            <div className="flex-1 min-w-0" />
+          </>
         ) : (
-          <div className="text-sm font-bold truncate min-w-0 flex-1">{store?.name || "Store"}</div>
+          <div className="text-[13px] font-bold truncate min-w-0 flex-1 leading-tight">{store?.name || "Store"}</div>
         )}
-        <div className="flex-1 min-w-0" />
+        <img
+          src={trustedSellerBadge.url}
+          alt="Trusted Seller"
+          width={251}
+          height={140}
+          decoding="async"
+          className="h-[26px] w-auto shrink-0 object-contain"
+        />
         <img
           src={secureBadge.url}
           alt="100% Secure Payment"
           width={110}
           height={50}
           decoding="async"
-          className="h-[30px] w-auto shrink-0 object-contain"
+          className="h-[28px] w-auto shrink-0 object-contain"
         />
       </div>
 
