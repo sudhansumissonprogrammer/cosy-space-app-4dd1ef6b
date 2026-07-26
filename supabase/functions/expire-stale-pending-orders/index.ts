@@ -28,9 +28,27 @@ Deno.serve(async (req) => {
 
   const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
+  // Ask the gateway FIRST. A shopper can pay on the very last UPI attempt and
+  // have the browser die before returning; if we cancel before reconciling,
+  // the merchant sees "auto-expired" on an order that was actually paid.
+  // payu-reconcile is idempotent and only upgrades orders PayU reports as paid.
+  try {
+    await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/payu-reconcile`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        "content-type": "application/json",
+      },
+      body: "{}",
+    });
+  } catch (e) {
+    console.error("expire-stale-pending-orders: reconcile pre-pass failed", e);
+  }
+
   // NOTE: `orders_status_check` does not permit 'expired'. We mark the row
   // 'cancelled' and record the reason in notes so dashboards + the recovery
   // cron still treat it as a payment drop-off (cancelled + payment_verified=false).
+
   const { data, error } = await supabase
     .from("orders")
     .update({
