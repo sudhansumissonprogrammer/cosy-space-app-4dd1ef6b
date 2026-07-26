@@ -5,6 +5,8 @@
  * Mobile: horizontal snap carousel with exactly 4 seals visible per screen,
  * the remaining 3 slide in. Desktop: all 7 in a single row.
  */
+import { useRef, useState } from "react";
+import { ChevronRight } from "lucide-react";
 import premium from "@/assets/trust/premium-quality.webp.asset.json";
 import money from "@/assets/trust/money-back-guarantee.webp.asset.json";
 import shipping from "@/assets/trust/fast-free-shipping.webp.asset.json";
