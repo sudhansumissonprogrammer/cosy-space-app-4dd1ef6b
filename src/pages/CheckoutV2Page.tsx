@@ -3943,19 +3943,22 @@ export default function CheckoutV2Page() {
                   // resumes this exact UPI launch on save. Only apply the
                   // real disabled state once the address is complete.
                   const addressReady = addressComplete;
-                  const disabled = addressReady && (s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount);
+                  // A `failed` tile must stay tappable — the tap is an explicit
+                  // retry (see tapUpiApp). Only block truly in-flight states.
+                  const retryable = s.status === "failed";
+                  const disabled = addressReady && !retryable && (s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount);
                   const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
                   return (
                     <a
                       key={app.key}
-                      href={disabled || !addressReady ? undefined : s.url}
+                      href={disabled || retryable || !addressReady ? undefined : s.url}
                       onClick={(e) => tapUpiApp(app.key, e)}
                       aria-disabled={disabled}
-                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 min-h-[92px] relative ${disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
+                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 min-h-[92px] relative ${disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""} ${retryable ? "opacity-70" : ""}`}
                     >
                       
                       <img src={app.icon} alt={app.label} className="h-8 w-8 mt-3 mb-1 object-contain" />
-                      <div className="text-[11px] font-semibold">{app.label}</div>
+                      <div className="text-[11px] font-semibold">{retryable ? "Retry" : app.label}</div>
                       {addressReady && (s.status === "loading" || staleAmount) && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
                     </a>
                   );
