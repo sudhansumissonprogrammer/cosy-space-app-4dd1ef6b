@@ -26,7 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import secureBadge from "@/assets/trust/secure-payment-badge.webp.asset.json";
-import trustedSellerBadge from "@/assets/trust/trusted-seller-badge.webp.asset.json";
+import trustedSellerBadge from "@/assets/trust/trusted-seller-badge-v2.webp.asset.json";
 import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote, Tag, X, Plus, Minus, Check, CreditCard, ShoppingCart, ChevronDown, Trash2, Info, Camera, Package, Truck, Wallet, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { StoreData } from "@/layouts/StorefrontLayout";
@@ -44,7 +44,6 @@ import { createPortal } from "react-dom";
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 import { QRCodeSVG } from "qrcode.react";
 import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
-import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { pixelPayloadFromItems } from "@/lib/expandBundleForPixel";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
@@ -2981,7 +2980,6 @@ export default function CheckoutV2Page() {
 
   const savedAddr = savedAddresses?.find((a: any) => a.id === selectedAddressId);
   const addressFilled = !!(pincode && streetAddress && city && state && fullName);
-  const marqueeEnabled = themeConfig?.marquee_enabled ?? true;
   // One source of truth for discounts shown in the header:
   //   • coupon always counts (applies to both plans)
   //   • prepaid discount counts only when the shopper is on "Pay full"
@@ -3031,10 +3029,10 @@ export default function CheckoutV2Page() {
         <img
           src={trustedSellerBadge.url}
           alt="Trusted Seller"
-          width={251}
-          height={140}
+          width={415}
+          height={200}
           decoding="async"
-          className="h-[26px] w-auto shrink-0 object-contain"
+          className="h-[34px] w-auto shrink-0 object-contain"
         />
         <img
           src={secureBadge.url}
