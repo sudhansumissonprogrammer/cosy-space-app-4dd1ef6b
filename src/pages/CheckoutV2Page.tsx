@@ -1616,15 +1616,37 @@ export default function CheckoutV2Page() {
 
   const WAIT_KEY = `sf_wait_v2_${store?.id}`;
   const persistWaiting = (app: UpiApp, label: string, override?: { orderId?: string | null; orderNumber?: string | null }) => {
+    const waitOrderId = override?.orderId ?? orderId;
     try {
       const payload = JSON.stringify({
-        orderId: override?.orderId ?? orderId,
+        orderId: waitOrderId,
         orderNumber: override?.orderNumber ?? orderNumber,
         app, label, gateway: gatewayRef.current, ts: Date.now(),
       });
       sessionStorage.setItem(WAIT_KEY, payload);
       localStorage.setItem(WAIT_KEY, payload);
     } catch { /* noop */ }
+    // Durable Purchase outbox: the shopper is leaving for a UPI app / gateway
+    // page. If the tab never comes back (very common on Android UPI hand-offs)
+    // the browser Purchase would be lost entirely. Stage it now — the next
+    // storefront pageload verifies the order status and fires the pixel then,
+    // with the SAME event_id the server already stored, so nothing double-counts.
+    if (waitOrderId && store?.id) {
+      try {
+        stagePendingPurchase({
+          storeId: store.id,
+          orderId: waitOrderId,
+          eventId: purchaseEventIdRef.current,
+          value: computePurchaseValue(lastPaidMethodRef.current),
+          currency,
+          payload: {
+            ...pixelPayloadFromItems(checkoutItems),
+            content_name: checkoutItems.map((i) => i.name).join(", "),
+          },
+          at: Date.now(),
+        });
+      } catch { /* noop */ }
+    }
   };
   const clearWaiting = () => {
     try { sessionStorage.removeItem(WAIT_KEY); } catch { /* noop */ }
