@@ -1906,32 +1906,25 @@ export default function CheckoutV2Page() {
     armWaiting();
 
     // Keep the user gesture as clean as possible for low-end Android Chrome:
-    // launch the app synchronously, then update React state only after the
-    // browser has had a chance to hand off to PhonePe/GPay/Paytm. Updating to
-    // the waiting screen before navigation unmounted the tapped anchor on old
-    // Android devices, so PhonePe silently failed to open.
-    try {
-      window.location.assign(s.url);
-    } catch {
-      try { window.location.href = s.url; } catch { /* noop */ }
-    }
+    // launch the app synchronously via a real anchor activation (some OEM
+    // Chrome/WebView builds ignore location.assign for non-http schemes),
+    // then update React state only after the browser has had a chance to hand
+    // off to PhonePe/GPay/Paytm.
+    launchUpiUrl(s.url);
 
     if (isAndroid() && app !== "any") {
-      const nativeUrl = nativeSchemeForUpiApp(app, s.url);
+      // Single fallback only. Chaining three navigations used to fire the
+      // app-private scheme (phonepe://, tez://) from a timer with no user
+      // activation left — Chrome blocks those, so the shopper saw nothing at
+      // all. `upi://pay` is the one scheme every UPI app registers and it
+      // shows the system app chooser, which is what other gateways rely on.
       const anyUpiUrl = genericUpiUrl(s.url);
       window.setTimeout(() => {
         if (leftCheckout || document.visibilityState !== "visible") return;
-        if (nativeUrl && nativeUrl !== s.url) {
-          try { window.location.assign(nativeUrl); } catch { /* noop */ }
-        }
-      }, 650);
-      window.setTimeout(() => {
-        if (leftCheckout || document.visibilityState !== "visible") return;
-        if (anyUpiUrl) {
-          try { window.location.assign(anyUpiUrl); } catch { /* noop */ }
-        }
-      }, 1350);
+        if (anyUpiUrl && anyUpiUrl !== s.url) launchUpiUrl(anyUpiUrl);
+      }, 900);
     }
+
 
     // Pixels and analytics run after the app launch has already been handed off.
     window.setTimeout(() => {
