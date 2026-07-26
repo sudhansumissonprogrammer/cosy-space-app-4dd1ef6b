@@ -526,6 +526,7 @@ interface ThemeConfig {
   show_trust_badges?: boolean;
   trust_badges?: { emoji: string; label: string }[];
   nav_icons?: Record<string, string>;
+  pdp_trust_seals?: string[];
 }
 
 const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
