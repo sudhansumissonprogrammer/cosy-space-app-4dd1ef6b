@@ -151,6 +151,31 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
   const lastVisibleAtRef = useRef<number | null>(null);
   const audio = useWheelAudio(cfg.sound_enabled !== false);
 
+  // Track the live route. The storefront is an SPA, so a shopper can move from
+  // a product page onto /checkout while the wheel timer is still counting.
+  // Keeping this in state lets us both cancel the pending trigger and unmount
+  // an already-open wheel the moment they reach a payment screen.
+  const [routePath, setRoutePath] = useState(
+    () => (typeof window !== "undefined" ? window.location.pathname : ""),
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sync = () => setRoutePath(window.location.pathname);
+    window.addEventListener("popstate", sync);
+    // pushState/replaceState don't emit events; a light poll is the only
+    // router-agnostic way to notice client-side navigation here.
+    const id = window.setInterval(sync, 700);
+    return () => {
+      window.removeEventListener("popstate", sync);
+      window.clearInterval(id);
+    };
+  }, []);
+  const routeBlocked = !previewMode && isBlockedPath(routePath);
+  useEffect(() => {
+    if (routeBlocked) setPhase("hidden");
+  }, [routeBlocked]);
+
+
   useEffect(() => {
     if (!storeId || segments.length < 2) return;
     const p = typeof window !== "undefined" ? window.location.pathname : "";
