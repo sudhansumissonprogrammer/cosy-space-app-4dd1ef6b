@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import useEmblaCarousel from "embla-carousel-react";
+import PdpTrustSeals from "@/components/storefront/PdpTrustSeals";
 import { VideoSlide } from "@/components/storefront/VideoSlide";
 import { createPortal } from "react-dom";
 import { useParams, Link, useOutletContext, useNavigate } from "react-router-dom";
