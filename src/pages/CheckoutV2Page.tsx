@@ -1906,16 +1906,19 @@ export default function CheckoutV2Page() {
     launchUpiUrl(s.url);
 
     if (isAndroid() && app !== "any") {
-      // Single fallback only. Chaining three navigations used to fire the
-      // app-private scheme (phonepe://, tez://) from a timer with no user
-      // activation left — Chrome blocks those, so the shopper saw nothing at
-      // all. `upi://pay` is the one scheme every UPI app registers and it
-      // shows the system app chooser, which is what other gateways rely on.
+      // Single fallback only, and only for a launch that clearly did nothing.
+      // On slower phones PhonePe/GPay can take >1s to come to the foreground,
+      // during which the page is still "visible" — firing a second navigation
+      // there makes Android re-resolve the intent and the shopper sits on a
+      // splash/spinner for several extra seconds. So wait long enough that a
+      // slow-but-successful launch is never interrupted, and also require the
+      // document to still hold focus (a launching app takes focus first).
       const anyUpiUrl = genericUpiUrl(s.url);
       window.setTimeout(() => {
         if (leftCheckout || document.visibilityState !== "visible") return;
+        try { if (!document.hasFocus()) return; } catch { /* noop */ }
         if (anyUpiUrl && anyUpiUrl !== s.url) launchUpiUrl(anyUpiUrl);
-      }, 900);
+      }, 2600);
     }
 
 
@@ -1933,10 +1936,10 @@ export default function CheckoutV2Page() {
         armWaiting();
         return;
       }
-      if (Date.now() - launchedAt >= 2200) {
+      if (Date.now() - launchedAt >= 4200) {
         toast.info(`${label} did not open. Tap All UPI Apps or retry.`, { duration: 4500 });
       }
-    }, 2500);
+    }, 4500);
   };
 
   // ─── Restore waiting state on mount / PayU redirect-back ────────────────
