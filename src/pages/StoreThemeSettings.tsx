@@ -742,6 +742,9 @@ export default function StoreThemeSettings() {
           { emoji: "👰", label: "Wedding" },
         ],
         nav_icons: (themeConfig as any).nav_icons || {},
+        pdp_trust_seals: Array.isArray((themeConfig as any).pdp_trust_seals)
+          ? (themeConfig as any).pdp_trust_seals
+          : DEFAULT_TRUST_SEAL_KEYS,
       });
     } else {
       setConfig(defaults);
