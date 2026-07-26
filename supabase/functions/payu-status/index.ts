@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
     const { data: orderInfo } = await supabase
       .from("orders")
-      .select("status, payment_type, customer_phone, storefront_customer_id")
+      .select("status, payment_type, customer_phone, storefront_customer_id, payu_txnids")
       .eq("id", order_id)
       .eq("store_id", store_id)
       .single();
@@ -83,12 +83,26 @@ Deno.serve(async (req) => {
     }
 
     const env = (config.payu_env === "sandbox" ? "sandbox" : "production") as PayuEnv;
-    const det = await verifyPayuTxn({
-      env,
-      key: config.payu_merchant_key,
-      salt: config.payu_merchant_salt,
-      txnid,
-    });
+    // The shopper may have paid on a *different* attempt than the txnid this
+    // tab remembers (each retry mints a fresh txnid). Check the remembered one
+    // first, then every attempt recorded on the order.
+    const candidates: string[] = Array.from(
+      new Set([txnid, ...((Array.isArray(orderInfo.payu_txnids) ? orderInfo.payu_txnids : []) as string[])]),
+    );
+    let det: any = null;
+    let matchedTxnid = txnid;
+    for (const candidate of candidates) {
+      const res = await verifyPayuTxn({
+        env,
+        key: config.payu_merchant_key,
+        salt: config.payu_merchant_salt,
+        txnid: candidate,
+      });
+      if (!res) continue;
+      det = res;
+      matchedTxnid = candidate;
+      if (mapPayuStatus(res.status) === "PAID") break;
+    }
 
     if (!det) return jsonRes({ status: "PENDING" });
     const verdict = mapPayuStatus(det.status);
@@ -101,7 +115,7 @@ Deno.serve(async (req) => {
       const update: Record<string, unknown> = {
         status: isPartial ? "partially_paid" : "confirmed",
         payment_method: "payu",
-        notes: `PayU Txn ID: ${txnid}${det.mihpayid ? ` (mihpayid: ${det.mihpayid})` : ""}`,
+        notes: `PayU Txn ID: ${matchedTxnid}${det.mihpayid ? ` (mihpayid: ${det.mihpayid})` : ""}`,
         payment_verified: true,
         payment_verified_at: new Date().toISOString(),
       };
