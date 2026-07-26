@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { TRUST_SEALS, DEFAULT_TRUST_SEAL_KEYS } from "@/components/storefront/trustSealCatalog";
 import { Check, Palette, Lock, ShoppingCart, Heart, User, Star, Tag, Monitor, Smartphone, Home, LayoutGrid, Layers, Type, LayoutList, MoreHorizontal, Store, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import ThemeSectionNav, { ThemeSectionId, ThemeSectionMeta } from "@/components/dashboard/theme/ThemeSectionNav";
