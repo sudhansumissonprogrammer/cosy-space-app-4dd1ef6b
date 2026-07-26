@@ -1014,30 +1014,8 @@ export default function ProductDetail() {
           {/* Delivery timeline (Order → Shipping → Delivery) */}
           {!isOutOfStock && <DeliveryTimeline />}
 
-          {/* Partial payment trust card — only renders if store has partial payment on */}
-          {!isOutOfStock && (
-            <div className="-mx-4 mt-4">
-              <PartialPaymentTrustCard
-                price={Number(product.price)}
-                salePrice={product.sale_price ? Number(product.sale_price) : null}
-                store={store as any}
-                currencySymbol={currency === "USD" ? "$" : currency === "INR" ? "₹" : "₹"}
-              />
-            </div>
-          )}
+          {/* Partial payment trust card, checkout trust block & wishlist — removed per user request */}
 
-          {/* Checkout Trust Block — removed per user request */}
-
-
-          {/* Wishlist — hidden in V18 */}
-          {!isV18 && (
-            <div className="mt-4">
-              <button onClick={handleWishlist} className={`flex items-center gap-2 text-sm transition-[transform,opacity,colors,box-shadow] duration-200 ${wishlisted ? "text-destructive font-semibold" : "text-muted-foreground hover:text-foreground"}`}>
-                <Heart className={`h-4 w-4 transition-transform duration-200 ${wishlisted ? "fill-destructive text-destructive scale-110" : ""}`} />
-                {wishlisted ? "Saved" : "Add to Wishlist"}
-              </button>
-            </div>
-          )}
 
           {/* Trust seals — hidden in V18 */}
           {!isV18 && <PdpTrustSeals />}
