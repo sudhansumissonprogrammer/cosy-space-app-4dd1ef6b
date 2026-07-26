@@ -3023,9 +3023,15 @@ export default function CheckoutV2Page() {
         ) : (
           <div className="text-sm font-bold truncate min-w-0 flex-1">{store?.name || "Store"}</div>
         )}
-        <div className="text-[11.5px] text-muted-foreground flex items-center gap-1 whitespace-nowrap shrink-0">
-          100% Secured Payment <Lock className="h-3 w-3" />
-        </div>
+        <div className="flex-1 min-w-0" />
+        <img
+          src={secureBadge.url}
+          alt="100% Secure Payment"
+          width={110}
+          height={50}
+          decoding="async"
+          className="h-[30px] w-auto shrink-0 object-contain"
+        />
       </div>
 
       {/* Announcement marquee — same component + dashboard-controlled text/gradient as storefront */}
