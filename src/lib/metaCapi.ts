@@ -47,40 +47,22 @@ export function getMetaCookies() {
 }
 
 /**
- * Fetch the visitor's public IP once per session and cache it. We POST this
- * to the CAPI edge fn as `declared_client_ip`; the server cross-validates it
- * against cf-connecting-ip / x-forwarded-for before forwarding to Meta.
- * Mismatch → server drops it silently (zero risk of leaking datacenter IPs).
+ * Client IP is NO LONGER fetched in the browser.
+ *
+ * The old scheme called api.ipify.org and posted the result as
+ * `declared_client_ip`. Every storefront ships a strict CSP whose
+ * `connect-src` does not (and should not) include ipify, so in production
+ * that fetch was blocked 100% of the time — the console filled with CSP
+ * violations and Meta never received an IP at all.
+ *
+ * Browser → CAPI calls hit the edge function directly, so the function's own
+ * `cf-connecting-ip` header IS the shopper's real IP. The server now derives
+ * it there (browser-originated requests only). Nothing to do client-side.
  */
-const CLIENT_IP_SS_KEY = "__sf_client_ip__";
-const CLIENT_IP_TTL_MS = 60 * 60 * 1000; // 1h
-let _clientIpInFlight: Promise<string> | null = null;
 export function getDeclaredClientIp(): string {
-  try {
-    const raw = sessionStorage.getItem(CLIENT_IP_SS_KEY);
-    if (raw) {
-      const [ip, exp] = raw.split("|");
-      if (ip && Number(exp) > Date.now()) return ip;
-    }
-  } catch {}
-  // Fire-and-forget refresh; don't block current event. Next event picks it up.
-  if (!_clientIpInFlight && typeof fetch !== "undefined") {
-    _clientIpInFlight = fetch("https://api.ipify.org?format=json", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((j: any) => {
-        const ip = String(j?.ip || "").trim();
-        if (ip) {
-          try {
-            sessionStorage.setItem(CLIENT_IP_SS_KEY, `${ip}|${Date.now() + CLIENT_IP_TTL_MS}`);
-          } catch {}
-        }
-        return ip;
-      })
-      .catch(() => "")
-      .finally(() => { _clientIpInFlight = null; }) as Promise<string>;
-  }
   return "";
 }
+
 
 interface CAPIEventParams {
   storeId: string;
