@@ -320,7 +320,7 @@ export default function CheckoutPhoneStep({
           width={415}
           height={200}
           decoding="async"
-          className="h-[34px] w-auto shrink-0 object-contain"
+          className="h-[26px] w-auto shrink-0 object-contain"
         />
         <img
           src={secureBadge.url}
