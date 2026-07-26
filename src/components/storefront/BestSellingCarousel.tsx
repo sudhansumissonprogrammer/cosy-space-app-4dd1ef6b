@@ -39,7 +39,7 @@ export default function BestSellingCarousel({ products, slug, store, cardStyle =
   return (
     <section>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-bold inline-flex items-center gap-2" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}><BestSellerBadge />Best Selling</h2>
+        <h2 className="text-xl font-bold inline-flex items-center gap-2" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}><BestSellerBadge /></h2>
         <Link
           to={storefrontPath(slug, "shop")}
           className="inline-flex items-center gap-1 text-xs font-semibold hover:underline"

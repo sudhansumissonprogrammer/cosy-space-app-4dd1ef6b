@@ -29,7 +29,7 @@ export function HomeBestSellingSection({ products, slug, store, cardStyle, bestS
 
   return (
     <div className="py-4">
-      <HomeSectionHeader title={<><BestSellerBadge />Best Selling</>} slug={slug} linkTo="shop" />
+      <HomeSectionHeader title={<BestSellerBadge />} slug={slug} linkTo="shop" />
       {useCarousel ? (
         <div className="px-4 lg:px-6">
           <Suspense fallback={null}>
