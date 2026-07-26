@@ -106,6 +106,17 @@ function confettiPaletteFor(style: WheelStyle, primary: string, accent: string):
   }
 }
 
+
+// Never interrupt a shopper who is paying. The old check only matched paths
+// that START with /checkout, so `/store/<slug>/checkout` (preview + path-based
+// storefronts) slipped through, and because the effect never re-ran on
+// client-side navigation the timer that started on the product page fired the
+// wheel *on top of* the payment screen — a full-screen overlay blocking UPI.
+const BLOCKED_SEGMENT_RX = /(^|\/)(checkout|order|order-success|orders|admin|dashboard|auth|login|signup|account)(\/|$)/i;
+export function isBlockedPath(pathname: string): boolean {
+  return BLOCKED_SEGMENT_RX.test(pathname || "");
+}
+
 export default function SpinWheelApp({ storeId, storeName, primaryColor, accentColor, config, previewMode = false }: Props) {
   const cfg: SpinWheelConfig = {
     trigger_delay_ms: 11000,
@@ -143,10 +154,7 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
   useEffect(() => {
     if (!storeId || segments.length < 2) return;
     const p = typeof window !== "undefined" ? window.location.pathname : "";
-    if (!previewMode) {
-      const blocked = /^\/(checkout|order|admin|dashboard|auth|login|signup|account)(\/|$)/i.test(p);
-      if (blocked) return;
-    }
+    if (!previewMode && isBlockedPath(p)) return;
 
     const leadKey = `sf_spin_lead_${storeId}`;
     const timerKey = `sf_spin_shown_${storeId}`;
