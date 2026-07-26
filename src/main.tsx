@@ -47,9 +47,18 @@ if (typeof window !== "undefined") {
     const api = "https://dqepeywgftbpxeeqfuwt.supabase.co";
     const anon = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
     const fallback = () => window.location.replace(`${api}/functions/v1/wa-r/${encodeURIComponent(redirectToken)}`);
+    // Signed marketing links (`p-<id>~<phone>`) can only be resolved by the
+    // edge function, which also mints the auto-login session. The RPC returns
+    // {ok:false} for them, so go straight to wa-r and skip a dead round-trip.
+    if (redirectToken.includes("~")) {
+      try { window.stop(); } catch { /* noop */ }
+      fallback();
+      throw new Error("redirecting");
+    }
     const timer = window.setTimeout(fallback, 900);
-    try { window.stop(); } catch {}
+    try { window.stop(); } catch { /* noop */ }
     fetch(`${api}/rest/v1/rpc/get_wa_redirect`, {
+
       method: "POST",
       cache: "no-store",
       credentials: "omit",
