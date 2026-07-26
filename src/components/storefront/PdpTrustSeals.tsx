@@ -24,9 +24,16 @@ const SEALS = [
 ];
 
 export default function PdpTrustSeals() {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [showHint, setShowHint] = useState(true);
+
   return (
-    <section className="mt-6 w-full max-w-full min-w-0" aria-label="Store guarantees">
+    <section className="mt-6 w-full max-w-full min-w-0 relative" aria-label="Store guarantees">
       <div
+        ref={scrollerRef}
+        onScroll={(e) => {
+          if (e.currentTarget.scrollLeft > 8) setShowHint(false);
+        }}
         className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-1 md:overflow-visible md:justify-between md:gap-2 pdp-seals"
         style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
       >
@@ -43,8 +50,23 @@ export default function PdpTrustSeals() {
             className="shrink-0 snap-start h-auto object-contain w-[calc((100%-2.25rem)/4)] md:w-[13%] md:max-w-[74px]"
           />
         ))}
-        <style>{`.pdp-seals::-webkit-scrollbar{display:none}`}</style>
+        <style>{`.pdp-seals::-webkit-scrollbar{display:none}@keyframes pdpNudge{0%,100%{transform:translate(0,-50%)}50%{transform:translate(4px,-50%)}}`}</style>
       </div>
+
+      {showHint && (
+        <button
+          type="button"
+          aria-label="Scroll to see more guarantees"
+          onClick={() => {
+            scrollerRef.current?.scrollBy({ left: 200, behavior: "smooth" });
+            setShowHint(false);
+          }}
+          className="md:hidden absolute right-0 top-1/2 flex h-7 w-7 items-center justify-center rounded-full border bg-background/90 shadow-sm backdrop-blur-sm"
+          style={{ transform: "translateY(-50%)", animation: "pdpNudge 1.4s ease-in-out infinite" }}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      )}
     </section>
   );
 }
