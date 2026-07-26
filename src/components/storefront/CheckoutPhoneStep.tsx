@@ -282,26 +282,6 @@ export default function CheckoutPhoneStep({
     if (!valid) autoSubmittedRef.current = false;
   }, [valid, submitting]);
 
-  useEffect(() => {
-    const viewport = window.visualViewport;
-    if (!viewport) return;
-
-    const syncKeyboardInset = () => {
-      const inset = Math.max(
-        0,
-        window.innerHeight - viewport.height - viewport.offsetTop,
-      );
-      setKeyboardInset(inset > 24 ? Math.round(inset) : 0);
-    };
-
-    syncKeyboardInset();
-    viewport.addEventListener("resize", syncKeyboardInset);
-    viewport.addEventListener("scroll", syncKeyboardInset);
-    return () => {
-      viewport.removeEventListener("resize", syncKeyboardInset);
-      viewport.removeEventListener("scroll", syncKeyboardInset);
-    };
-  }, []);
 
   return (
     <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] pb-10">
