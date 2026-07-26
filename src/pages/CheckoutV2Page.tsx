@@ -1902,13 +1902,34 @@ export default function CheckoutV2Page() {
     const onVisibility = () => {
       if (document.visibilityState === "hidden") markLeft();
     };
+    // Universal chooser fallback: fired at most once per tap, either because
+    // Chrome bounced us to the `#upi_fb` fallback (app not installed) or
+    // because nothing happened at all after 2.6s.
+    let chooserFired = false;
+    const anyUpiUrl = genericUpiUrl(s.url);
+    const fireChooser = () => {
+      if (chooserFired || leftCheckout) return;
+      chooserFired = true;
+      if (anyUpiUrl && anyUpiUrl !== s.url) launchUpiUrl(anyUpiUrl);
+    };
+    const onHashFallback = () => {
+      if (!window.location.hash.includes(UPI_FALLBACK_HASH)) return;
+      try {
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      } catch { /* noop */ }
+      // The targeted app is not installed on this device — immediately open
+      // the system UPI chooser, which lists only the apps the shopper has.
+      fireChooser();
+    };
     const cleanupLaunchListeners = () => {
       window.removeEventListener("blur", markLeft);
       window.removeEventListener("pagehide", markLeft);
+      window.removeEventListener("hashchange", onHashFallback);
       document.removeEventListener("visibilitychange", onVisibility);
     };
     window.addEventListener("blur", markLeft, { once: true });
     window.addEventListener("pagehide", markLeft, { once: true });
+    window.addEventListener("hashchange", onHashFallback);
     document.addEventListener("visibilitychange", onVisibility);
 
     // Arm waiting BEFORE navigating. WhatsApp/Instagram in-app browsers can
@@ -1932,11 +1953,10 @@ export default function CheckoutV2Page() {
       // splash/spinner for several extra seconds. So wait long enough that a
       // slow-but-successful launch is never interrupted, and also require the
       // document to still hold focus (a launching app takes focus first).
-      const anyUpiUrl = genericUpiUrl(s.url);
       window.setTimeout(() => {
         if (leftCheckout || document.visibilityState !== "visible") return;
         try { if (!document.hasFocus()) return; } catch { /* noop */ }
-        if (anyUpiUrl && anyUpiUrl !== s.url) launchUpiUrl(anyUpiUrl);
+        fireChooser();
       }, 2600);
     }
 
