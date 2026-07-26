@@ -662,6 +662,7 @@ export default function ProductDetail() {
     const qs = new URLSearchParams();
     qs.set("product", product.id);
     if (selectedVariant?.id) qs.set("variant", selectedVariant.id);
+    if (quantity > 1) qs.set("qty", String(quantity));
     navigate(storefrontPath(store.slug, `checkout?${qs.toString()}`));
   };
 
