@@ -314,14 +314,14 @@ export default function CheckoutPhoneStep({
             {storeName || "Store"}
           </div>
         )}
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center -space-x-1">
           <img
             src={trustedSellerBadge.url}
             alt="Trusted Seller"
             width={622}
             height={300}
             decoding="async"
-            className="h-[52px] w-auto shrink-0 object-contain"
+            className="h-[48px] w-auto shrink-0 object-contain -mr-1"
           />
           <img
             src={secureBadge.url}
@@ -329,7 +329,7 @@ export default function CheckoutPhoneStep({
             width={110}
             height={50}
             decoding="async"
-            className="h-[26px] w-auto shrink-0 object-contain"
+            className="h-[24px] w-auto shrink-0 object-contain"
           />
         </div>
       </div>
