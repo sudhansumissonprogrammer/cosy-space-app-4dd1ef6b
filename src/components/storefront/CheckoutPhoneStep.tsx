@@ -522,6 +522,14 @@ export default function CheckoutPhoneStep({
               </p>
             )}
 
+            <label className="flex items-center gap-2 text-[12px]">
+              <Checkbox
+                checked={consent}
+                onCheckedChange={(v) => setConsent(v === true)}
+              />
+              <span>Send me order updates &amp; offers - (no spam)</span>
+            </label>
+
             <Button
               onClick={submit}
               disabled={submitting}
@@ -533,6 +541,9 @@ export default function CheckoutPhoneStep({
                 "Continue"
               )}
             </Button>
+            <div className="text-[10px] text-center text-muted-foreground -mt-1">
+              By proceeding, I agree to the store's Privacy Policy and T&amp;C
+            </div>
           </div>
         </div>
 
