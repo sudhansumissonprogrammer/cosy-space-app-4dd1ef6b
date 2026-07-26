@@ -700,16 +700,16 @@ Deno.serve(async (req) => {
 
       const partialValue = Number(storeData?.partial_payment_value || 0);
       if (storeData?.partial_payment_enabled && partialValue > 0) {
+        // Advance is charged PER PRODUCT UNIT as the store configured it.
         let itemsAdvance = 0;
-        if (storeData.partial_payment_type === "percentage") {
-          for (const item of items) {
-            itemsAdvance += Math.round(Number(item.price) * (partialValue / 100)) * Number(item.quantity);
-          }
-        } else {
-          // Fixed advance is a flat per-ORDER token amount, never multiplied
-          // by item count/quantity (must match checkout UI).
-          itemsAdvance = Math.min(partialValue, serverSubtotal);
+        for (const item of items) {
+          const itemPrice = Number(item.price);
+          const itemAdv = storeData.partial_payment_type === "percentage"
+            ? Math.round(itemPrice * (partialValue / 100))
+            : Math.min(partialValue, itemPrice);
+          itemsAdvance += itemAdv * Number(item.quantity);
         }
+
 
         // Advance = configured up-front amount (per-item) + full shipping,
         // capped at order total. Coupons reduce the BALANCE (paid on

@@ -694,15 +694,15 @@ function CheckoutPageInner() {
   // floor would inflate the UI advance above what the gateway actually charges.
   const partialAdvanceTotal = (() => {
     if (!hasAnyPartialPayment) return total;
+    // Advance is charged PER PRODUCT UNIT as the store configured it.
     let itemsAdvance = 0;
-    if (storePartialType === "percentage") {
-      for (const item of checkoutItems) {
-        itemsAdvance += Math.round(item.price * (storePartialValue / 100)) * item.quantity;
-      }
-    } else {
-      // Fixed advance is flat per ORDER, not per item.
-      itemsAdvance = Math.min(storePartialValue, subtotal);
+    for (const item of checkoutItems) {
+      const itemAdvance = storePartialType === "percentage"
+        ? Math.round(item.price * (storePartialValue / 100))
+        : Math.min(storePartialValue, item.price);
+      itemsAdvance += itemAdvance * item.quantity;
     }
+
 
     // Shipping paid up-front; discount reduces advance proportionally.
     const ratio = subtotal > 0 ? itemsAdvance / subtotal : 1;

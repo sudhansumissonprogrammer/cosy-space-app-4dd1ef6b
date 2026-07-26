@@ -984,22 +984,17 @@ export default function CheckoutV2Page() {
 
   const partialAdvanceTotal = useMemo(() => {
     if (!hasPartial) return total;
+    // Advance is charged PER PRODUCT UNIT, exactly as the store owner
+    // configured it (fixed ₹/unit or % of unit price) × quantity.
     let advance = 0;
-    if (partialType === "percentage") {
-      // Percentage advance scales with each line item.
-      for (const it of checkoutItems) {
-        advance += Math.round(it.price * (Number(partialValue) / 100)) * it.quantity;
-      }
-    } else {
-      // FIXED advance is a flat per-ORDER token amount (e.g. ₹97), never
-      // multiplied by the number of items/quantity — a 2-item cart used to
-      // show ₹194 while the store setting (and PDP card) advertise ₹97.
-      advance = Math.min(Number(partialValue), subtotal);
+    for (const it of checkoutItems) {
+      const itemAdv = partialType === "percentage"
+        ? Math.round(it.price * (Number(partialValue) / 100))
+        : Math.min(Number(partialValue), it.price);
+      advance += itemAdv * it.quantity;
     }
-    // Advance is what the shopper pays UP FRONT (typically ₹100/item as
-    // configured). Coupons reduce the *balance* (paid on delivery), not
-    // the advance — otherwise a ₹100 coupon on a ₹100 advance would drop
-    // it to ~₹69 and confuse the shopper. Shipping is charged up front.
+    // Coupons reduce the *balance* (paid on delivery), not the advance.
+    // Shipping is charged up front; tax scales with the advance ratio.
     const ratio = subtotal > 0 ? advance / subtotal : 1;
     advance += (taxInclusive ? 0 : taxAmount) * ratio + shippingCharge;
     return Math.max(50, Math.min(total, Math.round(advance)));
