@@ -208,7 +208,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.72.3-wa-redirect-html-prefetch";
+const WORKER_VERSION = "8.73.0-stale-preload-fix";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -4213,7 +4213,8 @@ async function fetchAndInjectSlug(
     return { response, dataSource: "none" };
   }
 
-  let prebuiltHead = cachedHeadMem || (await getPrebuiltHead(shellResult.html, env));
+  let prebuiltHead =
+    _validateHeadAgainstShell(cachedHeadMem, shellResult.html) || (await getPrebuiltHead(shellResult.html, env));
   prebuiltHead = await enrichHeadWithDeepPreloads(prebuiltHead, new URL(request.url).origin, env);
   prebuiltHead = await enrichHeadWithThemeChunkPreloads(prebuiltHead, new URL(request.url).origin, env, themeLite?.th);
   if (_isPdpPath(new URL(request.url).pathname)) {
@@ -7459,7 +7460,8 @@ async function _handleFetch(request, env, ctx) {
       return addDiagnosticHeaders(response, { slug, cacheStatus: "MISS", dataSource: "none" });
     }
 
-    let prebuiltHead = cachedHead || (await getPrebuiltHead(shellResult.html, env));
+    let prebuiltHead =
+      _validateHeadAgainstShell(cachedHead, shellResult.html) || (await getPrebuiltHead(shellResult.html, env));
     prebuiltHead = await enrichHeadWithDeepPreloads(prebuiltHead, new URL(request.url).origin, env);
     prebuiltHead = await enrichHeadWithThemeChunkPreloads(prebuiltHead, new URL(request.url).origin, env, themeLite?.th);
     if (_isPdpPath(new URL(request.url).pathname)) {
@@ -7666,7 +7668,9 @@ async function _handleFetch(request, env, ctx) {
       return addDiagnosticHeaders(response, { slug: resolvedSlug, cacheStatus: "MISS", dataSource: "none" });
     }
 
-    let prebuiltHeadCD = cachedHeadCDReal || (await getPrebuiltHead(shellResultCD.html, env));
+    let prebuiltHeadCD =
+      _validateHeadAgainstShell(cachedHeadCDReal, shellResultCD.html) ||
+      (await getPrebuiltHead(shellResultCD.html, env));
     prebuiltHeadCD = await enrichHeadWithDeepPreloads(prebuiltHeadCD, new URL(request.url).origin, env);
     prebuiltHeadCD = await enrichHeadWithThemeChunkPreloads(prebuiltHeadCD, new URL(request.url).origin, env, themeLiteCD?.th);
     if (_isPdpPath(new URL(request.url).pathname)) {
