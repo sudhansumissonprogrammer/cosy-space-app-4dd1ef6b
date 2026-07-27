@@ -1,7 +1,7 @@
 import { MessageCircle } from "lucide-react";
 // Plain <a> for cross-app links — landing runs on a slim BrowserRouter that
 // doesn't know about /about-us, /privacy-policy, etc. Hard nav loads FullApp.
-import logo from "@/assets/shopbanao-logo.webp";
+import { GeoShape } from "@/components/landing/bauhaus/BauhausKit";
 
 const Footer = () => {
   const productLinks: { label: string; href: string }[] = [
