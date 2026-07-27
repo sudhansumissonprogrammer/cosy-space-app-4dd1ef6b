@@ -678,27 +678,14 @@ export default function CheckoutV2Page() {
     showAddressFormSheet ||
     (phoneValid && addressLookupSettled && !addressComplete && !addressSheetDismissed);
 
-  // PAYMENT-FIRST FLOW: We no longer auto-open the address sheet for new
-  // shoppers. Instead the checkout renders payment tiles inline with a
-  // prominent "+ Add delivery address" CTA. Tapping any payment method
-  // (UPI intent / gateway / COD) without a filled address opens the sheet
-  // AND remembers the intent so the shopper resumes exactly where they left
-  // off. This matches Meesho/Gokwik and cuts the address-form drop-off that
-  // was inflating pending/cancelled orders.
-  //
-  // If the phone gate settles and there is no saved address, we still nudge
-  // shoppers by opening the sheet ONCE — but they can dismiss it and see
-  // the payment options underneath. On re-tap of any payment tile it
-  // re-opens with a toast.
-  const initialNudgeFiredRef = useRef(false);
-  useEffect(() => {
-    if (!phoneValid || addressComplete) return;
-    if (!addressLookupSettled) return;
-    if (initialNudgeFiredRef.current) return;
-    initialNudgeFiredRef.current = true;
-    setAddressSheetDismissed(false);
-    setShowAddressFormSheet(true);
-  }, [phoneValid, addressComplete, addressLookupSettled]);
+  // PAYMENT-FIRST FLOW: We never auto-open the address sheet. The checkout
+  // lands on payment tiles with a prominent red "+ Add delivery address" CTA.
+  // The sheet only opens when the shopper explicitly taps the CTA, taps
+  // "Change" on an existing address, or taps a payment tile (via
+  // requireAddressOrPrompt, which also remembers the intent for auto-resume
+  // after save). This matches Meesho/Gokwik and cut the address-form
+  // drop-off that was inflating pending/cancelled orders on serdiyajewellers.
+
 
   // Pending pay-action: when the shopper taps a payment tile without an
   // address, we remember what they wanted so we can resume it the instant
