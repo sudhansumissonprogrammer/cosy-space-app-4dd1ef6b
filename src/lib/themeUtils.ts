@@ -472,6 +472,7 @@ export function buildThemeStyle(
   const footerTextColor = isLightColor(primaryColor) ? "#1a1a1a" : "#ffffff";
 
   const headingTune = getHeadingTuning(headingFont);
+  const bodyTune = getBodyTuning(bodyFont);
 
   const defaultThemeStyle: React.CSSProperties = {
     "--storefront-primary": primaryColor,
@@ -484,6 +485,12 @@ export function buildThemeStyle(
     "--storefront-heading-tracking": headingTune.tracking,
     "--storefront-heading-weight": String(headingTune.weight),
     "--storefront-heading-leading": String(headingTune.leading),
+    "--storefront-heading-adjust": headingTune.adjust,
+    "--storefront-body-tracking": bodyTune.tracking,
+    "--storefront-body-weight": String(bodyTune.weight),
+    "--storefront-body-leading": bodyTune.leading,
+    "--storefront-body-adjust": bodyTune.adjust,
+
     "--storefront-button-radius": getButtonRadius(buttonStyle, defaultButtonRadius),
     "--storefront-marquee-gradient": marqueeGradient,
     "--storefront-btn-text": btnTextColor,
