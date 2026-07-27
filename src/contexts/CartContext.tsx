@@ -43,6 +43,12 @@ function fireAddToCartAnalytics(
   // tracking event is throttled. Prevents Meta from seeing event inflation.
   import("@/lib/pixelDedupe").then(({ shouldFirePixelEvent }) => {
     if (!shouldFirePixelEvent("AddToCart", item.productId, item.variantId)) return;
+    // Never send synthetic bundle ids to Meta — they aren't in the catalog.
+    const contentIds = String(item.productId).startsWith("bundle:")
+      ? ((item as any)?.meta?.children || []).map((c: any) => c.productId).filter(Boolean)
+      : [item.productId];
+    if (contentIds.length === 0) return;
+
 
     // Dynamic imports keep fbPixelTrack + metaCapi out of the initial bundle
     Promise.all([
@@ -52,7 +58,7 @@ function fireAddToCartAnalytics(
       const eid = pixelMod.generateEventId();
       pixelMod.fbPixelTrack("AddToCart", {
         content_name: item.name,
-        content_ids: [item.productId],
+        content_ids: contentIds,
         content_type: "product",
         value: item.price,
         currency,
@@ -63,7 +69,7 @@ function fireAddToCartAnalytics(
           eventName: "AddToCart",
           eventId: eid,
           customData: {
-            content_ids: [item.productId],
+            content_ids: contentIds,
             content_name: item.name,
             content_type: "product",
             value: item.price,
@@ -148,9 +154,22 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
       ]).then(([pixelMod, capiMod]) => {
         const eid = pixelMod.generateEventId();
         const value = currentItems.reduce((s, i) => s + i.price * i.quantity, 0);
+        // Synthetic `bundle:<uuid>` ids don't exist in the Meta catalog and
+        // tank the catalog match rate — expand them to their real children.
+        const flat = currentItems
+          .flatMap((i: any) =>
+            i?.meta?.kind === "bundle" && Array.isArray(i.meta?.children)
+              ? i.meta.children.map((c: any) => ({
+                  id: c.productId,
+                  quantity: i.quantity,
+                  item_price: Number((i.price / Math.max(1, i.meta.children.length)).toFixed(2)),
+                }))
+              : [{ id: i.productId, quantity: i.quantity, item_price: i.price }]
+          )
+          .filter((f) => f.id && !String(f.id).startsWith("bundle:"));
         const data = {
-          content_ids: currentItems.map((i) => i.productId),
-          contents: currentItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+          content_ids: flat.map((f) => f.id),
+          contents: flat,
           content_type: "product",
           num_items: currentItems.reduce((s, i) => s + i.quantity, 0),
           value,

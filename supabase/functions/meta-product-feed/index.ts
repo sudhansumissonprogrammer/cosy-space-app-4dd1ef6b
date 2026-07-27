@@ -303,7 +303,10 @@ Deno.serve(async (req) => {
         csvEscape(fbCategoryFor(gcat)),
         csvEscape(qtyNum),
         csvEscape(salePrice),
-        csvEscape(""), // item_group_id — no shared-variant grouping yet
+        // item_group_id mirrors id: no shared-variant grouping yet, but a
+        // populated group id means events sent with content_type
+        // "product_group" still match the catalog instead of scoring 0%.
+        csvEscape(p.id),
         csvEscape(gallery.join(",")),
         csvEscape(productType),
         csvEscape("adult"),
