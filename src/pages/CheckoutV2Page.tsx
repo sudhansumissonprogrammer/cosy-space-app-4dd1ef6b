@@ -1970,8 +1970,10 @@ export default function CheckoutV2Page() {
     if (shipIdentityRef.current !== debouncedShipIdentity) {
       toast.info("Updating details…");
       flushShipIdentity();
+      clearUpiTapFx();
       return;
     }
+
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
 
     let leftCheckout = false;
