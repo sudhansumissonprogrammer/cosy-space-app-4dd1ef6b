@@ -3800,11 +3800,21 @@ export default function CheckoutV2Page() {
                   Know more · Why pay advance?
                 </button>
               )}
-              {(creatingOrder || couponLoading || paymentAmountSyncing || intents.any.status === "loading") && (
+              {!addressFilled ? (
+                <button
+                  type="button"
+                  onClick={openAddressFormSheet}
+                  className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-[12px] font-bold text-red-700 active:bg-red-100"
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  Add your delivery address to continue
+                </button>
+              ) : (creatingOrder || couponLoading || paymentAmountSyncing || intents.any.status === "loading") && (
                 <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin" /> Updating amount…
                 </div>
               )}
+
             </div>
           )}
 
