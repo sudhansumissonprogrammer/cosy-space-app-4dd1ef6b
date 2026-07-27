@@ -58,7 +58,7 @@ function fireAddToCartAnalytics(
       const eid = pixelMod.generateEventId();
       pixelMod.fbPixelTrack("AddToCart", {
         content_name: item.name,
-        content_ids: [item.productId],
+        content_ids: contentIds,
         content_type: "product",
         value: item.price,
         currency,
@@ -69,7 +69,7 @@ function fireAddToCartAnalytics(
           eventName: "AddToCart",
           eventId: eid,
           customData: {
-            content_ids: [item.productId],
+            content_ids: contentIds,
             content_name: item.name,
             content_type: "product",
             value: item.price,
