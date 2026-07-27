@@ -1,5 +1,6 @@
 import { Check, ArrowRight } from "lucide-react";
 import { onAuthCtaIntent } from "@/lib/prefetchLandingAuth";
+import { SectionHeading, bauButtonClass, GeoShape } from "@/components/landing/bauhaus/BauhausKit";
 
 const zeros = [
   { label: "Subscription", value: "₹0" },
@@ -22,24 +23,33 @@ const included = [
 const PricingV2 = () => (
   <section id="pricing" className="border-b-4 border-foreground py-14 sm:py-20 px-4 sm:px-6 lg:px-8 bg-bauhaus-canvas">
     <div className="max-w-5xl mx-auto">
-      <div className="text-center mb-10 sm:mb-14">
-        <span className="font-bold uppercase tracking-widest text-xs text-muted-foreground mb-2 block">Pricing</span>
-        <h2 className="font-black uppercase text-3xl sm:text-4xl lg:text-5xl tracking-tighter leading-[0.95] text-foreground">
-          ₹0 upfront. <span className="text-bauhaus-red">3% only when orders deliver.</span>
-        </h2>
-        <p className="font-medium text-sm sm:text-base text-muted-foreground mt-4 max-w-2xl mx-auto">
-          We make money only when you do. No order delivered, no fee. RTO returns? You pay nothing.
-        </p>
-      </div>
+      
+      <SectionHeading label="Pricing" size="lg" align="center" labelShape="circle">
+        ₹0 upfront.<br /><span className="text-bauhaus-red">3% only when orders deliver.</span>
+      </SectionHeading>
+      <p className="font-medium text-sm sm:text-base text-muted-foreground -mt-6 mb-10 sm:mb-12 max-w-2xl mx-auto text-center">
+        We make money only when you do. No order delivered, no fee. RTO returns? You pay nothing.
+      </p>
 
-      <div className="grid sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
-        {zeros.map((z) => (
-          <div key={z.label} className="bg-bauhaus-yellow border-4 border-foreground shadow-bauhaus p-5 text-center">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
+        {zeros.map((z, i) => (
+          <div
+            key={z.label}
+            className={`relative border-2 sm:border-4 border-foreground shadow-bauhaus p-5 text-center transition-transform duration-200 ease-out hover:-translate-y-1 ${
+              i % 2 === 0 ? "bg-bauhaus-yellow" : "bg-bauhaus-white"
+            }`}
+          >
+            <GeoShape
+              kind={i % 2 === 0 ? "circle" : "square"}
+              color={i % 2 === 0 ? "bg-bauhaus-red" : "bg-bauhaus-blue"}
+              className="absolute top-2 right-2 h-2.5 w-2.5"
+            />
             <div className="font-black text-4xl text-foreground">{z.value}</div>
             <div className="font-bold uppercase tracking-widest text-[10px] text-foreground/70 mt-1">{z.label}</div>
           </div>
         ))}
       </div>
+
 
       <div className="bg-bauhaus-white border-4 border-foreground shadow-bauhaus-lg overflow-hidden">
         <div className="bg-bauhaus-red text-primary-foreground px-6 py-5 border-b-4 border-foreground flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
@@ -61,7 +71,7 @@ const PricingV2 = () => (
         </div>
         <div className="p-6 sm:p-8 border-t-4 border-foreground bg-bauhaus-canvas flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <p className="font-bold text-sm text-foreground/80">Cancel any time. Migrate out with your full data.</p>
-          <a href="/signup" {...onAuthCtaIntent} className="inline-flex items-center justify-center gap-2 bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-sm px-6 py-3 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-[transform,opacity,colors,box-shadow] duration-200">
+          <a href="/signup" {...onAuthCtaIntent} className={bauButtonClass({ variant: "red", size: "md" })}>
             Start Free <ArrowRight className="h-4 w-4" />
           </a>
         </div>
