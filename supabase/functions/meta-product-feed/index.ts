@@ -29,6 +29,12 @@ const csvEscape = (v: string | number | null | undefined): string => {
   return s;
 };
 
+// Slug-looking titles ("rakhdi-set-ranihar-nath") read as spam in ads.
+const deSlug = (s: string): string =>
+  /^[a-z0-9]+(?:[-_][a-z0-9]+)+$/.test(s.trim())
+    ? s.trim().replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    : s;
+
 // Meta rejects HTML in description and dislikes ALL-CAPS / excess whitespace.
 const cleanText = (raw: string | null | undefined, max: number): string => {
   if (!raw) return "";
@@ -46,6 +52,7 @@ const cleanText = (raw: string | null | undefined, max: number): string => {
     .replace(/&gt;/gi, ">")
     .replace(/\s+/g, " ")
     .trim();
+  s = deSlug(s);
   // De-shout: if it's mostly capitals, title-case it (Meta flags ALL CAPS).
   const letters = s.replace(/[^A-Za-z]/g, "");
   if (letters.length > 8 && letters === letters.toUpperCase()) {
@@ -60,13 +67,13 @@ const cleanText = (raw: string | null | undefined, max: number): string => {
 // value goes into `product_type` instead — which accepts free text.
 const GOOGLE_TAXONOMY: [RegExp, string][] = [
   [/mangal\s*sutra|mangalsutra/i, "Apparel & Accessories > Jewelry > Necklaces"],
-  [/necklace|haar|chain|pendant/i, "Apparel & Accessories > Jewelry > Necklaces"],
+  [/necklace|haar|haar|ranihar|chain|pendant|chokar|choker|aad\b|thushi|sankh/i, "Apparel & Accessories > Jewelry > Necklaces"],
   [/\bring\b|ringe|anguthi/i, "Apparel & Accessories > Jewelry > Rings"],
-  [/bracelet|kada|bangle|kangan|brace/i, "Apparel & Accessories > Jewelry > Bracelets"],
+  [/bracelet|kada|bangle|kangan|brace|ponchi|gokharu|bajuband|baju\b|hathful|hathphool|armlet/i, "Apparel & Accessories > Jewelry > Bracelets"],
   [/ear\s*ring|earring|jhumk|tops|bali/i, "Apparel & Accessories > Jewelry > Earrings"],
   [/anklet|payal/i, "Apparel & Accessories > Jewelry > Anklets"],
   [/watch/i, "Apparel & Accessories > Jewelry > Watches"],
-  [/jewel|jewell|ornament/i, "Apparel & Accessories > Jewelry"],
+  [/rakhdi|borla|maang\s*tikka|\btika\b|tikka|nath\b|nathni|sheeshphool|hairband|hair\s*band|jewel|jewell|ornament|combo[-\s]?set/i, "Apparel & Accessories > Jewelry"],
   [/saree|sari|kurta|kurti|dress|shirt|top|apparel|cloth|wear/i, "Apparel & Accessories > Clothing"],
   [/bag|purse|clutch|wallet/i, "Apparel & Accessories > Handbags, Wallets & Cases"],
   [/shoe|sandal|footwear|slipper|sneaker/i, "Apparel & Accessories > Shoes"],
@@ -99,6 +106,34 @@ const fbCategoryFor = (googleCat: string): string => {
   for (const [re, val] of FB_CATEGORY) if (re.test(googleCat)) return val;
   return "";
 };
+
+// Optional but recommended attributes — Meta uses them for Advantage+ targeting.
+const COLORS = ["gold", "rose gold", "silver", "white", "black", "red", "green", "blue", "pink", "maroon", "multicolour", "multicolor"];
+const MATERIALS: [RegExp, string][] = [
+  [/kundan/i, "kundan"],
+  [/pearl|moti/i, "pearl"],
+  [/american\s*diamond|\bad\b|zircon|cz\b/i, "cubic zirconia"],
+  [/gold\s*plated|gold-plated/i, "gold plated brass"],
+  [/silver|oxidis|oxidiz/i, "silver"],
+  [/brass/i, "brass"],
+  [/cotton/i, "cotton"],
+  [/leather/i, "leather"],
+];
+const detectColor = (probe: string): string => {
+  const p = probe.toLowerCase();
+  for (const c of COLORS) if (p.includes(c)) return c === "multicolor" ? "multicolour" : c;
+  return "";
+};
+const detectMaterial = (probe: string): string => {
+  for (const [re, v] of MATERIALS) if (re.test(probe)) return v;
+  return "";
+};
+const detectGender = (probe: string): string => {
+  if (/\bmen\b|\bmens\b|\bmale\b|\bboy/i.test(probe)) return "male";
+  if (/\bwomen\b|\bwomens\b|\bladies\b|\bgirl|\bfemale\b/i.test(probe)) return "female";
+  return "unisex";
+};
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
