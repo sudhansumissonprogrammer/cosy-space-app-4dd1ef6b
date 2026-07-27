@@ -3104,23 +3104,74 @@ export default function CheckoutV2Page() {
   // QR code while completing payment in their phone's UPI app.
   if (waiting && isMobile()) {
     return (
-      <div className="mx-auto max-w-md p-6 pt-16 text-center">
-        <div className="mx-auto mb-6 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 text-primary animate-spin" />
-        </div>
-        <h1 className="text-xl font-bold mb-2">{tCritical(`Complete payment in ${waitingApp}`, `${waitingApp} में भुगतान पूरा करें`)}</h1>
-        <p className="text-sm text-muted-foreground mb-8">
-          Approve the payment request of <span className="font-semibold text-foreground">{formatPrice(chargeAmount, currency)}</span> in {waitingApp} to confirm your order.
-        </p>
-        <div className="rounded-lg border bg-muted/30 p-4 text-left text-xs text-muted-foreground mb-6">
-          <div className="flex items-start gap-2">
-            <ShieldCheck className="h-4 w-4 mt-0.5 text-emerald-600 flex-shrink-0" />
-            <div>{tCritical("Do not close this page. We'll confirm automatically once you approve payment in the app.", "यह पेज बंद न करें।")}</div>
+      <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] px-4 pt-10 pb-10">
+        {/* Status card */}
+        <div className="rounded-2xl bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.18)] p-6 text-center animate-fade-in">
+          <div className="relative mx-auto mb-5 h-20 w-20">
+            <span className="absolute inset-0 rounded-full bg-primary/10 animate-ping" aria-hidden="true" />
+            <span className="absolute inset-0 rounded-full bg-primary/10" aria-hidden="true" />
+            <span className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="h-9 w-9 text-primary animate-spin" />
+            </span>
+          </div>
+
+          <h1 className="text-[19px] font-bold tracking-tight text-foreground text-balance">
+            Complete payment in {waitingApp}
+          </h1>
+          <p className="mt-1.5 text-[13px] text-muted-foreground text-pretty">
+            Approve the request to confirm your order.
+          </p>
+
+          <div className="mt-5 rounded-xl bg-[#F7F8FA] px-4 py-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Amount to pay</div>
+            <div className="text-2xl font-extrabold tabular-nums text-foreground">{formatPrice(chargeAmount, currency)}</div>
+          </div>
+
+          {/* Progress steps */}
+          <div className="mt-5 space-y-2.5 text-left">
+            {[
+              { label: "Order created", done: true },
+              { label: `Opened ${waitingApp}`, done: true },
+              { label: "Waiting for your approval", done: false },
+              { label: "Order confirmed", done: false },
+            ].map((step) => (
+              <div key={step.label} className="flex items-center gap-2.5">
+                <span
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                    step.done ? "bg-emerald-500 text-white" : "border-2 border-dashed border-muted-foreground/30"
+                  }`}
+                >
+                  {step.done ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
+                </span>
+                <span className={`text-[13px] ${step.done ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+                  {step.label}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
-        <Button variant="outline" className="w-full" onClick={forceRecheck} disabled={manualChecking}>
-          {manualChecking ? "Checking…" : "I've paid — check now"}
+
+        {/* Reassurance */}
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3.5 py-3 text-left">
+          <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0 text-emerald-600" />
+          <p className="text-[12px] leading-relaxed text-emerald-900">
+            100% secure payment. Please keep this page open — we confirm your order automatically once the payment is approved.
+          </p>
+        </div>
+
+        <Button
+          variant="outline"
+          className="mt-5 w-full h-12 rounded-xl font-semibold active:scale-[0.98] transition-transform"
+          onClick={forceRecheck}
+          disabled={manualChecking}
+        >
+          {manualChecking ? (
+            <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Checking…</span>
+          ) : (
+            "I've paid — check now"
+          )}
         </Button>
+
         <button className="mt-3 text-xs text-muted-foreground underline" onClick={() => {
           clearWaiting(); setWaiting(false); setConfirmingPayment(false);
           try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
