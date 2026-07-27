@@ -312,6 +312,20 @@ export default function CheckoutV2Page() {
     }));
   }, [isSingleMode, buyNowProduct, buyNowVariant, buyNowQty, cartItems]);
 
+  // Stable fingerprint of WHAT is being bought. Used by the recent-order guard
+  // so it only blocks a re-mint of the *same* basket, never a genuinely new
+  // order the shopper places minutes later.
+  const cartSignature = useMemo(
+    () =>
+      checkoutItems
+        .map((i) => `${i.productId}:${i.variantId || ""}:${i.quantity}`)
+        .sort()
+        .join("|"),
+    [checkoutItems],
+  );
+  const cartSignatureRef = useRef(cartSignature);
+  useEffect(() => { cartSignatureRef.current = cartSignature; }, [cartSignature]);
+
   // ─── Form state (with express_checkout_ prefill) ────────────────────────
   const savedInfo = (() => {
     try { return JSON.parse(localStorage.getItem(`express_checkout_${store?.id}`) || "{}"); } catch { return {}; }
@@ -1561,7 +1575,7 @@ export default function CheckoutV2Page() {
       // AFTER a "full" order confirmed, same session_id + product. localStorage
       // survives the IABB wipe, so any re-entry into createOrderIfNeeded within
       // 3 minutes for this store is short-circuited.
-      const guardPayload = JSON.stringify({ ordId, at: Date.now() });
+      const guardPayload = JSON.stringify({ ordId, at: Date.now(), sig: cartSignatureRef.current });
       localStorage.setItem(`sb_last_order:${store.id}`, guardPayload);
     } catch { /* noop */ }
     window.dispatchEvent(new CustomEvent("order-placed"));
@@ -2224,27 +2238,38 @@ export default function CheckoutV2Page() {
   };
 
   const createOrderIfNeeded = async (paymentMethodHint: string): Promise<PendingOrder> => {
-    // Hard duplicate-order guard: if this store just completed an order in the
-    // last 3 minutes (persisted in localStorage by onOrderSuccess so it survives
-    // IABB sessionStorage wipes and popstate remounts), refuse to mint again.
-    // Root cause of #2782→#2783 and #2786→#2787 duplicate pairs: a stale mint
-    // effect fired after the success screen for the same session/product with a
-    // fresh checkout_token, producing an orphan "partial" pending order.
+    // Duplicate-order guard: if this store just completed an order in the last
+    // 3 minutes (persisted in localStorage by onOrderSuccess so it survives
+    // IABB sessionStorage wipes and popstate remounts) for the EXACT same
+    // basket, refuse to mint again. Root cause of #2782→#2783 and #2786→#2787
+    // duplicate pairs: a stale mint effect fired after the success screen for
+    // the same session/product with a fresh checkout_token.
+    //
+    // Scoped by cart signature: a shopper who legitimately places a second,
+    // different order minutes later must NOT be blocked (that used to surface
+    // as "UPI apps unavailable — recent_order_guard" on the tiles).
     try {
       const raw = localStorage.getItem(`sb_last_order:${store.id}`);
       if (raw) {
-        const parsed = JSON.parse(raw) as { ordId: string; at: number };
-        if (parsed?.ordId && Date.now() - Number(parsed.at) < 3 * 60 * 1000) {
+        const parsed = JSON.parse(raw) as { ordId: string; at: number; sig?: string };
+        const fresh = parsed?.ordId && Date.now() - Number(parsed.at) < 3 * 60 * 1000;
+        const sameBasket = typeof parsed?.sig === "string" && parsed.sig.length > 0
+          ? parsed.sig === cartSignatureRef.current
+          : false; // legacy payloads without a signature: don't block new orders
+        if (fresh && sameBasket) {
           if (orderIdRef.current === parsed.ordId) {
             return { id: parsed.ordId, number: orderNumberRef.current };
           }
           throw new Error("recent_order_guard");
         }
+        // Stale or unrelated guard entry — clear it so it can't linger.
+        if (!fresh) { try { localStorage.removeItem(`sb_last_order:${store.id}`); } catch { /* noop */ } }
       }
     } catch (e) {
       if (e instanceof Error && e.message === "recent_order_guard") throw e;
       /* localStorage / JSON errors — non-fatal, fall through */
     }
+
 
     // COD forces payment_type=full even when the shopper had "advance"
     // pre-selected. Fold that into the snapshot so a stale partial-mode
@@ -2392,7 +2417,10 @@ export default function CheckoutV2Page() {
           setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: msg }; }); return next; });
         }
       } catch (e: any) {
-        const rawMsg = String(e?.message || "");
+        const rawErrMsg = String(e?.message || "");
+        const rawMsg = rawErrMsg === "recent_order_guard"
+          ? "You just placed this same order a moment ago. Please check My Orders."
+          : rawErrMsg;
         const rateLimited = /too many attempts/i.test(rawMsg);
         // A 429 here is almost always a shopper who reloaded / toggled plans a
         // few times, not an attacker. Dead-ending them with a permanent error
