@@ -21,7 +21,49 @@ Deno.serve(async (req) => {
   if (isMetaBreakerOpen(breaker)) return json({ skipped: true, reason: "meta_breaker_open", open_until: breaker.open_until });
   if (!(await hasApprovedTemplates(admin))) return json({ skipped: true, reason: "no_approved_templates" });
 
+  // 🎟️ Per-store offer resolver — the recovery copy promises "₹X off + ₹Y
+  // advance". Those numbers MUST match what checkout actually charges, or the
+  // shopper lands on a different price and drops. Discount comes from the
+  // store's live auto-apply coupon, advance from stores.partial_payment_*.
+  const offerCache = new Map<string, any>();
+  async function resolveOffer(storeId: string, price: number) {
+    let conf = offerCache.get(storeId);
+    if (!conf) {
+      const nowIso = new Date().toISOString();
+      const [{ data: coupons }, { data: st }] = await Promise.all([
+        admin.from("coupons")
+          .select("discount_type, discount_value, min_order_amount, starts_at, expires_at")
+          .eq("store_id", storeId).eq("auto_apply", true).eq("is_active", true)
+          .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+          .order("discount_value", { ascending: false }).limit(5),
+        admin.from("stores")
+          .select("partial_payment_enabled, partial_payment_type, partial_payment_value")
+          .eq("id", storeId).maybeSingle(),
+      ]);
+      conf = { coupons: (coupons || []) as any[], store: (st || {}) as any, nowIso };
+      offerCache.set(storeId, conf);
+    }
+    const c = conf.coupons.find((x: any) =>
+      (!x.starts_at || x.starts_at <= conf.nowIso) && Number(x.min_order_amount || 0) <= price
+    );
+    const rawDiscount = !c ? 0
+      : c.discount_type === "percentage"
+        ? Math.round((price * Number(c.discount_value || 0)) / 100)
+        : Math.round(Number(c.discount_value || 0));
+    const discount = Math.max(0, Math.min(rawDiscount, price));
+    const s = conf.store;
+    const payable = Math.max(price - discount, 0);
+    const rawAdvance = s?.partial_payment_enabled
+      ? (s.partial_payment_type === "percentage"
+          ? Math.round((payable * Number(s.partial_payment_value || 0)) / 100)
+          : Math.round(Number(s.partial_payment_value || 0)))
+      : 0;
+    return { discount, advance: Math.max(0, Math.min(rawAdvance, payable)) };
+  }
+
+
   const now = Date.now();
+
   const minAgeMs = cfg!.wa_min_cart_age_minutes * 60 * 1000;
   const maxAgeMs = cfg!.wa_max_cart_age_hours * 60 * 60 * 1000;
   const beforeIso = new Date(now - minAgeMs).toISOString();
@@ -277,10 +319,12 @@ Deno.serve(async (req) => {
       : (productMrp && productMrp > 0 ? productMrp : (unitPrice > 0 ? unitPrice : total));
     const mrpPrice = effectiveSale; // ← use sale price as the crossed-out MRP
     const basePrice = effectiveSale;
-    const OFFER_DISCOUNT = 100;
-    const ADVANCE_AMOUNT = 100;
+    const offer = await resolveOffer((c as any).store_id, effectiveSale);
+    const OFFER_DISCOUNT = offer.discount;
+    const ADVANCE_AMOUNT = offer.advance;
     const discountedPrice = Math.max(effectiveSale - OFFER_DISCOUNT, 0);
     const balanceDue = Math.max(discountedPrice - ADVANCE_AMOUNT, 0);
+
 
     // Auto-pick the newest APPROVED + active abandoned_cart template. This lets
     // us promote v4/v5 by flipping is_active/meta_status in the DB — no code edit.
@@ -299,7 +343,11 @@ Deno.serve(async (req) => {
     // (e.g. "Ab Sirf ₹0", "delivery ₹0"). Below the floor, fall back to v2.
     const tplVars: string[] = ((activeTpl as any)?.variables) || [];
     const needsOfferMath = tplVars.includes("discounted_price") || tplVars.includes("balance_due");
-    if (needsOfferMath && basePrice < 300) chosenTemplate = "abandoned_cart_v2";
+    // Offer copy is only truthful when there IS a real auto-apply coupon to
+    // deduct at checkout. No coupon → the "Ab Sirf ₹X" line would repeat the
+    // same price, so fall back to the plain v2 template.
+    if (needsOfferMath && (basePrice < 300 || OFFER_DISCOUNT <= 0)) chosenTemplate = "abandoned_cart_v2";
+
 
 
     const { error: qErr } = await admin.from("wa_send_queue").insert({
@@ -485,8 +533,10 @@ Deno.serve(async (req) => {
         : (productMrp2 && productMrp2 > 0 ? productMrp2 : (unitPrice > 0 ? unitPrice : orderTotal));
       const mrpPrice2 = effectiveSale2; // ← sale price as crossed-out MRP
       const basePrice = effectiveSale2;
-      const discountedPrice = Math.max(effectiveSale2 - 100, 0);
-      const balanceDue = Math.max(discountedPrice - 100, 0);
+      const offer2 = await resolveOffer((o as any).store_id, effectiveSale2);
+      const discountedPrice = Math.max(effectiveSale2 - offer2.discount, 0);
+      const balanceDue = Math.max(discountedPrice - offer2.advance, 0);
+
 
       const { data: activeTpl2 } = await admin
         .from("platform_wa_templates")
@@ -497,7 +547,8 @@ Deno.serve(async (req) => {
       let chosenTemplate2 = (activeTpl2 as any)?.name || "abandoned_cart_v2";
       const tplVars2: string[] = ((activeTpl2 as any)?.variables) || [];
       const needsOfferMath2 = tplVars2.includes("discounted_price") || tplVars2.includes("balance_due");
-      if (needsOfferMath2 && basePrice < 300) chosenTemplate2 = "abandoned_cart_v2";
+      if (needsOfferMath2 && (basePrice < 300 || offer2.discount <= 0)) chosenTemplate2 = "abandoned_cart_v2";
+
 
       const { error: qErr } = await admin.from("wa_send_queue").insert({
         store_id: (o as any).store_id,

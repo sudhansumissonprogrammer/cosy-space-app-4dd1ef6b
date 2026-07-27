@@ -105,7 +105,17 @@
             var o = p.slice(7).split("/")[0].split("?")[0];
             if (o) tok = "o-" + o;
           }
+          // c-/o-/r- tokens belong to a known phone, so they MUST go through
+          // wa-r, which mints the auto-login session. The get_wa_redirect RPC
+          // returns a bare URL with no ?al=/#als= — using it here silently
+          // logged recovery shoppers out. Only p- (anonymous) uses the RPC.
+          if (tok && tok.slice(0, 2) !== "p-") {
+            try{ window.stop(); }catch(_){ }
+            location.replace("https://dqepeywgftbpxeeqfuwt.supabase.co/functions/v1/wa-r/" + encodeURIComponent(tok) + location.search);
+            return;
+          }
           if (tok) {
+
             try{ window.stop(); }catch(_){ }
             var api = "https://dqepeywgftbpxeeqfuwt.supabase.co";
             var anon = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
