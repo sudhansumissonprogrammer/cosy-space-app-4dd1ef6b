@@ -1783,6 +1783,15 @@ export default function CheckoutV2Page() {
     // (45 × 2s) — well beyond PayU's worst-case reflection window — and rely on the
     // parallel webhook to flip DB status the moment it lands.
     const maxAttempts = isDesktopQr ? 120 : (gatewayRef.current.pg ? 45 : 8);
+    // Shopper-returned fast exit: if the tab was hidden (UPI app opened) and
+    // then becomes visible again, the shopper is back on checkout. If they
+    // actually paid, PayU/Razorpay reflect it within a few seconds. If they
+    // backed out without paying, the old code kept them on "Complete your
+    // payment" for the full 90s window. So once they're back we only give a
+    // short grace period, then restore checkout with a retry option.
+    let wentToApp = false;
+    let returnedAt = 0;
+    const RETURN_GRACE_MS = 12000;
     const checkNow = async (): Promise<boolean> => {
       if (waitingCheckInFlightRef.current) return false;
       waitingCheckInFlightRef.current = true;
@@ -1818,6 +1827,10 @@ export default function CheckoutV2Page() {
       attempts++;
       const done = await checkNow();
       if (done || cancelled) return;
+      if (!isDesktopQr && returnedAt && Date.now() - returnedAt >= RETURN_GRACE_MS) {
+        stopWaitingForPayment("Payment not completed. Tap retry or choose another method.");
+        return;
+      }
       if (attempts >= maxAttempts) {
         stopWaitingForPayment(isDesktopQr
           ? "Still not confirmed. If you completed payment, tap retry."
@@ -1826,12 +1839,19 @@ export default function CheckoutV2Page() {
       }
       // QR: slow, steady cadence. Gateway redirect: fast at first, then steady 2s
       // so we ride out PayU's 15-45s reflection lag without hammering.
-      const delay = isDesktopQr ? 2500 : (attempts < 5 ? 1200 : 2000);
+      // After the shopper is back from the UPI app, poll tightly so a real
+      // payment confirms fast and a drop-off exits fast.
+      const delay = isDesktopQr ? 2500 : (returnedAt ? 1500 : attempts < 5 ? 1200 : 2000);
       setTimeout(poll, delay);
     };
     setTimeout(poll, 600);
     const onFocus = () => { void checkNow(); };
-    const onVis = () => { if (document.visibilityState === "visible") void checkNow(); };
+    const onVis = () => {
+      if (document.visibilityState === "hidden") { wentToApp = true; return; }
+      if (wentToApp && !returnedAt) returnedAt = Date.now();
+      void checkNow();
+    };
+
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVis);
     return () => {
