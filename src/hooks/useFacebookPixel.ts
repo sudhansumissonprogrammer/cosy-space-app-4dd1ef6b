@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useState } from "react";
-import { ensureFbpCookie, getOrCreateSfVid } from "@/lib/metaEnrichment";
+import { ensureFbpCookie, ensureFbcPersisted, getOrCreateSfVid } from "@/lib/metaEnrichment";
 import { purgeSharedDomainCookies } from "@/lib/purgeSharedDomainCookies";
 import { hasMarketingConsent } from "@/lib/marketingConsent";
 
