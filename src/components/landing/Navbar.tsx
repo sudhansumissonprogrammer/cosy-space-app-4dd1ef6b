@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { onAuthCtaIntent } from "@/lib/prefetchLandingAuth";
-import { BauhausMark, bauButtonClass } from "@/components/landing/bauhaus/BauhausKit";
+import { bauButtonClass } from "@/components/landing/bauhaus/BauhausKit";
+import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 
 // NOTE: We deliberately do NOT prefetch App.tsx from landing — any
 // `import("@/App")` reference here would make Rollup add modulepreload links
@@ -21,10 +22,15 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 bg-bauhaus-white border-b-4 border-foreground">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between h-14 md:h-20">
-        {/* Geometric brand mark: circle + square + triangle in the primaries */}
         <a href="/" className="flex items-center gap-2.5 group" aria-label="ShopBanao home">
-          <span className="border-2 border-foreground bg-bauhaus-canvas px-2 py-1.5 shadow-bauhaus-sm transition-transform duration-200 ease-out group-hover:-translate-y-0.5">
-            <BauhausMark size="h-3.5 w-3.5 md:h-4 md:w-4" />
+          <span className="border-2 border-foreground bg-bauhaus-white p-1 shadow-bauhaus-sm transition-transform duration-200 ease-out group-hover:-translate-y-0.5">
+            <img
+              src={shopbanaoLogo}
+              alt="ShopBanao logo"
+              width={32}
+              height={32}
+              className="block h-7 w-7 md:h-8 md:w-8 object-contain"
+            />
           </span>
           <span className="font-black uppercase tracking-tighter text-xl md:text-2xl text-foreground leading-none">
             Shop<span className="text-bauhaus-red">Banao</span>
