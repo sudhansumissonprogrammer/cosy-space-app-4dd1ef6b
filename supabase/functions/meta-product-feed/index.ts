@@ -29,6 +29,12 @@ const csvEscape = (v: string | number | null | undefined): string => {
   return s;
 };
 
+// Slug-looking titles ("rakhdi-set-ranihar-nath") read as spam in ads.
+const deSlug = (s: string): string =>
+  /^[a-z0-9]+(?:[-_][a-z0-9]+)+$/.test(s.trim())
+    ? s.trim().replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    : s;
+
 // Meta rejects HTML in description and dislikes ALL-CAPS / excess whitespace.
 const cleanText = (raw: string | null | undefined, max: number): string => {
   if (!raw) return "";
@@ -46,6 +52,7 @@ const cleanText = (raw: string | null | undefined, max: number): string => {
     .replace(/&gt;/gi, ">")
     .replace(/\s+/g, " ")
     .trim();
+  s = deSlug(s);
   // De-shout: if it's mostly capitals, title-case it (Meta flags ALL CAPS).
   const letters = s.replace(/[^A-Za-z]/g, "");
   if (letters.length > 8 && letters === letters.toUpperCase()) {
@@ -60,13 +67,13 @@ const cleanText = (raw: string | null | undefined, max: number): string => {
 // value goes into `product_type` instead — which accepts free text.
 const GOOGLE_TAXONOMY: [RegExp, string][] = [
   [/mangal\s*sutra|mangalsutra/i, "Apparel & Accessories > Jewelry > Necklaces"],
-  [/necklace|haar|chain|pendant/i, "Apparel & Accessories > Jewelry > Necklaces"],
+  [/necklace|haar|haar|ranihar|chain|pendant|chokar|choker|aad\b|thushi|sankh/i, "Apparel & Accessories > Jewelry > Necklaces"],
   [/\bring\b|ringe|anguthi/i, "Apparel & Accessories > Jewelry > Rings"],
-  [/bracelet|kada|bangle|kangan|brace/i, "Apparel & Accessories > Jewelry > Bracelets"],
+  [/bracelet|kada|bangle|kangan|brace|ponchi|gokharu|bajuband|baju\b|hathful|hathphool|armlet/i, "Apparel & Accessories > Jewelry > Bracelets"],
   [/ear\s*ring|earring|jhumk|tops|bali/i, "Apparel & Accessories > Jewelry > Earrings"],
   [/anklet|payal/i, "Apparel & Accessories > Jewelry > Anklets"],
   [/watch/i, "Apparel & Accessories > Jewelry > Watches"],
-  [/jewel|jewell|ornament/i, "Apparel & Accessories > Jewelry"],
+  [/rakhdi|borla|maang\s*tikka|\btika\b|tikka|nath\b|nathni|sheeshphool|hairband|hair\s*band|jewel|jewell|ornament|combo[-\s]?set/i, "Apparel & Accessories > Jewelry"],
   [/saree|sari|kurta|kurti|dress|shirt|top|apparel|cloth|wear/i, "Apparel & Accessories > Clothing"],
   [/bag|purse|clutch|wallet/i, "Apparel & Accessories > Handbags, Wallets & Cases"],
   [/shoe|sandal|footwear|slipper|sneaker/i, "Apparel & Accessories > Shoes"],
@@ -99,6 +106,34 @@ const fbCategoryFor = (googleCat: string): string => {
   for (const [re, val] of FB_CATEGORY) if (re.test(googleCat)) return val;
   return "";
 };
+
+// Optional but recommended attributes — Meta uses them for Advantage+ targeting.
+const COLORS = ["gold", "rose gold", "silver", "white", "black", "red", "green", "blue", "pink", "maroon", "multicolour", "multicolor"];
+const MATERIALS: [RegExp, string][] = [
+  [/kundan/i, "kundan"],
+  [/pearl|moti/i, "pearl"],
+  [/american\s*diamond|\bad\b|zircon|cz\b/i, "cubic zirconia"],
+  [/gold\s*plated|gold-plated/i, "gold plated brass"],
+  [/silver|oxidis|oxidiz/i, "silver"],
+  [/brass/i, "brass"],
+  [/cotton/i, "cotton"],
+  [/leather/i, "leather"],
+];
+const detectColor = (probe: string): string => {
+  const p = probe.toLowerCase();
+  for (const c of COLORS) if (p.includes(c)) return c === "multicolor" ? "multicolour" : c;
+  return "";
+};
+const detectMaterial = (probe: string): string => {
+  for (const [re, v] of MATERIALS) if (re.test(probe)) return v;
+  return "";
+};
+const detectGender = (probe: string): string => {
+  if (/\bmen\b|\bmens\b|\bmale\b|\bboy/i.test(probe)) return "male";
+  if (/\bwomen\b|\bwomens\b|\bladies\b|\bgirl|\bfemale\b/i.test(probe)) return "female";
+  return "unisex";
+};
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -170,6 +205,23 @@ Deno.serve(async (req) => {
       ? brandRaw.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
       : brandRaw;
 
+    // Store-level fallback taxonomy: use the dominant top-level category of the
+    // products we *could* match, so odd/regional item names never ship blank.
+    const catTally = new Map<string, number>();
+    for (const p of list) {
+      const g = googleCategoryFor(p.category, p.name || "");
+      if (!g) continue;
+      const top = g.split(" > ").slice(0, 3).join(" > ");
+      catTally.set(top, (catTally.get(top) || 0) + 1);
+    }
+    let fallbackCat = "";
+    let best = 0;
+    for (const [k, v] of catTally) if (v > best) { best = v; fallbackCat = k; }
+    // Prefer the safe parent node (e.g. ".. > Jewelry") over a leaf like Rings.
+    if (fallbackCat.split(" > ").length === 3) {
+      fallbackCat = fallbackCat.split(" > ").slice(0, 2).join(" > ") + " > " + fallbackCat.split(" > ")[2];
+    }
+
     // Meta CSV column order (template: catalog_products)
     const headers = [
       "id",
@@ -188,6 +240,10 @@ Deno.serve(async (req) => {
       "item_group_id",
       "additional_image_link",
       "product_type",
+      "age_group",
+      "gender",
+      "color",
+      "material",
     ];
 
     const rows: string[] = [headers.join(",")];
@@ -217,13 +273,26 @@ Deno.serve(async (req) => {
       const validSale = saleN > 0 && saleN < regN && saleN / regN >= 0.05;
       const salePrice = validSale ? `${saleN.toFixed(2)} ${currency}` : "";
 
-      const gcat = googleCategoryFor(p.category, p.name || "");
+      const gcat = googleCategoryFor(p.category, p.name || "") || fallbackCat;
       const gallery = (galleryByProduct.get(p.id) || []).filter((u) => u !== p.image_url);
+      const productType = cleanText(p.category, 750);
+      const probe = `${p.name || ""} ${p.category || ""} ${p.description || ""}`;
+
+      // Meta flags one-word / duplicate-of-title descriptions as low quality.
+      let description = cleanText(p.description, 9999);
+      if (description.length < 40 || description.toLowerCase() === title.toLowerCase()) {
+        const bits = [
+          `${title} from ${brand}.`,
+          productType ? `Handpicked ${productType.toLowerCase()} crafted for everyday and festive wear.` : "Crafted for everyday and festive wear.",
+          "Lightweight, skin-friendly finish with secure fastening. Cash on delivery available across India.",
+        ];
+        description = bits.join(" ").slice(0, 9999);
+      }
 
       rows.push([
         csvEscape(p.id),
         csvEscape(title),
-        csvEscape(cleanText(p.description, 9999) || title),
+        csvEscape(description),
         csvEscape(availability),
         csvEscape("new"),
         csvEscape(regularPrice),
@@ -236,9 +305,14 @@ Deno.serve(async (req) => {
         csvEscape(salePrice),
         csvEscape(""), // item_group_id — no shared-variant grouping yet
         csvEscape(gallery.join(",")),
-        csvEscape(cleanText(p.category, 750)),
+        csvEscape(productType),
+        csvEscape("adult"),
+        csvEscape(detectGender(probe)),
+        csvEscape(detectColor(probe)),
+        csvEscape(detectMaterial(probe)),
       ].join(","));
     }
+
 
     return new Response(rows.join("\n"), {
       status: 200,
