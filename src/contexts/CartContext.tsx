@@ -43,6 +43,12 @@ function fireAddToCartAnalytics(
   // tracking event is throttled. Prevents Meta from seeing event inflation.
   import("@/lib/pixelDedupe").then(({ shouldFirePixelEvent }) => {
     if (!shouldFirePixelEvent("AddToCart", item.productId, item.variantId)) return;
+    // Never send synthetic bundle ids to Meta — they aren't in the catalog.
+    const contentIds = String(item.productId).startsWith("bundle:")
+      ? ((item as any)?.meta?.children || []).map((c: any) => c.productId).filter(Boolean)
+      : [item.productId];
+    if (contentIds.length === 0) return;
+
 
     // Dynamic imports keep fbPixelTrack + metaCapi out of the initial bundle
     Promise.all([
