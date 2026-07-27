@@ -115,6 +115,7 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     if (isNonProductionHost()) return;
     if (!hasMarketingConsent()) return;
     ensureFbpCookie();
+    ensureFbcPersisted();
 
     // Phase 1: If index.html inline script already initialized this pixel,
     // skip — avoids duplicate init + duplicate PageView.
