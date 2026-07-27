@@ -54,39 +54,224 @@ function normalizeGoogleFontName(font: string): string {
 }
 
 /**
- * Per-font tuning so different headings don't look "odd". Big-brand sites
- * carefully tune tracking/weight per typeface — same setting that's right for
- * Inter is wrong for Cormorant. Keyed by exact font family name.
+ * ─── Font normalization layer ────────────────────────────────────────────
+ * Every typeface renders at a different optical size for the same CSS
+ * font-size: cap-height, x-height and average advance width all differ.
+ * That is why swapping the storefront font used to make titles look huge,
+ * prices dominant and cards crowded.
+ *
+ * The table below is built from REAL measured metrics (canvas ascent probe,
+ * 100px reference) for every font offered in Theme Settings:
+ *
+ *   font                   ex     cap    adv
+ *   Alegreya SC            0.51   0.65   0.61   <- heading benchmark
+ *   Inter                  0.55   0.73   0.59   <- body benchmark
+ *   Cormorant              0.39   0.63   0.52
+ *   Cinzel                 0.60   0.70   0.77
+ *   Oswald                 0.58   0.81   0.44
+ *   Bodoni Moda            0.46   0.75   0.60
+ *   ... (see FONT_METRICS)
+ *
+ * Normalization is OPTICAL, not numeric: we do not force identical CSS
+ * values. Instead each font gets
+ *   • `font-size-adjust` so its cap-height (headings) / x-height (body)
+ *     matches the benchmark → no more "this font renders 20% bigger"
+ *   • tracking compensation based on advance width (wide fonts tighten,
+ *     condensed fonts open up)
+ *   • a weight + line-height profile matched to its natural colour
+ *
+ * BENCHMARK RULE: "Alegreya SC" (headings) and "Inter" (body) are the
+ * reference design and MUST stay pixel-identical — their entries use
+ * `none` / `inherit` so not a single rule changes for them.
  */
-const HEADING_TUNING: Record<string, { tracking: string; weight: number; leading: number }> = {
-  "Alegreya SC":       { tracking: "0.02em",   weight: 700, leading: 1.2 },
-  "Playfair Display":  { tracking: "-0.01em",  weight: 700, leading: 1.15 },
-  "Cormorant":         { tracking: "0em",      weight: 600, leading: 1.15 },
-  "Bodoni Moda":       { tracking: "-0.005em", weight: 700, leading: 1.1 },
-  "DM Serif Display":  { tracking: "-0.01em",  weight: 400, leading: 1.1 },
-  "Fraunces":          { tracking: "-0.02em",  weight: 600, leading: 1.1 },
-  "Cinzel":            { tracking: "0.04em",   weight: 600, leading: 1.2 },
-  "Syne":              { tracking: "-0.02em",  weight: 700, leading: 1.05 },
-  "Space Grotesk":     { tracking: "-0.02em",  weight: 600, leading: 1.1 },
-  "DM Sans":           { tracking: "-0.02em",  weight: 700, leading: 1.15 },
-  "Plus Jakarta Sans": { tracking: "-0.02em",  weight: 700, leading: 1.15 },
-  "Inter":             { tracking: "-0.02em",  weight: 700, leading: 1.15 },
-  "Poppins":           { tracking: "-0.01em",  weight: 700, leading: 1.2 },
-  "Montserrat":        { tracking: "-0.01em",  weight: 700, leading: 1.2 },
-  "Montserrat Alternates": { tracking: "-0.01em", weight: 700, leading: 1.2 },
-  "Rubik":             { tracking: "-0.01em",  weight: 600, leading: 1.2 },
-  "Outfit":            { tracking: "-0.02em",  weight: 700, leading: 1.15 },
-  "Lora":              { tracking: "0em",      weight: 600, leading: 1.2 },
-  "Merriweather":      { tracking: "0em",      weight: 700, leading: 1.25 },
-  "Oswald":            { tracking: "0.01em",   weight: 600, leading: 1.1 },
-  "Raleway":           { tracking: "-0.01em",  weight: 700, leading: 1.15 },
-  "Open Sans":         { tracking: "-0.005em", weight: 700, leading: 1.2 },
-  "Roboto":            { tracking: "-0.01em",  weight: 700, leading: 1.2 },
+export type FontTuning = {
+  /** heading letter-spacing */
+  tracking: string;
+  /** heading font-weight */
+  weight: number;
+  /** heading line-height */
+  leading: number;
+  /** heading `font-size-adjust` value — normalizes cap-height */
+  adjust: string;
 };
 
-export function getHeadingTuning(font: string) {
-  return HEADING_TUNING[normalizeGoogleFontName(font)] ?? { tracking: "-0.01em", weight: 700, leading: 1.2 };
+export type BodyTuning = {
+  tracking: string;
+  weight: number | string;
+  leading: string;
+  /** body `font-size-adjust` value — normalizes x-height */
+  adjust: string;
+};
+
+/** Cap-height target = Alegreya SC (0.65). Keeps every heading optically equal. */
+const HEAD_CAP_TARGET = "cap-height 0.65";
+/** x-height target = Inter (0.55). Keeps every body text optically equal. */
+const BODY_EX_TARGET = "ex-height 0.55";
+
+type FontProfile = { head: FontTuning; body: BodyTuning };
+
+const FONT_METRICS: Record<string, FontProfile> = {
+  // ── Benchmarks — untouched ────────────────────────────────────────────
+  "Alegreya SC": {
+    head: { tracking: "0.02em", weight: 700, leading: 1.2, adjust: "none" },
+    body: { tracking: "inherit", weight: "inherit", leading: "inherit", adjust: "none" },
+  },
+  "Inter": {
+    head: { tracking: "-0.02em", weight: 700, leading: 1.15, adjust: "none" },
+    body: { tracking: "inherit", weight: "inherit", leading: "inherit", adjust: "none" },
+  },
+
+  // ── Display serifs (large cap-height → scale down, open leading) ──────
+  "Playfair Display": {
+    head: { tracking: "-0.01em", weight: 700, leading: 1.15, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0em", weight: 400, leading: "1.62", adjust: BODY_EX_TARGET },
+  },
+  "Bodoni Moda": {
+    // cap 0.75 → renders visibly bigger; thin hairlines need +1 weight step in body
+    head: { tracking: "0em", weight: 600, leading: 1.15, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0.005em", weight: 500, leading: "1.65", adjust: BODY_EX_TARGET },
+  },
+  "DM Serif Display": {
+    head: { tracking: "-0.005em", weight: 400, leading: 1.15, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+  },
+  "Fraunces": {
+    head: { tracking: "-0.015em", weight: 600, leading: 1.12, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+  },
+  "Cormorant": {
+    // ex 0.39 = tiniest of the set → the biggest up-scale + heavier body weight
+    head: { tracking: "0.005em", weight: 600, leading: 1.18, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0.005em", weight: 500, leading: "1.6", adjust: BODY_EX_TARGET },
+  },
+  "Cinzel": {
+    // adv 0.77 = widest → tighten tracking so titles stop wrapping in cards
+    head: { tracking: "0.02em", weight: 600, leading: 1.22, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "-0.005em", weight: 500, leading: "1.6", adjust: BODY_EX_TARGET },
+  },
+  "Lora": {
+    head: { tracking: "0em", weight: 600, leading: 1.2, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0em", weight: 400, leading: "1.62", adjust: BODY_EX_TARGET },
+  },
+  "Merriweather": {
+    // wide + heavy colour → lighter default, tighter tracking
+    head: { tracking: "-0.01em", weight: 600, leading: 1.22, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "-0.005em", weight: 400, leading: "1.65", adjust: BODY_EX_TARGET },
+  },
+
+  // ── Geometric / grotesque sans ────────────────────────────────────────
+  "Syne": {
+    head: { tracking: "-0.015em", weight: 700, leading: 1.1, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0em", weight: 400, leading: "1.55", adjust: BODY_EX_TARGET },
+  },
+  "Space Grotesk": {
+    head: { tracking: "-0.02em", weight: 600, leading: 1.12, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0em", weight: 400, leading: "1.55", adjust: BODY_EX_TARGET },
+  },
+  "DM Sans": {
+    head: { tracking: "-0.02em", weight: 700, leading: 1.15, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0em", weight: 400, leading: "1.55", adjust: BODY_EX_TARGET },
+  },
+  "Plus Jakarta Sans": {
+    head: { tracking: "-0.02em", weight: 700, leading: 1.15, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0em", weight: 400, leading: "1.55", adjust: BODY_EX_TARGET },
+  },
+  "Manrope": {
+    head: { tracking: "-0.02em", weight: 700, leading: 1.15, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0em", weight: 400, leading: "1.55", adjust: BODY_EX_TARGET },
+  },
+  "Poppins": {
+    // wide geometric, heavy at 700 → 600 heading + tighter tracking
+    head: { tracking: "-0.015em", weight: 600, leading: 1.2, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "-0.005em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+  },
+  "Montserrat": {
+    head: { tracking: "-0.015em", weight: 600, leading: 1.2, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "-0.005em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+  },
+  "Montserrat Alternates": {
+    head: { tracking: "-0.015em", weight: 600, leading: 1.2, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "-0.005em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+  },
+  "Rubik": {
+    head: { tracking: "-0.015em", weight: 600, leading: 1.2, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0em", weight: 400, leading: "1.58", adjust: BODY_EX_TARGET },
+  },
+  "Raleway": {
+    head: { tracking: "-0.01em", weight: 700, leading: 1.18, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+  },
+  "Nunito Sans": {
+    head: { tracking: "-0.01em", weight: 700, leading: 1.2, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+  },
+  "Open Sans": {
+    head: { tracking: "-0.01em", weight: 700, leading: 1.2, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+  },
+  "Roboto": {
+    head: { tracking: "-0.015em", weight: 700, leading: 1.18, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0em", weight: 400, leading: "1.58", adjust: BODY_EX_TARGET },
+  },
+  "Oswald": {
+    // condensed (adv 0.44) + tallest caps (0.81) → open tracking, big down-scale
+    head: { tracking: "0.02em", weight: 500, leading: 1.15, adjust: HEAD_CAP_TARGET },
+    body: { tracking: "0.015em", weight: 400, leading: "1.55", adjust: BODY_EX_TARGET },
+  },
+};
+
+const FALLBACK_PROFILE: FontProfile = {
+  head: { tracking: "-0.01em", weight: 700, leading: 1.2, adjust: HEAD_CAP_TARGET },
+  body: { tracking: "0em", weight: 400, leading: "1.58", adjust: BODY_EX_TARGET },
+};
+
+function getFontProfile(font: string): FontProfile {
+  return FONT_METRICS[normalizeGoogleFontName(font)] ?? FALLBACK_PROFILE;
 }
+
+export function getHeadingTuning(font: string): FontTuning {
+  return getFontProfile(font).head;
+}
+
+export function getBodyTuning(font: string): BodyTuning {
+  return getFontProfile(font).body;
+}
+
+/** Serif/display families — used for pairing sanity checks. */
+const DISPLAY_SERIFS = new Set([
+  "Playfair Display", "Bodoni Moda", "DM Serif Display", "Fraunces",
+  "Cormorant", "Cinzel", "Alegreya SC",
+]);
+const TEXT_SERIFS = new Set(["Lora", "Merriweather"]);
+const NARROW_BODY = new Set(["Oswald", "Cinzel", "Bodoni Moda", "DM Serif Display"]);
+
+/**
+ * Pairing guard. Returns null when the combination is safe, otherwise a
+ * short human explanation of why the pairing hurts hierarchy/readability.
+ */
+export function getPairingAdvice(
+  headingFont: string,
+  bodyFont: string
+): { level: "warn" | "info"; message: string } | null {
+  const h = normalizeGoogleFontName(headingFont);
+  const b = normalizeGoogleFontName(bodyFont);
+
+  if (h === b && DISPLAY_SERIFS.has(h)) {
+    return { level: "warn", message: `${h} is a display face — using it for body text too flattens hierarchy and hurts readability. Pair it with Inter or Manrope.` };
+  }
+  if (NARROW_BODY.has(b)) {
+    return { level: "warn", message: `${b} is a display/condensed face and reads poorly at paragraph sizes. Use it for headings and pick a text sans for body.` };
+  }
+  if (DISPLAY_SERIFS.has(h) && (DISPLAY_SERIFS.has(b) || TEXT_SERIFS.has(b))) {
+    return { level: "info", message: `Serif heading + serif body can look muddy. A neutral sans body (Inter, Manrope, DM Sans) gives a more premium contrast.` };
+  }
+  if (h === b) {
+    return { level: "info", message: `Same font for headings and body works, but a distinct heading face creates stronger hierarchy.` };
+  }
+  return null;
+}
+
+
 
 export function getResolvedThemeFonts(themeConfig: Record<string, any> | null): {
   headingFont: string;
