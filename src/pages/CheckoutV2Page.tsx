@@ -3172,7 +3172,7 @@ export default function CheckoutV2Page() {
           )}
         </Button>
 
-        <button className="mt-3 text-xs text-muted-foreground underline" onClick={() => {
+        <button className="mt-4 w-full text-center text-xs font-medium text-muted-foreground underline underline-offset-2" onClick={() => {
           clearWaiting(); setWaiting(false); setConfirmingPayment(false);
           try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
           // The intent URL carries a single gateway payment reference. Once the
