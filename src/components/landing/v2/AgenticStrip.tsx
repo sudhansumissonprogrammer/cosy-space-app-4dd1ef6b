@@ -27,7 +27,7 @@ const AgenticStrip = () => (
       <div className="grid sm:grid-cols-3 gap-5">
         {agents.map((a) => (
           <div key={a.title} className="relative border-2 border-bauhaus-white/20 bg-bauhaus-white/[0.03] p-6 hover:bg-bauhaus-white/[0.06] transition-colors duration-200">
-            <CornerMark tone="light" />
+            <CornerMark index={agents.indexOf(a)} />
             <div className="w-10 h-10 border-2 border-bauhaus-white/40 flex items-center justify-center mb-4">
               <a.icon className="h-5 w-5 text-bauhaus-yellow" strokeWidth={2.25} />
             </div>
