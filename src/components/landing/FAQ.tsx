@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
+import { SectionHeading } from "@/components/landing/bauhaus/BauhausKit";
 
 const faqs = [
   { q: "What does ShopBanao actually cost?", a: "₹0 subscription, ₹0 setup, ₹0 marketing fee. You pay a flat 3% only on orders that are actually delivered. If an order RTOs, you pay nothing on it." },
