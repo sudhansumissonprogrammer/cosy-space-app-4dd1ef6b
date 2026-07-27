@@ -172,8 +172,8 @@
    * Font normalization layer (see src/lib/themeUtils.ts FONT_METRICS):
    *  - `font-size-adjust` normalizes optical size across typefaces so a font
    *    swap never makes titles/prices render visibly bigger or smaller.
-   *    Headings normalize on cap-height (Alegreya SC = 0.65 benchmark),
-   *    body text on x-height (Inter = 0.55 benchmark).
+   *    Headings normalize on cap-height (Alegreya SC = 0.636 benchmark),
+   *    body text on x-height (Inter = 0.546 benchmark).
    *  - tracking / weight / leading come from the same per-font profile.
    *  - The benchmark pair (Alegreya SC + Inter) resolves to `none`/`inherit`,
    *    so their rendering is byte-identical to before this layer existed.

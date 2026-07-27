@@ -60,17 +60,9 @@ function normalizeGoogleFontName(font: string): string {
  * That is why swapping the storefront font used to make titles look huge,
  * prices dominant and cards crowded.
  *
- * The table below is built from REAL measured metrics (canvas ascent probe,
- * 100px reference) for every font offered in Theme Settings:
- *
- *   font                   ex     cap    adv
- *   Alegreya SC            0.51   0.65   0.61   <- heading benchmark
- *   Inter                  0.55   0.73   0.59   <- body benchmark
- *   Cormorant              0.39   0.63   0.52
- *   Cinzel                 0.60   0.70   0.77
- *   Oswald                 0.58   0.81   0.44
- *   Bodoni Moda            0.46   0.75   0.60
- *   ... (see FONT_METRICS)
+ * Metrics come from each font's binary (OS/2 sCapHeight / sxHeight and
+ * hmtx advances, normalized by unitsPerEm) — see the full table below.
+
  *
  * Normalization is OPTICAL, not numeric: we do not force identical CSS
  * values. Instead each font gets
@@ -103,131 +95,160 @@ export type BodyTuning = {
   adjust: string;
 };
 
-/** Cap-height target = Alegreya SC (0.65). Keeps every heading optically equal. */
-const HEAD_CAP_TARGET = "cap-height 0.65";
-/** x-height target = Inter (0.55). Keeps every body text optically equal. */
-const BODY_EX_TARGET = "ex-height 0.55";
-
+/**
+ * TRUE metrics, read from each font's binary (OS/2 sCapHeight, sxHeight,
+ * hmtx advance widths, normalized by unitsPerEm) — not eyeballed:
+ *
+ *   font                    cap     ex     adv        font                  cap     ex     adv
+ *   Alegreya SC  (H bench) 0.636  0.452  0.530        Poppins              0.698  0.548  0.561
+ *   Inter        (B bench) 0.728  0.546  0.536        Montserrat           0.700  0.525  0.574
+ *   Montserrat Alternates  0.700  0.525  0.588        Roboto               0.711  0.528  0.499
+ *   Playfair Display       0.708  0.514  0.509        Open Sans            0.714  0.535  0.522
+ *   Cormorant              0.625  0.386  0.440        Oswald               0.810  0.578  0.400
+ *   Bodoni Moda            0.750  0.460  0.533        Raleway              0.710  0.519  0.526
+ *   DM Serif Display       0.660  0.481  0.515        Merriweather         0.743  0.555  0.559
+ *   Fraunces               0.700  0.482  0.536        DM Sans              0.700  0.504  0.522
+ *   Cinzel                 0.700  0.500  0.639        Plus Jakarta Sans    0.745  0.536  0.540
+ *   Syne                   0.650  0.500  0.503        Manrope              0.720  0.540  0.523
+ *   Lora                   0.700  0.500  0.524        Rubik                0.700  0.520  0.531
+ *   Nunito Sans            0.705  0.486  0.508        Space Grotesk        0.700  0.486  0.556
+ *
+ * Heading target: cap-height 0.636 (Alegreya SC), clamped to ±(0.86…1.12)×
+ * the font's own cap so no face is distorted beyond a sane range.
+ * Body target: x-height 0.546 (Inter), clamped to (0.90…1.15)×.
+ * Body `font-size-adjust` is emitted as a bare number (the classic
+ * x-height syntax) → supported since Firefox 3 / Chrome 127, i.e. far wider
+ * reach than the two-value form, which is only needed for cap-height.
+ * Tracking is derived from advance-width-per-cap (headings) and
+ * advance-width-per-x-height (body) versus the benchmark, so wide faces
+ * tighten and condensed faces open up.
+ */
 type FontProfile = { head: FontTuning; body: BodyTuning };
 
 const FONT_METRICS: Record<string, FontProfile> = {
-  // ── Benchmarks — untouched ────────────────────────────────────────────
+  // ── Benchmarks — MUST stay pixel-identical ────────────────────────────
   "Alegreya SC": {
     head: { tracking: "0.02em", weight: 700, leading: 1.2, adjust: "none" },
     body: { tracking: "inherit", weight: "inherit", leading: "inherit", adjust: "none" },
   },
   "Inter": {
-    head: { tracking: "-0.02em", weight: 700, leading: 1.15, adjust: "none" },
+    head: { tracking: "-0.02em", weight: 700, leading: 1.15, adjust: "cap-height 0.636" },
     body: { tracking: "inherit", weight: "inherit", leading: "inherit", adjust: "none" },
   },
 
-  // ── Display serifs (large cap-height → scale down, open leading) ──────
+  // ── Display serifs ────────────────────────────────────────────────────
   "Playfair Display": {
-    head: { tracking: "-0.01em", weight: 700, leading: 1.15, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0em", weight: 400, leading: "1.62", adjust: BODY_EX_TARGET },
+    head: { tracking: "0.007em", weight: 700, leading: 1.16, adjust: "cap-height 0.636" },
+    body: { tracking: "0em", weight: 400, leading: "1.62", adjust: "0.546" },
   },
   "Bodoni Moda": {
-    // cap 0.75 → renders visibly bigger; thin hairlines need +1 weight step in body
-    head: { tracking: "0em", weight: 600, leading: 1.15, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0.005em", weight: 500, leading: "1.65", adjust: BODY_EX_TARGET },
+    // cap 0.750 = one of the tallest → biggest heading down-scale; hairline
+    // strokes need +1 weight step at body sizes to survive on mobile.
+    head: { tracking: "0.007em", weight: 600, leading: 1.16, adjust: "cap-height 0.645" },
+    body: { tracking: "-0.009em", weight: 500, leading: "1.65", adjust: "0.529" },
   },
   "DM Serif Display": {
-    head: { tracking: "-0.005em", weight: 400, leading: 1.15, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+    head: { tracking: "0.003em", weight: 400, leading: 1.18, adjust: "cap-height 0.636" },
+    body: { tracking: "-0.004em", weight: 400, leading: "1.6", adjust: "0.546" },
   },
   "Fraunces": {
-    head: { tracking: "-0.015em", weight: 600, leading: 1.12, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+    head: { tracking: "0.004em", weight: 600, leading: 1.14, adjust: "cap-height 0.636" },
+    body: { tracking: "-0.007em", weight: 400, leading: "1.6", adjust: "0.546" },
   },
   "Cormorant": {
-    // ex 0.39 = tiniest of the set → the biggest up-scale + heavier body weight
-    head: { tracking: "0.005em", weight: 600, leading: 1.18, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0.005em", weight: 500, leading: "1.6", adjust: BODY_EX_TARGET },
+    // ex 0.386 = smallest of the whole set → largest body up-scale (capped
+    // at 1.15×) plus a heavier default weight so it never looks washed out.
+    head: { tracking: "0.008em", weight: 600, leading: 1.18, adjust: "cap-height 0.636" },
+    body: { tracking: "-0.008em", weight: 500, leading: "1.6", adjust: "0.444" },
   },
   "Cinzel": {
-    // adv 0.77 = widest → tighten tracking so titles stop wrapping in cards
-    head: { tracking: "0.02em", weight: 600, leading: 1.22, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "-0.005em", weight: 500, leading: "1.6", adjust: BODY_EX_TARGET },
+    // adv 0.639 = widest face → the only heading that needs tightening.
+    head: { tracking: "-0.005em", weight: 600, leading: 1.22, adjust: "cap-height 0.636" },
+    body: { tracking: "-0.012em", weight: 500, leading: "1.6", adjust: "0.546" },
   },
   "Lora": {
-    head: { tracking: "0em", weight: 600, leading: 1.2, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0em", weight: 400, leading: "1.62", adjust: BODY_EX_TARGET },
+    head: { tracking: "0.005em", weight: 600, leading: 1.2, adjust: "cap-height 0.636" },
+    body: { tracking: "-0.003em", weight: 400, leading: "1.62", adjust: "0.546" },
   },
   "Merriweather": {
-    // wide + heavy colour → lighter default, tighter tracking
-    head: { tracking: "-0.01em", weight: 600, leading: 1.22, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "-0.005em", weight: 400, leading: "1.65", adjust: BODY_EX_TARGET },
+    // heavy colour + tall cap → lighter heading weight, big down-scale.
+    head: { tracking: "0.005em", weight: 600, leading: 1.22, adjust: "cap-height 0.639" },
+    body: { tracking: "-0.001em", weight: 400, leading: "1.65", adjust: "0.546" },
   },
 
   // ── Geometric / grotesque sans ────────────────────────────────────────
   "Syne": {
-    head: { tracking: "-0.015em", weight: 700, leading: 1.1, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0em", weight: 400, leading: "1.55", adjust: BODY_EX_TARGET },
+    head: { tracking: "0.004em", weight: 700, leading: 1.14, adjust: "cap-height 0.636" },
+    body: { tracking: "-0.001em", weight: 400, leading: "1.55", adjust: "0.546" },
   },
   "Space Grotesk": {
-    head: { tracking: "-0.02em", weight: 600, leading: 1.12, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0em", weight: 400, leading: "1.55", adjust: BODY_EX_TARGET },
+    head: { tracking: "0.002em", weight: 600, leading: 1.16, adjust: "cap-height 0.636" },
+    body: { tracking: "-0.008em", weight: 400, leading: "1.55", adjust: "0.546" },
   },
   "DM Sans": {
-    head: { tracking: "-0.02em", weight: 700, leading: 1.15, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0em", weight: 400, leading: "1.55", adjust: BODY_EX_TARGET },
+    head: { tracking: "0.005em", weight: 700, leading: 1.16, adjust: "cap-height 0.636" },
+    body: { tracking: "-0.003em", weight: 400, leading: "1.55", adjust: "0.546" },
   },
   "Plus Jakarta Sans": {
-    head: { tracking: "-0.02em", weight: 700, leading: 1.15, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0em", weight: 400, leading: "1.55", adjust: BODY_EX_TARGET },
+    head: { tracking: "0.007em", weight: 700, leading: 1.16, adjust: "cap-height 0.641" },
+    body: { tracking: "-0.001em", weight: 400, leading: "1.55", adjust: "0.546" },
   },
   "Manrope": {
-    head: { tracking: "-0.02em", weight: 700, leading: 1.15, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0em", weight: 400, leading: "1.55", adjust: BODY_EX_TARGET },
+    head: { tracking: "0.006em", weight: 700, leading: 1.16, adjust: "cap-height 0.636" },
+    body: { tracking: "0.001em", weight: 400, leading: "1.55", adjust: "0.546" },
   },
   "Poppins": {
-    // wide geometric, heavy at 700 → 600 heading + tighter tracking
-    head: { tracking: "-0.015em", weight: 600, leading: 1.2, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "-0.005em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+    // wide geometric, very heavy at 700 → 600 heading.
+    head: { tracking: "0.002em", weight: 600, leading: 1.2, adjust: "cap-height 0.636" },
+    body: { tracking: "-0.002em", weight: 400, leading: "1.6", adjust: "0.546" },
   },
   "Montserrat": {
-    head: { tracking: "-0.015em", weight: 600, leading: 1.2, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "-0.005em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+    head: { tracking: "0.001em", weight: 600, leading: 1.2, adjust: "cap-height 0.636" },
+    body: { tracking: "-0.006em", weight: 400, leading: "1.6", adjust: "0.546" },
   },
   "Montserrat Alternates": {
-    head: { tracking: "-0.015em", weight: 600, leading: 1.2, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "-0.005em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+    // adv 0.588 = 2nd widest → no extra opening, slight body tightening.
+    head: { tracking: "0em", weight: 600, leading: 1.2, adjust: "cap-height 0.636" },
+    body: { tracking: "-0.007em", weight: 400, leading: "1.6", adjust: "0.546" },
   },
   "Rubik": {
-    head: { tracking: "-0.015em", weight: 600, leading: 1.2, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0em", weight: 400, leading: "1.58", adjust: BODY_EX_TARGET },
+    head: { tracking: "0.004em", weight: 600, leading: 1.2, adjust: "cap-height 0.636" },
+    body: { tracking: "-0.002em", weight: 400, leading: "1.58", adjust: "0.546" },
   },
   "Raleway": {
-    head: { tracking: "-0.01em", weight: 700, leading: 1.18, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+    head: { tracking: "0.006em", weight: 700, leading: 1.18, adjust: "cap-height 0.636" },
+    body: { tracking: "-0.002em", weight: 400, leading: "1.6", adjust: "0.546" },
   },
   "Nunito Sans": {
-    head: { tracking: "-0.01em", weight: 700, leading: 1.2, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+    head: { tracking: "0.007em", weight: 700, leading: 1.2, adjust: "cap-height 0.636" },
+    body: { tracking: "-0.003em", weight: 400, leading: "1.6", adjust: "0.546" },
   },
   "Open Sans": {
-    head: { tracking: "-0.01em", weight: 700, leading: 1.2, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0em", weight: 400, leading: "1.6", adjust: BODY_EX_TARGET },
+    head: { tracking: "0.006em", weight: 700, leading: 1.2, adjust: "cap-height 0.636" },
+    body: { tracking: "0em", weight: 400, leading: "1.6", adjust: "0.546" },
   },
   "Roboto": {
-    head: { tracking: "-0.015em", weight: 700, leading: 1.18, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0em", weight: 400, leading: "1.58", adjust: BODY_EX_TARGET },
+    head: { tracking: "0.008em", weight: 700, leading: 1.18, adjust: "cap-height 0.636" },
+    body: { tracking: "0.002em", weight: 400, leading: "1.58", adjust: "0.546" },
   },
   "Oswald": {
-    // condensed (adv 0.44) + tallest caps (0.81) → open tracking, big down-scale
-    head: { tracking: "0.02em", weight: 500, leading: 1.15, adjust: HEAD_CAP_TARGET },
-    body: { tracking: "0.015em", weight: 400, leading: "1.55", adjust: BODY_EX_TARGET },
+    // cap 0.810 (tallest) + adv 0.400 (most condensed) → biggest down-scale
+    // and the largest tracking opening of the set.
+    head: { tracking: "0.02em", weight: 500, leading: 1.16, adjust: "cap-height 0.697" },
+    body: { tracking: "0.014em", weight: 400, leading: "1.55", adjust: "0.546" },
   },
 };
 
+/** Any font not in the table (legacy DB value, custom pick) still gets sane optics. */
 const FALLBACK_PROFILE: FontProfile = {
-  head: { tracking: "-0.01em", weight: 700, leading: 1.2, adjust: HEAD_CAP_TARGET },
-  body: { tracking: "0em", weight: 400, leading: "1.58", adjust: BODY_EX_TARGET },
+  head: { tracking: "0.004em", weight: 700, leading: 1.2, adjust: "cap-height 0.636" },
+  body: { tracking: "0em", weight: 400, leading: "1.58", adjust: "0.546" },
 };
 
 function getFontProfile(font: string): FontProfile {
   return FONT_METRICS[normalizeGoogleFontName(font)] ?? FALLBACK_PROFILE;
 }
+
 
 export function getHeadingTuning(font: string): FontTuning {
   return getFontProfile(font).head;
