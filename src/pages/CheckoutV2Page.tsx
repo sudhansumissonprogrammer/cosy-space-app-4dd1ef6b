@@ -27,7 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import secureBadge from "@/assets/trust/secure-payment-badge.webp.asset.json";
 import trustedSellerBadge from "@/assets/trust/trusted-seller-badge-v3.webp.asset.json";
-import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote, Tag, X, Plus, Minus, Check, CreditCard, ShoppingCart, ChevronDown, Trash2, Info, Camera, Package, Truck, Wallet, Sparkles } from "lucide-react";
+import { Loader2, MapPin, ShieldCheck, CheckCircle2, ArrowLeft, Lock, Banknote, Tag, X, Plus, Minus, Check, CreditCard, ShoppingCart, ChevronDown, Trash2, Info, Camera, Package, Truck, Wallet, Sparkles, Headset } from "lucide-react";
 import { toast } from "sonner";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
@@ -3161,19 +3161,31 @@ export default function CheckoutV2Page() {
         </div>
       )}
 
-      {/* Header: back • logo • Secured payment */}
-      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-1 flex items-center gap-1.5">
+      {/* Header: back • brand + customer care • trust badges */}
+      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-1 flex items-center gap-2">
         <button onClick={goBack} aria-label="Back" className="p-1 -ml-1 shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </button>
-        {store?.logo_url ? (
-          <>
+
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {store?.logo_url ? (
             <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[100px] object-contain shrink-0" />
-            <div className="flex-1 min-w-0" />
-          </>
-        ) : (
-          <div className="text-[13px] font-bold truncate min-w-0 flex-1 leading-tight">{store?.name || "Store"}</div>
-        )}
+          ) : null}
+          <div className="flex flex-col justify-center min-w-0">
+            <div className="text-[15px] font-bold leading-tight truncate">{store?.name || "Store"}</div>
+            {(store?.secondary_phone || store?.whatsapp_number) && (
+              <a
+                href={`tel:${(store?.secondary_phone || store?.whatsapp_number || "").replace(/\s/g, "")}`}
+                className="mt-0.5 inline-flex items-center gap-1 text-[11px] leading-none text-muted-foreground hover:text-foreground transition-colors"
+                aria-label={`Customer care ${store?.secondary_phone || store?.whatsapp_number}`}
+              >
+                <Headset className="h-3 w-3" />
+                <span className="truncate">{store?.secondary_phone || store?.whatsapp_number}</span>
+              </a>
+            )}
+          </div>
+        </div>
+
         <div className="flex items-center -space-x-2">
           <img
             src={trustedSellerBadge.url}
