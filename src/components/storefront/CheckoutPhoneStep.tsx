@@ -52,6 +52,8 @@ interface Props {
   storeSlug?: string;
   storeName?: string;
   storeLogo?: string;
+  /** Store owner / customer-care number shown in the header (same as payment step). */
+  storePhone?: string | null;
   cartItems: CartItem[];
   /** True when in buy-now single mode — hides Remove (no cart to fall back to). */
   isSingleMode?: boolean;
