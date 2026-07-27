@@ -299,13 +299,7 @@ export async function firePurchaseCapi(
         // on full cart value — sending only the advance for partial
         // payments would cripple ROAS reporting and destroy delivery.
         value: Number(order.total) || 0,
-        // Extra visibility in Events Manager (does not affect optimization).
-        expected_total: Number(order.total) || 0,
-        advance_paid: Number((order as any).advance_paid) || 0,
-        cod_balance: Math.max(
-          0,
-          (Number(order.total) || 0) - (Number((order as any).advance_paid) || 0),
-        ),
+
         content_type: "product",
         content_ids: contentIds,
         contents: (items || []).map((i) => ({
