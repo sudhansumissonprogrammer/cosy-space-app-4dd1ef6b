@@ -3075,7 +3075,11 @@ export default function CheckoutV2Page() {
               <Package className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-[12px] text-muted-foreground">Order</span>
               <span className="font-mono text-[12px] font-bold text-foreground">
-                {orderNumber ? `#${1000 + Number(orderNumber)}` : `#${orderId?.slice(0, 8).toUpperCase()}`}
+                {orderNumber && Number.isFinite(Number(orderNumber))
+                  ? `#${1000 + Number(orderNumber)}`
+                  : orderNumber
+                    ? `#${orderNumber}`
+                    : `#${orderId?.slice(0, 8).toUpperCase()}`}
               </span>
             </div>
           )}
