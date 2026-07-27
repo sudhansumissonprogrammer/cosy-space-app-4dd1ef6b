@@ -3350,6 +3350,7 @@ export default function CheckoutV2Page() {
             storeSlug={store?.slug}
           storeName={store?.name}
           storeLogo={store?.logo_url}
+          storePhone={(store as any)?.secondary_phone || (store as any)?.whatsapp_number || null}
           cartItems={checkoutItems as any}
           isSingleMode={isSingleMode}
           onQuantityChange={(item, nextQty) => {

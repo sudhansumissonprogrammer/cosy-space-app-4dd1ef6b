@@ -116,6 +116,7 @@ function CheckoutPhoneGate({ children }: { children: React.ReactNode }) {
         <CheckoutPhoneStep
           storeId={store?.id}
           storeName={store?.name}
+          storePhone={(store as any)?.secondary_phone || (store as any)?.whatsapp_number || null}
           cartItems={gateCartItems as any}
           isSingleMode={isSingleMode}
           onQuantityChange={isSingleMode ? undefined : (item, next) => updateQuantity(item.productId, item.variantId, next)}
