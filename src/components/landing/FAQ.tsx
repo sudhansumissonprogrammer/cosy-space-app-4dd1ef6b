@@ -41,12 +41,10 @@ const FAQ = () => {
   return (
     <section id="faq" className="border-b-4 border-foreground py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8 bg-bauhaus-canvas">
       <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-12">
-          <span className="font-bold uppercase tracking-widest text-xs text-muted-foreground mb-2 block">FAQ</span>
-          <h2 className="font-black uppercase text-3xl sm:text-4xl lg:text-5xl tracking-tighter leading-[0.9] text-foreground">
-            Frequently Asked<br /><span className="text-bauhaus-red">Questions</span>
-          </h2>
-        </div>
+        <SectionHeading label="FAQ" size="lg" align="center" labelShape="triangle">
+          Frequently asked<br /><span className="text-bauhaus-red">questions</span>
+        </SectionHeading>
+
         <div className="space-y-4">
           {faqs.map((f, i) => (
             <div key={i} className={`border-2 lg:border-4 border-foreground shadow-bauhaus transition-[transform,opacity,colors,box-shadow] duration-200 ${open === i ? "" : "bg-bauhaus-white"}`}>
