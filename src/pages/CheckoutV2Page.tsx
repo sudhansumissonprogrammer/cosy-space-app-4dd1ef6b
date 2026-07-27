@@ -1183,6 +1183,23 @@ export default function CheckoutV2Page() {
     gpay: { status: "idle" }, phonepe: { status: "idle" },
     paytm: { status: "idle" }, bhim: { status: "idle" }, any: { status: "idle" },
   });
+  // Tap feedback for UPI tiles: which tile is currently "pressed / opening".
+  // Purely presentational — never gates the launch itself.
+  const [tappedUpiApp, setTappedUpiApp] = useState<UpiApp | null>(null);
+  const tapFxTimerRef = useRef<number | null>(null);
+  const flashUpiTap = (app: UpiApp, ms = 2600) => {
+    try { (navigator as Navigator)?.vibrate?.(12); } catch { /* noop */ }
+    setTappedUpiApp(app);
+    if (tapFxTimerRef.current) window.clearTimeout(tapFxTimerRef.current);
+    tapFxTimerRef.current = window.setTimeout(() => setTappedUpiApp(null), ms);
+  };
+  const clearUpiTapFx = () => {
+    if (tapFxTimerRef.current) window.clearTimeout(tapFxTimerRef.current);
+    tapFxTimerRef.current = null;
+    setTappedUpiApp(null);
+  };
+  useEffect(() => () => { if (tapFxTimerRef.current) window.clearTimeout(tapFxTimerRef.current); }, []);
+
   const gatewayRef = useRef<{
     pg?: "cashfree" | "razorpay" | "payu";
     cf_order_id?: string;
