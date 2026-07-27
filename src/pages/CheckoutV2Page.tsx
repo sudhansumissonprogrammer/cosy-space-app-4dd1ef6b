@@ -2417,7 +2417,10 @@ export default function CheckoutV2Page() {
           setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: msg }; }); return next; });
         }
       } catch (e: any) {
-        const rawMsg = String(e?.message || "");
+        const rawErrMsg = String(e?.message || "");
+        const rawMsg = rawErrMsg === "recent_order_guard"
+          ? "You just placed this same order a moment ago. Please check My Orders."
+          : rawErrMsg;
         const rateLimited = /too many attempts/i.test(rawMsg);
         // A 429 here is almost always a shopper who reloaded / toggled plans a
         // few times, not an attacker. Dead-ending them with a permanent error
