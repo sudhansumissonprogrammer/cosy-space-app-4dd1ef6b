@@ -20,6 +20,7 @@ import {
   Lock,
   ShieldCheck,
   CheckCircle2,
+  Headset,
   Trash2,
   ShoppingCart,
   Minus,
