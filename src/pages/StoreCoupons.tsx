@@ -140,6 +140,27 @@ export default function StoreCoupons() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  // WhatsApp-only coupons auto-apply ONLY for shoppers arriving from a
+  // WhatsApp marketing/recovery message. Everyone else gets the normal
+  // auto-apply coupon (also shown on the product page).
+  const waExclusiveMutation = useMutation({
+    mutationFn: async ({ id, wa_exclusive }: { id: string; wa_exclusive: boolean }) => {
+      const { error } = await (supabase as any).from("coupons").update({ wa_exclusive }).eq("id", id).eq("store_id", storeId!);
+      if (error) {
+        if ((error as any).code === "23505") {
+          throw new Error("Only one auto-apply coupon of each kind is allowed. Disable the existing one first.");
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["coupons", storeId] });
+      toast.success("Updated");
+      purgeStore();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("coupons").delete().eq("id", id).eq("store_id", storeId!);
