@@ -312,6 +312,20 @@ export default function CheckoutV2Page() {
     }));
   }, [isSingleMode, buyNowProduct, buyNowVariant, buyNowQty, cartItems]);
 
+  // Stable fingerprint of WHAT is being bought. Used by the recent-order guard
+  // so it only blocks a re-mint of the *same* basket, never a genuinely new
+  // order the shopper places minutes later.
+  const cartSignature = useMemo(
+    () =>
+      checkoutItems
+        .map((i) => `${i.productId}:${i.variantId || ""}:${i.quantity}`)
+        .sort()
+        .join("|"),
+    [checkoutItems],
+  );
+  const cartSignatureRef = useRef(cartSignature);
+  useEffect(() => { cartSignatureRef.current = cartSignature; }, [cartSignature]);
+
   // ─── Form state (with express_checkout_ prefill) ────────────────────────
   const savedInfo = (() => {
     try { return JSON.parse(localStorage.getItem(`express_checkout_${store?.id}`) || "{}"); } catch { return {}; }
