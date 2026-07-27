@@ -1,4 +1,5 @@
 import { Bot, PhoneCall, Megaphone, RotateCcw } from "lucide-react";
+import { DotGrid, CornerMark } from "@/components/landing/bauhaus/BauhausKit";
 
 const agents = [
   { icon: PhoneCall, title: "Calling agent", body: "Confirms COD, answers product questions and re-engages drop-offs — in Hindi and English." },
@@ -7,8 +8,9 @@ const agents = [
 ];
 
 const AgenticStrip = () => (
-  <section className="border-b-4 border-foreground bg-foreground text-bauhaus-white py-14 sm:py-20 px-4 sm:px-6 lg:px-8">
-    <div className="max-w-6xl mx-auto">
+  <section className="border-b-4 border-foreground bg-foreground text-bauhaus-white py-14 sm:py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <DotGrid tone="light" opacity={0.08} />
+    <div className="max-w-6xl mx-auto relative z-10">
       <div className="text-center mb-10 sm:mb-14">
         <div className="inline-flex items-center gap-2 border-2 border-bauhaus-white px-3 py-1.5 mb-5 bg-bauhaus-red">
           <Bot className="h-3.5 w-3.5 text-primary-foreground" />
@@ -24,7 +26,8 @@ const AgenticStrip = () => (
 
       <div className="grid sm:grid-cols-3 gap-5">
         {agents.map((a) => (
-          <div key={a.title} className="border-2 border-bauhaus-white/20 bg-bauhaus-white/[0.03] p-6 hover:bg-bauhaus-white/[0.06] transition-colors">
+          <div key={a.title} className="relative border-2 border-bauhaus-white/20 bg-bauhaus-white/[0.03] p-6 hover:bg-bauhaus-white/[0.06] transition-colors duration-200">
+            <CornerMark tone="light" />
             <div className="w-10 h-10 border-2 border-bauhaus-white/40 flex items-center justify-center mb-4">
               <a.icon className="h-5 w-5 text-bauhaus-yellow" strokeWidth={2.25} />
             </div>
