@@ -54,7 +54,7 @@ const FAQ = () => {
                 <ChevronDown className={`h-5 w-5 flex-shrink-0 transition-transform duration-200 ${open === i ? "rotate-180" : ""}`} />
               </button>
               {open === i && (
-                <div className="p-4 lg:p-5 bg-[#FFF9C4] border-t-4 border-foreground">
+                <div className="p-4 lg:p-5 bg-bauhaus-yellow/30 border-t-4 border-foreground">
                   <p className="font-medium text-sm text-foreground leading-relaxed">{f.a}</p>
                 </div>
               )}
