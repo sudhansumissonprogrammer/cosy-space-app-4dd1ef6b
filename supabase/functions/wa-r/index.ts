@@ -187,11 +187,19 @@ Deno.serve(async (req) => {
   const suffixPhone = tildeIdx >= 0 ? rawId.slice(tildeIdx + 1) : "";
 
   // Fire-and-forget click log. Never blocks the redirect.
+  // NOTE: column names must match public.wa_link_clicks exactly — a previous
+  // version inserted token/kind/ref_id/ip_address (non-existent columns), so
+  // every insert silently failed and click tracking recorded zero rows.
   const ua = req.headers.get("user-agent") || "";
   const ip = req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for") || "";
   admin.from("wa_link_clicks").insert({
-    token, kind, ref_id: id, user_agent: ua.slice(0, 256), ip_address: ip.split(",")[0].trim() || null,
+    short_id: token.slice(0, 128),
+    target_url: `${kind}${id}`,
+    recipient_phone: suffixPhone ? canonicalPhone(suffixPhone) : null,
+    user_agent: ua.slice(0, 256),
+    ip_hash: ip.split(",")[0].trim() || null,
   } as any).then(() => {}, () => {});
+
 
   try {
     if (kind === "o-" || kind === "t-") {
