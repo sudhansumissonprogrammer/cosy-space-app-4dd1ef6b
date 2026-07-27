@@ -1783,6 +1783,15 @@ export default function CheckoutV2Page() {
     // (45 × 2s) — well beyond PayU's worst-case reflection window — and rely on the
     // parallel webhook to flip DB status the moment it lands.
     const maxAttempts = isDesktopQr ? 120 : (gatewayRef.current.pg ? 45 : 8);
+    // Shopper-returned fast exit: if the tab was hidden (UPI app opened) and
+    // then becomes visible again, the shopper is back on checkout. If they
+    // actually paid, PayU/Razorpay reflect it within a few seconds. If they
+    // backed out without paying, the old code kept them on "Complete your
+    // payment" for the full 90s window. So once they're back we only give a
+    // short grace period, then restore checkout with a retry option.
+    let wentToApp = false;
+    let returnedAt = 0;
+    const RETURN_GRACE_MS = 12000;
     const checkNow = async (): Promise<boolean> => {
       if (waitingCheckInFlightRef.current) return false;
       waitingCheckInFlightRef.current = true;
