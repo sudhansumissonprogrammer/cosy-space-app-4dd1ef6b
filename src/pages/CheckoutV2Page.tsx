@@ -4061,18 +4061,29 @@ export default function CheckoutV2Page() {
                   const retryable = s.status === "failed";
                   const disabled = addressReady && !retryable && (s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount);
                   const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
+                  const pressed = tappedUpiApp === app.key;
                   return (
                     <a
                       key={app.key}
                       href={disabled || retryable || !addressReady ? undefined : s.url}
                       onClick={(e) => tapUpiApp(app.key, e)}
                       aria-disabled={disabled}
-                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 min-h-[92px] relative ${disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""} ${retryable ? "opacity-70" : ""}`}
+                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-[0.92] transition-[transform,box-shadow,opacity] duration-150 ease-out p-2.5 min-h-[92px] relative overflow-hidden select-none touch-manipulation ${pressed ? "scale-[0.96] ring-2 ring-primary shadow-[0_6px_16px_-6px_rgba(0,0,0,0.35)]" : "shadow-[0_1px_2px_rgba(0,0,0,0.04)]"} ${disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""} ${retryable ? "opacity-70" : ""}`}
                     >
-                      
-                      <img src={app.icon} alt={app.label} className="h-8 w-8 mt-3 mb-1 object-contain" />
-                      <div className="text-[11px] font-semibold">{retryable ? "Retry" : app.label}</div>
-                      {addressReady && (s.status === "loading" || staleAmount) && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
+                      {pressed && (
+                        <span className="pointer-events-none absolute inset-0 rounded-lg bg-primary/10 animate-[fade-in_0.15s_ease-out]" aria-hidden="true" />
+                      )}
+                      <img
+                        src={app.icon}
+                        alt={app.label}
+                        className={`h-8 w-8 mt-3 mb-1 object-contain transition-transform duration-150 ${pressed ? "scale-110" : ""}`}
+                      />
+                      <div className="text-[11px] font-semibold relative">
+                        {retryable ? "Retry" : pressed ? "Opening…" : app.label}
+                      </div>
+                      {pressed
+                        ? <Loader2 className="h-3 w-3 animate-spin mt-1 text-primary" />
+                        : addressReady && (s.status === "loading" || staleAmount) && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
                     </a>
                   );
                 })}
@@ -4083,20 +4094,24 @@ export default function CheckoutV2Page() {
                 const addressReady = addressComplete;
                 const anyRetryable = anyS.status === "failed";
                 const anyDisabled = addressReady && !anyRetryable && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
+                const anyPressed = tappedUpiApp === "any";
                 return (
                   <a
                     href={anyDisabled || anyRetryable || !addressReady ? undefined : anyS.url}
                     onClick={(e) => tapUpiApp("any", e)}
                     aria-disabled={anyDisabled}
-                    className={`mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] ${anyDisabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
+                    className={`mt-3 w-full flex items-center justify-between border rounded-lg px-3 py-2.5 select-none touch-manipulation active:scale-[0.97] transition-[transform,box-shadow,border-color] duration-150 ease-out ${anyPressed ? "scale-[0.98] border-primary ring-2 ring-primary/40 bg-primary/5" : "border-[#ECECEC]"} ${anyDisabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
                   >
                     <span className="text-[13px] font-semibold">All UPI Apps</span>
                     <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
-                      Pay with any UPI app
-                      <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
+                      {anyPressed ? "Opening…" : "Pay with any UPI app"}
+                      {anyPressed
+                        ? <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        : <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />}
                     </span>
                   </a>
                 );
+
               })()}
             </div>
           )}
