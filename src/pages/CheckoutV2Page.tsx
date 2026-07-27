@@ -1924,12 +1924,17 @@ export default function CheckoutV2Page() {
 
   const tapUpiApp = (app: UpiApp, event?: MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
     event?.preventDefault();
+    // Instant tactile + visual acknowledgement of the tap. Runs before any
+    // guard so the shopper always *feels* the press, even when we end up
+    // re-minting instead of launching.
+    flashUpiTap(app);
     if (creatingOrder || couponLoading || paymentAmountSyncing) {
+      clearUpiTapFx();
       return;
     }
     // PAYMENT-FIRST address gate — if no address, open the sheet and remember
     // this tap so we auto-resume the UPI launch after the shopper saves.
-    if (!requireAddressOrPrompt(() => tapUpiApp(app))) return;
+    if (!requireAddressOrPrompt(() => tapUpiApp(app))) { clearUpiTapFx(); return; }
     const s = intents[app];
     // A failed tile used to be a dead end (silent return + pointer-events-none),
     // so a shopper who hit one transient gateway error could never pay by UPI
@@ -1940,9 +1945,11 @@ export default function CheckoutV2Page() {
       lastMintAtRef.current = 0;
       toast.info("Retrying…");
       void createOrderAndIntents();
+      clearUpiTapFx();
       return;
     }
     if (s.status !== "ready" || !s.url) {
+      clearUpiTapFx();
       return;
     }
     // Stale-intent guard: the minted URL encodes a fixed amount. If the
@@ -1952,8 +1959,10 @@ export default function CheckoutV2Page() {
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) {
       toast.info("Updating amount…");
       void createOrderAndIntents();
+      clearUpiTapFx();
       return;
     }
+
     // Stale-address guard: if the shopper edited address/name/phone/email
     // within the 1.8s ship-identity debounce window, the minted order row
     // still holds the pre-edit values. Flush + re-mint before launching so
