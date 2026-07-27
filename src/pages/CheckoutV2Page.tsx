@@ -3267,7 +3267,7 @@ export default function CheckoutV2Page() {
         <div className="fixed inset-0 z-50 bg-background/85 backdrop-blur-sm flex items-center justify-center">
           <div className="text-center p-6 max-w-xs">
             <Loader2 className="h-10 w-10 text-primary animate-spin mx-auto mb-4" />
-            <h3 className="font-semibold mb-1">{tCritical("Confirming your payment…", "भुगतान की पुष्टि हो रही है…")}</h3>
+            <h3 className="font-semibold mb-1">Confirming your payment…</h3>
             <p className="text-xs text-muted-foreground">Please don't close this page. It can take up to 20 seconds.</p>
           </div>
         </div>
