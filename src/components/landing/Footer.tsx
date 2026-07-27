@@ -27,10 +27,15 @@ const Footer = () => {
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 mb-12">
           <div className="lg:col-span-2">
             <a href="/" className="flex items-center gap-2.5 mb-4 w-fit group">
-              <span className="flex items-center gap-1 border-2 border-bauhaus-white bg-bauhaus-white/[0.06] px-2 py-1.5">
-                <GeoShape kind="circle" color="bg-bauhaus-red" className="h-3.5 w-3.5" />
-                <GeoShape kind="square" color="bg-bauhaus-blue" className="h-3.5 w-3.5" />
-                <GeoShape kind="triangle" color="bg-bauhaus-yellow" className="h-3.5 w-3.5" />
+              <span className="border-2 border-bauhaus-white bg-bauhaus-white p-1">
+                <img
+                  src={shopbanaoLogo}
+                  alt="ShopBanao logo"
+                  width={32}
+                  height={32}
+                  loading="lazy"
+                  className="block h-8 w-8 object-contain"
+                />
               </span>
               <span className="font-black uppercase tracking-tighter text-2xl leading-none text-primary-foreground">
                 Shop<span className="text-bauhaus-red">Banao</span>
