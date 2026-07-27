@@ -1407,6 +1407,7 @@ export default function StoreThemeSettings() {
                   letterSpacing: getHeadingTuning(config.heading_font).tracking,
                   fontWeight: getHeadingTuning(config.heading_font).weight,
                   lineHeight: getHeadingTuning(config.heading_font).leading,
+                  fontSizeAdjust: getHeadingTuning(config.heading_font).adjust as any,
                 }}
               >
                 The Quick Brown Fox
@@ -1422,10 +1423,37 @@ export default function StoreThemeSettings() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="mt-1 text-sm text-muted-foreground" style={{ fontFamily: config.body_font }}>Beautifully crafted for your shoppers.</p>
+              <p
+                className="mt-1 text-sm text-muted-foreground"
+                style={{
+                  fontFamily: config.body_font,
+                  letterSpacing: getBodyTuning(config.body_font).tracking,
+                  fontWeight: getBodyTuning(config.body_font).weight as any,
+                  lineHeight: getBodyTuning(config.body_font).leading,
+                  fontSizeAdjust: getBodyTuning(config.body_font).adjust as any,
+                }}
+              >
+                Beautifully crafted for your shoppers.
+              </p>
             </div>
           </div>
+          {(() => {
+            const advice = getPairingAdvice(config.heading_font, config.body_font);
+            if (!advice) return null;
+            return (
+              <p
+                className={`mt-3 rounded-md border px-2.5 py-2 text-[11px] leading-relaxed ${
+                  advice.level === "warn"
+                    ? "border-warning/40 bg-warning/10 text-warning-foreground"
+                    : "border-border bg-muted/40 text-muted-foreground"
+                }`}
+              >
+                {advice.message}
+              </p>
+            );
+          })()}
         </details>
+
       </Section>
     );
   };
