@@ -28,7 +28,7 @@ export default function StoreTextLogo({
         // Optical-size normalization so the wordmark keeps the same visual
         // weight/height whichever heading font the merchant picks.
         fontSizeAdjust: "var(--storefront-heading-adjust, none)" as any,
-        letterSpacing: "calc(0.04em + var(--storefront-heading-tracking, 0em))",
+        letterSpacing: "0.04em",
       }}
     >
       {storeName}
