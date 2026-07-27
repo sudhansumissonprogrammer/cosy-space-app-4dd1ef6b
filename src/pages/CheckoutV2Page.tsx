@@ -3204,26 +3204,6 @@ export default function CheckoutV2Page() {
           </div>
         )}
 
-        {/* Sticky mobile action bar — always visible without scrolling */}
-        <div
-          className="fixed inset-x-0 bottom-0 z-50 md:hidden border-t bg-background/95 backdrop-blur px-4 pt-3"
-          style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}
-        >
-          <Button
-            onClick={handleViewMyOrders}
-            disabled={viewingOrders}
-            className="h-12 w-full rounded-xl text-[15px] font-bold active:scale-[0.98] transition-transform"
-          >
-            {viewingOrders && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            View my order
-          </Button>
-          <button
-            onClick={() => navigate(storefrontPath(store.slug))}
-            className="mt-2 w-full text-center text-[13px] font-semibold text-muted-foreground active:opacity-70"
-          >
-            Continue shopping
-          </button>
-        </div>
       </div>
 
     );
