@@ -198,7 +198,10 @@ export default function CategoryDetail() {
       content_ids: topIds,
       content_name: category.name,
       content_category: category.name,
-      content_type: "product_group",
+      // MUST be "product": we send raw products.id values here. Sending
+      // "product_group" made Meta look these ids up as item_group_ids →
+      // every category ViewContent scored as an unmatched content id.
+      content_type: "product",
       ...(categoryValue > 0 ? { value: categoryValue, currency: "INR" } : {}),
     };
     try { fbPixelTrack("ViewContent", customData, eventId); } catch {}
