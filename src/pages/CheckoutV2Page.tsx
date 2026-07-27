@@ -3176,7 +3176,7 @@ export default function CheckoutV2Page() {
             {(store?.secondary_phone || store?.whatsapp_number) && (
               <a
                 href={`tel:${store?.secondary_phone || store?.whatsapp_number}`}
-                className="mt-0.5 inline-flex items-center gap-1 text-[11px] leading-none text-[#555] hover:text-[#333] transition-colors"
+                className="mt-0.5 inline-flex items-center gap-1 text-[11px] leading-none text-muted-foreground hover:text-foreground transition-colors"
                 aria-label={`Customer care ${store?.secondary_phone || store?.whatsapp_number}`}
               >
                 <Headset className="h-3 w-3" />
