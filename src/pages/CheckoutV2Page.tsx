@@ -3056,7 +3056,7 @@ export default function CheckoutV2Page() {
     const extraItems = checkoutItems.length - previewItems.length;
 
     return (
-      <div className="mx-auto max-w-lg px-4 pt-8 pb-12 md:pb-12 [padding-bottom:calc(112px+env(safe-area-inset-bottom,0px))] md:[padding-bottom:3rem]">
+      <div className="mx-auto max-w-lg px-4 pt-8 pb-12">
         {/* Hero */}
         <div className="text-center">
           <div className="relative mx-auto mb-4 h-20 w-20">
