@@ -3138,6 +3138,19 @@ export default function CheckoutV2Page() {
           </div>
         </div>
 
+        {/* Primary action — inline, always visible without scrolling to the bottom */}
+        <div className="mt-4">
+          <Button
+            onClick={handleViewMyOrders}
+            disabled={viewingOrders}
+            className="h-12 w-full rounded-xl text-[15px] font-bold active:scale-[0.98] transition-transform"
+          >
+            {viewingOrders && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            View my order
+          </Button>
+        </div>
+
+
         {/* Delivery */}
         {(addressLine || phone) && (
           <div className="mt-4 rounded-2xl border bg-card p-4">
