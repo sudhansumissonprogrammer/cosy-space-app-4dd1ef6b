@@ -1575,7 +1575,7 @@ export default function CheckoutV2Page() {
       // AFTER a "full" order confirmed, same session_id + product. localStorage
       // survives the IABB wipe, so any re-entry into createOrderIfNeeded within
       // 3 minutes for this store is short-circuited.
-      const guardPayload = JSON.stringify({ ordId, at: Date.now() });
+      const guardPayload = JSON.stringify({ ordId, at: Date.now(), sig: cartSignatureRef.current });
       localStorage.setItem(`sb_last_order:${store.id}`, guardPayload);
     } catch { /* noop */ }
     window.dispatchEvent(new CustomEvent("order-placed"));
