@@ -343,7 +343,11 @@ Deno.serve(async (req) => {
     // (e.g. "Ab Sirf ₹0", "delivery ₹0"). Below the floor, fall back to v2.
     const tplVars: string[] = ((activeTpl as any)?.variables) || [];
     const needsOfferMath = tplVars.includes("discounted_price") || tplVars.includes("balance_due");
-    if (needsOfferMath && basePrice < 300) chosenTemplate = "abandoned_cart_v2";
+    // Offer copy is only truthful when there IS a real auto-apply coupon to
+    // deduct at checkout. No coupon → the "Ab Sirf ₹X" line would repeat the
+    // same price, so fall back to the plain v2 template.
+    if (needsOfferMath && (basePrice < 300 || OFFER_DISCOUNT <= 0)) chosenTemplate = "abandoned_cart_v2";
+
 
 
     const { error: qErr } = await admin.from("wa_send_queue").insert({
