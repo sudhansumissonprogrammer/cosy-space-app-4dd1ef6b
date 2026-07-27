@@ -3049,53 +3049,142 @@ export default function CheckoutV2Page() {
 
   // ─── Thank-you screen ───────────────────────────────────────────────────
   if (orderPlaced) {
+    const codDue = isPartialOrder ? balanceDue : (lastPaidMethodRef.current === "cod" ? total : 0);
+    const paidNow = isPartialOrder ? advancePaid : (lastPaidMethodRef.current === "cod" ? 0 : total);
+    const addressLine = [streetAddress, apartment, city, state, pincode].filter(Boolean).join(", ");
+    const previewItems = checkoutItems.slice(0, 3);
+    const extraItems = checkoutItems.length - previewItems.length;
+
     return (
-      <div className="mx-auto max-w-lg px-4 py-10 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-          <CheckCircle2 className="h-8 w-8 text-primary" />
-        </div>
-        <h1 className="text-2xl font-bold text-foreground">{tCritical("Order Placed!", "ऑर्डर हो गया!")}</h1>
-        <p className="mt-2 text-muted-foreground">
-          {tCritical("Your order has been placed successfully. The store will contact you shortly.", "आपका ऑर्डर सफलतापूर्वक दे दिया गया है।")}
-        </p>
-        {(orderNumber || orderId) && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Order ID: <span className="font-mono font-semibold">{orderNumber || orderId?.slice(0, 8)}</span>
+      <div className="mx-auto max-w-lg px-4 pt-8 pb-12">
+        {/* Hero */}
+        <div className="text-center">
+          <div className="relative mx-auto mb-4 h-20 w-20">
+            <span className="absolute inset-0 rounded-full bg-emerald-500/15 animate-ping" aria-hidden="true" />
+            <span className="absolute inset-0 rounded-full bg-emerald-500/10" aria-hidden="true" />
+            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/30">
+              <Check className="h-9 w-9" strokeWidth={3} />
+            </span>
+          </div>
+          <h1 className="text-[22px] font-extrabold tracking-tight text-foreground">Order confirmed</h1>
+          <p className="mt-1.5 text-[13px] text-muted-foreground text-pretty">
+            Thanks{fullName ? `, ${fullName.split(" ")[0]}` : ""}! We've received your order and the store will process it shortly.
           </p>
-        )}
-        <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
-          <p className="flex items-center justify-center gap-1.5 text-sm font-medium text-foreground">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden="true" /> {tCritical("Order confirmed!", "ऑर्डर पुष्टि!")}
-          </p>
-          {(phone || email) && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              We'll send updates to <strong>{phone}</strong>{email ? ` and ${email}` : ""}.
-            </p>
+          {(orderNumber || orderId) && (
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5">
+              <Package className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-[12px] text-muted-foreground">Order</span>
+              <span className="font-mono text-[12px] font-bold text-foreground">
+                {orderNumber ? `#${1000 + Number(orderNumber)}` : `#${orderId?.slice(0, 8).toUpperCase()}`}
+              </span>
+            </div>
           )}
         </div>
 
-        {isPartialOrder && advancePaid > 0 && (
-          <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/30 p-3 text-left">
-            <div className="text-xs font-semibold mb-2">{tCritical("Partial payment breakdown", "आंशिक भुगतान")}</div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Advance paid</span>
-              <span className="font-semibold text-emerald-700">{formatPrice(advancePaid, currency)}</span>
+        {/* Items */}
+        {previewItems.length > 0 && (
+          <div className="mt-6 rounded-2xl border bg-card p-4">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {checkoutItems.length} {checkoutItems.length === 1 ? "item" : "items"} in this order
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Balance on delivery</span>
-              <span className="font-semibold">{formatPrice(balanceDue, currency)}</span>
+            <div className="mt-3 space-y-3">
+              {previewItems.map((it, idx) => (
+                <div key={`${it.productId}-${it.variantId || idx}`} className="flex items-center gap-3">
+                  {it.image ? (
+                    <img src={it.image} alt={it.name} loading="lazy" className="h-12 w-12 shrink-0 rounded-lg border object-cover" />
+                  ) : (
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border">
+                      <Package className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-1 text-[13px] font-medium text-foreground">{it.name}</p>
+                    <p className="text-[12px] text-muted-foreground">Qty {it.quantity}</p>
+                  </div>
+                  <span className="text-[13px] font-semibold tabular-nums text-foreground">
+                    {formatPrice(it.price * it.quantity, currency)}
+                  </span>
+                </div>
+              ))}
+              {extraItems > 0 && (
+                <p className="text-[12px] text-muted-foreground">+ {extraItems} more item{extraItems > 1 ? "s" : ""}</p>
+              )}
             </div>
           </div>
         )}
 
-        <div className="mt-6 flex flex-col items-center gap-2">
-          <Button variant="outline" onClick={handleViewMyOrders} disabled={viewingOrders} className="h-10 px-6">
+        {/* Payment summary */}
+        <div className="mt-4 rounded-2xl border bg-card p-4">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Payment</div>
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center justify-between text-[13px]">
+              <span className="text-muted-foreground">Order total</span>
+              <span className="font-semibold tabular-nums text-foreground">{formatPrice(total, currency)}</span>
+            </div>
+            {paidNow > 0 && (
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-muted-foreground">{isPartialOrder ? "Advance paid" : "Paid online"}</span>
+                <span className="font-semibold tabular-nums text-emerald-600">{formatPrice(paidNow, currency)}</span>
+              </div>
+            )}
+            {codDue > 0 && (
+              <div className="flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2 text-[13px]">
+                <span className="flex items-center gap-1.5 font-medium text-foreground">
+                  <Banknote className="h-4 w-4 text-muted-foreground" /> Pay on delivery
+                </span>
+                <span className="font-extrabold tabular-nums text-foreground">{formatPrice(codDue, currency)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Delivery */}
+        {(addressLine || phone) && (
+          <div className="mt-4 rounded-2xl border bg-card p-4">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Delivery details</div>
+            {addressLine && (
+              <div className="mt-3 flex items-start gap-2.5">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <p className="text-[13px] leading-relaxed text-foreground">
+                  {fullName && <span className="font-semibold">{fullName}<br /></span>}
+                  {addressLine}
+                </p>
+              </div>
+            )}
+            {(phone || email) && (
+              <div className="mt-3 flex items-start gap-2.5 border-t pt-3">
+                <Truck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <p className="text-[12px] leading-relaxed text-muted-foreground">
+                  Order updates will be sent to <strong className="text-foreground">{phone}</strong>
+                  {email ? <> and <strong className="text-foreground">{email}</strong></> : null}.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="mt-6 space-y-2.5">
+          <Button
+            onClick={handleViewMyOrders}
+            disabled={viewingOrders}
+            className="h-12 w-full rounded-xl text-[15px] font-bold active:scale-[0.98] transition-transform"
+          >
             {viewingOrders && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            View My Orders
+            Track my order
           </Button>
-          <Button onClick={() => navigate(storefrontPath(store.slug))} className="h-10 px-6">
-            Continue Shopping
+          <Button
+            variant="outline"
+            onClick={() => navigate(storefrontPath(store.slug))}
+            className="h-12 w-full rounded-xl text-[15px] font-semibold active:scale-[0.98] transition-transform"
+          >
+            Continue shopping
           </Button>
+        </div>
+
+        <div className="mt-4 flex items-center justify-center gap-1.5 text-[12px] text-muted-foreground">
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+          Secure checkout · Need help? Contact the store on WhatsApp
         </div>
 
         {showUpsell && orderId && (
@@ -3116,6 +3205,7 @@ export default function CheckoutV2Page() {
       </div>
     );
   }
+
 
 
   if (checkoutItems.length === 0 && !orderId && !isSingleMode) {
