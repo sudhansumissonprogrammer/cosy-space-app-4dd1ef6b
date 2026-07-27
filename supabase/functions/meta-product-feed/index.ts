@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
       // Numeric 0 (or negative) = out of stock. Anything > 0 = in stock.
       const qty = p.stock_quantity;
       const untracked = qty === null || qty === undefined;
-      const qtyNum = untracked ? 50 : Math.max(0, Number(qty) || 0);
+      const qtyNum = untracked ? 50 : Math.min(9999, Math.max(0, Number(qty) || 0));
       const availability = untracked || qtyNum > 0 ? "in stock" : "out of stock";
 
       const regN = Number(p.price || 0);
