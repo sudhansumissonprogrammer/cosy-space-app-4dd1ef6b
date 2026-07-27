@@ -1,7 +1,7 @@
 import { MessageCircle } from "lucide-react";
 // Plain <a> for cross-app links — landing runs on a slim BrowserRouter that
 // doesn't know about /about-us, /privacy-policy, etc. Hard nav loads FullApp.
-import logo from "@/assets/shopbanao-logo.webp";
+import { GeoShape } from "@/components/landing/bauhaus/BauhausKit";
 
 const Footer = () => {
   const productLinks: { label: string; href: string }[] = [
@@ -26,10 +26,17 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto">
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 mb-12">
           <div className="lg:col-span-2">
-            <div className="flex items-center -space-x-1 mb-4">
-              <img src={logo} alt="ShopBanao" className="h-14 w-auto" />
-              <span className="text-2xl text-primary-foreground" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700 }}>ShopBanao</span>
-            </div>
+            <a href="/" className="flex items-center gap-2.5 mb-4 w-fit group">
+              <span className="flex items-center gap-1 border-2 border-bauhaus-white bg-bauhaus-white/[0.06] px-2 py-1.5">
+                <GeoShape kind="circle" color="bg-bauhaus-red" className="h-3.5 w-3.5" />
+                <GeoShape kind="square" color="bg-bauhaus-blue" className="h-3.5 w-3.5" />
+                <GeoShape kind="triangle" color="bg-bauhaus-yellow" className="h-3.5 w-3.5" />
+              </span>
+              <span className="font-black uppercase tracking-tighter text-2xl leading-none text-primary-foreground">
+                Shop<span className="text-bauhaus-red">Banao</span>
+              </span>
+            </a>
+
             <p className="font-medium text-sm text-primary-foreground/60 leading-relaxed max-w-sm">Build your online store with zero commission. Your store, your domain, your rules.</p>
           </div>
           <div>

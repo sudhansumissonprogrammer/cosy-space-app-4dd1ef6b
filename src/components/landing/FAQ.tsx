@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
+import { SectionHeading } from "@/components/landing/bauhaus/BauhausKit";
 
 const faqs = [
   { q: "What does ShopBanao actually cost?", a: "₹0 subscription, ₹0 setup, ₹0 marketing fee. You pay a flat 3% only on orders that are actually delivered. If an order RTOs, you pay nothing on it." },
@@ -41,12 +42,10 @@ const FAQ = () => {
   return (
     <section id="faq" className="border-b-4 border-foreground py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8 bg-bauhaus-canvas">
       <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-12">
-          <span className="font-bold uppercase tracking-widest text-xs text-muted-foreground mb-2 block">FAQ</span>
-          <h2 className="font-black uppercase text-3xl sm:text-4xl lg:text-5xl tracking-tighter leading-[0.9] text-foreground">
-            Frequently Asked<br /><span className="text-bauhaus-red">Questions</span>
-          </h2>
-        </div>
+        <SectionHeading label="FAQ" size="lg" align="center" labelShape="triangle">
+          Frequently asked<br /><span className="text-bauhaus-red">questions</span>
+        </SectionHeading>
+
         <div className="space-y-4">
           {faqs.map((f, i) => (
             <div key={i} className={`border-2 lg:border-4 border-foreground shadow-bauhaus transition-[transform,opacity,colors,box-shadow] duration-200 ${open === i ? "" : "bg-bauhaus-white"}`}>
@@ -55,7 +54,7 @@ const FAQ = () => {
                 <ChevronDown className={`h-5 w-5 flex-shrink-0 transition-transform duration-200 ${open === i ? "rotate-180" : ""}`} />
               </button>
               {open === i && (
-                <div className="p-4 lg:p-5 bg-[#FFF9C4] border-t-4 border-foreground">
+                <div className="p-4 lg:p-5 bg-bauhaus-yellow/30 border-t-4 border-foreground">
                   <p className="font-medium text-sm text-foreground leading-relaxed">{f.a}</p>
                 </div>
               )}
