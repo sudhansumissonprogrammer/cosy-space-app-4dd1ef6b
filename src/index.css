@@ -227,6 +227,12 @@
   select {
     font-family: var(--storefront-body-font, "Inter"), "Segoe UI", sans-serif !important;
   }
+  .storefront-font input,
+  .storefront-font textarea,
+  .storefront-font select {
+    font-size-adjust: var(--storefront-body-adjust, none);
+  }
+
 
   /* Search placeholder uses body font */
   .storefront-font input[placeholder="Search products..."]::placeholder {
