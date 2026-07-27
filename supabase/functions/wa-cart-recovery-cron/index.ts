@@ -529,8 +529,10 @@ Deno.serve(async (req) => {
         : (productMrp2 && productMrp2 > 0 ? productMrp2 : (unitPrice > 0 ? unitPrice : orderTotal));
       const mrpPrice2 = effectiveSale2; // ← sale price as crossed-out MRP
       const basePrice = effectiveSale2;
-      const discountedPrice = Math.max(effectiveSale2 - 100, 0);
-      const balanceDue = Math.max(discountedPrice - 100, 0);
+      const offer2 = await resolveOffer((o as any).store_id, effectiveSale2);
+      const discountedPrice = Math.max(effectiveSale2 - offer2.discount, 0);
+      const balanceDue = Math.max(discountedPrice - offer2.advance, 0);
+
 
       const { data: activeTpl2 } = await admin
         .from("platform_wa_templates")
