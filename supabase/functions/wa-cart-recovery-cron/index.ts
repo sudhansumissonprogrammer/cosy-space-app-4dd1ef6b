@@ -25,11 +25,10 @@ Deno.serve(async (req) => {
   // advance". Those numbers MUST match what checkout actually charges, or the
   // shopper lands on a different price and drops. Discount comes from the
   // store's live auto-apply coupon, advance from stores.partial_payment_*.
-  const offerCache = new Map<string, { discount: number; advance: number }>();
+  const offerCache = new Map<string, any>();
   async function resolveOffer(storeId: string, price: number) {
-    const cached = offerCache.get(storeId);
-    let base = cached;
-    if (!base) {
+    let conf = offerCache.get(storeId);
+    if (!conf) {
       const nowIso = new Date().toISOString();
       const [{ data: coupons }, { data: st }] = await Promise.all([
         admin.from("coupons")
@@ -41,27 +40,27 @@ Deno.serve(async (req) => {
           .select("partial_payment_enabled, partial_payment_type, partial_payment_value")
           .eq("id", storeId).maybeSingle(),
       ]);
-      const c = (coupons || []).find((x: any) =>
-        (!x.starts_at || x.starts_at <= nowIso) && Number(x.min_order_amount || 0) <= price
-      ) as any;
-      const discount = !c ? 0
-        : c.discount_type === "percentage"
-          ? Math.round((price * Number(c.discount_value || 0)) / 100)
-          : Math.round(Number(c.discount_value || 0));
-      const s = st as any;
-      const advance = s?.partial_payment_enabled
-        ? (s.partial_payment_type === "percentage"
-            ? Math.round((price * Number(s.partial_payment_value || 0)) / 100)
-            : Math.round(Number(s.partial_payment_value || 0)))
-        : 0;
-      base = { discount, advance };
-      offerCache.set(storeId, base);
+      conf = { coupons: (coupons || []) as any[], store: (st || {}) as any, nowIso };
+      offerCache.set(storeId, conf);
     }
-    return {
-      discount: Math.min(base.discount, price),
-      advance: Math.min(base.advance, Math.max(price - Math.min(base.discount, price), 0)),
-    };
+    const c = conf.coupons.find((x: any) =>
+      (!x.starts_at || x.starts_at <= conf.nowIso) && Number(x.min_order_amount || 0) <= price
+    );
+    const rawDiscount = !c ? 0
+      : c.discount_type === "percentage"
+        ? Math.round((price * Number(c.discount_value || 0)) / 100)
+        : Math.round(Number(c.discount_value || 0));
+    const discount = Math.max(0, Math.min(rawDiscount, price));
+    const s = conf.store;
+    const payable = Math.max(price - discount, 0);
+    const rawAdvance = s?.partial_payment_enabled
+      ? (s.partial_payment_type === "percentage"
+          ? Math.round((payable * Number(s.partial_payment_value || 0)) / 100)
+          : Math.round(Number(s.partial_payment_value || 0)))
+      : 0;
+    return { discount, advance: Math.max(0, Math.min(rawAdvance, payable)) };
   }
+
 
   const now = Date.now();
 
