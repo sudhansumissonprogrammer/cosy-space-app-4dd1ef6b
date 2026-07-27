@@ -3163,16 +3163,8 @@ export default function CheckoutV2Page() {
           </div>
         )}
 
-        {/* Actions (desktop / tablet) */}
-        <div className="mt-6 space-y-2.5 hidden md:block">
-          <Button
-            onClick={handleViewMyOrders}
-            disabled={viewingOrders}
-            className="h-12 w-full rounded-xl text-[15px] font-bold active:scale-[0.98] transition-transform"
-          >
-            {viewingOrders && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            View my order
-          </Button>
+        {/* Secondary action */}
+        <div className="mt-4">
           <Button
             variant="outline"
             onClick={() => navigate(storefrontPath(store.slug))}
@@ -3181,6 +3173,7 @@ export default function CheckoutV2Page() {
             Continue shopping
           </Button>
         </div>
+
 
 
         <div className="mt-4 flex items-center justify-center gap-1.5 text-[12px] text-muted-foreground">
