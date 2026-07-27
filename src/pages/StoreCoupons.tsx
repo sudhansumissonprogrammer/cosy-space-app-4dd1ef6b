@@ -207,6 +207,7 @@ export default function StoreCoupons() {
                   <TableHead>Status</TableHead>
                   <TableHead>Active</TableHead>
                   <TableHead>Auto-apply</TableHead>
+                  <TableHead>WhatsApp only</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
@@ -218,6 +219,7 @@ export default function StoreCoupons() {
                       <TableCell className="font-mono font-semibold">
                         {c.code}
                         {c.auto_apply && <Badge variant="outline" className="ml-2 text-[10px]">AUTO</Badge>}
+                        {c.wa_exclusive && <Badge variant="outline" className="ml-1 text-[10px]">WA</Badge>}
                       </TableCell>
                       <TableCell>
                         {c.discount_type === "percentage" ? `${c.discount_value}%` : `₹${c.discount_value}`}
@@ -238,6 +240,12 @@ export default function StoreCoupons() {
                         />
                       </TableCell>
                       <TableCell>
+                        <Switch
+                          checked={!!c.wa_exclusive}
+                          onCheckedChange={(val) => waExclusiveMutation.mutate({ id: c.id, wa_exclusive: val })}
+                        />
+                      </TableCell>
+                      <TableCell>
                         <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(c.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -245,6 +253,7 @@ export default function StoreCoupons() {
                     </TableRow>
                   );
                 })}
+
               </TableBody>
             </Table>
           )}
