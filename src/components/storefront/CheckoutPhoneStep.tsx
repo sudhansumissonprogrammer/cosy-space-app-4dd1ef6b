@@ -106,6 +106,7 @@ export default function CheckoutPhoneStep({
   storeSlug,
   storeName,
   storeLogo,
+  storePhone,
   cartItems,
   isSingleMode,
   onQuantityChange,
