@@ -1183,6 +1183,23 @@ export default function CheckoutV2Page() {
     gpay: { status: "idle" }, phonepe: { status: "idle" },
     paytm: { status: "idle" }, bhim: { status: "idle" }, any: { status: "idle" },
   });
+  // Tap feedback for UPI tiles: which tile is currently "pressed / opening".
+  // Purely presentational — never gates the launch itself.
+  const [tappedUpiApp, setTappedUpiApp] = useState<UpiApp | null>(null);
+  const tapFxTimerRef = useRef<number | null>(null);
+  const flashUpiTap = (app: UpiApp, ms = 2600) => {
+    try { (navigator as Navigator)?.vibrate?.(12); } catch { /* noop */ }
+    setTappedUpiApp(app);
+    if (tapFxTimerRef.current) window.clearTimeout(tapFxTimerRef.current);
+    tapFxTimerRef.current = window.setTimeout(() => setTappedUpiApp(null), ms);
+  };
+  const clearUpiTapFx = () => {
+    if (tapFxTimerRef.current) window.clearTimeout(tapFxTimerRef.current);
+    tapFxTimerRef.current = null;
+    setTappedUpiApp(null);
+  };
+  useEffect(() => () => { if (tapFxTimerRef.current) window.clearTimeout(tapFxTimerRef.current); }, []);
+
   const gatewayRef = useRef<{
     pg?: "cashfree" | "razorpay" | "payu";
     cf_order_id?: string;
@@ -1907,12 +1924,17 @@ export default function CheckoutV2Page() {
 
   const tapUpiApp = (app: UpiApp, event?: MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
     event?.preventDefault();
+    // Instant tactile + visual acknowledgement of the tap. Runs before any
+    // guard so the shopper always *feels* the press, even when we end up
+    // re-minting instead of launching.
+    flashUpiTap(app);
     if (creatingOrder || couponLoading || paymentAmountSyncing) {
+      clearUpiTapFx();
       return;
     }
     // PAYMENT-FIRST address gate — if no address, open the sheet and remember
     // this tap so we auto-resume the UPI launch after the shopper saves.
-    if (!requireAddressOrPrompt(() => tapUpiApp(app))) return;
+    if (!requireAddressOrPrompt(() => tapUpiApp(app))) { clearUpiTapFx(); return; }
     const s = intents[app];
     // A failed tile used to be a dead end (silent return + pointer-events-none),
     // so a shopper who hit one transient gateway error could never pay by UPI
@@ -1923,9 +1945,11 @@ export default function CheckoutV2Page() {
       lastMintAtRef.current = 0;
       toast.info("Retrying…");
       void createOrderAndIntents();
+      clearUpiTapFx();
       return;
     }
     if (s.status !== "ready" || !s.url) {
+      clearUpiTapFx();
       return;
     }
     // Stale-intent guard: the minted URL encodes a fixed amount. If the
@@ -1935,8 +1959,10 @@ export default function CheckoutV2Page() {
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) {
       toast.info("Updating amount…");
       void createOrderAndIntents();
+      clearUpiTapFx();
       return;
     }
+
     // Stale-address guard: if the shopper edited address/name/phone/email
     // within the 1.8s ship-identity debounce window, the minted order row
     // still holds the pre-edit values. Flush + re-mint before launching so
@@ -1944,8 +1970,10 @@ export default function CheckoutV2Page() {
     if (shipIdentityRef.current !== debouncedShipIdentity) {
       toast.info("Updating details…");
       flushShipIdentity();
+      clearUpiTapFx();
       return;
     }
+
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
 
     let leftCheckout = false;
@@ -3076,24 +3104,75 @@ export default function CheckoutV2Page() {
   // QR code while completing payment in their phone's UPI app.
   if (waiting && isMobile()) {
     return (
-      <div className="mx-auto max-w-md p-6 pt-16 text-center">
-        <div className="mx-auto mb-6 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 text-primary animate-spin" />
-        </div>
-        <h1 className="text-xl font-bold mb-2">{tCritical(`Complete payment in ${waitingApp}`, `${waitingApp} में भुगतान पूरा करें`)}</h1>
-        <p className="text-sm text-muted-foreground mb-8">
-          Approve the payment request of <span className="font-semibold text-foreground">{formatPrice(chargeAmount, currency)}</span> in {waitingApp} to confirm your order.
-        </p>
-        <div className="rounded-lg border bg-muted/30 p-4 text-left text-xs text-muted-foreground mb-6">
-          <div className="flex items-start gap-2">
-            <ShieldCheck className="h-4 w-4 mt-0.5 text-emerald-600 flex-shrink-0" />
-            <div>{tCritical("Do not close this page. We'll confirm automatically once you approve payment in the app.", "यह पेज बंद न करें।")}</div>
+      <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] px-4 pt-10 pb-10">
+        {/* Status card */}
+        <div className="rounded-2xl bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.18)] p-6 text-center animate-fade-in">
+          <div className="relative mx-auto mb-5 h-20 w-20">
+            <span className="absolute inset-0 rounded-full bg-primary/10 animate-ping" aria-hidden="true" />
+            <span className="absolute inset-0 rounded-full bg-primary/10" aria-hidden="true" />
+            <span className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="h-9 w-9 text-primary animate-spin" />
+            </span>
+          </div>
+
+          <h1 className="text-[19px] font-bold tracking-tight text-foreground text-balance">
+            Complete payment in {waitingApp}
+          </h1>
+          <p className="mt-1.5 text-[13px] text-muted-foreground text-pretty">
+            Approve the request to confirm your order.
+          </p>
+
+          <div className="mt-5 rounded-xl bg-[#F7F8FA] px-4 py-3">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Amount to pay</div>
+            <div className="text-2xl font-extrabold tabular-nums text-foreground">{formatPrice(chargeAmount, currency)}</div>
+          </div>
+
+          {/* Progress steps */}
+          <div className="mt-5 space-y-2.5 text-left">
+            {[
+              { label: "Order created", done: true },
+              { label: `Opened ${waitingApp}`, done: true },
+              { label: "Waiting for your approval", done: false },
+              { label: "Order confirmed", done: false },
+            ].map((step) => (
+              <div key={step.label} className="flex items-center gap-2.5">
+                <span
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                    step.done ? "bg-emerald-500 text-white" : "border-2 border-dashed border-muted-foreground/30"
+                  }`}
+                >
+                  {step.done ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
+                </span>
+                <span className={`text-[13px] ${step.done ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+                  {step.label}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
-        <Button variant="outline" className="w-full" onClick={forceRecheck} disabled={manualChecking}>
-          {manualChecking ? "Checking…" : "I've paid — check now"}
+
+        {/* Reassurance */}
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3.5 py-3 text-left">
+          <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0 text-emerald-600" />
+          <p className="text-[12px] leading-relaxed text-emerald-900">
+            100% secure payment. Please keep this page open — we confirm your order automatically once the payment is approved.
+          </p>
+        </div>
+
+        <Button
+          variant="outline"
+          className="mt-5 w-full h-12 rounded-xl font-semibold active:scale-[0.98] transition-transform"
+          onClick={forceRecheck}
+          disabled={manualChecking}
+        >
+          {manualChecking ? (
+            <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Checking…</span>
+          ) : (
+            "I've paid — check now"
+          )}
         </Button>
-        <button className="mt-3 text-xs text-muted-foreground underline" onClick={() => {
+
+        <button className="mt-4 w-full text-center text-xs font-medium text-muted-foreground underline underline-offset-2" onClick={() => {
           clearWaiting(); setWaiting(false); setConfirmingPayment(false);
           try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
           // The intent URL carries a single gateway payment reference. Once the
@@ -3188,7 +3267,7 @@ export default function CheckoutV2Page() {
         <div className="fixed inset-0 z-50 bg-background/85 backdrop-blur-sm flex items-center justify-center">
           <div className="text-center p-6 max-w-xs">
             <Loader2 className="h-10 w-10 text-primary animate-spin mx-auto mb-4" />
-            <h3 className="font-semibold mb-1">{tCritical("Confirming your payment…", "भुगतान की पुष्टि हो रही है…")}</h3>
+            <h3 className="font-semibold mb-1">Confirming your payment…</h3>
             <p className="text-xs text-muted-foreground">Please don't close this page. It can take up to 20 seconds.</p>
           </div>
         </div>
@@ -4033,18 +4112,29 @@ export default function CheckoutV2Page() {
                   const retryable = s.status === "failed";
                   const disabled = addressReady && !retryable && (s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount);
                   const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
+                  const pressed = tappedUpiApp === app.key;
                   return (
                     <a
                       key={app.key}
                       href={disabled || retryable || !addressReady ? undefined : s.url}
                       onClick={(e) => tapUpiApp(app.key, e)}
                       aria-disabled={disabled}
-                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-95 transition-all p-2.5 min-h-[92px] relative ${disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""} ${retryable ? "opacity-70" : ""}`}
+                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-[0.92] transition-[transform,box-shadow,opacity] duration-150 ease-out p-2.5 min-h-[92px] relative overflow-hidden select-none touch-manipulation ${pressed ? "scale-[0.96] ring-2 ring-primary shadow-[0_6px_16px_-6px_rgba(0,0,0,0.35)]" : "shadow-[0_1px_2px_rgba(0,0,0,0.04)]"} ${disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""} ${retryable ? "opacity-70" : ""}`}
                     >
-                      
-                      <img src={app.icon} alt={app.label} className="h-8 w-8 mt-3 mb-1 object-contain" />
-                      <div className="text-[11px] font-semibold">{retryable ? "Retry" : app.label}</div>
-                      {addressReady && (s.status === "loading" || staleAmount) && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
+                      {pressed && (
+                        <span className="pointer-events-none absolute inset-0 rounded-lg bg-primary/10 animate-[fade-in_0.15s_ease-out]" aria-hidden="true" />
+                      )}
+                      <img
+                        src={app.icon}
+                        alt={app.label}
+                        className={`h-8 w-8 mt-3 mb-1 object-contain transition-transform duration-150 ${pressed ? "scale-110" : ""}`}
+                      />
+                      <div className="text-[11px] font-semibold relative">
+                        {retryable ? "Retry" : pressed ? "Opening…" : app.label}
+                      </div>
+                      {pressed
+                        ? <Loader2 className="h-3 w-3 animate-spin mt-1 text-primary" />
+                        : addressReady && (s.status === "loading" || staleAmount) && <Loader2 className="h-3 w-3 animate-spin mt-1 text-muted-foreground" />}
                     </a>
                   );
                 })}
@@ -4055,20 +4145,24 @@ export default function CheckoutV2Page() {
                 const addressReady = addressComplete;
                 const anyRetryable = anyS.status === "failed";
                 const anyDisabled = addressReady && !anyRetryable && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
+                const anyPressed = tappedUpiApp === "any";
                 return (
                   <a
                     href={anyDisabled || anyRetryable || !addressReady ? undefined : anyS.url}
                     onClick={(e) => tapUpiApp("any", e)}
                     aria-disabled={anyDisabled}
-                    className={`mt-3 w-full flex items-center justify-between border border-[#ECECEC] rounded-lg px-3 py-2.5 active:scale-[0.99] ${anyDisabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
+                    className={`mt-3 w-full flex items-center justify-between border rounded-lg px-3 py-2.5 select-none touch-manipulation active:scale-[0.97] transition-[transform,box-shadow,border-color] duration-150 ease-out ${anyPressed ? "scale-[0.98] border-primary ring-2 ring-primary/40 bg-primary/5" : "border-[#ECECEC]"} ${anyDisabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
                   >
                     <span className="text-[13px] font-semibold">All UPI Apps</span>
                     <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
-                      Pay with any UPI app
-                      <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
+                      {anyPressed ? "Opening…" : "Pay with any UPI app"}
+                      {anyPressed
+                        ? <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        : <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />}
                     </span>
                   </a>
                 );
+
               })()}
             </div>
           )}
