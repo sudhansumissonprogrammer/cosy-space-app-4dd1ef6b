@@ -319,10 +319,12 @@ Deno.serve(async (req) => {
       : (productMrp && productMrp > 0 ? productMrp : (unitPrice > 0 ? unitPrice : total));
     const mrpPrice = effectiveSale; // ← use sale price as the crossed-out MRP
     const basePrice = effectiveSale;
-    const OFFER_DISCOUNT = 100;
-    const ADVANCE_AMOUNT = 100;
+    const offer = await resolveOffer((c as any).store_id, effectiveSale);
+    const OFFER_DISCOUNT = offer.discount;
+    const ADVANCE_AMOUNT = offer.advance;
     const discountedPrice = Math.max(effectiveSale - OFFER_DISCOUNT, 0);
     const balanceDue = Math.max(discountedPrice - ADVANCE_AMOUNT, 0);
+
 
     // Auto-pick the newest APPROVED + active abandoned_cart template. This lets
     // us promote v4/v5 by flipping is_active/meta_status in the DB — no code edit.
