@@ -167,7 +167,19 @@
     @apply border-border;
   }
 
-  /* Storefront typography — body uses body font, headings use heading font */
+  /* Storefront typography — body uses body font, headings use heading font.
+   *
+   * Font normalization layer (see src/lib/themeUtils.ts FONT_METRICS):
+   *  - `font-size-adjust` normalizes optical size across typefaces so a font
+   *    swap never makes titles/prices render visibly bigger or smaller.
+   *    Headings normalize on cap-height (Alegreya SC = 0.65 benchmark),
+   *    body text on x-height (Inter = 0.55 benchmark).
+   *  - tracking / weight / leading come from the same per-font profile.
+   *  - The benchmark pair (Alegreya SC + Inter) resolves to `none`/`inherit`,
+   *    so their rendering is byte-identical to before this layer existed.
+   *  - Everything sits in @layer base, so Tailwind utilities (text-*, leading-*,
+   *    tracking-*, font-*) still win wherever a component sets them explicitly.
+   */
   .storefront-font,
   .storefront-font p,
   .storefront-font span,
@@ -178,6 +190,18 @@
   .storefront-font td,
   .storefront-font li {
     font-family: var(--storefront-body-font, "Inter"), system-ui, sans-serif;
+    font-size-adjust: var(--storefront-body-adjust, none);
+    letter-spacing: var(--storefront-body-tracking, inherit);
+  }
+
+  /* Line-height + weight only on real text containers — never on buttons,
+   * badges or inline chips where a taller leading would break alignment. */
+  .storefront-font p,
+  .storefront-font li,
+  .storefront-font td,
+  .storefront-font [data-sf-prose] {
+    line-height: var(--storefront-body-leading, inherit);
+    font-weight: var(--storefront-body-weight, inherit);
   }
 
   .storefront-font h1,
@@ -190,7 +214,9 @@
     letter-spacing: var(--storefront-heading-tracking, normal);
     line-height: var(--storefront-heading-leading, 1.2);
     font-weight: var(--storefront-heading-weight, 700);
+    font-size-adjust: var(--storefront-heading-adjust, none);
   }
+
 
   /* Inputs and textareas always use body font */
   .storefront-font input,
