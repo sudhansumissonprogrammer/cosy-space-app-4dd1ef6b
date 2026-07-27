@@ -21,7 +21,50 @@ Deno.serve(async (req) => {
   if (isMetaBreakerOpen(breaker)) return json({ skipped: true, reason: "meta_breaker_open", open_until: breaker.open_until });
   if (!(await hasApprovedTemplates(admin))) return json({ skipped: true, reason: "no_approved_templates" });
 
+  // 🎟️ Per-store offer resolver — the recovery copy promises "₹X off + ₹Y
+  // advance". Those numbers MUST match what checkout actually charges, or the
+  // shopper lands on a different price and drops. Discount comes from the
+  // store's live auto-apply coupon, advance from stores.partial_payment_*.
+  const offerCache = new Map<string, { discount: number; advance: number }>();
+  async function resolveOffer(storeId: string, price: number) {
+    const cached = offerCache.get(storeId);
+    let base = cached;
+    if (!base) {
+      const nowIso = new Date().toISOString();
+      const [{ data: coupons }, { data: st }] = await Promise.all([
+        admin.from("coupons")
+          .select("discount_type, discount_value, min_order_amount, starts_at, expires_at")
+          .eq("store_id", storeId).eq("auto_apply", true).eq("is_active", true)
+          .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+          .order("discount_value", { ascending: false }).limit(5),
+        admin.from("stores")
+          .select("partial_payment_enabled, partial_payment_type, partial_payment_value")
+          .eq("id", storeId).maybeSingle(),
+      ]);
+      const c = (coupons || []).find((x: any) =>
+        (!x.starts_at || x.starts_at <= nowIso) && Number(x.min_order_amount || 0) <= price
+      ) as any;
+      const discount = !c ? 0
+        : c.discount_type === "percentage"
+          ? Math.round((price * Number(c.discount_value || 0)) / 100)
+          : Math.round(Number(c.discount_value || 0));
+      const s = st as any;
+      const advance = s?.partial_payment_enabled
+        ? (s.partial_payment_type === "percentage"
+            ? Math.round((price * Number(s.partial_payment_value || 0)) / 100)
+            : Math.round(Number(s.partial_payment_value || 0)))
+        : 0;
+      base = { discount, advance };
+      offerCache.set(storeId, base);
+    }
+    return {
+      discount: Math.min(base.discount, price),
+      advance: Math.min(base.advance, Math.max(price - Math.min(base.discount, price), 0)),
+    };
+  }
+
   const now = Date.now();
+
   const minAgeMs = cfg!.wa_min_cart_age_minutes * 60 * 1000;
   const maxAgeMs = cfg!.wa_max_cart_age_hours * 60 * 60 * 1000;
   const beforeIso = new Date(now - minAgeMs).toISOString();
