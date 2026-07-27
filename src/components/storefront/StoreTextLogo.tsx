@@ -21,14 +21,18 @@ export default function StoreTextLogo({
 }: StoreTextLogoProps) {
   return (
     <span
-      className={`font-bold tracking-wide whitespace-nowrap ${size} ${className}`}
+      className={`font-bold whitespace-nowrap ${size} ${className}`}
       style={{
         fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif",
         color: color || undefined,
-        letterSpacing: "0.04em",
+        // Optical-size normalization so the wordmark keeps the same visual
+        // weight/height whichever heading font the merchant picks.
+        fontSizeAdjust: "var(--storefront-heading-adjust, none)" as any,
+        letterSpacing: "calc(0.04em + var(--storefront-heading-tracking, 0em))",
       }}
     >
       {storeName}
     </span>
   );
 }
+
