@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useState } from "react";
-import { ensureFbpCookie, getOrCreateSfVid } from "@/lib/metaEnrichment";
+import { ensureFbpCookie, ensureFbcPersisted, getOrCreateSfVid } from "@/lib/metaEnrichment";
 import { purgeSharedDomainCookies } from "@/lib/purgeSharedDomainCookies";
 import { hasMarketingConsent } from "@/lib/marketingConsent";
 
@@ -71,6 +71,11 @@ ensureFbqShim();
 // so the fresh _fbp it mints is host-only (isolated per merchant subdomain).
 purgeSharedDomainCookies();
 ensureFbpCookie();
+// Capture `?fbclid=` into `_fbc` at module load — BEFORE fbevents.js (deferred
+// to idle) would do it. Without this, shoppers who land from an ad and convert
+// within the first seconds, or whose SDK never loads (ITP / FB in-app WebView /
+// slow 4G), reach checkout with no fbc → Meta cannot attribute the click.
+ensureFbcPersisted();
 
 /**
  * Inject Facebook Pixel base code and fire PageView.
@@ -110,6 +115,7 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     if (isNonProductionHost()) return;
     if (!hasMarketingConsent()) return;
     ensureFbpCookie();
+    ensureFbcPersisted();
 
     // Phase 1: If index.html inline script already initialized this pixel,
     // skip — avoids duplicate init + duplicate PageView.
