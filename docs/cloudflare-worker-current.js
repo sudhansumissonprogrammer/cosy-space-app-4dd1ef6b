@@ -1212,8 +1212,8 @@ function buildThemeCssFromConfig(tc) {
     // for families we don't self-host.
     const SELF_HOSTED = {
       "Alegreya SC": [
-        { weight: 400, url: "/fonts/alegreya-sc-400.woff2" },
-        { weight: 700, url: "/fonts/alegreya-sc-700.woff2" },
+        { weight: 400, url: "/fonts/alegreya-sc-400-v2.woff2" },
+        { weight: 700, url: "/fonts/alegreya-sc-700-v2.woff2" },
       ],
       Poppins: [
         { weight: 400, url: "/fonts/poppins-400.woff2" },
