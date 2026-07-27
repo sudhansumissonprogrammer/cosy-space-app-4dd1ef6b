@@ -940,7 +940,7 @@ export default function CheckoutV2Page() {
     setAppliedCoupon(null); setCouponDiscount(0); setCouponCode(""); autoAppliedCouponRef.current = false;
   };
 
-  // Store-owner configured auto-apply coupon
+  // Store-owner configured auto-apply coupon (store-wide, shown on PDP too)
   const { data: autoApplyCoupon } = useQuery({
     queryKey: ["store-auto-apply-coupon", store?.id],
     enabled: !!store?.id,
@@ -951,29 +951,42 @@ export default function CheckoutV2Page() {
     },
   });
 
+  // WhatsApp-exclusive auto coupon — only for shoppers who arrived from a
+  // WhatsApp marketing/recovery message.
+  const { data: waCoupon } = useQuery({
+    queryKey: ["store-wa-coupon", store?.id],
+    enabled: !!store?.id,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await (supabase as any).rpc("get_store_wa_coupon", { _store_id: store.id });
+      return Array.isArray(data) ? data[0] ?? null : data ?? null;
+    },
+  });
+
   useEffect(() => {
     if (autoAppliedCouponRef.current || appliedCoupon) return;
     if (!store?.id || subtotal <= 0) return;
 
-    // Store-specific upgrade: serdiyajewellers shoppers who arrived via a
-    // WhatsApp marketing/recovery link (StorefrontAutoLogin sets
-    // `sf_wa_source` when consuming the `?al=` token) get FLAT100 instead of
-    // the store-wide SAVE50 auto-apply. Everyone else still gets SAVE50.
+    // Shoppers arriving via a WhatsApp marketing/recovery link (StorefrontAutoLogin
+    // sets `sf_wa_source` when consuming the `?al=` token) get the store's
+    // WhatsApp-exclusive coupon; everyone else gets the store-wide auto coupon.
     // Explicit ?coupon=... URL codes always win.
     const isWaSource = (() => {
       try { return sessionStorage.getItem("sf_wa_source") === "1"; } catch { return false; }
     })();
-    const waUpgradeCode = (store?.slug === "serdiyajewellers" && isWaSource) ? "FLAT100" : null;
+    const waEligible = isWaSource && waCoupon?.code
+      && Number(waCoupon.min_order_amount || 0) <= subtotal
+      ? waCoupon : null;
 
-    const codeToApply = urlCoupon
-      || waUpgradeCode
-      || (!dismissedAutoCouponRef.current && autoApplyCoupon?.code ? autoApplyCoupon.code : null);
+    const picked = waEligible
+      || (!dismissedAutoCouponRef.current && autoApplyCoupon ? autoApplyCoupon : null);
+    const codeToApply = urlCoupon || picked?.code || null;
     if (!codeToApply) return;
-    if (autoApplyCoupon && codeToApply === autoApplyCoupon.code
-        && Number(autoApplyCoupon.min_order_amount || 0) > subtotal) return;
+    if (!urlCoupon && picked && Number(picked.min_order_amount || 0) > subtotal) return;
     autoAppliedCouponRef.current = true;
     applyCoupon(String(codeToApply).toUpperCase());
-  }, [urlCoupon, store?.id, store?.slug, subtotal, appliedCoupon, autoApplyCoupon]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [urlCoupon, store?.id, store?.slug, subtotal, appliedCoupon, autoApplyCoupon, waCoupon]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // Re-validate the applied coupon when the cart total changes. If the shopper
   // removes items and drops below the coupon's minimum order value, or the

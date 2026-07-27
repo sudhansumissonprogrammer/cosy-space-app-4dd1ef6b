@@ -197,6 +197,7 @@ export type Database = {
           starts_at: string
           store_id: string
           used_count: number
+          wa_exclusive: boolean
         }
         Insert: {
           auto_apply?: boolean
@@ -212,6 +213,7 @@ export type Database = {
           starts_at?: string
           store_id: string
           used_count?: number
+          wa_exclusive?: boolean
         }
         Update: {
           auto_apply?: boolean
@@ -227,6 +229,7 @@ export type Database = {
           starts_at?: string
           store_id?: string
           used_count?: number
+          wa_exclusive?: boolean
         }
         Relationships: [
           {
@@ -5138,6 +5141,21 @@ export type Database = {
         Returns: {
           store_id: string
           view_count: number
+        }[]
+      }
+      get_store_wa_coupon: {
+        Args: { _store_id: string }
+        Returns: {
+          auto_apply: boolean
+          code: string
+          discount_type: string
+          discount_value: number
+          expires_at: string
+          id: string
+          max_uses: number
+          min_order_amount: number
+          starts_at: string
+          used_count: number
         }[]
       }
       get_store_wa_toggles: { Args: { _store_id: string }; Returns: Json }

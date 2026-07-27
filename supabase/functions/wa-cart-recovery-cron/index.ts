@@ -32,9 +32,12 @@ Deno.serve(async (req) => {
       const nowIso = new Date().toISOString();
       const [{ data: coupons }, { data: st }] = await Promise.all([
         admin.from("coupons")
-          .select("discount_type, discount_value, min_order_amount, starts_at, expires_at")
+          .select("discount_type, discount_value, min_order_amount, starts_at, expires_at, wa_exclusive")
           .eq("store_id", storeId).eq("auto_apply", true).eq("is_active", true)
           .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+          // WhatsApp-exclusive coupons win for recovery recipients — they are
+          // the ones checkout will auto-apply when the shopper taps the link.
+          .order("wa_exclusive", { ascending: false })
           .order("discount_value", { ascending: false }).limit(5),
         admin.from("stores")
           .select("partial_payment_enabled, partial_payment_type, partial_payment_value")
