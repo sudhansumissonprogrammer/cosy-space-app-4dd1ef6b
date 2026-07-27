@@ -3162,7 +3162,7 @@ export default function CheckoutV2Page() {
       )}
 
       {/* Header: back • brand + customer care • trust badges */}
-      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-2 flex items-center gap-2">
+      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-1 flex items-center gap-2">
         <button onClick={goBack} aria-label="Back" className="p-1 -ml-1 shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -3175,7 +3175,7 @@ export default function CheckoutV2Page() {
             <div className="text-[15px] font-bold leading-tight truncate">{store?.name || "Store"}</div>
             {(store?.secondary_phone || store?.whatsapp_number) && (
               <a
-                href={`tel:${store?.secondary_phone || store?.whatsapp_number}`}
+                href={`tel:${(store?.secondary_phone || store?.whatsapp_number || "").replace(/\s/g, "")}`}
                 className="mt-0.5 inline-flex items-center gap-1 text-[11px] leading-none text-muted-foreground hover:text-foreground transition-colors"
                 aria-label={`Customer care ${store?.secondary_phone || store?.whatsapp_number}`}
               >
