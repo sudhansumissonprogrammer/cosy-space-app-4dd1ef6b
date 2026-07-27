@@ -587,8 +587,8 @@ export default function CheckoutV2Page() {
     setState("");
     setPincode("");
     setAddressSheetDismissed(false);
-    initialNudgeFiredRef.current = false;
     phoneAddressLookupRef.current = "";
+
     // Rotate the checkout idempotency token so place-order creates a fresh
     // pending row for the new shopper instead of UPDATE-in-place onto the
     // previous number's order (which would cross-attribute the lead).
