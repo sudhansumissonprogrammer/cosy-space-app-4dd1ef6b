@@ -15,7 +15,7 @@ const PowerfulFeatures = () => {
           <span className="inline-block font-bold uppercase tracking-widest text-xs text-primary-foreground bg-bauhaus-blue border-2 border-foreground px-4 py-1.5 shadow-bauhaus-sm mb-4">⚡ Powerful Features</span>
           <h2 className="font-black uppercase text-3xl sm:text-4xl lg:text-5xl tracking-tighter leading-[0.9] text-foreground">
             Everything you need to run a<br />
-            <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif" }}>successful online store</span>
+            <span className="text-bauhaus-red">successful online store</span>
           </h2>
           <p className="font-medium text-sm sm:text-base text-muted-foreground mt-4 max-w-lg mx-auto">
             From product management to payments, we've built every tool you need so you can focus on growing your business.
@@ -27,7 +27,7 @@ const PowerfulFeatures = () => {
               <div className={`${f.reverse ? "lg:order-2" : "lg:order-1"}`}>
                 <span className={`inline-block font-bold uppercase tracking-widest text-[10px] sm:text-xs text-primary-foreground ${f.badgeColor} border-2 border-foreground px-3 py-1 shadow-bauhaus-sm mb-4 ${f.badgeColor === "bg-bauhaus-yellow" ? "text-foreground" : ""}`}>{f.badge}</span>
                 <h3 className="font-black text-xl sm:text-2xl lg:text-3xl tracking-tight text-foreground mb-3">
-                  {f.title}{" "}<span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif" }}>{f.highlight}</span>
+                  {f.title}{" "}<span className="text-bauhaus-red">{f.highlight}</span>
                 </h3>
                 <p className="font-medium text-sm text-muted-foreground leading-relaxed mb-4">{f.desc}</p>
                 <ul className="space-y-2">
