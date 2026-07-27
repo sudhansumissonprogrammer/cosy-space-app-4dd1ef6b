@@ -3056,7 +3056,7 @@ export default function CheckoutV2Page() {
     const extraItems = checkoutItems.length - previewItems.length;
 
     return (
-      <div className="mx-auto max-w-lg px-4 pt-8 pb-12">
+      <div className="mx-auto max-w-lg px-4 pt-8 pb-12 md:pb-12 [padding-bottom:calc(112px+env(safe-area-inset-bottom,0px))] md:[padding-bottom:3rem]">
         {/* Hero */}
         <div className="text-center">
           <div className="relative mx-auto mb-4 h-20 w-20">
@@ -3163,15 +3163,15 @@ export default function CheckoutV2Page() {
           </div>
         )}
 
-        {/* Actions */}
-        <div className="mt-6 space-y-2.5">
+        {/* Actions (desktop / tablet) */}
+        <div className="mt-6 space-y-2.5 hidden md:block">
           <Button
             onClick={handleViewMyOrders}
             disabled={viewingOrders}
             className="h-12 w-full rounded-xl text-[15px] font-bold active:scale-[0.98] transition-transform"
           >
             {viewingOrders && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Track my order
+            View my order
           </Button>
           <Button
             variant="outline"
@@ -3181,6 +3181,7 @@ export default function CheckoutV2Page() {
             Continue shopping
           </Button>
         </div>
+
 
         <div className="mt-4 flex items-center justify-center gap-1.5 text-[12px] text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
@@ -3202,7 +3203,29 @@ export default function CheckoutV2Page() {
             </Suspense>
           </div>
         )}
+
+        {/* Sticky mobile action bar — always visible without scrolling */}
+        <div
+          className="fixed inset-x-0 bottom-0 z-50 md:hidden border-t bg-background/95 backdrop-blur px-4 pt-3"
+          style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}
+        >
+          <Button
+            onClick={handleViewMyOrders}
+            disabled={viewingOrders}
+            className="h-12 w-full rounded-xl text-[15px] font-bold active:scale-[0.98] transition-transform"
+          >
+            {viewingOrders && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            View my order
+          </Button>
+          <button
+            onClick={() => navigate(storefrontPath(store.slug))}
+            className="mt-2 w-full text-center text-[13px] font-semibold text-muted-foreground active:opacity-70"
+          >
+            Continue shopping
+          </button>
+        </div>
       </div>
+
     );
   }
 
