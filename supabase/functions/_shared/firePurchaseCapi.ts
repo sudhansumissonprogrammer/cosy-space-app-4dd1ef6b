@@ -256,7 +256,12 @@ export async function firePurchaseCapi(
     }
 
     // 6. Build event.
-    const contentIds = (items || []).map((i) => i.product_id).filter(Boolean) as string[];
+    // Only catalog-backed order lines may be sent in Meta `content_ids` / `contents`.
+    // Older/manual rows can have product_id = NULL; including those in `contents`
+    // produces Meta "content IDs aren't matching any catalog" warnings even when
+    // the valid catalog rows are correct.
+    const catalogItems = (items || []).filter((i) => !!i.product_id);
+    const contentIds = catalogItems.map((i) => i.product_id).filter(Boolean) as string[];
     // Defense-in-depth: a stored URL from an old test order on
     // *.lovableproject.com / *.lovable.dev must NEVER be sent to Meta —
     // it dilutes domain authority + EMQ. Drop it and use the canonical
@@ -302,7 +307,7 @@ export async function firePurchaseCapi(
 
         content_type: "product",
         content_ids: contentIds,
-        contents: (items || []).map((i) => ({
+        contents: catalogItems.map((i) => ({
           id: i.product_id,
           quantity: Number(i.quantity) || 1,
           item_price: Number(i.unit_price) || 0,
