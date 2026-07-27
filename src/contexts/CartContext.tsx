@@ -148,9 +148,22 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
       ]).then(([pixelMod, capiMod]) => {
         const eid = pixelMod.generateEventId();
         const value = currentItems.reduce((s, i) => s + i.price * i.quantity, 0);
+        // Synthetic `bundle:<uuid>` ids don't exist in the Meta catalog and
+        // tank the catalog match rate — expand them to their real children.
+        const flat = currentItems
+          .flatMap((i: any) =>
+            i?.meta?.kind === "bundle" && Array.isArray(i.meta?.children)
+              ? i.meta.children.map((c: any) => ({
+                  id: c.productId,
+                  quantity: i.quantity,
+                  item_price: Number((i.price / Math.max(1, i.meta.children.length)).toFixed(2)),
+                }))
+              : [{ id: i.productId, quantity: i.quantity, item_price: i.price }]
+          )
+          .filter((f) => f.id && !String(f.id).startsWith("bundle:"));
         const data = {
-          content_ids: currentItems.map((i) => i.productId),
-          contents: currentItems.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+          content_ids: flat.map((f) => f.id),
+          contents: flat,
           content_type: "product",
           num_items: currentItems.reduce((s, i) => s + i.quantity, 0),
           value,
