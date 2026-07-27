@@ -60,17 +60,9 @@ function normalizeGoogleFontName(font: string): string {
  * That is why swapping the storefront font used to make titles look huge,
  * prices dominant and cards crowded.
  *
- * The table below is built from REAL measured metrics (canvas ascent probe,
- * 100px reference) for every font offered in Theme Settings:
- *
- *   font                   ex     cap    adv
- *   Alegreya SC            0.51   0.65   0.61   <- heading benchmark
- *   Inter                  0.55   0.73   0.59   <- body benchmark
- *   Cormorant              0.39   0.63   0.52
- *   Cinzel                 0.60   0.70   0.77
- *   Oswald                 0.58   0.81   0.44
- *   Bodoni Moda            0.46   0.75   0.60
- *   ... (see FONT_METRICS)
+ * Metrics come from each font's binary (OS/2 sCapHeight / sxHeight and
+ * hmtx advances, normalized by unitsPerEm) — see the full table below.
+
  *
  * Normalization is OPTICAL, not numeric: we do not force identical CSS
  * values. Instead each font gets
