@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { onAuthCtaIntent } from "@/lib/prefetchLandingAuth";
-import { BauhausMark, bauButtonClass } from "@/components/landing/bauhaus/BauhausKit";
+import { bauButtonClass } from "@/components/landing/bauhaus/BauhausKit";
+import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 
 // NOTE: We deliberately do NOT prefetch App.tsx from landing — any
 // `import("@/App")` reference here would make Rollup add modulepreload links
