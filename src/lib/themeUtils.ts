@@ -21,8 +21,8 @@ const SELF_HOSTED_FONTS = new Set([
 
 const SELF_HOSTED_FONT_FACES: Record<string, Array<{ weight: string; url: string; display?: "swap" | "optional" }>> = {
   "Alegreya SC": [
-    { weight: "400", url: "/fonts/alegreya-sc-400.woff2", display: "swap" },
-    { weight: "700", url: "/fonts/alegreya-sc-700.woff2", display: "swap" },
+    { weight: "400", url: "/fonts/alegreya-sc-400-v2.woff2", display: "swap" },
+    { weight: "700", url: "/fonts/alegreya-sc-700-v2.woff2", display: "swap" },
   ],
   Poppins: [
     { weight: "400", url: "/fonts/poppins-400.woff2" },
