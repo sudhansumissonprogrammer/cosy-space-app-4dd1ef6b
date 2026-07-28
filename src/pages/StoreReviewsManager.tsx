@@ -50,6 +50,7 @@ export default function StoreReviewsManager() {
   const storeId = store?.id;
   const qc = useQueryClient();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<ReviewRow | null>(null);
 
   const { data: rows = [], refetch } = useQuery({
     queryKey: ["dashboard-reviews", storeId],
