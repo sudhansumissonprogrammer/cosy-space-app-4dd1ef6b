@@ -154,6 +154,14 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
         </Suspense>
       )}
 
+      {galleryIndex !== null && gallery.length > 0 && (
+        <Suspense fallback={null}>
+          <ReviewMediaLightbox media={gallery} startIndex={galleryIndex} onClose={() => setGalleryIndex(null)} />
+        </Suspense>
+      )}
+
+
+
     </section>
   );
 }
