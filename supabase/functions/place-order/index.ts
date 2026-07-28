@@ -921,11 +921,23 @@ Deno.serve(async (req) => {
     if (reusableOrder) {
       const { data: updatedOrder, error: updateErr } = await supabase
         .from("orders")
-        .update(orderPayload)
+        .update({
+          ...orderPayload,
+          // A remint is a FRESH payment attempt on this row. Anything left over
+          // from the previous attempt (gateway ids, verification flags, a fired
+          // Purchase marker) must be cleared, otherwise the row looks partly
+          // paid / already-tracked while no money has arrived.
+          payment_verified: false,
+          payment_verified_at: null,
+          razorpay_order_id: null,
+          meta_purchase_fired_at: null,
+        })
         .eq("id", reusableOrder.id)
         .eq("store_id", store_id)
         .eq("checkout_token", checkout_token)
+        .eq("payment_verified", false)
         .in("status", ["pending", "cancelled", "failed"])
+
         .select("id")
         .maybeSingle();
       createdOrder = updatedOrder;
