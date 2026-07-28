@@ -75,10 +75,11 @@ export default function ReviewCard({ review, compact = false }: { review: StoreR
 
 
       {review.products?.name && (
-        <p className="mt-3 border-t border-border pt-2 text-[11px] text-muted-foreground">
+        <p className="mx-4 mb-3 border-t border-border pt-2 text-[11px] text-muted-foreground">
           Reviewed: {review.products.name}
         </p>
       )}
+
 
       {lightbox !== null && (
         <ReviewMediaLightbox media={review.media} startIndex={lightbox} onClose={() => setLightbox(null)} />
