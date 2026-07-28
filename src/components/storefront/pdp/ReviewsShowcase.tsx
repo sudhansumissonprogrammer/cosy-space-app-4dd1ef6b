@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { storefrontPath } from "@/lib/subdomain";
-import { PenLine, ChevronRight } from "lucide-react";
+import { PenLine, ChevronRight, ArrowRight } from "lucide-react";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
 import { REVIEW_SELECT, normalizeReview, ratingBreakdown, type StoreReview } from "@/components/storefront/reviews/reviewTypes";
 
 const WriteReviewDialog = lazy(() => import("@/components/storefront/reviews/WriteReviewDialog"));
+const ReviewMediaLightbox = lazy(() => import("@/components/storefront/reviews/ReviewMediaLightbox"));
 
 interface Props {
   productId: string;
