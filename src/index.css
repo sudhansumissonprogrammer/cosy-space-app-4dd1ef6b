@@ -542,6 +542,31 @@
   transform: translateY(-100%);
 }
 
+/* ── Premium UX: Smart mobile bottom nav show/hide ──
+   Zero-height fixed wrapper around the nav variants (which are themselves
+   `fixed bottom-0 inset-x-0`) so one transform slides the whole nav away
+   without touching each variant's markup. */
+.sf-smart-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  z-index: 40;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+.sf-smart-nav-hidden {
+  transform: translateY(140%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .smart-header,
+  .sf-smart-nav {
+    transition: none;
+  }
+}
+
+
 /* ── Premium UX: Quantity stepper bounce ── */
 @keyframes qty-bounce {
   0%,

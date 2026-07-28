@@ -1,60 +1,57 @@
 ## Goal
-Let store owners mark a coupon as **auto-apply** in the dashboard. That coupon then applies itself the moment a shopper lands on checkout (no code typing), while the shopper can still remove it. Discounts stack correctly with existing prepaid / partial payment logic and are shown transparently.
+
+Three connected changes across every storefront theme, built so cold home / category / PDP load speed is unchanged:
+
+1. Universal "smart" header + mobile bottom nav (hide on scroll down, reveal on scroll up).
+2. WhatsApp moves from the floating bubble into the header (replacing the account icon — account already lives in the bottom nav as "Orders").
+3. A new floating **Trust Video** button in the old WhatsApp spot that opens a reel-style, video-only player with a glassmorphic "See more details" CTA, powered by owner-uploaded videos and chained into the existing Shop by Video app.
 
 ---
 
-## 1. Database — add `auto_apply` flag on coupons
+## 1. Universal smart header + smart bottom nav
 
-Migration:
-- `ALTER TABLE public.coupons ADD COLUMN auto_apply boolean NOT NULL DEFAULT false;`
-- Partial unique index so only **one** auto-apply coupon can be active per store at a time (prevents ambiguity):
-  `CREATE UNIQUE INDEX coupons_one_auto_apply_per_store ON public.coupons(store_id) WHERE auto_apply = true AND is_active = true;`
-- Update RPC `get_store_auto_apply_coupon(_store_id uuid)` — returns the single active auto-apply coupon (code, discount_type, discount_value, min_order_amount, starts_at, expires_at). SECURITY DEFINER, `GRANT EXECUTE ... TO anon, authenticated` (checkout is public).
-- Update `validate_store_coupon` — no changes needed (still the source of truth on apply).
+Today `useSmartHeader()` is only wired into `CheckoutAwareLayout` (mobile header) and `DesktopNavBar`. Themes with their own headers (`MobileAppHeader` used by V3/V11, the V13 inline header, and the other V10–V22 layouts) never hide on scroll, and no bottom nav hides at all.
 
-## 2. Dashboard — `StoreCoupons.tsx`
+- Extend `useSmartHeader` into a shared `useSmartChrome()` returning `{ headerVisible, navVisible }`, driven by one rAF-throttled scroll listener (single listener, no per-component cost).
+- Apply the existing `smart-header` / `smart-header-hidden` CSS classes to every theme header: `MobileAppHeader`, `StorefrontLayoutV13`'s inline header, and any other layout that renders its own `<header>`.
+- Add matching `smart-nav` / `smart-nav-hidden` transform classes to `MobileBottomNavSwitcher` so all 11 nav variants inherit the behaviour from one wrapper (no edits inside each variant).
+- Always-visible rules: near page top (<80px), when the cart drawer/sheet/search overlay is open, and on checkout routes.
+- New universal toggle in Theme Settings → "Auto-hide header & nav on scroll" (default on), stored on `store_theme_config`. One switch controls both, all themes.
 
-- Add "Auto-apply" toggle to the create dialog (default off) and a new column in the table with an inline `Switch`.
-- Server-side toggle mutation calls update; if enabling and another auto-apply coupon exists, DB unique index rejects — surface a friendly toast ("Only one auto-apply coupon allowed. Disable the current one first.").
-- Small info line under the toggle: "Auto-apply coupons show as already applied on checkout. Shoppers can remove them."
+## 2. WhatsApp in the header
 
-## 3. Checkout — `src/pages/CheckoutV2Page.tsx`
+- `CheckoutAwareLayout`'s `ActionButtons` currently renders `AccountBadge`. Replace it with a `HeaderWhatsAppButton` (only when `store.whatsapp_number` is set; falls back to the account icon if not).
+- Same swap for `DesktopNavBar` and `MobileAppHeader`.
+- Remove the floating `FloatingWhatsApp` mount from `StorefrontShell`.
 
-- New query `["store-auto-apply-coupon", store.id]` calling the new RPC, staleTime 5 min.
-- In the existing "auto-apply" `useEffect` (currently only handles `urlCoupon` from `?coupon=` / sessionStorage), extend it:
-  - Priority: URL/session coupon → owner's auto-apply coupon.
-  - Guard with `autoAppliedCouponRef` and `appliedCoupon` so a shopper who removed it isn't re-nagged in the same session (`removeCoupon` already sets ref = false; introduce a separate `dismissedAutoCouponRef` so removal is sticky within the checkout session).
-  - Only apply once `subtotal > 0` and after `paymentConfig` is loaded (avoids racing the first mint).
-- Coupon pill UI: when the applied coupon has `auto_apply=true`, replace the "Have a coupon?" pill with a compact green banner "Coupon **CODE** auto-applied · you save ₹X · Remove". No behavioural changes to manual entry flow.
+## 3. Floating Trust Video reel
 
-## 4. Totals & payment display (no math change, only clarity)
+**Data (new, small migration)**
 
-Current invariants stay intact — verified against the code:
-- **Subtotal** shows original prices.
-- **Coupon discount** already appears as its own line (`−₹X`).
-- **Full / prepaid**: `prepaidDiscount` is calculated on `total` (which already has coupon subtracted), so both stack automatically. Only change: keep the two lines separate ("Coupon −₹100" and "Prepaid discount −₹100") — clearer than merging them into one "₹200" number and matches what already renders. If you'd rather merge, I'll add a "You save ₹200" summary line above the pay button (no change to the itemised breakdown).
-- **Partial payment**: existing rule preserved — coupon reduces the COD balance, advance stays as configured (so 1500 product − 100 coupon = 1400 total, ₹100 advance online, ₹1300 COD). Documented in a tooltip next to the advance amount.
+`store_trust_videos`: `id, store_id, video_url, poster_url, title, cta_label, cta_target (category/product/url), sort_order, is_active, created_at` + GRANTs (`anon` SELECT for active rows, owner full via RLS) and RLS policies scoped to the store owner.
 
-## 5. Server — `place-order` edge function
+**Dashboard — Theme Settings → "Trust Videos"**
 
-- No functional change to pricing (server already re-validates coupon via `validate_store_coupon` + `claim_coupon`).
-- Add: if the client-sent `coupon_id` doesn't match the store's current auto-apply coupon **and** the client didn't send any `coupon_id`, fall back to auto-applying it server-side too. This closes the race where the client mints an order in the ~200 ms before the auto-apply query resolves. Safe because it still runs the same validation + atomic claim.
+- Upload many videos; each row gets a title, CTA label, and a CTA target picker (any category, product, or custom path).
+- Reuses the existing `uploadCompressedVideo` pipeline (WebCodecs H.264, 1080p cap, ~3.5 Mbps, poster frame auto-generated) → R2 CDN. Compression only downsizes when it actually saves bytes, so quality is preserved.
+- Drag-reorder, toggle active, delete.
 
-## 6. Snapshot / re-mint safety
+**Storefront — zero cold-load cost**
 
-`paymentSnapshot` already includes `appliedCoupon?.id` + `couponDiscount`, so auto-applied coupons will trigger the existing re-mint path exactly like manual coupons. No new debounce/throttle needed.
+- The floating button is a tiny static pill (glass, no JS video). It renders only if the store has ≥1 active trust video — that flag rides along in the existing storefront shell payload, so no extra request on cold load.
+- Nothing video-related is fetched or parsed until the button is tapped: the player component, the video list query, and the media itself are all `lazy()` / on-demand. `preload="none"` until the sheet opens.
+- Player: full-screen reel, vertical swipe between videos, autoplay muted with tap-to-unmute, no chrome, no titles floating around — just the video plus a glassmorphic bottom CTA ("See more details") that navigates to the owner's chosen target.
+- After the owner's trust videos finish, if the **Shop by Video** app is enabled for the store, the reel continues into product videos (same `products.video_url` source the carousel uses), with "See more details" going to that product's PDP. If the app is off, the reel just ends.
+- Applies to all themes because it mounts once in `StorefrontShell`, same place the WhatsApp bubble was.
 
-## 7. Verification checklist
+## UI direction
 
-- Owner marks CODE10 as auto-apply → visit checkout in incognito → coupon banner shows applied, discount reflected in subtotal, prepaid, and partial breakdowns.
-- Shopper clicks "Remove" → coupon clears, does not re-apply on further edits, does re-apply after page reload.
-- Two auto-apply toggles on two coupons → dashboard blocks with clear error.
-- Coupon + prepaid discount stack correctly (prepaid computed on post-coupon total).
-- Partial payment: advance stays at configured value, coupon reduces COD balance.
-- Order row minted server-side has correct `coupon_id`, `subtotal`, `coupon_discount`, `total`.
+Frosted glass throughout: translucent blurred pills for the floating button and CTA, thin light borders, soft shadows, spring-ish scale on tap, respecting each theme's `--storefront-*` colour variables so it never clashes.
 
 ## Technical notes
 
-- Files touched: `supabase/migrations/<new>.sql`, `supabase/functions/place-order/index.ts`, `src/pages/StoreCoupons.tsx`, `src/pages/CheckoutV2Page.tsx`.
-- No changes to storefront theme layouts, cart pages, or product pages.
-- Cache: dashboard mutation calls existing `purgeStore()`; checkout query staleTime 5 min so toggling auto-apply reflects within 5 min on live storefronts (or immediately after purge propagation).
+- No new dependencies.
+- One scroll listener shared by header + nav; transforms only (no layout thrash).
+- Trust-video bundle is a separate lazy chunk, not referenced from any home/category/PDP critical path.
+- Migration includes GRANTs + RLS in the same statement block.
+- Rollout: `serdiyajewellers` first (owner uploads its videos), but the feature is available to every store from the dashboard.

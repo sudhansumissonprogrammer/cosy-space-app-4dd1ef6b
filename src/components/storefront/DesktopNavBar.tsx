@@ -11,6 +11,8 @@ import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { useSmartHeader } from "@/hooks/useSmartHeader";
+import HeaderWhatsAppButton from "@/components/storefront/HeaderWhatsAppButton";
+
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 
@@ -212,6 +214,14 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
                 <UserIcon className="h-5 w-5" />
               </Link>
             )}
+
+            {/* WhatsApp — moved out of the floating bubble slot */}
+            <HeaderWhatsAppButton
+              storeName={store.name}
+              whatsappNumber={(store as any).whatsapp_number}
+              className="flex h-9 w-9 items-center justify-center rounded-md transition-opacity hover:opacity-70"
+            />
+
 
             {/* Wishlist */}
             <Link

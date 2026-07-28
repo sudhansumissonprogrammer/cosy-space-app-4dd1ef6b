@@ -6,6 +6,9 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavIcons } from "@/hooks/useNavIcons";
+import { useSmartChrome } from "@/hooks/useSmartChrome";
+import HeaderWhatsAppButton from "@/components/storefront/HeaderWhatsAppButton";
+
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/contexts/CartContext";
@@ -21,6 +24,8 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const getIcon = useNavIcons(store.id);
+  const { headerVisible } = useSmartChrome();
+
   const MenuIcon = getIcon("menu");
   const SearchIcon = getIcon("search");
   const CartIcon = getIcon("cart");
@@ -37,7 +42,7 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
 
   return (
     <>
-      <header className={`header-shrink ${scrolled ? "is-shrunk" : ""} sticky top-0 z-30 border-b`} style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", borderColor: "var(--storefront-text, hsl(var(--foreground)))10", minHeight: 60 }}>
+      <header className={`header-shrink ${scrolled ? "is-shrunk" : ""} smart-header ${headerVisible ? "" : "smart-header-hidden"} sticky top-0 z-30 border-b`} style={{ backgroundColor: "var(--storefront-bg, hsl(var(--background)))", borderColor: "var(--storefront-text, hsl(var(--foreground)))10", minHeight: 60 }}>
         <div className="flex items-center gap-2 px-3 py-2.5">
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
             <SheetTrigger asChild>
@@ -67,6 +72,9 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
             <SearchIcon className="h-4 w-4 shrink-0" style={{ color: "var(--storefront-text, hsl(var(--foreground)))50" }} aria-hidden="true" />
             <span style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }}>Search products...</span>
           </button>
+
+          <HeaderWhatsAppButton storeName={store.name} whatsappNumber={(store as any).whatsapp_number} />
+
 
           <button onClick={openCart} className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors" aria-label="Open cart">
             <CartIcon className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />

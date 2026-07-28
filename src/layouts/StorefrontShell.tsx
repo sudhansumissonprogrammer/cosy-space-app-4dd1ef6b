@@ -28,7 +28,7 @@ const SideCart = lazy(() => import("@/components/storefront/SideCart"));
  * React-level skeletons are intentionally REMOVED to avoid the
  * "double skeleton" flash and to ship less JS per theme.
  */
-const FloatingWhatsApp = lazy(() => import("@/components/storefront/FloatingWhatsApp"));
+const TrustVideoLauncher = lazy(() => import("@/components/storefront/trust/TrustVideoLauncher"));
 const DynamicPwaManifest = lazy(() => import("@/components/storefront/DynamicPwaManifest"));
 const SmartInstallPrompt = lazy(() => import("@/components/SmartInstallPrompt"));
 const ExitIntentPopup = lazy(() => import("@/components/storefront/ExitIntentPopup"));
@@ -138,6 +138,14 @@ export default function StorefrontShell({
     if (!store?.id) return;
     loadGoogleFonts(themeConfig);
   }, [store?.id, themeConfig?.heading_font, themeConfig?.body_font]);
+
+  // Publish the store's "auto-hide header/nav on scroll" preference globally so
+  // useSmartChrome can read it without prop-threading through 20 layouts.
+  useEffect(() => {
+    const on = (themeConfig as any)?.auto_hide_chrome !== false;
+    document.documentElement.dataset.autoHideChrome = on ? "1" : "0";
+  }, [(themeConfig as any)?.auto_hide_chrome]);
+
 
   // Listen for live theme preview messages
   const previewOverride = useThemePreview(store?.id);
@@ -381,11 +389,15 @@ export default function StorefrontShell({
           <SideCart store={store} />
         </Suspense>
       )}
+      {/* WhatsApp now lives in the header. This slot hosts the trust-video reel
+          launcher — it self-hides when the store has no active trust videos and
+          only fetches the player chunk + media on tap. */}
       {overlaysReady && showWhatsApp && !/\/checkout(\/|$)/.test(pathname) && (
         <Suspense fallback={null}>
-          <FloatingWhatsApp store={store} />
+          <TrustVideoLauncher storeId={store.id} storeSlug={store.slug} />
         </Suspense>
       )}
+
       {/* ExitIntentPopup permanently disabled — SAVE100 reserved for WhatsApp recovery links only.
           Coupon auto-applies at checkout via ?coupon=SAVE100 in the recovery link. */}
       {overlaysReady && (

@@ -12,6 +12,8 @@
  * via the parent layout's padding.
  */
 import { lazy, Suspense } from "react";
+import { useSmartChrome } from "@/hooks/useSmartChrome";
+
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 const MobileBottomNav = lazy(() => import("./MobileBottomNav"));
@@ -64,9 +66,17 @@ export default function MobileBottomNavSwitcher({ store, variant }: Props) {
     }
   })();
 
+  const { navVisible } = useSmartChrome();
+
+  // Zero-height fixed wrapper: the nav variants are themselves
+  // `fixed bottom-0 inset-x-0`, so they resolve against this box and land in
+  // exactly the same place — but now a single transform can slide them away.
   return (
-    <Suspense fallback={null}>
-      <Component store={store} />
-    </Suspense>
+    <div className={`sf-smart-nav ${navVisible ? "" : "sf-smart-nav-hidden"}`}>
+      <Suspense fallback={null}>
+        <Component store={store} />
+      </Suspense>
+    </div>
   );
 }
+

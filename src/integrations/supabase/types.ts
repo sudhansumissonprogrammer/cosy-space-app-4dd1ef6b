@@ -3084,6 +3084,7 @@ export type Database = {
       store_theme_config: {
         Row: {
           accent_color: string
+          auto_hide_chrome: boolean
           background_color: string
           bilingual_cta: boolean
           body_font: string
@@ -3114,6 +3115,7 @@ export type Database = {
         }
         Insert: {
           accent_color?: string
+          auto_hide_chrome?: boolean
           background_color?: string
           bilingual_cta?: boolean
           body_font?: string
@@ -3144,6 +3146,7 @@ export type Database = {
         }
         Update: {
           accent_color?: string
+          auto_hide_chrome?: boolean
           background_color?: string
           bilingual_cta?: boolean
           body_font?: string
@@ -3184,6 +3187,63 @@ export type Database = {
             foreignKeyName: "store_theme_config_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: true
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_trust_videos: {
+        Row: {
+          created_at: string
+          cta_label: string
+          cta_target: string | null
+          id: string
+          is_active: boolean
+          poster_url: string | null
+          sort_order: number
+          store_id: string
+          title: string | null
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          cta_label?: string
+          cta_target?: string | null
+          id?: string
+          is_active?: boolean
+          poster_url?: string | null
+          sort_order?: number
+          store_id: string
+          title?: string | null
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          cta_label?: string
+          cta_target?: string | null
+          id?: string
+          is_active?: boolean
+          poster_url?: string | null
+          sort_order?: number
+          store_id?: string
+          title?: string | null
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_trust_videos_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_trust_videos_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "stores_public"
             referencedColumns: ["id"]
           },
