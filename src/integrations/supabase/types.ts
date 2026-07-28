@@ -2135,31 +2135,40 @@ export type Database = {
           created_at: string
           customer_name: string
           id: string
+          is_hidden: boolean
           is_verified: boolean
+          media: Json
           product_id: string
           rating: number
           review_text: string | null
           store_id: string
+          title: string | null
         }
         Insert: {
           created_at?: string
           customer_name: string
           id?: string
+          is_hidden?: boolean
           is_verified?: boolean
+          media?: Json
           product_id: string
           rating: number
           review_text?: string | null
           store_id: string
+          title?: string | null
         }
         Update: {
           created_at?: string
           customer_name?: string
           id?: string
+          is_hidden?: boolean
           is_verified?: boolean
+          media?: Json
           product_id?: string
           rating?: number
           review_text?: string | null
           store_id?: string
+          title?: string | null
         }
         Relationships: [
           {

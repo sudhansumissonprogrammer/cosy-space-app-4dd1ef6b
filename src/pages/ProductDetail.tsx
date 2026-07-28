@@ -49,7 +49,7 @@ import AutoCouponHint from "@/components/storefront/AutoCouponHint";
 import { useWaCouponPreview } from "@/hooks/useWaCouponPreview";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
-const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
+const ReviewsShowcase = lazy(() => import("@/components/storefront/pdp/ReviewsShowcase"));
 const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
 const VideoSlide = lazy(() =>
   import("@/components/storefront/VideoSlide").then((m) => ({ default: m.VideoSlide }))
@@ -529,24 +529,8 @@ export default function ProductDetail() {
   })();
 
 
-  const fakeReviews = useMemo(() => [], []);
+  // Reviews (incl. photo/video) are fetched inside <ReviewsShowcase />
 
-  // Fetch real reviews
-  const { data: realReviews, refetch: refetchReviews } = useQuery({
-    queryKey: ["product-reviews", product?.id],
-    queryFn: async () => {
-      const { PRODUCT_REVIEW_FIELDS } = await import("@/lib/productSelectors");
-      const { data } = await supabase
-        .from("product_reviews")
-        .select(PRODUCT_REVIEW_FIELDS)
-        .eq("product_id", product!.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      return (data || []) as { id: string; customer_name: string; rating: number; review_text: string | null; is_verified: boolean; created_at: string }[];
-    },
-    enabled: !!product?.id,
-    staleTime: 2 * 60 * 1000,
-  });
 
   // Display-only WhatsApp coupon price (no cart/order pricing change).
   const waPreviewBase = product
@@ -1152,7 +1136,7 @@ export default function ProductDetail() {
         {/* Customer Reviews — deferred until near viewport */}
         <DeferUntilVisible rootMargin="600px" minHeight={240}>
           <Suspense fallback={null}>
-            <CustomerReviews reviews={fakeReviews} realReviews={realReviews || []} rating={stats.rating} reviewCount={stats.reviewCount} productId={product.id} storeId={store.id} onReviewSubmitted={refetchReviews} />
+            <ReviewsShowcase productId={product.id} storeId={store.id} storeSlug={store.slug} productName={product.name} />
           </Suspense>
         </DeferUntilVisible>
       </div>
