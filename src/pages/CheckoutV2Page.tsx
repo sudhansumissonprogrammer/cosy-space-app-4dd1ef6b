@@ -2315,8 +2315,10 @@ export default function CheckoutV2Page() {
     }
 
     // Wait for the auto-apply coupon lookups (they resolve in ~100ms) so the
-    // minted amount already includes the discount.
-    if (!couponsResolvedRef.current && !appliedCoupon) {
+    // minted amount already includes the discount. Capped at ~1.5s so a slow
+    // RPC can never block checkout.
+    if (!couponsResolvedRef.current && !appliedCoupon && couponWaitTriesRef.current < 10) {
+      couponWaitTriesRef.current += 1;
       window.setTimeout(() => { void createOrderAndIntents(); }, 150);
       return;
     }
