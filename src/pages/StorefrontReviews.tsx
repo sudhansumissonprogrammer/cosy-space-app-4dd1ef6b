@@ -30,11 +30,12 @@ export default function StorefrontReviews() {
         .select(`${REVIEW_SELECT},products(name,slug)`)
         .eq("store_id", store.id)
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(60);
       return (data || []).map(normalizeReview) as StoreReview[];
     },
     enabled: !!store?.id,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const reviews = data || [];
