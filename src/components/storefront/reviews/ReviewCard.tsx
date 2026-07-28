@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Star, BadgeCheck, Play } from "lucide-react";
+import { Star, BadgeCheck, Play, Expand } from "lucide-react";
 import ReviewMediaLightbox from "./ReviewMediaLightbox";
 import { formatReviewDate, type StoreReview } from "./reviewTypes";
 
