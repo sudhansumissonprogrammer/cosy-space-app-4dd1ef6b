@@ -170,7 +170,13 @@ export default function CheckoutAwareLayout({
           <SearchIcon className={iconSize} />
         </button>
       ) : (
-        <AccountBadge slug={store.slug} storeId={store.id} />
+        <HeaderWhatsAppButton
+          storeName={store.name}
+          whatsappNumber={(store as any).whatsapp_number}
+          className="flex h-10 w-10 items-center justify-center rounded-md transition-opacity hover:opacity-70"
+          iconClassName={iconSize}
+        />
+
       )}
       {!hideWishlistAndShare && <WishlistBadge slug={store.slug} storeId={store.id} />}
       {!hideWishlistAndShare && <Suspense fallback={null}><LazyShareStoreDialog storeSlug={store.slug} storeName={store.name} customDomain={(store as any).custom_domain} iconOnly /></Suspense>}
