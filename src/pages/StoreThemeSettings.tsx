@@ -1908,6 +1908,42 @@ export default function StoreThemeSettings() {
         )}
 
         {(
+          <AccordionItem value="auto-hide-chrome" className="rounded-xl border border-border bg-card px-4">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex flex-col items-start text-left">
+                <span className="text-sm font-semibold">Auto-hide header &amp; bottom nav on scroll</span>
+                <span className="text-xs text-muted-foreground font-normal">Header and mobile nav slide away while scrolling down and come back instantly on scroll up</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-1 pb-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  Gives shoppers more screen space. Works on every theme. On by default.
+                </p>
+                <Switch
+                  checked={(config as any).auto_hide_chrome !== false}
+                  onCheckedChange={(checked) => updateField("auto_hide_chrome" as any, checked)}
+                />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {(
+          <AccordionItem value="trust-videos" className="rounded-xl border border-border bg-card px-4">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex flex-col items-start text-left">
+                <span className="text-sm font-semibold">Trust Videos (floating reel)</span>
+                <span className="text-xs text-muted-foreground font-normal">Upload customer/trust clips shown in the floating video button on your storefront</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-1 pb-4">
+              <TrustVideosManager storeId={storeId || undefined} />
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {(
           <AccordionItem value="premium-header-badge" className="rounded-xl border border-border bg-card px-4">
             <AccordionTrigger className="hover:no-underline">
               <div className="flex flex-col items-start text-left">
