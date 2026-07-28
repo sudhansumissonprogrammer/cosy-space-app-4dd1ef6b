@@ -1254,7 +1254,25 @@ export default function ProductDetail() {
                           <Zap className="inline h-3 w-3 text-warning mr-0.5" />
                           Deliver to <strong className="text-foreground">{saved.fullName}</strong> · {saved.pincode}
                         </p>
-                        <p className="text-lg font-extrabold text-foreground">{formatPrice((variantPrice * quantity), currency)}</p>
+                        {(() => {
+                          // Display-only: WhatsApp arrivals see the post-coupon
+                          // price here too. Cart/order pricing is untouched —
+                          // the real discount is applied by the coupon at checkout.
+                          const lineTotal = variantPrice * quantity;
+                          if (waPreview.active && lineTotal > waPreview.discount) {
+                            return (
+                              <p className="flex items-baseline gap-1.5">
+                                <span className="text-lg font-extrabold text-red-600">
+                                  {formatPrice(lineTotal - waPreview.discount, currency)}
+                                </span>
+                                <span className="text-xs font-semibold text-muted-foreground line-through">
+                                  {formatPrice(lineTotal, currency)}
+                                </span>
+                              </p>
+                            );
+                          }
+                          return <p className="text-lg font-extrabold text-foreground">{formatPrice(lineTotal, currency)}</p>;
+                        })()}
                       </div>
                       <button
                         onClick={() => {
