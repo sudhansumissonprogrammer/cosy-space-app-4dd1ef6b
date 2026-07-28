@@ -12,34 +12,78 @@ export interface ReviewMedia {
   type: "image" | "video";
 }
 
-const MAX_IMAGE_DIM = 1200;
+const MAX_IMAGE_DIM = 1400;
+const WEBP_QUALITY = 0.8;
+/** Hard cap enforced server-side for images */
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
-async function compressImage(file: File): Promise<File> {
+async function decodeToBitmapSource(file: File): Promise<CanvasImageSource & { width: number; height: number }> {
   try {
     const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, MAX_IMAGE_DIM / Math.max(bitmap.width, bitmap.height));
-    const w = Math.round(bitmap.width * scale);
-    const h = Math.round(bitmap.height * scale);
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
-    ctx.drawImage(bitmap, 0, 0, w, h);
-    bitmap.close?.();
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/webp", 0.82),
-    );
-    if (!blob) return file;
-    return new File([blob], `review.webp`, { type: "image/webp" });
+    return bitmap as any;
   } catch {
-    return file;
+    // Fallback for formats createImageBitmap can't handle directly (some HEIC/iOS cases)
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => reject(new Error("decode failed"));
+        el.src = url;
+      });
+      return Object.assign(img, { width: img.naturalWidth, height: img.naturalHeight }) as any;
+    } finally {
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
   }
 }
 
+/** Always converts to WebP; throws a friendly error if the image can't be read. */
+async function compressImage(file: File): Promise<File> {
+  const src = await decodeToBitmapSource(file).catch(() => null);
+  if (!src || !src.width || !src.height) {
+    throw new Error("This image format isn't supported. Please try a JPG or PNG photo.");
+  }
+  const scale = Math.min(1, MAX_IMAGE_DIM / Math.max(src.width, src.height));
+  const w = Math.max(1, Math.round(src.width * scale));
+  const h = Math.max(1, Math.round(src.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not process this photo. Please try another one.");
+  ctx.drawImage(src as any, 0, 0, w, h);
+  (src as any).close?.();
+
+  let quality = WEBP_QUALITY;
+  let blob: Blob | null = null;
+  for (let i = 0; i < 4; i++) {
+    blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", quality));
+    // Safari <14 returns PNG when webp is unsupported — accept it if small enough
+    if (!blob) break;
+    if (blob.size <= MAX_IMAGE_BYTES) break;
+    quality -= 0.15;
+  }
+  if (!blob) {
+    blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
+  }
+  if (!blob) throw new Error("Could not process this photo. Please try another one.");
+  if (blob.size > MAX_IMAGE_BYTES) throw new Error("Photo is too large. Please pick a smaller one.");
+
+  const isWebp = blob.type === "image/webp";
+  return new File([blob], isWebp ? "review.webp" : "review.jpg", {
+    type: isWebp ? "image/webp" : "image/jpeg",
+  });
+}
+
+
 export async function uploadReviewMedia(file: File, storeId: string): Promise<ReviewMedia> {
   const isVideo = (file.type || "").startsWith("video/");
+  if (isVideo && file.size > 40 * 1024 * 1024) {
+    throw new Error("Video is too large (max 40MB). Please pick a shorter clip.");
+  }
   const payload = isVideo ? file : await compressImage(file);
+
 
   const form = new FormData();
   form.append("file", payload);

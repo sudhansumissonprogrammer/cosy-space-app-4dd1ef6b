@@ -60,9 +60,11 @@ export default function WriteReviewDialog({ productId, storeId, productName, onC
     });
     setSubmitting(false);
     if (error) {
-      toast.error("Could not submit your review. Please try again.");
+      console.error("[review] insert failed", error);
+      toast.error(error.message || "Could not submit your review. Please try again.");
       return;
     }
+
     toast.success("Thanks! Your review has been posted 🎉");
     onSubmitted();
     onClose();
