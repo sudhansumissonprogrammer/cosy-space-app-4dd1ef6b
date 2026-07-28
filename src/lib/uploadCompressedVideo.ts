@@ -177,23 +177,32 @@ export async function uploadCompressedVideo(
   const posterBlob = await generatePoster(file);
   opts.onProgress?.(0.1);
 
-  // Try WebCodecs compression (1080p cap, 3.5 Mbps H.264). Falls back to raw on any error.
+  // NOTE: in-browser WebCodecs re-encoding was removed from the default path.
+  // It seeked frame-by-frame (30fps x up to 60s = ~1800 seeks) which took
+  // minutes on desktop and effectively hung on phones. Phone cameras already
+  // record H.264 MP4, so we upload as-is. Only very large files (>25MB) get
+  // compressed, and even then only with a hard time budget.
   let uploadBlob: File | Blob = file;
   let uploadName = file.name;
   let uploadExt = inferExt(file);
   let compressedBytes = file.size;
 
-  if (isWebCodecsSupported()) {
+  const COMPRESS_THRESHOLD = 25 * 1024 * 1024;
+  const COMPRESS_BUDGET_MS = 45_000;
+
+  if (file.size > COMPRESS_THRESHOLD && isWebCodecsSupported()) {
     try {
-      const result = await compressVideo(file, {
-        maxDimension: 1080,
-        videoBitrate: 3_500_000,
-        audioBitrate: 96_000,
-        keepAudio: true,
-        onProgress: (p) => opts.onProgress?.(0.1 + p * 0.6),
-      });
-      // Only use compressed if it actually saved bytes
-      if (result.blob.size > 0 && result.blob.size < file.size) {
+      const result = await Promise.race([
+        compressVideo(file, {
+          maxDimension: 1080,
+          videoBitrate: 3_500_000,
+          audioBitrate: 96_000,
+          keepAudio: true,
+          onProgress: (p) => opts.onProgress?.(0.1 + p * 0.6),
+        }),
+        new Promise<null>((res) => setTimeout(() => res(null), COMPRESS_BUDGET_MS)),
+      ]);
+      if (result && result.blob.size > 0 && result.blob.size < file.size) {
         uploadBlob = result.blob;
         uploadName = file.name.replace(/\.[^.]+$/, "") + ".mp4";
         uploadExt = "mp4";
