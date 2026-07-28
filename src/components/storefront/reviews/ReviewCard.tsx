@@ -31,6 +31,10 @@ export default function ReviewCard({
 
   const open = (i: number) => (onOpenMedia ? onOpenMedia(i) : setLightbox(i));
 
+  // Photo-only reviews: no real name and nothing written — show only the rating.
+  const genericName = !review.customer_name || /^(verified buyer|customer|anonymous)$/i.test(review.customer_name.trim());
+  const anonymousPhotoOnly = genericName && !review.review_text && !review.title;
+
   return (
     <article className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/15 bg-neutral-900 shadow-[0_8px_28px_-10px_rgba(0,0,0,0.5)]">
       {hero ? (
