@@ -17,6 +17,8 @@ import ThemeStickySaveBar from "@/components/dashboard/theme/ThemeStickySaveBar"
 import ThemeMobilePreviewDrawer from "@/components/dashboard/theme/ThemeMobilePreviewDrawer";
 import ThemeCategoryStyleIcon from "@/components/dashboard/theme/ThemeCategoryStyleIcon";
 import NavIconPicker from "@/components/dashboard/theme/NavIconPicker";
+import TrustVideosManager from "@/components/dashboard/theme/TrustVideosManager";
+
 import { getHeadingTuning, getBodyTuning, getPairingAdvice } from "@/lib/themeUtils";
 
 // Mini preview for each mobile bottom nav variant in the picker
