@@ -75,6 +75,7 @@ export function AppSidebar() {
     ? [
         { title: "Products", url: `/dashboard/stores/${storeSlug}/products`, icon: Package, menuKey: "products" },
         { title: "Best Sellers", url: `/dashboard/stores/${storeSlug}/best-sellers`, icon: Star, menuKey: "best_sellers" },
+        { title: "Reviews", url: `/dashboard/stores/${storeSlug}/reviews`, icon: MessageCircle, menuKey: "reviews" },
         { title: "Categories", url: `/dashboard/stores/${storeSlug}/categories`, icon: FolderOpen, menuKey: "categories" },
         { title: "Media Library", url: `/dashboard/stores/${storeSlug}/media`, icon: ImageIcon, menuKey: "media_library" },
         { title: "Bulk Upload", url: `/dashboard/stores/${storeSlug}/products/bulk-upload`, icon: Upload, menuKey: "bulk_upload" },
