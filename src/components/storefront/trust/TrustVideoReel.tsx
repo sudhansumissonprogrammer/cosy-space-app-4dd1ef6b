@@ -142,13 +142,15 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
             {/* Glassmorphic CTA */}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 p-4 pb-8">
               <div className="mx-auto flex max-w-sm flex-col gap-2">
-                <button
-                  onClick={() => handleCta(s)}
-                  className="pointer-events-auto flex w-full items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/15 px-5 py-3.5 text-[15px] font-semibold text-white shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-transform active:scale-[0.97]"
-                >
-                  {s.ctaLabel}
-                  <ArrowRight className="h-4 w-4" />
-                </button>
+                {s.ctaLabel && (s.to || s.href) && (
+                  <button
+                    onClick={() => handleCta(s)}
+                    className="pointer-events-auto flex w-full items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/15 px-5 py-3.5 text-[15px] font-semibold text-white shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-transform active:scale-[0.97]"
+                  >
+                    {s.ctaLabel}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                )}
                 {i < slides.length - 1 && (
                   <button
                     onClick={() => goNext(i)}

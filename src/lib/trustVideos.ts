@@ -6,7 +6,8 @@ export interface TrustSlide {
   videoUrl: string;
   posterUrl?: string | null;
   title?: string | null;
-  ctaLabel: string;
+  /** when empty/absent, no CTA button is rendered */
+  ctaLabel?: string | null;
   /** in-app path (react-router) */
   to?: string;
   /** external absolute URL */
@@ -26,7 +27,7 @@ interface TrustVideoRow {
 /** Resolve an owner-entered CTA target into a router path or external link. */
 function resolveTarget(slug: string, target?: string | null): { to?: string; href?: string } {
   const t = (target || "").trim();
-  if (!t) return { to: storefrontPath(slug, "shop") };
+  if (!t || t === "none") return {};
   if (/^https?:\/\//i.test(t)) return { href: t };
   const clean = t.replace(/^\/+/, "");
   return { to: storefrontPath(slug, clean) };
@@ -55,7 +56,7 @@ export async function fetchTrustReel(storeId: string, slug: string): Promise<Tru
       videoUrl: r.video_url,
       posterUrl: r.poster_url,
       title: r.title,
-      ctaLabel: r.cta_label || "See more details",
+      ctaLabel: (r.cta_label || "").trim() || null,
       ...resolveTarget(slug, r.cta_target),
     });
   }
