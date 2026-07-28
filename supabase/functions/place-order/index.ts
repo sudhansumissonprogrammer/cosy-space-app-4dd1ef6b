@@ -863,6 +863,9 @@ Deno.serve(async (req) => {
         customer_order_index: priorOrderCount + 1,
         is_repeat_customer: priorOrderCount > 0,
         attribution: attributionClean,
+        applied_coupon_id: coupon_id || null,
+        coupon_discount: Math.round(serverDiscount * 100) / 100,
+
       };
 
     let createdOrder: { id: string } | null = null;
