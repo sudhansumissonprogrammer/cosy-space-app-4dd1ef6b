@@ -70,7 +70,7 @@ export default function ReviewCard({
                 <button
                   key={`${m.url}-${i}`}
                   type="button"
-                  onClick={() => setLightbox(i + 1)}
+                  onClick={() => open(i + 1)}
                   className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-white/40 shadow-md transition-transform active:scale-95"
                   aria-label="View media"
                 >
