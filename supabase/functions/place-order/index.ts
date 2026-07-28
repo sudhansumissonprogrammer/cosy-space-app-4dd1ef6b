@@ -709,10 +709,22 @@ Deno.serve(async (req) => {
     // Replace client-supplied total + coupon_id with server-verified values.
     order.total = serverTotal;
     coupon_id = validCouponId;
+    // Always rebuild the notes field from scratch. On a remint (shopper
+    // switches full → partial on an existing pending order) the old
+    // "Prepaid discount" line would otherwise stick around on a partial
+    // order — and if `notes` was undefined the UPDATE dropped the key
+    // entirely, leaving the stale line in the DB. Strip + re-add.
+    const baseNotes = String(order.notes ?? "")
+      .split("\n")
+      .filter((l) => !/^\s*Prepaid discount:/i.test(l))
+      .join("\n")
+      .trim();
+    order.notes = baseNotes || null;
     if (prepaidDiscount > 0) {
       const note = `Prepaid discount: -${prepaidDiscount.toFixed(2)}`;
       order.notes = order.notes ? `${order.notes}\n${note}` : note;
     }
+
 
     // ────────────────────────────────────────────────────────────────
     // Server-side partial payment calculation (store-level).
