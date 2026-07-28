@@ -18,7 +18,9 @@ import {
   EyeOff,
   Star,
   Loader2,
+  Pencil,
 } from "lucide-react";
+import EditReviewDialog from "@/components/dashboard/EditReviewDialog";
 
 interface ReviewRow {
   id: string;
