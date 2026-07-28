@@ -189,6 +189,7 @@ export default function WriteReviewDialog({ productId, storeId, productName, onC
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
