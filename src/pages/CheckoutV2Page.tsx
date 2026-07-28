@@ -955,7 +955,7 @@ export default function CheckoutV2Page() {
   };
 
   // Store-owner configured auto-apply coupon (store-wide, shown on PDP too)
-  const { data: autoApplyCoupon } = useQuery({
+  const { data: autoApplyCoupon, isFetched: autoCouponFetched } = useQuery({
     queryKey: ["store-auto-apply-coupon", store?.id],
     enabled: !!store?.id,
     staleTime: 5 * 60 * 1000,
@@ -967,7 +967,7 @@ export default function CheckoutV2Page() {
 
   // WhatsApp-exclusive auto coupon — only for shoppers who arrived from a
   // WhatsApp marketing/recovery message.
-  const { data: waCoupon } = useQuery({
+  const { data: waCoupon, isFetched: waCouponFetched } = useQuery({
     queryKey: ["store-wa-coupon", store?.id],
     enabled: !!store?.id,
     staleTime: 5 * 60 * 1000,
@@ -976,6 +976,13 @@ export default function CheckoutV2Page() {
       return Array.isArray(data) ? data[0] ?? null : data ?? null;
     },
   });
+
+  // The order/UPI amount must never be minted before we know whether an
+  // auto-apply coupon exists — otherwise the shopper is charged the
+  // undiscounted amount while the server books the discounted total.
+  const couponsResolvedRef = useRef(false);
+  couponsResolvedRef.current = !store?.id || (autoCouponFetched && waCouponFetched);
+
 
   useEffect(() => {
     if (autoAppliedCouponRef.current || appliedCoupon) return;
