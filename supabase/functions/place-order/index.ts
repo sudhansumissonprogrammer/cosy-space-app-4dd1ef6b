@@ -324,16 +324,20 @@ Deno.serve(async (req) => {
     if (checkout_token) {
       const { data: existingOrder } = await supabase
         .from("orders")
-        .select("id, order_number, status, applied_coupon_id")
+        .select("id, order_number, status, applied_coupon_id, payment_verified")
         .eq("store_id", store_id)
         .eq("checkout_token", checkout_token)
         .maybeSingle();
 
       if (existingOrder) {
+        // A cancelled/failed row can still be payment_verified (customer paid,
+        // then cancelled). Rewriting that row into a fresh pending attempt
+        // would carry `payment_verified = true` onto an unpaid order.
         const reusableStatuses = new Set(["pending", "cancelled", "failed"]);
-        if (reusableStatuses.has(String(existingOrder.status || ""))) {
+        if (reusableStatuses.has(String(existingOrder.status || "")) && !existingOrder.payment_verified) {
           reusableOrder = existingOrder as typeof reusableOrder;
         } else {
+
         const orderNumber = existingOrder.order_number
           ? `#${1000 + existingOrder.order_number}`
           : `#${existingOrder.id.slice(0, 8).toUpperCase()}`;
