@@ -68,8 +68,9 @@ export default function WriteReviewDialog({ productId, storeId, productName, onC
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center bg-foreground/60 p-0 sm:p-4" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-[2147483100] flex items-end sm:items-center justify-center bg-foreground/60 p-0 sm:p-4" onClick={onClose}>
+
       <div
         className="w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-background border border-border shadow-xl animate-in slide-in-from-bottom-4 duration-200"
         onClick={(e) => e.stopPropagation()}
