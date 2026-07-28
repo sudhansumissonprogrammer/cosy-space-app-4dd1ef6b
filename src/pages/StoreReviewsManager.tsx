@@ -326,6 +326,18 @@ export default function StoreReviewsManager() {
           </div>
         )}
       </section>
+
+      {editing && storeId && (
+        <EditReviewDialog
+          storeId={storeId}
+          review={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            refetch();
+            invalidate();
+          }}
+        />
+      )}
     </div>
   );
 }
