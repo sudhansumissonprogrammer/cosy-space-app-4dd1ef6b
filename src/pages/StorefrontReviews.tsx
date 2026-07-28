@@ -1,5 +1,5 @@
 import { useMemo, useState, lazy, Suspense } from "react";
-import { useOutletContext, Link, useNavigate } from "react-router-dom";
+import { useOutletContext, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { storefrontPath } from "@/lib/subdomain";
