@@ -50,6 +50,7 @@ import { useWaCouponPreview } from "@/hooks/useWaCouponPreview";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const ReviewsShowcase = lazy(() => import("@/components/storefront/pdp/ReviewsShowcase"));
+import PdpReviewsBadge from "@/components/storefront/pdp/PdpReviewsBadge";
 const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
 const VideoSlide = lazy(() =>
   import("@/components/storefront/VideoSlide").then((m) => ({ default: m.VideoSlide }))
