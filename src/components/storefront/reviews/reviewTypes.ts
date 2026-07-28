@@ -8,11 +8,13 @@ export interface StoreReview {
   is_verified: boolean;
   created_at: string;
   media: { url: string; type: "image" | "video" }[];
+  pinned_rank?: number | null;
+  is_hidden?: boolean;
   products?: { name: string; slug: string } | null;
 }
 
 export const REVIEW_SELECT =
-  "id,product_id,customer_name,rating,title,review_text,is_verified,created_at,media";
+  "id,product_id,customer_name,rating,title,review_text,is_verified,created_at,media,pinned_rank,is_hidden";
 
 export function normalizeReview(row: any): StoreReview {
   const raw = Array.isArray(row?.media) ? row.media : [];

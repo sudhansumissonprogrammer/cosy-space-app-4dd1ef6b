@@ -16,7 +16,7 @@ import {
  * Only 12 rows are pulled — the PDP shows at most 6 cards + a "view all" tile,
  * and the summary numbers come from the full-count query on the reviews page.
  */
-export function useStoreReviews(storeId?: string, limit = 12) {
+export function useStoreReviews(storeId?: string, limit = 20) {
   const query = useQuery({
     queryKey: ["store-pdp-reviews", storeId],
     queryFn: async () => {
@@ -24,6 +24,8 @@ export function useStoreReviews(storeId?: string, limit = 12) {
         .from("product_reviews")
         .select(REVIEW_SELECT)
         .eq("store_id", storeId!)
+        .eq("is_hidden", false)
+        .order("pinned_rank", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false })
         .limit(limit);
       return (data || []).map(normalizeReview) as StoreReview[];
