@@ -567,11 +567,15 @@ Deno.serve(async (req) => {
       if (autoRow?.id) couponIdToCheck = autoRow.id;
     }
 
-    if (couponIdToCheck) {
+    // Resolve the best valid coupon. If the client-supplied coupon fails
+    // validation (stale cache, expired WA-exclusive, max_uses hit), fall back
+    // to the store's auto-apply coupon rather than silently charging full
+    // price — the shopper was shown a discounted total on the PDP/checkout.
+    const evaluateCoupon = async (id: string) => {
       const { data: c } = await supabase
         .from("coupons")
         .select("id, store_id, discount_type, discount_value, min_order_amount, max_uses, used_count, is_active, starts_at, expires_at")
-        .eq("id", couponIdToCheck)
+        .eq("id", id)
         .maybeSingle();
       const nowD = new Date();
       const ok = c
@@ -581,16 +585,39 @@ Deno.serve(async (req) => {
         && (!c.expires_at || new Date(c.expires_at) > nowD)
         && (c.max_uses == null || (c.used_count ?? 0) < c.max_uses)
         && serverSubtotal >= Number(c.min_order_amount || 0);
-      if (ok && c) {
-        if (c.discount_type === "percentage") {
-          serverDiscount = serverSubtotal * (Number(c.discount_value) / 100);
-        } else {
-          serverDiscount = Number(c.discount_value);
-        }
-        serverDiscount = Math.max(0, Math.min(serverDiscount, serverSubtotal));
-        validCouponId = c.id;
+      if (!ok || !c) return null;
+      let d = c.discount_type === "percentage"
+        ? serverSubtotal * (Number(c.discount_value) / 100)
+        : Number(c.discount_value);
+      d = Math.max(0, Math.min(d, serverSubtotal));
+      return { id: c.id, discount: d };
+    };
+
+    const candidates: string[] = [];
+    if (couponIdToCheck) candidates.push(couponIdToCheck);
+    if (coupon_id) {
+      // Client coupon failed? Try the store-wide auto-apply coupon next.
+      const { data: fbRows } = await supabase
+        .from("coupons")
+        .select("id")
+        .eq("store_id", store_id)
+        .eq("is_active", true)
+        .eq("auto_apply", true)
+        .eq("wa_exclusive", false)
+        .limit(1);
+      const fbId = Array.isArray(fbRows) ? fbRows[0]?.id : null;
+      if (fbId && !candidates.includes(fbId)) candidates.push(fbId);
+    }
+
+    for (const cid of candidates) {
+      const res = await evaluateCoupon(cid);
+      if (res) {
+        serverDiscount = res.discount;
+        validCouponId = res.id;
+        break;
       }
     }
+
 
     // Validate shipping server-side.
     let serverShipping = 0;
