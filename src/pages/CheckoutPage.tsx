@@ -708,7 +708,9 @@ function CheckoutPageInner() {
     // Shipping paid up-front; discount reduces advance proportionally.
     const ratio = subtotal > 0 ? itemsAdvance / subtotal : 1;
     const raw = itemsAdvance + (taxInclusive ? 0 : taxAmount) * ratio + shippingCharge - couponDiscount * ratio;
-    return Math.max(50, Math.min(total, Math.round(raw)));
+    // Clamp to the order total LAST — the ₹50 floor must never exceed it.
+    return Math.min(total, Math.max(50, Math.round(raw)));
+
   })();
   const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
   const isPartialOrder = hasAnyPartialPayment && partialPaymentMode === "partial" && hasOnline;

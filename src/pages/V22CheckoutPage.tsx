@@ -636,7 +636,10 @@ function V22CheckoutPageInner() {
     const ratio = subtotal > 0 ? advance / subtotal : 1;
     advance += (taxInclusive ? 0 : taxAmount) * ratio + shippingCharge;
     advance -= couponDiscount * ratio;
-    return Math.max(50, Math.round(advance));
+    // Floor first, then clamp to the order total so the advance is never more
+    // than the order itself (matches place-order's server-side calculation).
+    return Math.min(total, Math.max(50, Math.round(advance)));
+
   })();
   const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);
   const isPartialOrder = hasAnyPartialPayment && partialPaymentMode === "partial" && hasOnline;

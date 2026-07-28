@@ -1060,7 +1060,10 @@ export default function CheckoutV2Page() {
     // Shipping is charged up front; tax scales with the advance ratio.
     const ratio = subtotal > 0 ? advance / subtotal : 1;
     advance += (taxInclusive ? 0 : taxAmount) * ratio + shippingCharge;
-    return Math.max(50, Math.min(total, Math.round(advance)));
+    // Clamp to the order total LAST so the ₹50 floor can never exceed what the
+    // cart is actually worth (a ₹5 item must never ask for a ₹50 advance).
+    return Math.min(total, Math.max(50, Math.round(advance)));
+
   }, [checkoutItems, hasPartial, partialType, partialValue, subtotal, taxAmount, taxInclusive, shippingCharge, total]);
 
   const partialBalanceDue = Math.max(0, total - partialAdvanceTotal);

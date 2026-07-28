@@ -324,16 +324,20 @@ Deno.serve(async (req) => {
     if (checkout_token) {
       const { data: existingOrder } = await supabase
         .from("orders")
-        .select("id, order_number, status, applied_coupon_id")
+        .select("id, order_number, status, applied_coupon_id, payment_verified")
         .eq("store_id", store_id)
         .eq("checkout_token", checkout_token)
         .maybeSingle();
 
       if (existingOrder) {
+        // A cancelled/failed row can still be payment_verified (customer paid,
+        // then cancelled). Rewriting that row into a fresh pending attempt
+        // would carry `payment_verified = true` onto an unpaid order.
         const reusableStatuses = new Set(["pending", "cancelled", "failed"]);
-        if (reusableStatuses.has(String(existingOrder.status || ""))) {
+        if (reusableStatuses.has(String(existingOrder.status || "")) && !existingOrder.payment_verified) {
           reusableOrder = existingOrder as typeof reusableOrder;
         } else {
+
         const orderNumber = existingOrder.order_number
           ? `#${1000 + existingOrder.order_number}`
           : `#${existingOrder.id.slice(0, 8).toUpperCase()}`;
@@ -771,7 +775,10 @@ Deno.serve(async (req) => {
         // ₹100 advance would drop it to ~₹69. Tax adjusts proportionally.
         const ratio = serverSubtotal > 0 ? itemsAdvance / serverSubtotal : 1;
         const raw = itemsAdvance + (serverTaxToAdd * ratio) + serverShipping;
-        advancePaid = Math.max(50, Math.min(Number(order.total), Math.round(raw)));
+        // Clamp to the order total LAST — applying the ₹50 floor after the cap
+        // charged ₹50 advance on a ₹5 order (advance > total, balance ₹0).
+        advancePaid = Math.min(Number(order.total), Math.max(50, Math.round(raw)));
+
         balanceDue = Math.max(0, Number(order.total) - advancePaid);
       } else {
         // Store doesn't actually offer partial — downgrade to full instead of
@@ -914,11 +921,23 @@ Deno.serve(async (req) => {
     if (reusableOrder) {
       const { data: updatedOrder, error: updateErr } = await supabase
         .from("orders")
-        .update(orderPayload)
+        .update({
+          ...orderPayload,
+          // A remint is a FRESH payment attempt on this row. Anything left over
+          // from the previous attempt (gateway ids, verification flags, a fired
+          // Purchase marker) must be cleared, otherwise the row looks partly
+          // paid / already-tracked while no money has arrived.
+          payment_verified: false,
+          payment_verified_at: null,
+          razorpay_order_id: null,
+          meta_purchase_fired_at: null,
+        })
         .eq("id", reusableOrder.id)
         .eq("store_id", store_id)
         .eq("checkout_token", checkout_token)
+        .eq("payment_verified", false)
         .in("status", ["pending", "cancelled", "failed"])
+
         .select("id")
         .maybeSingle();
       createdOrder = updatedOrder;
