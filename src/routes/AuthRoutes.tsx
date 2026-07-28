@@ -72,6 +72,7 @@ const StorePages = lazy(() => import("@/pages/StorePages"));
 const StorePageEditor = lazy(() => import("@/pages/StorePageEditor"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const BestSellerManagement = lazy(() => import("@/pages/BestSellerManagement"));
+const StoreReviewsManager = lazy(() => import("@/pages/StoreReviewsManager"));
 const SpacingCheck = lazy(() => import("@/pages/SpacingCheck"));
 const InstallApp = lazy(() => import("@/pages/InstallApp"));
 const Index = lazy(() => import("@/pages/Index"));
