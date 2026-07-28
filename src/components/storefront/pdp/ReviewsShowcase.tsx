@@ -66,7 +66,7 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
             </div>
           ))}
 
-          {reviews.length > 6 && (
+          {reviews.length > 8 && (
             <div className="w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-[32%]">
               <Link
                 to={storefrontPath(storeSlug, "reviews")}
