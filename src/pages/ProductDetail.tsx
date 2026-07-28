@@ -1152,7 +1152,7 @@ export default function ProductDetail() {
         {/* Customer Reviews — deferred until near viewport */}
         <DeferUntilVisible rootMargin="600px" minHeight={240}>
           <Suspense fallback={null}>
-            <CustomerReviews reviews={fakeReviews} realReviews={realReviews || []} rating={stats.rating} reviewCount={stats.reviewCount} productId={product.id} storeId={store.id} onReviewSubmitted={refetchReviews} />
+            <ReviewsShowcase productId={product.id} storeId={store.id} storeSlug={store.slug} productName={product.name} />
           </Suspense>
         </DeferUntilVisible>
       </div>
