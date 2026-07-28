@@ -170,6 +170,7 @@ export default function AuthRoutes() {
           <Route path="stores/:storeSlug/tracking" element={<StoreTracking />} />
           <Route path="stores/:storeSlug/funnel" element={<StoreFunnel />} />
           <Route path="stores/:storeSlug/best-sellers" element={<BestSellerManagement />} />
+          <Route path="stores/:storeSlug/reviews" element={<StoreReviewsManager />} />
           <Route path="stores/:storeSlug/spacing-check" element={<SpacingCheck />} />
           <Route path="stores/:storeSlug/apps" element={<AppStoreBrowse />} />
           <Route path="stores/:storeSlug/apps/:appId" element={<AppRouter />} />
