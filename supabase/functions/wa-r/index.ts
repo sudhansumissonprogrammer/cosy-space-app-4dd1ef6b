@@ -282,6 +282,16 @@ Deno.serve(async (req) => {
         return redirect(fallback, { status: 302, maxAge: 0, preconnectHosts: [host] });
       }
 
+      // 🚫 Dead-link guard: the merchant may have disabled the product after
+      // the message was queued. Checkout would render an empty/broken cart, so
+      // land the shopper on the store home (still auto-logged + wa=1) instead.
+      const { data: rp } = await admin
+        .from("products").select("is_active").eq("id", retryProductId).maybeSingle();
+      if (!rp || (rp as any).is_active === false) {
+        const home = await withAutoLogin(base, effectivePhone, mintP);
+        return redirect(home, { status: 302, maxAge: 0, preconnectHosts: [host] });
+      }
+
       const qty = Math.max(1, Number(firstItem?.quantity || 1));
       const target = await withAutoLogin(
         `${base}/checkout?product=${encodeURIComponent(retryProductId)}&qty=${encodeURIComponent(String(qty))}&v2=1&recover=order`,
@@ -317,7 +327,15 @@ Deno.serve(async (req) => {
         });
       }
 
-      if (!slug) return redirect(base, { preconnectHosts: [host] });
+      // No slug → home, but keep the auto-login + wa=1 markers so the shopper
+      // stays logged in and still unlocks the WhatsApp-exclusive coupon.
+      if (!slug) {
+        return redirect(await withAutoLogin(base, suffixPhone, mintP), {
+          status: 302,
+          maxAge: 0,
+          preconnectHosts: [host],
+        });
+      }
 
       // Parallel: hero image lookup + storefront cache warm.
       const heroPromise = getHeroImage((p as any).id);
