@@ -24,6 +24,8 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const [active, setActive] = useState(0);
+  const [failed, setFailed] = useState<Record<string, boolean>>({});
+
   const [muted, setMuted] = useState(true);
 
   // Lock background scroll while the reel owns the screen.
