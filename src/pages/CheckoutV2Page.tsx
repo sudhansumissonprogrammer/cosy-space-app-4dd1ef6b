@@ -2314,6 +2314,15 @@ export default function CheckoutV2Page() {
       return createOrderPromiseRef.current;
     }
 
+    // Wait for the auto-apply coupon lookups (they resolve in ~100ms) so the
+    // minted amount already includes the discount.
+    if (!couponsResolvedRef.current && !appliedCoupon) {
+      window.setTimeout(() => { void createOrderAndIntents(); }, 150);
+      return;
+    }
+
+
+
     // Hard cap: if we've minted too many times or too rapidly for one
     // checkout session, stop the loop. The shopper still has a working
     // ready intent from the last successful mint; forcing another round
