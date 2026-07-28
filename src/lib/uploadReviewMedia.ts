@@ -79,7 +79,11 @@ async function compressImage(file: File): Promise<File> {
 
 export async function uploadReviewMedia(file: File, storeId: string): Promise<ReviewMedia> {
   const isVideo = (file.type || "").startsWith("video/");
+  if (isVideo && file.size > 40 * 1024 * 1024) {
+    throw new Error("Video is too large (max 40MB). Please pick a shorter clip.");
+  }
   const payload = isVideo ? file : await compressImage(file);
+
 
   const form = new FormData();
   form.append("file", payload);
