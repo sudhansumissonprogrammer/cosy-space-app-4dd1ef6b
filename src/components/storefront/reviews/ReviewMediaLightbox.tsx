@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Props {
@@ -28,9 +29,9 @@ export default function ReviewMediaLightbox({ media, startIndex, onClose }: Prop
   const current = media[index];
   if (!current) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/90 p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-[2147483000] flex items-center justify-center bg-foreground/90 p-4 animate-in fade-in duration-150"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -70,6 +71,7 @@ export default function ReviewMediaLightbox({ media, startIndex, onClose }: Prop
           <img src={current.url} alt="Customer review" className="max-h-[85vh] w-full rounded-xl object-contain" />
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
