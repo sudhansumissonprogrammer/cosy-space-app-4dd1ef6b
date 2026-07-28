@@ -81,7 +81,7 @@ export default function EditReviewDialog({ storeId, review, onClose, onSaved }: 
           rating: Math.max(1, Math.min(5, Math.round(rating))),
           title: title.trim().slice(0, 120) || null,
           review_text: text.trim().slice(0, 2000) || null,
-          media,
+          media: media as any,
         })
         .eq("id", review.id);
       if (error) throw error;
