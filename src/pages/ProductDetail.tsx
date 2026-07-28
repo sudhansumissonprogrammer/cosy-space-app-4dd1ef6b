@@ -547,7 +547,14 @@ export default function ProductDetail() {
     staleTime: 2 * 60 * 1000,
   });
 
+  // Display-only WhatsApp coupon price (no cart/order pricing change).
+  const waPreviewBase = product
+    ? Number(product.sale_price && product.sale_price < product.price ? product.sale_price : product.price) || 0
+    : 0;
+  const waPreview = useWaCouponPreview(store?.id, waPreviewBase);
+
   if (isLoading) return <ProductDetailSkeleton />;
+
 
   if (!product) {
     return (
