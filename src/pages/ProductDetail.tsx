@@ -46,6 +46,7 @@ import PdpTrustBadges from "@/components/storefront/PdpTrustBadges";
 // BuyNowPhoneModal deprecated — phone capture is now Step 1 of CheckoutPage.
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import AutoCouponHint from "@/components/storefront/AutoCouponHint";
+import { useWaCouponPreview } from "@/hooks/useWaCouponPreview";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
@@ -547,7 +548,14 @@ export default function ProductDetail() {
     staleTime: 2 * 60 * 1000,
   });
 
+  // Display-only WhatsApp coupon price (no cart/order pricing change).
+  const waPreviewBase = product
+    ? Number(product.sale_price && product.sale_price < product.price ? product.sale_price : product.price) || 0
+    : 0;
+  const waPreview = useWaCouponPreview(store?.id, waPreviewBase);
+
   if (isLoading) return <ProductDetailSkeleton />;
+
 
   if (!product) {
     return (
@@ -783,31 +791,54 @@ export default function ProductDetail() {
           {/* Price — simple, no border/background */}
           <div className="mt-4">
             <div className="flex items-baseline gap-2.5 flex-wrap">
-              <span className={`text-2xl font-extrabold sm:text-3xl ${isV18 ? '' : 'text-foreground'}`} style={isV18 ? { color: "#ffffff", ...v18Font, fontWeight: 400 } : {}}>
-                {isV18 ? `₹${Number(variantPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(variantPrice), currency)}`}
-              </span>
+              {/* WhatsApp arrivals: show the post-coupon price they'll actually
+                  pay at checkout. Display-only — cart/order pricing unchanged. */}
+              {waPreview.active ? (
+                <>
+                  <span className="text-2xl font-extrabold sm:text-3xl text-red-600" style={isV18 ? { ...v18Font, fontWeight: 400 } : {}}>
+                    {formatPrice(Number(waPreview.finalPrice), currency)}
+                  </span>
+                  <span className={`text-base line-through ${isV18 ? '' : 'text-muted-foreground'}`} style={isV18 ? { color: "#666666", ...v18Font } : {}}>
+                    {formatPrice(Number(variantPrice), currency)}
+                  </span>
+                </>
+              ) : (
+                <span className={`text-2xl font-extrabold sm:text-3xl ${isV18 ? '' : 'text-foreground'}`} style={isV18 ? { color: "#ffffff", ...v18Font, fontWeight: 400 } : {}}>
+                  {isV18 ? `₹${Number(variantPrice).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(variantPrice), currency)}`}
+                </span>
+              )}
               {hasDiscount && (
                 <>
                   <span className={`text-sm line-through ${isV18 ? '' : 'text-muted-foreground'}`} style={isV18 ? { color: "#666666", ...v18Font } : {}}>
                     {isV18 ? `₹${Number(product.price).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${formatPrice(Number(product.price), currency)}`}
                   </span>
-                  {!isV18 && (
+                  {!isV18 && !waPreview.active && (
                     <Badge className="bg-emerald-600 text-white text-[11px] font-bold border-0 px-2 py-0.5">
                       {discountPct}% OFF
                     </Badge>
                   )}
                 </>
               )}
+              {waPreview.active && (
+                <Badge className="bg-red-600 text-white text-[11px] font-bold border-0 px-2 py-0.5">
+                  Extra {formatPrice(waPreview.discount, currency)} OFF
+                </Badge>
+              )}
             </div>
             {isV18 && (
               <p className="mt-2 text-sm italic" style={{ color: "#999999", ...v18Font }}>Inclusive of all taxes</p>
             )}
-            {!isV18 && hasDiscount && (
+            {waPreview.active ? (
+              <p className="mt-1 text-xs font-semibold text-red-600">
+                {formatPrice(waPreview.discount, currency)} WhatsApp coupon auto-applies at checkout
+              </p>
+            ) : (!isV18 && hasDiscount && (
               <p className="mt-1 text-xs font-semibold text-emerald-600">
                 You save {formatPrice((product.price - product.sale_price!), currency)} on this order
               </p>
-           )}
+            ))}
           </div>
+
 
 
 
