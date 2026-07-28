@@ -172,45 +172,54 @@ Deno.serve(async (req) => {
   const preview: any[] = [];
   let slot = 0;
 
+  // ── Bulk prefetch (one query per concern, not per phone) ──────────────
+  const notTx = `(${TRANSACTIONAL.map((t) => `"${t}"`).join(",")})`;
+  const phones = unique.map((c) => c.phone);
+  const digits = (p: string) => {
+    const d = String(p).replace(/\D/g, "");
+    return d.startsWith("91") && d.length >= 12 ? d.slice(2) : d;
+  };
+  const [optRes, sentRes, queueRes, convRes, prodRes] = await Promise.all([
+    admin.from("whatsapp_optouts").select("phone"),
+    admin.from("whatsapp_messages").select("recipient_phone, message_type")
+      .eq("sent_via", "platform").eq("direction", "outgoing").eq("status", "sent")
+      .not("message_type", "in", notTx).gte("created_at", since24h).limit(20000),
+    admin.from("wa_send_queue").select("recipient_phone, message_type")
+      .in("status", ["pending", "sending", "sent"])
+      .not("message_type", "in", notTx).gte("created_at", since24h).limit(20000),
+    admin.from("orders").select("customer_phone, store_id, created_at")
+      .in("status", ["confirmed", "processing", "shipped", "delivered", "partially_paid", "paid"])
+      .gte("created_at", sinceIso).limit(20000),
+    admin.from("products").select("id, name, slug, image_url, price, sale_price, is_active")
+      .in("id", Array.from(new Set(unique.map((c) => c.productId).filter(Boolean))) as string[]),
+  ]);
+  const optedOut = new Set(((optRes.data as any[]) || []).map((r) => digits(r.phone)));
+  const recentlyMessaged = new Set([
+    ...(((sentRes.data as any[]) || []).map((r) => digits(r.recipient_phone))),
+    ...(((queueRes.data as any[]) || []).map((r) => digits(r.recipient_phone))),
+  ]);
+  const convertedAt = new Map<string, string>(); // storeId|phone → newest confirmed order time
+  for (const o of ((convRes.data as any[]) || [])) {
+    const k = `${o.store_id}|${digits(o.customer_phone || "")}`;
+    const prev = convertedAt.get(k);
+    if (!prev || o.created_at > prev) convertedAt.set(k, o.created_at);
+  }
+  const productById = new Map(((prodRes.data as any[]) || []).map((p) => [p.id, p]));
+  void phones;
+
   for (const c of unique) {
     if (!marketingOn.has(c.storeId)) { stats.store_off++; continue; }
-
-    // Opt-out
-    const { data: optout } = await admin.from("whatsapp_optouts").select("id").eq("phone", c.phone).limit(1).maybeSingle();
-    if (optout) { stats.opted_out++; continue; }
-
-    // Already messaged / queued in last 24h (marketing only)
-    const notTx = `(${TRANSACTIONAL.map((t) => `"${t}"`).join(",")})`;
-    const [{ count: sentMkt }, { count: pendingMkt }] = await Promise.all([
-      admin.from("whatsapp_messages").select("id", { count: "exact", head: true })
-        .eq("recipient_phone", c.phone).eq("sent_via", "platform").eq("direction", "outgoing")
-        .eq("status", "sent").not("message_type", "in", notTx).gte("created_at", since24h),
-      admin.from("wa_send_queue").select("id", { count: "exact", head: true })
-        .eq("recipient_phone", c.phone).in("status", ["pending", "sending", "sent"])
-        .not("message_type", "in", notTx).gte("created_at", since24h),
-    ]);
-    if (((sentMkt ?? 0) + (pendingMkt ?? 0)) >= 1) { stats.capped_24h++; continue; }
-
-    // Converted since the event?
-    const rawPhone = c.phone.replace(/\D/g, "");
-    const bare = rawPhone.startsWith("91") && rawPhone.length >= 12 ? rawPhone.slice(2) : rawPhone;
-    const variants = Array.from(new Set([c.phone, rawPhone, bare, `91${bare}`, `+91${bare}`]));
-    const { count: converted } = await admin.from("orders")
-      .select("id", { count: "exact", head: true })
-      .eq("store_id", c.storeId).in("customer_phone", variants)
-      .in("status", ["confirmed", "processing", "shipped", "delivered", "partially_paid", "paid"])
-      .gte("created_at", c.at);
-    if ((converted ?? 0) > 0) { stats.converted++; continue; }
+    const pd = digits(c.phone);
+    if (optedOut.has(pd)) { stats.opted_out++; continue; }
+    if (recentlyMessaged.has(pd)) { stats.capped_24h++; continue; }
+    const conv = convertedAt.get(`${c.storeId}|${pd}`);
+    if (conv && conv >= c.at) { stats.converted++; continue; }
 
     // Product must be live (no dead links).
-    let product: any = null;
-    if (c.productId) {
-      const { data: p } = await admin.from("products")
-        .select("id, name, slug, image_url, price, sale_price, is_active")
-        .eq("id", c.productId).maybeSingle();
-      if (p && (p as any).is_active !== false) product = p;
-    }
+    const candidate = c.productId ? productById.get(c.productId) : null;
+    const product = candidate && (candidate as any).is_active !== false ? candidate : null;
     if (!product) { stats.no_live_product++; continue; }
+
 
     const store: any = storeById.get(c.storeId) || {};
     const mrp = Number(product.price ?? 0) || 0;
