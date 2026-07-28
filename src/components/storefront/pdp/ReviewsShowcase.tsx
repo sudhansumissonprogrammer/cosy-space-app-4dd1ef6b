@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { storefrontPath } from "@/lib/subdomain";
-import { PenLine, ChevronRight } from "lucide-react";
+import { PenLine, ChevronRight, ArrowRight } from "lucide-react";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
 import { REVIEW_SELECT, normalizeReview, ratingBreakdown, type StoreReview } from "@/components/storefront/reviews/reviewTypes";
 
 const WriteReviewDialog = lazy(() => import("@/components/storefront/reviews/WriteReviewDialog"));
+const ReviewMediaLightbox = lazy(() => import("@/components/storefront/reviews/ReviewMediaLightbox"));
 
 interface Props {
   productId: string;
@@ -38,6 +39,21 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
   const reviews = data || [];
   const { counts, total, average } = useMemo(() => ratingBreakdown(reviews), [reviews]);
 
+  // Max 6 review cards on the PDP; a 7th "View all" card links to the full page.
+  const shown = reviews.slice(0, 6);
+
+  // Shared gallery so arrows move across every photo of the shown reviews.
+  const { gallery, offsets } = useMemo(() => {
+    const g: { url: string; type: "image" | "video" }[] = [];
+    const o: number[] = [];
+    shown.forEach((r) => {
+      o.push(g.length);
+      g.push(...r.media);
+    });
+    return { gallery: g, offsets: o };
+  }, [shown]);
+
+  const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
 
   return (
     <section className="mt-10 border-t border-border pt-8" id="reviews">
@@ -56,17 +72,37 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
 
       {reviews.length > 0 ? (
         <div className="mb-5 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {reviews.slice(0, 5).map((r) => (
+          {shown.map((r, ri) => (
             <div key={r.id} className="w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-[32%]">
-              <ReviewCard review={r} compact />
+              <ReviewCard
+                review={r}
+                compact
+                onOpenMedia={r.media.length ? (i) => setGalleryIndex(offsets[ri] + i) : undefined}
+              />
             </div>
           ))}
+
+          {reviews.length > 6 && (
+            <div className="w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-[32%]">
+              <Link
+                to={storefrontPath(storeSlug, "reviews")}
+                className="flex h-full min-h-[220px] flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-accent/40 p-6 text-center transition-colors hover:bg-accent"
+              >
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-foreground text-background">
+                  <ArrowRight className="h-5 w-5" />
+                </span>
+                <span className="text-sm font-bold text-foreground">View all {total} reviews</span>
+                <span className="text-xs text-muted-foreground">Photos & videos from customers</span>
+              </Link>
+            </div>
+          )}
         </div>
       ) : (
         <p className="mb-5 rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           Be the first to review this product.
         </p>
       )}
+
 
       <div className="rounded-2xl border border-border p-5">
         <div className="grid gap-5 sm:grid-cols-[auto_1fr] sm:items-center">
@@ -117,6 +153,14 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
           />
         </Suspense>
       )}
+
+      {galleryIndex !== null && gallery.length > 0 && (
+        <Suspense fallback={null}>
+          <ReviewMediaLightbox media={gallery} startIndex={galleryIndex} onClose={() => setGalleryIndex(null)} />
+        </Suspense>
+      )}
+
+
 
     </section>
   );
