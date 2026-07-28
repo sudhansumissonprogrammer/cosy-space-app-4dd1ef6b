@@ -257,6 +257,9 @@ export default function StoreReviewsManager() {
               <Pin className="mr-1 h-3.5 w-3.5" /> Feature on PDP
             </Button>
           )}
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => setEditing(row)}>
+            <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+          </Button>
           <Button size="sm" variant="outline" disabled={busy} onClick={() => toggleHidden(row)}>
             {row.is_hidden ? (
               <><Eye className="mr-1 h-3.5 w-3.5" /> Unhide</>
