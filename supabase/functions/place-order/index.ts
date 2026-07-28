@@ -775,7 +775,10 @@ Deno.serve(async (req) => {
         // ₹100 advance would drop it to ~₹69. Tax adjusts proportionally.
         const ratio = serverSubtotal > 0 ? itemsAdvance / serverSubtotal : 1;
         const raw = itemsAdvance + (serverTaxToAdd * ratio) + serverShipping;
-        advancePaid = Math.max(50, Math.min(Number(order.total), Math.round(raw)));
+        // Clamp to the order total LAST — applying the ₹50 floor after the cap
+        // charged ₹50 advance on a ₹5 order (advance > total, balance ₹0).
+        advancePaid = Math.min(Number(order.total), Math.max(50, Math.round(raw)));
+
         balanceDue = Math.max(0, Number(order.total) - advancePaid);
       } else {
         // Store doesn't actually offer partial — downgrade to full instead of
