@@ -11,6 +11,8 @@ import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
 import { WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
+import HeaderWhatsAppButton from "@/components/storefront/HeaderWhatsAppButton";
+
 import PremiumHeaderBadge from "@/components/storefront/PremiumHeaderBadge";
 import { useNavIcons } from "@/hooks/useNavIcons";
 
