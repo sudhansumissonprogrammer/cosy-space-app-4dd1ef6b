@@ -11,6 +11,8 @@ import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { useSmartHeader } from "@/hooks/useSmartHeader";
+import HeaderWhatsAppButton from "@/components/storefront/HeaderWhatsAppButton";
+
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 
