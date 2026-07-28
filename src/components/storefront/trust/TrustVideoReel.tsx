@@ -24,6 +24,8 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const [active, setActive] = useState(0);
+  const [failed, setFailed] = useState<Record<string, boolean>>({});
+
   const [muted, setMuted] = useState(true);
 
   // Lock background scroll while the reel owns the screen.
@@ -124,8 +126,18 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
               loop
               // Only the first clip preloads; the rest load as they scroll in.
               preload={i === 0 ? "auto" : "none"}
+              onError={() => setFailed((f) => ({ ...f, [s.id]: true }))}
               onClick={() => setMuted((m) => !m)}
             />
+
+            {failed[s.id] && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-8 text-center">
+                <p className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm text-white/80 backdrop-blur-xl">
+                  This video could not be played.
+                </p>
+              </div>
+            )}
+
 
             {/* Glassmorphic CTA */}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 p-4 pb-8">
