@@ -49,7 +49,7 @@ import AutoCouponHint from "@/components/storefront/AutoCouponHint";
 import { useWaCouponPreview } from "@/hooks/useWaCouponPreview";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
-const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
+const ReviewsShowcase = lazy(() => import("@/components/storefront/pdp/ReviewsShowcase"));
 const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
 const VideoSlide = lazy(() =>
   import("@/components/storefront/VideoSlide").then((m) => ({ default: m.VideoSlide }))
