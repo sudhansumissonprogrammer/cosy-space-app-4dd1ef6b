@@ -2138,6 +2138,7 @@ export type Database = {
           is_hidden: boolean
           is_verified: boolean
           media: Json
+          pinned_rank: number | null
           product_id: string
           rating: number
           review_text: string | null
@@ -2151,6 +2152,7 @@ export type Database = {
           is_hidden?: boolean
           is_verified?: boolean
           media?: Json
+          pinned_rank?: number | null
           product_id: string
           rating: number
           review_text?: string | null
@@ -2164,6 +2166,7 @@ export type Database = {
           is_hidden?: boolean
           is_verified?: boolean
           media?: Json
+          pinned_rank?: number | null
           product_id?: string
           rating?: number
           review_text?: string | null
