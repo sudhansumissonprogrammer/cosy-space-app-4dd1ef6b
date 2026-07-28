@@ -104,8 +104,8 @@ export default function TrustVideosManager({ storeId }: { storeId?: string }) {
           video_url: res.videoUrl,
           poster_url: res.posterUrl || null,
           title: file.name.replace(/\.[^.]+$/, "").slice(0, 80),
-          cta_label: "See more details",
-          cta_target: "shop",
+          cta_label: null,
+          cta_target: null,
           sort_order: order++,
           is_active: true,
         });
@@ -195,18 +195,19 @@ export default function TrustVideosManager({ storeId }: { storeId?: string }) {
                 />
                 <Input
                   defaultValue={r.cta_label || ""}
-                  placeholder="Button text (See more details)"
+                  placeholder="Button text (leave empty for no button)"
                   className="h-8 text-xs"
-                  onBlur={(e) => e.target.value !== (r.cta_label || "") && patch(r.id, { cta_label: e.target.value })}
+                  onBlur={(e) => e.target.value !== (r.cta_label || "") && patch(r.id, { cta_label: e.target.value.trim() || null })}
                 />
 
                 <div className="space-y-1">
                   <Label className="text-[11px] text-muted-foreground">Button goes to</Label>
-                  <Select value={r.cta_target || "shop"} onValueChange={(v) => patch(r.id, { cta_target: v })}>
+                  <Select value={r.cta_target || "none"} onValueChange={(v) => patch(r.id, { cta_target: v === "none" ? null : v })}>
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Choose destination" />
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
+                      <SelectItem value="none">No button</SelectItem>
                       <SelectItem value="shop">All products</SelectItem>
                       <SelectItem value="categories">All categories</SelectItem>
                       <SelectItem value="reviews">Customer reviews</SelectItem>
