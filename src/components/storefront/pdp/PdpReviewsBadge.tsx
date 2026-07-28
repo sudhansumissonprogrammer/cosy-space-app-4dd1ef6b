@@ -6,7 +6,7 @@ import { useStoreReviews } from "@/hooks/useStoreReviews";
  * Tapping it scrolls the shopper straight to the reviews section on the PDP.
  */
 export default function PdpReviewsBadge({ storeId, className = "" }: { storeId?: string; className?: string }) {
-  const { average, total } = useStoreReviews(storeId);
+  const { total } = useStoreReviews(storeId);
 
   if (!total) return null;
 
