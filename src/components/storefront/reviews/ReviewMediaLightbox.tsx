@@ -71,6 +71,7 @@ export default function ReviewMediaLightbox({ media, startIndex, onClose }: Prop
           <img src={current.url} alt="Customer review" className="max-h-[85vh] w-full rounded-xl object-contain" />
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
