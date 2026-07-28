@@ -8,6 +8,8 @@ export interface StoreReview {
   is_verified: boolean;
   created_at: string;
   media: { url: string; type: "image" | "video" }[];
+  pinned_rank?: number | null;
+  is_hidden?: boolean;
   products?: { name: string; slug: string } | null;
 }
 
