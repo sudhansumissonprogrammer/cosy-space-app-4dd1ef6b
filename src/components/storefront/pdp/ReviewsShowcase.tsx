@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { storefrontPath } from "@/lib/subdomain";
-import { PenLine, ChevronRight } from "lucide-react";
+import { PenLine, ChevronRight, Camera } from "lucide-react";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
 import { REVIEW_SELECT, normalizeReview, ratingBreakdown, type StoreReview } from "@/components/storefront/reviews/reviewTypes";
 
 const WriteReviewDialog = lazy(() => import("@/components/storefront/reviews/WriteReviewDialog"));
+const ReviewMediaLightbox = lazy(() => import("@/components/storefront/reviews/ReviewMediaLightbox"));
 
 interface Props {
   productId: string;
@@ -18,23 +19,28 @@ interface Props {
 
 export default function ReviewsShowcase({ productId, storeId, storeSlug, productName }: Props) {
   const [writing, setWriting] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
 
+  // Store-wide reviews — the same trusted social proof shows on every product page.
   const { data, refetch } = useQuery({
-    queryKey: ["pdp-reviews", productId],
+    queryKey: ["store-pdp-reviews", storeId],
     queryFn: async () => {
       const { data } = await supabase
         .from("product_reviews")
         .select(REVIEW_SELECT)
-        .eq("product_id", productId)
+        .eq("store_id", storeId)
         .order("created_at", { ascending: false })
         .limit(30);
       return (data || []).map(normalizeReview) as StoreReview[];
     },
-    staleTime: 2 * 60 * 1000,
+    enabled: !!storeId,
+    staleTime: 5 * 60 * 1000,
   });
 
   const reviews = data || [];
   const { counts, total, average } = useMemo(() => ratingBreakdown(reviews), [reviews]);
+  const gallery = useMemo(() => reviews.flatMap((r) => r.media), [reviews]);
+
 
   return (
     <section className="mt-10 border-t border-border pt-8" id="reviews">
@@ -87,9 +93,33 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
         </button>
       </div>
 
+      {gallery.length > 0 && (
+        <div className="mt-5">
+          <div className="mb-2 flex items-center gap-1.5 text-sm font-bold text-foreground">
+            <Camera className="h-4 w-4" /> Photos from customers
+          </div>
+          <div className="flex snap-x gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {gallery.slice(0, 20).map((m, i) => (
+              <button
+                key={`${m.url}-${i}`}
+                onClick={() => setGalleryIndex(i)}
+                className="h-24 w-24 shrink-0 snap-start overflow-hidden rounded-xl border border-border transition-transform active:scale-95 sm:h-28 sm:w-28"
+                aria-label="View customer photo"
+              >
+                {m.type === "video" ? (
+                  <video src={m.url} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+                ) : (
+                  <img src={m.url} alt="Customer photo" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {reviews.length > 0 ? (
         <div className="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {reviews.slice(0, 10).map((r) => (
+          {reviews.slice(0, 12).map((r) => (
             <div key={r.id} className="w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-[32%]">
               <ReviewCard review={r} compact />
             </div>
@@ -99,6 +129,12 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
         <p className="mt-4 rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           Be the first to review this product.
         </p>
+      )}
+
+      {galleryIndex !== null && (
+        <Suspense fallback={null}>
+          <ReviewMediaLightbox media={gallery} startIndex={galleryIndex} onClose={() => setGalleryIndex(null)} />
+        </Suspense>
       )}
 
       {writing && (
@@ -112,6 +148,7 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
           />
         </Suspense>
       )}
+
     </section>
   );
 }

@@ -1118,6 +1118,13 @@ export default function ProductDetail() {
 
 
       <div className="px-4 sm:px-0">
+        {/* Customer Reviews — shown above "Complete the look" */}
+        <DeferUntilVisible rootMargin="600px" minHeight={240}>
+          <Suspense fallback={null}>
+            <ReviewsShowcase productId={product.id} storeId={store.id} storeSlug={store.slug} productName={product.name} />
+          </Suspense>
+        </DeferUntilVisible>
+
         {/* Complete the Look — deferred until near viewport */}
         <DeferUntilVisible rootMargin="600px" minHeight={320}>
           <Suspense fallback={null}>
@@ -1132,14 +1139,8 @@ export default function ProductDetail() {
             />
           </Suspense>
         </DeferUntilVisible>
-
-        {/* Customer Reviews — deferred until near viewport */}
-        <DeferUntilVisible rootMargin="600px" minHeight={240}>
-          <Suspense fallback={null}>
-            <ReviewsShowcase productId={product.id} storeId={store.id} storeSlug={store.slug} productName={product.name} />
-          </Suspense>
-        </DeferUntilVisible>
       </div>
+
 
       {/* Portal: render fixed elements outside PageTransition animation container */}
       {createPortal(
