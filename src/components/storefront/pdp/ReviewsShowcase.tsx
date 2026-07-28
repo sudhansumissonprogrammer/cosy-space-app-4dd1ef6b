@@ -3,12 +3,11 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { storefrontPath } from "@/lib/subdomain";
-import { PenLine, ChevronRight, Camera } from "lucide-react";
+import { PenLine, ChevronRight } from "lucide-react";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
 import { REVIEW_SELECT, normalizeReview, ratingBreakdown, type StoreReview } from "@/components/storefront/reviews/reviewTypes";
 
 const WriteReviewDialog = lazy(() => import("@/components/storefront/reviews/WriteReviewDialog"));
-const ReviewMediaLightbox = lazy(() => import("@/components/storefront/reviews/ReviewMediaLightbox"));
 
 interface Props {
   productId: string;
@@ -19,7 +18,6 @@ interface Props {
 
 export default function ReviewsShowcase({ productId, storeId, storeSlug, productName }: Props) {
   const [writing, setWriting] = useState(false);
-  const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
 
   // Store-wide reviews — the same trusted social proof shows on every product page.
   const { data, refetch } = useQuery({
@@ -39,7 +37,6 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
 
   const reviews = data || [];
   const { counts, total, average } = useMemo(() => ratingBreakdown(reviews), [reviews]);
-  const gallery = useMemo(() => reviews.flatMap((r) => r.media), [reviews]);
 
 
   return (
@@ -57,34 +54,9 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
         </Link>
       </div>
 
-      {gallery.length > 0 && (
-        <div className="mb-5">
-          <div className="mb-2 flex items-center gap-1.5 text-sm font-bold text-foreground">
-            <Camera className="h-4 w-4" /> Photos from customers
-          </div>
-          <div className="flex snap-x gap-2.5 overflow-x-auto pb-1 scrollbar-hide">
-            {gallery.slice(0, 20).map((m, i) => (
-              <button
-                key={`${m.url}-${i}`}
-                type="button"
-                onClick={() => setGalleryIndex(i)}
-                className="h-36 w-32 shrink-0 snap-start overflow-hidden rounded-xl border border-border transition-transform active:scale-95 sm:h-44 sm:w-40"
-                aria-label="View customer photo"
-              >
-                {m.type === "video" ? (
-                  <video src={m.url} className="h-full w-full object-cover" muted playsInline preload="metadata" />
-                ) : (
-                  <img src={m.url} alt="Customer photo" loading="lazy" decoding="async" className="h-full w-full object-cover" />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {reviews.length > 0 ? (
         <div className="mb-5 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {reviews.slice(0, 12).map((r) => (
+          {reviews.slice(0, 5).map((r) => (
             <div key={r.id} className="w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-[32%]">
               <ReviewCard review={r} compact />
             </div>
@@ -115,7 +87,7 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
                 <div key={star} className="flex items-center gap-2">
                   <span className="w-8 shrink-0 text-[11px] font-semibold text-muted-foreground">{star} ★</span>
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-accent">
-                    <div className="h-full rounded-full bg-amber-400" style={{ width: `${pct}%` }} />
+                    <div className="h-full rounded-full bg-emerald-500" style={{ width: `${pct}%` }} />
                   </div>
                   <span className="w-7 shrink-0 text-right text-[11px] text-muted-foreground">{counts[star]}</span>
                 </div>
@@ -133,12 +105,6 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
         </button>
       </div>
 
-
-      {galleryIndex !== null && (
-        <Suspense fallback={null}>
-          <ReviewMediaLightbox media={gallery} startIndex={galleryIndex} onClose={() => setGalleryIndex(null)} />
-        </Suspense>
-      )}
 
       {writing && (
         <Suspense fallback={null}>

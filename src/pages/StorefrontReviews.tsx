@@ -1,5 +1,5 @@
 import { useMemo, useState, lazy, Suspense } from "react";
-import { useOutletContext, Link } from "react-router-dom";
+import { useOutletContext, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { storefrontPath } from "@/lib/subdomain";
@@ -15,6 +15,7 @@ type SortKey = "recent" | "highest" | "lowest" | "media";
 
 export default function StorefrontReviews() {
   const store = useOutletContext<StoreData>();
+  const navigate = useNavigate();
   const [sort, setSort] = useState<SortKey>("recent");
   const [starFilter, setStarFilter] = useState<number | null>(null);
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
@@ -51,12 +52,16 @@ export default function StorefrontReviews() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
-      <Link
-        to={storefrontPath(store.slug)}
+      <button
+        type="button"
+        onClick={() => {
+          if (window.history.length > 1) navigate(-1);
+          else navigate(storefrontPath(store.slug));
+        }}
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to store
-      </Link>
+        <ArrowLeft className="h-4 w-4" /> Back
+      </button>
 
       <h1 className="text-2xl font-black text-foreground sm:text-3xl">Customer reviews</h1>
       <p className="mt-1 text-sm text-muted-foreground">What shoppers say about {store.name}</p>
