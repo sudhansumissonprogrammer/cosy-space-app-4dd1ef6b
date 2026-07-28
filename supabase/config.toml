@@ -69,3 +69,6 @@ verify_jwt = false
 
 [functions.pincode-lookup]
 verify_jwt = false
+
+[functions.review-upload]
+verify_jwt = false
