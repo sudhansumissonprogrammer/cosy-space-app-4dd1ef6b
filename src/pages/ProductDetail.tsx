@@ -1765,6 +1765,13 @@ function ImageGallery({
             </button>
           )}
 
+          {/* Rating pill → jumps to the reviews section */}
+          <div className={`absolute right-3 z-10 ${showMultiUi ? "bottom-12 sm:bottom-3" : "bottom-3"}`}>
+            <PdpReviewsBadge storeId={storeId} />
+          </div>
+
+
+
           {/* Counter (mobile) */}
           {showMultiUi && (
             <div className="absolute bottom-3 right-3 z-10 sm:hidden rounded-full bg-black/50 backdrop-blur-sm px-2.5 py-1 text-[10px] font-bold text-white tabular-nums">
