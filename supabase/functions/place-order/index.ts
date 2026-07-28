@@ -550,15 +550,23 @@ Deno.serve(async (req) => {
     let validCouponId: string | null = null;
     let couponIdToCheck: string | null = coupon_id ?? null;
     if (!couponIdToCheck) {
-      const { data: autoRow } = await supabase
+      // NOTE: a store can have TWO active auto-apply coupons (store-wide +
+      // WhatsApp-exclusive). `.maybeSingle()` without the wa_exclusive filter
+      // errored on multiple rows and silently dropped the discount, which is
+      // why auto-apply coupons were missing on some orders. Pick the store-wide
+      // one explicitly.
+      const { data: autoRows } = await supabase
         .from("coupons")
         .select("id")
         .eq("store_id", store_id)
         .eq("is_active", true)
         .eq("auto_apply", true)
-        .maybeSingle();
+        .eq("wa_exclusive", false)
+        .limit(1);
+      const autoRow = Array.isArray(autoRows) ? autoRows[0] : null;
       if (autoRow?.id) couponIdToCheck = autoRow.id;
     }
+
     if (couponIdToCheck) {
       const { data: c } = await supabase
         .from("coupons")
