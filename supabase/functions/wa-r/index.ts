@@ -59,13 +59,32 @@ function startPreMint(rawPhone: string | null | undefined): Promise<MintedSessio
  * StorefrontAutoLogin consumes the fragment first and skips wa-autologin.
  * Fragment is stripped by history.replaceState immediately after consumption.
  */
+/**
+ * Marks the redirect target as a WhatsApp-sourced arrival. The client uses
+ * this to unlock the store's WhatsApp-exclusive auto-apply coupon on the PDP
+ * and at checkout. Added unconditionally (even when auto-login mint fails or
+ * the phone is missing) so the discount never depends on the auth fast-path.
+ */
+function withWaMarker(url: string): string {
+  try {
+    if (/[?&]wa=1(&|#|$)/.test(url)) return url;
+    const hashAt = url.indexOf("#");
+    const base = hashAt === -1 ? url : url.slice(0, hashAt);
+    const hash = hashAt === -1 ? "" : url.slice(hashAt);
+    const sep = base.includes("?") ? "&" : "?";
+    return `${base}${sep}wa=1${hash}`;
+  } catch {
+    return url;
+  }
+}
+
 async function withAutoLogin(
   url: string,
   rawPhone: string | null | undefined,
   mintPromise?: Promise<MintedSession | null>,
 ): Promise<string> {
   const phone = canonicalPhone(rawPhone || "");
-  if (!phone) return url;
+  if (!phone) return withWaMarker(url);
 
   // Race pre-mint against a small budget so a slow auth API never blocks the
   // redirect longer than ~800ms. If mint misses, we still ship the signed
@@ -82,7 +101,7 @@ async function withAutoLogin(
     mintAutoLoginToken(phone, SERVICE_KEY),
   ]);
 
-  let out = url;
+  let out = withWaMarker(url);
   if (token) {
     const sep = out.includes("?") ? "&" : "?";
     out = `${out}${sep}al=${encodeURIComponent(token)}`;
