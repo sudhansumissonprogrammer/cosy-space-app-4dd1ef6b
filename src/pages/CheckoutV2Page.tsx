@@ -981,6 +981,7 @@ export default function CheckoutV2Page() {
   // auto-apply coupon exists — otherwise the shopper is charged the
   // undiscounted amount while the server books the discounted total.
   const couponsResolvedRef = useRef(false);
+  const couponWaitTriesRef = useRef(0);
   couponsResolvedRef.current = !store?.id || (autoCouponFetched && waCouponFetched);
 
 
