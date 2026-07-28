@@ -22,8 +22,8 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
   // section renders instantly when the badge has already fetched them.
   const { reviews, counts, total, average, refetch } = useStoreReviews(storeId);
 
-  // Max 6 review cards on the PDP; a 7th "View all" card links to the full page.
-  const shown = reviews.slice(0, 6);
+  // Max 8 review cards on the PDP; a 9th "View all" card links to the full page.
+  const shown = reviews.slice(0, 8);
 
 
   // Shared gallery so arrows move across every photo of the shown reviews.
