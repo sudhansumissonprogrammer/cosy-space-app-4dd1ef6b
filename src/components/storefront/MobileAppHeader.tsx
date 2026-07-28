@@ -6,6 +6,9 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavIcons } from "@/hooks/useNavIcons";
+import { useSmartChrome } from "@/hooks/useSmartChrome";
+import HeaderWhatsAppButton from "@/components/storefront/HeaderWhatsAppButton";
+
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/contexts/CartContext";
