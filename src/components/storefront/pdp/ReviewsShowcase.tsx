@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { storefrontPath } from "@/lib/subdomain";
-import { PenLine, ChevronRight } from "lucide-react";
+import { PenLine, ChevronRight, Camera } from "lucide-react";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
 import { REVIEW_SELECT, normalizeReview, ratingBreakdown, type StoreReview } from "@/components/storefront/reviews/reviewTypes";
 
 const WriteReviewDialog = lazy(() => import("@/components/storefront/reviews/WriteReviewDialog"));
+const ReviewMediaLightbox = lazy(() => import("@/components/storefront/reviews/ReviewMediaLightbox"));
 
 interface Props {
   productId: string;
@@ -18,23 +19,28 @@ interface Props {
 
 export default function ReviewsShowcase({ productId, storeId, storeSlug, productName }: Props) {
   const [writing, setWriting] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
 
+  // Store-wide reviews — the same trusted social proof shows on every product page.
   const { data, refetch } = useQuery({
-    queryKey: ["pdp-reviews", productId],
+    queryKey: ["store-pdp-reviews", storeId],
     queryFn: async () => {
       const { data } = await supabase
         .from("product_reviews")
         .select(REVIEW_SELECT)
-        .eq("product_id", productId)
+        .eq("store_id", storeId)
         .order("created_at", { ascending: false })
         .limit(30);
       return (data || []).map(normalizeReview) as StoreReview[];
     },
-    staleTime: 2 * 60 * 1000,
+    enabled: !!storeId,
+    staleTime: 5 * 60 * 1000,
   });
 
   const reviews = data || [];
   const { counts, total, average } = useMemo(() => ratingBreakdown(reviews), [reviews]);
+  const gallery = useMemo(() => reviews.flatMap((r) => r.media), [reviews]);
+
 
   return (
     <section className="mt-10 border-t border-border pt-8" id="reviews">
