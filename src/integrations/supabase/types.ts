@@ -1061,6 +1061,7 @@ export type Database = {
       orders: {
         Row: {
           advance_paid: number
+          applied_coupon_id: string | null
           attribution: Json | null
           balance_due: number
           buyer_fbc: string | null
@@ -1069,6 +1070,7 @@ export type Database = {
           buyer_user_agent: string | null
           checkout_token: string | null
           city: string | null
+          coupon_discount: number
           created_at: string
           currency: string
           customer_id: string | null
@@ -1106,6 +1108,7 @@ export type Database = {
         }
         Insert: {
           advance_paid?: number
+          applied_coupon_id?: string | null
           attribution?: Json | null
           balance_due?: number
           buyer_fbc?: string | null
@@ -1114,6 +1117,7 @@ export type Database = {
           buyer_user_agent?: string | null
           checkout_token?: string | null
           city?: string | null
+          coupon_discount?: number
           created_at?: string
           currency?: string
           customer_id?: string | null
@@ -1151,6 +1155,7 @@ export type Database = {
         }
         Update: {
           advance_paid?: number
+          applied_coupon_id?: string | null
           attribution?: Json | null
           balance_due?: number
           buyer_fbc?: string | null
@@ -1159,6 +1164,7 @@ export type Database = {
           buyer_user_agent?: string | null
           checkout_token?: string | null
           city?: string | null
+          coupon_discount?: number
           created_at?: string
           currency?: string
           customer_id?: string | null
@@ -1195,6 +1201,13 @@ export type Database = {
           visitor_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_applied_coupon_id_fkey"
+            columns: ["applied_coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_customer_id_fkey"
             columns: ["customer_id"]
