@@ -55,8 +55,10 @@ export default function StorefrontAutoLogin({ storeId }: { storeId?: string }) {
     function stripMarkers(): { hadMarker: boolean } {
       try {
         const url = new URL(window.location.href);
-        const hadQuery = url.searchParams.has("al");
-        if (hadQuery) url.searchParams.delete("al");
+        const hadQuery = url.searchParams.has("al") || url.searchParams.has("wa");
+        url.searchParams.delete("al");
+        url.searchParams.delete("wa");
+
 
         // Rewrite fragment — strip only the `als=` pair, keep any other anchor.
         let hadFrag = false;
