@@ -139,7 +139,7 @@ export default function StorefrontReviews() {
         )}
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {isLoading && (
           <div className="col-span-full flex justify-center py-10">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
