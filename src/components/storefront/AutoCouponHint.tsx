@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tag, X, Sparkles } from "lucide-react";
 import { createPortal } from "react-dom";
+
 
 interface Props {
   storeId?: string;
@@ -27,15 +28,35 @@ function fmt(n: number, currency = "INR") {
 }
 
 /**
- * PDP hint that surfaces the store-owner's auto-apply coupon:
- * shows the effective "get it as low as ₹X" price and, on tap,
- * a small popover explaining the discount. Coupon is applied
- * automatically at checkout — this is purely informational.
+ * PDP hint that surfaces the auto-apply coupon a shopper will actually get at
+ * checkout:
+ *  - arrived from a WhatsApp marketing link (`sf_wa_source`) → the store's
+ *    WhatsApp-exclusive coupon (bigger discount), matching what
+ *    CheckoutV2Page auto-applies for that visitor.
+ *  - everyone else → the store-wide auto-apply coupon.
+ * Purely informational; the coupon itself is applied at checkout.
  */
 export function AutoCouponHint({ storeId, storeSlug, basePrice, currency = "INR", className }: Props) {
   const [open, setOpen] = useState(false);
 
-  const { data: coupon } = useQuery({
+  // WA arrivals are flagged by StorefrontAutoLogin, which may run a tick after
+  // this component mounts — listen for the event so the price updates in place.
+  const [isWaSource, setIsWaSource] = useState(() => {
+    try { return sessionStorage.getItem("sf_wa_source") === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    if (isWaSource) return;
+    const sync = () => {
+      try {
+        if (sessionStorage.getItem("sf_wa_source") === "1") setIsWaSource(true);
+      } catch { /* noop */ }
+    };
+    window.addEventListener("sf-wa-source", sync);
+    const t = window.setTimeout(sync, 400);
+    return () => { window.removeEventListener("sf-wa-source", sync); window.clearTimeout(t); };
+  }, [isWaSource]);
+
+  const { data: storeCoupon } = useQuery({
     queryKey: ["store-auto-apply-coupon", storeId],
     enabled: !!storeId,
     staleTime: 5 * 60 * 1000,
@@ -45,7 +66,21 @@ export function AutoCouponHint({ storeId, storeSlug, basePrice, currency = "INR"
     },
   });
 
+  const { data: waCoupon } = useQuery({
+    queryKey: ["store-wa-coupon", storeId],
+    enabled: !!storeId && isWaSource,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await (supabase as any).rpc("get_store_wa_coupon", { _store_id: storeId });
+      return Array.isArray(data) ? data[0] ?? null : data ?? null;
+    },
+  });
+
+  const coupon = (isWaSource && waCoupon) ? waCoupon : storeCoupon;
+
   if (!coupon || !basePrice || basePrice <= 0) return null;
+
+
 
   const minOrder = Number(coupon.min_order_amount || 0);
   const meetsMin = basePrice >= minOrder;
