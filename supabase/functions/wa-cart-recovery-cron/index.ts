@@ -276,10 +276,39 @@ Deno.serve(async (req) => {
     const customerName = (items[0]?.customer_name as string) || "there";
     const s = (c as any).stores || {};
 
-    // We highlight the first cart item (the product the shopper actually
+    // 🚫 Dead-link guard: a cart can reference a product the merchant has
+    // since disabled (is_active = false). The PDP 404s ("Product not found"),
+    // so the whole marketing message burns a WhatsApp conversation and lands
+    // the shopper on a dead page. Pitch the first item that is still live,
+    // and skip the cart entirely when nothing is purchasable anymore.
+    let liveItems = items;
+    if (cartProductIds.length) {
+      const { data: activeRows } = await admin
+        .from("products")
+        .select("id")
+        .eq("store_id", (c as any).store_id)
+        .eq("is_active", true)
+        .in("id", cartProductIds);
+      const activeIds = new Set((activeRows as any[] ?? []).map((r) => String(r.id)));
+      liveItems = items.filter((it: any) => {
+        const pid = String(it?.productId || it?.product_id || "");
+        // Items without a product id can't be verified — keep them, they fall
+        // back to the `c-` cart-recovery link which never 404s.
+        return !pid || activeIds.has(pid);
+      });
+      if (!liveItems.length) {
+        await admin.from("abandoned_carts")
+          .update({ recovery_status: "skipped", recovery_error: "product no longer available" })
+          .eq("id", (c as any).id);
+        skipped++;
+        continue;
+      }
+    }
+
+    // We highlight the first LIVE cart item (the product the shopper actually
     // viewed) and pitch that single product — matches the template copy
     // "You were checking out <product> ... complete your purchase".
-    const firstItem = items[0] || {};
+    const firstItem = liveItems[0] || {};
     const firstTitle = String(firstItem?.name || firstItem?.title || "your item").trim();
     const unitPrice = Number(firstItem?.price ?? 0);
     const productPrice = unitPrice > 0 ? `₹${unitPrice.toFixed(0)}` : `₹${total.toFixed(0)}`;
@@ -290,6 +319,7 @@ Deno.serve(async (req) => {
     const firstProductId = firstItem?.productId || firstItem?.product_id;
     const alSuffix = phone ? `~${phone}` : "";
     const ctaToken = firstProductId ? `p-${firstProductId}${alSuffix}` : `c-${(c as any).id}`;
+
 
     // 🖼️ Header image for IMAGE-type templates (v7_img+). Route the product
     // photo through wsrv.nl to guarantee JPG output — Meta rejects WebP in
