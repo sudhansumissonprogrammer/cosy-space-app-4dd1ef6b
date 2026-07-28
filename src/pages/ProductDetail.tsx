@@ -554,6 +554,16 @@ export default function ProductDetail() {
     : 0;
   const waPreview = useWaCouponPreview(store?.id, waPreviewBase);
 
+  // 🚑 Dead-link rescue: shoppers arriving from a WhatsApp recovery message
+  // must never hit a dead end if the product was disabled after the message
+  // was sent — bounce them to the store home immediately (session + coupon
+  // markers are already persisted by StorefrontAutoLogin).
+  const notFound = !isLoading && !product;
+  useEffect(() => {
+    if (!notFound || !store?.slug) return;
+    navigate(storefrontPath(store.slug), { replace: true });
+  }, [notFound, store?.slug, navigate]);
+
   if (isLoading) return <ProductDetailSkeleton />;
 
 
