@@ -93,9 +93,33 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
         </button>
       </div>
 
+      {gallery.length > 0 && (
+        <div className="mt-5">
+          <div className="mb-2 flex items-center gap-1.5 text-sm font-bold text-foreground">
+            <Camera className="h-4 w-4" /> Photos from customers
+          </div>
+          <div className="flex snap-x gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {gallery.slice(0, 20).map((m, i) => (
+              <button
+                key={`${m.url}-${i}`}
+                onClick={() => setGalleryIndex(i)}
+                className="h-24 w-24 shrink-0 snap-start overflow-hidden rounded-xl border border-border transition-transform active:scale-95 sm:h-28 sm:w-28"
+                aria-label="View customer photo"
+              >
+                {m.type === "video" ? (
+                  <video src={m.url} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+                ) : (
+                  <img src={m.url} alt="Customer photo" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {reviews.length > 0 ? (
         <div className="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {reviews.slice(0, 10).map((r) => (
+          {reviews.slice(0, 12).map((r) => (
             <div key={r.id} className="w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-[32%]">
               <ReviewCard review={r} compact />
             </div>
@@ -105,6 +129,12 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
         <p className="mt-4 rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           Be the first to review this product.
         </p>
+      )}
+
+      {galleryIndex !== null && (
+        <Suspense fallback={null}>
+          <ReviewMediaLightbox media={gallery} startIndex={galleryIndex} onClose={() => setGalleryIndex(null)} />
+        </Suspense>
       )}
 
       {writing && (
@@ -118,6 +148,7 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
           />
         </Suspense>
       )}
+
     </section>
   );
 }
