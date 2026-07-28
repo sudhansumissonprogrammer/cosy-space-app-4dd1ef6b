@@ -139,6 +139,14 @@ export default function StorefrontShell({
     loadGoogleFonts(themeConfig);
   }, [store?.id, themeConfig?.heading_font, themeConfig?.body_font]);
 
+  // Publish the store's "auto-hide header/nav on scroll" preference globally so
+  // useSmartChrome can read it without prop-threading through 20 layouts.
+  useEffect(() => {
+    const on = (themeConfig as any)?.auto_hide_chrome !== false;
+    document.documentElement.dataset.autoHideChrome = on ? "1" : "0";
+  }, [(themeConfig as any)?.auto_hide_chrome]);
+
+
   // Listen for live theme preview messages
   const previewOverride = useThemePreview(store?.id);
 
