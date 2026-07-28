@@ -79,6 +79,7 @@ function MobileMenu({
           items: filterItems([
             { label: "Products", icon: Package, path: `/dashboard/stores/${storeSlug}/products`, menuKey: "products" },
             { label: "Best Sellers", icon: Star, path: `/dashboard/stores/${storeSlug}/best-sellers`, menuKey: "best_sellers" },
+            { label: "Reviews", icon: MessageCircle, path: `/dashboard/stores/${storeSlug}/reviews`, menuKey: "reviews" },
             { label: "Categories", icon: Grid3X3, path: `/dashboard/stores/${storeSlug}/categories`, menuKey: "categories" },
             { label: "Media Library", icon: Upload, path: `/dashboard/stores/${storeSlug}/media`, menuKey: "media_library" },
             { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeSlug}/products/bulk-upload`, menuKey: "bulk_upload" },
