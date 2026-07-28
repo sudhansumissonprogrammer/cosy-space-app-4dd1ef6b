@@ -1,5 +1,5 @@
 import { useMemo, useState, lazy, Suspense } from "react";
-import { useOutletContext, Link } from "react-router-dom";
+import { useOutletContext, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { storefrontPath } from "@/lib/subdomain";
@@ -15,6 +15,7 @@ type SortKey = "recent" | "highest" | "lowest" | "media";
 
 export default function StorefrontReviews() {
   const store = useOutletContext<StoreData>();
+  const navigate = useNavigate();
   const [sort, setSort] = useState<SortKey>("recent");
   const [starFilter, setStarFilter] = useState<number | null>(null);
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
@@ -51,12 +52,16 @@ export default function StorefrontReviews() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
-      <Link
-        to={storefrontPath(store.slug)}
+      <button
+        type="button"
+        onClick={() => {
+          if (window.history.length > 1) navigate(-1);
+          else navigate(storefrontPath(store.slug));
+        }}
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to store
-      </Link>
+        <ArrowLeft className="h-4 w-4" /> Back
+      </button>
 
       <h1 className="text-2xl font-black text-foreground sm:text-3xl">Customer reviews</h1>
       <p className="mt-1 text-sm text-muted-foreground">What shoppers say about {store.name}</p>
@@ -82,7 +87,7 @@ export default function StorefrontReviews() {
               >
                 <span className="w-8 shrink-0 text-[11px] font-semibold text-muted-foreground">{star} ★</span>
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-accent">
-                  <div className="h-full rounded-full bg-amber-400" style={{ width: `${pct}%` }} />
+                  <div className="h-full rounded-full bg-emerald-500" style={{ width: `${pct}%` }} />
                 </div>
                 <span className="w-7 shrink-0 text-right text-[11px] text-muted-foreground">{counts[star]}</span>
               </button>
