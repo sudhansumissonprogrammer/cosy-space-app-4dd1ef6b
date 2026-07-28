@@ -102,7 +102,19 @@ export default function StorefrontAutoLogin({ storeId }: { storeId?: string }) {
         const url = new URL(window.location.href);
         const queryToken = url.searchParams.get("al");
         const fragSession = readFragmentSession();
-        if (!queryToken && !fragSession) return;
+        // `wa=1` is stamped on EVERY wa-r redirect, even when the auto-login
+        // mint failed. It is the source of truth for "arrived from a WhatsApp
+        // marketing message" and unlocks the WA-exclusive coupon on the PDP
+        // and at checkout.
+        const waMarker = url.searchParams.get("wa") === "1";
+        if (waMarker) {
+          try { sessionStorage.setItem("sf_wa_source", "1"); } catch { /* noop */ }
+          try { window.dispatchEvent(new Event("sf-wa-source")); } catch { /* noop */ }
+        }
+        if (!queryToken && !fragSession) {
+          if (waMarker) stripMarkers();
+          return;
+        }
 
         // Strip markers ASAP (before any await) so a refresh doesn't replay.
         stripMarkers();
@@ -110,6 +122,8 @@ export default function StorefrontAutoLogin({ storeId }: { storeId?: string }) {
         // Mark WA-source in session storage — used by store-owner-gated
         // auto-apply coupons downstream (see StorefrontAutoLogin history).
         try { sessionStorage.setItem("sf_wa_source", "1"); } catch { /* noop */ }
+        try { window.dispatchEvent(new Event("sf-wa-source")); } catch { /* noop */ }
+
 
         // If a storefront session is already present, skip everything — the
         // shopper is already logged-in for THIS storefront.
