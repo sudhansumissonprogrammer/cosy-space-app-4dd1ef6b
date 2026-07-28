@@ -13,12 +13,23 @@ export function ReviewStars({ rating, className = "h-4 w-4" }: { rating: number;
   );
 }
 
-export default function ReviewCard({ review, compact = false }: { review: StoreReview; compact?: boolean }) {
+export default function ReviewCard({
+  review,
+  compact = false,
+  onOpenMedia,
+}: {
+  review: StoreReview;
+  compact?: boolean;
+  /** When provided, media clicks open a shared gallery lightbox instead of a per-card one. */
+  onOpenMedia?: (indexWithinReview: number) => void;
+}) {
   const [lightbox, setLightbox] = useState<number | null>(null);
 
   const media = review.media || [];
   const hero = media[0];
   const rest = media.slice(1);
+
+  const open = (i: number) => (onOpenMedia ? onOpenMedia(i) : setLightbox(i));
 
   return (
     <article className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/15 bg-neutral-900 shadow-[0_8px_28px_-10px_rgba(0,0,0,0.5)]">
@@ -27,7 +38,7 @@ export default function ReviewCard({ review, compact = false }: { review: StoreR
           {/* Full-bleed media */}
           <button
             type="button"
-            onClick={() => setLightbox(0)}
+            onClick={() => open(0)}
             className="relative block w-full flex-1 overflow-hidden transition-transform active:scale-[0.99]"
             aria-label="View media"
           >
@@ -43,9 +54,14 @@ export default function ReviewCard({ review, compact = false }: { review: StoreR
                 <img src={hero.url} alt="Customer photo" loading="lazy" decoding="async" className="h-full w-full object-cover" />
               )}
             </div>
+            {/* enlarge affordance */}
+            <span className="pointer-events-none absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border border-white/30 bg-black/45 backdrop-blur-sm">
+              <Expand className="h-3.5 w-3.5 text-white" />
+            </span>
             {/* readability scrim */}
             <span className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
           </button>
+
 
           {/* extra media thumbs — small, top-right */}
           {rest.length > 0 && (
