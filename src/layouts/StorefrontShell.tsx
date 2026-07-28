@@ -389,11 +389,15 @@ export default function StorefrontShell({
           <SideCart store={store} />
         </Suspense>
       )}
+      {/* WhatsApp now lives in the header. This slot hosts the trust-video reel
+          launcher — it self-hides when the store has no active trust videos and
+          only fetches the player chunk + media on tap. */}
       {overlaysReady && showWhatsApp && !/\/checkout(\/|$)/.test(pathname) && (
         <Suspense fallback={null}>
-          <FloatingWhatsApp store={store} />
+          <TrustVideoLauncher storeId={store.id} storeSlug={store.slug} />
         </Suspense>
       )}
+
       {/* ExitIntentPopup permanently disabled — SAVE100 reserved for WhatsApp recovery links only.
           Coupon auto-applies at checkout via ?coupon=SAVE100 in the recovery link. */}
       {overlaysReady && (
