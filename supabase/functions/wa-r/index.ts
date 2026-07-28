@@ -299,13 +299,24 @@ Deno.serve(async (req) => {
 
       const { data: p } = await admin
         .from("products")
-        .select("id, slug, stores:store_id(name, slug, custom_domain)")
+        .select("id, slug, is_active, stores:store_id(name, slug, custom_domain)")
         .eq("id", id).maybeSingle();
       if (!p) return redirect("https://shopbanao.in");
       const storeRow = (p as any).stores;
       const base = storeBase(storeRow);
       const host = base.replace(/^https?:\/\//, "");
       const slug = (p as any).slug as string | undefined;
+      // Merchant disabled the product after the message was queued → the PDP
+      // renders "Product not found". Land the shopper on the storefront home
+      // instead of a dead end so the click still has a chance to convert.
+      if ((p as any).is_active === false) {
+        return redirect(await withAutoLogin(base, suffixPhone, mintP), {
+          status: 302,
+          maxAge: 0,
+          preconnectHosts: [host, "cdn.shopbanao.in"],
+        });
+      }
+
       if (!slug) return redirect(base, { preconnectHosts: [host] });
 
       // Parallel: hero image lookup + storefront cache warm.
