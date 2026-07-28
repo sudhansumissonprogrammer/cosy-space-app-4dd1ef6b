@@ -21,6 +21,8 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const getIcon = useNavIcons(store.id);
+  const { headerVisible } = useSmartChrome();
+
   const MenuIcon = getIcon("menu");
   const SearchIcon = getIcon("search");
   const CartIcon = getIcon("cart");
