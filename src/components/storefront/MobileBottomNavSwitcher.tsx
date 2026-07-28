@@ -12,6 +12,8 @@
  * via the parent layout's padding.
  */
 import { lazy, Suspense } from "react";
+import { useSmartChrome } from "@/hooks/useSmartChrome";
+
 import type { StoreData } from "@/layouts/StorefrontLayout";
 
 const MobileBottomNav = lazy(() => import("./MobileBottomNav"));
