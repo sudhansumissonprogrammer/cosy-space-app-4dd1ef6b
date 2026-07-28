@@ -28,7 +28,7 @@ const SideCart = lazy(() => import("@/components/storefront/SideCart"));
  * React-level skeletons are intentionally REMOVED to avoid the
  * "double skeleton" flash and to ship less JS per theme.
  */
-const FloatingWhatsApp = lazy(() => import("@/components/storefront/FloatingWhatsApp"));
+const TrustVideoLauncher = lazy(() => import("@/components/storefront/trust/TrustVideoLauncher"));
 const DynamicPwaManifest = lazy(() => import("@/components/storefront/DynamicPwaManifest"));
 const SmartInstallPrompt = lazy(() => import("@/components/SmartInstallPrompt"));
 const ExitIntentPopup = lazy(() => import("@/components/storefront/ExitIntentPopup"));
