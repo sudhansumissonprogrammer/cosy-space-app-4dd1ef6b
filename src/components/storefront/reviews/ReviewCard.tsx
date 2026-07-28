@@ -31,6 +31,10 @@ export default function ReviewCard({
 
   const open = (i: number) => (onOpenMedia ? onOpenMedia(i) : setLightbox(i));
 
+  // Photo-only reviews: no real name and nothing written — show only the rating.
+  const genericName = !review.customer_name || /^(verified buyer|customer|anonymous)$/i.test(review.customer_name.trim());
+  const anonymousPhotoOnly = genericName && !review.review_text && !review.title;
+
   return (
     <article className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/15 bg-neutral-900 shadow-[0_8px_28px_-10px_rgba(0,0,0,0.5)]">
       {hero ? (
@@ -94,26 +98,34 @@ export default function ReviewCard({
             </div>
           )}
 
-          {/* Glass caption pinned to the bottom of the photo */}
-          <div className="pointer-events-none absolute inset-x-2 bottom-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2 backdrop-blur-md">
-            <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/25 text-[11px] font-bold text-white">
-                {review.customer_name?.charAt(0)?.toUpperCase() || "C"}
-              </span>
-              <span className="truncate text-[12px] font-bold text-white">{review.customer_name}</span>
-              {review.is_verified && <BadgeCheck className="h-3.5 w-3.5 shrink-0 fill-[#1877F2] text-white" />}
-              <span className="ml-auto shrink-0">
-                <ReviewStars rating={review.rating} className="h-3 w-3" />
-              </span>
+          {/* Glass caption pinned to the bottom of the photo.
+              Photo-only reviews (no name, no text) show just the rating. */}
+          {anonymousPhotoOnly ? (
+            <div className="pointer-events-none absolute inset-x-2 bottom-2 flex items-center justify-between rounded-xl border border-white/20 bg-white/10 px-3 py-2 backdrop-blur-md">
+              <ReviewStars rating={review.rating} className="h-3.5 w-3.5" />
+              <span className="text-[10px] text-white/70">{formatReviewDate(review.created_at)}</span>
             </div>
-            {(review.title || review.review_text) && (
-              <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-white/90">
-                {review.title ? <span className="font-semibold">{review.title}. </span> : null}
-                {review.review_text}
-              </p>
-            )}
-            <span className="mt-0.5 block text-[10px] text-white/60">{formatReviewDate(review.created_at)}</span>
-          </div>
+          ) : (
+            <div className="pointer-events-none absolute inset-x-2 bottom-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2 backdrop-blur-md">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/25 text-[11px] font-bold text-white">
+                  {review.customer_name?.charAt(0)?.toUpperCase() || "C"}
+                </span>
+                <span className="truncate text-[12px] font-bold text-white">{review.customer_name}</span>
+                {review.is_verified && <BadgeCheck className="h-3.5 w-3.5 shrink-0 fill-[#1877F2] text-white" />}
+                <span className="ml-auto shrink-0">
+                  <ReviewStars rating={review.rating} className="h-3 w-3" />
+                </span>
+              </div>
+              {(review.title || review.review_text) && (
+                <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-white/90">
+                  {review.title ? <span className="font-semibold">{review.title}. </span> : null}
+                  {review.review_text}
+                </p>
+              )}
+              <span className="mt-0.5 block text-[10px] text-white/60">{formatReviewDate(review.created_at)}</span>
+            </div>
+          )}
         </>
       ) : (
         /* Text-only review */

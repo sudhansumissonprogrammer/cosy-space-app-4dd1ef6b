@@ -1,11 +1,9 @@
 import { useMemo, useState, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { storefrontPath } from "@/lib/subdomain";
 import { PenLine, ChevronRight, ArrowRight } from "lucide-react";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
-import { REVIEW_SELECT, normalizeReview, ratingBreakdown, type StoreReview } from "@/components/storefront/reviews/reviewTypes";
+import { useStoreReviews } from "@/hooks/useStoreReviews";
 
 const WriteReviewDialog = lazy(() => import("@/components/storefront/reviews/WriteReviewDialog"));
 const ReviewMediaLightbox = lazy(() => import("@/components/storefront/reviews/ReviewMediaLightbox"));
@@ -20,27 +18,13 @@ interface Props {
 export default function ReviewsShowcase({ productId, storeId, storeSlug, productName }: Props) {
   const [writing, setWriting] = useState(false);
 
-  // Store-wide reviews — the same trusted social proof shows on every product page.
-  const { data, refetch } = useQuery({
-    queryKey: ["store-pdp-reviews", storeId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("product_reviews")
-        .select(REVIEW_SELECT)
-        .eq("store_id", storeId)
-        .order("created_at", { ascending: false })
-        .limit(30);
-      return (data || []).map(normalizeReview) as StoreReview[];
-    },
-    enabled: !!storeId,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const reviews = data || [];
-  const { counts, total, average } = useMemo(() => ratingBreakdown(reviews), [reviews]);
+  // Store-wide reviews — shared cache with the gallery rating badge, so this
+  // section renders instantly when the badge has already fetched them.
+  const { reviews, counts, total, average, refetch } = useStoreReviews(storeId);
 
   // Max 6 review cards on the PDP; a 7th "View all" card links to the full page.
   const shown = reviews.slice(0, 6);
+
 
   // Shared gallery so arrows move across every photo of the shown reviews.
   const { gallery, offsets } = useMemo(() => {

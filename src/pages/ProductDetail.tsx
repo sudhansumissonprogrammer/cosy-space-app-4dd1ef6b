@@ -50,6 +50,7 @@ import { useWaCouponPreview } from "@/hooks/useWaCouponPreview";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const ReviewsShowcase = lazy(() => import("@/components/storefront/pdp/ReviewsShowcase"));
+import PdpReviewsBadge from "@/components/storefront/pdp/PdpReviewsBadge";
 const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
 const VideoSlide = lazy(() =>
   import("@/components/storefront/VideoSlide").then((m) => ({ default: m.VideoSlide }))
@@ -731,6 +732,7 @@ export default function ProductDetail() {
           hasDiscount={hasDiscount}
           discountPct={discountPct}
           showWarrantyBadge={!!(mainThemeConfig as any)?.show_warranty_badge}
+          storeId={store.id}
           onShare={async () => {
             const storeHost = (store as any).custom_domain
               ? `https://${(store as any).custom_domain}`
@@ -1516,6 +1518,7 @@ function ImageGallery({
   discountPct,
   onShare,
   showWarrantyBadge,
+  storeId,
 }: {
   images: string[];
   video?: { url: string; poster: string } | null;
@@ -1524,6 +1527,7 @@ function ImageGallery({
   discountPct: number;
   onShare?: () => void;
   showWarrantyBadge?: boolean;
+  storeId?: string;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -1761,6 +1765,13 @@ function ImageGallery({
               <Maximize2 className="h-4 w-4" />
             </button>
           )}
+
+          {/* Rating pill → jumps to the reviews section */}
+          <div className={`absolute right-3 z-10 ${showMultiUi ? "bottom-12 sm:bottom-3" : "bottom-3"}`}>
+            <PdpReviewsBadge storeId={storeId} />
+          </div>
+
+
 
           {/* Counter (mobile) */}
           {showMultiUi && (
