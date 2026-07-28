@@ -29,9 +29,9 @@ export default function ReviewMediaLightbox({ media, startIndex, onClose }: Prop
   const current = media[index];
   if (!current) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/90 p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-[2147483000] flex items-center justify-center bg-foreground/90 p-4 animate-in fade-in duration-150"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
