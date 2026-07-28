@@ -7,7 +7,7 @@ export function ReviewStars({ rating, className = "h-4 w-4" }: { rating: number;
   return (
     <div className="flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map((s) => (
-        <Star key={s} className={`${className} ${s <= Math.round(rating) ? "fill-amber-400 text-amber-400" : "text-white/30"}`} />
+        <Star key={s} className={`${className} ${s <= Math.round(rating) ? "fill-emerald-500 text-emerald-500" : "text-black/20"}`} />
       ))}
     </div>
   );
@@ -31,7 +31,7 @@ export default function ReviewCard({ review, compact = false }: { review: StoreR
             className="relative block w-full flex-1 overflow-hidden transition-transform active:scale-[0.99]"
             aria-label="View media"
           >
-            <div className="aspect-[3/4] w-full">
+            <div className="aspect-[3/4.6] w-full">
               {hero.type === "video" ? (
                 <>
                   <video src={hero.url} className="h-full w-full object-cover" muted playsInline preload="metadata" />
@@ -85,7 +85,7 @@ export default function ReviewCard({ review, compact = false }: { review: StoreR
                 {review.customer_name?.charAt(0)?.toUpperCase() || "C"}
               </span>
               <span className="truncate text-[12px] font-bold text-white">{review.customer_name}</span>
-              {review.is_verified && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-white/90" />}
+              {review.is_verified && <BadgeCheck className="h-3.5 w-3.5 shrink-0 fill-[#1877F2] text-white" />}
               <span className="ml-auto shrink-0">
                 <ReviewStars rating={review.rating} className="h-3 w-3" />
               </span>
@@ -109,7 +109,7 @@ export default function ReviewCard({ review, compact = false }: { review: StoreR
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="truncate text-sm font-bold text-white">{review.customer_name}</span>
-                {review.is_verified && <BadgeCheck className="h-4 w-4 shrink-0 text-white/90" />}
+                {review.is_verified && <BadgeCheck className="h-4 w-4 shrink-0 fill-[#1877F2] text-white" />}
               </div>
               <span className="text-[10px] text-white/70">{formatReviewDate(review.created_at)}</span>
             </div>

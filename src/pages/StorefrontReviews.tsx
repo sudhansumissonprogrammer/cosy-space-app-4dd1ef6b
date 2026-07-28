@@ -82,7 +82,7 @@ export default function StorefrontReviews() {
               >
                 <span className="w-8 shrink-0 text-[11px] font-semibold text-muted-foreground">{star} ★</span>
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-accent">
-                  <div className="h-full rounded-full bg-amber-400" style={{ width: `${pct}%` }} />
+                  <div className="h-full rounded-full bg-emerald-500" style={{ width: `${pct}%` }} />
                 </div>
                 <span className="w-7 shrink-0 text-right text-[11px] text-muted-foreground">{counts[star]}</span>
               </button>
