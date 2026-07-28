@@ -73,6 +73,9 @@ export default function MobileAppHeader({ store }: { store: StoreData }) {
             <span style={{ color: "var(--storefront-text, hsl(var(--foreground)))40" }}>Search products...</span>
           </button>
 
+          <HeaderWhatsAppButton storeName={store.name} whatsappNumber={(store as any).whatsapp_number} />
+
+
           <button onClick={openCart} className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors" aria-label="Open cart">
             <CartIcon className="h-5 w-5" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
             {cartCount > 0 && (
