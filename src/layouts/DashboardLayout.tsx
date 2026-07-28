@@ -19,7 +19,7 @@ import {
   Upload, Users, UserCheck, Globe, Settings, CreditCard, Tag, Truck,
   Receipt, ShoppingCart, Store, ChevronDown, ExternalLink, Palette,
   Search, User, Bell, X, BarChart3, MessageSquare, Clock, RefreshCw,
-  Grid3X3, FileText, Star, Wallet, Blocks, TrendingDown,
+  Grid3X3, FileText, Star, Wallet, Blocks, TrendingDown, MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,7 @@ function MobileMenu({
           items: filterItems([
             { label: "Products", icon: Package, path: `/dashboard/stores/${storeSlug}/products`, menuKey: "products" },
             { label: "Best Sellers", icon: Star, path: `/dashboard/stores/${storeSlug}/best-sellers`, menuKey: "best_sellers" },
+            { label: "Reviews", icon: MessageCircle, path: `/dashboard/stores/${storeSlug}/reviews`, menuKey: "reviews" },
             { label: "Categories", icon: Grid3X3, path: `/dashboard/stores/${storeSlug}/categories`, menuKey: "categories" },
             { label: "Media Library", icon: Upload, path: `/dashboard/stores/${storeSlug}/media`, menuKey: "media_library" },
             { label: "Bulk Upload", icon: Upload, path: `/dashboard/stores/${storeSlug}/products/bulk-upload`, menuKey: "bulk_upload" },
