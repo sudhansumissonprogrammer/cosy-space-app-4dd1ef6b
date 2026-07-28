@@ -1,0 +1,169 @@
+/**
+ * TrustVideoReel — full-screen, reel-style player for owner-uploaded trust
+ * videos (and, when the Shop by Video app is on, product videos).
+ *
+ * Loaded ONLY on demand (lazy chunk) when the shopper taps the floating
+ * button, so it never touches home / category / PDP cold-load cost.
+ *
+ * Video only: no titles floating around, no chrome — just the clip plus a
+ * glassmorphic "See more details" CTA.
+ */
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, ChevronUp, Volume2, VolumeX, X } from "lucide-react";
+import type { TrustSlide } from "@/lib/trustVideos";
+
+interface Props {
+  slides: TrustSlide[];
+  onClose: () => void;
+}
+
+export default function TrustVideoReel({ slides, onClose }: Props) {
+  const navigate = useNavigate();
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const [active, setActive] = useState(0);
+  const [muted, setMuted] = useState(true);
+
+  // Lock background scroll while the reel owns the screen.
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  // Play only the visible slide; everything else stays paused + unbuffered.
+  useEffect(() => {
+    const root = scrollerRef.current;
+    if (!root) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const idx = Number((entry.target as HTMLElement).dataset.idx);
+          const v = videoRefs.current[idx];
+          if (!v) return;
+          if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+            setActive(idx);
+            v.play().catch(() => {});
+          } else {
+            v.pause();
+          }
+        });
+      },
+      { root, threshold: [0, 0.6, 1] },
+    );
+    root.querySelectorAll("[data-idx]").forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [slides.length]);
+
+  useEffect(() => {
+    videoRefs.current.forEach((v) => { if (v) v.muted = muted; });
+  }, [muted]);
+
+  const goNext = (idx: number) => {
+    const root = scrollerRef.current;
+    if (!root) return;
+    const next = root.querySelector<HTMLElement>(`[data-idx="${idx + 1}"]`);
+    if (next) next.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleCta = (s: TrustSlide) => {
+    if (s.href) {
+      window.open(s.href, "_blank", "noopener,noreferrer");
+      return;
+    }
+    onClose();
+    if (s.to) navigate(s.to);
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] bg-black">
+      {/* Top controls */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between p-3">
+        <button
+          onClick={onClose}
+          className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-xl transition-transform active:scale-[0.92]"
+          aria-label="Close video"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        <button
+          onClick={() => setMuted((m) => !m)}
+          className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-xl transition-transform active:scale-[0.92]"
+          aria-label={muted ? "Unmute" : "Mute"}
+        >
+          {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+        </button>
+      </div>
+
+      <div
+        ref={scrollerRef}
+        className="h-full w-full snap-y snap-mandatory overflow-y-auto overscroll-contain"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {slides.map((s, i) => (
+          <section
+            key={s.id}
+            data-idx={i}
+            className="relative flex h-full w-full snap-start items-center justify-center"
+          >
+            <video
+              ref={(el) => { videoRefs.current[i] = el; }}
+              src={s.videoUrl}
+              poster={s.posterUrl || undefined}
+              className="h-full w-full object-contain"
+              playsInline
+              muted
+              loop
+              // Only the first clip preloads; the rest load as they scroll in.
+              preload={i === 0 ? "auto" : "none"}
+              onClick={() => setMuted((m) => !m)}
+            />
+
+            {/* Glassmorphic CTA */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 p-4 pb-8">
+              <div className="mx-auto flex max-w-sm flex-col gap-2">
+                <button
+                  onClick={() => handleCta(s)}
+                  className="pointer-events-auto flex w-full items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/15 px-5 py-3.5 text-[15px] font-semibold text-white shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-transform active:scale-[0.97]"
+                >
+                  {s.ctaLabel}
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                {i < slides.length - 1 && (
+                  <button
+                    onClick={() => goNext(i)}
+                    className="pointer-events-auto mx-auto flex items-center gap-1 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-medium text-white/80 backdrop-blur-xl"
+                  >
+                    <ChevronUp className="h-3.5 w-3.5" />
+                    Swipe up
+                  </button>
+                )}
+              </div>
+            </div>
+          </section>
+        ))}
+      </div>
+
+      {/* Progress dots */}
+      {slides.length > 1 && (
+        <div className="pointer-events-none absolute right-2 top-1/2 z-20 flex -translate-y-1/2 flex-col gap-1.5">
+          {slides.map((s, i) => (
+            <span
+              key={s.id}
+              className={`h-1.5 w-1.5 rounded-full transition-all ${i === active ? "h-4 bg-white" : "bg-white/40"}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>,
+    document.body,
+  );
+}

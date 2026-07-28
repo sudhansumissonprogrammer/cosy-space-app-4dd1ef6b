@@ -213,6 +213,14 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
               </Link>
             )}
 
+            {/* WhatsApp — moved out of the floating bubble slot */}
+            <HeaderWhatsAppButton
+              storeName={store.name}
+              whatsappNumber={(store as any).whatsapp_number}
+              className="flex h-9 w-9 items-center justify-center rounded-md transition-opacity hover:opacity-70"
+            />
+
+
             {/* Wishlist */}
             <Link
               to={storefrontPath(store.slug, "wishlist")}
