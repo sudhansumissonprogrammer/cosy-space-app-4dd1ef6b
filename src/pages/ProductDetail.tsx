@@ -1516,6 +1516,7 @@ function ImageGallery({
   discountPct,
   onShare,
   showWarrantyBadge,
+  storeId,
 }: {
   images: string[];
   video?: { url: string; poster: string } | null;
@@ -1524,6 +1525,7 @@ function ImageGallery({
   discountPct: number;
   onShare?: () => void;
   showWarrantyBadge?: boolean;
+  storeId?: string;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
