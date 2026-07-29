@@ -335,6 +335,22 @@ export async function recoveryDripDecision(admin: any, phone: string, opts: { ig
   const done = times.length;
   if (done >= DRIP_MAX_STEPS) return { allow: false, step: done, reason: "drip_complete" };
 
+  // 🚫 HARD RULE: never more than 2 messages to the same number in any rolling
+  // 24h window. The drip schedule (0h → +5h → +29h) already respects this, but
+  // this guard is absolute — retries, re-runs or schedule edits can't break it.
+  const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
+  let last24h = times.filter((t) => t >= cutoff24h).length;
+  if (!opts.ignoreInFlight) {
+    last24h += ((queueRows as any[]) ?? []).filter(
+      (q) => (q.status === "pending" || q.status === "sending") &&
+        new Date(q.created_at).getTime() >= cutoff24h,
+    ).length;
+  }
+  if (last24h >= DRIP_MAX_PER_24H) {
+    return { allow: false, step: done + 1, reason: "drip_24h_cap", lastSentAt: times[0] ? new Date(times[0]).toISOString() : null };
+  }
+
+
   const step = done + 1;
   if (done === 0) return { allow: true, step, lastSentAt: null };
 
