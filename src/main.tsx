@@ -192,10 +192,32 @@ if (shouldUseLandingFastPath()) {
     createRoot(rootElement).render(<LandingApp />);
   });
 } else {
+  // PERF (measured 2026-07-29): on storefront hosts the `storefront-shell`
+  // chunk (+ supabase / router-query / radix-slot / icons) was only discovered
+  // AFTER App.js finished parsing — a full extra RTT wave starting at ~584ms
+  // (home) / ~803ms (PDP) on cold mobile. Kick that wave off in PARALLEL with
+  // App.js instead of after it.
+  //
+  // CartContext lives in the `storefront-shell` manualChunk (see vite.config)
+  // and has no import-time side effects, so touching it only warms the network
+  // + module cache. This is a DYNAMIC import from the entry, so Rollup adds no
+  // static graph edge — the landing entry stays lean (see the `subdomain` note
+  // in vite.config manualChunks).
+  const host = window.location.hostname;
+  if (
+    isSubdomainHost(host) ||
+    isCustomDomainHost(host) ||
+    (window as any).__STORE_SLUG__ ||
+    (window as any).__STOREFRONT_DATA__
+  ) {
+    import("@/contexts/CartContext").catch(() => {});
+  }
+
   import("./App").then(({ default: App }) => {
     createRoot(rootElement).render(<App />);
   });
 }
+
 
 // storefront:mounted is no longer used for skeleton removal.
 // Worker skeleton is removed only by storefront:content-ready or 12s fallback.
