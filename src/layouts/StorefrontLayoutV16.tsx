@@ -35,10 +35,11 @@ export default function StorefrontLayoutV16({ slugOverride }: { slugOverride?: s
             mobileNav={
               mobileNavEnabled ? (
                 <Suspense fallback={null}>
-                  <LazyMobileBottomNav store={store} variant={mobileNavStyle as NavVariant} />
+                  <LazyMobileBottomNav store={store} variant={mobileNavStyle as NavVariant} swapCartWhatsApp />
                 </Suspense>
               ) : undefined
             }
+            swapCartWhatsApp
             showPremiumBadge={(themeConfig as any)?.show_premium_header_badge === true}
             headerStyle={themeConfig?.header_style || "normal"}
           />

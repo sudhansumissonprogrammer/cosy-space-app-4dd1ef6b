@@ -56,15 +56,22 @@ function pulseTarget(target: HTMLElement) {
  */
 export function flyToCart(source: Element | DOMRect | null, opts: FlyOptions = {}): number {
   if (typeof window === "undefined" || typeof document === "undefined") return 0;
-  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return 0;
+  // When the arc is skipped (reduced motion, no visible cart icon — e.g. the
+  // PDP where the bottom nav is hidden) we still must tell listeners the item
+  // "landed", otherwise the SideCart never opens after add-to-cart.
+  const bail = () => {
+    try { window.dispatchEvent(new CustomEvent("cart:fly-landed")); } catch {}
+    return 0;
+  };
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return bail();
 
   const target = pickTarget();
-  if (!target) return 0;
+  if (!target) return bail();
 
   const fromRect: DOMRect | null =
     opts.fromRect
       ?? (source instanceof Element ? source.getBoundingClientRect() : (source as DOMRect | null));
-  if (!fromRect) return 0;
+  if (!fromRect) return bail();
 
   const toRect = target.getBoundingClientRect();
 

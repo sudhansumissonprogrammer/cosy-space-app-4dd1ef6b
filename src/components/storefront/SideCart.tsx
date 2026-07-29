@@ -108,6 +108,10 @@ export default function SideCart({ store }: SideCartProps) {
     return Math.max(0, Math.min(Math.round(raw), cartTotal));
   }, [coupon, cartTotal]);
 
+  // Cart-only sweetener: ₹100 off every upsell card, but only once the cart
+  // already holds a product (never on a bare PDP).
+  const cartFlatOff = items.length > 0 ? 100 : 0;
+
   const flatOffLabel = couponDiscount > 0 ? `FLAT ${formatPrice(couponDiscount, currency)} OFF` : null;
 
   /* ── Three deduped upsell carousels (PDP engine) ───────────────── */
@@ -173,6 +177,7 @@ export default function SideCart({ store }: SideCartProps) {
                 slug={store.slug}
                 currency={currency}
                 highlight
+                flatOff={cartFlatOff}
                 hasNextPage={same.query.hasNextPage}
                 isFetchingNextPage={same.query.isFetchingNextPage}
                 fetchNextPage={same.query.fetchNextPage}
@@ -182,6 +187,7 @@ export default function SideCart({ store }: SideCartProps) {
                 items={best.items}
                 slug={store.slug}
                 currency={currency}
+                flatOff={cartFlatOff}
                 hasNextPage={best.query.hasNextPage}
                 isFetchingNextPage={best.query.isFetchingNextPage}
                 fetchNextPage={best.query.fetchNextPage}
@@ -191,6 +197,7 @@ export default function SideCart({ store }: SideCartProps) {
                 items={other.items}
                 slug={store.slug}
                 currency={currency}
+                flatOff={cartFlatOff}
                 hasNextPage={other.query.hasNextPage}
                 isFetchingNextPage={other.query.isFetchingNextPage}
                 fetchNextPage={other.query.fetchNextPage}
