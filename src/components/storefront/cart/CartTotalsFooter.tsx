@@ -109,8 +109,12 @@ export default function CartTotalsFooter({
           <span className="text-[9px] font-medium" style={{ color: "var(--storefront-text, inherit)" }}>
             Powered by
           </span>
-          <img src={shopbanaoLogo} alt="ShopBanao" height={14} className="h-[14px] w-auto" loading="lazy" />
+          <img src={shopbanaoLogo} alt="" width={13} height={13} className="h-[13px] w-[13px]" loading="lazy" />
+          <span className="text-[9px] font-bold" style={{ color: "var(--storefront-text, inherit)" }}>
+            ShopBanao
+          </span>
         </div>
+
       </div>
     </div>
   );
