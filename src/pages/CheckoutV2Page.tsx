@@ -142,6 +142,9 @@ function genericUpiUrl(url: string): string | null {
  * activation, so click a synthetic <a> first and only fall back to
  * location.assign if that throws.
  */
+/** Visible "order processing" beat before the UPI app takes over (ms). */
+const UPI_LAUNCH_DELAY_MS = 850;
+
 function launchUpiUrl(url: string): void {
   try {
     const a = document.createElement("a");
