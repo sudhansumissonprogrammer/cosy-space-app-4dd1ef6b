@@ -684,7 +684,11 @@ export default function CheckoutV2Page() {
             refresh_token: result.session.refresh_token,
           });
         }
-        if (!cancelled && result?.address) applyPhoneLookupAddress(result.address);
+        // Only autofill from the slow track if the shopper hasn't already
+        // started typing their own address — never clobber live input.
+        if (!cancelled && result?.address && !streetAddressRef.current) {
+          applyPhoneLookupAddress(result.address);
+        }
       } catch {
         // Keep checkout usable; session minting is best-effort.
       }
