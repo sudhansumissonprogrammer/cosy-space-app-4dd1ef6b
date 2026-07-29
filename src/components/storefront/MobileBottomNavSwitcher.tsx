@@ -46,9 +46,11 @@ export type NavVariant =
 interface Props {
   store: StoreData;
   variant: NavVariant;
+  /** Theme-16 only: bottom nav shows WhatsApp instead of Cart (cart moves to header). */
+  swapCartWhatsApp?: boolean;
 }
 
-export default function MobileBottomNavSwitcher({ store, variant }: Props) {
+export default function MobileBottomNavSwitcher({ store, variant, swapCartWhatsApp = false }: Props) {
   const Component = (() => {
     switch (variant) {
       case "v17": return MobileBottomNavV17;
@@ -74,7 +76,7 @@ export default function MobileBottomNavSwitcher({ store, variant }: Props) {
   return (
     <div className={`sf-smart-nav ${navVisible ? "" : "sf-smart-nav-hidden"}`}>
       <Suspense fallback={null}>
-        <Component store={store} />
+        <Component store={store} {...({ swapCartWhatsApp } as any)} />
       </Suspense>
     </div>
   );
