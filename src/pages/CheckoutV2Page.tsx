@@ -142,6 +142,9 @@ function genericUpiUrl(url: string): string | null {
  * activation, so click a synthetic <a> first and only fall back to
  * location.assign if that throws.
  */
+/** Visible "order processing" beat before the UPI app takes over (ms). */
+const UPI_LAUNCH_DELAY_MS = 850;
+
 function launchUpiUrl(url: string): void {
   try {
     const a = document.createElement("a");
@@ -1641,6 +1644,8 @@ export default function CheckoutV2Page() {
   // ─── UPI intent + polling ───────────────────────────────────────────────
   const [waiting, setWaiting] = useState(false);
   const [waitingApp, setWaitingApp] = useState<string>("");
+  // Short "processing" beat shown between the UPI tile tap and the app handoff.
+  const [launchingApp, setLaunchingApp] = useState<string | null>(null);
   const [manualChecking, setManualChecking] = useState(false);
   const waitingCheckInFlightRef = useRef(false);
 
@@ -2054,12 +2059,16 @@ export default function CheckoutV2Page() {
     // polling active even though the bank payment succeeded.
     armWaiting();
 
-    // Keep the user gesture as clean as possible for low-end Android Chrome:
-    // launch the app synchronously via a real anchor activation (some OEM
-    // Chrome/WebView builds ignore location.assign for non-http schemes),
-    // then update React state only after the browser has had a chance to hand
-    // off to PhonePe/GPay/Paytm.
-    launchUpiUrl(s.url);
+    // Micro-delay so the shopper actually SEES the "order processing" state
+    // before the UPI app takes over. Without it the handoff is instant and the
+    // tap feels like nothing happened / like a random app jump.
+    setLaunchingApp(label);
+    window.setTimeout(() => {
+      setLaunchingApp(null);
+      // Launch the app via a real anchor activation (some OEM Chrome/WebView
+      // builds ignore location.assign for non-http schemes).
+      launchUpiUrl(s.url);
+    }, UPI_LAUNCH_DELAY_MS);
 
     if (isAndroid() && app !== "any") {
       // Single fallback only, and only for a launch that clearly did nothing.
@@ -2073,7 +2082,7 @@ export default function CheckoutV2Page() {
         if (leftCheckout || document.visibilityState !== "visible") return;
         try { if (!document.hasFocus()) return; } catch { /* noop */ }
         fireChooser();
-      }, 2600);
+      }, 2600 + UPI_LAUNCH_DELAY_MS);
     }
 
 
@@ -3260,6 +3269,29 @@ export default function CheckoutV2Page() {
     return null;
   }
 
+
+  // ─── Pre-launch "processing" beat ───────────────────────────────────────
+  // Shown for <1s between the UPI tile tap and the app handoff so the shopper
+  // sees their order being processed instead of an abrupt app switch.
+  if (launchingApp) {
+    return (
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background px-8 text-center">
+        <div className="relative mb-6 h-20 w-20">
+          <span className="absolute inset-0 rounded-full bg-primary/10 animate-ping" aria-hidden="true" />
+          <span className="absolute inset-0 rounded-full bg-primary/10" aria-hidden="true" />
+          <span className="absolute inset-0 flex items-center justify-center">
+            <Loader2 className="h-9 w-9 text-primary animate-spin" />
+          </span>
+        </div>
+        <h1 className="text-[19px] font-bold tracking-tight text-foreground">Processing your order…</h1>
+        <p className="mt-1.5 text-[13px] text-muted-foreground">Opening {launchingApp} for payment</p>
+        <div className="mt-5 rounded-xl bg-muted px-4 py-3">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Amount to pay</div>
+          <div className="text-2xl font-extrabold tabular-nums text-foreground">{formatPrice(chargeAmount, currency)}</div>
+        </div>
+      </div>
+    );
+  }
 
   // ─── Waiting screen (UPI intent flow) — mobile only ─────────────────────
   // On desktop we keep the QR inline (see the desktop UPI QR card below) and
