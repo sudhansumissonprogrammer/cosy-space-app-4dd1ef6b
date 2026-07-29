@@ -5958,6 +5958,8 @@ async function handlePrewarm(request, url, ctx, env) {
       _cacheThemeForFastShell(slug, dataResult.data.theme_config, env, ctx, dataResult.data?.store?.theme || "");
       results.themeLite = "warmed";
     }
+    _cacheTopProductImages(slug, dataResult.data?.products, env, ctx);
+
 
     if (storeId) {
       const storeIdStr = storeId;
