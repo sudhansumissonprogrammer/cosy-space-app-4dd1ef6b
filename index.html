@@ -446,6 +446,27 @@
         }
         if(window.__THEME__){injectGFont(window.__THEME__.hf,window.__THEME__.bf);}
 
+        /* v8.74 — global LCP image preloader. Runs the instant product JSON
+           lands (either bootstrap path), ~600-1000ms before React would
+           discover the same URLs during its first render. */
+        window.__sfInjectImgPreloads__=function(products){
+          if(!Array.isArray(products))return;
+          var head=document.head;var injected=0;
+          for(var i=0;i<products.length && injected<6;i++){
+            var pp=products[i];var u=pp&&pp.image_url;
+            if(!u||typeof u!=='string')continue;
+            if(u.indexOf(',')>-1)u=u.split(',')[0].trim();
+            if(!u||document.querySelector('link[data-sf-img-pre="'+u+'"]'))continue;
+            var l=document.createElement('link');
+            l.rel='preload';l.as='image';l.href=u;
+            l.setAttribute('data-sf-img-pre',u);
+            if(injected<2)l.setAttribute('fetchpriority','high');
+            head.appendChild(l);injected++;
+          }
+        };
+
+
+
         // If Worker already injected __STOREFRONT_DATA__, we're done — products
         // are already inlined via window.__PRODUCTS_INLINE__ (set by Worker).
         // Only prefetch /api/products if the Worker did NOT inline products
