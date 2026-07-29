@@ -64,6 +64,7 @@ export function prefetchCategory(categorySlug?: string | null) {
   // Don't let a failed/empty prefetch poison the real fetch on click.
   p.then((d) => {
     if (!d) categoryPrefetchCache.delete(slug);
+    else categoryPrefetchResolved.set(slug, d);
   });
 }
 
