@@ -255,6 +255,19 @@
     scrollbar-width: none;
   }
 
+  /* Kill iOS Safari's start-playback triangle + all native chrome on the
+     floating trust-video preview thumbnail (Flipkart-style silent reel). */
+  .sf-trust-preview::-webkit-media-controls,
+  .sf-trust-preview::-webkit-media-controls-panel,
+  .sf-trust-preview::-webkit-media-controls-play-button,
+  .sf-trust-preview::-webkit-media-controls-start-playback-button {
+    display: none !important;
+    -webkit-appearance: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+
   .btn-gold {
     background: var(--storefront-primary, #004643);
     color: var(--storefront-btn-text, #ffffff);
