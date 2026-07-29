@@ -3,7 +3,7 @@
 // per-store toggle (when called from automation), daily-per-phone cap.
 // When called with store_id and a known template, auto-resolves branding vars.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader, metaFetch } from "../_shared/wa-platform.ts";
+import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader, metaFetch, recoveryDripDecision } from "../_shared/wa-platform.ts";
 import { loadStore, loadTemplate, resolveTemplateParams, pickLocaleVariant, sanitizeWaParam } from "../_shared/wa-branding.ts";
 
 type Body = {
@@ -128,7 +128,16 @@ Deno.serve(async (req) => {
   // must always reach the customer and are excluded from the cap.
   const isTransactional = TRANSACTIONAL.has(body.message_type || "");
 
-  if (!isTransactional) {
+  // 🔁 Recovery drip (abandoned_cart) is exempt from the flat 1-per-24h cap:
+  // it runs its own strict 3-step schedule (+30min, +5h, +24h) enforced by
+  // recoveryDripDecision(), so it can legitimately send twice in one day.
+  const isRecoveryDrip = (body.message_type || "") === "abandoned_cart";
+  if (isRecoveryDrip) {
+    const drip = await recoveryDripDecision(admin, phone, { ignoreInFlight: true });
+    if (!drip.allow) return json({ skipped: true, reason: drip.reason || "drip_blocked" });
+  }
+
+  if (!isTransactional && !isRecoveryDrip) {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     // Count MARKETING messages only — transactional sends (order confirmation,
     // shipping, payment) must not consume the marketing cap.
