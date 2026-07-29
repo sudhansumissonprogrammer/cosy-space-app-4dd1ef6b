@@ -22,6 +22,26 @@ import CategoryQuickJump from "@/components/storefront/CategoryQuickJump";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 
+/**
+ * The edge/RPC category payload returns up to CATEGORY_PAGE_LIMIT (50) products,
+ * but the infinite query paginates in PAGE_SIZE (20) chunks to match the Worker
+ * /api/products offsets. Seeding one 50-item page broke `hasNextPage`
+ * (50 !== 20 → pagination stopped dead at 50 items). So we split the payload
+ * into whole 20-item pages and drop the remainder — the next fetch resumes at
+ * the correct offset.
+ */
+function seedInfinitePages(products: any[]) {
+  const pages: { products: any[]; page: number }[] = [];
+  const pageParams: number[] = [];
+  const full = Math.floor(products.length / PAGE_SIZE);
+  const count = full > 0 ? full : 1; // keep short (<20) results as a single final page
+  for (let i = 0; i < count; i++) {
+    pages.push({ products: products.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE), page: i });
+    pageParams.push(i);
+  }
+  return { pages, pageParams };
+}
+
 export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
   const { slug, categorySlug } = useParams<{ slug: string; categorySlug: string }>();
@@ -64,10 +84,7 @@ export default function CategoryDetail() {
       if (rpc?.category) {
         if (Array.isArray(rpc.products)) {
           const qKey = ["cat-detail-v3", store.id, rpc.category.name, "default", PAGE_SIZE];
-          queryClient.setQueryData(
-            qKey,
-            { pages: [{ products: rpc.products, page: 0 }], pageParams: [0] }
-          );
+          queryClient.setQueryData(qKey, seedInfinitePages(rpc.products));
           // Note: this path is a FRESH Supabase RPC response — no need to
           // invalidate. (The stale-pin invalidation only matters for the
           // inline HTML payload, see initialData below.)
@@ -89,10 +106,7 @@ export default function CategoryDetail() {
       if (inline?.category) {
         if (Array.isArray(inline.products)) {
           const qKey = ["cat-detail-v3", store.id, inline.category.name, "default", PAGE_SIZE];
-          queryClient.setQueryData(
-            qKey,
-            { pages: [{ products: inline.products, page: 0 }], pageParams: [0] }
-          );
+          queryClient.setQueryData(qKey, seedInfinitePages(inline.products));
           // PERF: the inline HTML payload can be stale, so we still refresh from
           // the version-aware /api/products endpoint — but NOT synchronously.
           // Invalidating during render queued the refetch inside the hydration
