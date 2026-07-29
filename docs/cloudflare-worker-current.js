@@ -7568,7 +7568,7 @@ async function _handleFetch(request, env, ctx) {
     const [shellResult, storeInfo, kvBatch, cachedHead, inlineProducts, pdpCategoryJson] = await Promise.all([
       getNavigationSpaShell(request, ctx, env),
       _resolveStoreInfo(slug, hostname, env),
-      _batchKvRead(slug, env),
+      _batchKvRead(slug, env, pdpCategoryRoute),
       _getCachedPrebuiltHead(env),
       _getInlineProductsFastOrNull(hostname),
       _getInlinePdpCategoryOrNull(hostname, pdpCategoryRoute, env, ctx),
