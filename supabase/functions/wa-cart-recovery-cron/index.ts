@@ -575,6 +575,7 @@ Deno.serve(async (req) => {
 
       if (qErr) { payDropSkipped++; continue; }
       payDropEnqueued++;
+      handledPhones.add(phone);
 
       await admin.from("customers")
         .update({ last_marketing_sent_at: new Date().toISOString() })
