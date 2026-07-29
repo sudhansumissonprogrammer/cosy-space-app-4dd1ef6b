@@ -2959,7 +2959,7 @@ export default function CheckoutV2Page() {
     }
     setOpeningGateway(true);
     try {
-      const order = await createOrderIfNeeded(activeGateway || "razorpay");
+      const order = await createOrderIfNeeded(activeGateway || "payu");
       setShowPayment(true);
       try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: activeGateway || "online" } as any }); } catch { /* noop */ }
       if (activeGateway === "razorpay") await openRazorpay(order);
