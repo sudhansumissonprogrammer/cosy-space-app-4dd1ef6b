@@ -71,8 +71,8 @@ export default function CartItemsCarousel({ items, currency, updateQuantity, rem
                     <p className="text-[10px] opacity-60">{item.variantName}</p>
                   )}
 
-                  <div className="mt-auto flex items-center justify-between gap-1 pt-1">
-                    <span className="text-[11px] font-extrabold" style={{ color: "var(--storefront-text, inherit)" }}>
+                  <div className="mt-auto flex items-center justify-between gap-1 pt-1.5">
+                    <span className="text-[13px] font-extrabold" style={{ color: "var(--storefront-text, inherit)" }}>
                       {formatPrice(item.price * item.quantity, currency)}
                     </span>
                     <div
@@ -82,22 +82,23 @@ export default function CartItemsCarousel({ items, currency, updateQuantity, rem
                       <button
                         aria-label="Decrease quantity"
                         onClick={() => updateQuantity(item.productId, item.variantId, item.quantity - 1)}
-                        className="flex h-6 w-6 items-center justify-center active:scale-95"
+                        className="flex h-7 w-7 items-center justify-center active:scale-95"
                       >
-                        <Minus className="h-3 w-3" />
+                        <Minus className="h-3.5 w-3.5" />
                       </button>
-                      <span key={item.quantity} className="qty-bounce w-4 text-center text-[11px] font-bold">
+                      <span key={item.quantity} className="qty-bounce w-5 text-center text-[12px] font-bold">
                         {item.quantity}
                       </span>
                       <button
                         aria-label="Increase quantity"
                         onClick={() => updateQuantity(item.productId, item.variantId, item.quantity + 1)}
-                        className="flex h-6 w-6 items-center justify-center active:scale-95"
+                        className="flex h-7 w-7 items-center justify-center active:scale-95"
                       >
-                        <Plus className="h-3 w-3" />
+                        <Plus className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
+
                 </div>
               </div>
             </CarouselItem>
