@@ -22,6 +22,26 @@ import CategoryQuickJump from "@/components/storefront/CategoryQuickJump";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 
+/**
+ * The edge/RPC category payload returns up to CATEGORY_PAGE_LIMIT (50) products,
+ * but the infinite query paginates in PAGE_SIZE (20) chunks to match the Worker
+ * /api/products offsets. Seeding one 50-item page broke `hasNextPage`
+ * (50 !== 20 → pagination stopped dead at 50 items). So we split the payload
+ * into whole 20-item pages and drop the remainder — the next fetch resumes at
+ * the correct offset.
+ */
+function seedInfinitePages(products: any[]) {
+  const pages: { products: any[]; page: number }[] = [];
+  const pageParams: number[] = [];
+  const full = Math.floor(products.length / PAGE_SIZE);
+  const count = full > 0 ? full : 1; // keep short (<20) results as a single final page
+  for (let i = 0; i < count; i++) {
+    pages.push({ products: products.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE), page: i });
+    pageParams.push(i);
+  }
+  return { pages, pageParams };
+}
+
 export default function CategoryDetail() {
   const store = useOutletContext<StoreData>();
   const { slug, categorySlug } = useParams<{ slug: string; categorySlug: string }>();
