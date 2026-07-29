@@ -5035,17 +5035,18 @@ async function handleCategoryApi(request, url, ctx, env) {
   }
 
   const coalesceKey = `${domain}:${categorySlug}:${limit}`;
+  const catMeta = { storeSlug, categorySlug };
   if (inflightCategoryRequests.has(coalesceKey)) {
     try {
       const data = await inflightCategoryRequests.get(coalesceKey);
-      return _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, "category-coalesced");
+      return _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, "category-coalesced", catMeta);
     } catch {}
   }
   const fetchPromise = _fetchCategoryFromDb(storeSlug, categorySlug, limit, PDP_DB_TIMEOUT_MS);
   inflightCategoryRequests.set(coalesceKey, fetchPromise);
   try {
     const data = await fetchPromise;
-    return _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, "category-origin");
+    return _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, "category-origin", catMeta);
   } catch {
     return addCorsHeaders(
       new Response(JSON.stringify({ category: null, products: [], error: "upstream" }), {
