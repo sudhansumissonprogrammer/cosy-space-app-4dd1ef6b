@@ -4291,7 +4291,10 @@ async function fetchAndInjectSlug(
     prebuiltHead = await enrichHeadWithPdpChunkPreloads(prebuiltHead, new URL(request.url).origin, env);
   }
   // FIX #3: Always build Link header for every response
-  const linkHeader = _buildLinkPreloadHeader(shellResult.html);
+  // v8.74.0: prepend the LCP product image so it is discovered from the
+  // response HEADERS — earlier than any tag in the streamed body.
+  const topImages = kvBatch.imgs;
+  const linkHeader = _withImageLinkPreload(_buildLinkPreloadHeader(shellResult.html), topImages);
 
   const newHeaders = new Headers();
   newHeaders.set("Content-Type", "text/html; charset=utf-8");
@@ -4313,7 +4316,10 @@ async function fetchAndInjectSlug(
     inlineProducts,
     storefrontPromise,
     newHeaders,
+    null,
+    topImages,
   );
+
 
   await mirrorStreamedHtmlDirect(ctx, request, response, slug, env);
 
