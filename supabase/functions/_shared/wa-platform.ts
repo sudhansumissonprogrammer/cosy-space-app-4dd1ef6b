@@ -266,3 +266,78 @@ export async function hasApprovedTemplates(admin: any): Promise<boolean> {
   return Array.isArray(data) && data.length > 0;
 }
 
+
+// ══════════════════════════════════════════════════════════════════════
+// 🔁 RECOVERY DRIP SEQUENCE (abandoned cart / pending / cancelled orders)
+// A lead that hasn't purchased gets EXACTLY 3 recovery messages:
+//   step 1 → 30 min after the drop-off   (handled by cron min-age)
+//   step 2 → 5 hours after step 1
+//   step 3 → 24 hours after step 2
+// After step 3 the lead is done — no more marketing until the window
+// resets (72h). This intentionally overrides the flat 1-msg-per-24h
+// marketing cap, which only applies to non-recovery marketing.
+// ══════════════════════════════════════════════════════════════════════
+export const RECOVERY_MESSAGE_TYPES = ["abandoned_cart"];
+export const DRIP_GAPS_MS = [0, 5 * 60 * 60 * 1000, 24 * 60 * 60 * 1000];
+export const DRIP_MAX_STEPS = 3;
+export const DRIP_WINDOW_MS = 72 * 60 * 60 * 1000;
+
+export type DripDecision = {
+  allow: boolean;
+  step: number;           // 1-based step we're about to send
+  reason?: string;
+  lastSentAt?: string | null;
+};
+
+/**
+ * Decides whether the given phone may receive the next recovery message now.
+ * Counts BOTH delivered messages and in-flight queue rows so a cron re-run
+ * can never double-send. Only `abandoned_cart` recovery sends count here.
+ */
+export async function recoveryDripDecision(admin: any, phone: string): Promise<DripDecision> {
+  const sinceIso = new Date(Date.now() - DRIP_WINDOW_MS).toISOString();
+
+  const [{ data: sentRows }, { data: queueRows }] = await Promise.all([
+    admin.from("whatsapp_messages")
+      .select("created_at")
+      .eq("recipient_phone", phone).eq("sent_via", "platform").eq("direction", "outgoing")
+      .eq("status", "sent")
+      .in("message_type", RECOVERY_MESSAGE_TYPES)
+      .gte("created_at", sinceIso)
+      .order("created_at", { ascending: false })
+      .limit(10),
+    admin.from("wa_send_queue")
+      .select("created_at, status")
+      .eq("recipient_phone", phone)
+      .in("message_type", RECOVERY_MESSAGE_TYPES)
+      .in("status", ["pending", "sending", "sent"])
+      .gte("created_at", sinceIso)
+      .order("created_at", { ascending: false })
+      .limit(10),
+  ]);
+
+  // Anything still waiting to go out means the previous step hasn't landed.
+  const inFlight = ((queueRows as any[]) ?? []).some((r) => r.status === "pending" || r.status === "sending");
+  if (inFlight) return { allow: false, step: 0, reason: "drip_in_flight" };
+
+  // A queue row marked `sent` may not yet have its whatsapp_messages twin —
+  // union both sources by timestamp bucket (1 min) so we never double count.
+  const stamps = new Set<number>();
+  for (const r of ([...(sentRows as any[] ?? []), ...((queueRows as any[]) ?? []).filter((q) => q.status === "sent")])) {
+    const t = new Date(r.created_at).getTime();
+    if (Number.isFinite(t)) stamps.add(Math.round(t / 60000));
+  }
+  const times = Array.from(stamps).map((m) => m * 60000).sort((a, b) => b - a);
+  const done = times.length;
+  if (done >= DRIP_MAX_STEPS) return { allow: false, step: done, reason: "drip_complete" };
+
+  const step = done + 1;
+  if (done === 0) return { allow: true, step, lastSentAt: null };
+
+  const gap = DRIP_GAPS_MS[done] ?? DRIP_GAPS_MS[DRIP_GAPS_MS.length - 1];
+  const elapsed = Date.now() - times[0];
+  if (elapsed < gap) {
+    return { allow: false, step, reason: "drip_too_soon", lastSentAt: new Date(times[0]).toISOString() };
+  }
+  return { allow: true, step, lastSentAt: new Date(times[0]).toISOString() };
+}
