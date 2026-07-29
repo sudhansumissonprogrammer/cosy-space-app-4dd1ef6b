@@ -177,6 +177,8 @@ export default function CheckoutAwareLayout({
         <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-opacity hover:opacity-70" aria-label="Search products" style={iconStyle}>
           <SearchIcon className={iconSize} />
         </button>
+      ) : swapCartWhatsApp ? (
+        <CartBadge storeId={store.id} />
       ) : (
         <HeaderWhatsAppButton
           storeName={store.name}
