@@ -7631,7 +7631,9 @@ async function _handleFetch(request, env, ctx) {
     }
     // FIX #3: Always set Link header
     // v8.74.0: LCP product image preload rides in the response headers too.
-    const topImages = kvBatch.imgs;
+    // v8.75.0 — per-category images win over store-wide images when on a
+    // /category/* route, so cold category loads preload the RIGHT LCP image.
+    const topImages = (kvBatch.catImgs && kvBatch.catImgs.length ? kvBatch.catImgs : kvBatch.imgs) || null;
     const linkHeader = _withImageLinkPreload(_buildLinkPreloadHeader(shellResult.html), topImages);
 
     const responseHeaders = new Headers();
