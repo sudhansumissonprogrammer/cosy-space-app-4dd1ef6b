@@ -2378,10 +2378,14 @@ export default function CheckoutV2Page() {
       setCreatingOrder(true);
       try {
         saveExpressInfo();
-        // Label the order with the store's ACTUAL gateway. Hardcoding
-        // "razorpay" here mislabeled UPI-intent orders on stores that only
-        // have PayU/Cashfree enabled.
-        const order = await createOrderIfNeeded(activeGateway || "payu");
+        // STRICT GATEWAY: the order is always stamped with the store's actual
+        // enabled gateway. No fallback label — if nothing is enabled we abort
+        // instead of writing a gateway the store doesn't use.
+        if (!activeGateway) {
+          toast.error("No online payment gateway configured");
+          return;
+        }
+        const order = await createOrderIfNeeded(activeGateway);
         setShowPayment(true);
         try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { step: "continue_to_pay" } as any }); } catch { /* noop */ }
 
@@ -2957,15 +2961,18 @@ export default function CheckoutV2Page() {
       toast.info("Updating details…");
       return;
     }
+    if (!activeGateway) {
+      toast.error("No online payment gateway configured");
+      return;
+    }
     setOpeningGateway(true);
     try {
-      const order = await createOrderIfNeeded(activeGateway || "payu");
+      const order = await createOrderIfNeeded(activeGateway);
       setShowPayment(true);
-      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: activeGateway || "online" } as any }); } catch { /* noop */ }
+      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: activeGateway } as any }); } catch { /* noop */ }
       if (activeGateway === "razorpay") await openRazorpay(order);
       else if (activeGateway === "cashfree") await openCashfree(order);
-      else if (activeGateway === "payu") await openPayu(order);
-      else toast.error("No online payment gateway configured");
+      else await openPayu(order);
     } catch (e: any) {
       toast.error(e?.message || "Could not start payment");
     } finally {
