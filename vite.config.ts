@@ -196,13 +196,23 @@ export default defineConfig(({ mode }) => ({
          */
         manualChunks(id) {
           // === Entry-only helpers ===
+          // NOTE: ErrorBoundary + logError + the shopbanao logo asset are
+          // imported by BOTH landing and storefront code. Left unassigned,
+          // Rollup folded them into `landing-shell`, so every storefront page
+          // downloaded that 8KB chunk in the critical wave purely to read
+          // three shared symbols. Pinning them to `entry-utils` — a chunk both
+          // apps already load from main.tsx — removes that extra request.
           if (
             id.includes("/src/lib/subdomain") ||
             id.includes("/src/lib/chunkLoadRecovery") ||
+            id.includes("/src/components/ErrorBoundary") ||
+            id.includes("/src/lib/logError") ||
+            id.includes("/src/assets/shopbanao-logo") ||
             id.includes("vite/preload-helper")
           ) {
             return "entry-utils";
           }
+
 
           // === Landing above-the-fold shell ===
           // Navbar + Hero are statically imported by src/pages/Index.tsx but
