@@ -27,12 +27,12 @@ export async function sendOrderWhatsApp(
     // verified Meta Cloud credentials. No platform fallback is performed.
     const { data: config } = await supabase
       .from("whatsapp_config")
-      .select("id, is_active, access_token, phone_number_id" as any)
+      .select("id, is_active, phone_number_id" as any)
       .eq("store_id", storeId)
       .maybeSingle();
 
     const c = config as any;
-    if (!c || !c.is_active || !c.access_token || !c.phone_number_id) return;
+    if (!c || !c.is_active || !c.phone_number_id) return;
 
     // Get the template for this message type
     const { data: template } = await supabase
@@ -89,12 +89,12 @@ export async function sendAbandonedCartWhatsApp(
     // SECURITY/POLICY: cart recovery is gated behind verified store-owned credentials.
     const { data: config } = await supabase
       .from("whatsapp_config")
-      .select("id, is_active, access_token, phone_number_id" as any)
+      .select("id, is_active, phone_number_id" as any)
       .eq("store_id", storeId)
       .maybeSingle();
 
     const c = config as any;
-    if (!c || !c.is_active || !c.access_token || !c.phone_number_id) return;
+    if (!c || !c.is_active || !c.phone_number_id) return;
 
     const { data: template } = await supabase
       .from("whatsapp_templates")
