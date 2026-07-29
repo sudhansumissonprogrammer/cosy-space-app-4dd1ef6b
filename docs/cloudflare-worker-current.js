@@ -208,7 +208,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.74.0-lcp-image-kv-preload";
+const WORKER_VERSION = "8.75.0-category-lcp-preload";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -2196,21 +2196,31 @@ const CACHE_STOREFRONT_TTL = 3_600; // Tier-1 #1: 2h → 1h. Purge handles fresh
 // by earlyStorefrontPromise (prefetchStorefrontDataWithDeadline) and `storeInfo`
 // is fetched by _resolveStoreInfo in the same Promise.all — fetching them
 // again here was a duplicate KV read on every request.
-async function _batchKvRead(slug, env) {
-  if (!env?.STORE_KV) return { theme: null, imgs: null };
+async function _batchKvRead(slug, env, extra = null) {
+  if (!env?.STORE_KV) return { theme: null, imgs: null, catImgs: null };
   try {
-    const [themeV, themeLegacy, imgs] = await Promise.all([
+    // v8.75.0 — when route is /category/<catSlug>, fetch per-category LCP
+    // image list too so cold category cold loads get the RIGHT preloads
+    // (not the homepage carousel images).
+    const catSlug = extra && extra.kind === "category" && extra.slug ? extra.slug : null;
+    const promises = [
       env.STORE_KV.get(`theme-lite:${WORKER_VERSION}:${slug}`, { type: "json" }).catch(() => null),
       env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" }).catch(() => null),
-      // v8.74.0 — durable LCP image list, independent of the volatile
-      // product-version cache. ~200 bytes, read in the same KV round-trip.
       env.STORE_KV.get(`imgs:${slug}`, { type: "json" }).catch(() => null),
-    ]);
+      catSlug
+        ? env.STORE_KV.get(`imgs:${slug}:cat:${catSlug}`, { type: "json" }).catch(() => null)
+        : Promise.resolve(null),
+    ];
+    const [themeV, themeLegacy, imgs, catImgs] = await Promise.all(promises);
     let theme = themeV || themeLegacy;
     if (theme && theme.wv !== WORKER_VERSION) theme = null;
-    return { theme, imgs: Array.isArray(imgs) ? imgs : null };
+    return {
+      theme,
+      imgs: Array.isArray(imgs) ? imgs : null,
+      catImgs: Array.isArray(catImgs) ? catImgs : null,
+    };
   } catch {
-    return { theme: null, imgs: null };
+    return { theme: null, imgs: null, catImgs: null };
   }
 }
 
@@ -2239,8 +2249,40 @@ function _cacheTopProductImages(slug, products, env, ctx) {
     const same = prev && prev.urls.join("|") === urls.join("|") && Date.now() - prev.ts < 3600_000;
     _capMapSize(_memTopImages, 200);
     _memTopImages.set(slug, { urls, ts: Date.now() });
-    if (same) return; // no KV write when nothing changed
+    if (same) return;
     const write = env.STORE_KV.put(`imgs:${slug}`, JSON.stringify(urls), {
+      expirationTtl: TOP_IMAGES_TTL_SEC,
+    }).catch(() => {});
+    if (ctx) ctx.waitUntil(write);
+  } catch {}
+}
+
+/**
+ * v8.75.0 — Per-category durable LCP image list. Same shape as
+ * `imgs:<slug>` but scoped to a category so /category/<catSlug> cold
+ * loads emit the RIGHT preloads instead of the homepage's images.
+ */
+const _memTopCatImages = new Map(); // slug:cat -> { urls, ts }
+function _cacheTopCategoryImages(slug, catSlug, products, env, ctx) {
+  try {
+    if (!env?.STORE_KV || !slug || !catSlug) return;
+    if (!Array.isArray(products) || products.length === 0) return;
+    const urls = [];
+    for (const p of products) {
+      const u =
+        (p && (p.image_url || (Array.isArray(p.product_images) && p.product_images[0]?.image_url))) || "";
+      const first = typeof u === "string" && u.includes(",") ? u.split(",")[0].trim() : u;
+      if (first && first.startsWith("http")) urls.push(first);
+      if (urls.length >= 4) break;
+    }
+    if (urls.length === 0) return;
+    const memKey = `${slug}:${catSlug}`;
+    const prev = _memTopCatImages.get(memKey);
+    const same = prev && prev.urls.join("|") === urls.join("|") && Date.now() - prev.ts < 3600_000;
+    _capMapSize(_memTopCatImages, 500);
+    _memTopCatImages.set(memKey, { urls, ts: Date.now() });
+    if (same) return;
+    const write = env.STORE_KV.put(`imgs:${slug}:cat:${catSlug}`, JSON.stringify(urls), {
       expirationTtl: TOP_IMAGES_TTL_SEC,
     }).catch(() => {});
     if (ctx) ctx.waitUntil(write);
@@ -4051,9 +4093,24 @@ async function serveStreamedHtml(
       // product-version cache) fall back to the durable `imgs:<slug>` KV list,
       // so the preload scanner ALWAYS gets the first product images at byte 0
       // instead of waiting ~2s for React to discover them.
-      const productImagePreloads = inlineProducts
-        ? _buildProductImagePreloads(inlineProducts, 2)
-        : _buildImagePreloadsFromUrls(topImages, 2);
+      // v8.75.0 — On /category/* the inline HOME products are the WRONG source
+      // for LCP preload. Prefer the category's own inline products (the ones
+      // actually rendered above the fold) so the browser preloads the images
+      // the user will see, not the homepage carousel.
+      let categoryProductsJsonForPreload = "";
+      if (pdpCategoryInline?.kind === "category" && pdpCategoryInline?.json) {
+        try {
+          const _cp = JSON.parse(pdpCategoryInline.json);
+          if (Array.isArray(_cp?.products) && _cp.products.length > 0) {
+            categoryProductsJsonForPreload = JSON.stringify(_cp.products);
+          }
+        } catch {}
+      }
+      const productImagePreloads = categoryProductsJsonForPreload
+        ? _buildProductImagePreloads(categoryProductsJsonForPreload, 2)
+        : inlineProducts
+          ? _buildProductImagePreloads(inlineProducts, 2)
+          : _buildImagePreloadsFromUrls(topImages, 2);
 
 
       let perRouteSeoHead = "";
@@ -4978,17 +5035,18 @@ async function handleCategoryApi(request, url, ctx, env) {
   }
 
   const coalesceKey = `${domain}:${categorySlug}:${limit}`;
+  const catMeta = { storeSlug, categorySlug };
   if (inflightCategoryRequests.has(coalesceKey)) {
     try {
       const data = await inflightCategoryRequests.get(coalesceKey);
-      return _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, "category-coalesced");
+      return _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, "category-coalesced", catMeta);
     } catch {}
   }
   const fetchPromise = _fetchCategoryFromDb(storeSlug, categorySlug, limit, PDP_DB_TIMEOUT_MS);
   inflightCategoryRequests.set(coalesceKey, fetchPromise);
   try {
     const data = await fetchPromise;
-    return _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, "category-origin");
+    return _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, "category-origin", catMeta);
   } catch {
     return addCorsHeaders(
       new Response(JSON.stringify({ category: null, products: [], error: "upstream" }), {
@@ -5002,7 +5060,7 @@ async function handleCategoryApi(request, url, ctx, env) {
   }
 }
 
-function _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, source) {
+function _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, source, meta = null) {
   const body = JSON.stringify(data || { category: null, products: [] });
   const response = new Response(body, {
     headers: {
@@ -5018,6 +5076,10 @@ function _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, source) {
         ctx?.__skipKvWarm ? Promise.resolve() : kvPutLongTail(env, kvKey, body, { expirationTtl: CATEGORY_KV_TTL }), // v8.19.0 B
       ]),
     );
+    // v8.75.0 — durable per-category LCP image list for cold-preload fast path.
+    if (meta?.storeSlug && meta?.categorySlug && Array.isArray(data.products)) {
+      _cacheTopCategoryImages(meta.storeSlug, meta.categorySlug, data.products, env, ctx);
+    }
   } else {
     // v8.8.1 Fix #4: short negative cache for unknown categories.
     const negResp = new Response(body, {
@@ -5103,6 +5165,9 @@ async function _prewarmPdpAndCategory(store, storefrontData, env, ctx) {
         cache.put(cacheKey, resp.clone()).catch(() => {}),
         kvPutDedup(env, _buildCategoryKvKey(d, `${slug}:l50`, ver), body, { expirationTtl: CATEGORY_KV_TTL }),
       ]);
+      // v8.75.0 — seed per-category LCP image list during prewarm so the
+      // FIRST visitor to a category cold isolate gets the right preloads.
+      _cacheTopCategoryImages(store.slug, slug, data.products || [], env, ctx);
     } catch {}
   }
 
@@ -7503,7 +7568,7 @@ async function _handleFetch(request, env, ctx) {
     const [shellResult, storeInfo, kvBatch, cachedHead, inlineProducts, pdpCategoryJson] = await Promise.all([
       getNavigationSpaShell(request, ctx, env),
       _resolveStoreInfo(slug, hostname, env),
-      _batchKvRead(slug, env),
+      _batchKvRead(slug, env, pdpCategoryRoute),
       _getCachedPrebuiltHead(env),
       _getInlineProductsFastOrNull(hostname),
       _getInlinePdpCategoryOrNull(hostname, pdpCategoryRoute, env, ctx),
@@ -7566,7 +7631,9 @@ async function _handleFetch(request, env, ctx) {
     }
     // FIX #3: Always set Link header
     // v8.74.0: LCP product image preload rides in the response headers too.
-    const topImages = kvBatch.imgs;
+    // v8.75.0 — per-category images win over store-wide images when on a
+    // /category/* route, so cold category loads preload the RIGHT LCP image.
+    const topImages = (kvBatch.catImgs && kvBatch.catImgs.length ? kvBatch.catImgs : kvBatch.imgs) || null;
     const linkHeader = _withImageLinkPreload(_buildLinkPreloadHeader(shellResult.html), topImages);
 
     const responseHeaders = new Headers();
@@ -7742,7 +7809,7 @@ async function _handleFetch(request, env, ctx) {
       await Promise.all([
         handleSeoFiles(url, resolvedSlug, hostname),
         handleBot(request, resolvedSlug, url, true),
-        _batchKvRead(resolvedSlug, env),
+        _batchKvRead(resolvedSlug, env, pdpCategoryRouteCD),
         _getCachedPrebuiltHead(env),
         _getInlineProductsFastOrNull(hostname),
         _getInlinePdpCategoryOrNull(hostname, pdpCategoryRouteCD, env, ctx),
@@ -7778,7 +7845,8 @@ async function _handleFetch(request, env, ctx) {
       prebuiltHeadCD = await enrichHeadWithPdpChunkPreloads(prebuiltHeadCD, new URL(request.url).origin, env);
     }
     // FIX #3
-    const topImagesCD = kvBatchCD.imgs;
+    // v8.75.0 — per-category images take priority on /category/*.
+    const topImagesCD = (kvBatchCD.catImgs && kvBatchCD.catImgs.length ? kvBatchCD.catImgs : kvBatchCD.imgs) || null;
     const linkHeaderCD = _withImageLinkPreload(_buildLinkPreloadHeader(shellResultCD.html), topImagesCD);
 
     const responseHeadersCD = new Headers();
