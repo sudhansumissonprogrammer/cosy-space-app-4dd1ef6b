@@ -2054,12 +2054,16 @@ export default function CheckoutV2Page() {
     // polling active even though the bank payment succeeded.
     armWaiting();
 
-    // Keep the user gesture as clean as possible for low-end Android Chrome:
-    // launch the app synchronously via a real anchor activation (some OEM
-    // Chrome/WebView builds ignore location.assign for non-http schemes),
-    // then update React state only after the browser has had a chance to hand
-    // off to PhonePe/GPay/Paytm.
-    launchUpiUrl(s.url);
+    // Micro-delay so the shopper actually SEES the "order processing" state
+    // before the UPI app takes over. Without it the handoff is instant and the
+    // tap feels like nothing happened / like a random app jump.
+    setLaunchingApp(label);
+    window.setTimeout(() => {
+      setLaunchingApp(null);
+      // Launch the app via a real anchor activation (some OEM Chrome/WebView
+      // builds ignore location.assign for non-http schemes).
+      launchUpiUrl(s.url);
+    }, UPI_LAUNCH_DELAY_MS);
 
     if (isAndroid() && app !== "any") {
       // Single fallback only, and only for a launch that clearly did nothing.
