@@ -278,8 +278,11 @@ export async function hasApprovedTemplates(admin: any): Promise<boolean> {
 // marketing cap, which only applies to non-recovery marketing.
 // ══════════════════════════════════════════════════════════════════════
 export const RECOVERY_MESSAGE_TYPES = ["abandoned_cart"];
-export const DRIP_GAPS_MS = [0, 5 * 60 * 60 * 1000, 24 * 60 * 60 * 1000];
+// +5min buffer on step 3 so it lands just outside the rolling 24h window.
+export const DRIP_GAPS_MS = [0, 5 * 60 * 60 * 1000, 24 * 60 * 60 * 1000 + 5 * 60 * 1000];
 export const DRIP_MAX_STEPS = 3;
+// Absolute ceiling: max 2 messages to one number in any rolling 24h window.
+export const DRIP_MAX_PER_24H = 2;
 export const DRIP_WINDOW_MS = 72 * 60 * 60 * 1000;
 
 export type DripDecision = {
