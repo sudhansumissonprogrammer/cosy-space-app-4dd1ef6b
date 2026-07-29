@@ -17,7 +17,7 @@ import ShopFilterBar, { applySort, type SortKey } from "@/components/storefront/
 import CategoryHeroBanner from "@/components/storefront/CategoryHeroBanner";
 import ShopEmptyState from "@/components/storefront/ShopEmptyState";
 import BackToTop from "@/components/storefront/BackToTop";
-import { fetchCategoryEdge } from "@/lib/storefrontEdgeApi";
+import { fetchCategoryEdge, CATEGORY_PAGE_LIMIT } from "@/lib/storefrontEdgeApi";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 
