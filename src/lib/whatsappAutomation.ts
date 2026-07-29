@@ -27,7 +27,7 @@ export async function sendOrderWhatsApp(
     // verified Meta Cloud credentials. No platform fallback is performed.
     const { data: config } = await supabase
       .from("whatsapp_config")
-      .select("id, is_active, access_token, phone_number_id" as any)
+      .select("id, is_active, phone_number_id" as any)
       .eq("store_id", storeId)
       .maybeSingle();
 
