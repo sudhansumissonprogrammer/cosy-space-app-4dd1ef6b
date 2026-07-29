@@ -7546,7 +7546,9 @@ async function _handleFetch(request, env, ctx) {
       prebuiltHead = await enrichHeadWithPdpChunkPreloads(prebuiltHead, new URL(request.url).origin, env);
     }
     // FIX #3: Always set Link header
-    const linkHeader = _buildLinkPreloadHeader(shellResult.html);
+    // v8.74.0: LCP product image preload rides in the response headers too.
+    const topImages = kvBatch.imgs;
+    const linkHeader = _withImageLinkPreload(_buildLinkPreloadHeader(shellResult.html), topImages);
 
     const responseHeaders = new Headers();
     responseHeaders.set("Content-Type", "text/html; charset=utf-8");
@@ -7568,6 +7570,8 @@ async function _handleFetch(request, env, ctx) {
       earlyStorefrontPromise,
       responseHeaders,
       pdpCategoryInline,
+      topImages,
+
     );
 
     await mirrorStreamedHtmlDirect(ctx, request, response, slug, env);
