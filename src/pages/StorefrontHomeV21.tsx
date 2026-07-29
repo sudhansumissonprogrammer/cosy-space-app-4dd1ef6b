@@ -31,6 +31,7 @@ const StorefrontInstagramSection = lazy(() => import("@/components/storefront/St
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
 import BestSellerBadge from "@/components/storefront/BestSellerBadge";
+import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
 
 const BATCH_SIZE = 20;
 
@@ -242,7 +243,7 @@ export default function StorefrontHomeV21() {
   });
 
   const { products: initialProducts, isLoading: isInitialLoading } = useStorefrontProducts(store.id);
-  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const storeCategories = useStorefrontCategories(store.id);
   const themeConfig = useStorefrontThemeConfig(store.id);
 
   const cardStyle = themeConfig?.product_card_style || "style-1";

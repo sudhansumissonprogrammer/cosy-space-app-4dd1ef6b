@@ -10,6 +10,7 @@ import { useCart } from "@/contexts/CartContext";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import DeliveryLocationDialog, { getSavedDeliveryLabel } from "@/components/storefront/DeliveryLocationDialog";
+import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
 
 const SEARCH_TERMS = ['"new arrivals"', '"trending"', '"best sellers"', '"offers"', '"deals"', '"new in"'];
 
@@ -26,15 +27,11 @@ export default function V20Header({ store }: { store: any }) {
   const [scrolled, setScrolled] = useState(false);
   const { cartCount } = useCart();
   const location = useLocation();
-  // Subscribe (don't snapshot) so the header re-renders when the parent's
-  // storefront-categories / storefront-products queries resolve. `enabled:false`
-  // prevents our own fetch — the parent owns the queryFn.
-  const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ["storefront-categories", store?.id],
-    queryFn: () => [] as Category[],
-    enabled: false,
-    staleTime: Infinity,
-  });
+  // Subscribe (don't snapshot) so the header re-renders when categories resolve.
+  // Falls back to its own fetch when the parent's seed hasn't landed yet
+  // (brand-new stores / cold cache).
+  const categories = (useStorefrontCategories(store?.id) ?? []) as Category[];
+
   const themeConfig = useStorefrontThemeConfig(store?.id);
   const marqueeEnabled = themeConfig?.marquee_enabled !== false;
   const marqueeText = themeConfig?.marquee_text || "✦ FREE DELIVERY ON ALL ORDERS · 100% SAFE & SECURE · EASY RETURNS";

@@ -12,6 +12,7 @@ import { optimizeImageUrl } from "@/lib/imageOptimize";
 import UniversalProductCard from "@/components/storefront/UniversalProductCard";
 import UniversalCategories from "@/components/storefront/UniversalCategories";
 import { HomeBestSellingSection, HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
+import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 
 /* ── Veg / Non-Veg indicator ── */
@@ -415,7 +416,7 @@ export default function StorefrontHomeV13() {
   const { products: rawProducts } = useStorefrontProducts(store?.id);
   const products = rawProducts.filter((p: any) => p.is_active);
 
-  const categories = queryClient.getQueryData<any[]>(["storefront-categories", store?.id]) || [];
+  const categories = useStorefrontCategories(store?.id) ?? [];
 
   useStoreJsonLd({
     storeName: store?.name,

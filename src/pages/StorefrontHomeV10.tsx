@@ -15,6 +15,7 @@ const StorefrontInstagramSection = lazy(() => import("@/components/storefront/St
 const StorefrontTrustStrip = lazy(() => import("@/components/storefront/StorefrontTrustStrip"));
 import HeroBannerCarousel from "@/components/storefront/HeroBannerCarousel";
 import { ResponsiveHeroBanner, HomeBestSellingSection, HomeSectionHeader, HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
+import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
 
 /* ── Announcement Strip ── */
 function AnnouncementStrip({ customText }: { customText?: string }) {
@@ -74,7 +75,7 @@ export function ElegantHomePage({ defaultCardStyle = "style-2", defaultCategoryS
 
   const { products, isLoading: isProductsLoading } = useStorefrontProducts(store.id);
   const { products: allBestSellers } = useBestSellingProducts(store.id);
-  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const storeCategories = useStorefrontCategories(store.id);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || defaultCardStyle;
   const categoryStyle = themeConfig?.category_style || defaultCategoryStyle;

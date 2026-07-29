@@ -29,6 +29,7 @@ const ShopByVideoCarousel = lazy(() => import("@/components/storefront/ShopByVid
 import { DeferUntilVisible } from "@/components/storefront/DeferUntilVisible";
 import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 import BestSellerBadge from "@/components/storefront/BestSellerBadge";
+import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
 
 const ABOVE_FOLD_COUNT = 4;
 const POPULAR_LIMIT = 10;
@@ -68,7 +69,7 @@ export default function StorefrontHome() {
     listName: `${store.name} — All Products`,
     customDomain: (store as any)?.custom_domain,
   });
-  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const storeCategories = useStorefrontCategories(store.id);
   const themeConfig = useStorefrontThemeConfig(store.id);
 
   const cardStyle = themeConfig?.product_card_style || "style-1";

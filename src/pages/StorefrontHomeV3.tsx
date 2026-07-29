@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import SectionHeading from "@/components/storefront/SectionHeading";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
+import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 const StorefrontTrustStrip = lazy(() => import("@/components/storefront/StorefrontTrustStrip"));
 
@@ -289,7 +290,7 @@ export default function StorefrontHomeV3() {
   });
 
   const { products, isLoading: isProductsLoading } = useStorefrontProducts(store.id);
-  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const storeCategories = useStorefrontCategories(store.id);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
 

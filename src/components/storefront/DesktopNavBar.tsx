@@ -12,6 +12,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { useSmartHeader } from "@/hooks/useSmartHeader";
 import HeaderWhatsAppButton from "@/components/storefront/HeaderWhatsAppButton";
+import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
 
 
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
@@ -36,7 +37,7 @@ interface DesktopNavBarProps {
  */
 export default function DesktopNavBar({ store, onSearchOpen, className = "", style }: DesktopNavBarProps) {
   const queryClient = useQueryClient();
-  const categories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]) ?? [];
+  const categories = useStorefrontCategories(store.id) ?? [];
   const customPages = queryClient.getQueryData<any[]>(["storefront-custom-pages", store.id]) ?? [];
   const products = queryClient.getQueryData<any[]>(["storefront-products", store.id]);
   const { data: bundles } = useBundleMenu(store.slug);

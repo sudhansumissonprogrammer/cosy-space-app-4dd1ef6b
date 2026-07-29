@@ -34,6 +34,7 @@ import StorefrontTrustStrip from "@/components/storefront/StorefrontTrustStrip";
 import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 import SortDropdown from "@/components/storefront/SortDropdown";
 import BestSellerBadge from "@/components/storefront/BestSellerBadge";
+import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
 
 const ABOVE_FOLD_COUNT = 4;
 const POPULAR_LIMIT = 10;
@@ -59,7 +60,7 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
 
   const { products: initialProducts, isLoading: isInitialLoading, edgeSkelVisible } = useStorefrontProducts(store.id);
   const allCachedProducts = initialProducts;
-  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const storeCategories = useStorefrontCategories(store.id);
   const themeConfig = useStorefrontThemeConfig(store.id);
 
   const cardStyle = themeConfig?.product_card_style || defaultCardStyle;
