@@ -18,6 +18,7 @@ import CategoryHeroBanner from "@/components/storefront/CategoryHeroBanner";
 import ShopEmptyState from "@/components/storefront/ShopEmptyState";
 import BackToTop from "@/components/storefront/BackToTop";
 import { fetchCategoryEdge, CATEGORY_PAGE_LIMIT } from "@/lib/storefrontEdgeApi";
+import CategoryQuickJump from "@/components/storefront/CategoryQuickJump";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 
