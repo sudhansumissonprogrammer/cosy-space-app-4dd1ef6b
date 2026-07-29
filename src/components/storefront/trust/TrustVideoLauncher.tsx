@@ -148,8 +148,6 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
               muted
               loop
               playsInline
-              // @ts-expect-error — non-standard iOS attribute
-              disableRemotePlayback
               disablePictureInPicture
               preload="metadata"
               className="absolute inset-0 h-full w-full object-cover"
