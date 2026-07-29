@@ -2082,7 +2082,7 @@ export default function CheckoutV2Page() {
         if (leftCheckout || document.visibilityState !== "visible") return;
         try { if (!document.hasFocus()) return; } catch { /* noop */ }
         fireChooser();
-      }, 2600);
+      }, 2600 + UPI_LAUNCH_DELAY_MS);
     }
 
 
