@@ -1634,7 +1634,10 @@ async function enrichHeadWithPdpChunkPreloads(head, origin, env) {
       if (!res.ok) return head;
       const code = await res.text();
       // PDP + Category critical chunk names (v8.65 adds CategoryDetail + Shop deps).
-      const pdpRx = /\/assets\/(?:ProductDetail|V19ProductDetail|V20ProductDetail|V22ProductDetail|productSelectors|PdpEnhancements|VariantPickerDialog|SideCart|alert-dialog|CheckoutExitDialog|FrequentlyBoughtTogether|CustomerReviews|RelatedProducts|CategoryDetail|StorefrontShop|ShopFilterBar)-[A-Za-z0-9_-]+\.js$/;
+      // v8.68.6 — RelatedProducts was deleted (replaced by the 3-carousel PDP
+      // system). Preload the new chunk names instead so the below-fold
+      // carousels don't waterfall after PDP paint.
+      const pdpRx = /\/assets\/(?:ProductDetail|V19ProductDetail|V20ProductDetail|V22ProductDetail|productSelectors|PdpEnhancements|VariantPickerDialog|SideCart|alert-dialog|CheckoutExitDialog|FrequentlyBoughtTogether|CustomerReviews|PdpCarousels|PdpProductCarousel|CategoryDetail|StorefrontShop|ShopFilterBar)-[A-Za-z0-9_-]+\.js$/;
       const found = new Set();
       const RX = /["'`](?:\.\/|\.?\/?assets\/)?([A-Za-z0-9_\-]+-[A-Za-z0-9]{6,})\.js["'`]/g;
       for (const m of code.matchAll(RX)) {
