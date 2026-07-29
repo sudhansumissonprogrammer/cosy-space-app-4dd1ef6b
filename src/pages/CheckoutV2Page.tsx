@@ -2378,10 +2378,14 @@ export default function CheckoutV2Page() {
       setCreatingOrder(true);
       try {
         saveExpressInfo();
-        // Label the order with the store's ACTUAL gateway. Hardcoding
-        // "razorpay" here mislabeled UPI-intent orders on stores that only
-        // have PayU/Cashfree enabled.
-        const order = await createOrderIfNeeded(activeGateway || "payu");
+        // STRICT GATEWAY: the order is always stamped with the store's actual
+        // enabled gateway. No fallback label — if nothing is enabled we abort
+        // instead of writing a gateway the store doesn't use.
+        if (!activeGateway) {
+          toast.error("No online payment gateway configured");
+          return;
+        }
+        const order = await createOrderIfNeeded(activeGateway);
         setShowPayment(true);
         try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { step: "continue_to_pay" } as any }); } catch { /* noop */ }
 
