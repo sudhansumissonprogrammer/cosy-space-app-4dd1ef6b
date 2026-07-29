@@ -149,8 +149,15 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
               loop
               playsInline
               disablePictureInPicture
+              disableRemotePlayback
+              // @ts-expect-error non-standard but respected by Chrome/Safari
+              controlsList="nodownload nofullscreen noremoteplayback noplaybackrate"
+              // @ts-expect-error legacy iOS attribute
+              webkit-playsinline="true"
+              // @ts-expect-error legacy iOS attribute
+              x-webkit-airplay="deny"
               preload="metadata"
-              className="absolute inset-0 h-full w-full object-cover"
+              className="sf-trust-preview pointer-events-none absolute inset-0 h-full w-full object-cover"
             />
           ) : preview.posterUrl ? (
             <img
@@ -162,6 +169,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
               decoding="async"
             />
           ) : null}
+
 
           {/* subtle bottom gradient + speaker hint so shoppers know tap = sound */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-gradient-to-t from-black/70 via-black/20 to-transparent px-1.5 pb-1.5 pt-6">
