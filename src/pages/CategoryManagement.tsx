@@ -73,7 +73,7 @@ export default function CategoryManagement() {
       const { error } = await (supabase as any).rpc("swap_category_order", { _a: a.id, _b: b.id });
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
-      purgeStore();
+      purgeStore({ shell: true });
     } catch {
       toast.error("Failed to reorder");
     } finally {
@@ -215,7 +215,7 @@ export default function CategoryManagement() {
 
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
       setDialogOpen(false);
-      purgeStore();
+      purgeStore({ shell: true });
     } catch (err: any) {
       toast.error(err.message || "Failed to save category");
     } finally {
@@ -231,7 +231,7 @@ export default function CategoryManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
       toast.success("Category deleted");
-      purgeStore();
+      purgeStore({ shell: true });
     },
     onError: (err: any) => toast.error(err.message || "Failed to delete"),
   });
