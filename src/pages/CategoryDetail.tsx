@@ -74,7 +74,12 @@ export default function CategoryDetail() {
       // MISSED the KV cache and forced a full DB roundtrip on every SPA
       // click from home → category. This alone turns 350–650 ms uncached
       // hits into instant KV HITs.
-      const edge = await fetchCategoryEdge(categorySlug!, CATEGORY_PAGE_LIMIT);
+      // If the link was hovered/touched, the payload is already in flight (or
+      // resolved) from prefetchCategory — await that instead of a new RTT.
+      const prefetched = categoryPrefetchCache.get(categorySlug!);
+      const edge = prefetched
+        ? await prefetched
+        : await fetchCategoryEdge(categorySlug!, CATEGORY_PAGE_LIMIT);
       const rpc = edge ?? (await (supabase as any).rpc("get_category_page", {
         _store_slug: store.slug,
         _category_slug: categorySlug!,
