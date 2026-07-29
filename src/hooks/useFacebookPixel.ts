@@ -135,17 +135,41 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     // done by then), then still go to idle. Purchase/Checkout paths are
     // unaffected: pixelOutbox force-loads the SDK immediately when a
     // conversion event needs it.
-    const idle = (cb: () => void) =>
-      typeof requestIdleCallback !== "undefined"
-        ? requestIdleCallback(cb, { timeout: 4000 })
-        : setTimeout(cb, 1500);
+    // PERF (2026-07-29 follow-up): even after the `load` gate, the 104KB
+    // download still landed at ~2064ms — right at FCP on slow mobile. Push it
+    // behind whichever comes first:
+    //   a) the shopper's FIRST interaction (pointer/touch/keyboard/scroll), or
+    //   b) a 3s idle timer after `load`.
+    // Nothing is lost: fbq's shim queues events, pixelOutbox persists them and
+    // force-loads the SDK immediately for conversion events.
     const schedule = (cb: () => void) => {
+      let done = false;
+      const events = ["pointerdown", "touchstart", "keydown", "scroll", "mousemove"] as const;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const run = () => {
+        if (done) return;
+        done = true;
+        if (timer) clearTimeout(timer);
+        events.forEach((e) => window.removeEventListener(e, run as EventListener));
+        if (typeof requestIdleCallback !== "undefined") {
+          requestIdleCallback(cb, { timeout: 1500 });
+        } else {
+          cb();
+        }
+      };
+      const arm = () => {
+        events.forEach((e) =>
+          window.addEventListener(e, run as EventListener, { once: true, passive: true })
+        );
+        timer = setTimeout(run, 3000);
+      };
       if (document.readyState === "complete") {
-        idle(cb);
+        arm();
       } else {
-        window.addEventListener("load", () => idle(cb), { once: true });
+        window.addEventListener("load", arm, { once: true });
       }
     };
+
 
 
     schedule(() => {
