@@ -3970,7 +3970,14 @@ async function serveStreamedHtml(
 
       // v8.66.0: home cold load should not queue 6 product images before the
       // app is interactive; keep the two likely above-fold LCP candidates only.
-      const productImagePreloads = inlineProducts ? _buildProductImagePreloads(inlineProducts, 2) : "";
+      // v8.74.0: when inline products are unavailable (cold isolate / expired
+      // product-version cache) fall back to the durable `imgs:<slug>` KV list,
+      // so the preload scanner ALWAYS gets the first product images at byte 0
+      // instead of waiting ~2s for React to discover them.
+      const productImagePreloads = inlineProducts
+        ? _buildProductImagePreloads(inlineProducts, 2)
+        : _buildImagePreloadsFromUrls(topImages, 2);
+
 
       let perRouteSeoHead = "";
       let earlyStorefrontResult = null;
