@@ -17,7 +17,7 @@ import {
   ArrowLeft, Package, ChevronLeft, ChevronRight, ShoppingBag, ShoppingCart,
   Share2, Copy, Facebook, Twitter, X, ZoomIn, Star, Shield, Truck, RotateCcw,
   Clock, Eye, Flame, Heart, Minus, Plus, Check, ChevronDown, CreditCard, ThumbsUp,
-  Lock, Timer, Zap, ShieldCheck, Maximize2, Play
+  Lock, Timer, Zap, ShieldCheck, Maximize2, Play, LayoutGrid
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -1636,6 +1636,22 @@ function ImageGallery({
               aria-label="Enlarge image"
             >
               <Maximize2 className="h-4 w-4" />
+            </button>
+          )}
+
+          {/* Similar products — jumps to PDP carousels */}
+          {slides[activeIndex]?.kind !== "video" && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const el = document.getElementById("pdp-carousels");
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className="absolute bottom-3 left-14 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 backdrop-blur-md ring-1 ring-white/40 text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-white/30 active:scale-[0.96]"
+              aria-label="View similar products"
+              title="Similar products"
+            >
+              <LayoutGrid className="h-4 w-4" />
             </button>
           )}
 
