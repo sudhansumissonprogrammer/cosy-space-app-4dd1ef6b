@@ -384,10 +384,16 @@ Deno.serve(async (req) => {
 
     if (qErr) { skipped++; continue; }
     enqueued++;
+    handledPhones.add(phone);
 
     await admin.from("abandoned_carts")
-      .update({ recovery_sent_at: new Date().toISOString(), recovery_status: "queued" })
+      .update({
+        recovery_sent_at: new Date().toISOString(),
+        recovery_status: "queued",
+        recovery_error: `drip_step_${drip.step}`,
+      })
       .eq("id", (c as any).id);
+
 
     // 🔥 SPEED: warm the destination host + PDP HTML now (fire-and-forget) so
     // when the shopper taps the WA button ~minutes later, DNS/TLS is warm at
