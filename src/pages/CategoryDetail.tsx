@@ -47,8 +47,13 @@ export default function CategoryDetail() {
   const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ["category", store.id, categorySlug],
     queryFn: async () => {
-      // Phase A: try Worker edge cache first (KV + CF cache)
-      const edge = await fetchCategoryEdge(categorySlug!, PAGE_SIZE);
+      // Phase A: try Worker edge cache first (KV + CF cache).
+      // IMPORTANT: use CATEGORY_PAGE_LIMIT (50) — the Worker prewarms and
+      // caches under the `:l50` key. Requesting `:l20` (PAGE_SIZE) always
+      // MISSED the KV cache and forced a full DB roundtrip on every SPA
+      // click from home → category. This alone turns 350–650 ms uncached
+      // hits into instant KV HITs.
+      const edge = await fetchCategoryEdge(categorySlug!, CATEGORY_PAGE_LIMIT);
       const rpc = edge ?? (await (supabase as any).rpc("get_category_page", {
         _store_slug: store.slug,
         _category_slug: categorySlug!,
