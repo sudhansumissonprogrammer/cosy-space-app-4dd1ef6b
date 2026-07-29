@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, phone, name, store_id, order_id } = await req.json();
+    const { email, phone, name, store_id, order_id, address_only } = await req.json();
 
     if (!store_id) {
       return new Response(
@@ -93,6 +93,63 @@ Deno.serve(async (req) => {
     const normalizedPhone = local;
     const phoneEmail = `${normalizedPhone}@phone.guest`;
     const realEmail = email ? email.toLowerCase().trim() : null;
+
+    // ⚡ FAST PATH (address_only): the checkout UI blocks its address gate on
+    // this call, so it must be instant. Skip auth user creation, customer
+    // upsert, address seeding and session minting — just answer "does this
+    // phone have a deliverable address on file?" with 2 parallel reads.
+    // The heavy full call still runs in the background from the client.
+    if (address_only) {
+      const mapAddr = (row: any) => {
+        if (!row?.street_address || !row?.pincode) return null;
+        return {
+          id: row.id ?? null,
+          label: row.label ?? "Home",
+          full_name: row.full_name ?? row.customer_name ?? name ?? null,
+          phone: row.phone ?? row.customer_phone ?? normalizedPhone,
+          street_address: row.street_address,
+          city: row.city ?? null,
+          state: row.state ?? null,
+          pincode: row.pincode,
+          is_default: row.is_default ?? true,
+        };
+      };
+
+      const [{ data: phoneCustomers }, { data: lastOrder }] = await Promise.all([
+        supabase.from("storefront_customers").select("id").eq("phone", normalizedPhone).limit(50),
+        supabase
+          .from("orders")
+          .select("street_address, city, state, pincode, customer_name, customer_phone, created_at")
+          .eq("customer_phone", normalizedPhone)
+          .not("street_address", "is", null)
+          .not("pincode", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      let fastAddress: any = null;
+      const ids = (phoneCustomers || []).map((c: any) => c.id).filter(Boolean);
+      if (ids.length > 0) {
+        const { data: savedAddr } = await supabase
+          .from("customer_addresses")
+          .select("id, label, full_name, phone, street_address, city, state, pincode, is_default, created_at")
+          .in("storefront_customer_id", ids)
+          .not("street_address", "is", null)
+          .not("pincode", "is", null)
+          .order("is_default", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        fastAddress = mapAddr(savedAddr);
+      }
+      if (!fastAddress) fastAddress = mapAddr(lastOrder);
+
+      return new Response(
+        JSON.stringify({ success: true, fast: true, address: fastAddress }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // 1) O(1) lookup
     let userId: string | null = null;

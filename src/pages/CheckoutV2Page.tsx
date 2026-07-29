@@ -623,6 +623,10 @@ export default function CheckoutV2Page() {
   }, [phone]);
 
   const phoneAddressLookupRef = useRef("");
+  // Mirrors the live street address so async lookups can check it without
+  // re-running the effect (and without clobbering what the shopper typed).
+  const streetAddressRef = useRef("");
+  useEffect(() => { streetAddressRef.current = streetAddress; }, [streetAddress]);
   // Tracks whether the async `create-guest-account` lookup for the current
   // phone has settled. While `pending`, we suppress auto-opening the address
   // sheet so returning shoppers (address on file) don't see a flash-of-form
@@ -640,6 +644,34 @@ export default function CheckoutV2Page() {
 
     let cancelled = false;
     setPhoneLookupState("pending");
+
+    // ⚡ Two-track lookup so typing a phone never feels slow:
+    //   track A (blocking, ~80-150ms): `address_only` read — decides whether
+    //           to show the address form. Hard 900ms ceiling; if the network
+    //           is slow we open the form instantly rather than making the
+    //           shopper stare at a spinner.
+    //   track B (background): the full create-guest-account call that mints
+    //           the session + seeds customer_addresses. Never blocks the UI;
+    //           if it finds an address later it still autofills.
+    const settle = () => { if (!cancelled) setPhoneLookupState("done"); };
+    const timer = window.setTimeout(settle, 900);
+
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("create-guest-account", {
+          body: { phone: canon, store_id: store.id, address_only: true },
+        });
+        if (cancelled || error) return;
+        const addr = (data as any)?.address;
+        if (addr) applyPhoneLookupAddress(addr);
+      } catch {
+        // Ignore — the shopper can still type a fresh address.
+      } finally {
+        window.clearTimeout(timer);
+        settle();
+      }
+    })();
+
     (async () => {
       try {
         const { data, error } = await supabase.functions.invoke("create-guest-account", {
@@ -656,19 +688,23 @@ export default function CheckoutV2Page() {
             refresh_token: result.session.refresh_token,
           });
         }
-        if (!cancelled && result?.address) applyPhoneLookupAddress(result.address);
+        // Only autofill from the slow track if the shopper hasn't already
+        // started typing their own address — never clobber live input.
+        if (!cancelled && result?.address && !streetAddressRef.current) {
+          applyPhoneLookupAddress(result.address);
+        }
       } catch {
-        // Keep checkout usable; the shopper can still type a fresh address.
-      } finally {
-        if (!cancelled) setPhoneLookupState("done");
+        // Keep checkout usable; session minting is best-effort.
       }
     })();
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store?.id, phone, streetAddress, pincode, city, state, fullName]);
+
 
   const openAddressFormSheet = () => {
     setShowAddressDialog(false);
