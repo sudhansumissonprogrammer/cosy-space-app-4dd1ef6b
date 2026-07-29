@@ -473,6 +473,7 @@ Deno.serve(async (req) => {
       if (!dropEnabled.has((o as any).store_id)) { payDropStoreOff++; continue; }
       const phone = normalizePhone((o as any).customer_phone);
       if (!phone) { payDropSkipped++; continue; }
+      if (handledPhones.has(phone)) { payDropCapped++; continue; }
 
       // Skip if customer has ANY confirmed order in this store since drop-off
       // (they eventually completed via COD, retry, or another gateway).
@@ -490,22 +491,11 @@ Deno.serve(async (req) => {
         .gte("created_at", (o as any).created_at);
       if ((completedCount ?? 0) > 0) { payDropCompleted++; continue; }
 
-      // Reuse the strict 1/24h per-phone marketing cap.
-      const { count: sentMkt } = await admin
-        .from("whatsapp_messages")
-        .select("id", { count: "exact", head: true })
-        .eq("recipient_phone", phone).eq("sent_via", "platform").eq("direction", "outgoing")
-        .eq("status", "sent")
-        .not("message_type", "in", `(${TRANSACTIONAL.map((t) => `"${t}"`).join(",")})`)
-        .gte("created_at", since24h);
-      const { count: pendingMkt } = await admin
-        .from("wa_send_queue")
-        .select("id", { count: "exact", head: true })
-        .eq("recipient_phone", phone)
-        .in("status", ["pending", "sending", "sent"])
-        .not("message_type", "in", `(${TRANSACTIONAL.map((t) => `"${t}"`).join(",")})`)
-        .gte("created_at", since24h);
-      if (((sentMkt ?? 0) + (pendingMkt ?? 0)) >= 1) { payDropCapped++; continue; }
+      // 🔁 Same 3-step drip: +30min, +5h, +24h. Shared with the cart lane so a
+      // lead present in both places still gets exactly one message per step.
+      const dripDrop = await recoveryDripDecision(admin, phone);
+      if (!dripDrop.allow) { payDropCapped++; continue; }
+
 
       const items = Array.isArray((o as any).order_items) ? (o as any).order_items : [];
       const firstItem = items[0] || {};
