@@ -92,12 +92,14 @@ Deno.serve(async (req) => {
 
     const methods = Array.isArray(config.payment_methods) ? (config.payment_methods as string[]) : [];
 
-    // Build an ordered fallback list of gateways to try (Cashfree S2S requires
-    // approval; when not approved we transparently fall back to Razorpay).
+    // STRICT GATEWAY: use ONLY the store's selected/primary gateway. No silent
+    // fallback to another PG — a PayU-only store must never touch Razorpay or
+    // Cashfree, and orders must never get labelled with a gateway that isn't
+    // enabled for that store.
     const gatewayChain: ("cashfree" | "razorpay" | "payu")[] = [];
     if (methods.includes("cashfree") && config.cashfree_app_id && config.cashfree_secret_key) gatewayChain.push("cashfree");
-    if (methods.includes("razorpay") && config.razorpay_key_id && config.razorpay_key_secret) gatewayChain.push("razorpay");
-    if (methods.includes("payu") && config.payu_merchant_key && config.payu_merchant_salt) gatewayChain.push("payu");
+    else if (methods.includes("razorpay") && config.razorpay_key_id && config.razorpay_key_secret) gatewayChain.push("razorpay");
+    else if (methods.includes("payu") && config.payu_merchant_key && config.payu_merchant_salt) gatewayChain.push("payu");
 
     if (gatewayChain.length === 0) {
       return jsonRes({ error: "No UPI-capable gateway configured", code: "no_gateway" }, 400);
