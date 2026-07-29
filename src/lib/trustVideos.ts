@@ -102,3 +102,22 @@ export async function hasTrustVideos(storeId: string): Promise<boolean> {
     .eq("is_active", true);
   return (count ?? 0) > 0;
 }
+
+/**
+ * Fetch just the first active trust video for the floating preview thumbnail.
+ * Lightweight — one row, three columns. Called only after idle.
+ */
+export async function fetchFirstTrustVideo(
+  storeId: string
+): Promise<{ videoUrl: string; posterUrl: string | null } | null> {
+  const { data } = await (supabase as any)
+    .from("store_trust_videos")
+    .select("video_url,poster_url")
+    .eq("store_id", storeId)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!data?.video_url) return null;
+  return { videoUrl: data.video_url, posterUrl: data.poster_url ?? null };
+}
