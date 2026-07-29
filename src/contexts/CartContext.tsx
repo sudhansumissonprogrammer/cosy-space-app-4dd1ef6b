@@ -184,6 +184,20 @@ export function CartProvider({ slug, storeId, currency = "INR", children }: { sl
   }, [storeId, currency]);
   const closeCart = useCallback(() => setIsCartOpen(false), []);
 
+  // Open the side cart once the fly-to-cart arc lands (skip on cart/checkout
+  // pages, where the drawer would cover the page the user is already on).
+  useEffect(() => {
+    const onLanded = () => {
+      const p = window.location.pathname;
+      if (/\/(cart|checkout)(\/|$)/.test(p)) return;
+      setIsCartOpen(true);
+    };
+    window.addEventListener("cart:fly-landed", onLanded as EventListener);
+    return () => window.removeEventListener("cart:fly-landed", onLanded as EventListener);
+  }, []);
+
+
+
   const addToCart = useCallback((item: Omit<CartItem, "quantity"> & { quantity?: number }, options?: { silent?: boolean }) => {
     setItems((prev) => {
       const idx = prev.findIndex(
