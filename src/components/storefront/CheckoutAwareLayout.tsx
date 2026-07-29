@@ -10,7 +10,7 @@ import { ArrowLeft } from "lucide-react";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { Button } from "@/components/ui/button";
 import type { Tables } from "@/integrations/supabase/types";
-import { WishlistBadge, AccountBadge } from "@/components/storefront/HeaderBadges";
+import { WishlistBadge, AccountBadge, CartBadge } from "@/components/storefront/HeaderBadges";
 import HeaderWhatsAppButton from "@/components/storefront/HeaderWhatsAppButton";
 
 import PremiumHeaderBadge from "@/components/storefront/PremiumHeaderBadge";
@@ -53,6 +53,11 @@ interface CheckoutAwareLayoutProps {
   headerIconColor?: string;
   /** Show the golden "Premium Product · Guaranteed" trust medallion in the mobile header */
   showPremiumBadge?: boolean;
+  /**
+   * Theme-16 only: put the CART icon in the mobile header (where WhatsApp
+   * normally sits) and move the WhatsApp button into the bottom nav.
+   */
+  swapCartWhatsApp?: boolean;
 }
 
 export default function CheckoutAwareLayout({
@@ -68,6 +73,7 @@ export default function CheckoutAwareLayout({
   headerBgOverride,
   headerIconColor,
   showPremiumBadge = false,
+  swapCartWhatsApp = false,
 }: CheckoutAwareLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
