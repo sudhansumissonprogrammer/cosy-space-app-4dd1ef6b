@@ -3270,6 +3270,29 @@ export default function CheckoutV2Page() {
   }
 
 
+  // ─── Pre-launch "processing" beat ───────────────────────────────────────
+  // Shown for <1s between the UPI tile tap and the app handoff so the shopper
+  // sees their order being processed instead of an abrupt app switch.
+  if (launchingApp) {
+    return (
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background px-8 text-center">
+        <div className="relative mb-6 h-20 w-20">
+          <span className="absolute inset-0 rounded-full bg-primary/10 animate-ping" aria-hidden="true" />
+          <span className="absolute inset-0 rounded-full bg-primary/10" aria-hidden="true" />
+          <span className="absolute inset-0 flex items-center justify-center">
+            <Loader2 className="h-9 w-9 text-primary animate-spin" />
+          </span>
+        </div>
+        <h1 className="text-[19px] font-bold tracking-tight text-foreground">Processing your order…</h1>
+        <p className="mt-1.5 text-[13px] text-muted-foreground">Opening {launchingApp} for payment</p>
+        <div className="mt-5 rounded-xl bg-muted px-4 py-3">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Amount to pay</div>
+          <div className="text-2xl font-extrabold tabular-nums text-foreground">{formatPrice(chargeAmount, currency)}</div>
+        </div>
+      </div>
+    );
+  }
+
   // ─── Waiting screen (UPI intent flow) — mobile only ─────────────────────
   // On desktop we keep the QR inline (see the desktop UPI QR card below) and
   // just show a small "waiting" strip there, so the shopper can still see the
