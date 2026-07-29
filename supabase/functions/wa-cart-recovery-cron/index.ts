@@ -170,62 +170,32 @@ Deno.serve(async (req) => {
 
   let enqueued = 0, skipped = 0, storeOff = 0, cooldown = 0, emptyCart = 0, alreadyOrdered = 0, phoneCapped = 0;
 
-  // Strict per-phone marketing cap (1/day). Pre-check so we don't waste queue
-  // rows on phones that will just be skipped by the sender. Counts BOTH already
-  // sent marketing msgs AND queued/sending rows in the last 24h.
-  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const TRANSACTIONAL = ["order_confirmation", "payment_received", "payment_success", "order_shipped", "order_delivered"];
+
+  // 🔁 One recovery message per phone per cron run, across BOTH lanes
+  // (cart lane + payment drop-off lane). The drip helper handles pacing.
+  const handledPhones = new Set<string>();
+
+  // Newest cart first so a shopper with several carts gets pitched the latest one.
+  carts.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   for (const c of carts) {
     if (disabled.has((c as any).store_id)) { storeOff++; continue; }
     const phone = normalizePhone((c as any).customer_phone);
     if (!phone) { skipped++; continue; }
+    if (handledPhones.has(phone)) { phoneCapped++; continue; }
 
-    // 🚫 STRICT: 1 marketing msg per phone per 24h. Same shopper visiting 3 PDPs
-    // must not get 3 recovery messages — only the first cart wins.
-    const { count: sentMkt } = await admin
-      .from("whatsapp_messages")
-      .select("id", { count: "exact", head: true })
-      .eq("recipient_phone", phone).eq("sent_via", "platform").eq("direction", "outgoing")
-      .eq("status", "sent") // 🩹 failed msgs (Meta throttle) must not consume the cap
-      .not("message_type", "in", `(${TRANSACTIONAL.map((t) => `"${t}"`).join(",")})`)
-      .gte("created_at", since24h);
-
-    const { count: pendingMkt } = await admin
-      .from("wa_send_queue")
-      .select("id", { count: "exact", head: true })
-      .eq("recipient_phone", phone)
-      .in("status", ["pending", "sending", "sent"])
-      .not("message_type", "in", `(${TRANSACTIONAL.map((t) => `"${t}"`).join(",")})`)
-      .gte("created_at", since24h);
-    if (((sentMkt ?? 0) + (pendingMkt ?? 0)) >= 1) {
-      const { data: sentForCart } = await admin
-        .from("wa_send_queue")
-        .select("sent_message_id, updated_at")
-        .eq("abandoned_cart_id", (c as any).id)
-        .eq("message_type", "abandoned_cart")
-        .eq("status", "sent")
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (sentForCart) {
-        await admin.from("abandoned_carts")
-          .update({
-            recovery_status: "sent",
-            recovery_sent_at: (sentForCart as any).updated_at ?? new Date().toISOString(),
-            recovery_message_id: (sentForCart as any).sent_message_id ?? null,
-            recovery_error: null,
-          })
-          .eq("id", (c as any).id);
-      } else {
-        await admin.from("abandoned_carts")
-          .update({ recovery_status: "skipped", recovery_error: "phone_daily_cap" })
-          .eq("id", (c as any).id);
-      }
+    // 🔁 DRIP GATE: step 1 now (cart is already ≥30 min old), step 2 at +5h,
+    // step 3 at +24h after step 2. Never a 4th message.
+    const drip = await recoveryDripDecision(admin, phone);
+    if (!drip.allow) {
+      await admin.from("abandoned_carts")
+        .update({ recovery_status: "skipped", recovery_error: drip.reason || "drip_blocked" })
+        .eq("id", (c as any).id);
       phoneCapped++;
       continue;
     }
+
 
 
     const items = Array.isArray((c as any).cart_items) ? (c as any).cart_items : [];
