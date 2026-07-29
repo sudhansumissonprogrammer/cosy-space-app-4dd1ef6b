@@ -18,6 +18,7 @@ import CategoryHeroBanner from "@/components/storefront/CategoryHeroBanner";
 import ShopEmptyState from "@/components/storefront/ShopEmptyState";
 import BackToTop from "@/components/storefront/BackToTop";
 import { fetchCategoryEdge, CATEGORY_PAGE_LIMIT } from "@/lib/storefrontEdgeApi";
+import { categoryPrefetchCache, categoryPrefetchResolved } from "@/lib/prefetchCategory";
 import CategoryQuickJump from "@/components/storefront/CategoryQuickJump";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
@@ -74,7 +75,12 @@ export default function CategoryDetail() {
       // MISSED the KV cache and forced a full DB roundtrip on every SPA
       // click from home → category. This alone turns 350–650 ms uncached
       // hits into instant KV HITs.
-      const edge = await fetchCategoryEdge(categorySlug!, CATEGORY_PAGE_LIMIT);
+      // If the link was hovered/touched, the payload is already in flight (or
+      // resolved) from prefetchCategory — await that instead of a new RTT.
+      const prefetched = categoryPrefetchCache.get(categorySlug!);
+      const edge = prefetched
+        ? await prefetched
+        : await fetchCategoryEdge(categorySlug!, CATEGORY_PAGE_LIMIT);
       const rpc = edge ?? (await (supabase as any).rpc("get_category_page", {
         _store_slug: store.slug,
         _category_slug: categorySlug!,
@@ -102,6 +108,18 @@ export default function CategoryDetail() {
       return data as { id: string; name: string; slug: string; image_url: string | null } | null;
     },
     initialData: () => {
+      // Hover/touch prefetch already resolved → hydrate synchronously, the
+      // category page paints with products on its very first render.
+      const pre = categorySlug ? categoryPrefetchResolved.get(categorySlug) : null;
+      if (pre?.category) {
+        if (Array.isArray(pre.products)) {
+          queryClient.setQueryData(
+            ["cat-detail-v3", store.id, pre.category.name, "default", PAGE_SIZE],
+            seedInfinitePages(pre.products)
+          );
+        }
+        return pre.category;
+      }
       const inline = getInlineCategory();
       if (inline?.category) {
         if (Array.isArray(inline.products)) {

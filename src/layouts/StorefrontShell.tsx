@@ -328,6 +328,24 @@ export default function StorefrontShell({
     };
   }, [themeVarsKey]);
 
+  // Hover/touch prefetch for every category link in the storefront.
+  // Installed once at idle so it never competes with first paint.
+  useEffect(() => {
+    let dispose: (() => void) | undefined;
+    const install = () => {
+      import("@/lib/prefetchCategory")
+        .then((m) => { dispose = m.installCategoryLinkPrefetch(); })
+        .catch(() => {});
+    };
+    const idle: any = (window as any).requestIdleCallback;
+    const h = idle ? idle(install, { timeout: 2500 }) : window.setTimeout(install, 1200);
+    return () => {
+      if (idle && (window as any).cancelIdleCallback) (window as any).cancelIdleCallback(h);
+      else clearTimeout(h);
+      dispose?.();
+    };
+  }, []);
+
   // Defer non-critical overlay chunk loads until the browser is idle.
   // FloatingWhatsApp/SideCart/BackToTop/CartPlusOneOverlay are all `lazy()`
   // but their `import()` would fire the moment Suspense renders them. Gating
