@@ -2466,6 +2466,9 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
       if (data?.theme_config) {
         _cacheThemeForFastShell(slug, data.theme_config, env, ctx, data?.store?.theme || "");
       }
+      // v8.74.0 — keep the durable LCP image list fresh on every data fetch.
+      _cacheTopProductImages(slug, data?.products, env, ctx);
+
 
       if (ctx) {
         const dataStr = JSON.stringify(data);
