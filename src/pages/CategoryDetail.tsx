@@ -64,10 +64,7 @@ export default function CategoryDetail() {
       if (rpc?.category) {
         if (Array.isArray(rpc.products)) {
           const qKey = ["cat-detail-v3", store.id, rpc.category.name, "default", PAGE_SIZE];
-          queryClient.setQueryData(
-            qKey,
-            { pages: [{ products: rpc.products, page: 0 }], pageParams: [0] }
-          );
+          queryClient.setQueryData(qKey, seedInfinitePages(rpc.products));
           // Note: this path is a FRESH Supabase RPC response — no need to
           // invalidate. (The stale-pin invalidation only matters for the
           // inline HTML payload, see initialData below.)
