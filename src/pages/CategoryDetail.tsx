@@ -108,6 +108,18 @@ export default function CategoryDetail() {
       return data as { id: string; name: string; slug: string; image_url: string | null } | null;
     },
     initialData: () => {
+      // Hover/touch prefetch already resolved → hydrate synchronously, the
+      // category page paints with products on its very first render.
+      const pre = categorySlug ? categoryPrefetchResolved.get(categorySlug) : null;
+      if (pre?.category) {
+        if (Array.isArray(pre.products)) {
+          queryClient.setQueryData(
+            ["cat-detail-v3", store.id, pre.category.name, "default", PAGE_SIZE],
+            seedInfinitePages(pre.products)
+          );
+        }
+        return pre.category;
+      }
       const inline = getInlineCategory();
       if (inline?.category) {
         if (Array.isArray(inline.products)) {
