@@ -44,7 +44,7 @@ import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const CustomerReviews = lazy(() => import("@/components/storefront/pdp/CustomerReviews"));
-const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
+const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels"));
 import PdpUpsellSection from "@/components/storefront/apps/Upsell/PdpUpsellSection";
 
 
@@ -1021,14 +1021,12 @@ export default function V22ProductDetail() {
 
         <DeferUntilVisible rootMargin="600px" minHeight={320}>
           <Suspense fallback={null}>
-            <RelatedProducts
+            <PdpCarousels
               storeId={store.id}
               storeSlug={store.slug}
               currentProductId={product.id}
               currentCategory={product.category}
               store={store}
-              addToCart={addToCart}
-              currency={currency}
             />
           </Suspense>
         </DeferUntilVisible>

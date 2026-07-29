@@ -51,7 +51,7 @@ import { useWaCouponPreview } from "@/hooks/useWaCouponPreview";
 const FrequentlyBoughtTogether = lazy(() => import("@/components/storefront/pdp/FrequentlyBoughtTogether"));
 const ReviewsShowcase = lazy(() => import("@/components/storefront/pdp/ReviewsShowcase"));
 import PdpReviewsBadge from "@/components/storefront/pdp/PdpReviewsBadge";
-const RelatedProducts = lazy(() => import("@/components/storefront/pdp/RelatedProducts"));
+const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels"));
 const VideoSlide = lazy(() =>
   import("@/components/storefront/VideoSlide").then((m) => ({ default: m.VideoSlide }))
 );
@@ -1130,14 +1130,12 @@ export default function ProductDetail() {
         {/* Complete the Look — deferred until near viewport */}
         <DeferUntilVisible rootMargin="600px" minHeight={320}>
           <Suspense fallback={null}>
-            <RelatedProducts
+            <PdpCarousels
               storeId={store.id}
               storeSlug={store.slug}
               currentProductId={product.id}
               currentCategory={product.category}
               store={store}
-              addToCart={addToCart}
-              currency={currency}
             />
           </Suspense>
         </DeferUntilVisible>

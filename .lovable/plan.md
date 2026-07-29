@@ -1,57 +1,35 @@
-## Goal
+# PDP: 3 smart product carousels
 
-Three connected changes across every storefront theme, built so cold home / category / PDP load speed is unchanged:
+Replace the single "Complete the Look" grid on the product page with three horizontal carousels that never repeat a product, load lazily, and paginate as the shopper swipes.
 
-1. Universal "smart" header + mobile bottom nav (hide on scroll down, reveal on scroll up).
-2. WhatsApp moves from the floating bubble into the header (replacing the account icon — account already lives in the bottom nav as "Orders").
-3. A new floating **Trust Video** button in the old WhatsApp spot that opens a reel-style, video-only player with a glassmorphic "See more details" CTA, powered by owner-uploaded videos and chained into the existing Shop by Video app.
+## What the shopper sees
 
----
+Below the reviews section, in this order:
 
-## 1. Universal smart header + smart bottom nav
+1. **More in {current category}** — other products from the same category as the open product (e.g. open a Chain product → Chains carousel).
+2. **Best sellers** — the store's best-selling products.
+3. **You may also like — {other category}** — products from a different category (the next category in the store's category order, wrapping around; if the store has only one category, this carousel is skipped).
 
-Today `useSmartHeader()` is only wired into `CheckoutAwareLayout` (mobile header) and `DesktopNavBar`. Themes with their own headers (`MobileAppHeader` used by V3/V11, the V13 inline header, and the other V10–V22 layouts) never hide on scroll, and no bottom nav hides at all.
+Rules:
+- No product appears in more than one carousel, and the currently open product never appears at all. Carousel 1 claims its items first, then 2, then 3.
+- Each carousel shows ~6 items at a time on desktop (2.2 on mobile, 3–4 on tablet) and loads the next batch automatically as the shopper swipes to the end (infinite scroll inside the carousel), until that category / best-seller pool is exhausted.
+- Any carousel with zero remaining products after dedupe is hidden entirely.
 
-- Extend `useSmartHeader` into a shared `useSmartChrome()` returning `{ headerVisible, navVisible }`, driven by one rAF-throttled scroll listener (single listener, no per-component cost).
-- Apply the existing `smart-header` / `smart-header-hidden` CSS classes to every theme header: `MobileAppHeader`, `StorefrontLayoutV13`'s inline header, and any other layout that renders its own `<header>`.
-- Add matching `smart-nav` / `smart-nav-hidden` transform classes to `MobileBottomNavSwitcher` so all 11 nav variants inherit the behaviour from one wrapper (no edits inside each variant).
-- Always-visible rules: near page top (<80px), when the cart drawer/sheet/search overlay is open, and on checkout routes.
-- New universal toggle in Theme Settings → "Auto-hide header & nav on scroll" (default on), stored on `store_theme_config`. One switch controls both, all themes.
+## Performance guarantees (no PDP slowdown)
 
-## 2. WhatsApp in the header
+- The whole block stays inside the existing `DeferUntilVisible` (600px rootMargin) + `React.lazy` boundary — nothing loads until the shopper scrolls near it, so LCP/TTI of the PDP is unchanged.
+- First data fetch is a single request that pulls one page for all three pools at once, using the existing lightweight `PRODUCT_CARD_FIELDS` selector (~280 bytes/row, no descriptions).
+- Further pages fetch only for the carousel being swiped, 12 rows at a time.
+- Images use the existing lazy-loading product card; only the first row of each carousel is eagerly decoded.
+- React Query caching with a 5-minute staleTime, keyed per store + category, so navigating between PDPs in the same category reuses the data with zero network calls.
 
-- `CheckoutAwareLayout`'s `ActionButtons` currently renders `AccountBadge`. Replace it with a `HeaderWhatsAppButton` (only when `store.whatsapp_number` is set; falls back to the account icon if not).
-- Same swap for `DesktopNavBar` and `MobileAppHeader`.
-- Remove the floating `FloatingWhatsApp` mount from `StorefrontShell`.
+## Technical details
 
-## 3. Floating Trust Video reel
-
-**Data (new, small migration)**
-
-`store_trust_videos`: `id, store_id, video_url, poster_url, title, cta_label, cta_target (category/product/url), sort_order, is_active, created_at` + GRANTs (`anon` SELECT for active rows, owner full via RLS) and RLS policies scoped to the store owner.
-
-**Dashboard — Theme Settings → "Trust Videos"**
-
-- Upload many videos; each row gets a title, CTA label, and a CTA target picker (any category, product, or custom path).
-- Reuses the existing `uploadCompressedVideo` pipeline (WebCodecs H.264, 1080p cap, ~3.5 Mbps, poster frame auto-generated) → R2 CDN. Compression only downsizes when it actually saves bytes, so quality is preserved.
-- Drag-reorder, toggle active, delete.
-
-**Storefront — zero cold-load cost**
-
-- The floating button is a tiny static pill (glass, no JS video). It renders only if the store has ≥1 active trust video — that flag rides along in the existing storefront shell payload, so no extra request on cold load.
-- Nothing video-related is fetched or parsed until the button is tapped: the player component, the video list query, and the media itself are all `lazy()` / on-demand. `preload="none"` until the sheet opens.
-- Player: full-screen reel, vertical swipe between videos, autoplay muted with tap-to-unmute, no chrome, no titles floating around — just the video plus a glassmorphic bottom CTA ("See more details") that navigates to the owner's chosen target.
-- After the owner's trust videos finish, if the **Shop by Video** app is enabled for the store, the reel continues into product videos (same `products.video_url` source the carousel uses), with "See more details" going to that product's PDP. If the app is off, the reel just ends.
-- Applies to all themes because it mounts once in `StorefrontShell`, same place the WhatsApp bubble was.
-
-## UI direction
-
-Frosted glass throughout: translucent blurred pills for the floating button and CTA, thin light borders, soft shadows, spring-ish scale on tap, respecting each theme's `--storefront-*` colour variables so it never clashes.
-
-## Technical notes
-
-- No new dependencies.
-- One scroll listener shared by header + nav; transforms only (no layout thrash).
-- Trust-video bundle is a separate lazy chunk, not referenced from any home/category/PDP critical path.
-- Migration includes GRANTs + RLS in the same statement block.
-- Rollout: `serdiyajewellers` first (owner uploads its videos), but the feature is available to every store from the dashboard.
+- New `src/components/storefront/pdp/PdpCarousels.tsx` — owns the three sections, the dedupe ledger, and shared card style from `useStorefrontThemeConfig`.
+- New `src/components/storefront/pdp/PdpProductCarousel.tsx` — a single embla carousel (reusing `@/components/ui/carousel`, same theme-token styling as `BestSellingCarousel`) with `useInfiniteQuery`, an end-sentinel that calls `fetchNextPage`, and a skeleton tile while loading.
+- New hook `src/hooks/usePdpCarouselPools.ts`:
+  - fetches distinct categories for the store (from `categories`, ordered as the merchant arranged them) to resolve the "other category" target;
+  - three `useInfiniteQuery` pools — same-category, `is_best_selling=true`, other-category — each filtered `store_id`, `is_active`, `neq id = current`, page size 12;
+  - dedupe applied at render time in priority order 1 → 2 → 3, so pagination in an earlier carousel can't duplicate into a later one.
+- `RelatedProducts.tsx` is retired from `src/pages/ProductDetail.tsx` and `src/pages/V22ProductDetail.tsx`; both mount `PdpCarousels` with the same props (store, slug, current product id, current category). The file stays in place unused-safe or is deleted if no other importer exists.
+- Reuses `UniversalProductCard` + `VariantCountProvider` so pricing, badges, wishlist and add-to-cart behaviour are identical to today.
