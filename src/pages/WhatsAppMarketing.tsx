@@ -3006,7 +3006,7 @@ function OwnModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitch
     queryFn: async () => {
       const { data, error } = await supabase
         .from("whatsapp_config")
-        .select("id, is_active, access_token, phone_number_id" as any)
+        .select("id, is_active, phone_number_id" as any)
         .eq("store_id", storeId)
         .maybeSingle();
       if (error) throw error;
@@ -3014,7 +3014,9 @@ function OwnModeDashboard({ storeId, onSwitchMode }: { storeId: string; onSwitch
     },
   });
 
-  const isConnected = !!(config?.access_token && config?.phone_number_id && config?.is_active);
+  // access_token column is REVOKEd from anon/authenticated; presence of a
+  // configured phone_number_id + is_active is a sufficient proxy for "connected".
+  const isConnected = !!(config?.phone_number_id && config?.is_active);
   const defaultTab = activeTab || (isConnected ? "chat" : "setup");
 
   return (
