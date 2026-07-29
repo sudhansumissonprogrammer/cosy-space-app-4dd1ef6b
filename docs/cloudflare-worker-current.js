@@ -5165,6 +5165,9 @@ async function _prewarmPdpAndCategory(store, storefrontData, env, ctx) {
         cache.put(cacheKey, resp.clone()).catch(() => {}),
         kvPutDedup(env, _buildCategoryKvKey(d, `${slug}:l50`, ver), body, { expirationTtl: CATEGORY_KV_TTL }),
       ]);
+      // v8.75.0 — seed per-category LCP image list during prewarm so the
+      // FIRST visitor to a category cold isolate gets the right preloads.
+      _cacheTopCategoryImages(store.slug, slug, data.products || [], env, ctx);
     } catch {}
   }
 
