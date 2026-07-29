@@ -125,11 +125,28 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     // effect so PageView CAPI can mirror the shared event_id and the self-test
     // can verify the SDK registered the pixel after it loads.
 
-    // Defer actual script loading to idle time — events are queued by shim
-    const schedule =
+    // Defer actual script loading — events are queued by the fbq shim, so
+    // nothing is lost by loading late.
+    //
+    // PERF (measured 2026-07-29): plain requestIdleCallback fired the 104KB
+    // `fbevents.js` download at ~1790ms on home / ~1990ms on PDP — i.e. the
+    // exact millisecond of First Contentful Paint, stealing bandwidth and main
+    // thread from the paint itself. Wait for the `load` event FIRST (paint is
+    // done by then), then still go to idle. Purchase/Checkout paths are
+    // unaffected: pixelOutbox force-loads the SDK immediately when a
+    // conversion event needs it.
+    const idle = (cb: () => void) =>
       typeof requestIdleCallback !== "undefined"
-        ? (cb: () => void) => requestIdleCallback(cb, { timeout: 4000 })
-        : (cb: () => void) => setTimeout(cb, 2000);
+        ? requestIdleCallback(cb, { timeout: 4000 })
+        : setTimeout(cb, 1500);
+    const schedule = (cb: () => void) => {
+      if (document.readyState === "complete") {
+        idle(cb);
+      } else {
+        window.addEventListener("load", () => idle(cb), { once: true });
+      }
+    };
+
 
     schedule(() => {
       if (document.getElementById("fb-pixel-script")) return;
