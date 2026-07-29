@@ -1641,6 +1641,8 @@ export default function CheckoutV2Page() {
   // ─── UPI intent + polling ───────────────────────────────────────────────
   const [waiting, setWaiting] = useState(false);
   const [waitingApp, setWaitingApp] = useState<string>("");
+  // Short "processing" beat shown between the UPI tile tap and the app handoff.
+  const [launchingApp, setLaunchingApp] = useState<string | null>(null);
   const [manualChecking, setManualChecking] = useState(false);
   const waitingCheckInFlightRef = useRef(false);
 
