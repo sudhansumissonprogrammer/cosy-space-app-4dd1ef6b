@@ -570,7 +570,9 @@
   will-change: transform;
 }
 .sf-smart-nav-hidden {
-  transform: translateY(140%);
+  /* Wrapper has height:0, so a % translate resolves to 0px. Use a
+     fixed pixel value larger than any nav variant (safe-area + 96px). */
+  transform: translateY(calc(120px + env(safe-area-inset-bottom, 0px)));
 }
 @media (prefers-reduced-motion: reduce) {
   .smart-header,
