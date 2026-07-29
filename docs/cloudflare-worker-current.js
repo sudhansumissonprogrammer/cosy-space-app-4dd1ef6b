@@ -7809,7 +7809,7 @@ async function _handleFetch(request, env, ctx) {
       await Promise.all([
         handleSeoFiles(url, resolvedSlug, hostname),
         handleBot(request, resolvedSlug, url, true),
-        _batchKvRead(resolvedSlug, env),
+        _batchKvRead(resolvedSlug, env, pdpCategoryRouteCD),
         _getCachedPrebuiltHead(env),
         _getInlineProductsFastOrNull(hostname),
         _getInlinePdpCategoryOrNull(hostname, pdpCategoryRouteCD, env, ctx),
