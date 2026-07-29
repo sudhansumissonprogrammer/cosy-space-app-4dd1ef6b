@@ -2262,6 +2262,25 @@ function _buildImagePreloadsFromUrls(urls, count = 2) {
   return out;
 }
 
+/**
+ * v8.74.0 — Prepend an `as=image` preload for the LCP product image to the
+ * existing Link header. Headers are parsed before the body arrives, so this
+ * is the earliest possible discovery point for the hero/first-card image.
+ */
+function _withImageLinkPreload(linkHeader, urls) {
+  if (!Array.isArray(urls) || urls.length === 0) return linkHeader;
+  try {
+    const first = _toRenderUrl(urls[0], 400, 72);
+    if (!first) return linkHeader;
+    const imgLink = `<${first}>; rel=preload; as=image; fetchpriority=high`;
+    return linkHeader ? `${imgLink}, ${linkHeader}` : imgLink;
+  } catch {
+    return linkHeader;
+  }
+}
+
+
+
 
 /* ============================================================
    FIX #8 — LIGHTWEIGHT THEME CACHE (in-memory → Cache API → KV)
