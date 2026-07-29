@@ -2378,7 +2378,10 @@ export default function CheckoutV2Page() {
       setCreatingOrder(true);
       try {
         saveExpressInfo();
-        const order = await createOrderIfNeeded("razorpay");
+        // Label the order with the store's ACTUAL gateway. Hardcoding
+        // "razorpay" here mislabeled UPI-intent orders on stores that only
+        // have PayU/Cashfree enabled.
+        const order = await createOrderIfNeeded(activeGateway || "payu");
         setShowPayment(true);
         try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { step: "continue_to_pay" } as any }); } catch { /* noop */ }
 
