@@ -2961,15 +2961,18 @@ export default function CheckoutV2Page() {
       toast.info("Updating details…");
       return;
     }
+    if (!activeGateway) {
+      toast.error("No online payment gateway configured");
+      return;
+    }
     setOpeningGateway(true);
     try {
-      const order = await createOrderIfNeeded(activeGateway || "payu");
+      const order = await createOrderIfNeeded(activeGateway);
       setShowPayment(true);
-      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: activeGateway || "online" } as any }); } catch { /* noop */ }
+      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: activeGateway } as any }); } catch { /* noop */ }
       if (activeGateway === "razorpay") await openRazorpay(order);
       else if (activeGateway === "cashfree") await openCashfree(order);
-      else if (activeGateway === "payu") await openPayu(order);
-      else toast.error("No online payment gateway configured");
+      else await openPayu(order);
     } catch (e: any) {
       toast.error(e?.message || "Could not start payment");
     } finally {
