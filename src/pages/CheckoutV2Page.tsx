@@ -2059,12 +2059,11 @@ export default function CheckoutV2Page() {
     // polling active even though the bank payment succeeded.
     armWaiting();
 
-    // Micro-delay so the shopper actually SEES the "order processing" state
-    // before the UPI app takes over. Without it the handoff is instant and the
-    // tap feels like nothing happened / like a random app jump.
-    setLaunchingApp(label);
+    // Micro-delay so the shopper actually SEES the real "Complete payment in
+    // <app>" status screen (already armed above) before the UPI app takes
+    // over. Without it the handoff is instant and the tap feels like nothing
+    // happened / like a random app jump.
     window.setTimeout(() => {
-      setLaunchingApp(null);
       // Launch the app via a real anchor activation (some OEM Chrome/WebView
       // builds ignore location.assign for non-http schemes).
       launchUpiUrl(s.url);
