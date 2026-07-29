@@ -1,7 +1,7 @@
 // pg_cron calls this every 10 minutes. Enqueues abandoned-cart recovery
 // sends into wa_send_queue (the queue worker handles retries + dispatch).
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader, hasApprovedTemplates, getMetaBreaker, isMetaBreakerOpen } from "../_shared/wa-platform.ts";
+import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader, hasApprovedTemplates, getMetaBreaker, isMetaBreakerOpen, recoveryDripDecision, DRIP_WINDOW_MS } from "../_shared/wa-platform.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -70,14 +70,16 @@ Deno.serve(async (req) => {
   const minAgeMs = cfg!.wa_min_cart_age_minutes * 60 * 1000;
   const maxAgeMs = cfg!.wa_max_cart_age_hours * 60 * 60 * 1000;
   const beforeIso = new Date(now - minAgeMs).toISOString();
-  const afterIso = new Date(now - maxAgeMs).toISOString();
+  // 🔁 Drip: follow-ups land at +5h and +29h, so the scan window must cover
+  // the whole 3-message sequence, not just wa_max_cart_age_hours.
+  const scanWindowMs = Math.max(maxAgeMs, DRIP_WINDOW_MS);
+  const afterIso = new Date(now - scanWindowMs).toISOString();
 
   const requireConsent = (cfg as any)?.wa_require_marketing_consent !== false;
   let q = admin
     .from("abandoned_carts")
     .select("id, store_id, customer_phone, cart_items, created_at, wa_marketing_consent, stores:store_id(name, slug, custom_domain)")
     .eq("recovered", false)
-    .is("recovery_sent_at", null)
     .not("customer_phone", "is", null)
     .lte("created_at", beforeIso)
     .gte("created_at", afterIso)
@@ -123,7 +125,6 @@ Deno.serve(async (req) => {
         .from("abandoned_carts")
         .select("id, store_id, customer_phone, cart_items, created_at, wa_marketing_consent, stores:store_id(name, slug, custom_domain)")
         .eq("recovered", false)
-        .is("recovery_sent_at", null)
         .in("customer_phone", phones)
         .gte("created_at", afterIso)
         .limit(200);
