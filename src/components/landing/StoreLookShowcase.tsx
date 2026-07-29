@@ -148,7 +148,7 @@ const StoreLookShowcase = ({ showOverlays = true }: { showOverlays?: boolean }) 
         <h2 className="font-black uppercase text-2xl sm:text-4xl lg:text-5xl tracking-tighter leading-[0.9] text-foreground">
           How Your Store
           <br />
-          <span className="text-bauhaus-blue">
+          <span className="text-bauhaus-blue font-['Alegreya_SC',serif] italic">
             Actually Looks
           </span>
         </h2>

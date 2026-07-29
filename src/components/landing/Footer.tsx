@@ -1,7 +1,7 @@
 import { MessageCircle } from "lucide-react";
 // Plain <a> for cross-app links — landing runs on a slim BrowserRouter that
 // doesn't know about /about-us, /privacy-policy, etc. Hard nav loads FullApp.
-import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
+import logo from "@/assets/shopbanao-logo.webp";
 
 const Footer = () => {
   const productLinks: { label: string; href: string }[] = [
@@ -26,22 +26,10 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto">
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 mb-12">
           <div className="lg:col-span-2">
-            <a href="/" className="flex items-center gap-2.5 mb-4 w-fit group">
-              <span className="border-2 border-bauhaus-white bg-bauhaus-white p-1">
-                <img
-                  src={shopbanaoLogo}
-                  alt="ShopBanao logo"
-                  width={32}
-                  height={32}
-                  loading="lazy"
-                  className="block h-8 w-8 object-contain"
-                />
-              </span>
-              <span className="font-black uppercase tracking-tighter text-2xl leading-none text-primary-foreground">
-                Shop<span className="text-bauhaus-red">Banao</span>
-              </span>
-            </a>
-
+            <div className="flex items-center -space-x-1 mb-4">
+              <img src={logo} alt="ShopBanao" className="h-14 w-auto" />
+              <span className="text-2xl text-primary-foreground" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700 }}>ShopBanao</span>
+            </div>
             <p className="font-medium text-sm text-primary-foreground/60 leading-relaxed max-w-sm">Build your online store with zero commission. Your store, your domain, your rules.</p>
           </div>
           <div>
