@@ -7845,7 +7845,8 @@ async function _handleFetch(request, env, ctx) {
       prebuiltHeadCD = await enrichHeadWithPdpChunkPreloads(prebuiltHeadCD, new URL(request.url).origin, env);
     }
     // FIX #3
-    const topImagesCD = kvBatchCD.imgs;
+    // v8.75.0 — per-category images take priority on /category/*.
+    const topImagesCD = (kvBatchCD.catImgs && kvBatchCD.catImgs.length ? kvBatchCD.catImgs : kvBatchCD.imgs) || null;
     const linkHeaderCD = _withImageLinkPreload(_buildLinkPreloadHeader(shellResultCD.html), topImagesCD);
 
     const responseHeadersCD = new Headers();
