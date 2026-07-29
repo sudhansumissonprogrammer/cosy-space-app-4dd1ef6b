@@ -25,6 +25,9 @@ let chunkLoaded = false;
 /** Prefetched category payloads keyed by slug; consumed by CategoryDetail.tsx */
 export const categoryPrefetchCache = new Map<string, Promise<any | null>>();
 
+/** Synchronously readable copy — lets CategoryDetail hydrate with zero loading state. */
+export const categoryPrefetchResolved = new Map<string, any>();
+
 const warmedImages = new Set<string>();
 
 function warmImages(products: any[]) {
