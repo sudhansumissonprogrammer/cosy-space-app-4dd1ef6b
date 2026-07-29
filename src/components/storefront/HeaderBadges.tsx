@@ -13,7 +13,7 @@ export function CartBadge({ storeId }: { storeId?: string } = {}) {
   const hasItems = cartCount > 0;
   return (
     <button onClick={openCart} className="relative" aria-label={`Shopping cart${hasItems ? `, ${cartCount} items` : ''}`}>
-      <div className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${hasItems ? 'cart-breathe' : ''}`} style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+      <div data-cart-target="" className={`flex h-9 w-9 items-center justify-center rounded-md transition-colors ${hasItems ? 'cart-breathe' : ''}`} style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
         <Icon className="h-5 w-5" aria-hidden="true" />
       </div>
       {hasItems && (
