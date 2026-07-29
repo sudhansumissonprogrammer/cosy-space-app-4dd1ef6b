@@ -3,7 +3,6 @@ import { ArrowRight, ShieldCheck, CreditCard, Globe, Package, TrendingUp, Extern
 import overlaysMobile from "@/assets/showcase-overlays-mobile.webp";
 import serdiyaMobile from "@/assets/showcase-serdiya-mobile.webp";
 import { onAuthCtaIntent } from "@/lib/prefetchLandingAuth";
-import { GeoShape, DotGrid, bauButtonClass } from "@/components/landing/bauhaus/BauhausKit";
 
 
 // Native phone screenshot ratio (~9:19.5). Reserve space to prevent CLS.
@@ -53,7 +52,7 @@ const PhoneMockup = ({ img, label, url, className = "", priority = false }: { im
 // Removed `Math.random()` at render time which was wasteful and would block any
 // future SSR/edge-prerender step with a hydration mismatch.
 const HERO = {
-  headline: <>Run your D2C brand.<br />Pay only <span className="text-bauhaus-red">3%</span> on delivered orders.</>,
+  headline: <>Run your D2C brand.<br />Pay only <span className="text-bauhaus-red italic" style={{ fontFamily: "'Alegreya SC', serif", fontWeight: 700, fontSize: '1.15em' }}>3%</span> on delivered orders.</>,
   sub: "The agentic commerce OS for India — store, ads, WhatsApp, logistics, AI calling and checkout in one platform. ₹0 subscription. You pay only when an order is delivered.",
 };
 
@@ -75,28 +74,25 @@ const Hero = () => {
         <div className="grid lg:grid-cols-2 gap-0 max-w-7xl mx-auto w-full">
           <div className="flex flex-col justify-center lg:py-20 xl:py-24">
             <div className="inline-flex items-center gap-2 border-2 border-foreground px-3 py-1.5 mb-6 sm:mb-7 shadow-bauhaus-sm bg-bauhaus-yellow w-fit">
-              <GeoShape kind="circle" color="bg-bauhaus-red" className="h-2.5 w-2.5" />
               <span className="font-bold uppercase tracking-widest text-[10px] sm:text-xs text-foreground">₹0 Subscription · Pay only when delivered</span>
             </div>
 
-            <h1 className="font-black uppercase text-[34px] sm:text-5xl lg:text-6xl xl:text-7xl tracking-tighter leading-[0.9] text-foreground mb-5 sm:mb-6">
+            <h1 className="font-black text-[28px] sm:text-4xl lg:text-5xl xl:text-6xl tracking-tight leading-[1.1] text-foreground mb-4 sm:mb-5">
               {headline}
             </h1>
-
 
             <p className="font-medium text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed mb-7 sm:mb-8 max-w-md">
               {sub}
             </p>
 
             <div className="flex flex-row gap-3 mb-6 sm:mb-7">
-              <a href="/signup" {...onAuthCtaIntent} className={bauButtonClass({ variant: "red", size: "md", shadow: "shadow-bauhaus sm:shadow-bauhaus-md" })}>
+              <a href="/signup" {...onAuthCtaIntent} className="inline-flex items-center justify-center gap-2 bg-bauhaus-red text-primary-foreground font-bold uppercase tracking-wider text-xs sm:text-sm px-5 sm:px-8 py-3 sm:py-3.5 border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-[transform,opacity,colors,box-shadow] duration-200">
                 Start Free <ArrowRight className="h-4 w-4" />
               </a>
-              <a href="#demo" className={bauButtonClass({ variant: "outline", size: "md" })}>
+              <a href="#demo" className="inline-flex items-center justify-center gap-2 bg-bauhaus-white text-foreground font-bold uppercase tracking-wider text-xs sm:text-sm px-5 sm:px-8 py-3 sm:py-3.5 border-2 border-foreground shadow-bauhaus hover:bg-muted active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-[transform,opacity,colors,box-shadow] duration-200">
                 Book a Demo
               </a>
             </div>
-
 
             <div className="flex items-center gap-3 sm:gap-5">
               <div className="flex items-center gap-1.5">
@@ -115,14 +111,9 @@ const Hero = () => {
           </div>
 
           <div className="hidden lg:flex bg-bauhaus-blue items-center justify-center relative overflow-hidden min-h-[520px] -mr-12 xl:-mr-16">
-            <DotGrid tone="light" opacity={0.12} />
-            {/* Constructivist composition: circle + rotated square + triangle */}
+            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(hsl(var(--bauhaus-white)) 2px, transparent 2px)", backgroundSize: "20px 20px" }} />
             <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-bauhaus-white/5 border-2 border-white/10" />
             <div className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full bg-bauhaus-white/5 border-2 border-white/10" />
-            <div className="absolute top-24 -left-10 w-40 h-40 rotate-45 border-2 border-white/15 bg-bauhaus-white/[0.04]" />
-            <GeoShape kind="triangle" color="bg-bauhaus-yellow/25" className="absolute bottom-24 right-10 h-28 w-28" />
-            <GeoShape kind="circle" color="bg-bauhaus-red/30" className="absolute top-1/2 left-6 h-16 w-16" />
-
             <div className="relative z-10 flex items-end gap-5 xl:gap-7 px-6">
               <PhoneMockup img={liveStores[0].img} label={liveStores[0].label} url={liveStores[0].url} priority className="w-[190px] xl:w-[210px] -rotate-3 translate-y-3" />
               <PhoneMockup img={liveStores[1].img} label={liveStores[1].label} url={liveStores[1].url} className="w-[190px] xl:w-[210px] rotate-3 -translate-y-3" />

@@ -1,5 +1,4 @@
 import { Quote, Star } from "lucide-react";
-import { SectionHeading } from "@/components/landing/bauhaus/BauhausKit";
 
 const testimonials = [
   { quote: "I was losing ₹15,000/month in marketplace commissions. Switched to ShopBanao and saved ₹45,000 in just 3 months. Setup took 15 minutes flat!", metric: "Saved ₹45,000 in 3 months", name: "Priya Sharma", role: "Fashion Boutique Owner", city: "Mumbai", color: "red" },
@@ -24,10 +23,12 @@ const Stars = () => (
 const Testimonials = () => (
   <section className="border-b-4 border-foreground py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8">
     <div className="max-w-7xl mx-auto">
-      <SectionHeading label="Testimonials" size="lg" align="center" labelShape="square">
-        Real results from<br /><span className="text-bauhaus-blue">real sellers</span>
-      </SectionHeading>
-
+      <div className="text-center mb-12">
+        <span className="font-bold uppercase tracking-widest text-xs text-muted-foreground mb-2 block">Testimonials</span>
+        <h2 className="font-black uppercase text-3xl sm:text-4xl lg:text-6xl tracking-tighter leading-[0.9] text-foreground">
+          Real Results From<br /><span className="text-bauhaus-blue">Real Sellers</span>
+        </h2>
+      </div>
       <div className="grid md:grid-cols-3 gap-6">
         {testimonials.map((t) => (
           <div key={t.name} className={`bg-bauhaus-white border-4 border-foreground shadow-bauhaus-lg relative hover:-translate-y-1 transition-transform duration-200 border-t-8 ${colorMap[t.color].border}`}>
