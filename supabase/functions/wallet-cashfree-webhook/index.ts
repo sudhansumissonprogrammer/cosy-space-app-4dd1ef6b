@@ -73,6 +73,19 @@ Deno.serve(async (req) => {
     if (eventType === "PAYMENT_SUCCESS_WEBHOOK") {
       const payInfo = event?.data?.payment || {};
       if (rec.status !== "paid") {
+        // If an earlier attempt on the same order flipped this row to
+        // 'failed', reset it to 'pending' so wallet_apply_recharge (which
+        // only credits pending rows) can credit this successful retry.
+        // Cashfree fires one webhook per payment ATTEMPT under the same
+        // order_id — a fail followed by a success is a legitimate retry,
+        // not a duplicate, and the money IS charged.
+        if (rec.status === "failed") {
+          await supabase
+            .from("store_wallet_recharges")
+            .update({ status: "pending", failure_reason: null })
+            .eq("id", rec.id)
+            .eq("status", "failed");
+        }
         const { error: upErr } = await supabase
           .from("store_wallet_recharges")
           .update({
@@ -92,11 +105,17 @@ Deno.serve(async (req) => {
         }
       }
     } else if (eventType === "PAYMENT_FAILED_WEBHOOK" || eventType === "PAYMENT_USER_DROPPED_WEBHOOK") {
+      // DO NOT mark the recharge failed here. A single Cashfree order can
+      // receive multiple payment attempts; a failed attempt does not mean
+      // the order is terminal — the customer may (and often does) retry
+      // successfully seconds later. Marking failed here would block the
+      // subsequent SUCCESS from crediting the wallet (RPC guards on
+      // status='pending'). Terminal 'failed' is set by wallet-cashfree-verify
+      // only when Cashfree reports the ORDER as EXPIRED/TERMINATED/FAILED.
       await supabase
         .from("store_wallet_recharges")
         .update({
-          status: "failed",
-          failure_reason: event?.data?.payment?.payment_message || "Payment failed",
+          failure_reason: event?.data?.payment?.payment_message || "Payment attempt failed",
           raw_payload: event,
         })
         .eq("id", rec.id)
