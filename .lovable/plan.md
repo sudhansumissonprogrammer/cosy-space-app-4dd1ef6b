@@ -1,35 +1,92 @@
-# PDP: 3 smart product carousels
 
-Replace the single "Complete the Look" grid on the product page with three horizontal carousels that never repeat a product, load lazily, and paginate as the shopper swipes.
+# GoKwik-style Side Cart Rebuild
 
-## What the shopper sees
+Rebuild `SideCart.tsx` (the slide-in cart drawer) to match the reference layout, with zero impact on storefront cold-load (everything stays inside the already-lazy `SideCart` chunk, and all data fetching stays gated on `isCartOpen`).
 
-Below the reviews section, in this order:
+## 1. Layout (top → bottom)
 
-1. **More in {current category}** — other products from the same category as the open product (e.g. open a Chain product → Chains carousel).
-2. **Best sellers** — the store's best-selling products.
-3. **You may also like — {other category}** — products from a different category (the next category in the store's category order, wrapping around; if the store has only one category, this carousel is skipped).
+```text
+┌──────────────────────────────────────────┐
+│ Cart (2)                             [X] │  ← slim header, py-2
+├──────────────────────────────────────────┤
+│ ▸ YOUR ITEMS  (horizontal carousel)      │  ← cart items as cards + arrows
+│ ┌──────┐ ┌──────┐ ┌──────┐               │
+│ │ img  │ │ img  │ │ img  │  → arrows     │
+│ │title │ │title │ │title │               │
+│ │₹ qty │ │₹ qty │ │₹ qty │               │
+│ └──────┘ └──────┘ └──────┘               │
+├──────────────────────────────────────────┤
+│ [STEAL DEALS] Complete your set          │  ← lime pill + heading
+│ FLAT ₹100 OFF strip                      │
+│ ◂ product carousel 1 (full height) ▸     │
+│ ◂ product carousel 2 (full height) ▸     │
+│ ◂ carousel 3 (peeking ~20% height)       │
+├──────────────────────────────────────────┤
+│      ₹680 Saved so far!   (green pill)   │
+│ 🧾 Estimated Total    ₹1,779  ₹1,099     │
+│                          (38% OFF)       │
+│ ┌──────────────────────────────────────┐ │
+│ │            Checkout                  │ │
+│ │ Get Extra ₹50 Discount on UPI 🅿🟣🅶 │ │
+│ └──────────────────────────────────────┘ │
+│        Powered by [shopbanao logo]       │
+└──────────────────────────────────────────┘
+```
 
-Rules:
-- No product appears in more than one carousel, and the currently open product never appears at all. Carousel 1 claims its items first, then 2, then 3.
-- Each carousel shows ~6 items at a time on desktop (2.2 on mobile, 3–4 on tablet) and loads the next batch automatically as the shopper swipes to the end (infinite scroll inside the carousel), until that category / best-seller pool is exhausted.
-- Any carousel with zero remaining products after dedupe is hidden entirely.
+## 2. Cart items → horizontal carousel
 
-## Performance guarantees (no PDP slowdown)
+- Replace the vertical stacked list with an Embla carousel (same `@/components/ui/carousel` used by the PDP), `basis-[42%] sm:basis-1/3`, with prev/next arrows shown when >1 item.
+- Card contents: image with remove (X) on the corner, title (1 line), price, and a compact qty stepper (36px, not the current 44px blocks) instead of the tall up/down row.
+- Single item = single card, no arrows.
 
-- The whole block stays inside the existing `DeferUntilVisible` (600px rootMargin) + `React.lazy` boundary — nothing loads until the shopper scrolls near it, so LCP/TTI of the PDP is unchanged.
-- First data fetch is a single request that pulls one page for all three pools at once, using the existing lightweight `PRODUCT_CARD_FIELDS` selector (~280 bytes/row, no descriptions).
-- Further pages fetch only for the carousel being swiped, 12 rows at a time.
-- Images use the existing lazy-loading product card; only the first row of each carousel is eagerly decoded.
-- React Query caching with a 5-minute staleTime, keyed per store + category, so navigating between PDPs in the same category reuses the data with zero network calls.
+## 3. Three smart upsell carousels (same engine as PDP)
 
-## Technical details
+- New hook `useCartCarouselPools.ts`, adapted from `usePdpCarouselPools.ts`:
+  - inputs: `storeId`, all cart `productIds`, and the categories of the products currently in the cart
+  - pool 1: **same category as cart products** (union of cart categories)
+  - pool 2: **Best sellers**
+  - pool 3: **You may also like** (next merchant category)
+  - Dedupe priority same → best → other, and always exclude everything already in the cart. Infinite `useInfiniteQuery` paging like PDP.
+  - `enabled: isCartOpen` so no network work happens until the drawer opens (protects home/category cold load).
+- New `CartProductCarousel.tsx` — a compact variant of `PdpProductCarousel`:
+  - **review badge moved onto the product image** (top-left overlay pill)
+  - **price rendered inline next to the title** (title left, price right) so the card is shorter
+  - reduced card height so carousel 1 and 2 are fully visible and carousel 3 peeks ~20%
+  - red highlight on title+price for products in the discount strip
+- Existing `UpsellStrip` (merchant-configured offers) stays and renders above the three carousels when offers match.
 
-- New `src/components/storefront/pdp/PdpCarousels.tsx` — owns the three sections, the dedupe ledger, and shared card style from `useStorefrontThemeConfig`.
-- New `src/components/storefront/pdp/PdpProductCarousel.tsx` — a single embla carousel (reusing `@/components/ui/carousel`, same theme-token styling as `BestSellingCarousel`) with `useInfiniteQuery`, an end-sentinel that calls `fetchNextPage`, and a skeleton tile while loading.
-- New hook `src/hooks/usePdpCarouselPools.ts`:
-  - fetches distinct categories for the store (from `categories`, ordered as the merchant arranged them) to resolve the "other category" target;
-  - three `useInfiniteQuery` pools — same-category, `is_best_selling=true`, other-category — each filtered `store_id`, `is_active`, `neq id = current`, page size 12;
-  - dedupe applied at render time in priority order 1 → 2 → 3, so pagination in an earlier carousel can't duplicate into a later one.
-- `RelatedProducts.tsx` is retired from `src/pages/ProductDetail.tsx` and `src/pages/V22ProductDetail.tsx`; both mount `PdpCarousels` with the same props (store, slug, current product id, current category). The file stays in place unused-safe or is deleted if no other importer exists.
-- Reuses `UniversalProductCard` + `VariantCountProvider` so pricing, badges, wishlist and add-to-cart behaviour are identical to today.
+## 4. Steal deals + ₹100 flat off
+
+- Lime "STEAL DEALS" pill (skewed black-shadow tag, as in the reference) + "Complete your set" heading above the carousels.
+- A `FLAT ₹100 OFF` strip applied to the first carousel row; those cards show title + price in red (`text-red-600`) with the struck MRP.
+- The ₹100 value is read from the store's auto-apply coupon (`get_store_auto_apply_coupon`) so it follows whatever the merchant configures, falling back to hidden if no flat coupon exists.
+
+## 5. Footer: savings, estimated total, checkout
+
+- **"₹X Saved so far!"** green pill centred and overlapping the footer edge — X = (sum of MRP − sale price across cart) + auto-apply coupon discount.
+- **Estimated Total** row: receipt icon, struck MRP total, bold final total, and `(N% OFF)` in green underneath.
+- **Checkout button** (full-width green, radius from theme token): main label `Checkout`, sub-label `Get Extra ₹{couponValue} Discount on UPI` followed by the existing UPI app icons already used in Buy Now (`/icons/phonepe-round.webp`, `paytm-round.webp`, `gpay-round.webp`). Coupon value comes from the same auto-apply/WA coupon resolver used by `AutoCouponHint`.
+- Free-shipping progress bar stays but compacted to one line.
+- Remove the separate "Continue Shopping" text button under checkout (kept only in the empty-cart state) and tighten all footer paddings.
+- **Powered by** line with the existing `src/assets/shopbanao-logo.webp` at 14px height.
+
+## 6. Space tightening
+
+- Sheet header `py-4 → py-2`, item area padding `px-4 py-3 → px-3 py-2`, footer `space-y-1.5 → space-y-1`, section gaps reduced. Net ~90px reclaimed so more carousel is visible on a 640px viewport.
+
+## 7. Auto-open cart after add-to-cart
+
+- Add a `cart:fly-landed` listener (event already dispatched by `src/lib/flyToCart.ts`, currently unhandled) inside `CartContext` / `SideCart` that calls `openCart()` — so the drawer opens right after the fly-to-cart animation lands, from every product card and PDP add.
+- Explicitly **not** on Buy Now (that goes straight to checkout).
+
+## Performance guarantees
+
+- All new components live under the existing `lazy()`-loaded `SideCart` chunk — no new bytes on home/category first paint.
+- All new queries carry `enabled: isCartOpen`, `staleTime: 5min`, so cold storefront and category loads issue zero extra requests.
+- Cart-item images reuse already-cached URLs; carousel images lazy-load.
+
+## Technical notes
+
+- Files added: `src/hooks/useCartCarouselPools.ts`, `src/components/storefront/cart/CartItemsCarousel.tsx`, `src/components/storefront/cart/CartProductCarousel.tsx`, `src/components/storefront/cart/CartStealDealsHeader.tsx`, `src/components/storefront/cart/CartTotalsFooter.tsx`.
+- Files changed: `src/components/storefront/SideCart.tsx` (composition), `src/contexts/CartContext.tsx` (fly-landed auto-open).
+- Colors go through storefront CSS vars (`--storefront-primary`, `--storefront-text`, `--storefront-bg`) except the intentional steal-deal lime/red/green accents, which will be added as scoped tokens.
