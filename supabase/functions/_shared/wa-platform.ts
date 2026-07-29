@@ -278,8 +278,11 @@ export async function hasApprovedTemplates(admin: any): Promise<boolean> {
 // marketing cap, which only applies to non-recovery marketing.
 // ══════════════════════════════════════════════════════════════════════
 export const RECOVERY_MESSAGE_TYPES = ["abandoned_cart"];
-export const DRIP_GAPS_MS = [0, 5 * 60 * 60 * 1000, 24 * 60 * 60 * 1000];
+// +5min buffer on step 3 so it lands just outside the rolling 24h window.
+export const DRIP_GAPS_MS = [0, 5 * 60 * 60 * 1000, 24 * 60 * 60 * 1000 + 5 * 60 * 1000];
 export const DRIP_MAX_STEPS = 3;
+// Absolute ceiling: max 2 messages to one number in any rolling 24h window.
+export const DRIP_MAX_PER_24H = 2;
 export const DRIP_WINDOW_MS = 72 * 60 * 60 * 1000;
 
 export type DripDecision = {
@@ -334,6 +337,22 @@ export async function recoveryDripDecision(admin: any, phone: string, opts: { ig
   const times = Array.from(stamps).map((m) => m * 60000).sort((a, b) => b - a);
   const done = times.length;
   if (done >= DRIP_MAX_STEPS) return { allow: false, step: done, reason: "drip_complete" };
+
+  // 🚫 HARD RULE: never more than 2 messages to the same number in any rolling
+  // 24h window. The drip schedule (0h → +5h → +29h) already respects this, but
+  // this guard is absolute — retries, re-runs or schedule edits can't break it.
+  const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
+  let last24h = times.filter((t) => t >= cutoff24h).length;
+  if (!opts.ignoreInFlight) {
+    last24h += ((queueRows as any[]) ?? []).filter(
+      (q) => (q.status === "pending" || q.status === "sending") &&
+        new Date(q.created_at).getTime() >= cutoff24h,
+    ).length;
+  }
+  if (last24h >= DRIP_MAX_PER_24H) {
+    return { allow: false, step: done + 1, reason: "drip_24h_cap", lastSentAt: times[0] ? new Date(times[0]).toISOString() : null };
+  }
+
 
   const step = done + 1;
   if (done === 0) return { allow: true, step, lastSentAt: null };
