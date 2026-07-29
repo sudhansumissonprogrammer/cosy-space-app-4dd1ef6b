@@ -10,6 +10,8 @@ interface ShopFilterBarProps {
   onSortChange: (s: SortKey) => void;
   /** offset from top (header height); default 0 */
   topOffset?: number;
+  /** Optional leading node (e.g. back button) rendered inside the same sticky row. */
+  leading?: React.ReactNode;
 }
 
 const PILLS: { key: SortKey; label: string; icon: any }[] = [
@@ -21,7 +23,7 @@ const PILLS: { key: SortKey; label: string; icon: any }[] = [
 ];
 
 /** Sticky filter/sort pill bar with result count. Zero new network calls. */
-export default function ShopFilterBar({ total, showing, sort, onSortChange, topOffset = 0 }: ShopFilterBarProps) {
+export default function ShopFilterBar({ total, showing, sort, onSortChange, topOffset = 0, leading }: ShopFilterBarProps) {
   const [stuck, setStuck] = useState(false);
 
   useEffect(() => {
@@ -37,6 +39,7 @@ export default function ShopFilterBar({ total, showing, sort, onSortChange, topO
       style={{ top: topOffset, background: "var(--storefront-bg, hsl(var(--background)))" }}
     >
       <div className="flex items-center gap-2">
+        {leading}
         <div className="text-[11px] font-semibold text-muted-foreground whitespace-nowrap shrink-0">
           {showing} of {total}
         </div>

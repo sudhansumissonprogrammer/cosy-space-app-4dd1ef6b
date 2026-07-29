@@ -18,6 +18,7 @@ import CategoryHeroBanner from "@/components/storefront/CategoryHeroBanner";
 import ShopEmptyState from "@/components/storefront/ShopEmptyState";
 import BackToTop from "@/components/storefront/BackToTop";
 import { fetchCategoryEdge, CATEGORY_PAGE_LIMIT } from "@/lib/storefrontEdgeApi";
+import CategoryQuickJump from "@/components/storefront/CategoryQuickJump";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 
@@ -258,32 +259,22 @@ export default function CategoryDetail() {
   return (
     <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6 py-5">
       <h1 className="sr-only">{category?.name || "Category"} — {store.name}</h1>
-      <nav className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground" aria-label="Breadcrumb">
-        <Link to={storefrontPath(slug!, "")} className="hover:text-foreground transition-colors">Home</Link>
-        <span>/</span>
-        <Link to={storefrontPath(slug!, "categories")} className="hover:text-foreground transition-colors">Categories</Link>
-        <span>/</span>
-        <span className="text-foreground font-medium">{category?.name || "Category"}</span>
-      </nav>
-
-      <div className="mb-3 flex items-center gap-2">
-        <button
-          onClick={() => navigate(storefrontPath(slug!, ""))}
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card hover:bg-accent transition-colors shrink-0"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <span className="text-sm font-semibold text-muted-foreground">Back</span>
-      </div>
-
-
-
+      <CategoryQuickJump storeId={store.id} slug={slug!} activeCategory={categorySlug} />
 
       <ShopFilterBar
         total={totalEstimate || rawProducts.length}
         showing={products.length}
         sort={sort}
         onSortChange={setSort}
+        leading={
+          <button
+            onClick={() => navigate(storefrontPath(slug!, ""))}
+            aria-label="Back"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card hover:bg-accent transition-colors shrink-0"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+        }
       />
 
       <div style={{ minHeight: 600 }} className="mt-3">
