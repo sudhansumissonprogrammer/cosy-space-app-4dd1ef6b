@@ -10,6 +10,7 @@ import { useCart } from "@/contexts/CartContext";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import DeliveryLocationDialog, { getSavedDeliveryLabel } from "@/components/storefront/DeliveryLocationDialog";
+import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
 
 const SEARCH_TERMS = ['"new arrivals"', '"trending"', '"best sellers"', '"offers"', '"deals"', '"new in"'];
 
