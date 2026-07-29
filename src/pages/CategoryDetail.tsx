@@ -86,10 +86,7 @@ export default function CategoryDetail() {
       if (inline?.category) {
         if (Array.isArray(inline.products)) {
           const qKey = ["cat-detail-v3", store.id, inline.category.name, "default", PAGE_SIZE];
-          queryClient.setQueryData(
-            qKey,
-            { pages: [{ products: inline.products, page: 0 }], pageParams: [0] }
-          );
+          queryClient.setQueryData(qKey, seedInfinitePages(inline.products));
           // PERF: the inline HTML payload can be stale, so we still refresh from
           // the version-aware /api/products endpoint — but NOT synchronously.
           // Invalidating during render queued the refetch inside the hydration
