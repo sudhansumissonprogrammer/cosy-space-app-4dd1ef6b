@@ -623,6 +623,10 @@ export default function CheckoutV2Page() {
   }, [phone]);
 
   const phoneAddressLookupRef = useRef("");
+  // Mirrors the live street address so async lookups can check it without
+  // re-running the effect (and without clobbering what the shopper typed).
+  const streetAddressRef = useRef("");
+  useEffect(() => { streetAddressRef.current = streetAddress; }, [streetAddress]);
   // Tracks whether the async `create-guest-account` lookup for the current
   // phone has settled. While `pending`, we suppress auto-opening the address
   // sheet so returning shoppers (address on file) don't see a flash-of-form
