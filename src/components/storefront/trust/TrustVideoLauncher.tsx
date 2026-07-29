@@ -150,12 +150,12 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
               playsInline
               disablePictureInPicture
               disableRemotePlayback
-              // @ts-expect-error non-standard but respected by Chrome/Safari
-              controlsList="nodownload nofullscreen noremoteplayback noplaybackrate"
-              // @ts-expect-error legacy iOS attribute
-              webkit-playsinline="true"
-              // @ts-expect-error legacy iOS attribute
-              x-webkit-airplay="deny"
+              {...({
+                controlsList: "nodownload nofullscreen noremoteplayback noplaybackrate",
+                "webkit-playsinline": "true",
+                "x-webkit-airplay": "deny",
+              } as any)}
+
               preload="metadata"
               className="sf-trust-preview pointer-events-none absolute inset-0 h-full w-full object-cover"
             />
