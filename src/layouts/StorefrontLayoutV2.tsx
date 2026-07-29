@@ -15,6 +15,7 @@ import StorefrontShell from "@/layouts/StorefrontShell";
 import MobileBottomNav from "@/components/storefront/MobileBottomNav";
 import DesktopNavBar from "@/components/storefront/DesktopNavBar";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
 
 function CartBadgeV2() {
   const { cartCount, openCart } = useCart();
@@ -66,7 +67,7 @@ function AccountBadgeV2({ slug }: { slug: string }) {
 function TransparentNav({ store, scrolled }: { store: StoreData; scrolled: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const queryClient = useQueryClient();
-  const categories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const categories = useStorefrontCategories(store.id);
   const customPages = queryClient.getQueryData<any[]>(["storefront-custom-pages", store.id]) ?? [];
 
   return (

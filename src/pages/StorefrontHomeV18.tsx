@@ -22,6 +22,7 @@ import ProductCardSkeleton from "@/components/storefront/ProductCardSkeleton";
 
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
+import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
 
 /* V18 dark theme vars */
 const V18_BG = "var(--storefront-bg, #0a0a0a)";
@@ -81,7 +82,7 @@ export default function StorefrontHomeV18() {
   const isMenuStyle = cardStyle === "style-4";
   const gridClass = isMenuStyle ? "grid grid-cols-1 md:grid-cols-2 gap-3 px-3" : "grid grid-cols-2 md:grid-cols-4";
 
-  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store?.id]);
+  const storeCategories = useStorefrontCategories(store?.id);
   const categoriesLoading = storeCategories === undefined;
 
   const { products, isLoading: productsLoading } = useStorefrontProducts(store?.id);

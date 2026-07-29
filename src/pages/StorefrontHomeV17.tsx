@@ -36,6 +36,7 @@ import { optimizeImageUrl } from "@/lib/imageOptimize";
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
+import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
 
 const ABOVE_FOLD_COUNT = 8;
 
@@ -210,7 +211,7 @@ export default function StorefrontHomeV17() {
   const useCarousel = store?.best_selling_carousel === true;
   const hasBestSellers = bestSellers.length > 0;
 
-  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store?.id]);
+  const storeCategories = useStorefrontCategories(store?.id);
   const categoriesLoading = storeCategories === undefined;
 
   useStoreJsonLd({

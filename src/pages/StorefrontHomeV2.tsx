@@ -18,6 +18,7 @@ import { optimizeImageUrl } from "@/lib/imageOptimize";
 const StorefrontInstagramSection = lazy(() => import("@/components/storefront/StorefrontInstagramSection"));
 const StorefrontTrustStrip = lazy(() => import("@/components/storefront/StorefrontTrustStrip"));
 import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
+import { useStorefrontCategories } from "@/hooks/useStorefrontCategories";
 
 /* ── Hero Carousel ── */
 function HeroCarousel({ store }: { store: StoreData }) {
@@ -241,7 +242,7 @@ export default function StorefrontHomeV2() {
   });
 
   const { products, isLoading: isProductsLoading } = useStorefrontProducts(store.id);
-  const storeCategories = queryClient.getQueryData<any[]>(["storefront-categories", store.id]);
+  const storeCategories = useStorefrontCategories(store.id);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const cardStyle = themeConfig?.product_card_style || "style-1";
 
