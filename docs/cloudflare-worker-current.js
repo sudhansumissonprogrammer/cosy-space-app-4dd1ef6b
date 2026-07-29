@@ -5059,7 +5059,7 @@ async function handleCategoryApi(request, url, ctx, env) {
   }
 }
 
-function _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, source) {
+function _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, source, meta = null) {
   const body = JSON.stringify(data || { category: null, products: [] });
   const response = new Response(body, {
     headers: {
@@ -5075,6 +5075,10 @@ function _buildCategoryResponse(data, cacheKey, kvKey, ctx, env, source) {
         ctx?.__skipKvWarm ? Promise.resolve() : kvPutLongTail(env, kvKey, body, { expirationTtl: CATEGORY_KV_TTL }), // v8.19.0 B
       ]),
     );
+    // v8.75.0 — durable per-category LCP image list for cold-preload fast path.
+    if (meta?.storeSlug && meta?.categorySlug && Array.isArray(data.products)) {
+      _cacheTopCategoryImages(meta.storeSlug, meta.categorySlug, data.products, env, ctx);
+    }
   } else {
     // v8.8.1 Fix #4: short negative cache for unknown categories.
     const negResp = new Response(body, {
