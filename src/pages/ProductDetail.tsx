@@ -1796,6 +1796,22 @@ function ImageGallery({
             </button>
           )}
 
+          {/* Similar products — jumps to PDP carousels */}
+          {slides[activeIndex]?.kind !== "video" && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const el = document.getElementById("pdp-carousels");
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className="absolute bottom-3 left-14 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 backdrop-blur-md ring-1 ring-white/40 text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-white/30 active:scale-[0.96]"
+              aria-label="View similar products"
+              title="Similar products"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+          )}
+
           {/* Rating pill → jumps to the reviews section */}
           <div className={`absolute right-3 z-10 ${showMultiUi ? "bottom-12 sm:bottom-3" : "bottom-3"}`}>
             <PdpReviewsBadge storeId={storeId} />
