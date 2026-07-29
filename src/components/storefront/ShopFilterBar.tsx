@@ -10,6 +10,8 @@ interface ShopFilterBarProps {
   onSortChange: (s: SortKey) => void;
   /** offset from top (header height); default 0 */
   topOffset?: number;
+  /** Optional leading node (e.g. back button) rendered inside the same sticky row. */
+  leading?: React.ReactNode;
 }
 
 const PILLS: { key: SortKey; label: string; icon: any }[] = [
