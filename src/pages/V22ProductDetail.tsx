@@ -173,6 +173,30 @@ export default function V22ProductDetail() {
     return null;
   };
 
+  // ── Seed sibling caches from the worker-inlined PDP payload ──
+  // This runs regardless of whether the main product query took its
+  // `initialData` path. When the product query already had cached data
+  // (`existingData`), initialData is skipped — which previously stranded the
+  // inlined images/variants and forced two extra REST round-trips, making the
+  // gallery thumbs + variant picker appear ~600ms late.
+  const inlinePdpSeededRef = useRef<string | null>(null);
+  {
+    const inline = getInlinePdp();
+    const inlineId = inline?.product?.id as string | undefined;
+    if (inlineId && inlinePdpSeededRef.current !== inlineId) {
+      inlinePdpSeededRef.current = inlineId;
+      if (Array.isArray(inline.images) && !queryClient.getQueryData(["product-images", inlineId])) {
+        queryClient.setQueryData(["product-images", inlineId], inline.images);
+      }
+      if (Array.isArray(inline.variants) && !queryClient.getQueryData(["product-variants", inlineId])) {
+        queryClient.setQueryData(["product-variants", inlineId], inline.variants);
+      }
+      if (inline.shipping_config && !queryClient.getQueryData(["storefront-shipping-config", store.id])) {
+        queryClient.setQueryData(["storefront-shipping-config", store.id], inline.shipping_config);
+      }
+    }
+  }
+
   const { data: product, isLoading } = useQuery({
     queryKey: ["storefront-product", store.id, canonicalProductSlug],
     queryFn: async () => {
@@ -306,6 +330,10 @@ export default function V22ProductDetail() {
 
   // Use cached product_images from RPC data as initialData
   const getCachedImages = () => {
+    const inline = getInlinePdp();
+    if (Array.isArray(inline?.images)) {
+      return inline.images as { id: string; image_url: string; display_order: number }[];
+    }
     const cached = getCachedProduct();
     if (cached?.product_images && Array.isArray(cached.product_images)) {
       return cached.product_images as { id: string; image_url: string; display_order: number }[];
@@ -331,6 +359,10 @@ export default function V22ProductDetail() {
 
   // Use cached product_variants from RPC data as initialData
   const getCachedVariants = () => {
+    const inline = getInlinePdp();
+    if (Array.isArray(inline?.variants)) {
+      return inline.variants as Variant[];
+    }
     const cached = getCachedProduct();
     if (cached?.product_variants && Array.isArray(cached.product_variants)) {
       return cached.product_variants as Variant[];
