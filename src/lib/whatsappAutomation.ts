@@ -32,7 +32,7 @@ export async function sendOrderWhatsApp(
       .maybeSingle();
 
     const c = config as any;
-    if (!c || !c.is_active || !c.access_token || !c.phone_number_id) return;
+    if (!c || !c.is_active || !c.phone_number_id) return;
 
     // Get the template for this message type
     const { data: template } = await supabase
