@@ -2197,16 +2197,71 @@ const CACHE_STOREFRONT_TTL = 3_600; // Tier-1 #1: 2h → 1h. Purge handles fresh
 // is fetched by _resolveStoreInfo in the same Promise.all — fetching them
 // again here was a duplicate KV read on every request.
 async function _batchKvRead(slug, env) {
-  if (!env?.STORE_KV) return { theme: null };
+  if (!env?.STORE_KV) return { theme: null, imgs: null };
   try {
-    let theme = await env.STORE_KV.get(`theme-lite:${WORKER_VERSION}:${slug}`, { type: "json" }).catch(() => null);
-    if (!theme) theme = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" }).catch(() => null);
+    const [themeV, themeLegacy, imgs] = await Promise.all([
+      env.STORE_KV.get(`theme-lite:${WORKER_VERSION}:${slug}`, { type: "json" }).catch(() => null),
+      env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" }).catch(() => null),
+      // v8.74.0 — durable LCP image list, independent of the volatile
+      // product-version cache. ~200 bytes, read in the same KV round-trip.
+      env.STORE_KV.get(`imgs:${slug}`, { type: "json" }).catch(() => null),
+    ]);
+    let theme = themeV || themeLegacy;
     if (theme && theme.wv !== WORKER_VERSION) theme = null;
-    return { theme };
+    return { theme, imgs: Array.isArray(imgs) ? imgs : null };
   } catch {
-    return { theme: null };
+    return { theme: null, imgs: null };
   }
 }
+
+/**
+ * v8.74.0 — Persist the first N product image URLs for a store so every
+ * cold isolate can emit `<link rel=preload as=image>` at byte 0, even when
+ * the inline-products cache is cold. Written on every successful storefront
+ * data fetch (dedup'd by content) with a 24h TTL.
+ */
+const _memTopImages = new Map(); // slug -> { urls, ts }
+const TOP_IMAGES_TTL_SEC = 86400;
+
+function _cacheTopProductImages(slug, products, env, ctx) {
+  try {
+    if (!env?.STORE_KV || !Array.isArray(products) || products.length === 0) return;
+    const urls = [];
+    for (const p of products) {
+      const u =
+        (p && (p.image_url || (Array.isArray(p.product_images) && p.product_images[0]?.image_url))) || "";
+      const first = typeof u === "string" && u.includes(",") ? u.split(",")[0].trim() : u;
+      if (first && first.startsWith("http")) urls.push(first);
+      if (urls.length >= 4) break;
+    }
+    if (urls.length === 0) return;
+    const prev = _memTopImages.get(slug);
+    const same = prev && prev.urls.join("|") === urls.join("|") && Date.now() - prev.ts < 3600_000;
+    _capMapSize(_memTopImages, 200);
+    _memTopImages.set(slug, { urls, ts: Date.now() });
+    if (same) return; // no KV write when nothing changed
+    const write = env.STORE_KV.put(`imgs:${slug}`, JSON.stringify(urls), {
+      expirationTtl: TOP_IMAGES_TTL_SEC,
+    }).catch(() => {});
+    if (ctx) ctx.waitUntil(write);
+  } catch {}
+}
+
+/** Build image preload tags from a plain URL list (KV fallback path). */
+function _buildImagePreloadsFromUrls(urls, count = 2) {
+  if (!Array.isArray(urls) || urls.length === 0) return "";
+  let out = "";
+  const n = Math.min(count, urls.length);
+  for (let i = 0; i < n; i++) {
+    const href = escapeHtml(_toRenderUrl(urls[i], 400, 72));
+    const fp = i === 0 ? ` fetchpriority="high"` : "";
+    out +=
+      `<link rel="preload" as="image" href="${href}" ` +
+      `imagesizes="(max-width:640px) 45vw, 25vw"${fp} />\n`;
+  }
+  return out;
+}
+
 
 /* ============================================================
    FIX #8 — LIGHTWEIGHT THEME CACHE (in-memory → Cache API → KV)
