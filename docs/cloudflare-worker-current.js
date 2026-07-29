@@ -3914,7 +3914,9 @@ async function serveStreamedHtml(
   storefrontPromise,
   responseHeaders,
   pdpCategoryInline = null, // v8.9.0 { kind, json } | null
+  topImages = null, // v8.74.0 — LCP image URLs from `imgs:<slug>` KV
 ) {
+
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
   const enc = new TextEncoder();
