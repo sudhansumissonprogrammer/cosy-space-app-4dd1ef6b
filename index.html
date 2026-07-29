@@ -538,18 +538,8 @@
            in <head> immediately. This kicks off image downloads in parallel
            with the React JS bundle instead of after hydration. */
         function injectProductImagePreloads(products){
-          if(!Array.isArray(products))return;
-          var head=document.head;var injected=0;
-          for(var i=0;i<products.length && injected<6;i++){
-            var pp=products[i];var u=pp&&pp.image_url;
-            if(!u||typeof u!=='string')continue;
-            if(document.querySelector('link[data-sf-img-pre="'+u+'"]'))continue;
-            var l=document.createElement('link');
-            l.rel='preload';l.as='image';l.href=u;
-            l.setAttribute('data-sf-img-pre',u);
-            if(injected<2)l.setAttribute('fetchpriority','high');
-            head.appendChild(l);injected++;
-          }
+          window.__sfInjectImgPreloads__(products);
+
         }
 
         /* CRITICAL: kick off shell + products in PARALLEL.
