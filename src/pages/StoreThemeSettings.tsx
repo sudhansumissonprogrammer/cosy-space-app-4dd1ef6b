@@ -1949,14 +1949,14 @@ export default function StoreThemeSettings() {
           <AccordionItem value="premium-header-badge" className="rounded-xl border border-border bg-card px-4">
             <AccordionTrigger className="hover:no-underline">
               <div className="flex flex-col items-start text-left">
-                <span className="text-sm font-semibold">Premium Trust Badge in Header</span>
-                <span className="text-xs text-muted-foreground font-normal">Golden "Premium Product · Guaranteed" medallion shown in the mobile header to build trust</span>
+                <span className="text-sm font-semibold">Verified Store Badge in Header</span>
+                <span className="text-xs text-muted-foreground font-normal">Blue "Verified" tick shown next to your store name in the mobile header (text-logo stores only)</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pt-1 pb-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs text-muted-foreground">
-                  Adds a small crisp golden badge next to the header icons on mobile. Off by default.
+                  Adds a small blue verified tick beside your store name on mobile. Only visible when you don't have an uploaded logo. Off by default.
                 </p>
                 <Switch
                   checked={!!config.show_premium_header_badge}
