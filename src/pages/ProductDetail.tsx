@@ -16,8 +16,9 @@ import {
   ArrowLeft, Package, ChevronLeft, ChevronRight, ShoppingBag, ShoppingCart,
   Share2, Copy, Facebook, Twitter, X, ZoomIn, Star, Shield, Truck, RotateCcw,
   Clock, Eye, Flame, Heart, Minus, Plus, Check, ChevronDown, CreditCard, ThumbsUp,
-  Lock, Timer, Zap, ShieldCheck, Maximize2, Play, LayoutGrid
+  Lock, Timer, Zap, ShieldCheck, Maximize2, Play
 } from "lucide-react";
+import PdpSimilarProductsIcon from "@/components/storefront/pdp/PdpSimilarProductsIcon";
 import { toast } from "sonner";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useProductJsonLd } from "@/hooks/useJsonLd";
