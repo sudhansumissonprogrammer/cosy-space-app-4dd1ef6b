@@ -3,7 +3,7 @@
 // per-store toggle (when called from automation), daily-per-phone cap.
 // When called with store_id and a known template, auto-resolves branding vars.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader, metaFetch } from "../_shared/wa-platform.ts";
+import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader, metaFetch, recoveryDripDecision } from "../_shared/wa-platform.ts";
 import { loadStore, loadTemplate, resolveTemplateParams, pickLocaleVariant, sanitizeWaParam } from "../_shared/wa-branding.ts";
 
 type Body = {
@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
   // recoveryDripDecision(), so it can legitimately send twice in one day.
   const isRecoveryDrip = (body.message_type || "") === "abandoned_cart";
   if (isRecoveryDrip) {
-    const drip = await recoveryDripDecision(admin, phone);
+    const drip = await recoveryDripDecision(admin, phone, { ignoreInFlight: true });
     if (!drip.allow) return json({ skipped: true, reason: drip.reason || "drip_blocked" });
   }
 

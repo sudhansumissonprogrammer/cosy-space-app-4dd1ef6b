@@ -294,7 +294,7 @@ export type DripDecision = {
  * Counts BOTH delivered messages and in-flight queue rows so a cron re-run
  * can never double-send. Only `abandoned_cart` recovery sends count here.
  */
-export async function recoveryDripDecision(admin: any, phone: string): Promise<DripDecision> {
+export async function recoveryDripDecision(admin: any, phone: string, opts: { ignoreInFlight?: boolean } = {}): Promise<DripDecision> {
   const sinceIso = new Date(Date.now() - DRIP_WINDOW_MS).toISOString();
 
   const [{ data: sentRows }, { data: queueRows }] = await Promise.all([
@@ -317,8 +317,12 @@ export async function recoveryDripDecision(admin: any, phone: string): Promise<D
   ]);
 
   // Anything still waiting to go out means the previous step hasn't landed.
-  const inFlight = ((queueRows as any[]) ?? []).some((r) => r.status === "pending" || r.status === "sending");
-  if (inFlight) return { allow: false, step: 0, reason: "drip_in_flight" };
+  // The sender itself runs while its own row is `sending`, so it opts out of
+  // the in-flight guard — otherwise it would block its own message.
+  if (!opts.ignoreInFlight) {
+    const inFlight = ((queueRows as any[]) ?? []).some((r) => r.status === "pending" || r.status === "sending");
+    if (inFlight) return { allow: false, step: 0, reason: "drip_in_flight" };
+  }
 
   // A queue row marked `sent` may not yet have its whatsapp_messages twin —
   // union both sources by timestamp bucket (1 min) so we never double count.
