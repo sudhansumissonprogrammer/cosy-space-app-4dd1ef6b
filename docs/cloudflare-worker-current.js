@@ -7759,7 +7759,8 @@ async function _handleFetch(request, env, ctx) {
       prebuiltHeadCD = await enrichHeadWithPdpChunkPreloads(prebuiltHeadCD, new URL(request.url).origin, env);
     }
     // FIX #3
-    const linkHeaderCD = _buildLinkPreloadHeader(shellResultCD.html);
+    const topImagesCD = kvBatchCD.imgs;
+    const linkHeaderCD = _withImageLinkPreload(_buildLinkPreloadHeader(shellResultCD.html), topImagesCD);
 
     const responseHeadersCD = new Headers();
     responseHeadersCD.set("Content-Type", "text/html; charset=utf-8");
@@ -7781,7 +7782,9 @@ async function _handleFetch(request, env, ctx) {
       earlyStorefrontPromiseCD,
       responseHeadersCD,
       pdpCategoryInlineCD,
+      topImagesCD,
     );
+
 
     await mirrorStreamedHtmlDirect(ctx, request, responseCD, resolvedSlug, env);
 
