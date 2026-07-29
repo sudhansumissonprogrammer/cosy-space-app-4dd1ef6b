@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Check, Star } from "lucide-react";
 import {
@@ -21,6 +21,8 @@ interface Props {
   currency: string;
   /** Red price/title treatment — used for the FLAT-OFF steal-deals strip. */
   highlight?: boolean;
+  /** Flat rupee amount knocked off inside the cart only (e.g. 100). */
+  flatOff?: number;
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
   fetchNextPage?: () => void;
@@ -38,6 +40,7 @@ export default function CartProductCarousel({
   slug,
   currency,
   highlight = false,
+  flatOff = 0,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
@@ -64,6 +67,15 @@ export default function CartProductCarousel({
     if (hasNextPage && !isFetchingNextPage && items.length > 0 && items.length < 6) fetchNextPage?.();
   }, [items.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  // Products already added stay in the strip but slide to the end, so the
+  // next unseen recommendation is always the one in view.
+  const ordered = useMemo(() => {
+    const inCartIds = new Set(cartItems.map((i) => i.productId));
+    const fresh = items.filter((p: any) => !inCartIds.has(p.id));
+    const added = items.filter((p: any) => inCartIds.has(p.id));
+    return [...fresh, ...added];
+  }, [items, cartItems]);
+
   if (items.length === 0) return null;
 
   return (
@@ -81,11 +93,11 @@ export default function CartProductCarousel({
           className="w-full"
         >
           <CarouselContent className="-ml-2">
-            {items.map((p: any) => {
+            {ordered.map((p: any) => {
               const img = resolveProductImages(p)[0];
               const mrp = Number(p.price) || 0;
               const sale = p.sale_price && Number(p.sale_price) < mrp ? Number(p.sale_price) : mrp;
-              const off = mrp > sale ? Math.round(((mrp - sale) / mrp) * 100) : 0;
+              const cartPrice = flatOff > 0 ? Math.max(1, sale - flatOff) : sale;
               const inCart = cartItems.some((i) => i.productId === p.id && !i.variantId);
               const rating = Number(p.rating || 0);
               const reviews = Number(p.review_count || 0);
@@ -118,11 +130,6 @@ export default function CartProductCarousel({
                             {reviews > 0 && <span className="opacity-70">({reviews})</span>}
                           </span>
                         )}
-                        {off > 0 && (
-                          <span className="absolute right-1 top-1 rounded bg-red-600 px-1 py-[1px] text-[9px] font-extrabold text-white">
-                            {off}% OFF
-                          </span>
-                        )}
                       </div>
                     </Link>
                     <div className="px-1.5 py-1.5">
@@ -136,13 +143,18 @@ export default function CartProductCarousel({
                         >
                           {p.name}
                         </Link>
-                        <span
-                          className={`shrink-0 text-[11px] font-extrabold leading-tight ${
-                            highlight ? "text-red-600" : ""
-                          }`}
-                          style={highlight ? undefined : { color: "var(--storefront-text, inherit)" }}
-                        >
-                          {formatPrice(sale, currency)}
+                        <span className="flex shrink-0 flex-col items-end leading-tight">
+                          <span
+                            className={`text-[11.5px] font-extrabold ${highlight ? "text-red-600" : ""}`}
+                            style={highlight ? undefined : { color: "var(--storefront-text, inherit)" }}
+                          >
+                            {formatPrice(cartPrice, currency)}
+                          </span>
+                          {cartPrice < sale && (
+                            <span className="text-[9px] font-medium line-through opacity-55">
+                              {formatPrice(sale, currency)}
+                            </span>
+                          )}
                         </span>
                       </div>
                       <button
