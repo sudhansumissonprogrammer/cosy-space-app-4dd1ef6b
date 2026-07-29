@@ -52,7 +52,7 @@ export default function PdpCarousels({
 
   return (
     <VariantCountProvider products={allProducts}>
-      <div className="mt-8 pt-6 border-t border-border">
+      <div id="pdp-carousels" className="mt-8 pt-6 border-t border-border scroll-mt-24">
         <PdpProductCarousel
           title={currentCategory ? `More in ${titleCase(currentCategory)}` : "Similar products"}
           items={same.items}
