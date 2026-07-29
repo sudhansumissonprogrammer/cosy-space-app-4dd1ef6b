@@ -84,8 +84,33 @@ export function prefetchStorefrontRoutes() {
     schedule(loadNext);
   }
 
+  // v8.74: hold chunk prefetch until the LCP element has actually painted
+  // (or a 3s ceiling), so product-image bytes never queue behind route JS.
+  const startAfterLcp = () => {
+    let fired = false;
+    const go = () => {
+      if (fired) return;
+      fired = true;
+      schedule(loadNext);
+    };
+    const cap = setTimeout(go, 3000);
+    try {
+      const po = new PerformanceObserver(() => {
+        // LCP candidates keep coming; give the image a beat to finish, then go.
+        setTimeout(() => {
+          clearTimeout(cap);
+          po.disconnect();
+          go();
+        }, 400);
+      });
+      po.observe({ type: "largest-contentful-paint", buffered: true });
+    } catch {
+      /* no LCP support — the 3s cap covers it */
+    }
+  };
+
   const start = () => {
-    setTimeout(() => schedule(loadNext), PREFETCH_START_DELAY_MS);
+    setTimeout(startAfterLcp, PREFETCH_START_DELAY_MS);
   };
 
   if (document.readyState === "complete") {
@@ -95,3 +120,4 @@ export function prefetchStorefrontRoutes() {
 
   window.addEventListener("load", start, { once: true });
 }
+

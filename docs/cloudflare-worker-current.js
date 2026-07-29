@@ -208,7 +208,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.73.0-stale-preload-fix";
+const WORKER_VERSION = "8.74.0-lcp-image-kv-preload";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -2197,16 +2197,90 @@ const CACHE_STOREFRONT_TTL = 3_600; // Tier-1 #1: 2h → 1h. Purge handles fresh
 // is fetched by _resolveStoreInfo in the same Promise.all — fetching them
 // again here was a duplicate KV read on every request.
 async function _batchKvRead(slug, env) {
-  if (!env?.STORE_KV) return { theme: null };
+  if (!env?.STORE_KV) return { theme: null, imgs: null };
   try {
-    let theme = await env.STORE_KV.get(`theme-lite:${WORKER_VERSION}:${slug}`, { type: "json" }).catch(() => null);
-    if (!theme) theme = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" }).catch(() => null);
+    const [themeV, themeLegacy, imgs] = await Promise.all([
+      env.STORE_KV.get(`theme-lite:${WORKER_VERSION}:${slug}`, { type: "json" }).catch(() => null),
+      env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" }).catch(() => null),
+      // v8.74.0 — durable LCP image list, independent of the volatile
+      // product-version cache. ~200 bytes, read in the same KV round-trip.
+      env.STORE_KV.get(`imgs:${slug}`, { type: "json" }).catch(() => null),
+    ]);
+    let theme = themeV || themeLegacy;
     if (theme && theme.wv !== WORKER_VERSION) theme = null;
-    return { theme };
+    return { theme, imgs: Array.isArray(imgs) ? imgs : null };
   } catch {
-    return { theme: null };
+    return { theme: null, imgs: null };
   }
 }
+
+/**
+ * v8.74.0 — Persist the first N product image URLs for a store so every
+ * cold isolate can emit `<link rel=preload as=image>` at byte 0, even when
+ * the inline-products cache is cold. Written on every successful storefront
+ * data fetch (dedup'd by content) with a 24h TTL.
+ */
+const _memTopImages = new Map(); // slug -> { urls, ts }
+const TOP_IMAGES_TTL_SEC = 86400;
+
+function _cacheTopProductImages(slug, products, env, ctx) {
+  try {
+    if (!env?.STORE_KV || !Array.isArray(products) || products.length === 0) return;
+    const urls = [];
+    for (const p of products) {
+      const u =
+        (p && (p.image_url || (Array.isArray(p.product_images) && p.product_images[0]?.image_url))) || "";
+      const first = typeof u === "string" && u.includes(",") ? u.split(",")[0].trim() : u;
+      if (first && first.startsWith("http")) urls.push(first);
+      if (urls.length >= 4) break;
+    }
+    if (urls.length === 0) return;
+    const prev = _memTopImages.get(slug);
+    const same = prev && prev.urls.join("|") === urls.join("|") && Date.now() - prev.ts < 3600_000;
+    _capMapSize(_memTopImages, 200);
+    _memTopImages.set(slug, { urls, ts: Date.now() });
+    if (same) return; // no KV write when nothing changed
+    const write = env.STORE_KV.put(`imgs:${slug}`, JSON.stringify(urls), {
+      expirationTtl: TOP_IMAGES_TTL_SEC,
+    }).catch(() => {});
+    if (ctx) ctx.waitUntil(write);
+  } catch {}
+}
+
+/** Build image preload tags from a plain URL list (KV fallback path). */
+function _buildImagePreloadsFromUrls(urls, count = 2) {
+  if (!Array.isArray(urls) || urls.length === 0) return "";
+  let out = "";
+  const n = Math.min(count, urls.length);
+  for (let i = 0; i < n; i++) {
+    const href = escapeHtml(_toRenderUrl(urls[i], 400, 72));
+    const fp = i === 0 ? ` fetchpriority="high"` : "";
+    out +=
+      `<link rel="preload" as="image" href="${href}" ` +
+      `imagesizes="(max-width:640px) 45vw, 25vw"${fp} />\n`;
+  }
+  return out;
+}
+
+/**
+ * v8.74.0 — Prepend an `as=image` preload for the LCP product image to the
+ * existing Link header. Headers are parsed before the body arrives, so this
+ * is the earliest possible discovery point for the hero/first-card image.
+ */
+function _withImageLinkPreload(linkHeader, urls) {
+  if (!Array.isArray(urls) || urls.length === 0) return linkHeader;
+  try {
+    const first = _toRenderUrl(urls[0], 400, 72);
+    if (!first) return linkHeader;
+    const imgLink = `<${first}>; rel=preload; as=image; fetchpriority=high`;
+    return linkHeader ? `${imgLink}, ${linkHeader}` : imgLink;
+  } catch {
+    return linkHeader;
+  }
+}
+
+
+
 
 /* ============================================================
    FIX #8 — LIGHTWEIGHT THEME CACHE (in-memory → Cache API → KV)
@@ -2411,6 +2485,9 @@ async function _fetchShellFromSupabase(slug, ctx, env) {
       if (data?.theme_config) {
         _cacheThemeForFastShell(slug, data.theme_config, env, ctx, data?.store?.theme || "");
       }
+      // v8.74.0 — keep the durable LCP image list fresh on every data fetch.
+      _cacheTopProductImages(slug, data?.products, env, ctx);
+
 
       if (ctx) {
         const dataStr = JSON.stringify(data);
@@ -3914,7 +3991,9 @@ async function serveStreamedHtml(
   storefrontPromise,
   responseHeaders,
   pdpCategoryInline = null, // v8.9.0 { kind, json } | null
+  topImages = null, // v8.74.0 — LCP image URLs from `imgs:<slug>` KV
 ) {
+
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
   const enc = new TextEncoder();
@@ -3968,7 +4047,14 @@ async function serveStreamedHtml(
 
       // v8.66.0: home cold load should not queue 6 product images before the
       // app is interactive; keep the two likely above-fold LCP candidates only.
-      const productImagePreloads = inlineProducts ? _buildProductImagePreloads(inlineProducts, 2) : "";
+      // v8.74.0: when inline products are unavailable (cold isolate / expired
+      // product-version cache) fall back to the durable `imgs:<slug>` KV list,
+      // so the preload scanner ALWAYS gets the first product images at byte 0
+      // instead of waiting ~2s for React to discover them.
+      const productImagePreloads = inlineProducts
+        ? _buildProductImagePreloads(inlineProducts, 2)
+        : _buildImagePreloadsFromUrls(topImages, 2);
+
 
       let perRouteSeoHead = "";
       let earlyStorefrontResult = null;
@@ -4224,7 +4310,10 @@ async function fetchAndInjectSlug(
     prebuiltHead = await enrichHeadWithPdpChunkPreloads(prebuiltHead, new URL(request.url).origin, env);
   }
   // FIX #3: Always build Link header for every response
-  const linkHeader = _buildLinkPreloadHeader(shellResult.html);
+  // v8.74.0: prepend the LCP product image so it is discovered from the
+  // response HEADERS — earlier than any tag in the streamed body.
+  const topImages = kvBatch.imgs;
+  const linkHeader = _withImageLinkPreload(_buildLinkPreloadHeader(shellResult.html), topImages);
 
   const newHeaders = new Headers();
   newHeaders.set("Content-Type", "text/html; charset=utf-8");
@@ -4246,7 +4335,10 @@ async function fetchAndInjectSlug(
     inlineProducts,
     storefrontPromise,
     newHeaders,
+    null,
+    topImages,
   );
+
 
   await mirrorStreamedHtmlDirect(ctx, request, response, slug, env);
 
@@ -5885,6 +5977,8 @@ async function handlePrewarm(request, url, ctx, env) {
       _cacheThemeForFastShell(slug, dataResult.data.theme_config, env, ctx, dataResult.data?.store?.theme || "");
       results.themeLite = "warmed";
     }
+    _cacheTopProductImages(slug, dataResult.data?.products, env, ctx);
+
 
     if (storeId) {
       const storeIdStr = storeId;
@@ -7471,7 +7565,9 @@ async function _handleFetch(request, env, ctx) {
       prebuiltHead = await enrichHeadWithPdpChunkPreloads(prebuiltHead, new URL(request.url).origin, env);
     }
     // FIX #3: Always set Link header
-    const linkHeader = _buildLinkPreloadHeader(shellResult.html);
+    // v8.74.0: LCP product image preload rides in the response headers too.
+    const topImages = kvBatch.imgs;
+    const linkHeader = _withImageLinkPreload(_buildLinkPreloadHeader(shellResult.html), topImages);
 
     const responseHeaders = new Headers();
     responseHeaders.set("Content-Type", "text/html; charset=utf-8");
@@ -7493,6 +7589,8 @@ async function _handleFetch(request, env, ctx) {
       earlyStorefrontPromise,
       responseHeaders,
       pdpCategoryInline,
+      topImages,
+
     );
 
     await mirrorStreamedHtmlDirect(ctx, request, response, slug, env);
@@ -7680,7 +7778,8 @@ async function _handleFetch(request, env, ctx) {
       prebuiltHeadCD = await enrichHeadWithPdpChunkPreloads(prebuiltHeadCD, new URL(request.url).origin, env);
     }
     // FIX #3
-    const linkHeaderCD = _buildLinkPreloadHeader(shellResultCD.html);
+    const topImagesCD = kvBatchCD.imgs;
+    const linkHeaderCD = _withImageLinkPreload(_buildLinkPreloadHeader(shellResultCD.html), topImagesCD);
 
     const responseHeadersCD = new Headers();
     responseHeadersCD.set("Content-Type", "text/html; charset=utf-8");
@@ -7702,7 +7801,9 @@ async function _handleFetch(request, env, ctx) {
       earlyStorefrontPromiseCD,
       responseHeadersCD,
       pdpCategoryInlineCD,
+      topImagesCD,
     );
+
 
     await mirrorStreamedHtmlDirect(ctx, request, responseCD, resolvedSlug, env);
 

@@ -446,6 +446,27 @@
         }
         if(window.__THEME__){injectGFont(window.__THEME__.hf,window.__THEME__.bf);}
 
+        /* v8.74 — global LCP image preloader. Runs the instant product JSON
+           lands (either bootstrap path), ~600-1000ms before React would
+           discover the same URLs during its first render. */
+        window.__sfInjectImgPreloads__=function(products){
+          if(!Array.isArray(products))return;
+          var head=document.head;var injected=0;
+          for(var i=0;i<products.length && injected<6;i++){
+            var pp=products[i];var u=pp&&pp.image_url;
+            if(!u||typeof u!=='string')continue;
+            if(u.indexOf(',')>-1)u=u.split(',')[0].trim();
+            if(!u||document.querySelector('link[data-sf-img-pre="'+u+'"]'))continue;
+            var l=document.createElement('link');
+            l.rel='preload';l.as='image';l.href=u;
+            l.setAttribute('data-sf-img-pre',u);
+            if(injected<2)l.setAttribute('fetchpriority','high');
+            head.appendChild(l);injected++;
+          }
+        };
+
+
+
         // If Worker already injected __STOREFRONT_DATA__, we're done — products
         // are already inlined via window.__PRODUCTS_INLINE__ (set by Worker).
         // Only prefetch /api/products if the Worker did NOT inline products
@@ -466,7 +487,7 @@
                 var supaUrl='https://dqepeywgftbpxeeqfuwt.supabase.co';
                 var key='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk';
                 var prodUrl=supaUrl+'/rest/v1/products?store_id=eq.'+sd.store.id+'&is_active=eq.true&order=is_best_selling.desc,created_at.desc,id.asc&limit=20&select=id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id';
-                window.__PRODUCTS_PREFETCH__=fetch(prodUrl,{headers:{'apikey':key,'Authorization':'Bearer '+key}}).then(function(r){return r.json()}).catch(function(){return null});
+                window.__PRODUCTS_PREFETCH__=fetch(prodUrl,{headers:{'apikey':key,'Authorization':'Bearer '+key}}).then(function(r){return r.json()}).then(function(products){try{window.__sfInjectImgPreloads__&&window.__sfInjectImgPreloads__(products);}catch(e){}return products;}).catch(function(){return null});
               }
             }catch(e){}
           }
@@ -517,18 +538,8 @@
            in <head> immediately. This kicks off image downloads in parallel
            with the React JS bundle instead of after hydration. */
         function injectProductImagePreloads(products){
-          if(!Array.isArray(products))return;
-          var head=document.head;var injected=0;
-          for(var i=0;i<products.length && injected<6;i++){
-            var pp=products[i];var u=pp&&pp.image_url;
-            if(!u||typeof u!=='string')continue;
-            if(document.querySelector('link[data-sf-img-pre="'+u+'"]'))continue;
-            var l=document.createElement('link');
-            l.rel='preload';l.as='image';l.href=u;
-            l.setAttribute('data-sf-img-pre',u);
-            if(injected<2)l.setAttribute('fetchpriority','high');
-            head.appendChild(l);injected++;
-          }
+          window.__sfInjectImgPreloads__(products);
+
         }
 
         /* CRITICAL: kick off shell + products in PARALLEL.
