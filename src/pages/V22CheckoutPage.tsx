@@ -208,8 +208,11 @@ function V22CheckoutPageInner() {
   const [orderAdvancePaid, setOrderAdvancePaid] = useState(0);
   const [orderBalanceDue, setOrderBalanceDue] = useState(0);
 
-  // Idempotency token to prevent duplicate orders
-  const [checkoutToken] = useState(() => crypto.randomUUID());
+  // Idempotency token to prevent duplicate orders. Cookie-persisted so an
+  // in-app-browser remount (UPI app hand-off) reuses the same token instead of
+  // spawning a second pending order.
+  const [checkoutToken] = useState(() => getOrCreateCheckoutToken());
+  useEffect(() => { writeCheckoutTokenCookie(checkoutToken); }, [checkoutToken]);
   // Payment retry state: store created order for retry
   const [pendingOrder, setPendingOrder] = useState<{ id: string; number: string | null; profit: number | null } | null>(null);
   const [paymentFailed, setPaymentFailed] = useState(false);
