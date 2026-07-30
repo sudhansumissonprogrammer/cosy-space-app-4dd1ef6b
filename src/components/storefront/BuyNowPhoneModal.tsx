@@ -166,6 +166,7 @@ export default function BuyNowPhoneModal({
       if (normalized && isValidIndianPhone(normalized)) {
         didSkip.current = true;
         try { localStorage.setItem("checkout_phone", normalized); } catch {}
+        seedPhoneForMeta(normalized);
         saveLead({ storeId, phone: normalized, productId, productName, source });
         void autoLoginByPhone(storeId, normalized);
         onBeforeNavigate?.();
@@ -200,6 +201,7 @@ export default function BuyNowPhoneModal({
 
     try { localStorage.setItem("checkout_phone", normalized); } catch {}
 
+    seedPhoneForMeta(normalized);
     saveLead({ storeId, phone: normalized, productId, productName, source });
     void autoLoginByPhone(storeId, normalized);
 
