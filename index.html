@@ -351,6 +351,14 @@
           var sub=h.replace('.shopbanao.in','');if(sub&&sub.indexOf('.')===-1)isSf=true;
         }
         if(!isSf && window.__STORE_SLUG__)isSf=true;
+         /* Custom domains serve storefronts at `/`, so they must not depend
+            exclusively on Worker-injected globals. A stale/raw shell cache or
+            an edge fallback can omit __STORE_SLUG__; previously that made the
+            entire early Pixel bootstrap return before React mounted. Platform
+            app/landing hosts remain excluded by the guards above/below. */
+         if(!isSf && h!=='shopbanao.in' && h!=='www.shopbanao.in' &&
+            !h.endsWith('.shopbanao.in') && !h.endsWith('.lovable.app') &&
+            !h.endsWith('.lovableproject.com') && !h.endsWith('.lovable.dev'))isSf=true;
         if(!isSf)return; // landing/auth — skip pixel shim entirely
 
         /* BAN-FIX v8.62: purge stale apex .shopbanao.in-scoped tracking

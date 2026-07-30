@@ -152,11 +152,10 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
         );
         timer = setTimeout(run, 1200);
       };
-      if (document.readyState === "complete") {
-        arm();
-      } else {
-        window.addEventListener("load", arm, { once: true });
-      }
+      // Arm immediately rather than waiting for window.load. In-app browsers
+      // can postpone load and then freeze the tab when the shopper switches
+      // apps, leaving queued events with no SDK to deliver them.
+      arm();
     };
 
 
