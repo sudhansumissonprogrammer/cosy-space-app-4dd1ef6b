@@ -97,7 +97,13 @@ export default function CartProductCarousel({
               const img = resolveProductImages(p)[0];
               const mrp = Number(p.price) || 0;
               const sale = p.sale_price && Number(p.sale_price) < mrp ? Number(p.sale_price) : mrp;
-              const cartPrice = flatOff > 0 ? Math.max(1, sale - flatOff) : sale;
+              // Show exactly what the shopper will be charged. `place-order`
+              // always overrides line prices with the DB canonical price
+              // (only server-set bundle/upsell rows keep a custom price), so
+              // advertising a lower "cart-only" price here would be a
+              // price-shown ≠ price-charged mismatch. Genuine savings are
+              // still shown via the MRP strike-through below.
+              const cartPrice = sale;
               const inCart = cartItems.some((i) => i.productId === p.id && !i.variantId);
               const rating = Number(p.rating || 0);
               const reviews = Number(p.review_count || 0);
