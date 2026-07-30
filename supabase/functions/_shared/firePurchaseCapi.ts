@@ -318,9 +318,24 @@ export async function firePurchaseCapi(
         ? `https://${store.custom_domain}/checkout`
         : `https://${store.slug}.shopbanao.in/checkout`);
 
+    // event_time must be WHEN THE PURCHASE HAPPENED, not when we managed to
+    // send it. Reconcile/backfill crons and gateway-webhook retries fire this
+    // as much as 17.7h after the sale (measured on live orders), which pushed
+    // the conversion into the wrong attribution window and gave the deduped
+    // browser twin a wildly different timestamp — Meta treats a large skew
+    // between a browser/server pair as an unreliable integration.
+    // Clamp: never in the future, never older than 7 days (Meta rejects those).
+    const nowSec = Math.floor(Date.now() / 1000);
+    const occurredMs = Date.parse(
+      String((order as any).payment_verified_at || order.created_at || ""),
+    );
+    const eventTime = Number.isFinite(occurredMs)
+      ? Math.min(nowSec, Math.max(Math.floor(occurredMs / 1000), nowSec - 6 * 86400))
+      : nowSec;
+
     const event = {
       event_name: "Purchase",
-      event_time: Math.floor(Date.now() / 1000),
+      event_time: eventTime,
       // Dedupe vs browser Pixel. The browser derives its Purchase id from the
       // checkout token (`pur-<token>`, src/lib/pixelOutbox.ts), so when the
       // order row never captured meta_event_id we must rebuild the SAME id
