@@ -335,7 +335,18 @@ export async function firePurchaseCapi(
       return { ok: true, reason: "already_fired_or_status_changed" };
     }
 
-    // 7. Send to Meta — with 1 retry on 5xx (transient Meta blip).
+    // Release the claim so a later gateway callback / reconcile cron can retry.
+    // The claim above is a *lease*, not a receipt: it exists to stop two
+    // concurrent isolates double-firing, NOT to record success. Leaving it set
+    // after a transient failure permanently burns the order's Purchase signal.
+    const releaseClaim = async () => {
+      await supabase
+        .from("orders")
+        .update({ meta_purchase_fired_at: null })
+        .eq("id", orderId);
+    };
+
+    // 7. Send to Meta — with 2 retries on 5xx / network error (transient blip).
     const sendOnce = () => fetch(
       `${META_GRAPH_URL}/${store.facebook_pixel_id}/events`,
       {
@@ -344,27 +355,43 @@ export async function firePurchaseCapi(
         body: JSON.stringify({ data: [event] }),
       },
     );
-    let resp = await sendOnce();
-    if (resp.status >= 500 && resp.status < 600) {
-      await new Promise((r) => setTimeout(r, 500));
-      resp = await sendOnce();
+
+    let resp: Response | null = null;
+    let netErr: unknown = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 400 * attempt));
+      try {
+        netErr = null;
+        resp = await sendOnce();
+      } catch (e) {
+        netErr = e;
+        resp = null;
+        continue;
+      }
+      if (resp.status >= 500 && resp.status < 600) continue;
+      break;
+    }
+
+    if (!resp) {
+      console.error(`[capi:${opts.source}] network error`, netErr);
+      await releaseClaim(); // transient — must remain retryable
+      return { ok: false, reason: "network_error" };
     }
 
     const result = await resp.json().catch(() => ({}));
 
     if (!resp.ok) {
-      console.error(`[capi:${opts.source}] meta error`, JSON.stringify(result));
-      // Don't stamp on hard failure — let next gateway/retry try again.
-      // But avoid infinite retries for 4xx (config errors).
-      if (resp.status >= 400 && resp.status < 500) {
-        await supabase
-          .from("orders")
-          .update({ meta_purchase_fired_at: new Date().toISOString() })
-          .eq("id", orderId)
-          .is("meta_purchase_fired_at", null);
+      console.error(`[capi:${opts.source}] meta error ${resp.status}`, JSON.stringify(result));
+      if (resp.status >= 500) {
+        // Meta-side outage — keep the order eligible for a later retry.
+        await releaseClaim();
+        return { ok: false, reason: `meta_${resp.status}` };
       }
+      // 4xx = config error (bad token / pixel / payload). Retrying forever
+      // just hammers Meta and trips the circuit breaker, so keep the stamp.
       return { ok: false, reason: `meta_${resp.status}` };
     }
+
 
     console.log(`[capi:${opts.source}] purchase fired`, orderId, result.events_received);
     return { ok: true };
