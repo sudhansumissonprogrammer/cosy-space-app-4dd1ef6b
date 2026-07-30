@@ -821,11 +821,11 @@ Deno.serve(async (req) => {
     // BAN-FIX B4: extra per-phone COD throttle — 3 confirmed COD orders per
     // hour per normalized phone number. Same phone spamming COD orders is
     // the classic fake-conversion signal Meta watches for.
-    if (order.payment_method === "cod" && rlSupabase) {
+    if (order.payment_method === "cod") {
       try {
         const normPhoneForRl = String(order.customer_phone || "").replace(/\D/g, "").slice(-10);
         if (normPhoneForRl.length >= 10) {
-          const { data: codLimited } = await rlSupabase.rpc("hit_rate_limit", {
+          const { data: codLimited } = await supabase.rpc("hit_rate_limit", {
             _key: `cod_phone:${store_id}:${normPhoneForRl}`,
             _max: 3,
             _window_seconds: 3600,
