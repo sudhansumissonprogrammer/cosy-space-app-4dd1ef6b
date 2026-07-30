@@ -39,6 +39,42 @@ function grantMetaConsent() {
   }
 }
 
+/**
+ * STORE ISOLATION (P1): never use bare `fbq('track', ...)`.
+ *
+ * `fbq('track')` broadcasts to EVERY pixel currently registered in the page's
+ * fbq instance. In a multi-tenant SPA a second merchant's pixel can end up
+ * initialised in the same document (path-based `/store/:slug` navigation,
+ * dashboard theme-preview iframes, a stale init from a previous route). If
+ * that ever happens, one merchant's AddToCart/Purchase silently lands in
+ * another merchant's ad account.
+ *
+ * `trackSingle` pins the event to exactly one pixel ID, so the leak class is
+ * structurally impossible regardless of what else is registered.
+ */
+export function fbqTrackSingle(
+  pixelId: string | null | undefined,
+  eventName: string,
+  params?: Record<string, any>,
+  eventId?: string,
+) {
+  if (typeof window === "undefined" || typeof window.fbq !== "function") return;
+  const pid =
+    pixelId || ((window as any).__SF_PIXEL_INITED__ as string | undefined) || "";
+  const opts = eventId ? { eventID: eventId } : undefined;
+  try {
+    if (pid) {
+      if (opts) window.fbq("trackSingle", pid, eventName, params, opts);
+      else window.fbq("trackSingle", pid, eventName, params);
+      return;
+    }
+    // No pixel id resolvable — drop rather than broadcast to unknown pixels.
+  } catch {
+    /* noop */
+  }
+}
+
+
 function schedulePixelSelfTest(pixelId: string) {
   if (typeof window === "undefined") return;
   const w = window as any;
@@ -204,12 +240,13 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
         window.fbq("init", pixelId);
       }
       // Only fire PageView if the inline bootstrap didn't already do so.
+      (window as any).__SF_PIXEL_INITED__ = pixelId;
       if (!inlinePvAlreadyFired) {
         pageViewEventId = generateEventId();
         (window as any).__SF_PV_EVENT_ID__ = pageViewEventId;
-        window.fbq("track", "PageView", {}, { eventID: pageViewEventId });
+        fbqTrackSingle(pixelId, "PageView", {}, pageViewEventId);
       }
-      (window as any).__SF_PIXEL_INITED__ = pixelId;
+
     }
 
     schedulePixelSelfTest(pixelId);
@@ -248,15 +285,11 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
   const trackEvent = useCallback(
     (eventName: string, params?: Record<string, any>, eventId?: string) => {
       if (!pixelId || typeof window.fbq !== "function") return;
-      const clean = sanitizePixelParams(params);
-      if (eventId) {
-        window.fbq("track", eventName, clean, { eventID: eventId });
-      } else {
-        window.fbq("track", eventName, clean);
-      }
+      fbqTrackSingle(pixelId, eventName, sanitizePixelParams(params), eventId);
     },
     [pixelId]
   );
+
 
   return { trackEvent };
 }
@@ -290,16 +323,15 @@ function sanitizePixelParams(params?: Record<string, any>): Record<string, any> 
   return out;
 }
 
-/** Standalone helper — call from anywhere (e.g. CartContext) */
+/**
+ * Standalone helper — call from anywhere (e.g. CartContext).
+ * Routes through `trackSingle` against the pixel currently active for THIS
+ * storefront (`__SF_PIXEL_INITED__`) so the event can never fan out to a
+ * second merchant's pixel.
+ */
 export function fbPixelTrack(eventName: string, params?: Record<string, any>, eventId?: string) {
   if (typeof window === "undefined") return;
   if (isNonProductionHost()) return;
-  if (typeof window.fbq === "function") {
-    const clean = sanitizePixelParams(params);
-    if (eventId) {
-      window.fbq("track", eventName, clean, { eventID: eventId });
-    } else {
-      window.fbq("track", eventName, clean);
-    }
-  }
+  fbqTrackSingle(undefined, eventName, sanitizePixelParams(params), eventId);
+
 }
