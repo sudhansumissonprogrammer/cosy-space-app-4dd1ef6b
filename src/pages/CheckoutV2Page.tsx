@@ -33,7 +33,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { ga4Track } from "@/hooks/useGA4";
 import { fireMetaCAPI, getMetaCookies } from "@/lib/metaCapi";
-import { setCapiUser } from "@/lib/metaEnrichment";
+import { setCapiUser, getOrCreateSfVid } from "@/lib/metaEnrichment";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { loadCashfree } from "@/lib/loadCashfree";
@@ -1474,6 +1474,10 @@ export default function CheckoutV2Page() {
       event_id: purchaseEventIdRef.current,
       fbc: metaCookiesRef.current.fbc || undefined,
       fbp: metaCookiesRef.current.fbp || undefined,
+            // Advanced Matching: same identifiers the browser Pixel sent, so
+            // the server Purchase hashes match instead of minting a new person.
+            external_id: (getCapiUser().externalId || getOrCreateSfVid() || undefined),
+            email: (getCapiUser().email || undefined),
       event_source_url: safeUrl,
     };
   };
