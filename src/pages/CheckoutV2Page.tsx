@@ -3906,8 +3906,10 @@ export default function CheckoutV2Page() {
                 onClick={closeAddressFormSheet}
                 aria-hidden
               />
-              {/* Sheet — nearly full-screen so keyboard doesn't crush the form */}
-              <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden h-[95dvh]">
+              {/* Sheet — height driven by visualViewport so the keyboard never
+                  hides the lower fields / Continue button (see effect above) */}
+              <div ref={addressSheetRef} className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden h-[95dvh]">
+
               <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
                 <div className="text-[16px] font-bold">Add Delivery Address</div>
                 <button
