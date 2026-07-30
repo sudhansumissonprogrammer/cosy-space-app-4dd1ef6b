@@ -3097,6 +3097,13 @@ export default function CheckoutV2Page() {
   const [placingCod, setPlacingCod] = useState(false);
   const placeCod = async () => {
     if (placingCod || creatingOrder || couponLoading || paymentAmountSyncing) return;
+    // Partial-payment stores collect the configured advance online and only
+    // the remaining balance on delivery. Never allow a separate zero-advance
+    // COD path, including from a stale tab that rendered older checkout code.
+    if (hasPartial) {
+      toast.error("Please pay the advance to place this order");
+      return;
+    }
     // PAYMENT-FIRST address gate — open sheet + remember the COD tap so it
     // auto-resumes after the shopper saves.
     if (!requireAddressOrPrompt(() => { void placeCod(); })) return;
@@ -4491,12 +4498,10 @@ export default function CheckoutV2Page() {
           )}
 
 
-          {/* COD — shown whenever the store enabled "cod" in payment settings.
-              It can coexist with partial payment: the shopper simply picks
-              full-cash-on-delivery instead of the ₹X advance. placeCod always
-              forces payment_type="full", which is what checkout-v2-cod
-              accepts (it only rejects rows already marked partial). */}
-          {hasCod && (
+          {/* Standalone COD is only for stores without partial payment.
+              With partial enabled, COD means only the remaining balance after
+              the configured online advance has been paid. */}
+          {hasCod && !hasPartial && (
             <button
               onClick={placeCod}
               disabled={placingCod || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
