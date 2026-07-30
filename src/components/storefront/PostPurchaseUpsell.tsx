@@ -7,6 +7,7 @@ import { Loader2, Plus, ShoppingBag, X } from "lucide-react";
 import { toast } from "sonner";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
+import { shouldFirePixelEvent } from "@/lib/pixelDedupe";
 import { cleanImageUrl, optimizeImageUrl } from "@/lib/imageOptimize";
 import { getDiscountPercent } from "@/lib/productUtils";
 

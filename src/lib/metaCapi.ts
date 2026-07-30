@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCapiUser, getOrCreateSfVid, readFbcWithFallback } from "@/lib/metaEnrichment";
+import { hasMarketingConsent } from "@/lib/marketingConsent";
 
 /**
  * Returns true on Lovable preview/editor/dev hosts.
