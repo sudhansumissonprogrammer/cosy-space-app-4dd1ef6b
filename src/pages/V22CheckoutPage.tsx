@@ -29,7 +29,7 @@ import { loadCashfree } from "@/lib/loadCashfree";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { pixelPayloadFromItems } from "@/lib/expandBundleForPixel";
-import { getOrCreateCheckoutToken, writeCheckoutTokenCookie } from "@/lib/checkoutTokenStore";
+import { getOrCreateCheckoutToken, writeCheckoutTokenCookie, clearCheckoutTokenCookie } from "@/lib/checkoutTokenStore";
 import { purchaseEventIdFor } from "@/lib/pixelOutbox";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
@@ -1199,6 +1199,12 @@ function V22CheckoutPageInner() {
   const finalizeOrder = (newOrderId: string, newOrderNumber: string | null, profit?: number | null) => {
     if (finalizedOrderIdsRef.current.has(newOrderId)) return;
     finalizedOrderIdsRef.current.add(newOrderId);
+    // Burn the idempotency token now that this order is done. The token lives
+    // in the shared `sb_ct` cookie (30-min TTL); without clearing it, the
+    // shopper's NEXT order inside that window would reuse the same token and
+    // place-order would UPDATE this already-paid order instead of creating a
+    // new one.
+    clearCheckoutTokenCookie();
     setOrderId(newOrderId);
     setOrderNumber(newOrderNumber);
     if (isPartialOrder) {
