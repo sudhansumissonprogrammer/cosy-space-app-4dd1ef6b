@@ -125,8 +125,11 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     // effect so PageView CAPI can mirror the shared event_id and the self-test
     // can verify the SDK registered the pixel after it loads.
 
-    // Defer actual script loading — events are queued by the fbq shim, so
-    // nothing is lost by loading late.
+    // Load soon after init. Although the shim safely queues events, browser
+    // diagnostics (including Meta Pixel Helper) cannot see a registered pixel
+    // until fbevents.js has executed. A long idle/load gate therefore looked
+    // like an intermittent missing pixel on fast PDP/category checks and could
+    // strand short visits in browsers that aggressively freeze background tabs.
     //
     // PERF (measured 2026-07-29): plain requestIdleCallback fired the 104KB
     // `fbevents.js` download at ~1790ms on home / ~1990ms on PDP — i.e. the
@@ -139,7 +142,7 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     // download still landed at ~2064ms — right at FCP on slow mobile. Push it
     // behind whichever comes first:
     //   a) the shopper's FIRST interaction (pointer/touch/keyboard/scroll), or
-    //   b) a 3s idle timer after `load`.
+    //   b) a short 1.2s safety timer.
     // Nothing is lost: fbq's shim queues events, pixelOutbox persists them and
     // force-loads the SDK immediately for conversion events.
     const schedule = (cb: () => void) => {
@@ -151,17 +154,13 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
         done = true;
         if (timer) clearTimeout(timer);
         events.forEach((e) => window.removeEventListener(e, run as EventListener));
-        if (typeof requestIdleCallback !== "undefined") {
-          requestIdleCallback(cb, { timeout: 1500 });
-        } else {
-          cb();
-        }
+        cb();
       };
       const arm = () => {
         events.forEach((e) =>
           window.addEventListener(e, run as EventListener, { once: true, passive: true })
         );
-        timer = setTimeout(run, 3000);
+        timer = setTimeout(run, 1200);
       };
       if (document.readyState === "complete") {
         arm();
