@@ -130,7 +130,8 @@ function pruneSentKeys() {
 
 export function purchaseAlreadySent(orderId: string): boolean {
   try {
-    return localStorage.getItem(SENT_KEY(orderId)) === "1";
+    // Value is a timestamp now, "1" on legacy entries — presence is the guard.
+    return localStorage.getItem(SENT_KEY(orderId)) != null;
   } catch {
     return false;
   }
