@@ -94,6 +94,27 @@ export async function fetchTrustReel(storeId: string, slug: string): Promise<Tru
   return slides;
 }
 
+/**
+ * One-shot probe used by the floating launcher: existence AND the preview row
+ * in a single request. Previously the launcher ran a HEAD count followed by a
+ * second row fetch — two serial round trips during the image-loading window
+ * for zero extra information.
+ */
+export async function fetchTrustVideoProbe(
+  storeId: string,
+): Promise<{ available: boolean; preview: { videoUrl: string; posterUrl: string | null } | null }> {
+  const { data } = await (supabase as any)
+    .from("store_trust_videos")
+    .select("video_url,poster_url")
+    .eq("store_id", storeId)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!data?.video_url) return { available: false, preview: null };
+  return { available: true, preview: { videoUrl: data.video_url, posterUrl: data.poster_url ?? null } };
+}
+
 /** Cheap existence probe used by the floating launcher (idle-time only). */
 export async function hasTrustVideos(storeId: string): Promise<boolean> {
   const { count } = await (supabase as any)
