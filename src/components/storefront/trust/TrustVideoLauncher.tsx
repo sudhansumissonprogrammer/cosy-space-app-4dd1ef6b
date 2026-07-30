@@ -15,9 +15,8 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { X, Volume2 } from "lucide-react";
 import {
-  hasTrustVideos,
+  fetchTrustVideoProbe,
   fetchTrustReel,
-  fetchFirstTrustVideo,
   type TrustSlide,
 } from "@/lib/trustVideos";
 
@@ -61,18 +60,15 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
     if (dismissed) return;
     let cancelled = false;
     const run = () => {
-      hasTrustVideos(storeId)
-        .then((has) => {
+      // ONE request for both signals (was: count probe + row fetch, serial).
+      fetchTrustVideoProbe(storeId)
+        .then(({ available: has, preview: p }) => {
           if (cancelled) return;
           setAvailable(has);
           try { localStorage.setItem(LS_KEY(storeId), has ? "1" : "0"); } catch {}
-          if (!has) return;
-          if (preview) return;
-          return fetchFirstTrustVideo(storeId).then((p) => {
-            if (cancelled || !p) return;
-            setPreview(p);
-            try { localStorage.setItem(LS_PREVIEW(storeId), JSON.stringify(p)); } catch {}
-          });
+          if (!has || !p) return;
+          setPreview(p);
+          try { localStorage.setItem(LS_PREVIEW(storeId), JSON.stringify(p)); } catch {}
         })
         .catch(() => {});
     };
