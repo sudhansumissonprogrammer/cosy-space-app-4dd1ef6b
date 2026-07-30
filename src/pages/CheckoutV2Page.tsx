@@ -2044,7 +2044,7 @@ export default function CheckoutV2Page() {
       mintLoopBlockedRef.current = false;
       lastMintAtRef.current = 0;
       toast.info("Retrying…");
-      void createOrderAndIntents();
+      void createOrderAndIntents({ userInitiated: true });
       clearUpiTapFx();
       return;
     }
@@ -2058,7 +2058,7 @@ export default function CheckoutV2Page() {
     // UPI app never opens for the wrong amount.
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) {
       toast.info("Updating amount…");
-      void createOrderAndIntents();
+      void createOrderAndIntents({ userInitiated: true });
       clearUpiTapFx();
       return;
     }
@@ -2452,7 +2452,7 @@ export default function CheckoutV2Page() {
         window.setTimeout(() => {
           if (!createOrderPromiseRef.current && remintAfterCurrentOrderRef.current) {
             remintAfterCurrentOrderRef.current = false;
-            void createOrderAndIntents();
+            void createOrderAndIntents(opts);
           }
         }, Math.max(delay, 50));
       }
@@ -2560,7 +2560,7 @@ export default function CheckoutV2Page() {
               mintCountRef.current = 0;
               mintLoopBlockedRef.current = false;
               lastMintAtRef.current = 0;
-              void createOrderAndIntents();
+              void createOrderAndIntents(opts);
             }, 20000);
           }
         } else {
@@ -2587,7 +2587,7 @@ export default function CheckoutV2Page() {
         Math.round(mintedAmount * 100) === Math.round(chargeAmount * 100);
       if (remintAfterCurrentOrderRef.current && !confirmingPayment && !orderPlaced && !amountStillMatches) {
         remintAfterCurrentOrderRef.current = false;
-        window.setTimeout(() => { void createOrderAndIntents(); }, 0);
+        window.setTimeout(() => { void createOrderAndIntents(opts); }, 0);
       } else {
         remintAfterCurrentOrderRef.current = false;
       }
@@ -4356,7 +4356,7 @@ export default function CheckoutV2Page() {
                     mintCountRef.current = 0;
                     mintLoopBlockedRef.current = false;
                     lastMintAtRef.current = 0;
-                    void createOrderAndIntents();
+                    void createOrderAndIntents({ userInitiated: true });
                   }}
                 >
                   {creatingOrder ? <Loader2 className="h-4 w-4 animate-spin" /> : "Try again"}
