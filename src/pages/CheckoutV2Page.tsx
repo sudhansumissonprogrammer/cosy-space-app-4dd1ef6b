@@ -2525,6 +2525,14 @@ export default function CheckoutV2Page() {
             return;
           }
           const payload: any = intentData ?? (intErr as any)?.context?.body;
+          // The gateway refused a new intent because a previous attempt on this
+          // same order was already captured. Never show a failure here — the
+          // shopper has paid, so jump straight to the confirmation screen.
+          if (payload?.already_paid || payload?.code === "order_already_paid") {
+            setOrderId(order.id);
+            finishSuccess();
+            return;
+          }
           const url: string | undefined = payload?.intent_url;
           if (!url) {
             const errMsg: string = payload?.error || intErr?.message || "UPI temporarily unavailable";
