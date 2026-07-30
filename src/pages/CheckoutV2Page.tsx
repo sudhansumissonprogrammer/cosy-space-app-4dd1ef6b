@@ -777,6 +777,37 @@ export default function CheckoutV2Page() {
     return () => { document.body.style.overflow = prev; };
   }, [addressSheetOpen, showAddressDialog]);
 
+  // ─── Keyboard-safe sheet height ────────────────────────────────────────
+  // `dvh` does NOT shrink when the mobile keyboard opens on Android Chrome /
+  // Instagram WebView, so the sheet stays 95% of the *full* screen and its
+  // bottom (Continue button + last fields) ends up hidden behind the keyboard
+  // with no way to scroll to it. Track visualViewport instead and drive the
+  // sheet height from the real visible area.
+  const addressSheetRef = useRef<HTMLDivElement | null>(null);
+  const addressScrollRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!showAddressFormSheet) return;
+    const vv = (window as any).visualViewport as VisualViewport | undefined;
+    const apply = () => {
+      const el = addressSheetRef.current;
+      if (!el) return;
+      const h = vv?.height ?? window.innerHeight;
+      el.style.height = `${Math.max(320, Math.round(h * 0.96))}px`;
+      // Keep the sheet pinned to the visible viewport bottom when the browser
+      // offsets the layout viewport (iOS Safari keyboard behaviour).
+      el.style.transform = vv ? `translateY(-${Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))}px)` : "";
+    };
+    apply();
+    vv?.addEventListener("resize", apply);
+    vv?.addEventListener("scroll", apply);
+    window.addEventListener("resize", apply);
+    return () => {
+      vv?.removeEventListener("resize", apply);
+      vv?.removeEventListener("scroll", apply);
+      window.removeEventListener("resize", apply);
+    };
+  }, [showAddressFormSheet]);
+
   // Force Montserrat Alternates across the entire new checkout — including
   // early-return screens (order placed, waiting, phone step) and portaled
   // components (dialogs, toasts, sheets) that render outside the page root.
@@ -3875,8 +3906,10 @@ export default function CheckoutV2Page() {
                 onClick={closeAddressFormSheet}
                 aria-hidden
               />
-              {/* Sheet — nearly full-screen so keyboard doesn't crush the form */}
-              <div className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden h-[95dvh]">
+              {/* Sheet — height driven by visualViewport so the keyboard never
+                  hides the lower fields / Continue button (see effect above) */}
+              <div ref={addressSheetRef} className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden h-[95dvh]">
+
               <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
                 <div className="text-[16px] font-bold">Add Delivery Address</div>
                 <button
@@ -3891,6 +3924,7 @@ export default function CheckoutV2Page() {
 
 
               <div
+                ref={addressScrollRef}
                 className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-3 pb-4 space-y-2.5"
                 onFocusCapture={(e) => {
                   const t = e.target as HTMLElement;
@@ -3921,6 +3955,7 @@ export default function CheckoutV2Page() {
                   <Input
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    data-field="full_name"
                     placeholder="Your name"
                     className={`h-11 rounded-lg ${addressAttempted && !fullName.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                   />
@@ -3935,6 +3970,7 @@ export default function CheckoutV2Page() {
                     <Input
                       value={pincode}
                       onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      data-field="pincode"
                       placeholder="6-digit pincode"
                       inputMode="numeric"
                       maxLength={6}
@@ -3953,6 +3989,7 @@ export default function CheckoutV2Page() {
                     <Input
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
+                      data-field="city"
                       className={`h-11 rounded-lg ${addressAttempted && !city.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                     />
                     {addressAttempted && !city.trim() && (
@@ -3964,6 +4001,7 @@ export default function CheckoutV2Page() {
                     <Input
                       value={state}
                       onChange={(e) => setState(e.target.value)}
+                      data-field="state"
                       className={`h-11 rounded-lg ${addressAttempted && !state.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                     />
                     {addressAttempted && !state.trim() && (
@@ -3978,6 +4016,7 @@ export default function CheckoutV2Page() {
                   <Input
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
+                    data-field="street"
                     placeholder="House no, area, village, landmark"
                     className={`h-11 rounded-lg ${addressAttempted && !streetAddress.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                   />
@@ -4016,11 +4055,35 @@ export default function CheckoutV2Page() {
                 <Button
                   className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
                   onClick={() => {
-                    const valid = fullName.trim() && /^\d{6}$/.test(pincode) && streetAddress.trim() && city.trim() && state.trim();
-                    if (!valid) {
+                    // Find the FIRST missing field so we can tell the shopper
+                    // exactly what's wrong and scroll it into view. Previously
+                    // this silently set red borders — which are invisible if
+                    // the field is off-screen behind the keyboard, so shoppers
+                    // just kept tapping Continue and dropped off.
+                    const missing: Array<[string, string]> =
+                      [
+                        !fullName.trim() ? ["full_name", "Please enter your full name"] as [string, string] : null,
+                        !/^\d{6}$/.test(pincode) ? ["pincode", "Enter a valid 6-digit pincode"] as [string, string] : null,
+                        !city.trim() ? ["city", "Enter your city"] as [string, string] : null,
+                        !state.trim() ? ["state", "Enter your state"] as [string, string] : null,
+                        !streetAddress.trim() ? ["street", "Enter your complete address"] as [string, string] : null,
+                      ].filter(Boolean) as Array<[string, string]>;
+                    if (missing.length > 0) {
                       setAddressAttempted(true);
+                      const [field, msg] = missing[0];
+                      toast.error(msg);
+                      try {
+                        fireStorefrontEvent({ storeId: store.id, eventName: "checkout_field_error" as any, metadata: { error: msg, field } as any });
+                      } catch { /* noop */ }
+                      window.setTimeout(() => {
+                        const el = addressScrollRef.current?.querySelector<HTMLInputElement>(`[data-field="${field}"]`);
+                        if (!el) return;
+                        try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch { /* noop */ }
+                        try { el.focus({ preventScroll: true }); } catch { /* noop */ }
+                      }, 50);
                       return;
                     }
+
                     setAddressAttempted(false);
                     setShowAddressFormSheet(false);
                     // Do NOT auto-resume the payment. The shopper should
