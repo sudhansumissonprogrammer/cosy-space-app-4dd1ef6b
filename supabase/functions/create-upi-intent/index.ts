@@ -4,7 +4,7 @@
 // Used by the CheckoutV2 tile UI. Dormant until UI calls it — safe to deploy alongside
 // the existing checkout flow.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { computePayuRequestHash, payuCheckoutHost, type PayuEnv } from "../_shared/payuHelpers.ts";
+import { computePayuRequestHash, mapPayuStatus, payuCheckoutHost, verifyPayuTxn, type PayuEnv } from "../_shared/payuHelpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     // Load canonical order + amount
     const { data: dbOrder, error: orderErr } = await supabase
       .from("orders")
-      .select("id, store_id, total, status, payment_type, advance_paid, order_number, currency, notes")
+      .select("id, store_id, total, status, payment_type, advance_paid, order_number, currency, notes, payu_txnids")
       .eq("id", order_id)
       .maybeSingle();
     if (orderErr || !dbOrder) return jsonRes({ error: "Order not found" }, 404);
@@ -327,7 +327,29 @@ Deno.serve(async (req) => {
       if (pg === "payu") {
         try {
           const env = (config.payu_env === "sandbox" ? "sandbox" : "production") as PayuEnv;
-          const txnid = `sb_${order_id.replace(/-/g, "").slice(0, 16)}`;
+          // txnid MUST be unique per *attempt*. place-order reuses one pending
+          // order row across retries, so a deterministic `sb_<order16>` made
+          // attempt #2 collide with a txnid PayU had already seen (EX108) —
+          // the intent never minted, the UI never entered its polling state,
+          // and a shopper who DID pay on attempt #1 came back to a stuck
+          // "processing" screen. Mirror payu-create-txn: first attempt keeps
+          // the legacy id, later attempts get a short unique suffix, and every
+          // txnid is persisted so status/reconcile can verify all of them.
+          const baseTxnid = `sb_${order_id.replace(/-/g, "").slice(0, 16)}`;
+          const priorTxnids: string[] = Array.isArray((dbOrder as any).payu_txnids)
+            ? ((dbOrder as any).payu_txnids as string[])
+            : [];
+          const txnid = priorTxnids.length === 0
+            ? baseTxnid
+            : `${baseTxnid}x${Date.now().toString(36).slice(-4)}`;
+          if (!priorTxnids.includes(txnid)) {
+            await supabase
+              .from("orders")
+              .update({ payu_txnids: [...priorTxnids, txnid].slice(-8) })
+              .eq("id", order_id)
+              .eq("store_id", store_id);
+            (dbOrder as any).payu_txnids = [...priorTxnids, txnid].slice(-8);
+          }
           const amountStr = chargeAmount.toFixed(2);
           const productinfo = `Order ${dbOrder.order_number || order_id.slice(0, 8)}`;
           const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -421,6 +443,39 @@ Deno.serve(async (req) => {
           }
 
           if (!intentUrl || !intentUrl.startsWith("upi://")) {
+            // Before giving up: PayU rejects a duplicate txnid (EX108) when a
+            // previous attempt on this order was already captured. Ask PayU
+            // about every txnid this order ever used — if one is PAID we must
+            // confirm the order right here instead of dropping the shopper on
+            // a dead "processing" screen.
+            const allTxnids = Array.from(
+              new Set([...(Array.isArray((dbOrder as any).payu_txnids) ? (dbOrder as any).payu_txnids as string[] : []), baseTxnid]),
+            );
+            for (const t of allTxnids) {
+              try {
+                const det = await verifyPayuTxn({
+                  env,
+                  key: config.payu_merchant_key!,
+                  salt: config.payu_merchant_salt!,
+                  txnid: t,
+                });
+                if (det && mapPayuStatus(det.status) === "PAID") {
+                  await supabase
+                    .from("orders")
+                    .update({
+                      status: dbOrder.payment_type === "partial" ? "partially_paid" : "confirmed",
+                      payment_method: "payu",
+                      payment_verified: true,
+                      payment_verified_at: new Date().toISOString(),
+                      notes: `PayU Txn ID: ${t}${det.mihpayid ? ` (mihpayid: ${det.mihpayid})` : ""}`,
+                    })
+                    .eq("id", order_id)
+                    .eq("store_id", store_id)
+                    .eq("status", "pending");
+                  return jsonRes({ available: false, already_paid: true, code: "order_already_paid", order_id }, 409);
+                }
+              } catch { /* keep checking */ }
+            }
             lastError = {
               pg: "payu",
               message: payuData?.error_Message || payuData?.message || "PayU returned no intent URL",
