@@ -323,16 +323,15 @@ function sanitizePixelParams(params?: Record<string, any>): Record<string, any> 
   return out;
 }
 
-/** Standalone helper — call from anywhere (e.g. CartContext) */
+/**
+ * Standalone helper — call from anywhere (e.g. CartContext).
+ * Routes through `trackSingle` against the pixel currently active for THIS
+ * storefront (`__SF_PIXEL_INITED__`) so the event can never fan out to a
+ * second merchant's pixel.
+ */
 export function fbPixelTrack(eventName: string, params?: Record<string, any>, eventId?: string) {
   if (typeof window === "undefined") return;
   if (isNonProductionHost()) return;
-  if (typeof window.fbq === "function") {
-    const clean = sanitizePixelParams(params);
-    if (eventId) {
-      window.fbq("track", eventName, clean, { eventID: eventId });
-    } else {
-      window.fbq("track", eventName, clean);
-    }
-  }
+  fbqTrackSingle(undefined, eventName, sanitizePixelParams(params), eventId);
+
 }
