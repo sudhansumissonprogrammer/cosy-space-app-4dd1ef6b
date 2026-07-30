@@ -391,7 +391,16 @@
                (it sets __SF_PV_EVENT_ID__ before fbq). Without this, a slow
                __STOREFRONT_DATA__ resolve lets the hook fire PV first, then
                this inline path fires it again → duplicate PageView per visit. */
-            if(pid&&w.__SF_PIXEL_INITED__!==pid&&!w.__SF_PV_EVENT_ID__){
+            /* BAN-FIX P0 (consent parity): the React layer + every CAPI call
+               gate on localStorage['sb_marketing_consent'] !== 'declined'. This
+               pre-React bootstrap did NOT, so a shopper who declined marketing
+               still got a browser PageView + consent grant while the server
+               CAPI twin was correctly suppressed → an un-deduped, consent-
+               violating browser-only event on every page load. Gate it here
+               with the exact same rule so browser and server stay symmetric. */
+            var mkConsent=true;
+            try{ mkConsent = localStorage.getItem('sb_marketing_consent') !== 'declined'; }catch(e){}
+            if(pid&&mkConsent&&w.__SF_PIXEL_INITED__!==pid&&!w.__SF_PV_EVENT_ID__){
               w.__SF_PIXEL_INITED__=pid;
               w.fbq('consent','grant');
               /* v8.61.0 BAN-FIX P1-2: pass external_id from sf_vid cookie so

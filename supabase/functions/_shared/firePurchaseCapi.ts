@@ -97,7 +97,7 @@ export async function firePurchaseCapi(
       .select(
         "id, created_at, store_id, status, total, advance_paid, currency, customer_phone, customer_name, city, state, pincode, " +
         "storefront_customer_id, buyer_ip, buyer_user_agent, buyer_fbc, buyer_fbp, buyer_external_id, buyer_email, " +
-        "checkout_token, meta_event_id, meta_event_source_url, meta_purchase_fired_at",
+        "payment_verified_at, checkout_token, meta_event_id, meta_event_source_url, meta_purchase_fired_at",
       )
       .eq("id", orderId)
       .maybeSingle();
@@ -318,9 +318,24 @@ export async function firePurchaseCapi(
         ? `https://${store.custom_domain}/checkout`
         : `https://${store.slug}.shopbanao.in/checkout`);
 
+    // event_time must be WHEN THE PURCHASE HAPPENED, not when we managed to
+    // send it. Reconcile/backfill crons and gateway-webhook retries fire this
+    // as much as 17.7h after the sale (measured on live orders), which pushed
+    // the conversion into the wrong attribution window and gave the deduped
+    // browser twin a wildly different timestamp — Meta treats a large skew
+    // between a browser/server pair as an unreliable integration.
+    // Clamp: never in the future, never older than 7 days (Meta rejects those).
+    const nowSec = Math.floor(Date.now() / 1000);
+    const occurredMs = Date.parse(
+      String((order as any).payment_verified_at || order.created_at || ""),
+    );
+    const eventTime = Number.isFinite(occurredMs)
+      ? Math.min(nowSec, Math.max(Math.floor(occurredMs / 1000), nowSec - 6 * 86400))
+      : nowSec;
+
     const event = {
       event_name: "Purchase",
-      event_time: Math.floor(Date.now() / 1000),
+      event_time: eventTime,
       // Dedupe vs browser Pixel. The browser derives its Purchase id from the
       // checkout token (`pur-<token>`, src/lib/pixelOutbox.ts), so when the
       // order row never captured meta_event_id we must rebuild the SAME id
@@ -372,12 +387,38 @@ export async function firePurchaseCapi(
     // The claim above is a *lease*, not a receipt: it exists to stop two
     // concurrent isolates double-firing, NOT to record success. Leaving it set
     // after a transient failure permanently burns the order's Purchase signal.
+    // The claim is set BEFORE the Meta POST, so every failure path must put it
+    // back to NULL or the order is permanently un-retryable (reconcile crons
+    // only pick up rows where the stamp is still NULL — nothing ever re-clears
+    // a stuck-set stamp). This update itself can throw (DB timeout / dropped
+    // connection); if it did, the exception escaped into the outer catch and
+    // the stamp stayed set → silent, permanent Purchase loss. Never let that
+    // happen: swallow + log, and retry the release once.
     const releaseClaim = async () => {
-      await supabase
-        .from("orders")
-        .update({ meta_purchase_fired_at: null })
-        .eq("id", orderId);
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const { error } = await supabase
+            .from("orders")
+            .update({ meta_purchase_fired_at: null })
+            .eq("id", orderId);
+          if (!error) return;
+          console.error(
+            `[capi:${opts.source}] releaseClaim failed (attempt ${attempt + 1}) for ${orderId}`,
+            error.message,
+          );
+        } catch (e) {
+          console.error(
+            `[capi:${opts.source}] releaseClaim threw (attempt ${attempt + 1}) for ${orderId}`,
+            (e as Error)?.message,
+          );
+        }
+      }
+      // Both attempts failed — loud marker so this is greppable in logs.
+      console.error(
+        `[capi:${opts.source}] STUCK_LEASE order=${orderId} — meta_purchase_fired_at is set but Purchase was NOT delivered to Meta`,
+      );
     };
+
 
     // 7. Send to Meta — with 2 retries on 5xx / network error (transient blip).
     const sendOnce = () => fetch(
