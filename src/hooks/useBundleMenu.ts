@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { fetchStoreEnabledApps, storeEnabledAppsKey } from "@/hooks/useStoreEnabledApps";
 import { supabase } from "@/integrations/supabase/client";
 import type { BundleDef } from "@/lib/appStore/bundle/types";
 import { BUNDLE_APP_ID } from "@/lib/appStore/bundle/types";
@@ -12,14 +13,11 @@ import { BUNDLE_APP_ID } from "@/lib/appStore/bundle/types";
  */
 export function useBundleMenu(storeSlug: string | undefined) {
   return useQuery({
-    queryKey: ["storefront-bundles", storeSlug],
+    queryKey: [...storeEnabledAppsKey(storeSlug), "bundles"],
     enabled: !!storeSlug,
     staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<BundleDef[]> => {
-      const { data, error } = await (supabase as any).rpc("get_store_enabled_apps", {
-        _store_slug: storeSlug!,
-      });
-      if (error) throw error;
+      const data = await fetchStoreEnabledApps(storeSlug!);
       const row = (data ?? []).find((r: any) => r.app_id === BUNDLE_APP_ID);
       if (!row) return [];
       const bundles = (row.config?.bundles ?? []) as BundleDef[];
