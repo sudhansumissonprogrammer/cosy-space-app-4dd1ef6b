@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,126 +8,59 @@ interface Props {
   storeId: string;
 }
 
-// "Live" = unique sessions with a pageview in the last 5 minutes.
-// Matches GA4 Realtime / Plausible / Shopify Live View semantics.
-const LIVE_WINDOW_MS = 5 * 60 * 1000;
+// "Live" = sessions with a heartbeat in the last 60 seconds (server-side window
+// inside get_live_visitors). Heartbeats only fire while the shopper's tab is
+// actually visible, so people who left drop off within ~1 minute instead of
+// lingering for 5 minutes like the old pageview-window estimate did.
 const POLL_MS = 15_000;
 
-interface Row {
-  session_id: string | null;
-  visitor_id: string | null;
-  path: string | null;
-  device: string | null;
-  created_at: string;
+interface LiveData {
+  active: number;
+  mobile: number;
+  desktop: number;
+  tablet: number;
+  top_pages: { path: string; count: number }[];
 }
 
 export default function LiveVisitors({ storeId }: Props) {
   const queryClient = useQueryClient();
-  const [, setTick] = useState(0);
 
   const { data } = useQuery({
-    // sinceIso intentionally NOT in the key — otherwise every 30s tick spawned
-    // a brand new cache entry (500-row payload each) and a 1-hour open tab
-    // leaked ~60k row objects. Compute inside queryFn instead; invalidate to refetch.
     queryKey: ["dashboard-live-visitors", storeId],
     enabled: !!storeId,
     refetchOnWindowFocus: true,
-    staleTime: 30_000,
-    queryFn: async () => {
-      // Paginated so busy stores don't get a truncated "live" view.
-      // Cap at 20k rows in a 5-min window (~66/sec sustained) — sane upper bound.
-      const since = new Date(Date.now() - LIVE_WINDOW_MS).toISOString();
-      const PAGE = 1000;
-      const rows: Row[] = [];
-      for (let from = 0; from < 20_000; from += PAGE) {
-        const { data, error } = await supabase
-          .from("page_views")
-          .select("session_id, visitor_id, path, device, created_at")
-          .eq("store_id", storeId)
-          .eq("is_bot", false)
-          .gte("created_at", since)
-          .order("created_at", { ascending: false })
-          .range(from, from + PAGE - 1);
-        if (error) throw error;
-        const batch = (data || []) as Row[];
-        rows.push(...batch);
-        if (batch.length < PAGE) break;
-      }
-      return rows;
+    staleTime: 10_000,
+    queryFn: async (): Promise<LiveData> => {
+      const { data, error } = await supabase.rpc("get_live_visitors", { _store_id: storeId });
+      if (error) throw error;
+      const d = (data || {}) as any;
+      return {
+        active: Number(d.active || 0),
+        mobile: Number(d.mobile || 0),
+        desktop: Number(d.desktop || 0),
+        tablet: Number(d.tablet || 0),
+        top_pages: Array.isArray(d.top_pages) ? d.top_pages : [],
+      };
     },
   });
 
-  // Slide the 5-min window every 30s: invalidate to trigger a fresh query.
+  // Poll while the dashboard tab is open and visible.
   useEffect(() => {
+    if (!storeId) return;
     const id = setInterval(() => {
-      setTick((t) => t + 1);
+      if (document.visibilityState !== "visible") return;
       queryClient.invalidateQueries({ queryKey: ["dashboard-live-visitors", storeId] });
-    }, 30_000);
+    }, POLL_MS);
     return () => clearInterval(id);
   }, [queryClient, storeId]);
 
-  // Realtime: nudge a refetch the moment a new pageview lands.
-  useEffect(() => {
-    if (!storeId) return;
-    const channel = supabase
-      .channel(`live-visitors-${storeId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "page_views",
-          filter: `store_id=eq.${storeId}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["dashboard-live-visitors", storeId] });
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [storeId, queryClient]);
-
-  const rows = data || [];
-
-  // Unique active sessions in window
-  const activeSessions = useMemo(() => {
-    const seen = new Set<string>();
-    for (const r of rows) {
-      const key = r.session_id || r.visitor_id;
-      if (key) seen.add(key);
-    }
-    return seen.size;
-  }, [rows]);
-
-  // Top pages right now
-  const topPages = useMemo(() => {
-    const counts = new Map<string, Set<string>>();
-    for (const r of rows) {
-      const p = r.path || "/";
-      const key = r.session_id || r.visitor_id || "anon";
-      if (!counts.has(p)) counts.set(p, new Set());
-      counts.get(p)!.add(key);
-    }
-    return Array.from(counts.entries())
-      .map(([path, set]) => ({ path, count: set.size }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 3);
-  }, [rows]);
-
-  // Device split (unique sessions)
-  const devices = useMemo(() => {
-    const map: Record<string, Set<string>> = { mobile: new Set(), desktop: new Set(), tablet: new Set() };
-    for (const r of rows) {
-      const d = (r.device || "desktop").toLowerCase();
-      const key = r.session_id || r.visitor_id || "anon";
-      if (map[d]) map[d].add(key);
-      else (map.desktop ||= new Set()).add(key);
-    }
-    return { mobile: map.mobile.size, desktop: map.desktop.size, tablet: map.tablet.size };
-  }, [rows]);
-
+  const activeSessions = data?.active ?? 0;
+  const devices = {
+    mobile: data?.mobile ?? 0,
+    desktop: data?.desktop ?? 0,
+    tablet: data?.tablet ?? 0,
+  };
+  const topPages = data?.top_pages ?? [];
   const isLive = activeSessions > 0;
 
   return (
@@ -144,7 +77,7 @@ export default function LiveVisitors({ storeId }: Props) {
             </p>
           </div>
           <span className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
-            <Radio className="h-3 w-3" /> last 5 min
+            <Radio className="h-3 w-3" /> right now
           </span>
         </div>
 
