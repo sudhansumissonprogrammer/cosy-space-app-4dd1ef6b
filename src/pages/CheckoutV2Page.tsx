@@ -4507,7 +4507,7 @@ export default function CheckoutV2Page() {
                 <Banknote className="h-5 w-5" />
                 <div className="text-left">
                   <div className="text-[14px] font-bold">{tCritical("Cash on Delivery", "डिलीवरी पर कैश")}</div>
-                  {isPartialOrder && (
+                  {partialEnabled && (
                     <div className="text-[11px] text-muted-foreground mt-0.5">
                       {tCritical("Pay full amount on delivery", "पूरी राशि डिलीवरी पर दें")}
                     </div>
