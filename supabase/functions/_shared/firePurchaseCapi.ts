@@ -407,8 +407,9 @@ export async function firePurchaseCapi(
 
     if (!resp.ok) {
       console.error(`[capi:${opts.source}] meta error ${resp.status}`, JSON.stringify(result));
-      if (resp.status >= 500) {
-        // Meta-side outage — keep the order eligible for a later retry.
+      if (resp.status >= 500 || resp.status === 429) {
+        // Meta-side outage or rate limit — keep the order eligible for the
+        // reconcile-cron retry instead of burning the Purchase forever.
         await releaseClaim();
         return { ok: false, reason: `meta_${resp.status}` };
       }
