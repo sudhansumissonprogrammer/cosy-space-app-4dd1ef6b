@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
 import { sendOrderWhatsApp } from "@/lib/whatsappAutomation";
 import { getOrCreateCheckoutToken, writeCheckoutTokenCookie, clearCheckoutTokenCookie } from "@/lib/checkoutTokenStore";
+import { purchaseEventIdFor } from "@/lib/pixelOutbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -276,7 +277,11 @@ function CheckoutPageInner() {
   // Stable Meta tracking signals captured once per checkout session.
   // Same event_id is sent to place-order (server CAPI) and the browser Pixel —
   // Meta dedupes Pixel ↔ CAPI Purchase events using this id.
-  const purchaseEventIdRef = useRef<string>(generateEventId());
+  // Derived from the (cookie-persisted) checkout token, NOT random: a gateway
+  // redirect that remounts this page in a fresh tab would otherwise mint a new
+  // random id while the order row still holds the first one → Pixel and CAPI
+  // Purchase no longer dedupe and Meta counts the sale twice.
+  const purchaseEventIdRef = useRef<string>(purchaseEventIdFor(checkoutToken));
   const metaCookiesRef = useRef<{ fbc: string; fbp: string }>(getMetaCookies());
   const finalizedOrderIdsRef = useRef<Set<string>>(new Set());
   const CF_PENDING_KEY = `cf_pending_${store.id}`;

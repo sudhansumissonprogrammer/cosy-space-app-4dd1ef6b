@@ -29,6 +29,8 @@ import { loadCashfree } from "@/lib/loadCashfree";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { pixelPayloadFromItems } from "@/lib/expandBundleForPixel";
+import { getOrCreateCheckoutToken, writeCheckoutTokenCookie } from "@/lib/checkoutTokenStore";
+import { purchaseEventIdFor } from "@/lib/pixelOutbox";
 
 const PostPurchaseUpsell = lazy(() => import("@/components/storefront/PostPurchaseUpsell"));
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
@@ -208,8 +210,11 @@ function V22CheckoutPageInner() {
   const [orderAdvancePaid, setOrderAdvancePaid] = useState(0);
   const [orderBalanceDue, setOrderBalanceDue] = useState(0);
 
-  // Idempotency token to prevent duplicate orders
-  const [checkoutToken] = useState(() => crypto.randomUUID());
+  // Idempotency token to prevent duplicate orders. Cookie-persisted so an
+  // in-app-browser remount (UPI app hand-off) reuses the same token instead of
+  // spawning a second pending order.
+  const [checkoutToken] = useState(() => getOrCreateCheckoutToken());
+  useEffect(() => { writeCheckoutTokenCookie(checkoutToken); }, [checkoutToken]);
   // Payment retry state: store created order for retry
   const [pendingOrder, setPendingOrder] = useState<{ id: string; number: string | null; profit: number | null } | null>(null);
   const [paymentFailed, setPaymentFailed] = useState(false);
@@ -221,7 +226,9 @@ function V22CheckoutPageInner() {
   // Stable Meta tracking signals captured once per checkout session.
   // Same event_id is sent to place-order (server CAPI) and the browser Pixel —
   // Meta dedupes Pixel ↔ CAPI Purchase events using this id.
-  const purchaseEventIdRef = useRef<string>(generateEventId());
+  // Derived from the checkout token (not random) so a gateway-redirect remount
+  // keeps the same id and Pixel ↔ CAPI Purchase still dedupe.
+  const purchaseEventIdRef = useRef<string>(purchaseEventIdFor(checkoutToken));
   const metaCookiesRef = useRef<{ fbc: string; fbp: string }>(getMetaCookies());
   const finalizedOrderIdsRef = useRef<Set<string>>(new Set());
   const CF_PENDING_KEY = `cf_pending_${store.id}`;
