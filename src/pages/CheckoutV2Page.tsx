@@ -1116,7 +1116,10 @@ export default function CheckoutV2Page() {
   const partialEnabled: boolean = (store as any)?.partial_payment_enabled ?? false;
   const partialType: string = (store as any)?.partial_payment_type || "percentage";
   const partialValue: number | null = (store as any)?.partial_payment_value ?? null;
-  const hasPartial = partialEnabled && !!partialValue && Number(partialValue) > 0 && hasOnline;
+  // Strict rule: if the store has partial payment ON with a configured amount,
+  // standalone full COD is never offered — regardless of gateway availability.
+  const partialConfigured = partialEnabled && !!partialValue && Number(partialValue) > 0;
+  const hasPartial = partialConfigured && hasOnline;
 
   const partialAdvanceTotal = useMemo(() => {
     if (!hasPartial) return total;
