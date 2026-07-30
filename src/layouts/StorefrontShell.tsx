@@ -222,7 +222,9 @@ export default function StorefrontShell({
     }
     if (typeof window !== "undefined" && typeof window.fbq === "function") {
       const eid = generateEventId();
-      try { window.fbq("track", "PageView", {}, { eventID: eid }); } catch {}
+      // STORE ISOLATION: trackSingle pins the SPA PageView to THIS store's pixel.
+      try { window.fbq("trackSingle", pixelId, "PageView", {}, { eventID: eid }); } catch {}
+
       import("@/lib/metaCapi").then((m) => {
         m.fireMetaCAPI({ storeId, eventName: "PageView", eventId: eid });
       }).catch(() => {});

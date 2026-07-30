@@ -175,9 +175,14 @@ export function firePixelPurchase(args: {
     ? String(args.currency).toUpperCase()
     : "INR";
 
+  // STORE ISOLATION: pin the Purchase to this storefront's pixel only.
+  // Bare fbq('track') broadcasts to every registered pixel in the document.
+  const pid = (window as any).__SF_PIXEL_INITED__ as string | undefined;
+  if (!pid) return false;
   try {
     fbq(
-      "track",
+      "trackSingle",
+      pid,
       "Purchase",
       {
         ...(args.payload || {}),
@@ -187,6 +192,7 @@ export function firePixelPurchase(args: {
       },
       { eventID: args.eventId },
     );
+
   } catch {
     return false;
   }

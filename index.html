@@ -458,7 +458,10 @@
                  Without a shared eventID Meta counts them as two PageViews. */
               var pvid=(Date.now().toString(36))+'-'+Math.random().toString(36).slice(2,10);
               w.__SF_PV_EVENT_ID__=pvid;
-              w.fbq('track','PageView',{},{eventID:pvid});
+              /* trackSingle (not track) so the event can never fan out to a
+                 second merchant pixel registered in the same document. */
+              w.fbq('trackSingle',pid,'PageView',{},{eventID:pvid});
+
                /* Keep the SDK off the render-critical synchronous path, but do
                   not leave only the shim alive for several seconds. Pixel
                   Helper and privacy-sensitive WebViews cannot recognize a real
