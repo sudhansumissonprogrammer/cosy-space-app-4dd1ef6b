@@ -156,9 +156,9 @@ export default function CartProductCarousel({
                           >
                             {formatPrice(cartPrice, currency)}
                           </span>
-                          {cartPrice < sale && (
+                          {cartPrice < mrp && (
                             <span className="text-[9px] font-medium line-through opacity-55">
-                              {formatPrice(sale, currency)}
+                              {formatPrice(mrp, currency)}
                             </span>
                           )}
                         </span>
