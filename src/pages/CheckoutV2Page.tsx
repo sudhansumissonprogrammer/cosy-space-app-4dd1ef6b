@@ -3955,6 +3955,7 @@ export default function CheckoutV2Page() {
                   <Input
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    data-field="full_name"
                     placeholder="Your name"
                     className={`h-11 rounded-lg ${addressAttempted && !fullName.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                   />
@@ -3969,6 +3970,7 @@ export default function CheckoutV2Page() {
                     <Input
                       value={pincode}
                       onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      data-field="pincode"
                       placeholder="6-digit pincode"
                       inputMode="numeric"
                       maxLength={6}
@@ -3987,6 +3989,7 @@ export default function CheckoutV2Page() {
                     <Input
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
+                      data-field="city"
                       className={`h-11 rounded-lg ${addressAttempted && !city.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                     />
                     {addressAttempted && !city.trim() && (
@@ -3998,6 +4001,7 @@ export default function CheckoutV2Page() {
                     <Input
                       value={state}
                       onChange={(e) => setState(e.target.value)}
+                      data-field="state"
                       className={`h-11 rounded-lg ${addressAttempted && !state.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                     />
                     {addressAttempted && !state.trim() && (
@@ -4012,6 +4016,7 @@ export default function CheckoutV2Page() {
                   <Input
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
+                    data-field="street"
                     placeholder="House no, area, village, landmark"
                     className={`h-11 rounded-lg ${addressAttempted && !streetAddress.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                   />
