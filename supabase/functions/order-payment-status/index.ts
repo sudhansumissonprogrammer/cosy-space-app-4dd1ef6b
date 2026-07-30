@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 
     const { data: order, error } = await supabase
       .from("orders")
-      .select("id, store_id, status, payment_verified, payment_method, payment_type, checkout_token, notes")
+      .select("id, store_id, status, payment_verified, payment_method, payment_type, checkout_token, notes, payu_txnids")
       .eq("id", order_id)
       .maybeSingle();
 
@@ -161,18 +161,30 @@ Deno.serve(async (req) => {
       }
 
       if (order.status === "pending" && methods.includes("payu") && cfg?.payu_merchant_key && cfg?.payu_merchant_salt) {
-        const txnid = txnidForPayuOrder(order_id);
+        // Verify EVERY txnid this order ever used. Retries mint a suffixed
+        // txnid (`sb_<order16>x<rand>`), so checking only the derived base id
+        // missed payments made on attempt #2+ and left the shopper stuck on
+        // "processing" until the 5-minute reconcile cron caught up.
         const env = (cfg.payu_env === "sandbox" ? "sandbox" : "production") as PayuEnv;
-        const det = await verifyPayuTxn({ env, key: cfg.payu_merchant_key, salt: cfg.payu_merchant_salt, txnid });
-        if (det && mapPayuStatus(det.status) === "PAID") {
-          const newStatus = order.payment_type === "partial" ? "partially_paid" : "confirmed";
-          await markRecovered(supabase, order, store_id, {
-            status: newStatus,
-            payment_method: "payu",
-            notes: `PayU Txn ID: ${txnid}${det.mihpayid ? ` (mihpayid: ${det.mihpayid})` : ""}`,
-          });
-          await firePurchaseCapi(supabase, order_id, { source: "order-payment-status-payu" });
-          await fireWaOrderEvent(supabase, order_id, "order_confirmation");
+        const candidateTxnids = Array.from(
+          new Set([
+            ...((Array.isArray((order as any).payu_txnids) ? (order as any).payu_txnids : []) as string[]),
+            txnidForPayuOrder(order_id),
+          ]),
+        ).filter(Boolean);
+        for (const txnid of candidateTxnids) {
+          const det = await verifyPayuTxn({ env, key: cfg.payu_merchant_key, salt: cfg.payu_merchant_salt, txnid });
+          if (det && mapPayuStatus(det.status) === "PAID") {
+            const newStatus = order.payment_type === "partial" ? "partially_paid" : "confirmed";
+            await markRecovered(supabase, order, store_id, {
+              status: newStatus,
+              payment_method: "payu",
+              notes: `PayU Txn ID: ${txnid}${det.mihpayid ? ` (mihpayid: ${det.mihpayid})` : ""}`,
+            });
+            await firePurchaseCapi(supabase, order_id, { source: "order-payment-status-payu" });
+            await fireWaOrderEvent(supabase, order_id, "order_confirmation");
+            break;
+          }
         }
       }
     }
