@@ -12,6 +12,7 @@ import { generateEventId, useFacebookPixel } from "@/hooks/useFacebookPixel";
 import { ensureFbcPersisted, getOrCreateSfVid, seedCapiUserFromStorage } from "@/lib/metaEnrichment";
 import { useGA4 } from "@/hooks/useGA4";
 import { usePageviewBeacon } from "@/hooks/usePageviewBeacon";
+import { useLiveHeartbeat } from "@/hooks/useLiveHeartbeat";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 
 import { buildThemeStyle, loadGoogleFonts } from "@/lib/themeUtils";
@@ -275,6 +276,10 @@ export default function StorefrontShell({
   // HTML directly), so analytics dashboard sessions/conversion would
   // otherwise stay at zero. This insert fires once per route change.
   usePageviewBeacon(store?.id);
+
+  // Live visitors: 20s heartbeat while the tab is visible. Powers an accurate
+  // "people browsing now" count (shoppers who leave age out within 60s).
+  useLiveHeartbeat(store?.id);
 
   // Capture ?coupon=CODE from any storefront URL into sessionStorage so it survives
   // navigation through product → cart → checkout (where it auto-applies).
