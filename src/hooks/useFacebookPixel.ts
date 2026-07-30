@@ -295,7 +295,6 @@ function sanitizePixelParams(params?: Record<string, any>): Record<string, any> 
 export function fbPixelTrack(eventName: string, params?: Record<string, any>, eventId?: string) {
   if (typeof window === "undefined") return;
   if (isNonProductionHost()) return;
-  if (!hasMarketingConsent()) return;
   if (typeof window.fbq === "function") {
     const clean = sanitizePixelParams(params);
     if (eventId) {
