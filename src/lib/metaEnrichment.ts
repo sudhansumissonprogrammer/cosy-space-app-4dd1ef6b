@@ -204,7 +204,7 @@ export function setCapiUser(user: CapiUser | null): void {
       // CAPI hash, which already prepends 91) → the whole browser event was
       // counted as "unmatched". Normalize here so browser + server agree.
       const digits = merged.phone.replace(/\D/g, "");
-      am.ph = digits.length === 10 && /^[6-9]/.test(digits) ? `91${digits}` : digits;
+      am.ph = digits.length === 10 ? `91${digits}` : digits;
     }
     if (merged.externalId) am.external_id = merged.externalId;
     if (merged.firstName) am.fn = merged.firstName.trim().toLowerCase();

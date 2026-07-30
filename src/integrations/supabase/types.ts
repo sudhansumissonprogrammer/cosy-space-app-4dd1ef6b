@@ -1064,6 +1064,8 @@ export type Database = {
           applied_coupon_id: string | null
           attribution: Json | null
           balance_due: number
+          buyer_email: string | null
+          buyer_external_id: string | null
           buyer_fbc: string | null
           buyer_fbp: string | null
           buyer_ip: string | null
@@ -1111,6 +1113,8 @@ export type Database = {
           applied_coupon_id?: string | null
           attribution?: Json | null
           balance_due?: number
+          buyer_email?: string | null
+          buyer_external_id?: string | null
           buyer_fbc?: string | null
           buyer_fbp?: string | null
           buyer_ip?: string | null
@@ -1158,6 +1162,8 @@ export type Database = {
           applied_coupon_id?: string | null
           attribution?: Json | null
           balance_due?: number
+          buyer_email?: string | null
+          buyer_external_id?: string | null
           buyer_fbc?: string | null
           buyer_fbp?: string | null
           buyer_ip?: string | null

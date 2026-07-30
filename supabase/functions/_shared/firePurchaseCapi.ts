@@ -87,7 +87,7 @@ export async function firePurchaseCapi(
       .from("orders")
       .select(
         "id, created_at, store_id, status, total, advance_paid, currency, customer_phone, customer_name, city, state, pincode, " +
-        "storefront_customer_id, buyer_ip, buyer_user_agent, buyer_fbc, buyer_fbp, " +
+        "storefront_customer_id, buyer_ip, buyer_user_agent, buyer_fbc, buyer_fbp, buyer_external_id, buyer_email, " +
         "meta_event_id, meta_event_source_url, meta_purchase_fired_at",
       )
       .eq("id", orderId)
@@ -199,6 +199,11 @@ export async function firePurchaseCapi(
         .maybeSingle();
       customerEmail = cust?.email ?? null;
     }
+    // Guest checkout: no storefront_customers row, but the shopper may have
+    // typed an email at checkout — place-order persists it on the order.
+    if (!customerEmail && (order as any).buyer_email) {
+      customerEmail = String((order as any).buyer_email);
+    }
 
     // 5. Build user_data with hashed PII.
     const userData: Record<string, unknown> = {
@@ -228,9 +233,14 @@ export async function firePurchaseCapi(
     // PageView/ViewContent that already sent the bare trimmed external_id →
     // EMQ tanks + Meta flags "duplicate user across pixels". Match the spec
     // (trim only, no case normalization for opaque IDs).
-    userData.external_id = [
-      await sha256Hex(String(order.storefront_customer_id || order.id).trim()),
-    ];
+    // Priority: logged-in customer id → the browser's stable sf_vid captured at
+    // checkout → order id. The order-id fallback is a LAST resort: it is unique
+    // per order, so Meta sees a brand-new "person" for every purchase and can
+    // never match it against the browser Pixel's Advanced Matching external_id.
+    const purchaseExternalId = String(
+      order.storefront_customer_id || (order as any).buyer_external_id || order.id,
+    ).trim();
+    userData.external_id = [await sha256Hex(purchaseExternalId)];
     if (order.customer_name) {
       const parts = String(order.customer_name).trim().split(/\s+/);
       const fn = parts[0] ? normName(parts[0]) : "";
