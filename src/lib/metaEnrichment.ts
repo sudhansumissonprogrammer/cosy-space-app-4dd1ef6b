@@ -240,6 +240,37 @@ export function getCapiUser(): CapiUser {
 }
 
 /**
+ * STORE ISOLATION (P0): the shopper-PII localStorage keys `checkout_phone`
+ * and `checkout_address` are NOT store-scoped, and the apex origin
+ * `shopbanao.in` serves every path-based storefront (`/store/:slug`) out of
+ * ONE localStorage jar. Without this purge, a phone/address typed on Store A
+ * would be replayed as Advanced Matching into Store B's pixel and CAPI —
+ * a real cross-tenant PII leak (Shopify-grade isolation forbids this).
+ *
+ * Rule: PII in localStorage belongs to exactly one store. The moment a
+ * different store boots on the same origin, wipe it.
+ */
+export const PII_OWNER_KEY = "sb_pii_store";
+
+export function purgeForeignStorePii(storeId?: string | null): void {
+  if (typeof window === "undefined" || !storeId) return;
+  try {
+    const owner = localStorage.getItem(PII_OWNER_KEY);
+    if (owner === storeId) return;
+    if (owner) {
+      // Different merchant on the same origin — drop the previous shopper PII.
+      ["checkout_phone", "checkout_address", "checkout_email"].forEach((k) => {
+        try { localStorage.removeItem(k); } catch { /* noop */ }
+      });
+      try { (window as any).__SF_CAPI_USER__ = {}; } catch { /* noop */ }
+    }
+    localStorage.setItem(PII_OWNER_KEY, storeId);
+  } catch {
+    /* noop */
+  }
+}
+
+/**
  * Seed Advanced Matching from what this storefront actually collects.
  *
  * We never ask for an email — the only PII we hold is the mobile number
@@ -253,8 +284,12 @@ export function getCapiUser(): CapiUser {
  */
 export function seedCapiUserFromStorage(storeId?: string): void {
   if (typeof window === "undefined") return;
+  // Never replay another store's shopper into this store's pixel.
+  purgeForeignStorePii(storeId);
   try {
     const user: CapiUser = {};
+
+
 
     const phone = localStorage.getItem("checkout_phone") || "";
     const digits = phone.replace(/\D/g, "");

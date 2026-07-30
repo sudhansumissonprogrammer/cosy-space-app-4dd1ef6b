@@ -363,12 +363,18 @@ Deno.serve(async (req) => {
     // this endpoint, so we can safely require the header on this entrypoint.
     const referer = req.headers.get("referer") || req.headers.get("origin") || "";
     let refHost = "";
-    try { refHost = normalizeHost(new URL(referer).hostname); } catch {}
+    let refPath = "";
+    try {
+      const refUrl = new URL(referer);
+      refHost = normalizeHost(refUrl.hostname);
+      refPath = refUrl.pathname || "";
+    } catch { /* noop */ }
+    const slug = store.slug ? String(store.slug).toLowerCase() : "";
     const allowed: AllowedHost[] = [
       ...(store.custom_domain
         ? [{ host: String(store.custom_domain), allowSubdomains: true }]
         : []),
-      ...(store.slug ? [{ host: `${String(store.slug).toLowerCase()}.shopbanao.in` }] : []),
+      ...(slug ? [{ host: `${slug}.shopbanao.in` }] : []),
       { host: "shopbanao.in" },
     ];
     if (!refHost || !hostAllowed(refHost, allowed)) {
@@ -377,6 +383,26 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
+    // STORE ISOLATION (P1): the bare apex `shopbanao.in` serves EVERY
+    // path-based storefront (`/store/:slug`) plus the landing + dashboard, so
+    // trusting it for any store_id let anyone on the apex inject fabricated
+    // events into a competitor's dataset (store ids are public). On the apex,
+    // the referer path must belong to THIS store.
+    // Note: an `Origin` header carries no path — apex-origin requests without
+    // a path-bearing `Referer` are rejected rather than blindly trusted.
+    if (refHost === "shopbanao.in") {
+      const ok = slug
+        ? refPath === `/store/${slug}` || refPath.startsWith(`/store/${slug}/`)
+        : false;
+      if (!ok) {
+        return new Response(
+          JSON.stringify({ error: "origin_not_allowed", reason: "apex_store_mismatch" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
 
 
     const pixelId = store.facebook_pixel_id;

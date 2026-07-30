@@ -424,10 +424,28 @@
                  fingerprint below dedupes and we never re-init redundantly. */
               var am={};
               try{
+                var sid=w.__STOREFRONT_DATA__&&w.__STOREFRONT_DATA__.store&&w.__STOREFRONT_DATA__.store.id;
+                /* STORE ISOLATION: checkout_phone / checkout_address are NOT
+                   store-scoped and the apex origin serves every path-based
+                   storefront from one localStorage jar. If the last store to
+                   own this PII is a DIFFERENT merchant, wipe it before it can
+                   be hashed into this merchant's Advanced Matching. Mirrors
+                   purgeForeignStorePii() in src/lib/metaEnrichment.ts. */
+                if(sid){
+                  var owner=localStorage.getItem('sb_pii_store');
+                  if(owner!==sid){
+                    if(owner){
+                      localStorage.removeItem('checkout_phone');
+                      localStorage.removeItem('checkout_address');
+                      localStorage.removeItem('checkout_email');
+                    }
+                    localStorage.setItem('sb_pii_store',sid);
+                  }
+                }
                 var ph=(localStorage.getItem('checkout_phone')||'').replace(/\D/g,'');
                 if(ph.length===10)ph='91'+ph;
                 if(ph.length>=10)am.ph=ph;
-                var sid=w.__STOREFRONT_DATA__&&w.__STOREFRONT_DATA__.store&&w.__STOREFRONT_DATA__.store.id;
+
                 var raw=(sid&&localStorage.getItem('express_checkout_'+sid))||localStorage.getItem('checkout_address')||'';
                 var ad=raw?JSON.parse(raw):null;
                 if(ad&&typeof ad==='object'){
