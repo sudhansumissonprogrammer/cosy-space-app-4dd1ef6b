@@ -21,8 +21,6 @@ interface Props {
   currency: string;
   /** Red price/title treatment — used for the FLAT-OFF steal-deals strip. */
   highlight?: boolean;
-  /** Flat rupee amount knocked off inside the cart only (e.g. 100). */
-  flatOff?: number;
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
   fetchNextPage?: () => void;
@@ -40,7 +38,7 @@ export default function CartProductCarousel({
   slug,
   currency,
   highlight = false,
-  flatOff = 0,
+  
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
