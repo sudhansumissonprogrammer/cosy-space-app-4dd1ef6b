@@ -240,12 +240,13 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
         window.fbq("init", pixelId);
       }
       // Only fire PageView if the inline bootstrap didn't already do so.
+      (window as any).__SF_PIXEL_INITED__ = pixelId;
       if (!inlinePvAlreadyFired) {
         pageViewEventId = generateEventId();
         (window as any).__SF_PV_EVENT_ID__ = pageViewEventId;
-        window.fbq("track", "PageView", {}, { eventID: pageViewEventId });
+        fbqTrackSingle(pixelId, "PageView", {}, pageViewEventId);
       }
-      (window as any).__SF_PIXEL_INITED__ = pixelId;
+
     }
 
     schedulePixelSelfTest(pixelId);
