@@ -4491,11 +4491,12 @@ export default function CheckoutV2Page() {
           )}
 
 
-          {/* COD */}
-          {/* COD is mutually exclusive with partial payment. When the store
-              has partial payment enabled, the ₹X advance IS the anti-fake-order
-              mechanism — offering pure COD alongside would defeat its purpose. */}
-          {hasCod && !partialEnabled && (
+          {/* COD — shown whenever the store enabled "cod" in payment settings.
+              It can coexist with partial payment: the shopper simply picks
+              full-cash-on-delivery instead of the ₹X advance. placeCod always
+              forces payment_type="full", which is what checkout-v2-cod
+              accepts (it only rejects rows already marked partial). */}
+          {hasCod && (
             <button
               onClick={placeCod}
               disabled={placingCod || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
