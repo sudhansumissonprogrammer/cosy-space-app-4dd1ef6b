@@ -76,6 +76,10 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
 
       // Fire as AddToCart (NOT Purchase) with shared event_id so browser Pixel
       // and CAPI dedupe cleanly; this is not a second completed purchase.
+      // Rapid double-tap guard: without it, two clicks before the `disabled`
+      // state commits produce two AddToCart events with DIFFERENT event_ids,
+      // which Meta cannot dedupe — reads as event inflation.
+      if (!shouldFirePixelEvent("AddToCart", product.id)) return;
       const eventId = generateEventId();
       const customData = {
         content_ids: [product.id],
@@ -85,6 +89,7 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
         currency,
       };
       fbPixelTrack("AddToCart", customData, eventId);
+
       fireMetaCAPI({
         storeId,
         eventName: "AddToCart",
