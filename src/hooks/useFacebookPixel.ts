@@ -39,6 +39,42 @@ function grantMetaConsent() {
   }
 }
 
+/**
+ * STORE ISOLATION (P1): never use bare `fbq('track', ...)`.
+ *
+ * `fbq('track')` broadcasts to EVERY pixel currently registered in the page's
+ * fbq instance. In a multi-tenant SPA a second merchant's pixel can end up
+ * initialised in the same document (path-based `/store/:slug` navigation,
+ * dashboard theme-preview iframes, a stale init from a previous route). If
+ * that ever happens, one merchant's AddToCart/Purchase silently lands in
+ * another merchant's ad account.
+ *
+ * `trackSingle` pins the event to exactly one pixel ID, so the leak class is
+ * structurally impossible regardless of what else is registered.
+ */
+export function fbqTrackSingle(
+  pixelId: string | null | undefined,
+  eventName: string,
+  params?: Record<string, any>,
+  eventId?: string,
+) {
+  if (typeof window === "undefined" || typeof window.fbq !== "function") return;
+  const pid =
+    pixelId || ((window as any).__SF_PIXEL_INITED__ as string | undefined) || "";
+  const opts = eventId ? { eventID: eventId } : undefined;
+  try {
+    if (pid) {
+      if (opts) window.fbq("trackSingle", pid, eventName, params, opts);
+      else window.fbq("trackSingle", pid, eventName, params);
+      return;
+    }
+    // No pixel id resolvable — drop rather than broadcast to unknown pixels.
+  } catch {
+    /* noop */
+  }
+}
+
+
 function schedulePixelSelfTest(pixelId: string) {
   if (typeof window === "undefined") return;
   const w = window as any;
