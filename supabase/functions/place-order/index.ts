@@ -126,6 +126,11 @@ Deno.serve(async (req) => {
         fbc?: string;
         fbp?: string;
         event_source_url?: string;
+        // Advanced Matching: stable anon/customer visitor ID (sf_vid) + email
+        // typed at checkout. Stored on the order so the server Purchase CAPI
+        // sends the SAME external_id / em hash the browser pixel already sent.
+        external_id?: string;
+        email?: string;
       };
       // Strict analytics: link this order back to the visitor session that
       // produced it so conversion rate = orders / unique sessions is accurate.
@@ -805,6 +810,16 @@ Deno.serve(async (req) => {
     let buyerFbc = sanitizeFb(meta?.fbc, FBC_RX);
     let buyerFbp = sanitizeFb(meta?.fbp, FBP_RX);
     const metaEventId = sanitizeMetaEventId(meta?.event_id);
+    // Advanced Matching signals — opaque, length-capped, never trusted as auth.
+    const buyerExternalId =
+      typeof meta?.external_id === "string" && /^[A-Za-z0-9._:-]{6,128}$/.test(meta.external_id.trim())
+        ? meta.external_id.trim()
+        : null;
+    const rawBuyerEmail = typeof meta?.email === "string" ? meta.email.trim().toLowerCase() : "";
+    const buyerEmail =
+      rawBuyerEmail.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(rawBuyerEmail)
+        ? rawBuyerEmail
+        : null;
     const metaEventSourceUrl = sanitizeMetaSourceUrl(meta?.event_source_url, store);
 
     // BAN-FIX B3: for COD orders, only trust client-supplied fbc/fbp when the
@@ -902,6 +917,8 @@ Deno.serve(async (req) => {
         buyer_user_agent: buyerUa,
         buyer_fbc: buyerFbc,
         buyer_fbp: buyerFbp,
+        buyer_external_id: buyerExternalId,
+        buyer_email: buyerEmail,
         meta_event_id: metaEventId,
         meta_event_source_url: metaEventSourceUrl,
         visitor_id: visitor_id || null,
