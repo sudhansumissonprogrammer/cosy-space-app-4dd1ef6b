@@ -1116,7 +1116,10 @@ export default function CheckoutV2Page() {
   const partialEnabled: boolean = (store as any)?.partial_payment_enabled ?? false;
   const partialType: string = (store as any)?.partial_payment_type || "percentage";
   const partialValue: number | null = (store as any)?.partial_payment_value ?? null;
-  const hasPartial = partialEnabled && !!partialValue && Number(partialValue) > 0 && hasOnline;
+  // Strict rule: if the store has partial payment ON with a configured amount,
+  // standalone full COD is never offered — regardless of gateway availability.
+  const partialConfigured = partialEnabled && !!partialValue && Number(partialValue) > 0;
+  const hasPartial = partialConfigured && hasOnline;
 
   const partialAdvanceTotal = useMemo(() => {
     if (!hasPartial) return total;
@@ -3100,7 +3103,7 @@ export default function CheckoutV2Page() {
     // Partial-payment stores collect the configured advance online and only
     // the remaining balance on delivery. Never allow a separate zero-advance
     // COD path, including from a stale tab that rendered older checkout code.
-    if (hasPartial) {
+    if (partialConfigured) {
       toast.error("Please pay the advance to place this order");
       return;
     }
@@ -4501,7 +4504,7 @@ export default function CheckoutV2Page() {
           {/* Standalone COD is only for stores without partial payment.
               With partial enabled, COD means only the remaining balance after
               the configured online advance has been paid. */}
-          {hasCod && !hasPartial && (
+          {hasCod && !partialConfigured && (
             <button
               onClick={placeCod}
               disabled={placingCod || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
