@@ -1,6 +1,5 @@
 import { Suspense, useEffect, useState, type ComponentType, type LazyExoticComponent } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchStoreEnabledApps } from "@/hooks/useStoreEnabledApps";
 import { APP_REGISTRY } from "@/lib/appStore/registry";
 import type { StoreData } from "@/layouts/StorefrontLayout.logic";
 
@@ -18,7 +17,10 @@ export default function StorefrontApps({ store, primaryColor, accentColor }: { s
     if (!store?.slug) return;
     (async () => {
       try {
-        const data = await fetchStoreEnabledApps(store.slug);
+        const { data, error } = await (supabase as any).rpc("get_store_enabled_apps", {
+          _store_slug: store.slug,
+        });
+        if (error) throw error;
         if (!cancelled) setApps(Array.isArray(data) ? data : []);
       } catch {
         if (!cancelled) setApps([]);

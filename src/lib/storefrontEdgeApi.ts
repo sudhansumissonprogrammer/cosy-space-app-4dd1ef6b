@@ -37,16 +37,6 @@ export async function fetchPdpEdge(productSlug: string): Promise<any | null> {
 
 export async function fetchCategoryEdge(categorySlug: string, limit = CATEGORY_PAGE_LIMIT): Promise<any | null> {
   if (!isProductionHost()) return null;
-  // index.html fires this exact request at byte 0 for /category/* cold loads
-  // (see "Category boot fetch"). Reuse that in-flight promise so the app does
-  // not pay a second round trip ~1.5s later, after the JS bundle has booted.
-  try {
-    const w = window as any;
-    if (w.__CATEGORY_BOOT__ && w.__CATEGORY_BOOT_SLUG__ === categorySlug && limit === CATEGORY_PAGE_LIMIT) {
-      const booted = await w.__CATEGORY_BOOT__;
-      if (booted?.category) return booted;
-    }
-  } catch { /* ignore */ }
   try {
     const url = `${window.location.origin}/api/category?slug=${encodeURIComponent(categorySlug)}&limit=${limit}`;
     const res = await fetch(url, { headers: { Accept: "application/json" } });
@@ -57,4 +47,3 @@ export async function fetchCategoryEdge(categorySlug: string, limit = CATEGORY_P
     return null;
   }
 }
-

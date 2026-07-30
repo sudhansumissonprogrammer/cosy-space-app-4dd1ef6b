@@ -465,39 +465,6 @@
           }
         };
 
-        /* ─── Category boot fetch (byte 0) ───────────────────────────────
-           Measured on serdiyajewellers /category/chain (cold, mobile UA):
-           the category HTML is served from the CDN edge WITHOUT
-           __CATEGORY_INLINE__, so React had to boot (1.1s of JS) before it
-           even issued /api/category at 1588ms; grid images could not start
-           until 2131ms. Firing that same request here — before a single
-           byte of the app bundle is parsed — starts it at ~T+20ms and
-           injects the real above-fold <link rel=preload as=image> tags the
-           moment the JSON lands (~250ms), instead of ~2.1s.
-           CategoryDetail awaits this promise instead of making its own. */
-        try{
-          var _cm=location.pathname.match(/^\/(?:store\/[^/]+\/)?category\/([^/?#]+)/);
-          if(_cm&&_cm[1]){
-            var _ch=location.hostname;
-            var _prod=!(_ch==='localhost'||/^\d+\.\d+\.\d+\.\d+$/.test(_ch)||_ch.indexOf('.lovable.app')>-1||_ch.indexOf('.lovableproject.com')>-1);
-            if(_prod){
-              var _cs=decodeURIComponent(_cm[1]);
-              window.__CATEGORY_BOOT_SLUG__=_cs;
-              window.__CATEGORY_BOOT__=fetch('/api/category?slug='+encodeURIComponent(_cs)+'&limit=50',{headers:{Accept:'application/json'}})
-                .then(function(r){return r.ok?r.json():null})
-                .then(function(d){
-                  if(d&&d.category&&d.products&&d.products.length){
-                    try{window.__sfInjectImgPreloads__(d.products);}catch(e){}
-                    return d;
-                  }
-                  return null;
-                }).catch(function(){return null});
-            }
-          }
-        }catch(e){}
-
-
-
 
 
         // If Worker already injected __STOREFRONT_DATA__, we're done — products
