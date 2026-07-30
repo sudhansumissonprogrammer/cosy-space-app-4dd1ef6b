@@ -2387,7 +2387,25 @@ export default function CheckoutV2Page() {
 
 
   // ─── UPI intent-based flow (mobile-first) ───────────────────────────────
-  const createOrderAndIntents = async (): Promise<void> => {
+  const createOrderAndIntents = async (opts?: { userInitiated?: boolean }): Promise<void> => {
+    const userInitiated = opts?.userInitiated === true;
+
+    // PAYMENT-FIRST guard. `showPayment` is revealed as soon as the phone gate
+    // clears, so every automatic re-mint (coupon resolve, config load, snapshot
+    // change) used to run validateAddress() against an empty form and fire a red
+    // "Please enter your name" toast at a shopper who had done nothing wrong.
+    // That single false-positive accounted for ~75% of all checkout_field_error
+    // events. Automatic triggers now no-op silently until the address exists.
+    if (!addressCompleteRef.current) {
+      if (!userInitiated) return;
+      const err0 = validateAddress();
+      if (err0) {
+        toast.error(err0);
+        try { fireStorefrontEvent({ storeId: store.id, eventName: "checkout_field_error" as any, metadata: { error: err0, src: "pay" } as any }); } catch { /* noop */ }
+        return;
+      }
+    }
+
     if (createOrderPromiseRef.current) {
       remintAfterCurrentOrderRef.current = true;
       return createOrderPromiseRef.current;
@@ -2398,7 +2416,7 @@ export default function CheckoutV2Page() {
     // RPC can never block checkout.
     if (!couponsResolvedRef.current && !appliedCoupon && couponWaitTriesRef.current < 10) {
       couponWaitTriesRef.current += 1;
-      window.setTimeout(() => { void createOrderAndIntents(); }, 150);
+      window.setTimeout(() => { void createOrderAndIntents(opts); }, 150);
       return;
     }
 
