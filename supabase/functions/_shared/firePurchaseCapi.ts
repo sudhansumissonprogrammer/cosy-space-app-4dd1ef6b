@@ -28,6 +28,15 @@ const normName = (v: string) => v.trim().toLowerCase().replace(/[^a-zà-ÿ\u0080
 const normCityState = (v: string) => v.trim().toLowerCase().replace(/[^a-z]/g, "");
 const normZip = (v: string) => v.trim().toLowerCase().replace(/\s+/g, "");
 const normCountry = (v: string) => v.trim().toLowerCase().slice(0, 2);
+/**
+ * Rebuild the browser's deterministic Purchase event_id from the checkout
+ * token. Mirrors `purchaseEventIdFor()` in src/lib/pixelOutbox.ts exactly.
+ * Falls back to the order id only when there is no token at all.
+ */
+const derivedEventId = (order: { id: string; checkout_token?: string | null }) => {
+  const t = String(order.checkout_token || "").replace(/[^A-Za-z0-9._:-]/g, "");
+  return t.length >= 4 ? `pur-${t}`.slice(0, 120) : order.id;
+};
 const FBP_RX = /^fb\.[12]\.\d{10,16}\.\d+$/;
 const FBC_RX = /^fb\.[12]\.\d{10,16}\.[A-Za-z0-9_-]+$/;
 const sanitizeFb = (v: unknown, rx: RegExp): string | undefined =>
