@@ -17,7 +17,6 @@ import { X, Volume2 } from "lucide-react";
 import {
   fetchTrustVideoProbe,
   fetchTrustReel,
-  fetchFirstTrustVideo,
   type TrustSlide,
 } from "@/lib/trustVideos";
 
