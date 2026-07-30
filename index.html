@@ -400,7 +400,45 @@
                  and SKIPS re-init, so external_id is silently never sent → 
                  EMQ stuck at ~4/10 instead of ~8/10. */
               var sfv=(document.cookie.match(/(?:^|;\s*)sf_vid=([^;]+)/)||[])[1]||'';
-              if(sfv){w.fbq('init',pid,{external_id:sfv});}else{w.fbq('init',pid);}
+              /* Advanced Matching at first paint. The initial PageView is the
+                 highest-volume event we send; previously it carried ONLY
+                 external_id, because the phone/address replay
+                 (seedCapiUserFromStorage) runs after React mounts — i.e. after
+                 PageView already left the browser. Read the same localStorage
+                 keys here so a returning shopper's PageView is matched too.
+                 Key order MUST mirror metaEnrichment.setCapiUser() so the
+                 fingerprint below dedupes and we never re-init redundantly. */
+              var am={};
+              try{
+                var ph=(localStorage.getItem('checkout_phone')||'').replace(/\D/g,'');
+                if(ph.length===10)ph='91'+ph;
+                if(ph.length>=10)am.ph=ph;
+                var sid=w.__STOREFRONT_DATA__&&w.__STOREFRONT_DATA__.store&&w.__STOREFRONT_DATA__.store.id;
+                var raw=(sid&&localStorage.getItem('express_checkout_'+sid))||localStorage.getItem('checkout_address')||'';
+                var ad=raw?JSON.parse(raw):null;
+                if(ad&&typeof ad==='object'){
+                  var nm=String(ad.fullName||ad.name||'').trim();
+                  if(nm){var p=nm.split(/\s+/);am.fn=p[0].toLowerCase();if(p.length>1)am.ln=p.slice(1).join(' ').toLowerCase();}
+                  var sq=function(v){return String(v||'').trim().toLowerCase().replace(/\s+/g,'')};
+                  if(ad.city)am.ct=sq(ad.city);
+                  if(ad.state||ad.stateVal)am.st=sq(ad.state||ad.stateVal);
+                  if(ad.pincode||ad.zip)am.zp=sq(ad.pincode||ad.zip);
+                }
+              }catch(_){}
+              /* Rebuild in setCapiUser()'s exact key order for fingerprint parity. */
+              var ordered={};
+              if(am.ph)ordered.ph=am.ph;
+              if(sfv)ordered.external_id=sfv;
+              if(am.fn)ordered.fn=am.fn;
+              if(am.ln)ordered.ln=am.ln;
+              if(am.ct)ordered.ct=am.ct;
+              if(am.st)ordered.st=am.st;
+              if(am.zp)ordered.zp=am.zp;
+              if(ordered.ct||ordered.st||ordered.zp||ordered.ph)ordered.country='in';
+              if(Object.keys(ordered).length){
+                w.fbq('init',pid,ordered);
+                try{w.__SF_AM_FP__=JSON.stringify(ordered);}catch(_){}
+              }else{w.fbq('init',pid);}
               /* Generate event_id so the same PageView fired server-side via
                  CAPI (see useFacebookPixel.ts) deduplicates against this one.
                  Without a shared eventID Meta counts them as two PageViews. */
