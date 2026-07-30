@@ -387,12 +387,38 @@ export async function firePurchaseCapi(
     // The claim above is a *lease*, not a receipt: it exists to stop two
     // concurrent isolates double-firing, NOT to record success. Leaving it set
     // after a transient failure permanently burns the order's Purchase signal.
+    // The claim is set BEFORE the Meta POST, so every failure path must put it
+    // back to NULL or the order is permanently un-retryable (reconcile crons
+    // only pick up rows where the stamp is still NULL — nothing ever re-clears
+    // a stuck-set stamp). This update itself can throw (DB timeout / dropped
+    // connection); if it did, the exception escaped into the outer catch and
+    // the stamp stayed set → silent, permanent Purchase loss. Never let that
+    // happen: swallow + log, and retry the release once.
     const releaseClaim = async () => {
-      await supabase
-        .from("orders")
-        .update({ meta_purchase_fired_at: null })
-        .eq("id", orderId);
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const { error } = await supabase
+            .from("orders")
+            .update({ meta_purchase_fired_at: null })
+            .eq("id", orderId);
+          if (!error) return;
+          console.error(
+            `[capi:${opts.source}] releaseClaim failed (attempt ${attempt + 1}) for ${orderId}`,
+            error.message,
+          );
+        } catch (e) {
+          console.error(
+            `[capi:${opts.source}] releaseClaim threw (attempt ${attempt + 1}) for ${orderId}`,
+            (e as Error)?.message,
+          );
+        }
+      }
+      // Both attempts failed — loud marker so this is greppable in logs.
+      console.error(
+        `[capi:${opts.source}] STUCK_LEASE order=${orderId} — meta_purchase_fired_at is set but Purchase was NOT delivered to Meta`,
+      );
     };
+
 
     // 7. Send to Meta — with 2 retries on 5xx / network error (transient blip).
     const sendOnce = () => fetch(
