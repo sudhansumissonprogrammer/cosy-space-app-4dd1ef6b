@@ -9,7 +9,7 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { generateEventId, useFacebookPixel } from "@/hooks/useFacebookPixel";
-import { ensureFbcPersisted, getOrCreateSfVid } from "@/lib/metaEnrichment";
+import { ensureFbcPersisted, getOrCreateSfVid, seedCapiUserFromStorage } from "@/lib/metaEnrichment";
 import { useGA4 } from "@/hooks/useGA4";
 import { usePageviewBeacon } from "@/hooks/usePageviewBeacon";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
