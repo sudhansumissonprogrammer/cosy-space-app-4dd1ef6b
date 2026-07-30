@@ -399,7 +399,7 @@
                violating browser-only event on every page load. Gate it here
                with the exact same rule so browser and server stay symmetric. */
             var mkConsent=true;
-            try{ mkConsent = localStorage.getItem('sb_marketing_consent') !== 'denied'; }catch(e){}
+            try{ mkConsent = localStorage.getItem('sb_marketing_consent') !== 'declined'; }catch(e){}
             if(pid&&mkConsent&&w.__SF_PIXEL_INITED__!==pid&&!w.__SF_PV_EVENT_ID__){
               w.__SF_PIXEL_INITED__=pid;
               w.fbq('consent','grant');
