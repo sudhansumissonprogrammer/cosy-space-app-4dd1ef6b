@@ -777,6 +777,37 @@ export default function CheckoutV2Page() {
     return () => { document.body.style.overflow = prev; };
   }, [addressSheetOpen, showAddressDialog]);
 
+  // ─── Keyboard-safe sheet height ────────────────────────────────────────
+  // `dvh` does NOT shrink when the mobile keyboard opens on Android Chrome /
+  // Instagram WebView, so the sheet stays 95% of the *full* screen and its
+  // bottom (Continue button + last fields) ends up hidden behind the keyboard
+  // with no way to scroll to it. Track visualViewport instead and drive the
+  // sheet height from the real visible area.
+  const addressSheetRef = useRef<HTMLDivElement | null>(null);
+  const addressScrollRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!showAddressFormSheet) return;
+    const vv = (window as any).visualViewport as VisualViewport | undefined;
+    const apply = () => {
+      const el = addressSheetRef.current;
+      if (!el) return;
+      const h = vv?.height ?? window.innerHeight;
+      el.style.height = `${Math.max(320, Math.round(h * 0.96))}px`;
+      // Keep the sheet pinned to the visible viewport bottom when the browser
+      // offsets the layout viewport (iOS Safari keyboard behaviour).
+      el.style.transform = vv ? `translateY(-${Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))}px)` : "";
+    };
+    apply();
+    vv?.addEventListener("resize", apply);
+    vv?.addEventListener("scroll", apply);
+    window.addEventListener("resize", apply);
+    return () => {
+      vv?.removeEventListener("resize", apply);
+      vv?.removeEventListener("scroll", apply);
+      window.removeEventListener("resize", apply);
+    };
+  }, [showAddressFormSheet]);
+
   // Force Montserrat Alternates across the entire new checkout — including
   // early-return screens (order placed, waiting, phone step) and portaled
   // components (dialogs, toasts, sheets) that render outside the page root.
