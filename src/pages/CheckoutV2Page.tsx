@@ -4055,11 +4055,35 @@ export default function CheckoutV2Page() {
                 <Button
                   className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
                   onClick={() => {
-                    const valid = fullName.trim() && /^\d{6}$/.test(pincode) && streetAddress.trim() && city.trim() && state.trim();
-                    if (!valid) {
+                    // Find the FIRST missing field so we can tell the shopper
+                    // exactly what's wrong and scroll it into view. Previously
+                    // this silently set red borders — which are invisible if
+                    // the field is off-screen behind the keyboard, so shoppers
+                    // just kept tapping Continue and dropped off.
+                    const missing: Array<[string, string]> =
+                      [
+                        !fullName.trim() ? ["full_name", "Please enter your full name"] as [string, string] : null,
+                        !/^\d{6}$/.test(pincode) ? ["pincode", "Enter a valid 6-digit pincode"] as [string, string] : null,
+                        !city.trim() ? ["city", "Enter your city"] as [string, string] : null,
+                        !state.trim() ? ["state", "Enter your state"] as [string, string] : null,
+                        !streetAddress.trim() ? ["street", "Enter your complete address"] as [string, string] : null,
+                      ].filter(Boolean) as Array<[string, string]>;
+                    if (missing.length > 0) {
                       setAddressAttempted(true);
+                      const [field, msg] = missing[0];
+                      toast.error(msg);
+                      try {
+                        fireStorefrontEvent({ storeId: store.id, eventName: "checkout_field_error" as any, metadata: { error: msg, field } as any });
+                      } catch { /* noop */ }
+                      window.setTimeout(() => {
+                        const el = addressScrollRef.current?.querySelector<HTMLInputElement>(`[data-field="${field}"]`);
+                        if (!el) return;
+                        try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch { /* noop */ }
+                        try { el.focus({ preventScroll: true }); } catch { /* noop */ }
+                      }, 50);
                       return;
                     }
+
                     setAddressAttempted(false);
                     setShowAddressFormSheet(false);
                     // Do NOT auto-resume the payment. The shopper should
