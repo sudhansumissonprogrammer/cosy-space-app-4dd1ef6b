@@ -285,15 +285,11 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
   const trackEvent = useCallback(
     (eventName: string, params?: Record<string, any>, eventId?: string) => {
       if (!pixelId || typeof window.fbq !== "function") return;
-      const clean = sanitizePixelParams(params);
-      if (eventId) {
-        window.fbq("track", eventName, clean, { eventID: eventId });
-      } else {
-        window.fbq("track", eventName, clean);
-      }
+      fbqTrackSingle(pixelId, eventName, sanitizePixelParams(params), eventId);
     },
     [pixelId]
   );
+
 
   return { trackEvent };
 }
