@@ -739,6 +739,36 @@ export type Database = {
         }
         Relationships: []
       }
+      live_sessions: {
+        Row: {
+          device: string | null
+          first_seen: string
+          last_seen: string
+          path: string | null
+          session_id: string
+          store_id: string
+          visitor_id: string | null
+        }
+        Insert: {
+          device?: string | null
+          first_seen?: string
+          last_seen?: string
+          path?: string | null
+          session_id: string
+          store_id: string
+          visitor_id?: string | null
+        }
+        Update: {
+          device?: string | null
+          first_seen?: string
+          last_seen?: string
+          path?: string | null
+          session_id?: string
+          store_id?: string
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
       media_library: {
         Row: {
           created_at: string
@@ -5121,6 +5151,7 @@ export type Database = {
         Returns: string[]
       }
       get_dashboard_stats: { Args: { _store_id: string }; Returns: Json }
+      get_live_visitors: { Args: { _store_id: string }; Returns: Json }
       get_order_tracking: { Args: { _query: string }; Returns: Json }
       get_own_cashfree_secret: { Args: { _store_id: string }; Returns: string }
       get_own_domain_token: { Args: { _store_id: string }; Returns: string }
@@ -5360,6 +5391,16 @@ export type Database = {
       }
       swap_category_order: {
         Args: { _a: string; _b: string }
+        Returns: undefined
+      }
+      touch_live_session: {
+        Args: {
+          _device?: string
+          _path?: string
+          _session_id: string
+          _store_id: string
+          _visitor_id?: string
+        }
         Returns: undefined
       }
       validate_store_coupon: {
