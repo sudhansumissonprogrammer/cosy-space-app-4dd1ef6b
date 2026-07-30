@@ -242,14 +242,23 @@ export async function firePurchaseCapi(
     // PageView/ViewContent that already sent the bare trimmed external_id →
     // EMQ tanks + Meta flags "duplicate user across pixels". Match the spec
     // (trim only, no case normalization for opaque IDs).
-    // Priority: logged-in customer id → the browser's stable sf_vid captured at
-    // checkout → order id. The order-id fallback is a LAST resort: it is unique
-    // per order, so Meta sees a brand-new "person" for every purchase and can
-    // never match it against the browser Pixel's Advanced Matching external_id.
-    const purchaseExternalId = String(
-      order.storefront_customer_id || (order as any).buyer_external_id || order.id,
-    ).trim();
-    userData.external_id = [await sha256Hex(purchaseExternalId)];
+    // Send BOTH ids Meta may have already seen from the browser, not one.
+    // Guest checkout auto-creates a storefront_customers row mid-flow, so the
+    // browser's Pixel Advanced Matching carried `sf_vid` for the whole session
+    // (PageView / ViewContent / AddToCart) and only switched to the customer id
+    // after auto-login. Sending only the customer id made the server Purchase
+    // look like a different person than every prior event. external_id accepts
+    // an array — send both so Meta stitches the identity graph either way.
+    // order.id stays as the last-resort fallback when we have neither.
+    const extIdCandidates = [
+      order.storefront_customer_id,
+      (order as any).buyer_external_id,
+    ]
+      .map((v) => String(v || "").trim())
+      .filter(Boolean);
+    const uniqueExtIds = [...new Set(extIdCandidates.length ? extIdCandidates : [String(order.id).trim()])];
+    userData.external_id = await Promise.all(uniqueExtIds.map((v) => sha256Hex(v)));
+
     if (order.customer_name) {
       const parts = String(order.customer_name).trim().split(/\s+/);
       const fn = parts[0] ? normName(parts[0]) : "";
