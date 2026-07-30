@@ -7,6 +7,7 @@ import { Loader2, Plus, ShoppingBag, X } from "lucide-react";
 import { toast } from "sonner";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
+import { shouldFirePixelEvent } from "@/lib/pixelDedupe";
 import { cleanImageUrl, optimizeImageUrl } from "@/lib/imageOptimize";
 import { getDiscountPercent } from "@/lib/productUtils";
 
@@ -76,6 +77,10 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
 
       // Fire as AddToCart (NOT Purchase) with shared event_id so browser Pixel
       // and CAPI dedupe cleanly; this is not a second completed purchase.
+      // Rapid double-tap guard: without it, two clicks before the `disabled`
+      // state commits produce two AddToCart events with DIFFERENT event_ids,
+      // which Meta cannot dedupe — reads as event inflation.
+      if (!shouldFirePixelEvent("AddToCart", product.id)) return;
       const eventId = generateEventId();
       const customData = {
         content_ids: [product.id],
@@ -85,6 +90,7 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
         currency,
       };
       fbPixelTrack("AddToCart", customData, eventId);
+
       fireMetaCAPI({
         storeId,
         eventName: "AddToCart",
