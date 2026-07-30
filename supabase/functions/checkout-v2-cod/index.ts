@@ -44,16 +44,28 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Verify store allows COD
-    const { data: config } = await supabase
-      .from("store_payment_config")
-      .select("payment_methods")
-      .eq("store_id", store_id)
-      .single();
+    // Verify store allows standalone COD. A partial-payment store may still
+    // list `cod` because the remaining balance is collected on delivery, but
+    // that must never create a zero-advance full-COD order.
+    const [{ data: config }, { data: store }] = await Promise.all([
+      supabase
+        .from("store_payment_config")
+        .select("payment_methods")
+        .eq("store_id", store_id)
+        .single(),
+      supabase
+        .from("stores")
+        .select("partial_payment_enabled, partial_payment_value")
+        .eq("id", store_id)
+        .single(),
+    ]);
 
     const methods = Array.isArray(config?.payment_methods) ? (config!.payment_methods as string[]) : [];
     if (!methods.includes("cod")) {
       return jsonRes({ error: "COD not enabled for this store" }, 400);
+    }
+    if (store?.partial_payment_enabled && Number(store.partial_payment_value || 0) > 0) {
+      return jsonRes({ error: "Advance payment is required for this store" }, 400);
     }
 
     // Fetch the order and validate ownership + pending state

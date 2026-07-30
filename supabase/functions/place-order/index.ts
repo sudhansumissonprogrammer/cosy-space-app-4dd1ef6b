@@ -378,12 +378,27 @@ Deno.serve(async (req) => {
 
     const { data: store, error: storeErr } = await supabase
       .from("stores")
-      .select("id, is_suspended, default_profit_margin, slug, custom_domain")
+      .select("id, is_suspended, default_profit_margin, slug, custom_domain, partial_payment_enabled, partial_payment_value")
       .eq("id", store_id)
       .single();
 
     if (storeErr || !store || store.is_suspended) {
       return new Response(JSON.stringify({ error: "Store is not accepting orders" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // A store with partial payment enabled requires its configured online
+    // advance. `cod` remains a delivery method for the balance, not a separate
+    // zero-advance checkout option. Enforce this server-side so old cached
+    // storefront bundles and direct function calls cannot create full COD.
+    if (
+      order.payment_method === "cod" &&
+      store.partial_payment_enabled &&
+      Number(store.partial_payment_value || 0) > 0
+    ) {
+      return new Response(JSON.stringify({ error: "Advance payment is required for this store" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
