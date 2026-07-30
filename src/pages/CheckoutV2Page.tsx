@@ -723,6 +723,9 @@ export default function CheckoutV2Page() {
 
   const phoneValid = !!toCanonicalIndianPhone(phone);
   const addressComplete = !!(pincode && streetAddress && city && state && fullName);
+  // Ref mirror so async mint paths read the live value, never a stale closure.
+  const addressCompleteRef = useRef(addressComplete);
+  addressCompleteRef.current = addressComplete;
   // Wait for the phone→address lookup to settle before deciding to show the
   // form. Prevents the flash-of-form for WhatsApp autologin shoppers whose
   // saved address arrives ~200-600ms after the checkout mounts.
@@ -2041,7 +2044,7 @@ export default function CheckoutV2Page() {
       mintLoopBlockedRef.current = false;
       lastMintAtRef.current = 0;
       toast.info("Retrying…");
-      void createOrderAndIntents();
+      void createOrderAndIntents({ userInitiated: true });
       clearUpiTapFx();
       return;
     }
@@ -2055,7 +2058,7 @@ export default function CheckoutV2Page() {
     // UPI app never opens for the wrong amount.
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) {
       toast.info("Updating amount…");
-      void createOrderAndIntents();
+      void createOrderAndIntents({ userInitiated: true });
       clearUpiTapFx();
       return;
     }
@@ -2387,7 +2390,25 @@ export default function CheckoutV2Page() {
 
 
   // ─── UPI intent-based flow (mobile-first) ───────────────────────────────
-  const createOrderAndIntents = async (): Promise<void> => {
+  const createOrderAndIntents = async (opts?: { userInitiated?: boolean }): Promise<void> => {
+    const userInitiated = opts?.userInitiated === true;
+
+    // PAYMENT-FIRST guard. `showPayment` is revealed as soon as the phone gate
+    // clears, so every automatic re-mint (coupon resolve, config load, snapshot
+    // change) used to run validateAddress() against an empty form and fire a red
+    // "Please enter your name" toast at a shopper who had done nothing wrong.
+    // That single false-positive accounted for ~75% of all checkout_field_error
+    // events. Automatic triggers now no-op silently until the address exists.
+    if (!addressCompleteRef.current) {
+      if (!userInitiated) return;
+      const err0 = validateAddress();
+      if (err0) {
+        toast.error(err0);
+        try { fireStorefrontEvent({ storeId: store.id, eventName: "checkout_field_error" as any, metadata: { error: err0, src: "pay" } as any }); } catch { /* noop */ }
+        return;
+      }
+    }
+
     if (createOrderPromiseRef.current) {
       remintAfterCurrentOrderRef.current = true;
       return createOrderPromiseRef.current;
@@ -2398,7 +2419,7 @@ export default function CheckoutV2Page() {
     // RPC can never block checkout.
     if (!couponsResolvedRef.current && !appliedCoupon && couponWaitTriesRef.current < 10) {
       couponWaitTriesRef.current += 1;
-      window.setTimeout(() => { void createOrderAndIntents(); }, 150);
+      window.setTimeout(() => { void createOrderAndIntents(opts); }, 150);
       return;
     }
 
@@ -2431,7 +2452,7 @@ export default function CheckoutV2Page() {
         window.setTimeout(() => {
           if (!createOrderPromiseRef.current && remintAfterCurrentOrderRef.current) {
             remintAfterCurrentOrderRef.current = false;
-            void createOrderAndIntents();
+            void createOrderAndIntents(opts);
           }
         }, Math.max(delay, 50));
       }
@@ -2539,7 +2560,7 @@ export default function CheckoutV2Page() {
               mintCountRef.current = 0;
               mintLoopBlockedRef.current = false;
               lastMintAtRef.current = 0;
-              void createOrderAndIntents();
+              void createOrderAndIntents(opts);
             }, 20000);
           }
         } else {
@@ -2566,7 +2587,7 @@ export default function CheckoutV2Page() {
         Math.round(mintedAmount * 100) === Math.round(chargeAmount * 100);
       if (remintAfterCurrentOrderRef.current && !confirmingPayment && !orderPlaced && !amountStillMatches) {
         remintAfterCurrentOrderRef.current = false;
-        window.setTimeout(() => { void createOrderAndIntents(); }, 0);
+        window.setTimeout(() => { void createOrderAndIntents(opts); }, 0);
       } else {
         remintAfterCurrentOrderRef.current = false;
       }
@@ -4335,7 +4356,7 @@ export default function CheckoutV2Page() {
                     mintCountRef.current = 0;
                     mintLoopBlockedRef.current = false;
                     lastMintAtRef.current = 0;
-                    void createOrderAndIntents();
+                    void createOrderAndIntents({ userInitiated: true });
                   }}
                 >
                   {creatingOrder ? <Loader2 className="h-4 w-4 animate-spin" /> : "Try again"}
@@ -4509,7 +4530,12 @@ export default function CheckoutV2Page() {
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-[#ECECEC] p-3">
           <Button
             className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
-            onClick={createOrderAndIntents}
+            onClick={() => {
+              // Missing address → open the sheet (and auto-resume after save)
+              // instead of firing a bare red validation toast.
+              if (!requireAddressOrPrompt(() => { void createOrderAndIntents({ userInitiated: true }); })) return;
+              void createOrderAndIntents({ userInitiated: true });
+            }}
             disabled={creatingOrder || couponLoading || paymentAmountSyncing || !paymentConfigLoaded}
           >
             {creatingOrder ? <Loader2 className="h-5 w-5 animate-spin" /> : addressFilled ? "Continue to Pay" : "Continue"}
