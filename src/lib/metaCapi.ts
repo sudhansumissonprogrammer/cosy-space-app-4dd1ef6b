@@ -197,7 +197,19 @@ export function fireMetaCAPI(params: CAPIEventParams) {
 
   const { fbc, fbp } = getMetaCookies();
   // Per-call params win over the global registry — explicit > implicit.
-  const u = getCapiUser();
+  // The PageView CAPI mirror fires from useFacebookPixel on a setTimeout(0),
+  // which can beat StorefrontShell's seedCapiUserFromStorage() to the punch —
+  // that PageView then went out with no phone/name while its browser twin
+  // (initialised inline in index.html) had them. Seed on demand when the
+  // registry is still empty so both halves of the pair carry identical keys.
+  let u = getCapiUser();
+  if (!u.phone && !u.email) {
+    try {
+      seedCapiUserFromStorage((window as any).__SF_STORE_ID__ || params.storeId);
+      u = getCapiUser();
+    } catch { /* noop */ }
+  }
+
   const userEmail = params.userEmail ?? u.email;
   const userPhone = params.userPhone ?? u.phone;
   // Always-on external_id: explicit > registry > anon visitor cookie.
