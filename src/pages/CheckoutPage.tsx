@@ -24,7 +24,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { ga4Track } from "@/hooks/useGA4";
 import { fireMetaCAPI, getMetaCookies } from "@/lib/metaCapi";
-import { setCapiUser, getOrCreateSfVid } from "@/lib/metaEnrichment";
+import { setCapiUser, getOrCreateSfVid, getCapiUser } from "@/lib/metaEnrichment";
 import { useStorefrontAuth } from "@/contexts/StorefrontAuthContext";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
 import { estimateDelivery, type DeliveryEstimate } from "@/lib/deliveryEstimate";

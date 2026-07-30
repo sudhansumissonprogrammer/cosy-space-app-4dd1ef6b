@@ -33,7 +33,7 @@ import type { StoreData } from "@/layouts/StorefrontLayout";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { ga4Track } from "@/hooks/useGA4";
 import { fireMetaCAPI, getMetaCookies } from "@/lib/metaCapi";
-import { setCapiUser, getOrCreateSfVid } from "@/lib/metaEnrichment";
+import { setCapiUser, getOrCreateSfVid, getCapiUser } from "@/lib/metaEnrichment";
 import { getVisitorId, getOrCreateSessionId } from "@/lib/visitorSession";
 import { fireStorefrontEvent } from "@/lib/storefrontEvents";
 import { loadCashfree } from "@/lib/loadCashfree";
