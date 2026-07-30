@@ -392,7 +392,8 @@ export async function firePurchaseCapi(
         resp = null;
         continue;
       }
-      if (resp.status >= 500 && resp.status < 600) continue;
+      // 429 is a transient rate-limit, not a config error — retry like a 5xx.
+      if (resp.status === 429 || (resp.status >= 500 && resp.status < 600)) continue;
       break;
     }
 
