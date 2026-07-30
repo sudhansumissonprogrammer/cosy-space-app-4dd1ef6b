@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { storefrontPath } from "@/lib/subdomain";
+import { fetchStoreEnabledApps } from "@/hooks/useStoreEnabledApps";
 
 export interface TrustSlide {
   id: string;
@@ -63,7 +64,7 @@ export async function fetchTrustReel(storeId: string, slug: string): Promise<Tru
 
   // Chain into Shop by Video product reels when that add-on is enabled.
   try {
-    const { data: apps } = await (supabase as any).rpc("get_store_enabled_apps", { _store_slug: slug });
+    const apps = await fetchStoreEnabledApps(slug);
     const enabled = Array.isArray(apps) && apps.some((a: any) => a.app_id === "shop-by-video");
     if (enabled) {
       const { data: products } = await supabase

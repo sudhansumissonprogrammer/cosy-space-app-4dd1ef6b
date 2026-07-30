@@ -13,6 +13,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import { Volume2, VolumeX, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchStoreEnabledApps } from "@/hooks/useStoreEnabledApps";
 import { storefrontPath } from "@/lib/subdomain";
 import { cn } from "@/lib/utils";
 
@@ -66,10 +67,7 @@ export default function ShopByVideoCarousel({ storeSlug, storeId, previewConfig,
     let cancelled = false;
     (async () => {
       try {
-        const { data, error } = await (supabase as any).rpc("get_store_enabled_apps", {
-          _store_slug: storeSlug,
-        });
-        if (error) throw error;
+        const data = await fetchStoreEnabledApps(storeSlug);
         if (cancelled) return;
         const row = Array.isArray(data) ? data.find((r: any) => r.app_id === "shop-by-video") : null;
         setConfig(row ? { ...(row.config || {}), enabled: true } : null);
