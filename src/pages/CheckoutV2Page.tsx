@@ -723,6 +723,9 @@ export default function CheckoutV2Page() {
 
   const phoneValid = !!toCanonicalIndianPhone(phone);
   const addressComplete = !!(pincode && streetAddress && city && state && fullName);
+  // Ref mirror so async mint paths read the live value, never a stale closure.
+  const addressCompleteRef = useRef(addressComplete);
+  addressCompleteRef.current = addressComplete;
   // Wait for the phone→address lookup to settle before deciding to show the
   // form. Prevents the flash-of-form for WhatsApp autologin shoppers whose
   // saved address arrives ~200-600ms after the checkout mounts.
