@@ -87,7 +87,7 @@ export async function firePurchaseCapi(
       .from("orders")
       .select(
         "id, created_at, store_id, status, total, advance_paid, currency, customer_phone, customer_name, city, state, pincode, " +
-        "storefront_customer_id, buyer_ip, buyer_user_agent, buyer_fbc, buyer_fbp, " +
+        "storefront_customer_id, buyer_ip, buyer_user_agent, buyer_fbc, buyer_fbp, buyer_external_id, buyer_email, " +
         "meta_event_id, meta_event_source_url, meta_purchase_fired_at",
       )
       .eq("id", orderId)
