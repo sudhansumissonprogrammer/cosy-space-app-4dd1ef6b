@@ -3924,6 +3924,7 @@ export default function CheckoutV2Page() {
 
 
               <div
+                ref={addressScrollRef}
                 className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-3 pb-4 space-y-2.5"
                 onFocusCapture={(e) => {
                   const t = e.target as HTMLElement;
