@@ -1,7 +1,6 @@
 import { useEffect, useCallback, useState } from "react";
 import { ensureFbpCookie, ensureFbcPersisted, getOrCreateSfVid } from "@/lib/metaEnrichment";
 import { purgeSharedDomainCookies } from "@/lib/purgeSharedDomainCookies";
-import { hasMarketingConsent } from "@/lib/marketingConsent";
 
 
 declare global {
@@ -102,18 +101,9 @@ function isNonProductionHost(): boolean {
 }
 
 export function useFacebookPixel(pixelId: string | null | undefined, storeId?: string | null) {
-  const [consentTick, setConsentTick] = useState(0);
-
-  useEffect(() => {
-    const onConsent = () => setConsentTick((v) => v + 1);
-    window.addEventListener("storefront:marketing-consent", onConsent as EventListener);
-    return () => window.removeEventListener("storefront:marketing-consent", onConsent as EventListener);
-  }, []);
-
   useEffect(() => {
     if (!pixelId) return;
     if (isNonProductionHost()) return;
-    if (!hasMarketingConsent()) return;
     ensureFbpCookie();
     ensureFbcPersisted();
 
@@ -125,8 +115,11 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     // effect so PageView CAPI can mirror the shared event_id and the self-test
     // can verify the SDK registered the pixel after it loads.
 
-    // Defer actual script loading — events are queued by the fbq shim, so
-    // nothing is lost by loading late.
+    // Load soon after init. Although the shim safely queues events, browser
+    // diagnostics (including Meta Pixel Helper) cannot see a registered pixel
+    // until fbevents.js has executed. A long idle/load gate therefore looked
+    // like an intermittent missing pixel on fast PDP/category checks and could
+    // strand short visits in browsers that aggressively freeze background tabs.
     //
     // PERF (measured 2026-07-29): plain requestIdleCallback fired the 104KB
     // `fbevents.js` download at ~1790ms on home / ~1990ms on PDP — i.e. the
@@ -139,7 +132,7 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     // download still landed at ~2064ms — right at FCP on slow mobile. Push it
     // behind whichever comes first:
     //   a) the shopper's FIRST interaction (pointer/touch/keyboard/scroll), or
-    //   b) a 3s idle timer after `load`.
+    //   b) a short 1.2s safety timer.
     // Nothing is lost: fbq's shim queues events, pixelOutbox persists them and
     // force-loads the SDK immediately for conversion events.
     const schedule = (cb: () => void) => {
@@ -151,23 +144,18 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
         done = true;
         if (timer) clearTimeout(timer);
         events.forEach((e) => window.removeEventListener(e, run as EventListener));
-        if (typeof requestIdleCallback !== "undefined") {
-          requestIdleCallback(cb, { timeout: 1500 });
-        } else {
-          cb();
-        }
+        cb();
       };
       const arm = () => {
         events.forEach((e) =>
           window.addEventListener(e, run as EventListener, { once: true, passive: true })
         );
-        timer = setTimeout(run, 3000);
+        timer = setTimeout(run, 1200);
       };
-      if (document.readyState === "complete") {
-        arm();
-      } else {
-        window.addEventListener("load", arm, { once: true });
-      }
+      // Arm immediately rather than waiting for window.load. In-app browsers
+      // can postpone load and then freeze the tab when the shopper switches
+      // apps, leaving queued events with no SDK to deliver them.
+      arm();
     };
 
 
@@ -255,12 +243,11 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     // Previously we removed it on unmount, which caused a fresh init + PageView
     // every time StorefrontShell re-mounted (Suspense fallback/resolve, layout
     // switch, dev StrictMode). The __SF_PIXEL_INITED__ flag handles dedup.
-  }, [pixelId, storeId, consentTick]);
+  }, [pixelId, storeId]);
 
   const trackEvent = useCallback(
     (eventName: string, params?: Record<string, any>, eventId?: string) => {
       if (!pixelId || typeof window.fbq !== "function") return;
-      if (!hasMarketingConsent()) return;
       const clean = sanitizePixelParams(params);
       if (eventId) {
         window.fbq("track", eventName, clean, { eventID: eventId });
@@ -307,7 +294,6 @@ function sanitizePixelParams(params?: Record<string, any>): Record<string, any> 
 export function fbPixelTrack(eventName: string, params?: Record<string, any>, eventId?: string) {
   if (typeof window === "undefined") return;
   if (isNonProductionHost()) return;
-  if (!hasMarketingConsent()) return;
   if (typeof window.fbq === "function") {
     const clean = sanitizePixelParams(params);
     if (eventId) {

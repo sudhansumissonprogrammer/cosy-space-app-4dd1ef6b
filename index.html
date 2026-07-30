@@ -351,6 +351,14 @@
           var sub=h.replace('.shopbanao.in','');if(sub&&sub.indexOf('.')===-1)isSf=true;
         }
         if(!isSf && window.__STORE_SLUG__)isSf=true;
+         /* Custom domains serve storefronts at `/`, so they must not depend
+            exclusively on Worker-injected globals. A stale/raw shell cache or
+            an edge fallback can omit __STORE_SLUG__; previously that made the
+            entire early Pixel bootstrap return before React mounted. Platform
+            app/landing hosts remain excluded by the guards above/below. */
+         if(!isSf && h!=='shopbanao.in' && h!=='www.shopbanao.in' &&
+            !h.endsWith('.shopbanao.in') && !h.endsWith('.lovable.app') &&
+            !h.endsWith('.lovableproject.com') && !h.endsWith('.lovable.dev'))isSf=true;
         if(!isSf)return; // landing/auth — skip pixel shim entirely
 
         /* BAN-FIX v8.62: purge stale apex .shopbanao.in-scoped tracking
@@ -451,20 +459,20 @@
               var pvid=(Date.now().toString(36))+'-'+Math.random().toString(36).slice(2,10);
               w.__SF_PV_EVENT_ID__=pvid;
               w.fbq('track','PageView',{},{eventID:pvid});
-              /* PERF: fbevents.js is ~110KB of parse+execute. Loading it at
-                 plain idle landed it at ~1.9s on throttled mobile — right in
-                 the middle of the render-critical chunk waterfall, delaying
-                 FCP. The fbq() queue buffers PageView until the SDK arrives,
-                 so waiting for first content costs no tracking accuracy.
-                 Hard 4s timeout guarantees it always loads. */
-              var wrap=function(){loadSdk();};
+               /* Keep the SDK off the render-critical synchronous path, but do
+                  not leave only the shim alive for several seconds. Pixel
+                  Helper and privacy-sensitive WebViews cannot recognize a real
+                  registered pixel until fbevents.js executes, and short visits
+                  may be frozen before an idle callback runs. First interaction,
+                  content-ready, or the 1.2s safety timer now loads it. */
+               var wrap=function(){loadSdk();};
               var armed=false;
               var arm=function(){
                 if(armed)return;armed=true;
-                if('requestIdleCallback' in w){w.requestIdleCallback(wrap,{timeout:2500});}else{setTimeout(wrap,600);}
+                 wrap();
               };
               w.addEventListener('storefront:content-ready',arm,{once:true});
-              setTimeout(arm,4000);
+               setTimeout(arm,1200);
               ['pointerdown','touchstart','keydown'].forEach(function(ev){
                 w.addEventListener(ev,wrap,{once:true,passive:true,capture:true});
               });
