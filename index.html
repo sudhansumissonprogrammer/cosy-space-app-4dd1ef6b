@@ -392,7 +392,7 @@
                __STOREFRONT_DATA__ resolve lets the hook fire PV first, then
                this inline path fires it again → duplicate PageView per visit. */
             /* BAN-FIX P0 (consent parity): the React layer + every CAPI call
-               gate on localStorage['sb_marketing_consent'] !== 'denied'. This
+               gate on localStorage['sb_marketing_consent'] !== 'declined'. This
                pre-React bootstrap did NOT, so a shopper who declined marketing
                still got a browser PageView + consent grant while the server
                CAPI twin was correctly suppressed → an un-deduped, consent-
