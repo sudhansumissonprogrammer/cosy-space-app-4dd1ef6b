@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCapiUser, getOrCreateSfVid, readFbcWithFallback, seedCapiUserFromStorage } from "@/lib/metaEnrichment";
-import { hasMarketingConsent } from "@/lib/marketingConsent";
 
 /**
  * Returns true on Lovable preview/editor/dev hosts.
@@ -128,14 +127,6 @@ const CAPI_EVENTS = new Set([
 export function fireMetaCAPI(params: CAPIEventParams) {
   // Guard: never fire from Lovable preview/editor/dev domains.
   if (isNonProductionHost()) return;
-
-  // Consent parity with the browser Pixel. fbPixelTrack() already refuses to
-  // fire when the shopper declined marketing, but server CAPI had no such
-  // gate — a declined shopper still generated PageView/IC/AddPaymentInfo
-  // events server-side. Consent is implied-by-default, so this only blocks
-  // explicit opt-outs.
-  if (!hasMarketingConsent()) return;
-
 
   // Anti-ban hardening: per-store hard isolation.
   // StorefrontShell sets `__SF_STORE_ID__` to the store the page is rendering.

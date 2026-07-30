@@ -1,7 +1,6 @@
 import { useEffect, useCallback, useState } from "react";
 import { ensureFbpCookie, ensureFbcPersisted, getOrCreateSfVid } from "@/lib/metaEnrichment";
 import { purgeSharedDomainCookies } from "@/lib/purgeSharedDomainCookies";
-import { hasMarketingConsent } from "@/lib/marketingConsent";
 
 
 declare global {
@@ -102,18 +101,9 @@ function isNonProductionHost(): boolean {
 }
 
 export function useFacebookPixel(pixelId: string | null | undefined, storeId?: string | null) {
-  const [consentTick, setConsentTick] = useState(0);
-
-  useEffect(() => {
-    const onConsent = () => setConsentTick((v) => v + 1);
-    window.addEventListener("storefront:marketing-consent", onConsent as EventListener);
-    return () => window.removeEventListener("storefront:marketing-consent", onConsent as EventListener);
-  }, []);
-
   useEffect(() => {
     if (!pixelId) return;
     if (isNonProductionHost()) return;
-    if (!hasMarketingConsent()) return;
     ensureFbpCookie();
     ensureFbcPersisted();
 
@@ -254,12 +244,11 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
     // Previously we removed it on unmount, which caused a fresh init + PageView
     // every time StorefrontShell re-mounted (Suspense fallback/resolve, layout
     // switch, dev StrictMode). The __SF_PIXEL_INITED__ flag handles dedup.
-  }, [pixelId, storeId, consentTick]);
+  }, [pixelId, storeId]);
 
   const trackEvent = useCallback(
     (eventName: string, params?: Record<string, any>, eventId?: string) => {
       if (!pixelId || typeof window.fbq !== "function") return;
-      if (!hasMarketingConsent()) return;
       const clean = sanitizePixelParams(params);
       if (eventId) {
         window.fbq("track", eventName, clean, { eventID: eventId });
