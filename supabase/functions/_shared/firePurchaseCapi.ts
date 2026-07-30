@@ -28,6 +28,15 @@ const normName = (v: string) => v.trim().toLowerCase().replace(/[^a-zà-ÿ\u0080
 const normCityState = (v: string) => v.trim().toLowerCase().replace(/[^a-z]/g, "");
 const normZip = (v: string) => v.trim().toLowerCase().replace(/\s+/g, "");
 const normCountry = (v: string) => v.trim().toLowerCase().slice(0, 2);
+/**
+ * Rebuild the browser's deterministic Purchase event_id from the checkout
+ * token. Mirrors `purchaseEventIdFor()` in src/lib/pixelOutbox.ts exactly.
+ * Falls back to the order id only when there is no token at all.
+ */
+const derivedEventId = (order: { id: string; checkout_token?: string | null }) => {
+  const t = String(order.checkout_token || "").replace(/[^A-Za-z0-9._:-]/g, "");
+  return t.length >= 4 ? `pur-${t}`.slice(0, 120) : order.id;
+};
 const FBP_RX = /^fb\.[12]\.\d{10,16}\.\d+$/;
 const FBC_RX = /^fb\.[12]\.\d{10,16}\.[A-Za-z0-9_-]+$/;
 const sanitizeFb = (v: unknown, rx: RegExp): string | undefined =>
@@ -88,7 +97,7 @@ export async function firePurchaseCapi(
       .select(
         "id, created_at, store_id, status, total, advance_paid, currency, customer_phone, customer_name, city, state, pincode, " +
         "storefront_customer_id, buyer_ip, buyer_user_agent, buyer_fbc, buyer_fbp, buyer_external_id, buyer_email, " +
-        "meta_event_id, meta_event_source_url, meta_purchase_fired_at",
+        "checkout_token, meta_event_id, meta_event_source_url, meta_purchase_fired_at",
       )
       .eq("id", orderId)
       .maybeSingle();
@@ -303,7 +312,12 @@ export async function firePurchaseCapi(
     const event = {
       event_name: "Purchase",
       event_time: Math.floor(Date.now() / 1000),
-      event_id: order.meta_event_id || order.id, // dedupe vs browser Pixel
+      // Dedupe vs browser Pixel. The browser derives its Purchase id from the
+      // checkout token (`pur-<token>`, src/lib/pixelOutbox.ts), so when the
+      // order row never captured meta_event_id we must rebuild the SAME id
+      // instead of falling back to the order UUID — a UUID can never match the
+      // browser event, which made Meta count the sale twice.
+      event_id: order.meta_event_id || derivedEventId(order as any),
       event_source_url: eventSourceUrl,
       action_source: "website",
       user_data: userData,
@@ -378,7 +392,8 @@ export async function firePurchaseCapi(
         resp = null;
         continue;
       }
-      if (resp.status >= 500 && resp.status < 600) continue;
+      // 429 is a transient rate-limit, not a config error — retry like a 5xx.
+      if (resp.status === 429 || (resp.status >= 500 && resp.status < 600)) continue;
       break;
     }
 
@@ -392,8 +407,9 @@ export async function firePurchaseCapi(
 
     if (!resp.ok) {
       console.error(`[capi:${opts.source}] meta error ${resp.status}`, JSON.stringify(result));
-      if (resp.status >= 500) {
-        // Meta-side outage — keep the order eligible for a later retry.
+      if (resp.status >= 500 || resp.status === 429) {
+        // Meta-side outage or rate limit — keep the order eligible for the
+        // reconcile-cron retry instead of burning the Purchase forever.
         await releaseClaim();
         return { ok: false, reason: `meta_${resp.status}` };
       }

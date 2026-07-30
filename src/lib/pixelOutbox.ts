@@ -94,7 +94,35 @@ export function ensureFbSdkNow(): void {
 
 function markSent(orderId: string) {
   try {
-    localStorage.setItem(SENT_KEY(orderId), "1");
+    localStorage.setItem(SENT_KEY(orderId), String(Date.now()));
+    pruneSentKeys();
+  } catch {
+    /* noop */
+  }
+}
+
+/**
+ * One `sb_px_purchase_sent:<orderId>` key is written per completed order and
+ * nothing ever removed them, so a repeat shopper's localStorage grew forever.
+ * Drop entries older than MAX_AGE_MS (the outbox replay window) — past that
+ * the guard can no longer suppress anything the outbox would replay.
+ */
+function pruneSentKeys() {
+  try {
+    const now = Date.now();
+    const stale: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith("sb_px_purchase_sent:")) continue;
+      const ts = Number(localStorage.getItem(k));
+      // Legacy entries stored "1" → no timestamp; re-stamp them as of now.
+      if (!Number.isFinite(ts) || ts <= 1) {
+        localStorage.setItem(k, String(now));
+        continue;
+      }
+      if (now - ts > MAX_AGE_MS) stale.push(k);
+    }
+    stale.forEach((k) => localStorage.removeItem(k));
   } catch {
     /* noop */
   }
@@ -102,7 +130,8 @@ function markSent(orderId: string) {
 
 export function purchaseAlreadySent(orderId: string): boolean {
   try {
-    return localStorage.getItem(SENT_KEY(orderId)) === "1";
+    // Value is a timestamp now, "1" on legacy entries — presence is the guard.
+    return localStorage.getItem(SENT_KEY(orderId)) != null;
   } catch {
     return false;
   }
