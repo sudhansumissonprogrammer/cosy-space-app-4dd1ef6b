@@ -303,7 +303,12 @@ export async function firePurchaseCapi(
     const event = {
       event_name: "Purchase",
       event_time: Math.floor(Date.now() / 1000),
-      event_id: order.meta_event_id || order.id, // dedupe vs browser Pixel
+      // Dedupe vs browser Pixel. The browser derives its Purchase id from the
+      // checkout token (`pur-<token>`, src/lib/pixelOutbox.ts), so when the
+      // order row never captured meta_event_id we must rebuild the SAME id
+      // instead of falling back to the order UUID — a UUID can never match the
+      // browser event, which made Meta count the sale twice.
+      event_id: order.meta_event_id || derivedEventId(order as any),
       event_source_url: eventSourceUrl,
       action_source: "website",
       user_data: userData,
