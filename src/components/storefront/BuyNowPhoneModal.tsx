@@ -36,6 +36,20 @@ import { storefrontPath } from "@/lib/subdomain";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phoneUtils";
+import { setCapiUser } from "@/lib/metaEnrichment";
+
+/**
+ * The mobile number is the ONLY identifier this storefront collects before
+ * checkout (we never ask for email). Push it into Pixel Advanced Matching +
+ * the CAPI registry the instant it's captured, so the InitiateCheckout that
+ * fires seconds later on the checkout page already carries a `ph` match key.
+ */
+function seedPhoneForMeta(phone: string) {
+  try {
+    const digits = String(phone).replace(/\D/g, "");
+    if (digits.length >= 10) setCapiUser({ phone: digits });
+  } catch { /* noop */ }
+}
 
 interface Props {
   open: boolean;
@@ -152,6 +166,7 @@ export default function BuyNowPhoneModal({
       if (normalized && isValidIndianPhone(normalized)) {
         didSkip.current = true;
         try { localStorage.setItem("checkout_phone", normalized); } catch {}
+        seedPhoneForMeta(normalized);
         saveLead({ storeId, phone: normalized, productId, productName, source });
         void autoLoginByPhone(storeId, normalized);
         onBeforeNavigate?.();
@@ -186,6 +201,7 @@ export default function BuyNowPhoneModal({
 
     try { localStorage.setItem("checkout_phone", normalized); } catch {}
 
+    seedPhoneForMeta(normalized);
     saveLead({ storeId, phone: normalized, productId, productName, source });
     void autoLoginByPhone(storeId, normalized);
 

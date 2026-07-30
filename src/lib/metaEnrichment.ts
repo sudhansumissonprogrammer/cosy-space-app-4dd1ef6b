@@ -243,3 +243,58 @@ export function getCapiUser(): CapiUser {
   if (typeof window === "undefined") return {};
   return window.__SF_CAPI_USER__ || {};
 }
+
+/**
+ * Seed Advanced Matching from what this storefront actually collects.
+ *
+ * We never ask for an email — the only PII we hold is the mobile number
+ * (captured in the Buy Now modal / phone step) and the delivery address
+ * (name, city, state, pincode) typed at checkout. Both are persisted in
+ * localStorage, but until now nothing replayed them into the Pixel/CAPI
+ * registry on a fresh page load, so PageView / ViewContent / AddToCart for
+ * a *returning* shopper went out with no match keys at all.
+ *
+ * Call on storefront mount (and right after phone capture). Idempotent.
+ */
+export function seedCapiUserFromStorage(storeId?: string): void {
+  if (typeof window === "undefined") return;
+  if (!hasMarketingConsent()) return;
+  try {
+    const user: CapiUser = {};
+
+    const phone = localStorage.getItem("checkout_phone") || "";
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length >= 10) user.phone = digits;
+
+    let addr: any = null;
+    if (storeId) {
+      try { addr = JSON.parse(localStorage.getItem(`express_checkout_${storeId}`) || "null"); } catch {}
+    }
+    if (!addr) {
+      try { addr = JSON.parse(localStorage.getItem("checkout_address") || "null"); } catch {}
+    }
+    if (addr && typeof addr === "object") {
+      const name = String(addr.fullName || addr.name || "").trim();
+      if (name) {
+        const parts = name.split(/\s+/).filter(Boolean);
+        user.firstName = parts[0];
+        if (parts.length > 1) user.lastName = parts.slice(1).join(" ");
+      }
+      const city = String(addr.city || "").trim();
+      const state = String(addr.state || addr.stateVal || "").trim();
+      const zip = String(addr.pincode || addr.zip || "").trim();
+      if (city) user.city = city;
+      if (state) user.state = state;
+      if (zip) user.zipCode = zip;
+      if (!user.phone) {
+        const ad = String(addr.phone || "").replace(/\D/g, "");
+        if (ad.length >= 10) user.phone = ad;
+      }
+    }
+
+    if (Object.keys(user).length === 0) return;
+    setCapiUser(user);
+  } catch {
+    /* noop */
+  }
+}

@@ -9,7 +9,7 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { generateEventId, useFacebookPixel } from "@/hooks/useFacebookPixel";
-import { ensureFbcPersisted, getOrCreateSfVid } from "@/lib/metaEnrichment";
+import { ensureFbcPersisted, getOrCreateSfVid, seedCapiUserFromStorage } from "@/lib/metaEnrichment";
 import { useGA4 } from "@/hooks/useGA4";
 import { usePageviewBeacon } from "@/hooks/usePageviewBeacon";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
@@ -232,6 +232,11 @@ export default function StorefrontShell({
   useEffect(() => {
     ensureFbcPersisted();
     getOrCreateSfVid(); // stable anon external_id for Pixel + CAPI
+    // Replay the only PII this storefront collects (mobile + delivery
+    // address) into Pixel Advanced Matching / CAPI on every page load.
+    // Without this a returning shopper's PageView/ViewContent/AddToCart
+    // carried zero match keys until they reached checkout.
+    seedCapiUserFromStorage(store?.id);
     if (store?.id) (window as any).__SF_STORE_ID__ = store.id;
     // Anti-ban: purge any legacy cookies scoped to the shared `.shopbanao.in`
     // platform domain. On platform subdomains this isolates each merchant
