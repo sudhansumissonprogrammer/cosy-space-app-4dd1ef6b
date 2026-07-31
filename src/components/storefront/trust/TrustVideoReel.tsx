@@ -133,13 +133,22 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
               playsInline
               muted
               loop
-              // Raw (uncompressed) uploads can be 20-45MB. preload="auto" would
-              // pull the whole first clip before the sheet even settles, so we
-              // stop at metadata and let playback stream on demand.
-              preload={i === 0 ? "metadata" : "none"}
-              onError={() => setFailed((f) => ({ ...f, [s.id]: true }))}
+              // Only the visible clip buffers (the observer flips this to
+              // "auto"). Everything else stays at zero bytes.
+              preload={i === 0 ? "auto" : "none"}
+              onWaiting={() => { if (i === active) setBuffering(true); }}
+              onPlaying={() => { if (i === active) setBuffering(false); }}
+              onCanPlay={() => { if (i === active) setBuffering(false); }}
+              onError={() => { setFailed((f) => ({ ...f, [s.id]: true })); setBuffering(false); }}
               onClick={() => setMuted((m) => !m)}
             />
+
+            {i === active && buffering && !failed[s.id] && (
+              <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
+              </span>
+            )}
+
 
             {failed[s.id] && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-8 text-center">
