@@ -309,7 +309,10 @@ Deno.serve(async (req) => {
     errCls = "transient";
   }
 
-  await admin.from("whatsapp_messages").insert({
+  // ⚠️ Log EVERY send. A silent insert failure here breaks drip pacing,
+  // analytics and attribution (this happened once via a unique index that
+  // allowed only one recovery row per cart), so surface the error loudly.
+  const { error: logErr } = await admin.from("whatsapp_messages").insert({
     store_id: body.store_id ?? null,
     message_type: body.message_type || (isTextReply ? "text_reply" : "platform"),
     recipient_phone: phone,
@@ -324,6 +327,8 @@ Deno.serve(async (req) => {
     direction: "outgoing",
     sent_via: "platform",
   });
+  if (logErr) console.error("whatsapp_messages log insert failed", logErr.message, { phone, template: body.template_name });
+
 
   if (status !== "sent") return json({ error: "send_failed", details: errMsg, error_class: errCls }, 502);
   return json({ success: true, message_id: metaId });
