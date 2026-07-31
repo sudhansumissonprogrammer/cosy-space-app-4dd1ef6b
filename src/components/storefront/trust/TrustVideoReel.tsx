@@ -25,8 +25,10 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const [active, setActive] = useState(0);
   const [failed, setFailed] = useState<Record<string, boolean>>({});
+  const [buffering, setBuffering] = useState(true);
 
   const [muted, setMuted] = useState(true);
+
 
   // Lock background scroll while the reel owns the screen.
   useEffect(() => {
@@ -53,7 +55,13 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
           if (!v) return;
           if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
             setActive(idx);
+            // Only the on-screen clip is allowed to buffer.
+            v.preload = "auto";
+            if (v.readyState < 3) setBuffering(true);
             v.play().catch(() => {});
+            // Warm just the next clip's header so the swipe feels instant.
+            const nxt = videoRefs.current[idx + 1];
+            if (nxt && nxt.preload === "none") nxt.preload = "metadata";
           } else {
             v.pause();
           }
@@ -64,6 +72,7 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
     root.querySelectorAll("[data-idx]").forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, [slides.length]);
+
 
   useEffect(() => {
     videoRefs.current.forEach((v) => { if (v) v.muted = muted; });
@@ -124,13 +133,22 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
               playsInline
               muted
               loop
-              // Raw (uncompressed) uploads can be 20-45MB. preload="auto" would
-              // pull the whole first clip before the sheet even settles, so we
-              // stop at metadata and let playback stream on demand.
-              preload={i === 0 ? "metadata" : "none"}
-              onError={() => setFailed((f) => ({ ...f, [s.id]: true }))}
+              // Only the visible clip buffers (the observer flips this to
+              // "auto"). Everything else stays at zero bytes.
+              preload={i === 0 ? "auto" : "none"}
+              onWaiting={() => { if (i === active) setBuffering(true); }}
+              onPlaying={() => { if (i === active) setBuffering(false); }}
+              onCanPlay={() => { if (i === active) setBuffering(false); }}
+              onError={() => { setFailed((f) => ({ ...f, [s.id]: true })); setBuffering(false); }}
               onClick={() => setMuted((m) => !m)}
             />
+
+            {i === active && buffering && !failed[s.id] && (
+              <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/80 border-t-transparent" />
+              </span>
+            )}
+
 
             {failed[s.id] && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-8 text-center">
