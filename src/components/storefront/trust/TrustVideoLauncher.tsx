@@ -120,8 +120,6 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
 
 
   const handleOpen = async () => {
-    // Pause the preview so it doesn't fight the full-screen player for the decoder.
-    videoRef.current?.pause();
     if (loading) return;
     if (slides) { setOpen(true); return; }
     setLoading(true);
@@ -141,42 +139,24 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
     try { sessionStorage.setItem(SS_DISMISS(storeId), "1"); } catch {}
   };
 
-  if (!available || dismissed || !preview) return null;
+  if (!available || dismissed || !preview || !revealed) return null;
 
   return (
     <>
       <div
-        className="fixed bottom-24 right-3 z-40 sm:bottom-5"
+        className="fixed bottom-24 right-3 z-40 animate-fade-in sm:bottom-5"
         style={{ width: 78 }}
       >
         <button
           type="button"
           onClick={handleOpen}
+          onPointerEnter={prefetch}
+          onTouchStart={prefetch}
           aria-label="Watch customer videos"
           className="relative block w-full overflow-hidden rounded-2xl bg-black shadow-[0_10px_28px_rgba(0,0,0,0.32)] ring-1 ring-white/25 transition-transform duration-200 active:scale-[0.96]"
           style={{ aspectRatio: "9 / 16" }}
         >
-          {mountVideo ? (
-            <video
-              ref={videoRef}
-              src={preview.videoUrl}
-              poster={preview.posterUrl || undefined}
-              autoPlay
-              muted
-              loop
-              playsInline
-              disablePictureInPicture
-              disableRemotePlayback
-              {...({
-                controlsList: "nodownload nofullscreen noremoteplayback noplaybackrate",
-                "webkit-playsinline": "true",
-                "x-webkit-airplay": "deny",
-              } as any)}
-
-              preload="metadata"
-              className="sf-trust-preview pointer-events-none absolute inset-0 h-full w-full object-cover"
-            />
-          ) : preview.posterUrl ? (
+          {preview.posterUrl ? (
             <img
               src={preview.posterUrl}
               alt=""
@@ -187,16 +167,19 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
             />
           ) : null}
 
+          {/* Play affordance — tap loads and plays the reel with sound */}
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-black shadow-md">
+              <Play className="h-3.5 w-3.5 translate-x-[1px] fill-current" strokeWidth={0} />
+            </span>
+          </span>
 
-          {/* subtle bottom gradient + speaker hint so shoppers know tap = sound */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 bg-gradient-to-t from-black/70 via-black/20 to-transparent px-1.5 pb-1.5 pt-6">
             <span className="text-[9px] font-semibold uppercase tracking-wide text-white/95 drop-shadow">
               Reels
             </span>
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white/90 text-black">
-              <Volume2 className="h-2.5 w-2.5" strokeWidth={2.5} />
-            </span>
           </div>
+
 
           {loading && (
             <span className="absolute inset-0 flex items-center justify-center bg-black/40">
