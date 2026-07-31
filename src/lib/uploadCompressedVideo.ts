@@ -135,10 +135,23 @@ async function uploadToR2(file: File | Blob, name: string, bucket: string, path:
   form.append("bucket", bucket);
   form.append("path", path);
   const { data, error } = await supabase.functions.invoke("r2-upload", { body: form });
-  if (error) throw new Error(`Upload failed: ${error.message}`);
+  if (error) {
+    // Surface the real server message ("File too large", "Unauthorized", ...)
+    // instead of the opaque "Edge Function returned a non-2xx status code".
+    let detail = error.message;
+    try {
+      const res = (error as any)?.context;
+      if (res && typeof res.json === "function") {
+        const body = await res.clone().json();
+        if (body?.error) detail = body.error;
+      }
+    } catch { /* keep default */ }
+    throw new Error(`Upload failed: ${detail}`);
+  }
   if (!data?.publicUrl) throw new Error("Upload failed: no URL returned");
   return data.publicUrl as string;
 }
+
 
 function inferExt(file: File): string {
   const m = file.name.match(/\.([a-z0-9]+)$/i);
