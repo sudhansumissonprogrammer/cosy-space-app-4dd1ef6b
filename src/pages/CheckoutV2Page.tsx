@@ -2050,13 +2050,19 @@ export default function CheckoutV2Page() {
     // guard so the shopper always *feels* the press, even when we end up
     // re-minting instead of launching.
     flashUpiTap(app);
+    // Queue the tap while the order/intent is still being prepared, so the
+    // launch happens automatically the instant it's ready (no second tap).
+    const queueTap = () => {
+      pendingUpiTapRef.current = { app, at: Date.now() };
+      flashUpiTap(app, PENDING_TAP_TTL_MS);
+    };
     if (creatingOrder || couponLoading || paymentAmountSyncing) {
-      clearUpiTapFx();
+      queueTap();
       return;
     }
     // PAYMENT-FIRST address gate — if no address, open the sheet and remember
     // this tap so we auto-resume the UPI launch after the shopper saves.
-    if (!requireAddressOrPrompt(() => tapUpiApp(app))) { clearUpiTapFx(); return; }
+    if (!requireAddressOrPrompt(() => tapUpiApp(app))) { pendingUpiTapRef.current = null; clearUpiTapFx(); return; }
     const s = intents[app];
     // A failed tile used to be a dead end (silent return + pointer-events-none),
     // so a shopper who hit one transient gateway error could never pay by UPI
@@ -2066,14 +2072,19 @@ export default function CheckoutV2Page() {
       mintLoopBlockedRef.current = false;
       lastMintAtRef.current = 0;
       toast.info("Retrying…");
+      queueTap();
       void createOrderAndIntents({ userInitiated: true });
-      clearUpiTapFx();
       return;
     }
     if (s.status !== "ready" || !s.url) {
-      clearUpiTapFx();
+      // Still minting (or not started yet) — remember the tap and make sure a
+      // mint is actually in flight, then let the pending-tap effect launch it.
+      queueTap();
+      if (s.status === "idle") void createOrderAndIntents({ userInitiated: true });
       return;
     }
+    pendingUpiTapRef.current = null;
+
     // Stale-intent guard: the minted URL encodes a fixed amount. If the
     // shopper toggled Partial/Full (or coupon/shipping shifted the total)
     // between mint and tap, refuse the launch and force a re-mint so the
