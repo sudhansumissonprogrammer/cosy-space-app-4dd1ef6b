@@ -1513,17 +1513,33 @@ async function getDeepChunkPreloads(entryPath, origin, env) {
     if (!res.ok) return [];
     const code = await res.text();
     const found = new Set();
-    // v8.24.1: Vite ACTUALLY emits relative paths in the entry chunk
-    // (e.g. `import{...}from"./entry-utils-DnXwcs32.js"`), not absolute
-    // `/assets/...` strings. Previous regex matched zero chunks → only
-    // 1 modulepreload ever shipped → cold load still waterfalled.
-    // Now match both forms and normalize to /assets/<file>.
-    const RX = /["'`](?:\.\/|\.?\/?assets\/)?([A-Za-z0-9_\-]+-[A-Za-z0-9]{6,})\.js["'`]/g;
-    for (const m of code.matchAll(RX)) {
-      const p = "/assets/" + m[1] + ".js";
+    // v8.69.0: use the shared, hash-safe extractor (see _extractChunkRefs).
+    for (const p of _extractChunkRefs(code)) {
       if (p === entryPath) continue;
       if (DEEP_CHUNK_DASH_PATTERN.test(p)) continue;
       found.add(p);
+    }
+
+    /* v8.69.0 — SECOND-LEVEL HUB SCAN.
+       main.tsx only statically imports entry-utils/framework/storefront-shell.
+       App-*.js and the vendor group (supabase / radix / router-query / icons)
+       are imports of storefront-shell, so a 1-level scan can never see them —
+       they waterfall as a 3rd and 4th RTT. Scan the storefront-shell hub too
+       (same 1h edge cache, memoized for the isolate's lifetime) and merge its
+       critical deps. This is what collapses PDP boot from 5 RTTs to 2. */
+    const HUB_CRITICAL =
+      /\/assets\/(?:App|supabase|radix|radix-slot|router-query|icons|ErrorBoundary|logError)-[A-Za-z0-9_.-]+\.js$/;
+    const hub = [...found].find((p) => /\/assets\/storefront-shell-/.test(p));
+    if (hub) {
+      try {
+        const hres = await fetch(`${origin}${hub}`, { cf: { cacheTtl: 3600, cacheEverything: true } });
+        if (hres.ok) {
+          const hcode = await hres.text();
+          for (const p of _extractChunkRefs(hcode)) {
+            if (HUB_CRITICAL.test(p) && !DEEP_CHUNK_DASH_PATTERN.test(p)) found.add(p);
+          }
+        }
+      } catch {}
     }
 
       // Storefront-critical chunk names — prioritize these first
@@ -1537,6 +1553,7 @@ async function getDeepChunkPreloads(entryPath, origin, env) {
         return pa - pb;
       })
       .slice(0, 12); // cap at 12 to avoid head bloat
+
     _memDeepChunks = arr;
     if (env?.STORE_KV) {
       env.STORE_KV.put(DEEP_CHUNKS_KV_KEY, JSON.stringify({ entry: entryPath, chunks: arr }), {
