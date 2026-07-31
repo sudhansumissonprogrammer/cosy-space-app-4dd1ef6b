@@ -2491,6 +2491,19 @@ export default function CheckoutV2Page() {
   };
 
   const createOrderIfNeeded = async (paymentMethodHint: string): Promise<PendingOrder> => {
+    // A previous order in THIS tab already consumed the idempotency token
+    // (success screen → shopper browsed to another product → new checkout).
+    // Start clean, otherwise place-order would return the old paid order and
+    // the UPI tiles would fail with already_paid.
+    if (tokenRetiredRef.current) {
+      rotateCheckoutToken();
+      orderIdRef.current = null;
+      orderNumberRef.current = null;
+      orderSnapshotRef.current = null;
+      setOrderId(null);
+      setOrderNumber(null);
+    }
+
     // Duplicate-order guard: if this store just completed an order in the last
     // 3 minutes (persisted in localStorage by onOrderSuccess so it survives
     // IABB sessionStorage wipes and popstate remounts) for the EXACT same
