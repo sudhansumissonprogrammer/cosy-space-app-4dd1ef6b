@@ -726,6 +726,14 @@ export default function CheckoutV2Page() {
   // Ref mirror so async mint paths read the live value, never a stale closure.
   const addressCompleteRef = useRef(addressComplete);
   addressCompleteRef.current = addressComplete;
+  // Live mirror of every address field. Deferred mint paths (coupon retry
+  // timeout, 2.5s coalesce timer, config-change effects) capture an OLD
+  // closure of validateAddress; reading state directly there produced a false
+  // "Please enter your name" toast on a fully-filled form — 392 of 748 checkout
+  // sessions hit it. validateAddress now reads these refs instead.
+  const addrFieldsRef = useRef({ fullName, phone, pincode, streetAddress, city, state });
+  addrFieldsRef.current = { fullName, phone, pincode, streetAddress, city, state };
+
   // Wait for the phone→address lookup to settle before deciding to show the
   // form. Prevents the flash-of-form for WhatsApp autologin shoppers whose
   // saved address arrives ~200-600ms after the checkout mounts.
