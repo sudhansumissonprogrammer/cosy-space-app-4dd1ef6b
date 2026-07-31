@@ -1887,18 +1887,18 @@ export default function CheckoutV2Page() {
       : storefrontPath(store.slug, "account");
     try {
       const { data: existing } = await supabaseStorefront.auth.getSession();
-      if (existing?.session?.user) { navigate(orderPath); return; }
+      if (existing?.session?.user) { navigate(orderPath, { replace: true }); return; }
       if (guestAccountPromiseRef.current) {
         await Promise.race([
           guestAccountPromiseRef.current.catch(() => {}),
           new Promise((r) => setTimeout(r, 600)),
         ]);
         const { data: after } = await supabaseStorefront.auth.getSession();
-        if (after?.session?.user) { navigate(orderPath); return; }
+        if (after?.session?.user) { navigate(orderPath, { replace: true }); return; }
       }
       const normalized = toCanonicalIndianPhone(phone) || normalizePhone(phone);
-      if (!normalized || normalized.length < 10) { navigate(orderPath); return; }
-      navigate(orderPath);
+      if (!normalized || normalized.length < 10) { navigate(orderPath, { replace: true }); return; }
+      navigate(orderPath, { replace: true });
       void (async () => {
         try {
           const { data, error } = await supabase.functions.invoke("phone-login", {
@@ -2343,6 +2343,26 @@ export default function CheckoutV2Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store?.id]);
 
+  // ─── Recently-completed order guard (back-nav from order detail) ────────
+  // The success screen lives on the /checkout route itself, so pressing Back
+  // from the order-detail page remounts checkout with orderPlaced=false. Read
+  // the durable localStorage marker written by onOrderSuccess (survives the
+  // Instagram/FB in-app-browser sessionStorage wipe) and bounce the shopper
+  // back to their order instead of dropping them into a live checkout.
+  const readRecentOrder = useCallback((): { ordId: string; at: number; sig?: string } | null => {
+    if (!store?.id) return null;
+    try {
+      const raw = localStorage.getItem(`sb_last_order:${store.id}`);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { ordId: string; at: number; sig?: string };
+      if (!parsed?.ordId) return null;
+      if (Date.now() - Number(parsed.at) > 10 * 60 * 1000) return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }, [store?.id]);
+
   // ─── Empty cart guard (skip in buy-now single mode) ─────────────────────
   // Must be declared unconditionally BEFORE any early returns below,
   // otherwise flipping orderPlaced/waiting after a payment-return would
@@ -2352,28 +2372,45 @@ export default function CheckoutV2Page() {
     if (orderId || orderPlaced || waiting || confirmingPayment) return;
     if (checkoutItems.length !== 0) return;
     if (summaryOpen) setSummaryOpen(false);
+    // Cart is empty because we JUST cleared it on a successful order — send
+    // them to that order, not to a confusing "your cart is empty" home bounce.
+    const recent = readRecentOrder();
+    if (recent) {
+      navigate(storefrontPath(store.slug, `account/orders/${recent.ordId}`), { replace: true });
+      return;
+    }
     toast("Your cart is empty — add items to continue");
     navigate(storefrontPath(store.slug), { replace: true });
-  }, [checkoutItems.length, isSingleMode, orderId, orderPlaced, waiting, confirmingPayment, summaryOpen, navigate, store?.slug]);
+  }, [checkoutItems.length, isSingleMode, orderId, orderPlaced, waiting, confirmingPayment, summaryOpen, navigate, store?.slug, readRecentOrder]);
 
   // ─── Buy-Now: "just ordered this" guard ─────────────────────────────────
   // If the shopper completed a Buy-Now order for THIS product and hits back
   // from the order-detail page, the URL still carries ?product=<pid>. Without
   // this guard the same product silently re-hydrates into checkout, tricking
-  // them into re-ordering. Redirect to home instead. Skipped while a payment
-  // flow / success screen is active on the SAME mount (orderPlaced/waiting).
+  // them into re-ordering. Skipped while a payment flow / success screen is
+  // active on the SAME mount (orderPlaced/waiting).
   useEffect(() => {
     if (!isSingleMode || !productId || !store?.id || isRecoveryRetry) return;
     if (orderId || orderPlaced || waiting || confirmingPayment) return;
+    let matchedOrderId: string | null = null;
     try {
       const key = `recent_order:${store.id}:${productId}${variantId ? `:${variantId}` : ""}`;
-      const recent = sessionStorage.getItem(key);
-      if (recent) {
-        toast("You've already placed this order");
-        navigate(storefrontPath(store.slug), { replace: true });
-      }
+      matchedOrderId = sessionStorage.getItem(key);
     } catch { /* noop */ }
-  }, [isSingleMode, productId, variantId, store?.id, store?.slug, isRecoveryRetry, orderId, orderPlaced, waiting, confirmingPayment, navigate]);
+    if (!matchedOrderId) {
+      // sessionStorage is wiped by Instagram/FB webviews after the UPI
+      // redirect — fall back to the durable marker, scoped to the same basket
+      // so a genuine second (different) order is never blocked.
+      const recent = readRecentOrder();
+      if (recent && typeof recent.sig === "string" && recent.sig.length > 0 && recent.sig === cartSignatureRef.current) {
+        matchedOrderId = recent.ordId;
+      }
+    }
+    if (matchedOrderId) {
+      navigate(storefrontPath(store.slug, `account/orders/${matchedOrderId}`), { replace: true });
+    }
+  }, [isSingleMode, productId, variantId, store?.id, store?.slug, isRecoveryRetry, orderId, orderPlaced, waiting, confirmingPayment, navigate, readRecentOrder]);
+
 
 
 
