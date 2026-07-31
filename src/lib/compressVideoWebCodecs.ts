@@ -80,14 +80,15 @@ function fitDims(w: number, h: number, maxDim: number) {
   return { w: nw - (nw % 2), h: nh - (nh % 2) };
 }
 
-/** Quality-preserving bitrate: ~70% of source, clamped by resolution. */
+/** Quality-preserving bitrate: high bpp target, never below a safe floor. */
 function pickBitrate(fileBytes: number, durationSec: number, w: number, h: number) {
   const pixels = w * h;
-  // Visually-lossless-ish target for H.264 ≈ 0.10 bits per pixel per frame @30fps
-  const byResolution = Math.round(pixels * 30 * 0.1);
+  // ~0.17 bits per pixel per frame @30fps — visually transparent for phone footage
+  const byResolution = Math.round(pixels * 30 * 0.17);
   const sourceBps = durationSec > 0 ? (fileBytes * 8) / durationSec : byResolution;
-  const target = Math.min(byResolution, Math.round(sourceBps * 0.7));
-  return Math.max(1_200_000, Math.min(target, 8_000_000));
+  // Never spend more than the source, but keep ~95% of it (not 70%).
+  const target = Math.min(byResolution, Math.round(sourceBps * 0.95));
+  return Math.max(3_500_000, Math.min(target, 14_000_000));
 }
 
 export async function compressVideo(file: File, opts: CompressOptions = {}): Promise<CompressResult> {
