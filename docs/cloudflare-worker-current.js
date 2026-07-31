@@ -208,7 +208,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.75.0-category-lcp-preload";
+const WORKER_VERSION = "8.76.0-chunk-hash-regex-fix";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -1608,7 +1608,7 @@ async function injectDeepPreloadsIntoColdHtml(html, origin, env) {
   if (!html || typeof html !== "string") return html;
   try {
     // Find the entry chunk in the existing head (same regex as _buildPrebuiltHead).
-    const entryMatch = html.match(/<script[^>]+type="module"[^>]+src="(\/assets\/[A-Za-z0-9_\-]+-[A-Za-z0-9]+\.js)"/);
+    const entryMatch = html.match(/<script[^>]+type="module"[^>]+src="(\/assets\/[A-Za-z0-9_][A-Za-z0-9_.-]*\.js)"/);
     if (!entryMatch) return html;
     const entryPath = entryMatch[1];
     const deep = await getDeepChunkPreloads(entryPath, origin, env);
@@ -1761,8 +1761,7 @@ async function getLandingChunkPreloads(entryPath, origin, env) {
     if (!res.ok) return [];
     const code = await res.text();
     const found = new Set();
-    for (const m of code.matchAll(/["'`]\/?(assets\/[A-Za-z0-9_\-]+-[A-Za-z0-9]+\.js)["'`]/g)) {
-      const p = "/" + m[1];
+    for (const p of _extractChunkRefs(code)) {
       if (p === entryPath) continue;
       if (LANDING_EXCLUDE_PATTERN.test(p)) continue;
       found.add(p);
