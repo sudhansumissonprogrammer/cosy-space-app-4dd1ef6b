@@ -2091,8 +2091,8 @@ export default function CheckoutV2Page() {
     // UPI app never opens for the wrong amount.
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) {
       toast.info("Updating amount…");
+      queueTap();
       void createOrderAndIntents({ userInitiated: true });
-      clearUpiTapFx();
       return;
     }
 
@@ -2102,10 +2102,11 @@ export default function CheckoutV2Page() {
     // the delivery boy sees the corrected address.
     if (shipIdentityRef.current !== debouncedShipIdentity) {
       toast.info("Updating details…");
+      queueTap();
       flushShipIdentity();
-      clearUpiTapFx();
       return;
     }
+
 
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
 
