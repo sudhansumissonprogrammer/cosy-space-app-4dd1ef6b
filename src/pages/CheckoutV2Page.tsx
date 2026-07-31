@@ -2286,8 +2286,13 @@ export default function CheckoutV2Page() {
           .invoke("order-payment-status", { body: { store_id: store.id, order_id: saved.orderId } })
           .then(({ data }) => {
             const st = (data as any)?.payment_status;
-            if (st === "success") { finishSuccess(); }
-            else if (st === "failed") { clearWaiting(); setWaiting(false); setPaymentFailed(true); }
+            if (st === "success") { finishSuccess(saved.orderId); }
+            else if (st === "failed") {
+              clearWaiting();
+              setWaiting(false);
+              setPendingOrder({ id: saved.orderId, number: saved.orderNumber || null });
+              setPaymentFailed(true);
+            }
           })
           .catch(() => { /* poll effect will retry */ });
       }
@@ -3101,6 +3106,18 @@ export default function CheckoutV2Page() {
           document.removeEventListener("visibilitychange", handleVisibilityReturn);
           resolve();
         };
+        const continueUnifiedVerification = () => {
+          settled = true;
+          setConfirmingPayment(false);
+          setOrderId(order.id);
+          setOrderNumber(order.number);
+          setShowPayment(true);
+          setWaitingApp("PayU");
+          setPaymentFailed(false);
+          setPendingOrder(null);
+          setWaiting(true);
+          done();
+        };
         const finish = async (ok: boolean, cancelled = false) => {
           if (settled) return;
           settled = true;
@@ -3114,10 +3131,8 @@ export default function CheckoutV2Page() {
           }
           const confirmed = await verifyAndFinalize({ attempts: ok ? 10 : 3, intervalMs: 2000, showConfirming: true });
           if (!confirmed) {
-            setPendingOrder(order); setPaymentFailed(true);
-            try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
-            try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { order_id: order.id, gateway: "payu" } as any }); } catch { /* noop */ }
-            toast.error(ok ? "Payment not confirmed yet. You can retry below." : "Payment was not completed. You can retry below.");
+            continueUnifiedVerification();
+            return;
           }
           done();
         };
@@ -3134,16 +3149,7 @@ export default function CheckoutV2Page() {
             // Keep the durable recovery record and hand off to the unified 90s
             // poller so the shopper sees processing → confirmation, even when
             // the browser document was refreshed during the UPI round trip.
-            settled = true;
-            setConfirmingPayment(false);
-            setOrderId(order.id);
-            setOrderNumber(order.number);
-            setShowPayment(true);
-            setWaitingApp("PayU");
-            setPaymentFailed(false);
-            setPendingOrder(null);
-            setWaiting(true);
-            done();
+            continueUnifiedVerification();
           }, 1200);
         };
         document.addEventListener("visibilitychange", handleVisibilityReturn);
@@ -3151,12 +3157,7 @@ export default function CheckoutV2Page() {
           if (settled) return;
           const confirmed = await verifyAndFinalize({ attempts: 1, intervalMs: 0, showConfirming: false });
           if (confirmed) { settled = true; done(); return; }
-          settled = true;
-          setConfirmingPayment(false);
-          setPendingOrder(order); setPaymentFailed(true);
-          try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
-          toast.error("Payment not completed. You can retry below.");
-          done();
+          continueUnifiedVerification();
         }, 30000);
         const isCancelStatus = (s: string) =>
           s === "cancel" || s === "cancelled" || s === "canceled" ||
