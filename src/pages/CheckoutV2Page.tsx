@@ -2960,12 +2960,21 @@ export default function CheckoutV2Page() {
 
   const openCashfree = async (order: PendingOrder) => {
     const env = (paymentConfig?.cashfree_env as any) === "sandbox" ? "sandbox" : "production";
+    let cashfreeReturnUrl: string;
+    try {
+      const returnUrl = new URL(buildPaymentReturnUrl());
+      returnUrl.searchParams.set("cf_order", "{order_id}");
+      returnUrl.searchParams.set("order", order.id);
+      cashfreeReturnUrl = returnUrl.toString();
+    } catch {
+      cashfreeReturnUrl = `${window.location.origin}/checkout?cf_order={order_id}&order=${order.id}`;
+    }
     const [cashfree, cfData] = await Promise.all([
       loadCashfree(env),
       callEdgeFunction("store-cashfree-create-order", {
         store_id: store.id, amount: chargeAmount, currency, order_id: order.id,
         customer_name: fullName, customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone), customer_email: email || undefined,
-        return_url: `${window.location.origin}/checkout?cf_order={order_id}&order=${order.id}`,
+        return_url: cashfreeReturnUrl,
       }),
     ]);
     gatewayRef.current = { pg: "cashfree", cf_order_id: cfData.cf_order_id };
@@ -3509,7 +3518,24 @@ export default function CheckoutV2Page() {
 
 
 
-  if (checkoutItems.length === 0 && !orderId && !isSingleMode) {
+  const hasPendingPaymentReturn = (() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.has("cf_order")
+        || params.has("payu_order")
+        || Boolean(sessionStorage.getItem(WAIT_KEY) || localStorage.getItem(WAIT_KEY))
+        || Boolean(
+          store?.id && (
+            sessionStorage.getItem(`payu_pending_${store.id}`)
+            || localStorage.getItem(`payu_pending_${store.id}`)
+          ),
+        );
+    } catch {
+      return false;
+    }
+  })();
+
+  if (checkoutItems.length === 0 && !orderId && !isSingleMode && !hasPendingPaymentReturn) {
     // Cart is empty (e.g. shopper removed the last item on the phone step) —
     // send them straight back to the storefront home rather than a dead end.
     navigate(storefrontPath(store.slug), { replace: true });
