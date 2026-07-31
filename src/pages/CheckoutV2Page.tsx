@@ -1308,6 +1308,14 @@ export default function CheckoutV2Page() {
   };
   useEffect(() => () => { if (tapFxTimerRef.current) window.clearTimeout(tapFxTimerRef.current); }, []);
 
+  /** ONE-TAP UPI: a tap that lands while the intent is still minting used to be
+   *  a dead tap (silent return). Remember it instead and auto-launch the moment
+   *  the intent turns ready. Expires so a stale tap can never launch later. */
+  const pendingUpiTapRef = useRef<{ app: UpiApp; at: number } | null>(null);
+  const tapUpiAppRef = useRef<((app: UpiApp) => void) | null>(null);
+  const PENDING_TAP_TTL_MS = 20000;
+
+
   const gatewayRef = useRef<{
     pg?: "cashfree" | "razorpay" | "payu";
     cf_order_id?: string;
