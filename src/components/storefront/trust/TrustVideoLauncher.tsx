@@ -86,8 +86,18 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
   }, [storeId, dismissed, preview]);
 
   // Insert the <video> element only after an idle tick so we don't fight LCP.
+  // PERF (India mobile): an autoplaying preview downloads the WHOLE mp4
+  // (4-6MB was landing on every category page), starving product images on
+  // 4G. On slow / data-saver connections we keep the poster image only —
+  // tapping still opens the full reel, so nothing is lost functionally.
   useEffect(() => {
     if (!preview || dismissed) return;
+    const conn = (navigator as any).connection;
+    const slow =
+      !!conn &&
+      (conn.saveData === true ||
+        ["slow-2g", "2g", "3g"].includes(String(conn.effectiveType || "")));
+    if (slow && preview.posterUrl) return; // poster-only, zero video bytes
     const ric = (window as any).requestIdleCallback as
       | ((cb: () => void) => number)
       | undefined;
@@ -97,6 +107,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
       else window.clearTimeout(h as number);
     };
   }, [preview, dismissed]);
+
 
   const handleOpen = async () => {
     // Pause the preview so it doesn't fight the full-screen player for the decoder.
