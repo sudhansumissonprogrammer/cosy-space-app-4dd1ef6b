@@ -1587,7 +1587,16 @@ export default function CheckoutV2Page() {
       },
     });
     if (error) throw new Error(error.message);
-    const result = data as { order_id?: string; order_number?: string; error?: string } | null;
+    const result = data as { order_id?: string; order_number?: string; error?: string; token_consumed?: boolean } | null;
+    // The token this tab is holding already belongs to a PAID/confirmed order
+    // (shopper bought something, then started a second order in the same tab).
+    // Rotate to a fresh idempotency key and place the new order for real,
+    // instead of silently reusing the old paid row (which surfaced as
+    // "UPI apps unavailable" / already_paid on the second checkout).
+    if (result?.token_consumed && attempt === 0) {
+      rotateCheckoutToken();
+      return placeOrderRow(paymentMethodHint, paymentTypeOverride, 1);
+    }
     if (!result?.order_id) throw new Error(result?.error || "Failed to place order");
     return { id: result.order_id, number: result.order_number || null };
   };
