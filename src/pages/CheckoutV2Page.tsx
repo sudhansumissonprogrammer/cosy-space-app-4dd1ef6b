@@ -2717,8 +2717,10 @@ export default function CheckoutV2Page() {
           // Discard if the shopper switched plans mid-flight — a fresh mint is queued after this run finishes.
           if (Math.round(requestedAmount * 100) !== Math.round(chargeAmount * 100)) {
             remintAfterCurrentOrderRef.current = true;
+            discardedMintRef.current = true;
             return;
           }
+
           const payload: any = intentData ?? (intErr as any)?.context?.body;
           // The gateway refused a new intent because a previous attempt on this
           // same order was already captured. Never show a failure here — the
