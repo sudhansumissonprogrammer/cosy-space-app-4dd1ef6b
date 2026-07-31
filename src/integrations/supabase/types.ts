@@ -5314,6 +5314,7 @@ export type Database = {
         Args: { _key: string; _max: number; _window_seconds: number }
         Returns: boolean
       }
+      is_admin: { Args: never; Returns: boolean }
       is_order_owner: { Args: { _order_id: string }; Returns: boolean }
       is_partner_owner: { Args: { _partner_id: string }; Returns: boolean }
       is_store_active: { Args: { _store_id: string }; Returns: boolean }
@@ -5348,6 +5349,9 @@ export type Database = {
         }
         Returns: number
       }
+      my_customer_ids: { Args: never; Returns: string[] }
+      my_order_ids: { Args: never; Returns: string[] }
+      my_store_ids: { Args: never; Returns: string[] }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
