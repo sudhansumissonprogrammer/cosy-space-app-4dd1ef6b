@@ -1854,6 +1854,10 @@ export default function CheckoutV2Page() {
     const finalOrderId = paidOrderId || orderId;
     if (!finalOrderId) return;
     clearWaiting();
+    try {
+      sessionStorage.removeItem(`payu_pending_${store.id}`);
+      localStorage.removeItem(`payu_pending_${store.id}`);
+    } catch { /* noop */ }
     onOrderSuccess(finalOrderId);
     if (!orderId) setOrderId(finalOrderId);
     setWaiting(false);
@@ -1936,7 +1940,10 @@ export default function CheckoutV2Page() {
     // the webhook / reconcile cron confirmed the order seconds later. Poll for ~90s
     // (45 × 2s) — well beyond PayU's worst-case reflection window — and rely on the
     // parallel webhook to flip DB status the moment it lands.
-    const maxAttempts = isDesktopQr ? 120 : (gatewayRef.current.pg ? 45 : 8);
+    // A real PayU payment in production has taken up to ~3.5 minutes to become
+    // visible through verify_payment. Keep the confirmation screen alive for
+    // five minutes; pending is not failure and must never reopen checkout.
+    const maxAttempts = isDesktopQr ? 120 : (gatewayRef.current.pg === "payu" ? 150 : gatewayRef.current.pg ? 45 : 8);
     // Shopper-returned fast exit: if the tab was hidden (UPI app opened) and
     // then becomes visible again, the shopper is back on checkout. If they
     // actually paid, PayU/Razorpay reflect it within a few seconds. If they
@@ -1981,7 +1988,7 @@ export default function CheckoutV2Page() {
       attempts++;
       const done = await checkNow();
       if (done || cancelled) return;
-      if (!isDesktopQr && returnedAt && Date.now() - returnedAt >= RETURN_GRACE_MS) {
+      if (!isDesktopQr && gatewayRef.current.pg !== "payu" && returnedAt && Date.now() - returnedAt >= RETURN_GRACE_MS) {
         stopWaitingForPayment("Payment not completed. Tap retry or choose another method.");
         return;
       }
@@ -2249,7 +2256,26 @@ export default function CheckoutV2Page() {
   // being stuck on the "waiting" screen re-polling.
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem(WAIT_KEY) || localStorage.getItem(WAIT_KEY);
+      // Normal UPI intents persist WAIT_KEY. PayU Bolt historically persisted a
+      // separate payu_pending key, so a full mobile-webview reload after opening
+      // PhonePe/GPay lost the active order and rendered a fresh checkout/address
+      // form. Accept that durable record as a recovery fallback as well.
+      let raw = sessionStorage.getItem(WAIT_KEY) || localStorage.getItem(WAIT_KEY);
+      if (!raw && store?.id) {
+        const payuRaw = sessionStorage.getItem(`payu_pending_${store.id}`)
+          || localStorage.getItem(`payu_pending_${store.id}`);
+        if (payuRaw) {
+          const payuSaved = JSON.parse(payuRaw);
+          raw = JSON.stringify({
+            orderId: payuSaved?.order_id,
+            orderNumber: payuSaved?.order_number,
+            app: "any",
+            label: "PayU",
+            gateway: { pg: "payu", payu_txnid: payuSaved?.txnid },
+            ts: payuSaved?.ts,
+          });
+        }
+      }
       if (!raw) return;
       const saved = JSON.parse(raw);
       if (!saved?.orderId) return;
@@ -2267,8 +2293,13 @@ export default function CheckoutV2Page() {
           .invoke("order-payment-status", { body: { store_id: store.id, order_id: saved.orderId } })
           .then(({ data }) => {
             const st = (data as any)?.payment_status;
-            if (st === "success") { finishSuccess(); }
-            else if (st === "failed") { clearWaiting(); setWaiting(false); setPaymentFailed(true); }
+            if (st === "success") { finishSuccess(saved.orderId); }
+            else if (st === "failed") {
+              clearWaiting();
+              setWaiting(false);
+              setPendingOrder({ id: saved.orderId, number: saved.orderNumber || null });
+              setPaymentFailed(true);
+            }
           })
           .catch(() => { /* poll effect will retry */ });
       }
@@ -2929,12 +2960,21 @@ export default function CheckoutV2Page() {
 
   const openCashfree = async (order: PendingOrder) => {
     const env = (paymentConfig?.cashfree_env as any) === "sandbox" ? "sandbox" : "production";
+    let cashfreeReturnUrl: string;
+    try {
+      const returnUrl = new URL(buildPaymentReturnUrl());
+      returnUrl.searchParams.set("cf_order", "{order_id}");
+      returnUrl.searchParams.set("order", order.id);
+      cashfreeReturnUrl = returnUrl.toString();
+    } catch {
+      cashfreeReturnUrl = `${window.location.origin}/checkout?cf_order={order_id}&order=${order.id}`;
+    }
     const [cashfree, cfData] = await Promise.all([
       loadCashfree(env),
       callEdgeFunction("store-cashfree-create-order", {
         store_id: store.id, amount: chargeAmount, currency, order_id: order.id,
         customer_name: fullName, customer_phone: toCanonicalIndianPhone(phone) || normalizePhone(phone), customer_email: email || undefined,
-        return_url: `${window.location.origin}/checkout?cf_order={order_id}&order=${order.id}`,
+        return_url: cashfreeReturnUrl,
       }),
     ]);
     gatewayRef.current = { pg: "cashfree", cf_order_id: cfData.cf_order_id };
@@ -3027,6 +3067,10 @@ export default function CheckoutV2Page() {
       sessionStorage.setItem(`payu_pending_${store.id}`, pendingPayload);
       localStorage.setItem(`payu_pending_${store.id}`, pendingPayload);
     } catch { /* noop */ }
+    // Persist the same canonical recovery state used by every other UPI flow.
+    // This must happen before Bolt opens an external app because Android/IABB
+    // may destroy and recreate the checkout document during the handoff.
+    persistWaiting("any", "PayU", { orderId: order.id, orderNumber: order.number });
 
     fireInitiateCheckoutOnce();
     fireAddPaymentInfoOnce(isPartialOrder ? "partial_cod_payu" : "payu", chargeAmount);
@@ -3078,6 +3122,18 @@ export default function CheckoutV2Page() {
           document.removeEventListener("visibilitychange", handleVisibilityReturn);
           resolve();
         };
+        const continueUnifiedVerification = () => {
+          settled = true;
+          setConfirmingPayment(false);
+          setOrderId(order.id);
+          setOrderNumber(order.number);
+          setShowPayment(true);
+          setWaitingApp("PayU");
+          setPaymentFailed(false);
+          setPendingOrder(null);
+          setWaiting(true);
+          done();
+        };
         const finish = async (ok: boolean, cancelled = false) => {
           if (settled) return;
           settled = true;
@@ -3091,10 +3147,8 @@ export default function CheckoutV2Page() {
           }
           const confirmed = await verifyAndFinalize({ attempts: ok ? 10 : 3, intervalMs: 2000, showConfirming: true });
           if (!confirmed) {
-            setPendingOrder(order); setPaymentFailed(true);
-            try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
-            try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { order_id: order.id, gateway: "payu" } as any }); } catch { /* noop */ }
-            toast.error(ok ? "Payment not confirmed yet. You can retry below." : "Payment was not completed. You can retry below.");
+            continueUnifiedVerification();
+            return;
           }
           done();
         };
@@ -3106,25 +3160,20 @@ export default function CheckoutV2Page() {
             if (settled) return;
             const confirmed = await verifyAndFinalize({ attempts: 1, intervalMs: 0, showConfirming: false });
             if (confirmed) { settled = true; done(); return; }
-            settled = true;
-            setConfirmingPayment(false);
-            setPendingOrder(order); setPaymentFailed(true);
-            try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
-            toast.error("Payment not completed. You can retry below.");
-            done();
-          }, 900);
+            // PayU commonly needs 15–45s to reflect a successful UPI payment.
+            // A single check 900ms after app return is not a failure verdict.
+            // Keep the durable recovery record and hand off to the unified 90s
+            // poller so the shopper sees processing → confirmation, even when
+            // the browser document was refreshed during the UPI round trip.
+            continueUnifiedVerification();
+          }, 1200);
         };
         document.addEventListener("visibilitychange", handleVisibilityReturn);
         timeoutId = window.setTimeout(async () => {
           if (settled) return;
           const confirmed = await verifyAndFinalize({ attempts: 1, intervalMs: 0, showConfirming: false });
           if (confirmed) { settled = true; done(); return; }
-          settled = true;
-          setConfirmingPayment(false);
-          setPendingOrder(order); setPaymentFailed(true);
-          try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
-          toast.error("Payment not completed. You can retry below.");
-          done();
+          continueUnifiedVerification();
         }, 30000);
         const isCancelStatus = (s: string) =>
           s === "cancel" || s === "cancelled" || s === "canceled" ||
@@ -3469,7 +3518,24 @@ export default function CheckoutV2Page() {
 
 
 
-  if (checkoutItems.length === 0 && !orderId && !isSingleMode) {
+  const hasPendingPaymentReturn = (() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.has("cf_order")
+        || params.has("payu_order")
+        || Boolean(sessionStorage.getItem(WAIT_KEY) || localStorage.getItem(WAIT_KEY))
+        || Boolean(
+          store?.id && (
+            sessionStorage.getItem(`payu_pending_${store.id}`)
+            || localStorage.getItem(`payu_pending_${store.id}`)
+          ),
+        );
+    } catch {
+      return false;
+    }
+  })();
+
+  if (checkoutItems.length === 0 && !orderId && !isSingleMode && !hasPendingPaymentReturn) {
     // Cart is empty (e.g. shopper removed the last item on the phone step) —
     // send them straight back to the storefront home rather than a dead end.
     navigate(storefrontPath(store.slug), { replace: true });
