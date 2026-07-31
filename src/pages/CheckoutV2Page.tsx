@@ -2748,8 +2748,10 @@ export default function CheckoutV2Page() {
           // Ignore late failures from a request that no longer matches the current amount.
           if (Math.round(requestedAmount * 100) !== Math.round(chargeAmount * 100)) {
             remintAfterCurrentOrderRef.current = true;
+            discardedMintRef.current = true;
             return;
           }
+
           const msg = e?.message || "UPI temporarily unavailable";
           setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: msg }; }); return next; });
         }
