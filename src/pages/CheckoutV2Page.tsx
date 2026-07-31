@@ -1702,6 +1702,7 @@ export default function CheckoutV2Page() {
       payload: {
         ...pixelPayloadFromItems(checkoutItems),
         content_name: checkoutItems.map((i) => i.name).join(", "),
+        order_id: ordId,
       },
     });
     clearPendingPurchase(ordId);
@@ -1781,6 +1782,7 @@ export default function CheckoutV2Page() {
           payload: {
             ...pixelPayloadFromItems(checkoutItems),
             content_name: checkoutItems.map((i) => i.name).join(", "),
+            order_id: waitOrderId,
           },
           // Match keys snapshot so a replayed Purchase (tab died during the
           // UPI hand-off) still carries phone/name/city/state/pincode.
