@@ -86,59 +86,37 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
     };
   }, [storeId, dismissed, preview]);
 
-  // Insert the <video> element only after an idle tick so we don't fight LCP.
-  // PERF (India mobile): an autoplaying preview downloads the WHOLE mp4
-  // (4-6MB was landing on every category page), starving product images on
-  // 4G. On slow / data-saver connections we keep the poster image only —
-  // tapping still opens the full reel, so nothing is lost functionally.
+  // Reveal only after the shopper has scrolled — keeps the tile (and its
+  // poster request) completely out of the first-paint / LCP window.
   useEffect(() => {
-    if (!preview || dismissed) return;
-    const conn = (navigator as any).connection;
-    const slow =
-      !!conn &&
-      (conn.saveData === true ||
-        ["slow-2g", "2g", "3g"].includes(String(conn.effectiveType || "")));
-    if (slow && preview.posterUrl) return; // poster-only, zero video bytes
-
-    let cancelled = false;
-    // Raw uploads (compression only kicks in above 45MB) can be 20-45MB. An
-    // autoplaying 78px thumbnail would stream the ENTIRE file and starve the
-    // product grid, so we HEAD the file once (result cached) and fall back to
-    // the poster whenever it is too heavy to be a "preview".
-    const MAX_PREVIEW_BYTES = 6 * 1024 * 1024;
-    const sizeKey = `sf_tv_size_${preview.videoUrl}`;
-    const okToPlay = async (): Promise<boolean> => {
-      if (!preview.posterUrl) return true; // no poster -> video is the only visual
-      try {
-        const cached = localStorage.getItem(sizeKey);
-        if (cached) return Number(cached) <= MAX_PREVIEW_BYTES;
-      } catch {}
-      try {
-        const res = await fetch(preview.videoUrl, { method: "HEAD" });
-        const len = Number(res.headers.get("content-length") || 0);
-        if (!len) return true;
-        try { localStorage.setItem(sizeKey, String(len)); } catch {}
-        return len <= MAX_PREVIEW_BYTES;
-      } catch {
-        return true;
+    if (dismissed || revealed) return;
+    const check = () => {
+      if (window.scrollY >= SCROLL_REVEAL_PX) {
+        setRevealed(true);
+        window.removeEventListener("scroll", check);
       }
     };
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    return () => window.removeEventListener("scroll", check);
+  }, [dismissed, revealed]);
 
-    const start = () => {
-      okToPlay().then((ok) => {
-        if (!cancelled && ok) setMountVideo(true);
-      });
-    };
-    const ric = (window as any).requestIdleCallback as
-      | ((cb: () => void) => number)
-      | undefined;
-    const h = ric ? ric(start) : window.setTimeout(start, 800);
-    return () => {
-      cancelled = true;
-      if (ric) (window as any).cancelIdleCallback?.(h);
-      else window.clearTimeout(h as number);
-    };
-  }, [preview, dismissed]);
+  /** Warm the reel chunk + first video on touch-start so tap feels instant. */
+  const prefetch = () => {
+    if (prefetchedRef.current) return;
+    prefetchedRef.current = true;
+    import("./TrustVideoReel").catch(() => {});
+    if (preview?.videoUrl) {
+      try {
+        const l = document.createElement("link");
+        l.rel = "prefetch";
+        l.as = "video";
+        l.href = preview.videoUrl;
+        document.head.appendChild(l);
+      } catch { /* noop */ }
+    }
+  };
+
 
 
   const handleOpen = async () => {
