@@ -1286,6 +1286,10 @@ export default function CheckoutV2Page() {
   }, [checkoutToken]);
 
 
+  // Set once an order on the current token is paid/placed. The next mint in
+  // this same tab must start from a brand-new idempotency token.
+  const tokenRetiredRef = useRef(false);
+
 
   const [intents, setIntents] = useState<Record<UpiApp, IntentState>>({
     gpay: { status: "idle" }, phonepe: { status: "idle" },
