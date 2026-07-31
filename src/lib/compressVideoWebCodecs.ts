@@ -152,6 +152,7 @@ export async function compressVideo(file: File, opts: CompressOptions = {}): Pro
       height: targetH,
       bitrate: videoBitrate,
       framerate: 30,
+      latencyMode: "quality" as const,
       avc: { format: "avc" as const },
     };
     try {
@@ -166,8 +167,9 @@ export async function compressVideo(file: File, opts: CompressOptions = {}): Pro
   }
   if (!configured) throw new Error("No supported H.264 encoder config");
 
-  // Play the clip as fast as the decoder allows and capture presented frames.
-  video.playbackRate = 2;
+  // Capture at real time for short clips — accelerated playback makes the
+  // browser DROP presented frames, which is what produced juddery output.
+  video.playbackRate = durationSec > 45 ? 1.5 : 1;
   let frameIndex = 0;
   let lastTs = -1;
 
