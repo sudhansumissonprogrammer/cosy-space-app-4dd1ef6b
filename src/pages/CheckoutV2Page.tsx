@@ -2652,11 +2652,18 @@ export default function CheckoutV2Page() {
     const run = (async () => {
       const err = validateAddress();
       if (err) {
-        toast.error(err);
-        try { fireStorefrontEvent({ storeId: store.id, eventName: "checkout_field_error" as any, metadata: { error: err } as any }); } catch { /* noop */ }
+        // Only a real tap deserves a red toast. Background re-mints (coupon
+        // resolve, snapshot change, payment-config load) must fail silently —
+        // shouting at a shopper who did nothing was the single biggest
+        // checkout drop-off trigger.
+        if (userInitiated) {
+          toast.error(err);
+          try { fireStorefrontEvent({ storeId: store.id, eventName: "checkout_field_error" as any, metadata: { error: err, src: "mint" } as any }); } catch { /* noop */ }
+        }
         return;
       }
-      if (checkoutItems.length === 0) { toast.error("Your cart is empty"); return; }
+      if (checkoutItems.length === 0) { if (userInitiated) toast.error("Your cart is empty"); return; }
+
       // Note: intentionally NOT waiting on paymentConfigLoaded — server picks the gateway.
 
       setCreatingOrder(true);
