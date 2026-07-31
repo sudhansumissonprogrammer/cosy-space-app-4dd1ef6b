@@ -23,10 +23,20 @@ function deviceOf(): string {
   return "desktop";
 }
 
+// The same page can be reached on two URL shapes: the custom domain
+// (`/category/ring-1`) and the platform path form (`/store/<slug>/category/ring-1`).
+// Without normalising, "Top pages right now" splits one page into two rows and
+// the store home shows up as the odd-looking `/store/<slug>`.
+function normalizePath(p: string): string {
+  const stripped = p.replace(/^\/store\/[^/]+/, "");
+  return stripped === "" || stripped === "/" ? "/" : stripped;
+}
+
 export function useLiveHeartbeat(storeId: string | undefined | null) {
   const { pathname } = useLocation();
-  const pathRef = useRef(pathname);
-  pathRef.current = pathname;
+  const pathRef = useRef(normalizePath(pathname));
+  pathRef.current = normalizePath(pathname);
+
 
   useEffect(() => {
     if (!storeId) return;
