@@ -1621,34 +1621,54 @@ async function injectDeepPreloadsIntoColdHtml(html, origin, env) {
   }
 }
 
+/* v8.69.0 — shared hub resolver. Route-level chunks are split across TWO
+   hubs: App-*.js (routers/providers) and storefront-shell-*.js (all the
+   storefront route + layout chunks, incl. ProductDetail). The old enrichers
+   only ever scanned App-*.js, so ProductDetail was never preloaded even when
+   the head contained App. Scan both, memoized per hub URL. */
+const _memHubCode = new Map();
+async function _hubChunkRefs(head, origin) {
+  const hubs = [];
+  const a = head.match(/href="(\/assets\/App-[^"]+\.js)"/);
+  if (a) hubs.push(a[1]);
+  const s = head.match(/href="(\/assets\/storefront-shell-[^"]+\.js)"/);
+  if (s) hubs.push(s[1]);
+  if (!hubs.length) return null;
+  const all = new Set();
+  for (const hub of hubs) {
+    let refs = _memHubCode.get(hub);
+    if (!refs) {
+      try {
+        const res = await fetch(`${origin}${hub}`, { cf: { cacheTtl: 3600, cacheEverything: true } });
+        if (!res.ok) continue;
+        refs = [..._extractChunkRefs(await res.text())];
+        _memHubCode.set(hub, refs);
+      } catch {
+        continue;
+      }
+    }
+    for (const p of refs) all.add(p);
+  }
+  return { key: hubs.join("|"), refs: all };
+}
+
 const _memThemeChunkPreloads = new Map();
 async function enrichHeadWithThemeChunkPreloads(head, origin, env, themeName) {
   if (!head || !themeName) return head;
-  const appMatch = head.match(/href="(\/assets\/App-[^"]+\.js)"/);
-  if (!appMatch) return head;
-  const cacheKey = `${appMatch[1]}:${themeName}`;
+  const hub = await _hubChunkRefs(head, origin);
+  if (!hub) return head;
+  const cacheKey = `${hub.key}:${themeName}`;
   let chunks = _memThemeChunkPreloads.get(cacheKey);
   if (!chunks) {
-    try {
-      const res = await fetch(`${origin}${appMatch[1]}`, { cf: { cacheTtl: 3600, cacheEverything: true } });
-      if (!res.ok) return head;
-      const code = await res.text();
-      const n = String(themeName).replace(/^theme-?/, "");
-      const themeRx = n === "1"
-        ? /\/assets\/(?:StorefrontLayout|StorefrontHome)-[A-Za-z0-9_-]+\.js$/
-        : new RegExp(`/assets/(?:StorefrontLayoutV${n}|StorefrontHomeV${n})-[A-Za-z0-9_-]+\\.js$`);
-      const essentialRx = /\/assets\/(?:storefront-shell|router-query|icons|radix-slot)-[A-Za-z0-9_-]+\.js$/;
-      const found = new Set();
-      const RX = /["'`](?:\.\/|\.?\/?assets\/)?([A-Za-z0-9_\-]+-[A-Za-z0-9]{6,})\.js["'`]/g;
-      for (const m of code.matchAll(RX)) {
-        const p = "/assets/" + m[1] + ".js";
-        if (essentialRx.test(p) || themeRx.test(p)) found.add(p);
-      }
-      chunks = [...found].slice(0, 8);
-      _memThemeChunkPreloads.set(cacheKey, chunks);
-    } catch {
-      return head;
-    }
+    const n = String(themeName).replace(/^theme-?/, "");
+    const themeRx = n === "1"
+      ? /\/assets\/(?:StorefrontLayout|StorefrontHome)-[A-Za-z0-9_.-]+\.js$/
+      : new RegExp(`/assets/(?:StorefrontLayoutV${n}|StorefrontHomeV${n})-[A-Za-z0-9_.-]+\\.js$`);
+    const essentialRx = /\/assets\/(?:storefront-shell|router-query|icons|radix-slot)-[A-Za-z0-9_.-]+\.js$/;
+    const found = [];
+    for (const p of hub.refs) if (essentialRx.test(p) || themeRx.test(p)) found.push(p);
+    chunks = found.slice(0, 8);
+    _memThemeChunkPreloads.set(cacheKey, chunks);
   }
   if (!chunks.length) return head;
   const tags = chunks
@@ -1661,38 +1681,29 @@ async function enrichHeadWithThemeChunkPreloads(head, origin, env, themeName) {
 /* v8.64.0 — PDP modulepreload enricher.
    Storefront PDP cold-load profile showed ProductDetail + productSelectors +
    PdpEnhancements + dialog chunks waterfalled serially after App.js parsed,
-   adding ~2-3s to FCP on ad clicks. We scan App.js once, cache in memory,
-   and inject <link rel="modulepreload"> for PDP-critical chunks ONLY on
-   /product/* and /products/* paths. Purely additive — non-PDP pages
-   unchanged. Cap at 6 to avoid head bloat. */
+   adding ~2-3s to FCP on ad clicks. We scan the hub chunks once, cache in
+   memory, and inject <link rel="modulepreload"> for PDP-critical chunks ONLY
+   on /product/* and /category/* paths. Purely additive.
+   v8.69.0 — now scans storefront-shell too (ProductDetail lives there, not in
+   App), and uses the hash-safe extractor. Cap raised 6 → 8; the render-
+   blocking set (ProductDetail + productSelectors + variant/layout deps) alone
+   is 5-6 chunks, so a cap of 6 was truncating the tail that still waterfalled. */
 const _memPdpChunkPreloads = new Map();
 async function enrichHeadWithPdpChunkPreloads(head, origin, env) {
   if (!head) return head;
-  const appMatch = head.match(/href="(\/assets\/App-[^"]+\.js)"/);
-  if (!appMatch) return head;
-  const cacheKey = appMatch[1];
-  let chunks = _memPdpChunkPreloads.get(cacheKey);
+  const hub = await _hubChunkRefs(head, origin);
+  if (!hub) return head;
+  let chunks = _memPdpChunkPreloads.get(hub.key);
   if (!chunks) {
-    try {
-      const res = await fetch(`${origin}${appMatch[1]}`, { cf: { cacheTtl: 3600, cacheEverything: true } });
-      if (!res.ok) return head;
-      const code = await res.text();
-      // PDP + Category critical chunk names (v8.65 adds CategoryDetail + Shop deps).
-      // v8.68.6 — RelatedProducts was deleted (replaced by the 3-carousel PDP
-      // system). Preload the new chunk names instead so the below-fold
-      // carousels don't waterfall after PDP paint.
-      const pdpRx = /\/assets\/(?:ProductDetail|V19ProductDetail|V20ProductDetail|V22ProductDetail|productSelectors|PdpEnhancements|VariantPickerDialog|SideCart|alert-dialog|CheckoutExitDialog|FrequentlyBoughtTogether|CustomerReviews|PdpCarousels|PdpProductCarousel|CategoryDetail|StorefrontShop|ShopFilterBar)-[A-Za-z0-9_-]+\.js$/;
-      const found = new Set();
-      const RX = /["'`](?:\.\/|\.?\/?assets\/)?([A-Za-z0-9_\-]+-[A-Za-z0-9]{6,})\.js["'`]/g;
-      for (const m of code.matchAll(RX)) {
-        const p = "/assets/" + m[1] + ".js";
-        if (pdpRx.test(p)) found.add(p);
-      }
-      chunks = [...found].slice(0, 6);
-      _memPdpChunkPreloads.set(cacheKey, chunks);
-    } catch {
-      return head;
-    }
+    // PDP + Category critical chunk names (v8.65 adds CategoryDetail + Shop deps).
+    // v8.68.6 — RelatedProducts was deleted (replaced by the 3-carousel PDP
+    // system). Preload the new chunk names instead so the below-fold
+    // carousels don't waterfall after PDP paint.
+    const pdpRx = /\/assets\/(?:ProductDetail|V19ProductDetail|V20ProductDetail|V22ProductDetail|productSelectors|PdpEnhancements|VariantPickerDialog|SideCart|alert-dialog|CheckoutExitDialog|FrequentlyBoughtTogether|CustomerReviews|PdpCarousels|PdpProductCarousel|CategoryDetail|StorefrontShop|ShopFilterBar)-[A-Za-z0-9_.-]+\.js$/;
+    const found = [];
+    for (const p of hub.refs) if (pdpRx.test(p)) found.push(p);
+    chunks = found.slice(0, 8);
+    _memPdpChunkPreloads.set(hub.key, chunks);
   }
   if (!chunks.length) return head;
   const tags = chunks
@@ -1701,6 +1712,7 @@ async function enrichHeadWithPdpChunkPreloads(head, origin, env) {
     .join("");
   return tags ? head.replace("</head>", `${tags}</head>`) : head;
 }
+
 
 function _isPdpPath(pathname) {
   return /^\/products?\/[^/]+/.test(pathname || "") || /^\/category\/[^/]+/.test(pathname || "");
