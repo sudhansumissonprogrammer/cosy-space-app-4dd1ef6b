@@ -1896,6 +1896,7 @@ export default function CheckoutV2Page() {
     // Order is paid — retire the checkout_token so the next checkout starts
     // with a fresh idempotency key (IABB cookie fix).
     clearCheckoutTokenCookie();
+    tokenRetiredRef.current = true;
     try { window.scrollTo({ top: 0, behavior: "auto" }); } catch { /* noop */ }
   };
 
