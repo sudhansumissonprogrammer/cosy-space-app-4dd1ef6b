@@ -771,14 +771,21 @@ export default function CheckoutV2Page() {
     return false;
   }, [addressComplete]);
 
-  // Lock body scroll while any address overlay is open so only the form scrolls.
+  // Lock body scroll ONLY while an address overlay is actually rendered.
+  // NOTE: `addressSheetOpen` is a *derived intent* flag (phone valid + address
+  // missing) that stays true on the payment screen even though no sheet is
+  // mounted — using it here froze the whole payment page's scroll.
   useEffect(() => {
-    const anySheetOpen = addressSheetOpen || showAddressDialog;
+    const anySheetOpen = showAddressFormSheet || showAddressDialog;
     if (!anySheetOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
-  }, [addressSheetOpen, showAddressDialog]);
+  }, [showAddressFormSheet, showAddressDialog]);
+
+  // Safety net: never leave the page scroll-locked when checkout unmounts.
+  useEffect(() => () => { document.body.style.overflow = ""; }, []);
+
 
   // ─── Keyboard-safe sheet height ────────────────────────────────────────
   // `dvh` does NOT shrink when the mobile keyboard opens on Android Chrome /
