@@ -135,10 +135,23 @@ async function uploadToR2(file: File | Blob, name: string, bucket: string, path:
   form.append("bucket", bucket);
   form.append("path", path);
   const { data, error } = await supabase.functions.invoke("r2-upload", { body: form });
-  if (error) throw new Error(`Upload failed: ${error.message}`);
+  if (error) {
+    // Surface the real server message ("File too large", "Unauthorized", ...)
+    // instead of the opaque "Edge Function returned a non-2xx status code".
+    let detail = error.message;
+    try {
+      const res = (error as any)?.context;
+      if (res && typeof res.json === "function") {
+        const body = await res.clone().json();
+        if (body?.error) detail = body.error;
+      }
+    } catch { /* keep default */ }
+    throw new Error(`Upload failed: ${detail}`);
+  }
   if (!data?.publicUrl) throw new Error("Upload failed: no URL returned");
   return data.publicUrl as string;
 }
+
 
 function inferExt(file: File): string {
   const m = file.name.match(/\.([a-z0-9]+)$/i);
@@ -187,17 +200,21 @@ export async function uploadCompressedVideo(
   let uploadExt = inferExt(file);
   let compressedBytes = file.size;
 
-  const COMPRESS_THRESHOLD = 25 * 1024 * 1024;
-  const COMPRESS_BUDGET_MS = 45_000;
+  // Compress when the file is heavy OR larger than 1080p. Bitrate is derived
+  // from the source inside compressVideo(), so quality stays visually intact.
+  const COMPRESS_THRESHOLD = 8 * 1024 * 1024;
+  const longEdge = Math.max(meta.width || 0, meta.height || 0);
+  const shouldCompress =
+    isWebCodecsSupported() && (file.size > COMPRESS_THRESHOLD || longEdge > 1080);
+  // Playback capture runs at ~2x realtime, so budget = 2x duration + slack.
+  const COMPRESS_BUDGET_MS = Math.min(180_000, Math.max(45_000, (meta.duration || 30) * 2000 + 20_000));
 
-  if (file.size > COMPRESS_THRESHOLD && isWebCodecsSupported()) {
+  if (shouldCompress) {
     try {
+      opts.onStage?.("compressing");
       const result = await Promise.race([
         compressVideo(file, {
           maxDimension: 1080,
-          videoBitrate: 3_500_000,
-          audioBitrate: 96_000,
-          keepAudio: true,
           onProgress: (p) => opts.onProgress?.(0.1 + p * 0.6),
         }),
         new Promise<null>((res) => setTimeout(() => res(null), COMPRESS_BUDGET_MS)),
@@ -213,6 +230,7 @@ export async function uploadCompressedVideo(
       console.warn("[video] compression failed, uploading raw", e);
     }
   }
+
 
   // Upload video
   opts.onStage?.("uploading-video");
