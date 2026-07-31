@@ -1887,18 +1887,18 @@ export default function CheckoutV2Page() {
       : storefrontPath(store.slug, "account");
     try {
       const { data: existing } = await supabaseStorefront.auth.getSession();
-      if (existing?.session?.user) { navigate(orderPath); return; }
+      if (existing?.session?.user) { navigate(orderPath, { replace: true }); return; }
       if (guestAccountPromiseRef.current) {
         await Promise.race([
           guestAccountPromiseRef.current.catch(() => {}),
           new Promise((r) => setTimeout(r, 600)),
         ]);
         const { data: after } = await supabaseStorefront.auth.getSession();
-        if (after?.session?.user) { navigate(orderPath); return; }
+        if (after?.session?.user) { navigate(orderPath, { replace: true }); return; }
       }
       const normalized = toCanonicalIndianPhone(phone) || normalizePhone(phone);
-      if (!normalized || normalized.length < 10) { navigate(orderPath); return; }
-      navigate(orderPath);
+      if (!normalized || normalized.length < 10) { navigate(orderPath, { replace: true }); return; }
+      navigate(orderPath, { replace: true });
       void (async () => {
         try {
           const { data, error } = await supabase.functions.invoke("phone-login", {
