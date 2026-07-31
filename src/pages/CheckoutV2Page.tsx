@@ -1479,15 +1479,18 @@ export default function CheckoutV2Page() {
 
   // ─── Validation ─────────────────────────────────────────────────────────
   const validateAddress = (): string | null => {
-    if (!fullName.trim()) return "Please enter your name";
-    const nPhone = normalizePhone(phone);
+    // Read from the live ref, not closed-over state — see addrFieldsRef.
+    const f = addrFieldsRef.current;
+    if (!f.fullName.trim()) return "Please enter your name";
+    const nPhone = normalizePhone(f.phone);
     if (!isValidIndianPhone(nPhone)) return "Enter a valid 10-digit phone number";
-    if (!/^\d{6}$/.test((pincode || "").replace(/\D/g, ""))) return "Enter a valid 6-digit pincode";
-    if (!streetAddress.trim()) return "Enter your street address";
-    if (!city.trim()) return "Enter city";
-    if (!state.trim()) return "Enter state";
+    if (!/^\d{6}$/.test((f.pincode || "").replace(/\D/g, ""))) return "Enter a valid 6-digit pincode";
+    if (!f.streetAddress.trim()) return "Enter your street address";
+    if (!f.city.trim()) return "Enter city";
+    if (!f.state.trim()) return "Enter state";
     return null;
   };
+
 
   // ─── place-order payload builders ───────────────────────────────────────
   const buildPlaceOrderMeta = () => {
