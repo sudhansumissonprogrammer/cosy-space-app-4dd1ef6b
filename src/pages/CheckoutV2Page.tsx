@@ -1308,6 +1308,14 @@ export default function CheckoutV2Page() {
   };
   useEffect(() => () => { if (tapFxTimerRef.current) window.clearTimeout(tapFxTimerRef.current); }, []);
 
+  /** ONE-TAP UPI: a tap that lands while the intent is still minting used to be
+   *  a dead tap (silent return). Remember it instead and auto-launch the moment
+   *  the intent turns ready. Expires so a stale tap can never launch later. */
+  const pendingUpiTapRef = useRef<{ app: UpiApp; at: number } | null>(null);
+  const tapUpiAppRef = useRef<((app: UpiApp) => void) | null>(null);
+  const PENDING_TAP_TTL_MS = 20000;
+
+
   const gatewayRef = useRef<{
     pg?: "cashfree" | "razorpay" | "payu";
     cf_order_id?: string;
@@ -2042,13 +2050,19 @@ export default function CheckoutV2Page() {
     // guard so the shopper always *feels* the press, even when we end up
     // re-minting instead of launching.
     flashUpiTap(app);
+    // Queue the tap while the order/intent is still being prepared, so the
+    // launch happens automatically the instant it's ready (no second tap).
+    const queueTap = () => {
+      pendingUpiTapRef.current = { app, at: Date.now() };
+      flashUpiTap(app, PENDING_TAP_TTL_MS);
+    };
     if (creatingOrder || couponLoading || paymentAmountSyncing) {
-      clearUpiTapFx();
+      queueTap();
       return;
     }
     // PAYMENT-FIRST address gate — if no address, open the sheet and remember
     // this tap so we auto-resume the UPI launch after the shopper saves.
-    if (!requireAddressOrPrompt(() => tapUpiApp(app))) { clearUpiTapFx(); return; }
+    if (!requireAddressOrPrompt(() => tapUpiApp(app))) { pendingUpiTapRef.current = null; clearUpiTapFx(); return; }
     const s = intents[app];
     // A failed tile used to be a dead end (silent return + pointer-events-none),
     // so a shopper who hit one transient gateway error could never pay by UPI
@@ -2058,22 +2072,27 @@ export default function CheckoutV2Page() {
       mintLoopBlockedRef.current = false;
       lastMintAtRef.current = 0;
       toast.info("Retrying…");
+      queueTap();
       void createOrderAndIntents({ userInitiated: true });
-      clearUpiTapFx();
       return;
     }
     if (s.status !== "ready" || !s.url) {
-      clearUpiTapFx();
+      // Still minting (or not started yet) — remember the tap and make sure a
+      // mint is actually in flight, then let the pending-tap effect launch it.
+      queueTap();
+      if (s.status === "idle") void createOrderAndIntents({ userInitiated: true });
       return;
     }
+    pendingUpiTapRef.current = null;
+
     // Stale-intent guard: the minted URL encodes a fixed amount. If the
     // shopper toggled Partial/Full (or coupon/shipping shifted the total)
     // between mint and tap, refuse the launch and force a re-mint so the
     // UPI app never opens for the wrong amount.
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) {
       toast.info("Updating amount…");
+      queueTap();
       void createOrderAndIntents({ userInitiated: true });
-      clearUpiTapFx();
       return;
     }
 
@@ -2083,10 +2102,11 @@ export default function CheckoutV2Page() {
     // the delivery boy sees the corrected address.
     if (shipIdentityRef.current !== debouncedShipIdentity) {
       toast.info("Updating details…");
+      queueTap();
       flushShipIdentity();
-      clearUpiTapFx();
       return;
     }
+
 
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
 
@@ -2188,6 +2208,38 @@ export default function CheckoutV2Page() {
       }
     }, 4500);
   };
+
+  // Keep a live ref so the pending-tap effect always calls the current closure.
+  tapUpiAppRef.current = tapUpiApp;
+
+  // ONE-TAP UPI: auto-resume a queued tap the moment its intent is ready.
+  useEffect(() => {
+    const pending = pendingUpiTapRef.current;
+    if (!pending) return;
+    if (Date.now() - pending.at > PENDING_TAP_TTL_MS) {
+      pendingUpiTapRef.current = null;
+      clearUpiTapFx();
+      return;
+    }
+    if (waiting || orderPlaced || confirmingPayment) {
+      pendingUpiTapRef.current = null;
+      return;
+    }
+    if (creatingOrder || couponLoading || paymentAmountSyncing) return;
+    if (shipIdentityRef.current !== debouncedShipIdentity) return;
+    const s = intents[pending.app];
+    if (s.status === "failed") {
+      pendingUpiTapRef.current = null;
+      clearUpiTapFx();
+      return;
+    }
+    if (s.status !== "ready" || !s.url) return;
+    if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) return;
+    pendingUpiTapRef.current = null;
+    tapUpiAppRef.current?.(pending.app);
+  }, [intents, creatingOrder, couponLoading, paymentAmountSyncing, chargeAmount, debouncedShipIdentity, waiting, orderPlaced, confirmingPayment]);
+
+
 
   // ─── Restore waiting state on mount / PayU redirect-back ────────────────
   // Also fires a one-shot server-side reconciliation so shoppers who reload
