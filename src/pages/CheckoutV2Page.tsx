@@ -2249,7 +2249,26 @@ export default function CheckoutV2Page() {
   // being stuck on the "waiting" screen re-polling.
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem(WAIT_KEY) || localStorage.getItem(WAIT_KEY);
+      // Normal UPI intents persist WAIT_KEY. PayU Bolt historically persisted a
+      // separate payu_pending key, so a full mobile-webview reload after opening
+      // PhonePe/GPay lost the active order and rendered a fresh checkout/address
+      // form. Accept that durable record as a recovery fallback as well.
+      let raw = sessionStorage.getItem(WAIT_KEY) || localStorage.getItem(WAIT_KEY);
+      if (!raw && store?.id) {
+        const payuRaw = sessionStorage.getItem(`payu_pending_${store.id}`)
+          || localStorage.getItem(`payu_pending_${store.id}`);
+        if (payuRaw) {
+          const payuSaved = JSON.parse(payuRaw);
+          raw = JSON.stringify({
+            orderId: payuSaved?.order_id,
+            orderNumber: payuSaved?.order_number,
+            app: "any",
+            label: "PayU",
+            gateway: { pg: "payu", payu_txnid: payuSaved?.txnid },
+            ts: payuSaved?.ts,
+          });
+        }
+      }
       if (!raw) return;
       const saved = JSON.parse(raw);
       if (!saved?.orderId) return;
@@ -3027,6 +3046,10 @@ export default function CheckoutV2Page() {
       sessionStorage.setItem(`payu_pending_${store.id}`, pendingPayload);
       localStorage.setItem(`payu_pending_${store.id}`, pendingPayload);
     } catch { /* noop */ }
+    // Persist the same canonical recovery state used by every other UPI flow.
+    // This must happen before Bolt opens an external app because Android/IABB
+    // may destroy and recreate the checkout document during the handoff.
+    persistWaiting("any", "PayU", { orderId: order.id, orderNumber: order.number });
 
     fireInitiateCheckoutOnce();
     fireAddPaymentInfoOnce(isPartialOrder ? "partial_cod_payu" : "payu", chargeAmount);
@@ -3106,13 +3129,22 @@ export default function CheckoutV2Page() {
             if (settled) return;
             const confirmed = await verifyAndFinalize({ attempts: 1, intervalMs: 0, showConfirming: false });
             if (confirmed) { settled = true; done(); return; }
+            // PayU commonly needs 15–45s to reflect a successful UPI payment.
+            // A single check 900ms after app return is not a failure verdict.
+            // Keep the durable recovery record and hand off to the unified 90s
+            // poller so the shopper sees processing → confirmation, even when
+            // the browser document was refreshed during the UPI round trip.
             settled = true;
             setConfirmingPayment(false);
-            setPendingOrder(order); setPaymentFailed(true);
-            try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
-            toast.error("Payment not completed. You can retry below.");
+            setOrderId(order.id);
+            setOrderNumber(order.number);
+            setShowPayment(true);
+            setWaitingApp("PayU");
+            setPaymentFailed(false);
+            setPendingOrder(null);
+            setWaiting(true);
             done();
-          }, 900);
+          }, 1200);
         };
         document.addEventListener("visibilitychange", handleVisibilityReturn);
         timeoutId = window.setTimeout(async () => {
