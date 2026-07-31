@@ -53,7 +53,13 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
           if (!v) return;
           if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
             setActive(idx);
+            // Only the on-screen clip is allowed to buffer.
+            v.preload = "auto";
+            if (v.readyState < 3) setBuffering(true);
             v.play().catch(() => {});
+            // Warm just the next clip's header so the swipe feels instant.
+            const nxt = videoRefs.current[idx + 1];
+            if (nxt && nxt.preload === "none") nxt.preload = "metadata";
           } else {
             v.pause();
           }
@@ -64,6 +70,7 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
     root.querySelectorAll("[data-idx]").forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, [slides.length]);
+
 
   useEffect(() => {
     videoRefs.current.forEach((v) => { if (v) v.muted = muted; });
