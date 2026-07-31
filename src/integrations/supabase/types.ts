@@ -3234,7 +3234,7 @@ export type Database = {
       store_trust_videos: {
         Row: {
           created_at: string
-          cta_label: string
+          cta_label: string | null
           cta_target: string | null
           id: string
           is_active: boolean
@@ -3247,7 +3247,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          cta_label?: string
+          cta_label?: string | null
           cta_target?: string | null
           id?: string
           is_active?: boolean
@@ -3260,7 +3260,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          cta_label?: string
+          cta_label?: string | null
           cta_target?: string | null
           id?: string
           is_active?: boolean
