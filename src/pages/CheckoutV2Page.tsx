@@ -1854,6 +1854,10 @@ export default function CheckoutV2Page() {
     const finalOrderId = paidOrderId || orderId;
     if (!finalOrderId) return;
     clearWaiting();
+    try {
+      sessionStorage.removeItem(`payu_pending_${store.id}`);
+      localStorage.removeItem(`payu_pending_${store.id}`);
+    } catch { /* noop */ }
     onOrderSuccess(finalOrderId);
     if (!orderId) setOrderId(finalOrderId);
     setWaiting(false);
@@ -1936,7 +1940,10 @@ export default function CheckoutV2Page() {
     // the webhook / reconcile cron confirmed the order seconds later. Poll for ~90s
     // (45 × 2s) — well beyond PayU's worst-case reflection window — and rely on the
     // parallel webhook to flip DB status the moment it lands.
-    const maxAttempts = isDesktopQr ? 120 : (gatewayRef.current.pg ? 45 : 8);
+    // A real PayU payment in production has taken up to ~3.5 minutes to become
+    // visible through verify_payment. Keep the confirmation screen alive for
+    // five minutes; pending is not failure and must never reopen checkout.
+    const maxAttempts = isDesktopQr ? 120 : (gatewayRef.current.pg === "payu" ? 150 : gatewayRef.current.pg ? 45 : 8);
     // Shopper-returned fast exit: if the tab was hidden (UPI app opened) and
     // then becomes visible again, the shopper is back on checkout. If they
     // actually paid, PayU/Razorpay reflect it within a few seconds. If they
@@ -1981,7 +1988,7 @@ export default function CheckoutV2Page() {
       attempts++;
       const done = await checkNow();
       if (done || cancelled) return;
-      if (!isDesktopQr && returnedAt && Date.now() - returnedAt >= RETURN_GRACE_MS) {
+      if (!isDesktopQr && gatewayRef.current.pg !== "payu" && returnedAt && Date.now() - returnedAt >= RETURN_GRACE_MS) {
         stopWaitingForPayment("Payment not completed. Tap retry or choose another method.");
         return;
       }
