@@ -1,19 +1,17 @@
 /**
  * TrustVideoLauncher — Flipkart-style floating video preview.
  *
- * Renders a small muted-autoplay looping video thumbnail in the bottom-right
- * corner. Tap the video to open the full-screen reel with sound. A tiny X
- * lets the shopper dismiss it for the session.
- *
- * Cold-load safe by design:
- *  - Mounted only after StorefrontShell's idle gate.
- *  - Existence probe cached in localStorage → instant repeat renders.
- *  - The <video> element uses preload="metadata" and is only inserted after
- *    an idle callback, so it never competes with LCP / hero images.
- *  - The player chunk, slide list and full-quality media are fetched ONLY on tap.
+ * ZERO page-load cost by design (v2):
+ *  - Nothing renders until the shopper has scrolled (~500px) — the launcher
+ *    never exists during the LCP / product-image window.
+ *  - The floating tile is a POSTER IMAGE ONLY. No <video> element, no
+ *    autoplay, no muted background streaming. Previously a 3-5MB mp4 was
+ *    being pulled on every home / category view.
+ *  - The reel chunk + the video bytes are fetched only on tap (with a warm
+ *    prefetch on touch-start so the first frame paints fast).
  */
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { X, Volume2 } from "lucide-react";
+import { Play, X } from "lucide-react";
 import {
   fetchTrustVideoProbe,
   fetchTrustReel,
@@ -30,6 +28,8 @@ interface Props {
 const LS_KEY = (id: string) => `sf_trust_videos_${id}`;
 const LS_PREVIEW = (id: string) => `sf_trust_preview_${id}`;
 const SS_DISMISS = (id: string) => `sf_trust_dismiss_${id}`;
+/** px of scroll before the floating tile is allowed to appear */
+const SCROLL_REVEAL_PX = 500;
 
 type PreviewCache = { videoUrl: string; posterUrl: string | null };
 
@@ -49,11 +49,12 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
     if (typeof window === "undefined") return false;
     try { return sessionStorage.getItem(SS_DISMISS(storeId)) === "1"; } catch { return false; }
   });
-  const [mountVideo, setMountVideo] = useState(false);
+  const [revealed, setRevealed] = useState(false);
   const [open, setOpen] = useState(false);
   const [slides, setSlides] = useState<TrustSlide[] | null>(null);
   const [loading, setLoading] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const prefetchedRef = useRef(false);
+
 
   // Existence probe + first-video fetch — both idle, no LCP impact.
   useEffect(() => {
