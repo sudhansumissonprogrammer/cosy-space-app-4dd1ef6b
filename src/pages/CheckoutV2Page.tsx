@@ -1286,6 +1286,10 @@ export default function CheckoutV2Page() {
   }, [checkoutToken]);
 
 
+  // Set once an order on the current token is paid/placed. The next mint in
+  // this same tab must start from a brand-new idempotency token.
+  const tokenRetiredRef = useRef(false);
+
 
   const [intents, setIntents] = useState<Record<UpiApp, IntentState>>({
     gpay: { status: "idle" }, phonepe: { status: "idle" },
@@ -1530,9 +1534,23 @@ export default function CheckoutV2Page() {
     } catch { /* noop */ }
   };
 
+  /** Retire the current idempotency token and start a brand-new one. Called
+   *  after a completed order, so the shopper's NEXT order (different product,
+   *  same tab) never collides with the paid row keyed by the old token. */
+  const rotateCheckoutToken = (): string => {
+    const fresh = mintCheckoutToken();
+    checkoutTokenRef.current = fresh;
+    purchaseEventIdRef.current = purchaseEventIdFor(fresh);
+    writeCheckoutTokenCookie(fresh);
+    setCheckoutToken(fresh);
+    tokenRetiredRef.current = false;
+    return fresh;
+  };
+
   const placeOrderRow = async (
     paymentMethodHint: string,
     paymentTypeOverride?: "full" | "partial",
+    attempt = 0,
   ): Promise<PendingOrder> => {
     const orderNotes = appliedCoupon
       ? `Coupon: ${appliedCoupon.code} (-${formatPrice(couponDiscount, currency)})`
@@ -1573,7 +1591,16 @@ export default function CheckoutV2Page() {
       },
     });
     if (error) throw new Error(error.message);
-    const result = data as { order_id?: string; order_number?: string; error?: string } | null;
+    const result = data as { order_id?: string; order_number?: string; error?: string; token_consumed?: boolean } | null;
+    // The token this tab is holding already belongs to a PAID/confirmed order
+    // (shopper bought something, then started a second order in the same tab).
+    // Rotate to a fresh idempotency key and place the new order for real,
+    // instead of silently reusing the old paid row (which surfaced as
+    // "UPI apps unavailable" / already_paid on the second checkout).
+    if (result?.token_consumed && attempt === 0) {
+      rotateCheckoutToken();
+      return placeOrderRow(paymentMethodHint, paymentTypeOverride, 1);
+    }
     if (!result?.order_id) throw new Error(result?.error || "Failed to place order");
     return { id: result.order_id, number: result.order_number || null };
   };
@@ -1869,6 +1896,7 @@ export default function CheckoutV2Page() {
     // Order is paid — retire the checkout_token so the next checkout starts
     // with a fresh idempotency key (IABB cookie fix).
     clearCheckoutTokenCookie();
+    tokenRetiredRef.current = true;
     try { window.scrollTo({ top: 0, behavior: "auto" }); } catch { /* noop */ }
   };
 
@@ -2463,6 +2491,19 @@ export default function CheckoutV2Page() {
   };
 
   const createOrderIfNeeded = async (paymentMethodHint: string): Promise<PendingOrder> => {
+    // A previous order in THIS tab already consumed the idempotency token
+    // (success screen → shopper browsed to another product → new checkout).
+    // Start clean, otherwise place-order would return the old paid order and
+    // the UPI tiles would fail with already_paid.
+    if (tokenRetiredRef.current) {
+      rotateCheckoutToken();
+      orderIdRef.current = null;
+      orderNumberRef.current = null;
+      orderSnapshotRef.current = null;
+      setOrderId(null);
+      setOrderNumber(null);
+    }
+
     // Duplicate-order guard: if this store just completed an order in the last
     // 3 minutes (persisted in localStorage by onOrderSuccess so it survives
     // IABB sessionStorage wipes and popstate remounts) for the EXACT same

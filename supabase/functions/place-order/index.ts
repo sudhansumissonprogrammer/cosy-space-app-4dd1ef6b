@@ -346,7 +346,11 @@ Deno.serve(async (req) => {
         const orderNumber = existingOrder.order_number
           ? `#${1000 + existingOrder.order_number}`
           : `#${existingOrder.id.slice(0, 8).toUpperCase()}`;
-        return new Response(JSON.stringify({ success: true, order_id: existingOrder.id, order_number: orderNumber, profit: null }), {
+        // `token_consumed` tells the storefront this idempotency key already
+        // belongs to a paid/confirmed order. The client rotates to a fresh
+        // token and retries ONCE so a second, genuinely new order can be
+        // placed in the same tab instead of dead-ending on already_paid.
+        return new Response(JSON.stringify({ success: true, order_id: existingOrder.id, order_number: orderNumber, profit: null, token_consumed: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
         }
