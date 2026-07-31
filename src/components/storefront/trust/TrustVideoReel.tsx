@@ -124,8 +124,10 @@ export default function TrustVideoReel({ slides, onClose }: Props) {
               playsInline
               muted
               loop
-              // Only the first clip preloads; the rest load as they scroll in.
-              preload={i === 0 ? "auto" : "none"}
+              // Raw (uncompressed) uploads can be 20-45MB. preload="auto" would
+              // pull the whole first clip before the sheet even settles, so we
+              // stop at metadata and let playback stream on demand.
+              preload={i === 0 ? "metadata" : "none"}
               onError={() => setFailed((f) => ({ ...f, [s.id]: true }))}
               onClick={() => setMuted((m) => !m)}
             />
