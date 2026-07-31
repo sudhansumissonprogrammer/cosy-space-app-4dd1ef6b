@@ -1530,9 +1530,23 @@ export default function CheckoutV2Page() {
     } catch { /* noop */ }
   };
 
+  /** Retire the current idempotency token and start a brand-new one. Called
+   *  after a completed order, so the shopper's NEXT order (different product,
+   *  same tab) never collides with the paid row keyed by the old token. */
+  const rotateCheckoutToken = (): string => {
+    const fresh = mintCheckoutToken();
+    checkoutTokenRef.current = fresh;
+    purchaseEventIdRef.current = purchaseEventIdFor(fresh);
+    writeCheckoutTokenCookie(fresh);
+    setCheckoutToken(fresh);
+    tokenRetiredRef.current = false;
+    return fresh;
+  };
+
   const placeOrderRow = async (
     paymentMethodHint: string,
     paymentTypeOverride?: "full" | "partial",
+    attempt = 0,
   ): Promise<PendingOrder> => {
     const orderNotes = appliedCoupon
       ? `Coupon: ${appliedCoupon.code} (-${formatPrice(couponDiscount, currency)})`
