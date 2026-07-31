@@ -98,11 +98,42 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
       (conn.saveData === true ||
         ["slow-2g", "2g", "3g"].includes(String(conn.effectiveType || "")));
     if (slow && preview.posterUrl) return; // poster-only, zero video bytes
+
+    let cancelled = false;
+    // Raw uploads (compression only kicks in above 45MB) can be 20-45MB. An
+    // autoplaying 78px thumbnail would stream the ENTIRE file and starve the
+    // product grid, so we HEAD the file once (result cached) and fall back to
+    // the poster whenever it is too heavy to be a "preview".
+    const MAX_PREVIEW_BYTES = 6 * 1024 * 1024;
+    const sizeKey = `sf_tv_size_${preview.videoUrl}`;
+    const okToPlay = async (): Promise<boolean> => {
+      if (!preview.posterUrl) return true; // no poster -> video is the only visual
+      try {
+        const cached = localStorage.getItem(sizeKey);
+        if (cached) return Number(cached) <= MAX_PREVIEW_BYTES;
+      } catch {}
+      try {
+        const res = await fetch(preview.videoUrl, { method: "HEAD" });
+        const len = Number(res.headers.get("content-length") || 0);
+        if (!len) return true;
+        try { localStorage.setItem(sizeKey, String(len)); } catch {}
+        return len <= MAX_PREVIEW_BYTES;
+      } catch {
+        return true;
+      }
+    };
+
+    const start = () => {
+      okToPlay().then((ok) => {
+        if (!cancelled && ok) setMountVideo(true);
+      });
+    };
     const ric = (window as any).requestIdleCallback as
       | ((cb: () => void) => number)
       | undefined;
-    const h = ric ? ric(() => setMountVideo(true)) : window.setTimeout(() => setMountVideo(true), 800);
+    const h = ric ? ric(start) : window.setTimeout(start, 800);
     return () => {
+      cancelled = true;
       if (ric) (window as any).cancelIdleCallback?.(h);
       else window.clearTimeout(h as number);
     };
