@@ -18,6 +18,12 @@ verify_jwt = false
 [functions.wallet-cashfree-webhook]
 verify_jwt = false
 
+[functions.wallet-cashfree-create-order]
+verify_jwt = false
+
+[functions.wallet-cashfree-verify]
+verify_jwt = false
+
 [functions.payu-webhook]
 verify_jwt = false
 

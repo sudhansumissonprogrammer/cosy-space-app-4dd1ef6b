@@ -120,12 +120,26 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
     }
     setBusy(true);
     try {
+      // Make sure we send a *fresh* access token — a stale/expired one is what
+      // made the edge function return 401 "Unauthorized" on recharge.
+      let { data: sess } = await supabase.auth.getSession();
+      if (!sess.session) {
+        const refreshed = await supabase.auth.refreshSession();
+        sess = refreshed.data as any;
+      }
+      const accessToken = sess?.session?.access_token;
+      if (!accessToken) throw new Error("Session expired. Please refresh the page and sign in again.");
+
       const { data: res, error } = await supabase.functions.invoke(
         "wallet-cashfree-create-order",
-        { body: { store_id: storeId, amount: n } },
+        {
+          body: { store_id: storeId, amount: n },
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
       );
       if (error || (res as any)?.error)
         throw new Error((res as any)?.error || error?.message);
+
       const sessionId = (res as any).payment_session_id;
       const orderId = (res as any).order_id;
       const Cashfree = await loadCashfree();

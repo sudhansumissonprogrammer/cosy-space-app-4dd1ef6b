@@ -23,16 +23,28 @@ function j(b: unknown, s = 200) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const auth = req.headers.get("Authorization");
-    if (!auth) return j({ error: "Missing authorization" }, 401);
+    const auth = req.headers.get("Authorization") || "";
+    const token = auth.replace(/^Bearer\s+/i, "").trim();
+    if (!token) {
+      console.error("wallet recharge: missing Authorization header");
+      return j({ error: "Please sign in again and retry the recharge." }, 401);
+    }
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const { data: ud } = await supabase.auth.getUser(auth.replace("Bearer ", ""));
+    const { data: ud, error: authErr } = await supabase.auth.getUser(token);
     const user = ud?.user;
-    if (!user) return j({ error: "Unauthorized" }, 401);
+    if (authErr || !user) {
+      console.error("wallet recharge: getUser failed", authErr?.message, "tokenLen", token.length);
+      return j({ error: "Session expired. Please refresh the page and try again." }, 401);
+    }
+
+    if (!CASHFREE_APP_ID || !CASHFREE_SECRET_KEY) {
+      console.error("wallet recharge: Cashfree credentials not configured");
+      return j({ error: "Payment gateway not configured. Contact support." }, 500);
+    }
 
     const body = await req.json().catch(() => ({}));
     const storeId = String(body.store_id || "");
