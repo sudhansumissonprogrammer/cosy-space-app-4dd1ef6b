@@ -2209,6 +2209,38 @@ export default function CheckoutV2Page() {
     }, 4500);
   };
 
+  // Keep a live ref so the pending-tap effect always calls the current closure.
+  tapUpiAppRef.current = tapUpiApp;
+
+  // ONE-TAP UPI: auto-resume a queued tap the moment its intent is ready.
+  useEffect(() => {
+    const pending = pendingUpiTapRef.current;
+    if (!pending) return;
+    if (Date.now() - pending.at > PENDING_TAP_TTL_MS) {
+      pendingUpiTapRef.current = null;
+      clearUpiTapFx();
+      return;
+    }
+    if (waiting || orderPlaced || confirmingPayment) {
+      pendingUpiTapRef.current = null;
+      return;
+    }
+    if (creatingOrder || couponLoading || paymentAmountSyncing) return;
+    if (shipIdentityRef.current !== debouncedShipIdentity) return;
+    const s = intents[pending.app];
+    if (s.status === "failed") {
+      pendingUpiTapRef.current = null;
+      clearUpiTapFx();
+      return;
+    }
+    if (s.status !== "ready" || !s.url) return;
+    if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) return;
+    pendingUpiTapRef.current = null;
+    tapUpiAppRef.current?.(pending.app);
+  }, [intents, creatingOrder, couponLoading, paymentAmountSyncing, chargeAmount, debouncedShipIdentity, waiting, orderPlaced, confirmingPayment]);
+
+
+
   // ─── Restore waiting state on mount / PayU redirect-back ────────────────
   // Also fires a one-shot server-side reconciliation so shoppers who reload
   // after paying (webhook already landed) see success instantly instead of
