@@ -1263,6 +1263,13 @@ export default function CheckoutV2Page() {
   const [creatingOrder, setCreatingOrder] = useState(false);
   const createOrderPromiseRef = useRef<Promise<void> | null>(null);
   const remintAfterCurrentOrderRef = useRef(false);
+  // Set when an in-flight intent response is thrown away because the shopper
+  // toggled Partial↔Full mid-request. Without this the UPI tiles could stay
+  // stuck on "loading" forever (the finally-block's amountStillMatches check
+  // can be true from an OLDER mint), which reads to the shopper as a dead
+  // payment section — they leave with an order row and no gateway attempt.
+  const discardedMintRef = useRef(false);
+
   // Throttle guards — prevent a feedback loop from hammering place-order.
   // Real cause seen in prod: chargeAmount recomputes fractionally out of sync
   // with the stamped intent amount (late paymentConfig, coupon reapply,
