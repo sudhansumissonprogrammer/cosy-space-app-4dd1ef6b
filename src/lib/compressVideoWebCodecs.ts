@@ -96,7 +96,7 @@ export async function compressVideo(file: File, opts: CompressOptions = {}): Pro
     throw new Error("WebCodecs not supported");
   }
 
-  const maxDim = opts.maxDimension ?? 1080;
+  const maxDim = opts.maxDimension ?? 1280;
   const meta = await probe(file);
   const { w: targetW, h: targetH } = fitDims(meta.width, meta.height, maxDim);
   const durationSec = meta.duration || 0;
