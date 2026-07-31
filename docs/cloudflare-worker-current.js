@@ -1,5 +1,22 @@
 /**
- * SHOPBANAO PRODUCTION ROUTER v8.68.5 — Meta ban-risk round 4 + bot homepage parity
+ * SHOPBANAO PRODUCTION ROUTER v8.76.0 — chunk-hash regex fix (PDP cold load)
+ *
+ * v8.76.0 — ROOT-CAUSE FIX for 5s PDP cold load on ad clicks.
+ *           The chunk-discovery regex required Vite hashes to be pure
+ *           [A-Za-z0-9], so every chunk with `_` or `-` in its hash was
+ *           invisible (App-_uiJmy0r, supabase-B_hdDSGZ, radix-Bpa4ymT-,
+ *           SideCart-BDulNaP-). App-*.js being invisible made the PDP and
+ *           theme enrichers bail out entirely (they key off App in the head),
+ *           so /product/* shipped only 5 modulepreloads and booted through 5
+ *           serial round trips: index -> storefront-shell -> App -> vendor
+ *           group -> ProductDetail. Measured FCP 4.98s / first product image
+ *           6.42s on throttled Indian 4G.
+ *           Fixes: (1) hash-safe _extractChunkRefs() shared by all scanners,
+ *           (2) second-level scan of the storefront-shell hub so App + vendor
+ *           group are discovered, (3) PDP/theme enrichers scan both hubs,
+ *           (4) PDP preloads priority-sorted and cap raised 6 -> 8.
+ *
+ * v8.68.5 — Meta ban-risk round 4 + bot homepage parity
  *
  * v8.68.5 — Bot cache version bump for bot-render homepage parity fix:
  *           store home bot HTML is store-detail only (no product grid/product
@@ -1700,9 +1717,23 @@ async function enrichHeadWithPdpChunkPreloads(head, origin, env) {
     // system). Preload the new chunk names instead so the below-fold
     // carousels don't waterfall after PDP paint.
     const pdpRx = /\/assets\/(?:ProductDetail|V19ProductDetail|V20ProductDetail|V22ProductDetail|productSelectors|PdpEnhancements|VariantPickerDialog|SideCart|alert-dialog|CheckoutExitDialog|FrequentlyBoughtTogether|CustomerReviews|PdpCarousels|PdpProductCarousel|CategoryDetail|StorefrontShop|ShopFilterBar)-[A-Za-z0-9_.-]+\.js$/;
+    /* v8.69.0 — priority order. Unsorted Set order put V19/V20/V22
+       ProductDetail (theme variants almost no store uses) ahead of
+       productSelectors + PdpCarousels, so the cap truncated the chunks that
+       actually block paint. Render-critical first, theme variants last. */
+    const PDP_PRIORITY = [
+      /\/assets\/ProductDetail-/, /\/assets\/productSelectors-/,
+      /\/assets\/PdpEnhancements-/, /\/assets\/VariantPickerDialog-/,
+      /\/assets\/CategoryDetail-/, /\/assets\/ShopFilterBar-/,
+      /\/assets\/PdpCarousels-/, /\/assets\/PdpProductCarousel-/,
+    ];
+    const rank = (p) => {
+      const i = PDP_PRIORITY.findIndex((rx) => rx.test(p));
+      return i === -1 ? PDP_PRIORITY.length : i;
+    };
     const found = [];
     for (const p of hub.refs) if (pdpRx.test(p)) found.push(p);
-    chunks = found.slice(0, 8);
+    chunks = found.sort((x, y) => rank(x) - rank(y)).slice(0, 8);
     _memPdpChunkPreloads.set(hub.key, chunks);
   }
   if (!chunks.length) return head;
