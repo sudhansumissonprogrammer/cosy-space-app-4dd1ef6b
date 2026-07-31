@@ -1462,7 +1462,34 @@ const DEEP_CHUNKS_TTL = 86400; // 24h
 const DEEP_CHUNK_DASH_PATTERN =
   /(?:charts|dash-vendor|admin-pages|dashboard-pages|dashboard-shell|WhatsApp|auth-pages|landing-)/;
 
+/* v8.69.0 — CHUNK REGEX FIX (root cause of the 5s PDP cold load).
+   The previous extractor was:
+     /["'`](?:\.\/|\.?\/?assets\/)?([A-Za-z0-9_\-]+-[A-Za-z0-9]{6,})\.js["'`]/g
+   which requires the Vite hash segment to be pure [A-Za-z0-9]. Vite emits
+   base64url hashes, so any hash containing `_` or `-` never matched:
+     App-_uiJmy0r.js   supabase-B_hdDSGZ.js   radix-Bpa4ymT-.js   SideCart-BDulNaP-.js
+   ~1 in 3 chunks was invisible. Critically App-*.js was ALWAYS invisible,
+   and both enrichHeadWithPdpChunkPreloads() and
+   enrichHeadWithThemeChunkPreloads() bail out when no App-*.js is in the
+   head — so the entire deep/PDP/theme preload system was silently dead.
+   Result on /product/*: index → storefront-shell → App → vendor group →
+   ProductDetail = 5 serial RTTs, FCP ~5.0s on Indian 4G.
+   This extractor matches the whole filename token, then validates it looks
+   hashed, allowing `_` and `-` anywhere in the hash. */
+function _extractChunkRefs(code) {
+  const out = new Set();
+  const RX = /["'`](?:\.\/|\.?\/?assets\/)?([A-Za-z0-9_][A-Za-z0-9_.-]*\.js)["'`]/g;
+  for (const m of code.matchAll(RX)) {
+    const file = m[1];
+    // must look like <name>-<hash6+>.js
+    if (!/-[A-Za-z0-9_-]{6,}\.js$/.test(file)) continue;
+    out.add("/assets/" + file);
+  }
+  return out;
+}
+
 async function getDeepChunkPreloads(entryPath, origin, env) {
+
   if (_memDeepChunks) return _memDeepChunks;
   // KV first
   if (env?.STORE_KV) {
