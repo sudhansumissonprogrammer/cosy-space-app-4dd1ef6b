@@ -2799,13 +2799,23 @@ export default function CheckoutV2Page() {
       const mintedAmount = lastMintedAmountRef.current;
       const amountStillMatches = mintedAmount != null &&
         Math.round(mintedAmount * 100) === Math.round(chargeAmount * 100);
-      if (remintAfterCurrentOrderRef.current && !confirmingPayment && !orderPlaced && !amountStillMatches) {
+      // A discarded mid-flight response left the tiles on "loading" with no
+      // usable intent — always re-mint in that case, even if an older mint's
+      // amount happens to match the current charge.
+      const forceRemint = discardedMintRef.current;
+      discardedMintRef.current = false;
+      if (remintAfterCurrentOrderRef.current && !confirmingPayment && !orderPlaced &&
+          (forceRemint || !amountStillMatches)) {
         remintAfterCurrentOrderRef.current = false;
+        // Reset the rapid-fire coalescer so this recovery mint isn't swallowed
+        // by the 2.5s throttle it would otherwise land inside.
+        lastMintAtRef.current = 0;
         window.setTimeout(() => { void createOrderAndIntents(opts); }, 0);
       } else {
         remintAfterCurrentOrderRef.current = false;
       }
     });
+
 
     return createOrderPromiseRef.current;
   };
