@@ -726,6 +726,14 @@ export default function CheckoutV2Page() {
   // Ref mirror so async mint paths read the live value, never a stale closure.
   const addressCompleteRef = useRef(addressComplete);
   addressCompleteRef.current = addressComplete;
+  // Live mirror of every address field. Deferred mint paths (coupon retry
+  // timeout, 2.5s coalesce timer, config-change effects) capture an OLD
+  // closure of validateAddress; reading state directly there produced a false
+  // "Please enter your name" toast on a fully-filled form — 392 of 748 checkout
+  // sessions hit it. validateAddress now reads these refs instead.
+  const addrFieldsRef = useRef({ fullName, phone, pincode, streetAddress, city, state });
+  addrFieldsRef.current = { fullName, phone, pincode, streetAddress, city, state };
+
   // Wait for the phone→address lookup to settle before deciding to show the
   // form. Prevents the flash-of-form for WhatsApp autologin shoppers whose
   // saved address arrives ~200-600ms after the checkout mounts.
@@ -1255,6 +1263,13 @@ export default function CheckoutV2Page() {
   const [creatingOrder, setCreatingOrder] = useState(false);
   const createOrderPromiseRef = useRef<Promise<void> | null>(null);
   const remintAfterCurrentOrderRef = useRef(false);
+  // Set when an in-flight intent response is thrown away because the shopper
+  // toggled Partial↔Full mid-request. Without this the UPI tiles could stay
+  // stuck on "loading" forever (the finally-block's amountStillMatches check
+  // can be true from an OLDER mint), which reads to the shopper as a dead
+  // payment section — they leave with an order row and no gateway attempt.
+  const discardedMintRef = useRef(false);
+
   // Throttle guards — prevent a feedback loop from hammering place-order.
   // Real cause seen in prod: chargeAmount recomputes fractionally out of sync
   // with the stamped intent amount (late paymentConfig, coupon reapply,
@@ -1471,15 +1486,18 @@ export default function CheckoutV2Page() {
 
   // ─── Validation ─────────────────────────────────────────────────────────
   const validateAddress = (): string | null => {
-    if (!fullName.trim()) return "Please enter your name";
-    const nPhone = normalizePhone(phone);
+    // Read from the live ref, not closed-over state — see addrFieldsRef.
+    const f = addrFieldsRef.current;
+    if (!f.fullName.trim()) return "Please enter your name";
+    const nPhone = normalizePhone(f.phone);
     if (!isValidIndianPhone(nPhone)) return "Enter a valid 10-digit phone number";
-    if (!/^\d{6}$/.test((pincode || "").replace(/\D/g, ""))) return "Enter a valid 6-digit pincode";
-    if (!streetAddress.trim()) return "Enter your street address";
-    if (!city.trim()) return "Enter city";
-    if (!state.trim()) return "Enter state";
+    if (!/^\d{6}$/.test((f.pincode || "").replace(/\D/g, ""))) return "Enter a valid 6-digit pincode";
+    if (!f.streetAddress.trim()) return "Enter your street address";
+    if (!f.city.trim()) return "Enter city";
+    if (!f.state.trim()) return "Enter state";
     return null;
   };
+
 
   // ─── place-order payload builders ───────────────────────────────────────
   const buildPlaceOrderMeta = () => {
@@ -2641,11 +2659,18 @@ export default function CheckoutV2Page() {
     const run = (async () => {
       const err = validateAddress();
       if (err) {
-        toast.error(err);
-        try { fireStorefrontEvent({ storeId: store.id, eventName: "checkout_field_error" as any, metadata: { error: err } as any }); } catch { /* noop */ }
+        // Only a real tap deserves a red toast. Background re-mints (coupon
+        // resolve, snapshot change, payment-config load) must fail silently —
+        // shouting at a shopper who did nothing was the single biggest
+        // checkout drop-off trigger.
+        if (userInitiated) {
+          toast.error(err);
+          try { fireStorefrontEvent({ storeId: store.id, eventName: "checkout_field_error" as any, metadata: { error: err, src: "mint" } as any }); } catch { /* noop */ }
+        }
         return;
       }
-      if (checkoutItems.length === 0) { toast.error("Your cart is empty"); return; }
+      if (checkoutItems.length === 0) { if (userInitiated) toast.error("Your cart is empty"); return; }
+
       // Note: intentionally NOT waiting on paymentConfigLoaded — server picks the gateway.
 
       setCreatingOrder(true);
@@ -2692,8 +2717,10 @@ export default function CheckoutV2Page() {
           // Discard if the shopper switched plans mid-flight — a fresh mint is queued after this run finishes.
           if (Math.round(requestedAmount * 100) !== Math.round(chargeAmount * 100)) {
             remintAfterCurrentOrderRef.current = true;
+            discardedMintRef.current = true;
             return;
           }
+
           const payload: any = intentData ?? (intErr as any)?.context?.body;
           // The gateway refused a new intent because a previous attempt on this
           // same order was already captured. Never show a failure here — the
@@ -2721,8 +2748,10 @@ export default function CheckoutV2Page() {
           // Ignore late failures from a request that no longer matches the current amount.
           if (Math.round(requestedAmount * 100) !== Math.round(chargeAmount * 100)) {
             remintAfterCurrentOrderRef.current = true;
+            discardedMintRef.current = true;
             return;
           }
+
           const msg = e?.message || "UPI temporarily unavailable";
           setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: msg }; }); return next; });
         }
@@ -2770,13 +2799,23 @@ export default function CheckoutV2Page() {
       const mintedAmount = lastMintedAmountRef.current;
       const amountStillMatches = mintedAmount != null &&
         Math.round(mintedAmount * 100) === Math.round(chargeAmount * 100);
-      if (remintAfterCurrentOrderRef.current && !confirmingPayment && !orderPlaced && !amountStillMatches) {
+      // A discarded mid-flight response left the tiles on "loading" with no
+      // usable intent — always re-mint in that case, even if an older mint's
+      // amount happens to match the current charge.
+      const forceRemint = discardedMintRef.current;
+      discardedMintRef.current = false;
+      if (remintAfterCurrentOrderRef.current && !confirmingPayment && !orderPlaced &&
+          (forceRemint || !amountStillMatches)) {
         remintAfterCurrentOrderRef.current = false;
+        // Reset the rapid-fire coalescer so this recovery mint isn't swallowed
+        // by the 2.5s throttle it would otherwise land inside.
+        lastMintAtRef.current = 0;
         window.setTimeout(() => { void createOrderAndIntents(opts); }, 0);
       } else {
         remintAfterCurrentOrderRef.current = false;
       }
     });
+
 
     return createOrderPromiseRef.current;
   };
