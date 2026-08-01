@@ -53,9 +53,9 @@ export interface DeliveryEstimate {
   tier: DeliveryTier;
   minDate: Date;
   maxDate: Date;
-  /** "Mon, 28 Apr" — short form for badges */
+  /** "Mon, 28 Apr" — the single promised date */
   shortLabel: string;
-  /** "Mon, 28 Apr – Wed, 30 Apr" */
+  /** Kept for API compatibility — same single date, never a range */
   rangeLabel: string;
   daysAway: number;
 }
@@ -63,18 +63,17 @@ export interface DeliveryEstimate {
 export function estimateDelivery(pincode: string, from: Date = new Date()): DeliveryEstimate | null {
   const tier = getDeliveryTier(pincode);
   if (!tier) return null;
-  const { min, max } = DAYS_BY_TIER[tier];
-  const minDate = addBusinessDays(from, min);
-  const maxDate = addBusinessDays(from, max);
+  const date = addDeliveryDays(from, DELIVERY_DAYS);
   const fmt = (d: Date) =>
     d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
-  const daysAway = Math.ceil((minDate.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+  const daysAway = Math.ceil((date.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+  const label = fmt(date);
   return {
     tier,
-    minDate,
-    maxDate,
-    shortLabel: fmt(minDate),
-    rangeLabel: `${fmt(minDate)} – ${fmt(maxDate)}`,
+    minDate: date,
+    maxDate: date,
+    shortLabel: label,
+    rangeLabel: label,
     daysAway,
   };
 }
