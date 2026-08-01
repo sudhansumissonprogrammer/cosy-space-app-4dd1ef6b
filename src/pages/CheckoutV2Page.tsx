@@ -2483,7 +2483,7 @@ export default function CheckoutV2Page() {
       // sheet is open cancels it. Also pushed out to 12s so a slow chooser
       // dialog is never interrupted.
       window.setTimeout(() => {
-        if (leftCheckout || document.visibilityState !== "visible") return;
+        if (isStale() || leftCheckout || document.visibilityState !== "visible") return;
         try { if (!document.hasFocus()) return; } catch { /* noop */ }
         if (chooserFired) return;
         chooserFired = true;
@@ -2501,6 +2501,8 @@ export default function CheckoutV2Page() {
 
     const launchedAt = Date.now();
     window.setTimeout(() => {
+      // A newer tap owns the wait screen now — never cancel it.
+      if (isStale()) return;
       cleanupLaunchListeners();
       if (leftCheckout || document.visibilityState !== "visible") {
         armWaiting();
