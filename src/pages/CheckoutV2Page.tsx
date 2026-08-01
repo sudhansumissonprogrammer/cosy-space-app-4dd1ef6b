@@ -2790,7 +2790,7 @@ export default function CheckoutV2Page() {
         }
         const order = await createOrderIfNeeded(activeGateway);
         setShowPayment(true);
-        try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { step: "continue_to_pay" } as any }); } catch { /* noop */ }
+        try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { step: "continue_to_pay", dev: deviceTag() } as any }); } catch { /* noop */ }
 
         const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
         setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "loading" }; }); return next; });
@@ -3422,7 +3422,7 @@ export default function CheckoutV2Page() {
     try {
       const order = await createOrderIfNeeded(activeGateway);
       setShowPayment(true);
-      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: activeGateway } as any }); } catch { /* noop */ }
+      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: activeGateway, dev: deviceTag() } as any }); } catch { /* noop */ }
       if (activeGateway === "razorpay") await openRazorpay(order);
       else if (activeGateway === "cashfree") await openCashfree(order);
       else await openPayu(order);
