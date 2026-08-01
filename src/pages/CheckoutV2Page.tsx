@@ -1848,6 +1848,15 @@ export default function CheckoutV2Page() {
   
   const [manualChecking, setManualChecking] = useState(false);
   const waitingCheckInFlightRef = useRef(false);
+  // Absolute wall-clock start of the CURRENT payment wait. Survives remounts
+  // (restored from the persisted WAIT_KEY.ts) so a shopper who cancels in the
+  // UPI app and wanders back into checkout can never restart a fresh polling
+  // budget over and over — that's what made "processing" look infinite.
+  const waitStartedAtRef = useRef(0);
+  // True when the wait was restored from storage (i.e. the shopper is already
+  // back on our page after the payment app), so the poller treats it as a
+  // "returned from app" wait and exits fast with a retry option.
+  const waitResumedRef = useRef(false);
 
   const goBack = useCallback(() => {
     if (showAddressFormSheet && addressComplete) {
