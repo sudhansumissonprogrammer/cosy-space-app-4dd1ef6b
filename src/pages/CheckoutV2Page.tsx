@@ -2097,13 +2097,27 @@ export default function CheckoutV2Page() {
       void checkNow();
     };
 
+    // iOS Safari restores the checkout from the back/forward cache after a UPI
+    // round trip: JS timers stay frozen and `visibilitychange` may never fire,
+    // so without a `pageshow` hook the poller sits idle and a PAID order looks
+    // pending. `persisted` means we came back from bfcache — treat it exactly
+    // like a return from the payment app.
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      wentToApp = true;
+      if (!returnedAt) returnedAt = Date.now();
+      void checkNow();
+    };
     window.addEventListener("focus", onFocus);
+    window.addEventListener("pageshow", onPageShow);
     document.addEventListener("visibilitychange", onVis);
     return () => {
       cancelled = true;
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("pageshow", onPageShow);
       document.removeEventListener("visibilitychange", onVis);
     };
+
   }, [waiting, orderId, waitingApp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const lastManualCheckRef = useRef(0);
