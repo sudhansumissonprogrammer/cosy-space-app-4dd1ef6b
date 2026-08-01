@@ -2094,10 +2094,9 @@ export default function CheckoutV2Page() {
   //   2. keep a permanently-mounted popstate listener that consumes it
   useEffect(() => {
     if (!canShowExitOffer || exitGuardPushedRef.current) return;
-    try { if (sessionStorage.getItem(exitSessionKey)) return; } catch { /* noop */ }
     exitGuardPushedRef.current = true;
     try { window.history.pushState({ sfExitGuard: true }, ""); } catch { /* noop */ }
-  }, [canShowExitOffer, exitSessionKey]);
+  }, [canShowExitOffer]);
 
   useEffect(() => {
     const onPop = () => {

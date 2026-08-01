@@ -53,7 +53,7 @@ export default function CheckoutExitOffer({
 
   return (
     <div
-      className="fixed inset-0 z-[95] flex items-start justify-center px-4 pt-[max(12px,env(safe-area-inset-top))] bg-black/60 backdrop-blur-[2px] animate-in fade-in duration-150 overflow-y-auto overscroll-contain"
+      className="fixed inset-0 z-[120] flex items-start justify-center px-4 pt-[max(12px,env(safe-area-inset-top))] bg-black/60 backdrop-blur-[2px] animate-in fade-in duration-150 overflow-y-auto overscroll-contain"
       role="dialog"
       aria-modal="true"
       aria-label="Before you leave"
