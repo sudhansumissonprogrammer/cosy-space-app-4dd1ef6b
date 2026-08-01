@@ -61,7 +61,16 @@ interface IntentState {
    *  the UPI URL was minted — prevents "chose Full but UPI opened for 100"
    *  race by refusing to launch a URL whose amount no longer matches. */
   amount?: number;
+  /** Date.now() at mint. A UPI intent URL carries a gateway-side transaction
+   *  reference (`tr`) that expires (Cashfree link ~15min, Razorpay S2S payment
+   *  sooner). Launching an expired URL opens the UPI app on a transaction the
+   *  bank will decline, so we re-mint instead. */
+  at?: number;
 }
+
+/** Max age of a minted UPI intent before we force a fresh mint on tap. */
+const UPI_INTENT_MAX_AGE_MS = 8 * 60 * 1000;
+
 
 interface PendingOrder {
   id: string;
@@ -1994,15 +2003,40 @@ export default function CheckoutV2Page() {
   };
 
 
+  /**
+   * A UPI intent URL is single-use at the gateway: it carries a transaction
+   * reference (`tr`) plus, for Razorpay/Cashfree, an already-created payment
+   * attempt. Once an attempt ends WITHOUT success (shopper cancelled in GPay,
+   * bank declined, timeout), re-launching the very same URL makes the UPI app
+   * either refuse it as a duplicate transaction or open a payment that can
+   * never be captured — the classic "I keep tapping GPay and it always fails"
+   * loop. Drop the intents back to `idle` so the next tap mints a fresh one,
+   * and clear the mint throttle so that mint is actually allowed to run.
+   */
+  const invalidateUpiIntents = () => {
+    mintCountRef.current = 0;
+    mintLoopBlockedRef.current = false;
+    lastMintAtRef.current = 0;
+    lastMintedAmountRef.current = null;
+    const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
+    setIntents((s) => {
+      const next = { ...s };
+      apps.forEach((a) => { next[a] = { status: "idle" }; });
+      return next;
+    });
+  };
+
   const stopWaitingForPayment = (message?: string) => {
     clearWaiting();
     setWaiting(false);
     setConfirmingPayment(false);
     if (orderId) setPendingOrder({ id: orderId, number: orderNumber });
     setPaymentFailed(true);
+    invalidateUpiIntents();
     try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
     if (message) toast(message, { duration: 5000 });
   };
+
 
   const handleViewMyOrders = async () => {
     if (viewingOrders) return;
@@ -2192,15 +2226,17 @@ export default function CheckoutV2Page() {
       if (verdict === "failed") {
         toast.error("Payment was cancelled — please try again");
         clearWaiting(); setWaiting(false); setPendingOrder({ id: orderId!, number: orderNumber }); setPaymentFailed(true);
+        invalidateUpiIntents();
         try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
         return;
       }
+
       const { data } = await supabase.functions.invoke("order-payment-status", {
         body: { store_id: store.id, order_id: orderId },
       });
       const status = (data as any)?.payment_status;
       if (status === "success") { finishSuccess(); return; }
-      if (status === "failed") { toast.error("Payment failed — please try again"); clearWaiting(); setWaiting(false); setPendingOrder({ id: orderId!, number: orderNumber }); setPaymentFailed(true); try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ } return; }
+      if (status === "failed") { toast.error("Payment failed — please try again"); clearWaiting(); setWaiting(false); setPendingOrder({ id: orderId!, number: orderNumber }); setPaymentFailed(true); invalidateUpiIntents(); try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ } return; }
       toast("Not confirmed yet — please complete the payment in your UPI app");
     } finally { setManualChecking(false); }
   };
@@ -2258,6 +2294,22 @@ export default function CheckoutV2Page() {
       void createOrderAndIntents({ userInitiated: true });
       return;
     }
+
+    // Expired-intent guard: the gateway's transaction reference inside the
+    // `upi://` URL has a limited lifetime. A shopper who left the checkout open
+    // for 10+ minutes and then tapped GPay used to get the app opening on a
+    // transaction the bank immediately declines. Re-mint instead — the queued
+    // tap fires automatically the moment the fresh intent is ready.
+    if (typeof s.at === "number" && Date.now() - s.at > UPI_INTENT_MAX_AGE_MS) {
+      mintCountRef.current = 0;
+      mintLoopBlockedRef.current = false;
+      lastMintAtRef.current = 0;
+      toast.info("Refreshing payment…");
+      queueTap();
+      void createOrderAndIntents({ userInitiated: true });
+      return;
+    }
+
 
     // Stale-address guard: if the shopper edited address/name/phone/email
     // within the 1.8s ship-identity debounce window, the minted order row
@@ -2913,7 +2965,7 @@ export default function CheckoutV2Page() {
               };
             }
             lastMintedAmountRef.current = requestedAmount;
-            setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "ready", url: schemeFor(a, url), amount: requestedAmount }; }); return next; });
+            setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "ready", url: schemeFor(a, url), amount: requestedAmount, at: Date.now() }; }); return next; });
           }
         } catch (e: any) {
           // Ignore late failures from a request that no longer matches the current amount.
@@ -4854,19 +4906,24 @@ export default function CheckoutV2Page() {
                   // real disabled state once the address is complete.
                   const addressReady = addressComplete;
                   // A `failed` tile must stay tappable — the tap is an explicit
-                  // retry (see tapUpiApp). Only block truly in-flight states.
+                  // retry (see tapUpiApp). `idle` must stay tappable too: after
+                  // a cancelled/declined attempt we deliberately drop the stale
+                  // single-use intents back to idle, and the tap is what mints
+                  // a fresh one. Only block truly in-flight states.
                   const retryable = s.status === "failed";
-                  const disabled = addressReady && !retryable && (s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount);
+                  const needsMint = s.status === "idle";
+                  const disabled = addressReady && !retryable && !needsMint && (s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount);
                   const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
                   const pressed = tappedUpiApp === app.key;
                   return (
                     <a
                       key={app.key}
-                      href={disabled || retryable || !addressReady ? undefined : s.url}
+                      href={disabled || retryable || needsMint || !addressReady ? undefined : s.url}
                       onClick={(e) => tapUpiApp(app.key, e)}
                       aria-disabled={disabled}
                       className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-[0.92] transition-[transform,box-shadow,opacity] duration-150 ease-out p-2.5 min-h-[92px] relative overflow-hidden select-none touch-manipulation ${pressed ? "scale-[0.96] ring-2 ring-primary shadow-[0_6px_16px_-6px_rgba(0,0,0,0.35)]" : "shadow-[0_1px_2px_rgba(0,0,0,0.04)]"} ${disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""} ${retryable ? "opacity-70" : ""}`}
                     >
+
                       {pressed && (
                         <span className="pointer-events-none absolute inset-0 rounded-lg bg-primary/10 animate-[fade-in_0.15s_ease-out]" aria-hidden="true" />
                       )}
@@ -4890,11 +4947,13 @@ export default function CheckoutV2Page() {
                 const staleAny = typeof anyS.amount === "number" && Math.round(anyS.amount * 100) !== Math.round(chargeAmount * 100);
                 const addressReady = addressComplete;
                 const anyRetryable = anyS.status === "failed";
-                const anyDisabled = addressReady && !anyRetryable && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
+                const anyNeedsMint = anyS.status === "idle";
+                const anyDisabled = addressReady && !anyRetryable && !anyNeedsMint && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
                 const anyPressed = tappedUpiApp === "any";
                 return (
                   <a
-                    href={anyDisabled || anyRetryable || !addressReady || isIOS() ? undefined : anyS.url}
+                    href={anyDisabled || anyRetryable || anyNeedsMint || !addressReady || isIOS() ? undefined : anyS.url}
+
                     onClick={(e) => {
                       // iOS has no Android-style `upi://` chooser. Sending an
                       // iPhone to that generic scheme is a dead tap (or opens an
