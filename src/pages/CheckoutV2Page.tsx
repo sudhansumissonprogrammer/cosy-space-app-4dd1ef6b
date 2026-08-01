@@ -2158,10 +2158,15 @@ export default function CheckoutV2Page() {
       attempts++;
       const done = await checkNow();
       if (done || cancelled) return;
+      // Never fail an attempt while the shopper is away from this tab — a
+      // hidden page means they are still inside the UPI app (PIN entry can take
+      // well over the grace window). The grace only counts foreground time.
+      if (document.visibilityState !== "visible") returnedAt = 0;
       if (!isDesktopQr && returnedAt && Date.now() - returnedAt >= RETURN_GRACE_MS) {
         stopWaitingForPayment("Payment not completed. Tap retry or choose another method.");
         return;
       }
+
       if (budgetExpired()) {
         stopWaitingForPayment("We couldn't confirm this payment. Tap retry or choose another method.");
         return;
