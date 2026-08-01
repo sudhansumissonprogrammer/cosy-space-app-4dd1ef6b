@@ -366,6 +366,38 @@ export async function recoveryDripDecision(admin: any, phone: string, opts: { ig
     for (const d of [-2, -1, 0, 1, 2]) stamps.delete(b + d);
   }
 
+  // ── Anti-spam retry guards ────────────────────────────────────────────────
+  // Failed sends no longer burn a drip step (shopper saw nothing), but they DO
+  // count as attempts. Without this the 10-min cron re-fired the same template
+  // forever whenever Meta rejected it.
+  const failed = ((failedRows as any[]) ?? []).filter((r) => Number.isFinite(new Date(r.created_at).getTime()));
+
+  // 1. Permanently undeliverable / ecosystem-blocked → never retry.
+  if (failed.some((r) => isPermanentWaError(r.error_message))) {
+    return { allow: false, step: 0, reason: "drip_undeliverable" };
+  }
+
+  const now = Date.now();
+  const attemptTimes = [
+    ...Array.from(stamps).map((m) => m * 60000),
+    ...failed.map((r) => new Date(r.created_at).getTime()),
+  ].sort((a, b) => b - a);
+
+  // 2. Hard ceiling on total attempts (sent + failed) in the last 24h.
+  const attempts24h = attemptTimes.filter((t) => t >= now - 24 * 60 * 60 * 1000).length;
+  if (attempts24h >= DRIP_MAX_ATTEMPTS_24H) {
+    return { allow: false, step: 0, reason: "drip_attempt_cap" };
+  }
+
+  // 3. Minimum cooldown between any two attempts, retry or not.
+  if (attemptTimes.length && now - attemptTimes[0] < DRIP_RETRY_GAP_MS) {
+    const lastFail = failed.length ? new Date(failed[0].created_at).getTime() : 0;
+    if (lastFail && lastFail >= attemptTimes[0]) {
+      return { allow: false, step: 0, reason: "drip_retry_cooldown", lastSentAt: new Date(lastFail).toISOString() };
+    }
+  }
+
+
   const times = Array.from(stamps).map((m) => m * 60000).sort((a, b) => b - a);
   const done = times.length;
   if (done >= DRIP_MAX_STEPS) return { allow: false, step: done, reason: "drip_complete" };
