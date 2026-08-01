@@ -2346,9 +2346,15 @@ export default function CheckoutV2Page() {
     // happened / like a random app jump. iOS gets a much shorter beat because
     // Safari/WKWebView drop custom-scheme navigations once the user gesture
     // has gone stale.
-    if (isIOS()) {
+    // Android in-app webviews (Instagram/Facebook/WhatsApp) also enforce a
+    // user-activation window for external-scheme navigations — an 850ms timer
+    // is long enough for the activation to go stale there, so the tap silently
+    // does nothing. Hand off in the same tick for every webview; keep the beat
+    // only for real Chrome, where it is safe.
+    const inAppWebview = !deviceTag().endsWith(":browser");
+    if (isIOS() || inAppWebview) {
       // Same-tick navigation — see UPI_LAUNCH_DELAY_IOS_MS. Any deferral risks
-      // WKWebView dropping the custom-scheme hop entirely.
+      // the webview dropping the custom-scheme hop entirely.
       launchUpiUrl(s.url);
     } else {
       window.setTimeout(() => {
@@ -2357,6 +2363,7 @@ export default function CheckoutV2Page() {
         launchUpiUrl(s.url);
       }, UPI_LAUNCH_DELAY_MS);
     }
+
 
 
 
