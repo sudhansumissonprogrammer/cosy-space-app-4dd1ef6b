@@ -2098,7 +2098,12 @@ export default function CheckoutV2Page() {
     // A real PayU payment in production has taken up to ~3.5 minutes to become
     // visible through verify_payment. Keep the confirmation screen alive for
     // five minutes; pending is not failure and must never reopen checkout.
-    const maxAttempts = isDesktopQr ? 120 : (gatewayRef.current.pg === "payu" ? 150 : gatewayRef.current.pg ? 45 : 8);
+    // Plain UPI intents used to stop after only 8 polls (~14s). That fired the
+    // "Still verifying with the bank" retry screen while the shopper was still
+    // reading Instagram's "you are leaving the app" sheet or Android's app
+    // chooser — the retry UI was literally visible behind the dialog. The
+    // absolute WAIT_BUDGET_MS below is the real stop condition now.
+    const maxAttempts = isDesktopQr ? 120 : (gatewayRef.current.pg === "payu" ? 150 : gatewayRef.current.pg ? 45 : 120);
     // Shopper-returned fast exit: if the tab was hidden (UPI app opened) and
     // then becomes visible again, the shopper is back on checkout. If they
     // actually paid, PayU/Razorpay reflect it within a few seconds. If they
