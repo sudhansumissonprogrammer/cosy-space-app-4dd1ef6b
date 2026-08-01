@@ -109,6 +109,7 @@ export default function StorefrontAutoLogin({ storeId }: { storeId?: string }) {
         const waMarker = url.searchParams.get("wa") === "1";
         if (waMarker) {
           try { sessionStorage.setItem("sf_wa_source", "1"); } catch { /* noop */ }
+          try { localStorage.setItem("sf_wa_source", "1"); } catch { /* noop */ }
           try { window.dispatchEvent(new Event("sf-wa-source")); } catch { /* noop */ }
         }
         if (!queryToken && !fragSession) {
@@ -122,6 +123,7 @@ export default function StorefrontAutoLogin({ storeId }: { storeId?: string }) {
         // Mark WA-source in session storage — used by store-owner-gated
         // auto-apply coupons downstream (see StorefrontAutoLogin history).
         try { sessionStorage.setItem("sf_wa_source", "1"); } catch { /* noop */ }
+        try { localStorage.setItem("sf_wa_source", "1"); } catch { /* noop */ }
         try { window.dispatchEvent(new Event("sf-wa-source")); } catch { /* noop */ }
 
 

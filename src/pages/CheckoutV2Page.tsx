@@ -1141,7 +1141,10 @@ export default function CheckoutV2Page() {
     // WhatsApp-exclusive coupon; everyone else gets the store-wide auto coupon.
     // Explicit ?coupon=... URL codes always win.
     const isWaSource = (() => {
-      try { return sessionStorage.getItem("sf_wa_source") === "1"; } catch { return false; }
+      try {
+        return sessionStorage.getItem("sf_wa_source") === "1"
+          || localStorage.getItem("sf_wa_source") === "1";
+      } catch { return false; }
     })();
     const waEligible = isWaSource && waCoupon?.code
       && Number(waCoupon.min_order_amount || 0) <= subtotal
@@ -2563,6 +2566,12 @@ export default function CheckoutV2Page() {
     if (isSingleMode) return;
     if (orderId || orderPlaced || waiting || confirmingPayment) return;
     if (checkoutItems.length !== 0) return;
+    // On iOS the cart can hydrate one render later than this page after the OS
+    // recreates a payment tab. Never redirect away while durable payment
+    // recovery exists, even before the restore effect's state updates commit.
+    try {
+      if (sessionStorage.getItem(WAIT_KEY) || localStorage.getItem(WAIT_KEY)) return;
+    } catch { /* continue with the normal empty-cart guard */ }
     if (summaryOpen) setSummaryOpen(false);
     // Cart is empty because we JUST cleared it on a successful order — send
     // them to that order, not to a confusing "your cart is empty" home bounce.
@@ -4498,10 +4507,16 @@ export default function CheckoutV2Page() {
 
                     setAddressAttempted(false);
                     setShowAddressFormSheet(false);
-                    // Do NOT auto-resume the payment. The shopper should
-                    // review the address on the summary and consciously tap
-                    // (or switch) the payment method themselves.
+                    // Resume the exact payment action the shopper selected.
+                    // Android can launch immediately; the resumed iOS handler
+                    // intentionally asks for one fresh tap because custom URL
+                    // schemes require a current Safari/WKWebView gesture.
+                    const resume = pendingPayActionRef.current;
                     pendingPayActionRef.current = null;
+                    if (resume) {
+                      bypassAddressGateRef.current = true;
+                      resume();
+                    }
                   }}
                 >
                   Continue
