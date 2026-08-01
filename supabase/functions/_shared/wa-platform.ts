@@ -325,7 +325,7 @@ export async function recoveryDripDecision(admin: any, phone: string, opts: { ig
     // undeliverable 131026, ecosystem throttle 131049…). These must NOT burn a
     // drip step — the shopper never saw anything.
     admin.from("whatsapp_messages")
-      .select("created_at")
+      .select("created_at, error_message")
       .eq("recipient_phone", phone).eq("sent_via", "platform").eq("direction", "outgoing")
       .eq("status", "failed")
       .in("message_type", RECOVERY_MESSAGE_TYPES)
