@@ -62,6 +62,8 @@ interface Props {
   onQuantityChange?: (item: CartItem, nextQty: number) => void;
   /** Called when the shopper taps Remove. Parent removes + navigates if cart empties. */
   onRemoveItem?: (item: CartItem) => void;
+  /** Parent-owned exit handler so header back follows the checkout save-offer flow. */
+  onBack?: () => void;
   /** Fires with the canonical 10-digit phone once Step 1 succeeds. */
   onComplete: (phone: string, savedAddress?: CheckoutSavedAddress | null) => void;
 }
@@ -112,6 +114,7 @@ export default function CheckoutPhoneStep({
   isSingleMode,
   onQuantityChange,
   onRemoveItem,
+  onBack,
   onComplete,
 }: Props) {
   const [phone, setPhone] = useState<string>(() => {
@@ -321,6 +324,10 @@ export default function CheckoutPhoneStep({
       <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-1 flex items-center gap-2">
         <button
           onClick={() => {
+            if (onBack) {
+              onBack();
+              return;
+            }
             try {
               if (window.history.length > 1) {
                 window.history.back();
