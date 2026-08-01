@@ -2155,6 +2155,20 @@ export default function CheckoutV2Page() {
     navigate(storefrontPath(store?.slug || ""), { replace: true });
   };
 
+  const exitOfferDialog = (
+    <CheckoutExitOffer
+      open={exitOfferOpen}
+      offerLabel={exitCoupon ? `${formatPrice(exitCoupon.value, currency)} OFF` : couponDiscount > 0 ? `${formatPrice(couponDiscount, currency)} OFF` : undefined}
+      offerCode={exitCoupon?.code || appliedCoupon?.code}
+      currentTotalLabel={exitExtraSaving > 0 ? formatPrice(total, currency) : undefined}
+      newTotalLabel={exitExtraSaving > 0 ? formatPrice(Math.max(0, total - exitExtraSaving), currency) : formatPrice(total, currency)}
+      alreadyClaimed={!exitCoupon}
+      onClaim={() => { void claimExitOffer(); }}
+      onLeave={leaveFromExitOffer}
+      onClose={() => setExitOfferOpen(false)}
+    />
+  );
+
 
   const [viewingOrders, setViewingOrders] = useState(false);
   const [showUpsell, setShowUpsell] = useState(false);
@@ -4352,36 +4366,40 @@ export default function CheckoutV2Page() {
   const needsPhone = !toCanonicalIndianPhone(phone);
   if (needsPhone) {
     return (
-      <Suspense fallback={<div className="min-h-[70vh]" />}>
-        <CheckoutPhoneStep
-          storeId={store?.id}
+      <>
+        <Suspense fallback={<div className="min-h-[70vh]" />}>
+          <CheckoutPhoneStep
+            storeId={store?.id}
             storeSlug={store?.slug}
-          storeName={store?.name}
-          storeLogo={store?.logo_url}
-          storePhone={(store as any)?.secondary_phone || (store as any)?.whatsapp_number || null}
-          cartItems={checkoutItems as any}
-          isSingleMode={isSingleMode}
-          onQuantityChange={(item, nextQty) => {
-            if (isSingleMode) setBuyNowQty(nextQty);
-            else updateQuantity(item.productId, item.variantId, nextQty);
-          }}
-          onRemoveItem={(item) => {
-            if (isSingleMode) {
-              // Buy-now has no cart to fall back to — go straight home.
-              navigate(storefrontPath(store?.slug || ""), { replace: true });
-              return;
-            }
-            removeFromCart(item.productId, item.variantId);
-            // If that was the last item, the empty-cart guard above will
-            // redirect to the storefront home on the next render.
-          }}
-          onComplete={(p, savedAddress) => {
-            setPhone(p);
-            try { localStorage.setItem("checkout_phone", toCanonicalIndianPhone(p) || p); } catch { /* noop */ }
-            if (savedAddress) applyPhoneLookupAddress(savedAddress);
-          }}
-        />
-      </Suspense>
+            storeName={store?.name}
+            storeLogo={store?.logo_url}
+            storePhone={(store as any)?.secondary_phone || (store as any)?.whatsapp_number || null}
+            cartItems={checkoutItems as any}
+            isSingleMode={isSingleMode}
+            onBack={goBack}
+            onQuantityChange={(item, nextQty) => {
+              if (isSingleMode) setBuyNowQty(nextQty);
+              else updateQuantity(item.productId, item.variantId, nextQty);
+            }}
+            onRemoveItem={(item) => {
+              if (isSingleMode) {
+                // Buy-now has no cart to fall back to — go straight home.
+                navigate(storefrontPath(store?.slug || ""), { replace: true });
+                return;
+              }
+              removeFromCart(item.productId, item.variantId);
+              // If that was the last item, the empty-cart guard above will
+              // redirect to the storefront home on the next render.
+            }}
+            onComplete={(p, savedAddress) => {
+              setPhone(p);
+              try { localStorage.setItem("checkout_phone", toCanonicalIndianPhone(p) || p); } catch { /* noop */ }
+              if (savedAddress) applyPhoneLookupAddress(savedAddress);
+            }}
+          />
+        </Suspense>
+        {exitOfferDialog}
+      </>
     );
   }
 
@@ -5568,17 +5586,7 @@ export default function CheckoutV2Page() {
       )}
 
       {/* Exit-intent save sheet — once per session */}
-      <CheckoutExitOffer
-        open={exitOfferOpen}
-        offerLabel={exitCoupon ? `${formatPrice(exitCoupon.value, currency)} OFF` : couponDiscount > 0 ? `${formatPrice(couponDiscount, currency)} OFF` : undefined}
-        offerCode={exitCoupon?.code || appliedCoupon?.code}
-        currentTotalLabel={exitExtraSaving > 0 ? formatPrice(total, currency) : undefined}
-        newTotalLabel={exitExtraSaving > 0 ? formatPrice(Math.max(0, total - exitExtraSaving), currency) : formatPrice(total, currency)}
-        alreadyClaimed={!exitCoupon}
-        onClaim={() => { void claimExitOffer(); }}
-        onLeave={leaveFromExitOffer}
-        onClose={() => setExitOfferOpen(false)}
-      />
+      {exitOfferDialog}
     </div>
 
   );
