@@ -269,8 +269,8 @@ function loadRazorpayScript(): Promise<boolean> {
 const SUPABASE_FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-async function callEdgeFunction(fnName: string, body: Record<string, any>) {
-  const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/${fnName}`, {
+async function callEdgeFunction(fnName: string, body: Record<string, any>, timeoutMs?: number) {
+  const request = fetch(`${SUPABASE_FUNCTIONS_URL}/${fnName}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -279,6 +279,14 @@ async function callEdgeFunction(fnName: string, body: Record<string, any>) {
     },
     body: JSON.stringify(body),
   });
+  const res = timeoutMs
+    ? await Promise.race([
+        request,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`${fnName} timed out`)), timeoutMs),
+        ),
+      ])
+    : await request;
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || `Edge function ${fnName} failed`);
   return data;
@@ -2164,6 +2172,36 @@ export default function CheckoutV2Page() {
       if (waitingCheckInFlightRef.current) return false;
       waitingCheckInFlightRef.current = true;
       try {
+        // Read our authoritative order row FIRST. Instagram/FB WebViews often
+        // suspend the direct PayU verifier fetch after returning from a UPI app.
+        // The reconcile job/webhook may already have confirmed the order, but
+        // the old ordering made the shopper wait up to 10s on PayU before every
+        // local status read (or indefinitely in older WebViews with frozen
+        // promises). A confirmed database row must always win immediately.
+        const readOrderStatus = async () => {
+          const { data } = await Promise.race([
+            supabase.functions.invoke("order-payment-status", {
+              body: { store_id: store.id, order_id: orderId },
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("Payment status check timed out")), 10000),
+            ),
+          ]);
+          return (data as any)?.payment_status as string | undefined;
+        };
+
+        const initialStatus = await readOrderStatus().catch(() => undefined);
+        if (initialStatus === "success") { finishSuccess(); return true; }
+        if (initialStatus === "failed") {
+          toast.error("Payment failed — please try again");
+          clearWaiting(); setWaiting(false); setPendingOrder({ id: orderId!, number: orderNumber }); setPaymentFailed(true);
+          try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+          try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { order_id: orderId } as any }); } catch { /* noop */ }
+          return true;
+        }
+
+        // Still pending locally: ask the gateway for a fresh verdict. This can
+        // update the order row when the webhook is delayed.
         const gatewayResult = await forceGatewayVerify();
         const verdict = normalizeGatewayResult(gatewayResult);
         if (verdict === "success") { finishSuccess(); return true; }
@@ -2174,15 +2212,9 @@ export default function CheckoutV2Page() {
           try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { order_id: orderId, gateway: gatewayRef.current?.pg } as any }); } catch { /* noop */ }
           return true;
         }
-        const { data } = await Promise.race([
-          supabase.functions.invoke("order-payment-status", {
-            body: { store_id: store.id, order_id: orderId },
-          }),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Payment status check timed out")), 10000),
-          ),
-        ]);
-        const status = (data as any)?.payment_status;
+        // The gateway verifier may have confirmed the row. Read it once more
+        // before scheduling the next poll so success is reflected this tick.
+        const status = await readOrderStatus().catch(() => undefined);
         if (status === "success") { finishSuccess(); return true; }
         if (status === "failed") {
           toast.error("Payment failed — please try again");
@@ -2304,14 +2336,14 @@ export default function CheckoutV2Page() {
       if (document.visibilityState === "visible" && !waitingCheckInFlightRef.current) {
         waitingCheckInFlightRef.current = true;
         try {
-          const gatewayResult = await forceGatewayVerify();
-          if (!cancelled && normalizeGatewayResult(gatewayResult) === "success") {
-            finishSuccess(pendingOrder.id); return;
-          }
           const { data } = await supabase.functions.invoke("order-payment-status", {
             body: { store_id: store.id, order_id: pendingOrder.id },
           });
           if (!cancelled && (data as any)?.payment_status === "success") {
+            finishSuccess(pendingOrder.id); return;
+          }
+          const gatewayResult = await forceGatewayVerify();
+          if (!cancelled && normalizeGatewayResult(gatewayResult) === "success") {
             finishSuccess(pendingOrder.id); return;
           }
         } catch { /* keep watching */ }
@@ -2726,7 +2758,10 @@ export default function CheckoutV2Page() {
     // Android recent-app restore / WebView bfcache can replay the exact PayU
     // return URL after this mount has already reached confirmation. Never let a
     // stale redirect re-arm the processing screen for a completed order.
-    if (orderPlaced || confirmingPayment) return;
+    // `confirmingPayment` is transient and may be stuck when Instagram freezes
+    // an in-flight PayU request. It must never veto redirect recovery; only the
+    // terminal success state is safe to ignore.
+    if (orderPlaced) return;
     const params = new URLSearchParams(window.location.search);
     const payuStatus = params.get("payu_status");
     const txnid = params.get("txnid");
@@ -2768,7 +2803,7 @@ export default function CheckoutV2Page() {
       } catch { /* noop */ }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store?.id, orderPlaced, confirmingPayment]);
+  }, [store?.id, orderPlaced]);
 
   // ─── Cashfree redirect-back recovery (mirrors CheckoutPage) ─────────────
   useEffect(() => {
@@ -3543,7 +3578,7 @@ export default function CheckoutV2Page() {
         try {
           const verdict = await callEdgeFunction("payu-verify-payment", {
             store_id: store.id, order_id: order.id, txnid: payuData.txnid,
-          });
+          }, 10000);
           if (verdict?.status === "PAID" || verdict?.success === true) {
             setConfirmingPayment(false);
             try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
