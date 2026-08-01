@@ -1921,6 +1921,8 @@ export default function CheckoutV2Page() {
     }
   };
   const clearWaiting = () => {
+    waitStartedAtRef.current = 0;
+    waitResumedRef.current = false;
     try { sessionStorage.removeItem(WAIT_KEY); } catch { /* noop */ }
     try { localStorage.removeItem(WAIT_KEY); } catch { /* noop */ }
   };
