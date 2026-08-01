@@ -2072,8 +2072,19 @@ export default function CheckoutV2Page() {
     // payment" for the full 90s window. So once they're back we only give a
     // short grace period, then restore checkout with a retry option.
     let wentToApp = false;
-    let returnedAt = 0;
-    const RETURN_GRACE_MS = 12000;
+    // A wait restored from storage means the shopper is ALREADY back on our
+    // page (they cancelled or finished in the UPI app and navigated around the
+    // store). Start the return grace immediately so they get a retry screen
+    // instead of an endless spinner.
+    let returnedAt = waitResumedRef.current ? Date.now() : 0;
+    // PayU's status API lags well behind the charge, so give it a longer grace
+    // than plain intents — but never zero grace (that was the infinite spinner).
+    const RETURN_GRACE_MS = gatewayRef.current.pg === "payu" ? 45000 : 12000;
+    // Absolute wall-clock budget for THIS payment attempt. Because it is keyed
+    // off the persisted wait timestamp, remounting checkout cannot reset it.
+    if (!waitStartedAtRef.current) waitStartedAtRef.current = Date.now();
+    const WAIT_BUDGET_MS = isDesktopQr ? 10 * 60 * 1000 : (gatewayRef.current.pg === "payu" ? 5 * 60 * 1000 : 3 * 60 * 1000);
+    const budgetExpired = () => Date.now() - waitStartedAtRef.current >= WAIT_BUDGET_MS;
     const checkNow = async (): Promise<boolean> => {
       if (waitingCheckInFlightRef.current) return false;
       waitingCheckInFlightRef.current = true;
