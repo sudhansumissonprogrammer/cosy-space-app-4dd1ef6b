@@ -1956,22 +1956,39 @@ export default function CheckoutV2Page() {
   const forceGatewayVerify = async () => {
     if (!orderId) return null;
     const gw = gatewayRef.current;
+    // Mobile WebViews can suspend an in-flight fetch while the UPI app is open
+    // and never settle it after returning. Without a bound, checkNow keeps the
+    // global in-flight lock forever and every focus/pageshow recheck is skipped,
+    // leaving a paid shopper on "processing" indefinitely.
+    const invokeWithTimeout = async (name: string, body: Record<string, unknown>, timeoutMs = 10000) => {
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+      try {
+        return await Promise.race([
+          supabase.functions.invoke(name, { body }),
+          new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error(`${name} timed out`)), timeoutMs);
+          }),
+        ]);
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+      }
+    };
     try {
       if (gw.pg === "cashfree" && gw.cf_order_id) {
-        const { data } = await supabase.functions.invoke("store-cashfree-status", {
-          body: { store_id: store.id, order_id: orderId, cf_order_id: gw.cf_order_id },
+        const { data } = await invokeWithTimeout("store-cashfree-status", {
+          store_id: store.id, order_id: orderId, cf_order_id: gw.cf_order_id,
         });
         return data;
       }
       if (gw.pg === "razorpay") {
-        const { data } = await supabase.functions.invoke("razorpay-payment-status", {
-          body: { store_id: store.id, order_id: orderId, razorpay_payment_id: gw.razorpay_payment_id },
+        const { data } = await invokeWithTimeout("razorpay-payment-status", {
+          store_id: store.id, order_id: orderId, razorpay_payment_id: gw.razorpay_payment_id,
         });
         return data;
       }
       if (gw.pg === "payu") {
-        const { data } = await supabase.functions.invoke("payu-status", {
-          body: { store_id: store.id, order_id: orderId, txnid: gw.payu_txnid },
+        const { data } = await invokeWithTimeout("payu-status", {
+          store_id: store.id, order_id: orderId, txnid: gw.payu_txnid,
         });
         return data;
       }
@@ -1993,7 +2010,9 @@ export default function CheckoutV2Page() {
       sessionStorage.removeItem(`payu_pending_${store.id}`);
       localStorage.removeItem(`payu_pending_${store.id}`);
     } catch { /* noop */ }
-    onOrderSuccess(finalOrderId);
+    // Commit the paid UI state BEFORE cart/account/analytics side effects.
+    // A blocked Pixel script, storage exception, or cart subscriber must never
+    // be able to strand a verified-paid shopper on the processing screen.
     if (!orderId) setOrderId(finalOrderId);
     setWaiting(false);
     setConfirmingPayment(false);
@@ -2006,6 +2025,13 @@ export default function CheckoutV2Page() {
     clearCheckoutTokenCookie();
     tokenRetiredRef.current = true;
     try { window.scrollTo({ top: 0, behavior: "auto" }); } catch { /* noop */ }
+    try {
+      onOrderSuccess(finalOrderId);
+    } catch (err) {
+      // Payment confirmation is authoritative; post-purchase telemetry is
+      // best-effort and must not roll back or block the confirmation screen.
+      console.error("Post-purchase side effect failed:", err);
+    }
   };
 
 
@@ -2148,9 +2174,14 @@ export default function CheckoutV2Page() {
           try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { order_id: orderId, gateway: gatewayRef.current?.pg } as any }); } catch { /* noop */ }
           return true;
         }
-        const { data } = await supabase.functions.invoke("order-payment-status", {
-          body: { store_id: store.id, order_id: orderId },
-        });
+        const { data } = await Promise.race([
+          supabase.functions.invoke("order-payment-status", {
+            body: { store_id: store.id, order_id: orderId },
+          }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Payment status check timed out")), 10000),
+          ),
+        ]);
         const status = (data as any)?.payment_status;
         if (status === "success") { finishSuccess(); return true; }
         if (status === "failed") {
@@ -2241,11 +2272,13 @@ export default function CheckoutV2Page() {
     };
     window.addEventListener("focus", onFocus);
     window.addEventListener("pageshow", onPageShow);
+    window.addEventListener("online", onFocus);
     document.addEventListener("visibilitychange", onVis);
     return () => {
       cancelled = true;
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("online", onFocus);
       document.removeEventListener("visibilitychange", onVis);
     };
 
@@ -2690,11 +2723,24 @@ export default function CheckoutV2Page() {
 
   useEffect(() => {
     if (!store?.id) return;
+    // Android recent-app restore / WebView bfcache can replay the exact PayU
+    // return URL after this mount has already reached confirmation. Never let a
+    // stale redirect re-arm the processing screen for a completed order.
+    if (orderPlaced || confirmingPayment) return;
     const params = new URLSearchParams(window.location.search);
     const payuStatus = params.get("payu_status");
     const txnid = params.get("txnid");
     const returnedOrderId = params.get("payu_order");
     if (!payuStatus || !txnid || !returnedOrderId) return;
+    // Consume redirect parameters before setting state. This makes StrictMode,
+    // fast remounts, and duplicate pageshow events idempotent.
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.delete("payu_status");
+      u.searchParams.delete("txnid");
+      u.searchParams.delete("payu_order");
+      window.history.replaceState({}, "", u.toString());
+    } catch { /* noop */ }
     const normalizedPayuStatus = payuStatus.toLowerCase().replace(/[\s_-]/g, "");
     gatewayRef.current = { pg: "payu", payu_txnid: txnid };
     setOrderId(returnedOrderId);
@@ -2721,15 +2767,8 @@ export default function CheckoutV2Page() {
           .catch(() => { /* polling will catch it */ });
       } catch { /* noop */ }
     }
-    try {
-      const u = new URL(window.location.href);
-      u.searchParams.delete("payu_status");
-      u.searchParams.delete("txnid");
-      u.searchParams.delete("payu_order");
-      window.history.replaceState({}, "", u.toString());
-    } catch { /* noop */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store?.id]);
+  }, [store?.id, orderPlaced, confirmingPayment]);
 
   // ─── Cashfree redirect-back recovery (mirrors CheckoutPage) ─────────────
   useEffect(() => {
