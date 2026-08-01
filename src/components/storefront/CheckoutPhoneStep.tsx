@@ -408,21 +408,33 @@ export default function CheckoutPhoneStep({
 
 
       <div className="px-3 py-3 space-y-3">
-        {/* Auto-applied coupon reward banner — makes the discount feel earned
-            before the shopper commits their phone number. */}
-        {autoCouponDiscount > 0 && autoCoupon && (
-          <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white overflow-hidden">
-            <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-emerald-600 text-white">
+        {/* Best-available coupon reward banner — advertises the biggest
+            saving (exclusive coupon wins over the store-wide auto one). */}
+        {autoCouponDiscount > 0 && bestCoupon && (
+          <div
+            className="rounded-xl border overflow-hidden"
+            style={{
+              borderColor: "color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 26%, transparent)",
+              background: "color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 6%, #fff)",
+            }}
+          >
+            <div
+              className="flex items-center gap-2.5 px-3.5 py-2.5"
+              style={{
+                background: "var(--storefront-primary, hsl(var(--primary)))",
+                color: "var(--storefront-btn-text, #fff)",
+              }}
+            >
               <Sparkles className="h-4 w-4 shrink-0" strokeWidth={2.6} />
               <div className="text-[12.5px] font-extrabold leading-tight tracking-tight flex-1">
                 You got {formatPrice(autoCouponDiscount)} off!
               </div>
               <span className="text-[10.5px] font-bold bg-white/20 px-2 py-0.5 rounded">
-                {autoCoupon.code}
+                {bestCoupon.code}
               </span>
             </div>
-            <div className="px-3.5 py-2 text-[11.5px] leading-snug text-gray-700">
-              Coupon <span className="font-bold text-gray-900">{autoCoupon.code}</span> auto-applied · Enter your mobile number to claim
+            <div className="px-3.5 py-2 text-[11.5px] leading-snug opacity-80">
+              Coupon <span className="font-bold">{bestCoupon.code}</span> auto-applied · Enter your mobile number to claim
             </div>
           </div>
         )}
