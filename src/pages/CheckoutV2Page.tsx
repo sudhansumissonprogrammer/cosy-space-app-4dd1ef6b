@@ -2188,9 +2188,13 @@ export default function CheckoutV2Page() {
     const onFocus = () => { void checkNow(); };
     const onVis = () => {
       if (document.visibilityState === "hidden") { wentToApp = true; return; }
-      if (wentToApp && !returnedAt) returnedAt = Date.now();
+      // A restored wait counts as "already came back" the moment this page is
+      // foregrounded, even if we never observed the hide (the tab was recreated
+      // while the shopper was inside the UPI app).
+      if ((wentToApp || waitResumedRef.current) && !returnedAt) returnedAt = Date.now();
       void checkNow();
     };
+
 
     // iOS Safari restores the checkout from the back/forward cache after a UPI
     // round trip: JS timers stay frozen and `visibilitychange` may never fire,
