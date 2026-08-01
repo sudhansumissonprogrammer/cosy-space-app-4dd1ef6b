@@ -80,21 +80,21 @@ export default function CheckoutExitOffer({
             </div>
           )}
 
-          <h3 className="mt-2 pr-6 text-[16px] font-extrabold leading-snug text-foreground">
+          <h3 className="mt-1.5 pr-6 text-[15px] font-extrabold leading-tight text-foreground">
             {offerLabel ? `Wait — ${offerLabel} if you pay now` : "Your order isn't placed yet"}
           </h3>
-          <p className="mt-0.5 text-[11.5px] leading-snug text-muted-foreground">
+          <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
             {offerLabel
               ? `Valid on this order only${offerCode ? ` · code ${offerCode}` : ""}`
               : "We're holding your items for a few minutes."}
           </p>
 
           {showProof && (
-            <div className="mt-2.5 flex items-baseline gap-2 rounded-lg bg-emerald-50 px-3 py-2">
+            <div className="mt-2 flex items-baseline gap-2 rounded-lg bg-emerald-50 px-2.5 py-1.5">
               {currentTotalLabel && (
-                <span className="text-[12px] text-muted-foreground line-through">{currentTotalLabel}</span>
+                <span className="text-[11.5px] text-muted-foreground line-through">{currentTotalLabel}</span>
               )}
-              <span className="text-[18px] font-extrabold text-emerald-700">{newTotalLabel}</span>
+              <span className="text-[17px] font-extrabold text-emerald-700">{newTotalLabel}</span>
               <span className="ml-auto text-[10px] font-semibold text-emerald-700">You pay</span>
             </div>
           )}
@@ -102,10 +102,11 @@ export default function CheckoutExitOffer({
           <button
             type="button"
             onClick={onClaim}
-            className="mt-3 w-full h-11 rounded-xl bg-emerald-600 text-white text-[14px] font-extrabold active:scale-[0.99] transition-transform"
+            className="mt-2.5 w-full h-10 rounded-xl bg-emerald-600 text-white text-[13.5px] font-extrabold active:scale-[0.99] transition-transform"
           >
             {alreadyClaimed || !offerLabel ? "Continue & pay now" : `Claim ${offerLabel} & pay`}
           </button>
+
 
           <div className="mt-2 flex items-center justify-between">
             <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
