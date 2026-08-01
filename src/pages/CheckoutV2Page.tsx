@@ -2172,7 +2172,16 @@ export default function CheckoutV2Page() {
       // Never fail an attempt while the shopper is away from this tab — a
       // hidden page means they are still inside the UPI app (PIN entry can take
       // well over the grace window). The grace only counts foreground time.
-      if (document.visibilityState !== "visible") returnedAt = 0;
+      const away = document.visibilityState !== "visible";
+      if (away) returnedAt = 0;
+      // While the shopper is INSIDE the UPI app (page hidden) we must never
+      // end the wait — not on the return grace, not on the wall-clock budget,
+      // not on the attempt cap. Otherwise a slow PIN entry / bank OTP past the
+      // 3-minute budget lands them back on a "couldn't confirm" retry screen
+      // for a payment that actually went through. Keep polling at a slow
+      // cadence instead; the foreground checks below resolve it once they
+      // come back.
+      if (away) { setTimeout(poll, 4000); return; }
       if (!isDesktopQr && returnedAt && Date.now() - returnedAt >= RETURN_GRACE_MS) {
         stopWaitingForPayment("Payment not completed. Tap retry or choose another method.");
         return;
