@@ -48,6 +48,8 @@ import shopbanaoLogo from "@/assets/shopbanao-logo.webp";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { pixelPayloadFromItems } from "@/lib/expandBundleForPixel";
 const CheckoutPhoneStep = lazy(() => import("@/components/storefront/CheckoutPhoneStep"));
+import { estimateDelivery } from "@/lib/deliveryEstimate";
+import CheckoutExitOffer from "@/components/storefront/CheckoutExitOffer";
 
 type UpiApp = "gpay" | "phonepe" | "paytm" | "bhim" | "any";
 type PayMethod = "upi" | "gateway" | "cod";
@@ -1197,6 +1199,12 @@ export default function CheckoutV2Page() {
     if (d !== couponDiscount) setCouponDiscount(d);
   }, [subtotal, appliedCoupon]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ─── Delivery-date promise (from pincode) ───────────────────────────────
+  // Indian D2C shoppers convert on a *date*, not on "3–5 days".
+  const deliveryEta = useMemo(() => estimateDelivery(pincode), [pincode]);
+
+
+
   // Shipping is calculated after coupon discount, matching the backend order
   // total. Otherwise a coupon can make the checkout display free shipping while
   // the gateway/order is minted with paid shipping (or vice versa).
@@ -2005,6 +2013,107 @@ export default function CheckoutV2Page() {
   };
 
   const [orderPlaced, setOrderPlaced] = useState(false);
+
+  // ─── Exit-intent save sheet ─────────────────────────────────────────────
+  // Fires at most once per session when a shopper tries to abandon checkout:
+  // mobile back-press, desktop mouse-out, or 20s idle at the payment step.
+  // Offers the store's WhatsApp-exclusive coupon (bigger than the store-wide
+  // auto coupon) which replaces the currently applied one on claim.
+  const [exitOfferOpen, setExitOfferOpen] = useState(false);
+  const exitOfferShownRef = useRef(false);
+  const exitGuardPushedRef = useRef(false);
+  const exitSessionKey = `sf_exit_offer_${store?.id || "x"}`;
+
+  const exitCoupon = useMemo(() => {
+    if (!waCoupon?.code || subtotal <= 0) return null;
+    if (Number(waCoupon.min_order_amount || 0) > subtotal) return null;
+    if (appliedCoupon?.code && String(appliedCoupon.code).toUpperCase() === String(waCoupon.code).toUpperCase()) return null;
+    const raw = waCoupon.discount_type === "percentage"
+      ? (subtotal * Number(waCoupon.discount_value)) / 100
+      : Number(waCoupon.discount_value);
+    const value = Math.min(Math.round(raw), subtotal);
+    if (value <= couponDiscount) return null;
+    return { code: String(waCoupon.code).toUpperCase(), value };
+  }, [waCoupon, subtotal, appliedCoupon, couponDiscount]);
+
+  const exitExtraSaving = exitCoupon ? Math.max(0, exitCoupon.value - couponDiscount) : 0;
+
+  const canShowExitOffer =
+    !!store?.id &&
+    checkoutItems.length > 0 &&
+    !orderPlaced &&
+    !waiting &&
+    !confirmingPayment &&
+    !creatingOrder &&
+    (!!exitCoupon || couponDiscount > 0);
+  const canShowExitOfferRef = useRef(canShowExitOffer);
+  canShowExitOfferRef.current = canShowExitOffer;
+
+  const triggerExitOffer = useCallback(() => {
+    if (exitOfferShownRef.current || !canShowExitOfferRef.current) return false;
+    try { if (sessionStorage.getItem(exitSessionKey)) return false; } catch { /* noop */ }
+    exitOfferShownRef.current = true;
+    try { sessionStorage.setItem(exitSessionKey, "1"); } catch { /* noop */ }
+    setExitOfferOpen(true);
+    return true;
+  }, [exitSessionKey]);
+
+  // Back-press guard (mobile) — one extra history entry, consumed once.
+  useEffect(() => {
+    if (!canShowExitOffer || exitGuardPushedRef.current || exitOfferShownRef.current) return;
+    try { if (sessionStorage.getItem(exitSessionKey)) return; } catch { /* noop */ }
+    exitGuardPushedRef.current = true;
+    try { window.history.pushState({ sfExitGuard: true }, ""); } catch { /* noop */ }
+    const onPop = () => {
+      if (triggerExitOffer()) {
+        try { window.history.pushState({ sfExitGuard: true }, ""); } catch { /* noop */ }
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [canShowExitOffer, exitSessionKey, triggerExitOffer]);
+
+  // Desktop mouse-out of the viewport top.
+  useEffect(() => {
+    if (!canShowExitOffer) return;
+    const onLeave = (e: globalThis.MouseEvent) => { if (e.clientY <= 0) triggerExitOffer(); };
+    document.addEventListener("mouseleave", onLeave);
+    return () => document.removeEventListener("mouseleave", onLeave);
+  }, [canShowExitOffer, triggerExitOffer]);
+
+  // 20s idle while sitting on the payment step.
+  useEffect(() => {
+    if (!canShowExitOffer || !showPayment) return;
+    let timer = 0;
+    const arm = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => { if (document.visibilityState === "visible") triggerExitOffer(); }, 20000);
+    };
+    arm();
+    const events: (keyof DocumentEventMap)[] = ["touchstart", "click", "keydown", "scroll"];
+    events.forEach((ev) => document.addEventListener(ev, arm, { passive: true } as any));
+    return () => {
+      window.clearTimeout(timer);
+      events.forEach((ev) => document.removeEventListener(ev, arm as any));
+    };
+  }, [canShowExitOffer, showPayment, triggerExitOffer]);
+
+  const claimExitOffer = async () => {
+    setExitOfferOpen(false);
+    if (exitCoupon) {
+      dismissedAutoCouponRef.current = true;
+      autoAppliedCouponRef.current = true;
+      await applyCoupon(exitCoupon.code);
+    }
+    if (!showPayment) setShowPayment(true);
+    try { window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }); } catch { /* noop */ }
+  };
+
+  const leaveFromExitOffer = () => {
+    setExitOfferOpen(false);
+    navigate(storefrontPath(store?.slug || ""));
+  };
+
   const [viewingOrders, setViewingOrders] = useState(false);
   const [showUpsell, setShowUpsell] = useState(false);
   const [advancePaid, setAdvancePaid] = useState(0);
@@ -4541,6 +4650,17 @@ export default function CheckoutV2Page() {
                   <div className="text-[12.5px] text-foreground/80 mt-1 line-clamp-2 leading-snug">
                     {streetAddress}, {city}, {state} {pincode}
                   </div>
+                  {deliveryEta && (
+                    <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2 py-1.5">
+                      <Truck className="h-3.5 w-3.5 text-emerald-700 flex-shrink-0" />
+                      <span className="text-[12.5px] font-semibold text-emerald-800">
+                        Arriving {deliveryEta.shortLabel}
+                      </span>
+                      <span className="text-[11px] text-emerald-700/70">
+                        ({deliveryEta.rangeLabel})
+                      </span>
+                    </div>
+                  )}
                   {/* Line 3: phone with inline change link */}
                   <div className="text-[12px] text-muted-foreground mt-1 flex items-center gap-2 min-w-0">
                     <span className="truncate">+91 {phone}</span>
@@ -4739,6 +4859,11 @@ export default function CheckoutV2Page() {
                   </div>
                   {addressAttempted && !/^\d{6}$/.test(pincode) && (
                     <p className="mt-1 text-[12px] text-red-600">Enter a valid 6-digit pincode</p>
+                  )}
+                  {deliveryEta && (
+                    <p className="mt-1.5 text-[12px] font-semibold text-emerald-700 flex items-center gap-1.5">
+                      <Truck className="h-3.5 w-3.5" /> Arriving {deliveryEta.shortLabel}
+                    </p>
                   )}
                 </div>
 
@@ -5399,6 +5524,20 @@ export default function CheckoutV2Page() {
           </div>
         </>
       )}
+
+      {/* Exit-intent save sheet — once per session */}
+      <CheckoutExitOffer
+        open={exitOfferOpen}
+        offerLabel={`${formatPrice(exitCoupon ? exitCoupon.value : couponDiscount, currency)} OFF`}
+        offerCode={exitCoupon?.code || appliedCoupon?.code}
+        currentTotalLabel={exitExtraSaving > 0 ? formatPrice(total, currency) : undefined}
+        newTotalLabel={exitExtraSaving > 0 ? formatPrice(Math.max(0, total - exitExtraSaving), currency) : formatPrice(total, currency)}
+        alreadyClaimed={!exitCoupon}
+        onClaim={() => { void claimExitOffer(); }}
+        onLeave={leaveFromExitOffer}
+        onClose={() => setExitOfferOpen(false)}
+      />
     </div>
+
   );
 }
