@@ -92,7 +92,7 @@ export function AdminCommandPalette({ open, onOpenChange }: AdminCommandPaletteP
         : `customer_name.ilike.${q}`;
       const { data } = await supabase
         .from("orders")
-        .select("id, order_number, customer_name, total_amount")
+        .select("id, order_number, customer_name, total")
         .or(filter)
         .limit(5);
       return data || [];
@@ -167,7 +167,7 @@ export function AdminCommandPalette({ open, onOpenChange }: AdminCommandPaletteP
                   <Receipt className="mr-2 h-4 w-4" />
                   <div className="flex flex-col">
                     <span className="text-sm">#{o.order_number}</span>
-                    <span className="text-xs text-muted-foreground">{o.customer_name} · ₹{o.total_amount}</span>
+                    <span className="text-xs text-muted-foreground">{o.customer_name} · ₹{o.total}</span>
                   </div>
                 </CommandItem>
               ))}
