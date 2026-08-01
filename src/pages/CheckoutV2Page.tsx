@@ -3624,6 +3624,18 @@ export default function CheckoutV2Page() {
 
   const handleRetryPayment = async () => {
     if (!pendingOrder) return;
+    // NEVER start a second charge before re-checking the first one. A late
+    // bank/gateway confirmation (very common on UPI) can land after we've
+    // already shown the retry screen — retrying blindly charges the shopper
+    // twice for the same order.
+    try {
+      const gatewayResult = await forceGatewayVerify();
+      if (normalizeGatewayResult(gatewayResult) === "success") { finishSuccess(pendingOrder.id); return; }
+      const { data } = await supabase.functions.invoke("order-payment-status", {
+        body: { store_id: store.id, order_id: pendingOrder.id },
+      });
+      if ((data as any)?.payment_status === "success") { finishSuccess(pendingOrder.id); return; }
+    } catch { /* fall through to a real retry */ }
     setPaymentFailed(false);
     try {
       if (activeGateway === "cashfree") await openCashfree(pendingOrder);
@@ -3634,6 +3646,7 @@ export default function CheckoutV2Page() {
       toast.error(e?.message || "Retry failed");
     }
   };
+
 
   // ─── COD (goes through checkout-v2-cod edge fn to enforce partial rules) ─
   const [placingCod, setPlacingCod] = useState(false);
