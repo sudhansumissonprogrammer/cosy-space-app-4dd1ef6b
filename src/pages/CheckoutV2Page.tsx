@@ -3903,7 +3903,8 @@ export default function CheckoutV2Page() {
     const extraItems = checkoutItems.length - previewItems.length;
 
     return (
-      <div className="mx-auto max-w-lg px-4 pt-8 pb-12">
+      <div className="mx-auto max-w-lg px-4 pt-3 pb-12">
+        {storeSupportBar}
         {/* Hero */}
         <div className="text-center">
           <div className="relative mx-auto mb-4 h-20 w-20">
