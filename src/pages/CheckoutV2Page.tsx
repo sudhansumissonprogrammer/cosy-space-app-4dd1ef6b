@@ -1873,7 +1873,8 @@ export default function CheckoutV2Page() {
   const WAIT_KEY = `sf_wait_v2_${store?.id}`;
   const persistWaiting = (app: UpiApp, label: string, override?: { orderId?: string | null; orderNumber?: string | null }) => {
     const waitOrderId = override?.orderId ?? orderId;
-    try {
+    if (!waitStartedAtRef.current) waitStartedAtRef.current = Date.now();
+    waitResumedRef.current = false;
       const payload = JSON.stringify({
         orderId: waitOrderId,
         orderNumber: override?.orderNumber ?? orderNumber,
