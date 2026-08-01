@@ -80,15 +80,18 @@ export default function CheckoutExitOffer({
         {/* Offer header */}
         <div className="bg-gradient-to-b from-emerald-50 to-white px-5 pt-6 pb-4 text-center">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 text-white text-[11px] font-bold uppercase tracking-wide px-2.5 py-1">
-            <Clock className="h-3 w-3" /> Offer expires in {mm}:{ss}
+            <Clock className="h-3 w-3" /> {offerLabel ? "Offer expires in" : "Order held for"} {mm}:{ss}
           </div>
           <h3 className="mt-3 text-[20px] font-extrabold leading-tight text-foreground">
-            Wait — get {offerLabel} if you pay now
+            {offerLabel ? `Wait — get ${offerLabel} if you pay now` : "Wait — your order isn't placed yet"}
           </h3>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            This discount is only valid on this order. Leaving will lose it.
+            {offerLabel
+              ? "This discount is only valid on this order. Leaving will lose it."
+              : "We're holding your items and this price for a few minutes. Finish now to confirm."}
           </p>
         </div>
+
 
         {/* Price proof */}
         {(currentTotalLabel || newTotalLabel) && (
