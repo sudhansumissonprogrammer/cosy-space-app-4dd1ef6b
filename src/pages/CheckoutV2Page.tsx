@@ -156,7 +156,26 @@ function genericUpiUrl(url: string): string | null {
  *  shopper taps GPay and literally nothing happens. Keep the beat for Android
  *  (which has no such restriction) and hand off almost immediately on iOS. */
 const UPI_LAUNCH_DELAY_MS = 850;
-const UPI_LAUNCH_DELAY_IOS_MS = 120;
+/** iOS: navigate in the SAME tick as the tap. Any timer — even 120ms — can
+ *  push the custom-scheme navigation outside the "user activation" window in
+ *  WKWebView (Instagram/WhatsApp in-app browsers are the strictest), and the
+ *  tap silently does nothing. */
+const UPI_LAUNCH_DELAY_IOS_MS = 0;
+
+/** Coarse device tag for payment telemetry (iOS vs Android vs desktop, plus
+ *  in-app webview), so UPI success/failure can actually be measured per OS. */
+function deviceTag(): string {
+  if (typeof navigator === "undefined") return "unknown";
+  const ua = navigator.userAgent || "";
+  const os = isIOS() ? "ios" : isAndroid() ? "android" : "desktop";
+  let app = "browser";
+  if (/Instagram/i.test(ua)) app = "instagram";
+  else if (/FBAN|FBAV|FB_IAB/i.test(ua)) app = "facebook";
+  else if (/WhatsApp/i.test(ua)) app = "whatsapp";
+  else if (os === "ios" && !/Safari/i.test(ua)) app = "webview";
+  return `${os}:${app}`;
+}
+
 
 function launchUpiUrl(url: string): void {
   // iOS: a synthetic anchor click for a non-http scheme is treated as a
@@ -1369,7 +1388,7 @@ export default function CheckoutV2Page() {
    *  a dead tap (silent return). Remember it instead and auto-launch the moment
    *  the intent turns ready. Expires so a stale tap can never launch later. */
   const pendingUpiTapRef = useRef<{ app: UpiApp; at: number } | null>(null);
-  const tapUpiAppRef = useRef<((app: UpiApp) => void) | null>(null);
+  const tapUpiAppRef = useRef<((app: UpiApp, event?: any, opts?: { gesture?: boolean }) => void) | null>(null);
   const PENDING_TAP_TTL_MS = 20000;
 
 
@@ -2151,7 +2170,8 @@ export default function CheckoutV2Page() {
   };
 
 
-  const tapUpiApp = (app: UpiApp, event?: MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
+  const tapUpiApp = (app: UpiApp, event?: MouseEvent<HTMLAnchorElement | HTMLButtonElement>, opts?: { gesture?: boolean }) => {
+    const gesture = opts?.gesture !== false;
     event?.preventDefault();
     // Instant tactile + visual acknowledgement of the tap. Runs before any
     // guard so the shopper always *feels* the press, even when we end up
@@ -2169,7 +2189,7 @@ export default function CheckoutV2Page() {
     }
     // PAYMENT-FIRST address gate — if no address, open the sheet and remember
     // this tap so we auto-resume the UPI launch after the shopper saves.
-    if (!requireAddressOrPrompt(() => tapUpiApp(app))) { pendingUpiTapRef.current = null; clearUpiTapFx(); return; }
+    if (!requireAddressOrPrompt(() => tapUpiApp(app, undefined, { gesture: false }))) { pendingUpiTapRef.current = null; clearUpiTapFx(); return; }
     const s = intents[app];
     // A failed tile used to be a dead end (silent return + pointer-events-none),
     // so a shopper who hit one transient gateway error could never pay by UPI
@@ -2216,6 +2236,20 @@ export default function CheckoutV2Page() {
 
 
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
+
+    // iOS: a custom-scheme navigation triggered WITHOUT a live user gesture
+    // (queued tap replayed once the intent finished minting, address-sheet
+    // resume, etc.) is silently dropped by Safari/WKWebView — the shopper sat
+    // on an armed "Complete payment" screen while nothing ever opened. Ask for
+    // one fresh tap instead; the intent is ready so it launches instantly.
+    if (isIOS() && !gesture) {
+      pendingUpiTapRef.current = null;
+      clearUpiTapFx();
+      toast.info(`Ready — tap ${label} to open the app`, { duration: 5000 });
+      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}`, step: "ios_retap_prompt", dev: deviceTag() } as any }); } catch { /* noop */ }
+      return;
+    }
+
 
     let leftCheckout = false;
     let waitingArmed = false;
@@ -2276,11 +2310,18 @@ export default function CheckoutV2Page() {
     // happened / like a random app jump. iOS gets a much shorter beat because
     // Safari/WKWebView drop custom-scheme navigations once the user gesture
     // has gone stale.
-    window.setTimeout(() => {
-      // Launch the app via a real anchor activation (some OEM Chrome/WebView
-      // builds ignore location.assign for non-http schemes).
+    if (isIOS()) {
+      // Same-tick navigation — see UPI_LAUNCH_DELAY_IOS_MS. Any deferral risks
+      // WKWebView dropping the custom-scheme hop entirely.
       launchUpiUrl(s.url);
-    }, isIOS() ? UPI_LAUNCH_DELAY_IOS_MS : UPI_LAUNCH_DELAY_MS);
+    } else {
+      window.setTimeout(() => {
+        // Launch the app via a real anchor activation (some OEM Chrome/WebView
+        // builds ignore location.assign for non-http schemes).
+        launchUpiUrl(s.url);
+      }, UPI_LAUNCH_DELAY_MS);
+    }
+
 
 
     if (isAndroid() && app !== "any") {
@@ -2301,7 +2342,7 @@ export default function CheckoutV2Page() {
 
     // Pixels and analytics run after the app launch has already been handed off.
     window.setTimeout(() => {
-      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}` } as any }); } catch { /* noop */ }
+      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}`, dev: deviceTag() } as any }); } catch { /* noop */ }
       fireInitiateCheckoutOnce();
       fireAddPaymentInfoOnce(`upi_${app}`, chargeAmount);
     }, 0);
@@ -2319,7 +2360,7 @@ export default function CheckoutV2Page() {
           // here — and leaving the waiting screen armed traps the shopper on
           // "Complete payment in <app>" for an app that never opened.
           try { stopWaitingForPayment(`${label} is not installed on this iPhone. Choose another app or pay by card.`); } catch { /* noop */ }
-          try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { reason: "ios_app_not_installed", method: `upi_${app}` } as any }); } catch { /* noop */ }
+          try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { reason: "ios_app_not_installed", method: `upi_${app}`, dev: deviceTag() } as any }); } catch { /* noop */ }
         } else {
           toast.info(`${label} did not open. Tap All UPI Apps or retry.`, { duration: 4500 });
         }
@@ -2355,7 +2396,7 @@ export default function CheckoutV2Page() {
     if (s.status !== "ready" || !s.url) return;
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) return;
     pendingUpiTapRef.current = null;
-    tapUpiAppRef.current?.(pending.app);
+    tapUpiAppRef.current?.(pending.app, undefined, { gesture: false });
   }, [intents, creatingOrder, couponLoading, paymentAmountSyncing, chargeAmount, debouncedShipIdentity, waiting, orderPlaced, confirmingPayment]);
 
 
@@ -2749,7 +2790,7 @@ export default function CheckoutV2Page() {
         }
         const order = await createOrderIfNeeded(activeGateway);
         setShowPayment(true);
-        try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { step: "continue_to_pay" } as any }); } catch { /* noop */ }
+        try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { step: "continue_to_pay", dev: deviceTag() } as any }); } catch { /* noop */ }
 
         const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
         setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "loading" }; }); return next; });
@@ -3381,7 +3422,7 @@ export default function CheckoutV2Page() {
     try {
       const order = await createOrderIfNeeded(activeGateway);
       setShowPayment(true);
-      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: activeGateway } as any }); } catch { /* noop */ }
+      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: activeGateway, dev: deviceTag() } as any }); } catch { /* noop */ }
       if (activeGateway === "razorpay") await openRazorpay(order);
       else if (activeGateway === "cashfree") await openCashfree(order);
       else await openPayu(order);
