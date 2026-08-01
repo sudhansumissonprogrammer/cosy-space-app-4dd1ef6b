@@ -2369,10 +2369,16 @@ export default function CheckoutV2Page() {
 
 
 
+    // New attempt supersedes any previous one: tear down its listeners and
+    // invalidate its pending timers.
+    try { launchCleanupRef.current?.(); } catch { /* noop */ }
+    const seq = ++launchSeqRef.current;
+    const isStale = () => launchSeqRef.current !== seq;
+
     let leftCheckout = false;
     let waitingArmed = false;
     const armWaiting = () => {
-      if (waitingArmed) return;
+      if (waitingArmed || isStale()) return;
       waitingArmed = true;
       persistWaiting(app, label);
       setWaitingApp(label);
@@ -2392,7 +2398,7 @@ export default function CheckoutV2Page() {
     let chooserFired = false;
     const anyUpiUrl = genericUpiUrl(s.url);
     const fireChooser = () => {
-      if (chooserFired || leftCheckout) return;
+      if (chooserFired || leftCheckout || isStale()) return;
       chooserFired = true;
       if (anyUpiUrl && anyUpiUrl !== s.url) launchUpiUrl(anyUpiUrl);
     };
@@ -2410,7 +2416,9 @@ export default function CheckoutV2Page() {
       window.removeEventListener("pagehide", markLeft);
       window.removeEventListener("hashchange", onHashFallback);
       document.removeEventListener("visibilitychange", onVisibility);
+      if (launchCleanupRef.current === cleanupLaunchListeners) launchCleanupRef.current = null;
     };
+    launchCleanupRef.current = cleanupLaunchListeners;
     window.addEventListener("blur", markLeft, { once: true });
     window.addEventListener("pagehide", markLeft, { once: true });
     window.addEventListener("hashchange", onHashFallback);
