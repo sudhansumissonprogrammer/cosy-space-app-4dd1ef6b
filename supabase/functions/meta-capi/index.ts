@@ -455,8 +455,19 @@ Deno.serve(async (req) => {
     };
 
 
-    if (user_email) {
-      userData.em = [await hashSHA256(normEmail(user_email))];
+    // Synthetic auth emails (`<digits>@phone.guest`) exist only inside our
+    // auth table — they can NEVER match a Meta user. Hashing and sending them
+    // adds an `em` key that always misses, which Meta counts against Event
+    // Match Quality (a present-but-unmatchable key scores worse than an absent
+    // one). Drop anything that isn't a plausible real email.
+    const realEmail = (() => {
+      const e = normEmail(String(user_email || ""));
+      if (!e || !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(e)) return "";
+      if (e.endsWith("@phone.guest") || e.endsWith(".guest") || e.endsWith("@n")) return "";
+      return e;
+    })();
+    if (realEmail) {
+      userData.em = [await hashSHA256(realEmail)];
     }
     if (user_phone) {
       const cleaned = user_phone.replace(/\D/g, "");
