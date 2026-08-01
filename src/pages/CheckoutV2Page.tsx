@@ -61,7 +61,16 @@ interface IntentState {
    *  the UPI URL was minted — prevents "chose Full but UPI opened for 100"
    *  race by refusing to launch a URL whose amount no longer matches. */
   amount?: number;
+  /** Date.now() at mint. A UPI intent URL carries a gateway-side transaction
+   *  reference (`tr`) that expires (Cashfree link ~15min, Razorpay S2S payment
+   *  sooner). Launching an expired URL opens the UPI app on a transaction the
+   *  bank will decline, so we re-mint instead. */
+  at?: number;
 }
+
+/** Max age of a minted UPI intent before we force a fresh mint on tap. */
+const UPI_INTENT_MAX_AGE_MS = 8 * 60 * 1000;
+
 
 interface PendingOrder {
   id: string;
