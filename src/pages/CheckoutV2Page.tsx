@@ -1356,6 +1356,12 @@ export default function CheckoutV2Page() {
   const rateLimitRetryRef = useRef(false);
   const mintCountRef = useRef<number>(0);
   const mintLoopBlockedRef = useRef<boolean>(false);
+  // Monotonic id for each UPI launch attempt. Timers/listeners from an older
+  // tap must never act on a newer attempt (e.g. tap GPay → nothing opens → tap
+  // PhonePe → GPay's "no app opened" timer would otherwise cancel the live
+  // PhonePe wait). Also lets a new tap tear down the previous tap's listeners.
+  const launchSeqRef = useRef(0);
+  const launchCleanupRef = useRef<null | (() => void)>(null);
   const [showPayment, setShowPayment] = useState(false);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [pendingOrder, setPendingOrder] = useState<PendingOrder | null>(null);
@@ -2363,10 +2369,16 @@ export default function CheckoutV2Page() {
 
 
 
+    // New attempt supersedes any previous one: tear down its listeners and
+    // invalidate its pending timers.
+    try { launchCleanupRef.current?.(); } catch { /* noop */ }
+    const seq = ++launchSeqRef.current;
+    const isStale = () => launchSeqRef.current !== seq;
+
     let leftCheckout = false;
     let waitingArmed = false;
     const armWaiting = () => {
-      if (waitingArmed) return;
+      if (waitingArmed || isStale()) return;
       waitingArmed = true;
       persistWaiting(app, label);
       setWaitingApp(label);
@@ -2386,7 +2398,7 @@ export default function CheckoutV2Page() {
     let chooserFired = false;
     const anyUpiUrl = genericUpiUrl(s.url);
     const fireChooser = () => {
-      if (chooserFired || leftCheckout) return;
+      if (chooserFired || leftCheckout || isStale()) return;
       chooserFired = true;
       if (anyUpiUrl && anyUpiUrl !== s.url) launchUpiUrl(anyUpiUrl);
     };
@@ -2404,7 +2416,9 @@ export default function CheckoutV2Page() {
       window.removeEventListener("pagehide", markLeft);
       window.removeEventListener("hashchange", onHashFallback);
       document.removeEventListener("visibilitychange", onVisibility);
+      if (launchCleanupRef.current === cleanupLaunchListeners) launchCleanupRef.current = null;
     };
+    launchCleanupRef.current = cleanupLaunchListeners;
     window.addEventListener("blur", markLeft, { once: true });
     window.addEventListener("pagehide", markLeft, { once: true });
     window.addEventListener("hashchange", onHashFallback);
@@ -2469,7 +2483,7 @@ export default function CheckoutV2Page() {
       // sheet is open cancels it. Also pushed out to 12s so a slow chooser
       // dialog is never interrupted.
       window.setTimeout(() => {
-        if (leftCheckout || document.visibilityState !== "visible") return;
+        if (isStale() || leftCheckout || document.visibilityState !== "visible") return;
         try { if (!document.hasFocus()) return; } catch { /* noop */ }
         if (chooserFired) return;
         chooserFired = true;
@@ -2487,6 +2501,8 @@ export default function CheckoutV2Page() {
 
     const launchedAt = Date.now();
     window.setTimeout(() => {
+      // A newer tap owns the wait screen now — never cancel it.
+      if (isStale()) return;
       cleanupLaunchListeners();
       if (leftCheckout || document.visibilityState !== "visible") {
         armWaiting();
