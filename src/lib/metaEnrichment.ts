@@ -167,6 +167,18 @@ declare global {
   }
 }
 
+/**
+ * Synthetic auth emails (`<digits>@phone.guest`) are an internal convention —
+ * they never exist in Meta's user graph, so sending them as `em` guarantees a
+ * miss and actively *lowers* Event Match Quality vs. sending no email at all.
+ */
+export function isRealEmail(value?: string): boolean {
+  const e = (value || "").trim().toLowerCase();
+  if (!e || !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(e)) return false;
+  if (e.endsWith("@phone.guest") || e.endsWith(".guest") || e.endsWith("@n")) return false;
+  return true;
+}
+
 export function setCapiUser(user: CapiUser | null): void {
   if (typeof window === "undefined") return;
   if (!user) {
@@ -180,8 +192,14 @@ export function setCapiUser(user: CapiUser | null): void {
   // events (InitiateCheckout / AddPaymentInfo) we're trying to lift.
   const prev = window.__SF_CAPI_USER__ || {};
   const combined: CapiUser = { ...prev, ...user };
-  // Preserve a previously-set customer externalId over the anon fallback.
-  const externalId = user.externalId || prev.externalId || getOrCreateSfVid() || undefined;
+  if (!isRealEmail(combined.email)) delete combined.email;
+  // external_id MUST be stable for one human across the whole session and all
+  // future sessions — Meta uses it as an identity key. Previously it flipped
+  // between the anon visitor UUID, the auth user id and the per-store customer
+  // id within a single checkout, so Meta saw 3 different "people" and audience
+  // / lookalike building degraded. Pin it to the persistent first-party
+  // visitor ID (cookie + localStorage) and never let it churn.
+  const externalId = getOrCreateSfVid() || prev.externalId || user.externalId || undefined;
   const merged: CapiUser = { ...combined, externalId };
   window.__SF_CAPI_USER__ = merged;
 
