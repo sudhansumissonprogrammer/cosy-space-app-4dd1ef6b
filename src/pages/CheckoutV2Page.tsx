@@ -2922,7 +2922,7 @@ export default function CheckoutV2Page() {
               };
             }
             lastMintedAmountRef.current = requestedAmount;
-            setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "ready", url: schemeFor(a, url), amount: requestedAmount }; }); return next; });
+            setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "ready", url: schemeFor(a, url), amount: requestedAmount, at: Date.now() }; }); return next; });
           }
         } catch (e: any) {
           // Ignore late failures from a request that no longer matches the current amount.
