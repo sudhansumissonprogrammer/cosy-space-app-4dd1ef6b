@@ -4101,7 +4101,8 @@ export default function CheckoutV2Page() {
   // QR code while completing payment in their phone's UPI app.
   if (waiting && isMobile()) {
     return (
-      <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] px-4 pt-10 pb-10">
+      <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] px-4 pt-3 pb-10">
+        {storeSupportBar}
         {/* Status card */}
         <div className="rounded-2xl bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.18)] p-6 text-center animate-fade-in">
           <div className="relative mx-auto mb-5 h-20 w-20">
