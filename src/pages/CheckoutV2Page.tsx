@@ -350,7 +350,7 @@ export default function CheckoutV2Page() {
     enabled: !!productId,
     staleTime: 10 * 60 * 1000,
     initialData: () => {
-      if (!productId) return undefined;
+      if (!productId || variantId) return undefined; // variant price must come from the RPC
       const matches = qc.getQueriesData<any>({ queryKey: ["storefront-product", store?.id] });
       for (const [, p] of matches) if (p && p.id === productId) return { product: p, variant: null };
       return undefined;
