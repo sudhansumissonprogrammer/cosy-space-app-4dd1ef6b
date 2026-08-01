@@ -129,8 +129,9 @@ export default function CheckoutExitOffer({
             className="w-full h-12 text-[15px] font-extrabold bg-emerald-600 hover:bg-emerald-700"
             onClick={onClaim}
           >
-            {alreadyClaimed ? "Continue & pay now" : `Claim ${offerLabel} & pay now`}
+            {alreadyClaimed || !offerLabel ? "Continue & pay now" : `Claim ${offerLabel} & pay now`}
           </Button>
+
           <button
             type="button"
             onClick={onLeave}
