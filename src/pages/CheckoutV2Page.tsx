@@ -2055,11 +2055,23 @@ export default function CheckoutV2Page() {
     !waiting &&
     !confirmingPayment &&
     !creatingOrder;
+  // Explicit header/browser back must not be blocked by background order or
+  // intent preparation. That work commonly runs for a few seconds immediately
+  // after phone entry, which made the visible back arrow appear broken. Only
+  // an actual payment wait/confirmation or completed order suppresses it.
+  const canShowExplicitExitOffer =
+    !!store?.id &&
+    checkoutItems.length > 0 &&
+    !orderPlaced &&
+    !waiting &&
+    !confirmingPayment;
   const canShowExitOfferRef = useRef(canShowExitOffer);
   canShowExitOfferRef.current = canShowExitOffer;
+  const canShowExplicitExitOfferRef = useRef(canShowExplicitExitOffer);
+  canShowExplicitExitOfferRef.current = canShowExplicitExitOffer;
 
   const triggerExitOffer = useCallback((explicit = false) => {
-    if (!canShowExitOfferRef.current) return false;
+    if (explicit ? !canShowExplicitExitOfferRef.current : !canShowExitOfferRef.current) return false;
     // Idle/mouse-leave is once per checkout session. A deliberate back action
     // must always work, even when an earlier automatic popup was dismissed or
     // stale sessionStorage from HMR/Instagram WebView remains in the tab.
