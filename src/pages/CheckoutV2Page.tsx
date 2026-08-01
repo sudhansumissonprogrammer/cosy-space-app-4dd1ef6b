@@ -2236,7 +2236,7 @@ export default function CheckoutV2Page() {
       });
       const status = (data as any)?.payment_status;
       if (status === "success") { finishSuccess(); return; }
-      if (status === "failed") { toast.error("Payment failed — please try again"); clearWaiting(); setWaiting(false); setPendingOrder({ id: orderId!, number: orderNumber }); setPaymentFailed(true); try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ } return; }
+      if (status === "failed") { toast.error("Payment failed — please try again"); clearWaiting(); setWaiting(false); setPendingOrder({ id: orderId!, number: orderNumber }); setPaymentFailed(true); invalidateUpiIntents(); try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ } return; }
       toast("Not confirmed yet — please complete the payment in your UPI app");
     } finally { setManualChecking(false); }
   };
