@@ -180,17 +180,27 @@ Deno.serve(async (req) => {
   if (isTextReply) {
     // 24h session window check — Meta only accepts free-form text within 24h of last user message.
     const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    let lastInQuery = admin
+    // NOTE: Meta scopes the session window to the PHONE NUMBER pair, not to a
+    // store. Filtering on store_id/inferred_store_id here wrongly rejected
+    // replies on threads whose inbound row had no store attribution, surfacing
+    // as a bare "non-2xx status code" in the admin inbox.
+    const { data: lastIn } = await admin
       .from("whatsapp_messages")
       .select("id")
       .eq("direction", "incoming")
       .or(`sender_phone.eq.${phone},recipient_phone.eq.${phone}`)
-      .gte("created_at", windowStart);
-    if (body.store_id) {
-      lastInQuery = lastInQuery.or(`store_id.eq.${body.store_id},inferred_store_id.eq.${body.store_id}`);
+      .gte("created_at", windowStart)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!lastIn) {
+      return json({
+        error: "outside_24h_session",
+        details: "No inbound message from this number in the last 24h — WhatsApp only allows an approved template now.",
+        error_class: "permanent",
+      }, 400);
     }
-    const { data: lastIn } = await lastInQuery.limit(1).maybeSingle();
-    if (!lastIn) return json({ error: "outside_24h_session", error_class: "permanent" }, 400);
+
     if (!body.message_body) return json({ error: "message_body required", error_class: "permanent" }, 400);
     metaPayload = {
       messaging_product: "whatsapp",

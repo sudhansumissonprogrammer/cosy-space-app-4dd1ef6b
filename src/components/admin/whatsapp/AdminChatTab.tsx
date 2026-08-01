@@ -153,8 +153,49 @@ export function AdminChatTab() {
   }, [selectedPhone, selectedStoreId, currentConv, queryClient]);
 
 
+  // 24h session window — Meta rejects free-form text after 24h since last inbound.
+  // Compute it client-side so the admin sees WHY instead of a raw non-2xx error.
+  const sessionWindowOpen = useMemo(() => {
+    const at = currentConv?.lastIncomingAt;
+    if (!at) return false;
+    return Date.now() - new Date(at).getTime() < 24 * 60 * 60 * 1000;
+  }, [currentConv]);
+
+  const lastIncomingLabel = useMemo(() => {
+    const at = currentConv?.lastIncomingAt;
+    if (!at) return null;
+    const hrs = Math.floor((Date.now() - new Date(at).getTime()) / 3_600_000);
+    if (hrs < 48) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  }, [currentConv]);
+
+  // supabase-js masks edge-function failures as "non-2xx status code".
+  // Read the JSON body so the real reason reaches the toast.
+  const edgeErrorMessage = async (err: any): Promise<string> => {
+    try {
+      const ctx = err?.context;
+      if (ctx && typeof ctx.json === "function") {
+        const b = await ctx.clone().json();
+        if (b?.error) return String(b.details ? `${b.error}: ${b.details}` : b.error);
+      }
+    } catch { /* fall through */ }
+    return err?.message || "Unknown error";
+  };
+
+  const REASONS: Record<string, string> = {
+    outside_24h_session: "The customer hasn't messaged in the last 24 hours. WhatsApp blocks free-form replies — send an approved template instead.",
+    wa_disabled: "Platform WhatsApp is disabled or credentials are missing.",
+    opted_out: "This number has opted out of messages.",
+    forbidden: "You don't have permission to send for this store.",
+    send_failed: "Meta rejected the message.",
+  };
+
   const sendMessage = async () => {
     if (!selectedPhone || !message.trim()) return;
+    if (!sessionWindowOpen) {
+      toast({ title: "Reply window closed", description: REASONS.outside_24h_session, variant: "destructive" });
+      return;
+    }
     setSending(true);
     try {
       if (isPlatformOnly) {
@@ -168,23 +209,28 @@ export function AdminChatTab() {
             message_type: "text_reply",
           },
         });
-        if (res.error) throw res.error;
-        if ((res.data as any)?.error) throw new Error((res.data as any).error);
+        if (res.error) throw new Error(await edgeErrorMessage(res.error));
+        const d = res.data as any;
+        if (d?.error) throw new Error(String(d.error));
+        if (d?.skipped) throw new Error(REASONS[d.reason] || `Skipped: ${d.reason}`);
       } else {
         if (!selectedStoreId) return;
         const res = await supabase.functions.invoke("whatsapp-send", {
           body: { store_id: selectedStoreId, recipient_phone: selectedPhone, message_body: message.trim(), message_type: "manual" },
         });
-        if (res.error) throw res.error;
+        if (res.error) throw new Error(await edgeErrorMessage(res.error));
         if ((res.data as any)?.error) throw new Error((res.data as any).error);
       }
       setMessage("");
       queryClient.invalidateQueries({ queryKey: ["admin-whatsapp-all-messages"] });
       inputRef.current?.focus();
     } catch (e: any) {
-      toast({ title: "Failed to send", description: e.message || "Outside 24h reply window — use a template instead.", variant: "destructive" });
+      const raw = String(e?.message || "");
+      const key = Object.keys(REASONS).find((k) => raw.includes(k));
+      toast({ title: "Failed to send", description: key ? REASONS[key] : raw || "Unknown error", variant: "destructive" });
     } finally { setSending(false); }
   };
+
 
   const markThreadRead = async () => {
     if (!selectedPhone) return;
@@ -330,15 +376,23 @@ export function AdminChatTab() {
                 })}
                 <div ref={messagesEndRef} />
               </div>
+              {!sessionWindowOpen && (
+                <div className="border-t bg-amber-50 px-3 py-2 text-[12px] text-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+                  24-hour reply window closed{lastIncomingLabel ? ` (last customer message ${lastIncomingLabel})` : ""}. WhatsApp only allows an approved template now — use Campaigns / Templates.
+                </div>
+              )}
               <div className="flex items-end gap-2 px-3 py-2 border-t bg-muted/50">
-                <Textarea ref={inputRef} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message" rows={1}
+                <Textarea ref={inputRef} value={message} onChange={(e) => setMessage(e.target.value)} rows={1}
+                  placeholder={sessionWindowOpen ? "Type a message" : "Reply window closed — send a template instead"}
+                  disabled={!sessionWindowOpen}
                   className="text-[14px] resize-none min-h-[38px] max-h-[120px] rounded-xl bg-background flex-1"
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} />
                 <Button size="icon" className="h-9 w-9 shrink-0 rounded-full bg-[hsl(142,72%,40%)] hover:bg-[hsl(142,72%,35%)] text-white"
-                  onClick={sendMessage} disabled={sending || !message.trim()}>
+                  onClick={sendMessage} disabled={sending || !message.trim() || !sessionWindowOpen}>
                   {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
+
             </>
           )}
         </div>
