@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { addDeliveryDays } from "@/lib/deliveryEstimate";
 import useEmblaCarousel from "embla-carousel-react";
 // VideoSlide lazy-loaded (only ~5% of products have video) — see below
 import { createPortal } from "react-dom";
