@@ -1848,6 +1848,15 @@ export default function CheckoutV2Page() {
   
   const [manualChecking, setManualChecking] = useState(false);
   const waitingCheckInFlightRef = useRef(false);
+  // Absolute wall-clock start of the CURRENT payment wait. Survives remounts
+  // (restored from the persisted WAIT_KEY.ts) so a shopper who cancels in the
+  // UPI app and wanders back into checkout can never restart a fresh polling
+  // budget over and over — that's what made "processing" look infinite.
+  const waitStartedAtRef = useRef(0);
+  // True when the wait was restored from storage (i.e. the shopper is already
+  // back on our page after the payment app), so the poller treats it as a
+  // "returned from app" wait and exits fast with a retry option.
+  const waitResumedRef = useRef(false);
 
   const goBack = useCallback(() => {
     if (showAddressFormSheet && addressComplete) {
@@ -1864,6 +1873,8 @@ export default function CheckoutV2Page() {
   const WAIT_KEY = `sf_wait_v2_${store?.id}`;
   const persistWaiting = (app: UpiApp, label: string, override?: { orderId?: string | null; orderNumber?: string | null }) => {
     const waitOrderId = override?.orderId ?? orderId;
+    if (!waitStartedAtRef.current) waitStartedAtRef.current = Date.now();
+    waitResumedRef.current = false;
     try {
       const payload = JSON.stringify({
         orderId: waitOrderId,
@@ -1910,6 +1921,8 @@ export default function CheckoutV2Page() {
     }
   };
   const clearWaiting = () => {
+    waitStartedAtRef.current = 0;
+    waitResumedRef.current = false;
     try { sessionStorage.removeItem(WAIT_KEY); } catch { /* noop */ }
     try { localStorage.removeItem(WAIT_KEY); } catch { /* noop */ }
   };
@@ -2059,8 +2072,19 @@ export default function CheckoutV2Page() {
     // payment" for the full 90s window. So once they're back we only give a
     // short grace period, then restore checkout with a retry option.
     let wentToApp = false;
-    let returnedAt = 0;
-    const RETURN_GRACE_MS = 12000;
+    // A wait restored from storage means the shopper is ALREADY back on our
+    // page (they cancelled or finished in the UPI app and navigated around the
+    // store). Start the return grace immediately so they get a retry screen
+    // instead of an endless spinner.
+    let returnedAt = waitResumedRef.current ? Date.now() : 0;
+    // PayU's status API lags well behind the charge, so give it a longer grace
+    // than plain intents — but never zero grace (that was the infinite spinner).
+    const RETURN_GRACE_MS = gatewayRef.current.pg === "payu" ? 45000 : 12000;
+    // Absolute wall-clock budget for THIS payment attempt. Because it is keyed
+    // off the persisted wait timestamp, remounting checkout cannot reset it.
+    if (!waitStartedAtRef.current) waitStartedAtRef.current = Date.now();
+    const WAIT_BUDGET_MS = isDesktopQr ? 10 * 60 * 1000 : (gatewayRef.current.pg === "payu" ? 5 * 60 * 1000 : 3 * 60 * 1000);
+    const budgetExpired = () => Date.now() - waitStartedAtRef.current >= WAIT_BUDGET_MS;
     const checkNow = async (): Promise<boolean> => {
       if (waitingCheckInFlightRef.current) return false;
       waitingCheckInFlightRef.current = true;
@@ -2096,8 +2120,12 @@ export default function CheckoutV2Page() {
       attempts++;
       const done = await checkNow();
       if (done || cancelled) return;
-      if (!isDesktopQr && gatewayRef.current.pg !== "payu" && returnedAt && Date.now() - returnedAt >= RETURN_GRACE_MS) {
+      if (!isDesktopQr && returnedAt && Date.now() - returnedAt >= RETURN_GRACE_MS) {
         stopWaitingForPayment("Payment not completed. Tap retry or choose another method.");
+        return;
+      }
+      if (budgetExpired()) {
+        stopWaitingForPayment("We couldn't confirm this payment. Tap retry or choose another method.");
         return;
       }
       if (attempts >= maxAttempts) {
@@ -2440,6 +2468,11 @@ export default function CheckoutV2Page() {
       const saved = JSON.parse(raw);
       if (!saved?.orderId) return;
       if (Date.now() - (saved.ts || 0) > 15 * 60 * 1000) { clearWaiting(); return; }
+      // Keep the ORIGINAL attempt timestamp so the poller's absolute budget
+      // survives this remount (otherwise a shopper who cancels in the UPI app
+      // and re-enters checkout restarts the wait forever).
+      waitStartedAtRef.current = Number(saved.ts) || Date.now();
+      waitResumedRef.current = true;
       setOrderId(saved.orderId);
       setOrderNumber(saved.orderNumber || null);
       setShowPayment(true);
