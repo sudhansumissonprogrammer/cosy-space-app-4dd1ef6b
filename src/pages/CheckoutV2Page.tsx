@@ -2360,18 +2360,25 @@ export default function CheckoutV2Page() {
 
 
 
-    if (isAndroid() && app !== "any") {
-      // Single fallback only, and only for a launch that clearly did nothing.
-      // On slower phones PhonePe/GPay can take >1s to come to the foreground,
-      // during which the page is still "visible" — firing a second navigation
-      // there makes Android re-resolve the intent and the shopper sits on a
-      // splash/spinner for several extra seconds. So wait long enough that a
-      // slow-but-successful launch is never interrupted, and also require the
-      // document to still hold focus (a launching app takes focus first).
+    if (isAndroid()) {
+      // Recovery for "the tap did nothing".
+      //
+      // In system-chooser mode every branded tile launches the SAME
+      // `upi://pay?…` url, so the old fallback (`launch the generic url`) was a
+      // silent no-op — `anyUpiUrl === s.url` and fireChooser() returned without
+      // navigating. Android shoppers were then left on an armed "Complete
+      // payment in <app>" screen forever, with no app ever opening.
+      //
+      // Correct recovery: re-attempt the exact same launch once (some OEM
+      // WebViews swallow the first external-scheme hop), and only if the page
+      // is STILL foregrounded + focused afterwards do we conclude nothing
+      // opened and release the waiting screen so the shopper can retry.
       window.setTimeout(() => {
         if (leftCheckout || document.visibilityState !== "visible") return;
         try { if (!document.hasFocus()) return; } catch { /* noop */ }
-        fireChooser();
+        if (chooserFired) return;
+        chooserFired = true;
+        launchUpiUrl(anyUpiUrl && anyUpiUrl !== s.url ? anyUpiUrl : s.url);
       }, 2600 + UPI_LAUNCH_DELAY_MS);
     }
 
@@ -2390,19 +2397,19 @@ export default function CheckoutV2Page() {
         armWaiting();
         return;
       }
-      if (Date.now() - launchedAt >= 4200) {
-        if (isIOS()) {
-          // iOS has no system UPI chooser, so "All UPI Apps" is useless advice
-          // here — and leaving the waiting screen armed traps the shopper on
-          // "Complete payment in <app>" for an app that never opened.
-          try { stopWaitingForPayment(`${label} is not installed on this iPhone. Choose another app or pay by card.`); } catch { /* noop */ }
-          try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { reason: "ios_app_not_installed", method: `upi_${app}`, dev: deviceTag() } as any }); } catch { /* noop */ }
-        } else {
-          toast.info(`${label} did not open. Tap All UPI Apps or retry.`, { duration: 4500 });
-        }
+      try { if (!document.hasFocus()) return; } catch { /* noop */ }
+      if (Date.now() - launchedAt >= 6000) {
+        // Nothing ever came to the foreground on either OS — never strand the
+        // shopper on a spinner for a payment app that never opened.
+        const msg = isIOS()
+          ? `${label} is not installed on this iPhone. Choose another app or pay by card.`
+          : `No UPI app opened. Tap ${label} again or pay by card.`;
+        try { stopWaitingForPayment(msg); } catch { /* noop */ }
+        try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { reason: isIOS() ? "ios_app_not_installed" : "android_no_upi_app", method: `upi_${app}`, dev: deviceTag() } as any }); } catch { /* noop */ }
       }
-    }, 4500);
+    }, 6200);
   };
+
 
 
   // Keep a live ref so the pending-tap effect always calls the current closure.
