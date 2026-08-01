@@ -2038,14 +2038,15 @@ export default function CheckoutV2Page() {
 
   const exitExtraSaving = exitCoupon ? Math.max(0, exitCoupon.value - couponDiscount) : 0;
 
+  // Gokwik-style: the sheet fires on ANY abandon attempt with items in cart,
+  // with or without a coupon (no-coupon variant is a reassurance sheet).
   const canShowExitOffer =
     !!store?.id &&
     checkoutItems.length > 0 &&
     !orderPlaced &&
     !waiting &&
     !confirmingPayment &&
-    !creatingOrder &&
-    (!!exitCoupon || couponDiscount > 0);
+    !creatingOrder;
   const canShowExitOfferRef = useRef(canShowExitOffer);
   canShowExitOfferRef.current = canShowExitOffer;
 
@@ -2058,20 +2059,33 @@ export default function CheckoutV2Page() {
     return true;
   }, [exitSessionKey]);
 
-  // Back-press guard (mobile) — one extra history entry, consumed once.
+  // Expose to handlers declared earlier in the component (e.g. the header back arrow).
+  exitTriggerRef.current = triggerExitOffer;
+
+  // Back-press guard (mobile). Two separate concerns so the listener can never
+  // be torn down by a state flip while the guard entry stays on the stack:
+  //   1. push one sentinel history entry once checkout is interactive
+  //   2. keep a permanently-mounted popstate listener that consumes it
   useEffect(() => {
-    if (!canShowExitOffer || exitGuardPushedRef.current || exitOfferShownRef.current) return;
+    if (!canShowExitOffer || exitGuardPushedRef.current) return;
     try { if (sessionStorage.getItem(exitSessionKey)) return; } catch { /* noop */ }
     exitGuardPushedRef.current = true;
     try { window.history.pushState({ sfExitGuard: true }, ""); } catch { /* noop */ }
+  }, [canShowExitOffer, exitSessionKey]);
+
+  useEffect(() => {
     const onPop = () => {
+      if (!exitGuardPushedRef.current) return;
       if (triggerExitOffer()) {
+        // Re-arm so the sheet's own "go back" is what actually leaves.
         try { window.history.pushState({ sfExitGuard: true }, ""); } catch { /* noop */ }
+      } else {
+        exitGuardPushedRef.current = false;
       }
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [canShowExitOffer, exitSessionKey, triggerExitOffer]);
+  }, [triggerExitOffer]);
 
   // Desktop mouse-out of the viewport top.
   useEffect(() => {
@@ -2081,13 +2095,13 @@ export default function CheckoutV2Page() {
     return () => document.removeEventListener("mouseleave", onLeave);
   }, [canShowExitOffer, triggerExitOffer]);
 
-  // 20s idle while sitting on the payment step.
+  // 30s idle while sitting on the payment step.
   useEffect(() => {
     if (!canShowExitOffer || !showPayment) return;
     let timer = 0;
     const arm = () => {
       window.clearTimeout(timer);
-      timer = window.setTimeout(() => { if (document.visibilityState === "visible") triggerExitOffer(); }, 20000);
+      timer = window.setTimeout(() => { if (document.visibilityState === "visible") triggerExitOffer(); }, 30000);
     };
     arm();
     const events: (keyof DocumentEventMap)[] = ["touchstart", "click", "keydown", "scroll"];
@@ -2097,6 +2111,7 @@ export default function CheckoutV2Page() {
       events.forEach((ev) => document.removeEventListener(ev, arm as any));
     };
   }, [canShowExitOffer, showPayment, triggerExitOffer]);
+
 
   const claimExitOffer = async () => {
     setExitOfferOpen(false);
