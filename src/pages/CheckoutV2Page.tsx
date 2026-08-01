@@ -1356,6 +1356,12 @@ export default function CheckoutV2Page() {
   const rateLimitRetryRef = useRef(false);
   const mintCountRef = useRef<number>(0);
   const mintLoopBlockedRef = useRef<boolean>(false);
+  // Monotonic id for each UPI launch attempt. Timers/listeners from an older
+  // tap must never act on a newer attempt (e.g. tap GPay → nothing opens → tap
+  // PhonePe → GPay's "no app opened" timer would otherwise cancel the live
+  // PhonePe wait). Also lets a new tap tear down the previous tap's listeners.
+  const launchSeqRef = useRef(0);
+  const launchCleanupRef = useRef<null | (() => void)>(null);
   const [showPayment, setShowPayment] = useState(false);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [pendingOrder, setPendingOrder] = useState<PendingOrder | null>(null);
