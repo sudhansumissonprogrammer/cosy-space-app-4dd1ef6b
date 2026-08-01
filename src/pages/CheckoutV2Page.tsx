@@ -2170,7 +2170,8 @@ export default function CheckoutV2Page() {
   };
 
 
-  const tapUpiApp = (app: UpiApp, event?: MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
+  const tapUpiApp = (app: UpiApp, event?: MouseEvent<HTMLAnchorElement | HTMLButtonElement>, opts?: { gesture?: boolean }) => {
+    const gesture = opts?.gesture !== false;
     event?.preventDefault();
     // Instant tactile + visual acknowledgement of the tap. Runs before any
     // guard so the shopper always *feels* the press, even when we end up
