@@ -150,10 +150,21 @@ function genericUpiUrl(url: string): string | null {
  * activation, so click a synthetic <a> first and only fall back to
  * location.assign if that throws.
  */
-/** Visible "order processing" beat before the UPI app takes over (ms). */
+/** Visible "order processing" beat before the UPI app takes over (ms).
+ *  iOS/WKWebView only honours a custom-scheme navigation while the user
+ *  gesture is still "fresh" — a long timer gets silently swallowed, so the
+ *  shopper taps GPay and literally nothing happens. Keep the beat for Android
+ *  (which has no such restriction) and hand off almost immediately on iOS. */
 const UPI_LAUNCH_DELAY_MS = 850;
+const UPI_LAUNCH_DELAY_IOS_MS = 120;
 
 function launchUpiUrl(url: string): void {
+  // iOS: a synthetic anchor click for a non-http scheme is treated as a
+  // programmatic popup by Safari and is frequently blocked. Direct location
+  // assignment is the only path WKWebView + Safari both honour.
+  if (isIOS()) {
+    try { window.location.href = url; return; } catch { /* fall through */ }
+  }
   try {
     const a = document.createElement("a");
     a.href = url;
@@ -168,6 +179,7 @@ function launchUpiUrl(url: string): void {
     try { window.location.href = url; } catch { /* noop */ }
   }
 }
+
 
 
 /** When true, every UPI tile on Android launches the plain `upi://pay?…`
