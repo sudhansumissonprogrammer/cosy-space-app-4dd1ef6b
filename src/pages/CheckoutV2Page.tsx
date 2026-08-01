@@ -2723,11 +2723,24 @@ export default function CheckoutV2Page() {
 
   useEffect(() => {
     if (!store?.id) return;
+    // Android recent-app restore / WebView bfcache can replay the exact PayU
+    // return URL after this mount has already reached confirmation. Never let a
+    // stale redirect re-arm the processing screen for a completed order.
+    if (orderPlaced || confirmingPayment) return;
     const params = new URLSearchParams(window.location.search);
     const payuStatus = params.get("payu_status");
     const txnid = params.get("txnid");
     const returnedOrderId = params.get("payu_order");
     if (!payuStatus || !txnid || !returnedOrderId) return;
+    // Consume redirect parameters before setting state. This makes StrictMode,
+    // fast remounts, and duplicate pageshow events idempotent.
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.delete("payu_status");
+      u.searchParams.delete("txnid");
+      u.searchParams.delete("payu_order");
+      window.history.replaceState({}, "", u.toString());
+    } catch { /* noop */ }
     const normalizedPayuStatus = payuStatus.toLowerCase().replace(/[\s_-]/g, "");
     gatewayRef.current = { pg: "payu", payu_txnid: txnid };
     setOrderId(returnedOrderId);
@@ -2754,15 +2767,8 @@ export default function CheckoutV2Page() {
           .catch(() => { /* polling will catch it */ });
       } catch { /* noop */ }
     }
-    try {
-      const u = new URL(window.location.href);
-      u.searchParams.delete("payu_status");
-      u.searchParams.delete("txnid");
-      u.searchParams.delete("payu_order");
-      window.history.replaceState({}, "", u.toString());
-    } catch { /* noop */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store?.id]);
+  }, [store?.id, orderPlaced, confirmingPayment]);
 
   // ─── Cashfree redirect-back recovery (mirrors CheckoutPage) ─────────────
   useEffect(() => {
