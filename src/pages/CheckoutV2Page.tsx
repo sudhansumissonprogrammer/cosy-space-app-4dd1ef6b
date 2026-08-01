@@ -156,7 +156,26 @@ function genericUpiUrl(url: string): string | null {
  *  shopper taps GPay and literally nothing happens. Keep the beat for Android
  *  (which has no such restriction) and hand off almost immediately on iOS. */
 const UPI_LAUNCH_DELAY_MS = 850;
-const UPI_LAUNCH_DELAY_IOS_MS = 120;
+/** iOS: navigate in the SAME tick as the tap. Any timer — even 120ms — can
+ *  push the custom-scheme navigation outside the "user activation" window in
+ *  WKWebView (Instagram/WhatsApp in-app browsers are the strictest), and the
+ *  tap silently does nothing. */
+const UPI_LAUNCH_DELAY_IOS_MS = 0;
+
+/** Coarse device tag for payment telemetry (iOS vs Android vs desktop, plus
+ *  in-app webview), so UPI success/failure can actually be measured per OS. */
+function deviceTag(): string {
+  if (typeof navigator === "undefined") return "unknown";
+  const ua = navigator.userAgent || "";
+  const os = isIOS() ? "ios" : isAndroid() ? "android" : "desktop";
+  let app = "browser";
+  if (/Instagram/i.test(ua)) app = "instagram";
+  else if (/FBAN|FBAV|FB_IAB/i.test(ua)) app = "facebook";
+  else if (/WhatsApp/i.test(ua)) app = "whatsapp";
+  else if (os === "ios" && !/Safari/i.test(ua)) app = "webview";
+  return `${os}:${app}`;
+}
+
 
 function launchUpiUrl(url: string): void {
   // iOS: a synthetic anchor click for a non-http scheme is treated as a
