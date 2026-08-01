@@ -4716,11 +4716,8 @@ export default function CheckoutV2Page() {
                   {deliveryEta && (
                     <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2 py-1.5">
                       <Truck className="h-3.5 w-3.5 text-emerald-700 flex-shrink-0" />
-                      <span className="text-[12.5px] font-semibold text-emerald-800">
+                      <span className="text-[12.5px] font-semibold text-emerald-800 truncate">
                         Arriving {deliveryEta.shortLabel}
-                      </span>
-                      <span className="text-[11px] text-emerald-700/70">
-                        ({deliveryEta.rangeLabel})
                       </span>
                     </div>
                   )}
