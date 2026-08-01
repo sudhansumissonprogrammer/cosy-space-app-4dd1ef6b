@@ -87,6 +87,14 @@ function isAndroid(): boolean {
   return typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
 }
 
+/** iOS (incl. iPadOS 13+ which reports as Mac with touch points). */
+function isIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
+  return /Macintosh/i.test(navigator.userAgent) && (navigator as any).maxTouchPoints > 1;
+}
+
+
 const UPI_ANDROID_PACKAGES: Partial<Record<UpiApp, string>> = {
   gpay: "com.google.android.apps.nbu.paisa.user",
   phonepe: "com.phonepe.app",
@@ -142,10 +150,21 @@ function genericUpiUrl(url: string): string | null {
  * activation, so click a synthetic <a> first and only fall back to
  * location.assign if that throws.
  */
-/** Visible "order processing" beat before the UPI app takes over (ms). */
+/** Visible "order processing" beat before the UPI app takes over (ms).
+ *  iOS/WKWebView only honours a custom-scheme navigation while the user
+ *  gesture is still "fresh" — a long timer gets silently swallowed, so the
+ *  shopper taps GPay and literally nothing happens. Keep the beat for Android
+ *  (which has no such restriction) and hand off almost immediately on iOS. */
 const UPI_LAUNCH_DELAY_MS = 850;
+const UPI_LAUNCH_DELAY_IOS_MS = 120;
 
 function launchUpiUrl(url: string): void {
+  // iOS: a synthetic anchor click for a non-http scheme is treated as a
+  // programmatic popup by Safari and is frequently blocked. Direct location
+  // assignment is the only path WKWebView + Safari both honour.
+  if (isIOS()) {
+    try { window.location.href = url; return; } catch { /* fall through */ }
+  }
   try {
     const a = document.createElement("a");
     a.href = url;
@@ -160,6 +179,7 @@ function launchUpiUrl(url: string): void {
     try { window.location.href = url; } catch { /* noop */ }
   }
 }
+
 
 
 /** When true, every UPI tile on Android launches the plain `upi://pay?…`
@@ -187,14 +207,16 @@ function schemeFor(app: UpiApp, url: string): string {
     return `upi://pay?${query}`;
   }
 
-  // iOS has no UPI chooser — a plain upi:// link opens nothing, so keep the
-  // app-specific universal schemes there.
+  // iOS has no UPI chooser — a plain upi:// link resolves to nothing (or to an
+  // arbitrary app), so keep the app-specific universal schemes there. BHIM
+  // registers `bhim://` on iOS; `upi://` used to dead-end for iPhone shoppers.
   if (app === "gpay") return `tez://upi/pay?${query}`;
   if (app === "phonepe") return `phonepe://pay?${query}`;
   if (app === "paytm") return `paytmmp://pay?${query}`;
-  if (app === "bhim") return `upi://pay?${query}`;
+  if (app === "bhim") return isIOS() ? `bhim://upi/pay?${query}` : `upi://pay?${query}`;
   return url;
 }
+
 
 declare global {
   interface Window {
@@ -2075,13 +2097,27 @@ export default function CheckoutV2Page() {
       void checkNow();
     };
 
+    // iOS Safari restores the checkout from the back/forward cache after a UPI
+    // round trip: JS timers stay frozen and `visibilitychange` may never fire,
+    // so without a `pageshow` hook the poller sits idle and a PAID order looks
+    // pending. `persisted` means we came back from bfcache — treat it exactly
+    // like a return from the payment app.
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      wentToApp = true;
+      if (!returnedAt) returnedAt = Date.now();
+      void checkNow();
+    };
     window.addEventListener("focus", onFocus);
+    window.addEventListener("pageshow", onPageShow);
     document.addEventListener("visibilitychange", onVis);
     return () => {
       cancelled = true;
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("pageshow", onPageShow);
       document.removeEventListener("visibilitychange", onVis);
     };
+
   }, [waiting, orderId, waitingApp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const lastManualCheckRef = useRef(0);
@@ -2237,12 +2273,15 @@ export default function CheckoutV2Page() {
     // Micro-delay so the shopper actually SEES the real "Complete payment in
     // <app>" status screen (already armed above) before the UPI app takes
     // over. Without it the handoff is instant and the tap feels like nothing
-    // happened / like a random app jump.
+    // happened / like a random app jump. iOS gets a much shorter beat because
+    // Safari/WKWebView drop custom-scheme navigations once the user gesture
+    // has gone stale.
     window.setTimeout(() => {
       // Launch the app via a real anchor activation (some OEM Chrome/WebView
       // builds ignore location.assign for non-http schemes).
       launchUpiUrl(s.url);
-    }, UPI_LAUNCH_DELAY_MS);
+    }, isIOS() ? UPI_LAUNCH_DELAY_IOS_MS : UPI_LAUNCH_DELAY_MS);
+
 
     if (isAndroid() && app !== "any") {
       // Single fallback only, and only for a launch that clearly did nothing.
@@ -2275,10 +2314,19 @@ export default function CheckoutV2Page() {
         return;
       }
       if (Date.now() - launchedAt >= 4200) {
-        toast.info(`${label} did not open. Tap All UPI Apps or retry.`, { duration: 4500 });
+        if (isIOS()) {
+          // iOS has no system UPI chooser, so "All UPI Apps" is useless advice
+          // here — and leaving the waiting screen armed traps the shopper on
+          // "Complete payment in <app>" for an app that never opened.
+          try { stopWaitingForPayment(`${label} is not installed on this iPhone. Choose another app or pay by card.`); } catch { /* noop */ }
+          try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { reason: "ios_app_not_installed", method: `upi_${app}` } as any }); } catch { /* noop */ }
+        } else {
+          toast.info(`${label} did not open. Tap All UPI Apps or retry.`, { duration: 4500 });
+        }
       }
     }, 4500);
   };
+
 
   // Keep a live ref so the pending-tap effect always calls the current closure.
   tapUpiAppRef.current = tapUpiApp;
@@ -3216,6 +3264,8 @@ export default function CheckoutV2Page() {
           if (timeoutId != null) window.clearTimeout(timeoutId);
           if (returnedCheckId != null) window.clearTimeout(returnedCheckId);
           document.removeEventListener("visibilitychange", handleVisibilityReturn);
+          window.removeEventListener("pageshow", handleBfcacheReturn);
+
           resolve();
         };
         const continueUnifiedVerification = () => {
@@ -3264,7 +3314,15 @@ export default function CheckoutV2Page() {
             continueUnifiedVerification();
           }, 1200);
         };
+        // iOS bfcache restore after the Bolt/UPI hop — see the poller above.
+        const handleBfcacheReturn = (e: PageTransitionEvent) => {
+          if (!e.persisted || settled) return;
+          leftCheckoutTab = true;
+          handleVisibilityReturn();
+        };
+        window.addEventListener("pageshow", handleBfcacheReturn);
         document.addEventListener("visibilitychange", handleVisibilityReturn);
+
         timeoutId = window.setTimeout(async () => {
           if (settled) return;
           const confirmed = await verifyAndFinalize({ attempts: 1, intervalMs: 0, showConfirming: false });
