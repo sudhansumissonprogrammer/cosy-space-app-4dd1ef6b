@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getCapiUser, getOrCreateSfVid, readFbcWithFallback, seedCapiUserFromStorage } from "@/lib/metaEnrichment";
+import { getCapiUser, getOrCreateSfVid, isRealEmail, readFbcWithFallback, seedCapiUserFromStorage } from "@/lib/metaEnrichment";
 
 /**
  * Returns true on Lovable preview/editor/dev hosts.
@@ -201,10 +201,12 @@ export function fireMetaCAPI(params: CAPIEventParams) {
     } catch { /* noop */ }
   }
 
-  const userEmail = params.userEmail ?? u.email;
+  const rawEmail = params.userEmail ?? u.email;
+  const userEmail = isRealEmail(rawEmail) ? rawEmail : undefined;
   const userPhone = params.userPhone ?? u.phone;
-  // Always-on external_id: explicit > registry > anon visitor cookie.
-  const externalId = params.externalId ?? u.externalId ?? getOrCreateSfVid() ?? undefined;
+  // Always-on external_id, pinned to the persistent first-party visitor ID so
+  // one shopper is never split into several Meta identities mid-funnel.
+  const externalId = getOrCreateSfVid() || u.externalId || params.externalId || undefined;
   const firstName = params.firstName ?? u.firstName;
   const lastName = params.lastName ?? u.lastName;
   const city = params.city ?? u.city;
