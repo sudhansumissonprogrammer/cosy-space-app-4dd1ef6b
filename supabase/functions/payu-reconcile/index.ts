@@ -85,10 +85,14 @@ Deno.serve(async (req) => {
     .from("orders")
     .select("id, store_id, status, payment_type, customer_phone, storefront_customer_id, created_at, payu_txnids")
     .eq("payment_method", "payu")
-    .limit(200);
+    .limit(fast ? 40 : 200);
 
   if (onlyOrderId) {
     q = q.eq("id", onlyOrderId);
+  } else if (fast) {
+    q = q
+      .eq("status", "pending")
+      .gte("created_at", new Date(Date.now() - 20 * 60 * 1000).toISOString());
   } else {
     q = q
       // Include cancelled/failed too: if a shopper paid but the browser returned
@@ -96,6 +100,7 @@ Deno.serve(async (req) => {
       .in("status", ["pending", "cancelled", "failed"])
       .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
   }
+
 
   const { data: orders, error } = await q;
   if (error) {
