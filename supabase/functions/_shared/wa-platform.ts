@@ -284,6 +284,18 @@ export const DRIP_MAX_STEPS = 3;
 // Absolute ceiling: max 2 messages to one number in any rolling 24h window.
 export const DRIP_MAX_PER_24H = 2;
 export const DRIP_WINDOW_MS = 72 * 60 * 60 * 1000;
+// A failed send may be retried, but never sooner than this and never more than
+// DRIP_MAX_ATTEMPTS_24H total attempts (sent + failed) per number per 24h.
+// Without this, transient Meta errors made the 10-min cron re-fire forever.
+export const DRIP_RETRY_GAP_MS = 6 * 60 * 60 * 1000;
+export const DRIP_MAX_ATTEMPTS_24H = 3;
+// Meta errors that mean "this number will never receive this message".
+// Retrying these only burns quality rating — block the number for the window.
+const PERMANENT_WA_ERRORS = ["131026", "131049", "131047", "131048", "131051", "133010", "470", "63024"];
+export function isPermanentWaError(msg: string | null | undefined): boolean {
+  const s = String(msg ?? "");
+  return PERMANENT_WA_ERRORS.some((c) => s.includes(c));
+}
 
 export type DripDecision = {
   allow: boolean;
