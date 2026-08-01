@@ -1388,7 +1388,7 @@ export default function CheckoutV2Page() {
    *  a dead tap (silent return). Remember it instead and auto-launch the moment
    *  the intent turns ready. Expires so a stale tap can never launch later. */
   const pendingUpiTapRef = useRef<{ app: UpiApp; at: number } | null>(null);
-  const tapUpiAppRef = useRef<((app: UpiApp) => void) | null>(null);
+  const tapUpiAppRef = useRef<((app: UpiApp, event?: any, opts?: { gesture?: boolean }) => void) | null>(null);
   const PENDING_TAP_TTL_MS = 20000;
 
 
