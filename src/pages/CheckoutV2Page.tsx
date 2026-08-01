@@ -1890,12 +1890,12 @@ export default function CheckoutV2Page() {
   const waitResumedRef = useRef(false);
 
   // Set later by the exit-intent block; lets the header back arrow open the save sheet.
-  const exitTriggerRef = useRef<null | (() => boolean)>(null);
+  const exitTriggerRef = useRef<null | ((explicit?: boolean) => boolean)>(null);
 
   const goBack = useCallback(() => {
     // Gokwik-style: intercept the FIRST leave attempt from the header arrow,
     // including while the phone/address sheet is open.
-    if (exitTriggerRef.current?.()) return;
+    if (exitTriggerRef.current?.(true)) return;
     if (showAddressFormSheet && addressComplete) {
       closeAddressFormSheet();
       return;
@@ -2055,12 +2055,30 @@ export default function CheckoutV2Page() {
     !waiting &&
     !confirmingPayment &&
     !creatingOrder;
+  // Explicit header/browser back must not be blocked by background order or
+  // intent preparation. That work commonly runs for a few seconds immediately
+  // after phone entry, which made the visible back arrow appear broken. Only
+  // an actual payment wait/confirmation or completed order suppresses it.
+  const canShowExplicitExitOffer =
+    !!store?.id &&
+    checkoutItems.length > 0 &&
+    !orderPlaced &&
+    !waiting &&
+    !confirmingPayment;
   const canShowExitOfferRef = useRef(canShowExitOffer);
   canShowExitOfferRef.current = canShowExitOffer;
+  const canShowExplicitExitOfferRef = useRef(canShowExplicitExitOffer);
+  canShowExplicitExitOfferRef.current = canShowExplicitExitOffer;
 
-  const triggerExitOffer = useCallback(() => {
-    if (exitOfferShownRef.current || !canShowExitOfferRef.current) return false;
-    try { if (sessionStorage.getItem(exitSessionKey)) return false; } catch { /* noop */ }
+  const triggerExitOffer = useCallback((explicit = false) => {
+    if (explicit ? !canShowExplicitExitOfferRef.current : !canShowExitOfferRef.current) return false;
+    // Idle/mouse-leave is once per checkout session. A deliberate back action
+    // must always work, even when an earlier automatic popup was dismissed or
+    // stale sessionStorage from HMR/Instagram WebView remains in the tab.
+    if (!explicit) {
+      if (exitOfferShownRef.current) return false;
+      try { if (sessionStorage.getItem(exitSessionKey)) return false; } catch { /* noop */ }
+    }
     exitOfferShownRef.current = true;
     try { sessionStorage.setItem(exitSessionKey, "1"); } catch { /* noop */ }
     setExitOfferOpen(true);
@@ -2084,7 +2102,7 @@ export default function CheckoutV2Page() {
   useEffect(() => {
     const onPop = () => {
       if (!exitGuardPushedRef.current) return;
-      if (triggerExitOffer()) {
+      if (triggerExitOffer(true)) {
         // Re-arm so the sheet's own "go back" is what actually leaves.
         try { window.history.pushState({ sfExitGuard: true }, ""); } catch { /* noop */ }
       } else {
