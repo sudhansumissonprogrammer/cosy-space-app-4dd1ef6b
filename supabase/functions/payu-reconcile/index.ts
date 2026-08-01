@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
   }
 
   if (!onlyOrderId && (!orders || orders.length === 0)) {
-    const capiBackfilled = await capiBackfill(supabase as any, null);
+    const capiBackfilled = fast ? 0 : await capiBackfill(supabase as any, null);
     return json({ ok: true, scanned: 0, skipped: "no_recent_payu_orders", capi_backfilled: capiBackfilled });
   }
 
@@ -227,7 +227,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  const capiBackfilled = await capiBackfill(supabase as any, onlyOrderId);
+  const capiBackfilled = fast ? 0 : await capiBackfill(supabase as any, onlyOrderId);
 
   return json({
     ok: true,
