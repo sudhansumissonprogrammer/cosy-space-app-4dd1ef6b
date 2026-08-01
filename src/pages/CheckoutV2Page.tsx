@@ -2226,9 +2226,11 @@ export default function CheckoutV2Page() {
       if (verdict === "failed") {
         toast.error("Payment was cancelled — please try again");
         clearWaiting(); setWaiting(false); setPendingOrder({ id: orderId!, number: orderNumber }); setPaymentFailed(true);
+        invalidateUpiIntents();
         try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
         return;
       }
+
       const { data } = await supabase.functions.invoke("order-payment-status", {
         body: { store_id: store.id, order_id: orderId },
       });
