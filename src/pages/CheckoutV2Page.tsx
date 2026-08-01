@@ -1199,6 +1199,12 @@ export default function CheckoutV2Page() {
     if (d !== couponDiscount) setCouponDiscount(d);
   }, [subtotal, appliedCoupon]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ─── Delivery-date promise (from pincode) ───────────────────────────────
+  // Indian D2C shoppers convert on a *date*, not on "3–5 days".
+  const deliveryEta = useMemo(() => estimateDelivery(pincode), [pincode]);
+
+
+
   // Shipping is calculated after coupon discount, matching the backend order
   // total. Otherwise a coupon can make the checkout display free shipping while
   // the gateway/order is minted with paid shipping (or vice versa).
