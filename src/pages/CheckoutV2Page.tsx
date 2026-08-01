@@ -2251,7 +2251,53 @@ export default function CheckoutV2Page() {
 
   }, [waiting, orderId, waitingApp]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ─── LATE-CONFIRMATION WATCHER ────────────────────────────────────────────
+  // Once the poller gives up we drop the shopper on the "Payment not completed"
+  // retry card and stop checking entirely. But UPI/PayU confirmations regularly
+  // land 1-5 minutes late (bank queue, webhook retry, reconcile cron). Without
+  // this watcher a genuinely PAID order stays on a retry screen — and the
+  // shopper pays a second time. Keep a quiet, low-frequency check running for
+  // 8 more minutes; the moment the order flips to paid we jump to the success
+  // screen with no interaction.
+  useEffect(() => {
+    if (!paymentFailed || !pendingOrder?.id || orderPlaced) return;
+    let cancelled = false;
+    const startedAt = Date.now();
+    const MAX_MS = 8 * 60 * 1000;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const tick = async () => {
+      if (cancelled) return;
+      if (Date.now() - startedAt >= MAX_MS) return;
+      if (document.visibilityState === "visible" && !waitingCheckInFlightRef.current) {
+        waitingCheckInFlightRef.current = true;
+        try {
+          const gatewayResult = await forceGatewayVerify();
+          if (!cancelled && normalizeGatewayResult(gatewayResult) === "success") {
+            finishSuccess(pendingOrder.id); return;
+          }
+          const { data } = await supabase.functions.invoke("order-payment-status", {
+            body: { store_id: store.id, order_id: pendingOrder.id },
+          });
+          if (!cancelled && (data as any)?.payment_status === "success") {
+            finishSuccess(pendingOrder.id); return;
+          }
+        } catch { /* keep watching */ }
+        finally { waitingCheckInFlightRef.current = false; }
+      }
+      if (!cancelled) timer = setTimeout(tick, 6000);
+    };
+    timer = setTimeout(tick, 4000);
+    const onVis = () => { if (document.visibilityState === "visible") void tick(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [paymentFailed, pendingOrder?.id, orderPlaced]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const lastManualCheckRef = useRef(0);
+
   const manualRecheck = async () => {
     if (manualChecking || !orderId) return;
     const now = Date.now();
