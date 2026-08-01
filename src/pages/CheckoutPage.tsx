@@ -2552,7 +2552,7 @@ function CheckoutPageInner() {
                 <div className="flex items-center gap-1.5 pt-1 text-[11px] font-medium text-primary">
                   <Truck className="h-3.5 w-3.5" />
                   <span>Delivery by <span className="font-semibold">{deliveryEstimate.shortLabel}</span></span>
-                  <span className="text-muted-foreground font-normal">· {deliveryEstimate.daysAway}-{Math.ceil((deliveryEstimate.maxDate.getTime() - Date.now()) / 86400000)} days</span>
+                  
                 </div>
               )}
             </div>

@@ -34,21 +34,18 @@ export function getDeliveryTier(pincode: string): DeliveryTier | null {
   return "remote"; // 9xxxxx — northeast, J&K
 }
 
-const DAYS_BY_TIER: Record<DeliveryTier, { min: number; max: number }> = {
-  metro: { min: 2, max: 4 },
-  tier1: { min: 3, max: 5 },
-  tier2: { min: 5, max: 7 },
-  remote: { min: 7, max: 10 },
-};
+/**
+ * Single, uniform promise across the whole platform: 5 days from today.
+ * (Order on the 1st → delivery on the 6th.) No ranges, no tier drift —
+ * PDP, checkout and WhatsApp must all show the exact same date.
+ */
+export const DELIVERY_DAYS = 5;
 
-/** Add N business days (skip Sundays). Saturday counts as a working day. */
-function addBusinessDays(start: Date, days: number): Date {
+/** Add N calendar days; if it lands on a Sunday, push to Monday. */
+export function addDeliveryDays(start: Date, days: number = DELIVERY_DAYS): Date {
   const d = new Date(start);
-  let added = 0;
-  while (added < days) {
-    d.setDate(d.getDate() + 1);
-    if (d.getDay() !== 0) added++; // skip Sunday
-  }
+  d.setDate(d.getDate() + days);
+  if (d.getDay() === 0) d.setDate(d.getDate() + 1);
   return d;
 }
 
@@ -56,9 +53,9 @@ export interface DeliveryEstimate {
   tier: DeliveryTier;
   minDate: Date;
   maxDate: Date;
-  /** "Mon, 28 Apr" — short form for badges */
+  /** "Mon, 28 Apr" — the single promised date */
   shortLabel: string;
-  /** "Mon, 28 Apr – Wed, 30 Apr" */
+  /** Kept for API compatibility — same single date, never a range */
   rangeLabel: string;
   daysAway: number;
 }
@@ -66,18 +63,17 @@ export interface DeliveryEstimate {
 export function estimateDelivery(pincode: string, from: Date = new Date()): DeliveryEstimate | null {
   const tier = getDeliveryTier(pincode);
   if (!tier) return null;
-  const { min, max } = DAYS_BY_TIER[tier];
-  const minDate = addBusinessDays(from, min);
-  const maxDate = addBusinessDays(from, max);
+  const date = addDeliveryDays(from, DELIVERY_DAYS);
   const fmt = (d: Date) =>
     d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
-  const daysAway = Math.ceil((minDate.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+  const daysAway = Math.ceil((date.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+  const label = fmt(date);
   return {
     tier,
-    minDate,
-    maxDate,
-    shortLabel: fmt(minDate),
-    rangeLabel: `${fmt(minDate)} – ${fmt(maxDate)}`,
+    minDate: date,
+    maxDate: date,
+    shortLabel: label,
+    rangeLabel: label,
     daysAway,
   };
 }

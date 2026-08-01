@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { addDeliveryDays } from "@/lib/deliveryEstimate";
 import useEmblaCarousel from "embla-carousel-react";
 // VideoSlide lazy-loaded (only ~5% of products have video) — see below
 import { createPortal } from "react-dom";
@@ -81,8 +82,8 @@ function getProductStats(productId: string) {
 }
 
 function getDeliveryDate() {
-  const d = new Date();
-  d.setDate(d.getDate() + 3 + Math.floor(Math.random() * 3));
+  // Single platform-wide promise: today + 5 days (Sunday pushes to Monday).
+  const d = addDeliveryDays(new Date());
   return d.toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" });
 }
 
