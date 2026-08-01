@@ -1890,12 +1890,12 @@ export default function CheckoutV2Page() {
   const waitResumedRef = useRef(false);
 
   // Set later by the exit-intent block; lets the header back arrow open the save sheet.
-  const exitTriggerRef = useRef<null | (() => boolean)>(null);
+  const exitTriggerRef = useRef<null | ((explicit?: boolean) => boolean)>(null);
 
   const goBack = useCallback(() => {
     // Gokwik-style: intercept the FIRST leave attempt from the header arrow,
     // including while the phone/address sheet is open.
-    if (exitTriggerRef.current?.()) return;
+    if (exitTriggerRef.current?.(true)) return;
     if (showAddressFormSheet && addressComplete) {
       closeAddressFormSheet();
       return;
@@ -2058,9 +2058,15 @@ export default function CheckoutV2Page() {
   const canShowExitOfferRef = useRef(canShowExitOffer);
   canShowExitOfferRef.current = canShowExitOffer;
 
-  const triggerExitOffer = useCallback(() => {
-    if (exitOfferShownRef.current || !canShowExitOfferRef.current) return false;
-    try { if (sessionStorage.getItem(exitSessionKey)) return false; } catch { /* noop */ }
+  const triggerExitOffer = useCallback((explicit = false) => {
+    if (!canShowExitOfferRef.current) return false;
+    // Idle/mouse-leave is once per checkout session. A deliberate back action
+    // must always work, even when an earlier automatic popup was dismissed or
+    // stale sessionStorage from HMR/Instagram WebView remains in the tab.
+    if (!explicit) {
+      if (exitOfferShownRef.current) return false;
+      try { if (sessionStorage.getItem(exitSessionKey)) return false; } catch { /* noop */ }
+    }
     exitOfferShownRef.current = true;
     try { sessionStorage.setItem(exitSessionKey, "1"); } catch { /* noop */ }
     setExitOfferOpen(true);
@@ -2084,7 +2090,7 @@ export default function CheckoutV2Page() {
   useEffect(() => {
     const onPop = () => {
       if (!exitGuardPushedRef.current) return;
-      if (triggerExitOffer()) {
+      if (triggerExitOffer(true)) {
         // Re-arm so the sheet's own "go back" is what actually leaves.
         try { window.history.pushState({ sfExitGuard: true }, ""); } catch { /* noop */ }
       } else {
