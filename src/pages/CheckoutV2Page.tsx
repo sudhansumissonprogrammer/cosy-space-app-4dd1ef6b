@@ -2013,6 +2013,107 @@ export default function CheckoutV2Page() {
   };
 
   const [orderPlaced, setOrderPlaced] = useState(false);
+
+  // ─── Exit-intent save sheet ─────────────────────────────────────────────
+  // Fires at most once per session when a shopper tries to abandon checkout:
+  // mobile back-press, desktop mouse-out, or 20s idle at the payment step.
+  // Offers the store's WhatsApp-exclusive coupon (bigger than the store-wide
+  // auto coupon) which replaces the currently applied one on claim.
+  const [exitOfferOpen, setExitOfferOpen] = useState(false);
+  const exitOfferShownRef = useRef(false);
+  const exitGuardPushedRef = useRef(false);
+  const exitSessionKey = `sf_exit_offer_${store?.id || "x"}`;
+
+  const exitCoupon = useMemo(() => {
+    if (!waCoupon?.code || subtotal <= 0) return null;
+    if (Number(waCoupon.min_order_amount || 0) > subtotal) return null;
+    if (appliedCoupon?.code && String(appliedCoupon.code).toUpperCase() === String(waCoupon.code).toUpperCase()) return null;
+    const raw = waCoupon.discount_type === "percentage"
+      ? (subtotal * Number(waCoupon.discount_value)) / 100
+      : Number(waCoupon.discount_value);
+    const value = Math.min(Math.round(raw), subtotal);
+    if (value <= couponDiscount) return null;
+    return { code: String(waCoupon.code).toUpperCase(), value };
+  }, [waCoupon, subtotal, appliedCoupon, couponDiscount]);
+
+  const exitExtraSaving = exitCoupon ? Math.max(0, exitCoupon.value - couponDiscount) : 0;
+
+  const canShowExitOffer =
+    !!store?.id &&
+    checkoutItems.length > 0 &&
+    !orderPlaced &&
+    !waiting &&
+    !confirmingPayment &&
+    !creatingOrder &&
+    (!!exitCoupon || couponDiscount > 0);
+  const canShowExitOfferRef = useRef(canShowExitOffer);
+  canShowExitOfferRef.current = canShowExitOffer;
+
+  const triggerExitOffer = useCallback(() => {
+    if (exitOfferShownRef.current || !canShowExitOfferRef.current) return false;
+    try { if (sessionStorage.getItem(exitSessionKey)) return false; } catch { /* noop */ }
+    exitOfferShownRef.current = true;
+    try { sessionStorage.setItem(exitSessionKey, "1"); } catch { /* noop */ }
+    setExitOfferOpen(true);
+    return true;
+  }, [exitSessionKey]);
+
+  // Back-press guard (mobile) — one extra history entry, consumed once.
+  useEffect(() => {
+    if (!canShowExitOffer || exitGuardPushedRef.current || exitOfferShownRef.current) return;
+    try { if (sessionStorage.getItem(exitSessionKey)) return; } catch { /* noop */ }
+    exitGuardPushedRef.current = true;
+    try { window.history.pushState({ sfExitGuard: true }, ""); } catch { /* noop */ }
+    const onPop = () => {
+      if (triggerExitOffer()) {
+        try { window.history.pushState({ sfExitGuard: true }, ""); } catch { /* noop */ }
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [canShowExitOffer, exitSessionKey, triggerExitOffer]);
+
+  // Desktop mouse-out of the viewport top.
+  useEffect(() => {
+    if (!canShowExitOffer) return;
+    const onLeave = (e: globalThis.MouseEvent) => { if (e.clientY <= 0) triggerExitOffer(); };
+    document.addEventListener("mouseleave", onLeave);
+    return () => document.removeEventListener("mouseleave", onLeave);
+  }, [canShowExitOffer, triggerExitOffer]);
+
+  // 20s idle while sitting on the payment step.
+  useEffect(() => {
+    if (!canShowExitOffer || !showPayment) return;
+    let timer = 0;
+    const arm = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => { if (document.visibilityState === "visible") triggerExitOffer(); }, 20000);
+    };
+    arm();
+    const events: (keyof DocumentEventMap)[] = ["touchstart", "click", "keydown", "scroll"];
+    events.forEach((ev) => document.addEventListener(ev, arm, { passive: true } as any));
+    return () => {
+      window.clearTimeout(timer);
+      events.forEach((ev) => document.removeEventListener(ev, arm as any));
+    };
+  }, [canShowExitOffer, showPayment, triggerExitOffer]);
+
+  const claimExitOffer = async () => {
+    setExitOfferOpen(false);
+    if (exitCoupon) {
+      dismissedAutoCouponRef.current = true;
+      autoAppliedCouponRef.current = true;
+      await applyCoupon(exitCoupon.code);
+    }
+    if (!showPayment) setShowPayment(true);
+    try { window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }); } catch { /* noop */ }
+  };
+
+  const leaveFromExitOffer = () => {
+    setExitOfferOpen(false);
+    navigate(storefrontPath(store?.slug || ""));
+  };
+
   const [viewingOrders, setViewingOrders] = useState(false);
   const [showUpsell, setShowUpsell] = useState(false);
   const [advancePaid, setAdvancePaid] = useState(0);
