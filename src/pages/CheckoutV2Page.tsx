@@ -5524,6 +5524,20 @@ export default function CheckoutV2Page() {
           </div>
         </>
       )}
+
+      {/* Exit-intent save sheet — once per session */}
+      <CheckoutExitOffer
+        open={exitOfferOpen}
+        offerLabel={`${formatPrice(exitCoupon ? exitCoupon.value : couponDiscount, currency)} OFF`}
+        offerCode={exitCoupon?.code || appliedCoupon?.code}
+        currentTotalLabel={exitExtraSaving > 0 ? formatPrice(total, currency) : undefined}
+        newTotalLabel={exitExtraSaving > 0 ? formatPrice(Math.max(0, total - exitExtraSaving), currency) : formatPrice(total, currency)}
+        alreadyClaimed={!exitCoupon}
+        onClaim={() => { void claimExitOffer(); }}
+        onLeave={leaveFromExitOffer}
+        onClose={() => setExitOfferOpen(false)}
+      />
     </div>
+
   );
 }
