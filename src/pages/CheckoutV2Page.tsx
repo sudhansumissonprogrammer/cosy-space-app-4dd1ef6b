@@ -2106,11 +2106,15 @@ export default function CheckoutV2Page() {
     // payment" for the full 90s window. So once they're back we only give a
     // short grace period, then restore checkout with a retry option.
     let wentToApp = false;
-    // A wait restored from storage means the shopper is ALREADY back on our
-    // page (they cancelled or finished in the UPI app and navigated around the
-    // store). Start the return grace immediately so they get a retry screen
-    // instead of an endless spinner.
-    let returnedAt = waitResumedRef.current ? Date.now() : 0;
+    // A wait restored from storage usually means the shopper is ALREADY back on
+    // our page (they cancelled or finished in the UPI app and navigated around
+    // the store). Start the return grace immediately so they get a retry screen
+    // instead of an endless spinner — but ONLY if this page is actually in the
+    // foreground. Android WebViews routinely re-create the checkout while the
+    // shopper is still inside GPay/PhonePe entering their PIN; presetting the
+    // grace there would fail the attempt mid-payment.
+    let returnedAt = (waitResumedRef.current && document.visibilityState === "visible") ? Date.now() : 0;
+
     // PayU's status API lags well behind the charge, so give it a longer grace
     // than plain intents — but never zero grace (that was the infinite spinner).
     const RETURN_GRACE_MS = gatewayRef.current.pg === "payu" ? 45000 : 12000;
