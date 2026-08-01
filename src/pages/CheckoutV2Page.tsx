@@ -2236,6 +2236,20 @@ export default function CheckoutV2Page() {
 
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
 
+    // iOS: a custom-scheme navigation triggered WITHOUT a live user gesture
+    // (queued tap replayed once the intent finished minting, address-sheet
+    // resume, etc.) is silently dropped by Safari/WKWebView — the shopper sat
+    // on an armed "Complete payment" screen while nothing ever opened. Ask for
+    // one fresh tap instead; the intent is ready so it launches instantly.
+    if (isIOS() && !gesture) {
+      pendingUpiTapRef.current = null;
+      clearUpiTapFx();
+      toast.info(`Ready — tap ${label} to open the app`, { duration: 5000 });
+      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}`, step: "ios_retap_prompt", dev: deviceTag() } as any }); } catch { /* noop */ }
+      return;
+    }
+
+
     let leftCheckout = false;
     let waitingArmed = false;
     const armWaiting = () => {
