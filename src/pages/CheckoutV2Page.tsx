@@ -2438,26 +2438,38 @@ export default function CheckoutV2Page() {
 
 
 
-    if (isAndroid()) {
-      // Recovery for "the tap did nothing".
+    // How long we wait before concluding "no payment app ever opened".
+    //
+    // The old 6.2s budget was far too aggressive: Android Chrome shows an
+    // "Open with PhonePe?" system dialog, and Instagram/FB webviews show a
+    // "You are leaving the app" confirmation. While either dialog is up the
+    // page is STILL visible + focused, so we were declaring failure and
+    // flipping the shopper to "retry payment" seconds before they tapped
+    // Continue — the app then opened onto an already-abandoned attempt.
+    //
+    // Give a full 90s (and 2 min inside in-app webviews, where the extra
+    // confirm step is guaranteed) before releasing the wait screen.
+    const NO_APP_TIMEOUT_MS = inAppWebview ? 120000 : 90000;
+
+    if (isAndroid() && !inAppWebview) {
+      // Recovery for "the tap did nothing" on real Android Chrome only.
       //
       // In system-chooser mode every branded tile launches the SAME
       // `upi://pay?…` url, so the old fallback (`launch the generic url`) was a
-      // silent no-op — `anyUpiUrl === s.url` and fireChooser() returned without
-      // navigating. Android shoppers were then left on an armed "Complete
-      // payment in <app>" screen forever, with no app ever opening.
+      // silent no-op. Correct recovery: re-attempt the exact same launch once
+      // (some OEM WebViews swallow the first external-scheme hop).
       //
-      // Correct recovery: re-attempt the exact same launch once (some OEM
-      // WebViews swallow the first external-scheme hop), and only if the page
-      // is STILL foregrounded + focused afterwards do we conclude nothing
-      // opened and release the waiting screen so the shopper can retry.
+      // Deliberately NOT done in in-app webviews: there the first hop opens a
+      // "leaving the app" confirm sheet, and a second navigation while that
+      // sheet is open cancels it. Also pushed out to 12s so a slow chooser
+      // dialog is never interrupted.
       window.setTimeout(() => {
         if (leftCheckout || document.visibilityState !== "visible") return;
         try { if (!document.hasFocus()) return; } catch { /* noop */ }
         if (chooserFired) return;
         chooserFired = true;
         launchUpiUrl(anyUpiUrl && anyUpiUrl !== s.url ? anyUpiUrl : s.url);
-      }, 2600 + UPI_LAUNCH_DELAY_MS);
+      }, 12000 + UPI_LAUNCH_DELAY_MS);
     }
 
 
@@ -2476,7 +2488,7 @@ export default function CheckoutV2Page() {
         return;
       }
       try { if (!document.hasFocus()) return; } catch { /* noop */ }
-      if (Date.now() - launchedAt >= 6000) {
+      if (Date.now() - launchedAt >= NO_APP_TIMEOUT_MS - 200) {
         // Nothing ever came to the foreground on either OS — never strand the
         // shopper on a spinner for a payment app that never opened.
         const msg = isIOS()
@@ -2485,7 +2497,8 @@ export default function CheckoutV2Page() {
         try { stopWaitingForPayment(msg); } catch { /* noop */ }
         try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { reason: isIOS() ? "ios_app_not_installed" : "android_no_upi_app", method: `upi_${app}`, dev: deviceTag() } as any }); } catch { /* noop */ }
       }
-    }, 6200);
+    }, NO_APP_TIMEOUT_MS);
+
   };
 
 
