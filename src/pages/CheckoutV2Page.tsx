@@ -2342,7 +2342,7 @@ export default function CheckoutV2Page() {
 
     // Pixels and analytics run after the app launch has already been handed off.
     window.setTimeout(() => {
-      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}` } as any }); } catch { /* noop */ }
+      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}`, dev: deviceTag() } as any }); } catch { /* noop */ }
       fireInitiateCheckoutOnce();
       fireAddPaymentInfoOnce(`upi_${app}`, chargeAmount);
     }, 0);
