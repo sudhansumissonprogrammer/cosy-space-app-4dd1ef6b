@@ -45,7 +45,6 @@ import type { CartItem } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { setCapiUser } from "@/lib/metaEnrichment";
-import { useIsWaSource } from "@/hooks/useWaCouponPreview";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 
@@ -161,7 +160,6 @@ export default function CheckoutPhoneStep({
   };
   const [autoCoupon, setAutoCoupon] = useState<CouponRow | null>(null);
   const [exclusiveCoupon, setExclusiveCoupon] = useState<CouponRow | null>(null);
-  const isWaSource = useIsWaSource();
   useEffect(() => {
     let cancelled = false;
     if (!storeId) return;
@@ -198,14 +196,12 @@ export default function CheckoutPhoneStep({
 
   const { bestCoupon, autoCouponDiscount } = useMemo(() => {
     const a = valueOf(autoCoupon);
-    // The exclusive coupon is only auto-applied at checkout for WhatsApp
-    // arrivals — never advertise a saving the next step won't honour.
-    const e = isWaSource ? valueOf(exclusiveCoupon) : 0;
+    const e = valueOf(exclusiveCoupon);
     return e > a
       ? { bestCoupon: exclusiveCoupon, autoCouponDiscount: e }
       : { bestCoupon: autoCoupon, autoCouponDiscount: a };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoCoupon, exclusiveCoupon, subtotal, isWaSource]);
+  }, [autoCoupon, exclusiveCoupon, subtotal]);
 
 
   const setQty = (item: CartItem, next: number) => {
