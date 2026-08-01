@@ -2214,6 +2214,13 @@ export default function CheckoutV2Page() {
       // foregrounded, even if we never observed the hide (the tab was recreated
       // while the shopper was inside the UPI app).
       if ((wentToApp || waitResumedRef.current) && !returnedAt) returnedAt = Date.now();
+      // If the shopper spent longer than the whole wall-clock budget inside the
+      // UPI app, the budget is already blown the instant they return and they
+      // would see "couldn't confirm" before a single foreground check runs.
+      // Guarantee at least one full grace window of verification on return.
+      if (budgetExpired()) {
+        waitStartedAtRef.current = Date.now() - (WAIT_BUDGET_MS - RETURN_GRACE_MS);
+      }
       void checkNow();
     };
 
