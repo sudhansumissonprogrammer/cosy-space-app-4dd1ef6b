@@ -2132,8 +2132,10 @@ export default function CheckoutV2Page() {
 
   const leaveFromExitOffer = () => {
     setExitOfferOpen(false);
-    navigate(storefrontPath(store?.slug || ""));
+    exitGuardPushedRef.current = false;
+    navigate(storefrontPath(store?.slug || ""), { replace: true });
   };
+
 
   const [viewingOrders, setViewingOrders] = useState(false);
   const [showUpsell, setShowUpsell] = useState(false);
