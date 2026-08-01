@@ -2300,10 +2300,19 @@ export default function CheckoutV2Page() {
         return;
       }
       if (Date.now() - launchedAt >= 4200) {
-        toast.info(`${label} did not open. Tap All UPI Apps or retry.`, { duration: 4500 });
+        if (isIOS()) {
+          // iOS has no system UPI chooser, so "All UPI Apps" is useless advice
+          // here — and leaving the waiting screen armed traps the shopper on
+          // "Complete payment in <app>" for an app that never opened.
+          try { stopWaitingForPayment(`${label} is not installed on this iPhone. Choose another app or pay by card.`); } catch { /* noop */ }
+          try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { reason: "ios_app_not_installed", method: `upi_${app}` } as any }); } catch { /* noop */ }
+        } else {
+          toast.info(`${label} did not open. Tap All UPI Apps or retry.`, { duration: 4500 });
+        }
       }
     }, 4500);
   };
+
 
   // Keep a live ref so the pending-tap effect always calls the current closure.
   tapUpiAppRef.current = tapUpiApp;
