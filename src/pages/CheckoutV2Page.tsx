@@ -2120,8 +2120,12 @@ export default function CheckoutV2Page() {
       attempts++;
       const done = await checkNow();
       if (done || cancelled) return;
-      if (!isDesktopQr && gatewayRef.current.pg !== "payu" && returnedAt && Date.now() - returnedAt >= RETURN_GRACE_MS) {
+      if (!isDesktopQr && returnedAt && Date.now() - returnedAt >= RETURN_GRACE_MS) {
         stopWaitingForPayment("Payment not completed. Tap retry or choose another method.");
+        return;
+      }
+      if (budgetExpired()) {
+        stopWaitingForPayment("We couldn't confirm this payment. Tap retry or choose another method.");
         return;
       }
       if (attempts >= maxAttempts) {
