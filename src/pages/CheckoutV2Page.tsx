@@ -4860,6 +4860,11 @@ export default function CheckoutV2Page() {
                   {addressAttempted && !/^\d{6}$/.test(pincode) && (
                     <p className="mt-1 text-[12px] text-red-600">Enter a valid 6-digit pincode</p>
                   )}
+                  {deliveryEta && (
+                    <p className="mt-1.5 text-[12px] font-semibold text-emerald-700 flex items-center gap-1.5">
+                      <Truck className="h-3.5 w-3.5" /> Arriving {deliveryEta.shortLabel}
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
