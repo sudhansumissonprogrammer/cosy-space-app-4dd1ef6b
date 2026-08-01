@@ -34,21 +34,18 @@ export function getDeliveryTier(pincode: string): DeliveryTier | null {
   return "remote"; // 9xxxxx — northeast, J&K
 }
 
-const DAYS_BY_TIER: Record<DeliveryTier, { min: number; max: number }> = {
-  metro: { min: 2, max: 4 },
-  tier1: { min: 3, max: 5 },
-  tier2: { min: 5, max: 7 },
-  remote: { min: 7, max: 10 },
-};
+/**
+ * Single, uniform promise across the whole platform: 5 days from today.
+ * (Order on the 1st → delivery on the 6th.) No ranges, no tier drift —
+ * PDP, checkout and WhatsApp must all show the exact same date.
+ */
+export const DELIVERY_DAYS = 5;
 
-/** Add N business days (skip Sundays). Saturday counts as a working day. */
-function addBusinessDays(start: Date, days: number): Date {
+/** Add N calendar days; if it lands on a Sunday, push to Monday. */
+export function addDeliveryDays(start: Date, days: number = DELIVERY_DAYS): Date {
   const d = new Date(start);
-  let added = 0;
-  while (added < days) {
-    d.setDate(d.getDate() + 1);
-    if (d.getDay() !== 0) added++; // skip Sunday
-  }
+  d.setDate(d.getDate() + days);
+  if (d.getDay() === 0) d.setDate(d.getDate() + 1);
   return d;
 }
 
