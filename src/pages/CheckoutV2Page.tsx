@@ -2003,15 +2003,40 @@ export default function CheckoutV2Page() {
   };
 
 
+  /**
+   * A UPI intent URL is single-use at the gateway: it carries a transaction
+   * reference (`tr`) plus, for Razorpay/Cashfree, an already-created payment
+   * attempt. Once an attempt ends WITHOUT success (shopper cancelled in GPay,
+   * bank declined, timeout), re-launching the very same URL makes the UPI app
+   * either refuse it as a duplicate transaction or open a payment that can
+   * never be captured — the classic "I keep tapping GPay and it always fails"
+   * loop. Drop the intents back to `idle` so the next tap mints a fresh one,
+   * and clear the mint throttle so that mint is actually allowed to run.
+   */
+  const invalidateUpiIntents = () => {
+    mintCountRef.current = 0;
+    mintLoopBlockedRef.current = false;
+    lastMintAtRef.current = 0;
+    lastMintedAmountRef.current = null;
+    const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
+    setIntents((s) => {
+      const next = { ...s };
+      apps.forEach((a) => { next[a] = { status: "idle" }; });
+      return next;
+    });
+  };
+
   const stopWaitingForPayment = (message?: string) => {
     clearWaiting();
     setWaiting(false);
     setConfirmingPayment(false);
     if (orderId) setPendingOrder({ id: orderId, number: orderNumber });
     setPaymentFailed(true);
+    invalidateUpiIntents();
     try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
     if (message) toast(message, { duration: 5000 });
   };
+
 
   const handleViewMyOrders = async () => {
     if (viewingOrders) return;
