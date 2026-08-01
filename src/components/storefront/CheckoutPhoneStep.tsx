@@ -148,26 +148,35 @@ export default function CheckoutPhoneStep({
     0,
   );
 
-  // Store-owner auto-apply coupon — preview the reward BEFORE the shopper
-  // commits their phone so the discount feels earned, not surprise-applied
-  // on the next step. Same RPC + math the main checkout uses.
-  const [autoCoupon, setAutoCoupon] = useState<{
+  // Coupon preview BEFORE the shopper commits their phone so the discount
+  // feels earned. We look at BOTH the store-wide auto-apply coupon and the
+  // exclusive (WhatsApp) coupon and advertise whichever saves more — the
+  // exclusive one is what checkout ends up applying on the exit offer.
+  type CouponRow = {
     code: string;
     discount_type: string;
     discount_value: number;
     min_order_amount?: number | null;
-  } | null>(null);
+  };
+  const [autoCoupon, setAutoCoupon] = useState<CouponRow | null>(null);
+  const [exclusiveCoupon, setExclusiveCoupon] = useState<CouponRow | null>(null);
   useEffect(() => {
     let cancelled = false;
     if (!storeId) return;
     (async () => {
+      const first = <T,>(d: any): T | null => (Array.isArray(d) ? d[0] ?? null : d ?? null);
       try {
         const { data } = await (supabase as any).rpc(
           "get_store_auto_apply_coupon",
           { _store_id: storeId },
         );
-        const row = Array.isArray(data) ? data[0] ?? null : data ?? null;
-        if (!cancelled) setAutoCoupon(row);
+        if (!cancelled) setAutoCoupon(first<CouponRow>(data));
+      } catch {}
+      try {
+        const { data } = await (supabase as any).rpc("get_store_wa_coupon", {
+          _store_id: storeId,
+        });
+        if (!cancelled) setExclusiveCoupon(first<CouponRow>(data));
       } catch {}
     })();
     return () => {
@@ -175,16 +184,24 @@ export default function CheckoutPhoneStep({
     };
   }, [storeId]);
 
-  const autoCouponDiscount = useMemo(() => {
-    if (!autoCoupon || subtotal <= 0) return 0;
-    const min = Number(autoCoupon.min_order_amount || 0);
-    if (subtotal < min) return 0;
+  const valueOf = (c: CouponRow | null) => {
+    if (!c || subtotal <= 0) return 0;
+    if (subtotal < Number(c.min_order_amount || 0)) return 0;
     const raw =
-      autoCoupon.discount_type === "percentage"
-        ? (subtotal * Number(autoCoupon.discount_value || 0)) / 100
-        : Number(autoCoupon.discount_value || 0);
+      c.discount_type === "percentage"
+        ? (subtotal * Number(c.discount_value || 0)) / 100
+        : Number(c.discount_value || 0);
     return Math.max(0, Math.min(raw, subtotal));
-  }, [autoCoupon, subtotal]);
+  };
+
+  const { bestCoupon, autoCouponDiscount } = useMemo(() => {
+    const a = valueOf(autoCoupon);
+    const e = valueOf(exclusiveCoupon);
+    return e > a
+      ? { bestCoupon: exclusiveCoupon, autoCouponDiscount: e }
+      : { bestCoupon: autoCoupon, autoCouponDiscount: a };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoCoupon, exclusiveCoupon, subtotal]);
 
 
   const setQty = (item: CartItem, next: number) => {
