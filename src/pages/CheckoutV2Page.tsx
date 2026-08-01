@@ -2396,7 +2396,7 @@ export default function CheckoutV2Page() {
     if (s.status !== "ready" || !s.url) return;
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) return;
     pendingUpiTapRef.current = null;
-    tapUpiAppRef.current?.(pending.app);
+    tapUpiAppRef.current?.(pending.app, undefined, { gesture: false });
   }, [intents, creatingOrder, couponLoading, paymentAmountSyncing, chargeAmount, debouncedShipIdentity, waiting, orderPlaced, confirmingPayment]);
 
 
