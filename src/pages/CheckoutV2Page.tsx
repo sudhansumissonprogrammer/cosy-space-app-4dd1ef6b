@@ -3314,7 +3314,15 @@ export default function CheckoutV2Page() {
             continueUnifiedVerification();
           }, 1200);
         };
+        // iOS bfcache restore after the Bolt/UPI hop — see the poller above.
+        const handleBfcacheReturn = (e: PageTransitionEvent) => {
+          if (!e.persisted || settled) return;
+          leftCheckoutTab = true;
+          handleVisibilityReturn();
+        };
+        window.addEventListener("pageshow", handleBfcacheReturn);
         document.addEventListener("visibilitychange", handleVisibilityReturn);
+
         timeoutId = window.setTimeout(async () => {
           if (settled) return;
           const confirmed = await verifyAndFinalize({ attempts: 1, intervalMs: 0, showConfirming: false });
