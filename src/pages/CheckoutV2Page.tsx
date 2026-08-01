@@ -2295,6 +2295,22 @@ export default function CheckoutV2Page() {
       return;
     }
 
+    // Expired-intent guard: the gateway's transaction reference inside the
+    // `upi://` URL has a limited lifetime. A shopper who left the checkout open
+    // for 10+ minutes and then tapped GPay used to get the app opening on a
+    // transaction the bank immediately declines. Re-mint instead — the queued
+    // tap fires automatically the moment the fresh intent is ready.
+    if (typeof s.at === "number" && Date.now() - s.at > UPI_INTENT_MAX_AGE_MS) {
+      mintCountRef.current = 0;
+      mintLoopBlockedRef.current = false;
+      lastMintAtRef.current = 0;
+      toast.info("Refreshing payment…");
+      queueTap();
+      void createOrderAndIntents({ userInitiated: true });
+      return;
+    }
+
+
     // Stale-address guard: if the shopper edited address/name/phone/email
     // within the 1.8s ship-identity debounce window, the minted order row
     // still holds the pre-edit values. Flush + re-mint before launching so
