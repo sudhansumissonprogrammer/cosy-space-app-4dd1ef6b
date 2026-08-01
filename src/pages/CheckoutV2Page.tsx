@@ -5551,7 +5551,7 @@ export default function CheckoutV2Page() {
       {/* Exit-intent save sheet — once per session */}
       <CheckoutExitOffer
         open={exitOfferOpen}
-        offerLabel={`${formatPrice(exitCoupon ? exitCoupon.value : couponDiscount, currency)} OFF`}
+        offerLabel={exitCoupon ? `${formatPrice(exitCoupon.value, currency)} OFF` : couponDiscount > 0 ? `${formatPrice(couponDiscount, currency)} OFF` : undefined}
         offerCode={exitCoupon?.code || appliedCoupon?.code}
         currentTotalLabel={exitExtraSaving > 0 ? formatPrice(total, currency) : undefined}
         newTotalLabel={exitExtraSaving > 0 ? formatPrice(Math.max(0, total - exitExtraSaving), currency) : formatPrice(total, currency)}
