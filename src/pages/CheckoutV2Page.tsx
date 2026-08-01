@@ -3264,6 +3264,8 @@ export default function CheckoutV2Page() {
           if (timeoutId != null) window.clearTimeout(timeoutId);
           if (returnedCheckId != null) window.clearTimeout(returnedCheckId);
           document.removeEventListener("visibilitychange", handleVisibilityReturn);
+          window.removeEventListener("pageshow", handleBfcacheReturn);
+
           resolve();
         };
         const continueUnifiedVerification = () => {
