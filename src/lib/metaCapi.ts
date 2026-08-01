@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getCapiUser, getOrCreateSfVid, readFbcWithFallback, seedCapiUserFromStorage } from "@/lib/metaEnrichment";
+import { getCapiUser, getOrCreateSfVid, isRealEmail, readFbcWithFallback, seedCapiUserFromStorage } from "@/lib/metaEnrichment";
 
 /**
  * Returns true on Lovable preview/editor/dev hosts.
