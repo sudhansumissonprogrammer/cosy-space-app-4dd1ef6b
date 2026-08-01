@@ -162,6 +162,15 @@ function launchUpiUrl(url: string): void {
 }
 
 
+/** When true, every UPI tile on Android launches the plain `upi://pay?…`
+ *  intent instead of a package-targeted `intent://…;package=…`. Android then
+ *  shows its own system chooser listing ONLY the UPI apps actually installed
+ *  on the device (this is exactly what the BHIM tile already did). The payload
+ *  — pa/pn/am/tr/tn/cu — is byte-identical either way, so the payment itself is
+ *  unchanged; only which app resolves it differs. This also removes the
+ *  "app not installed → blank bounce" failure mode of package intents. */
+const UPI_USE_SYSTEM_CHOOSER = true;
+
 /** Rewrite `upi://pay?...` to the safest app launch URL for the shopper's device. */
 function schemeFor(app: UpiApp, url: string): string {
   if (!url) return url;
@@ -169,10 +178,17 @@ function schemeFor(app: UpiApp, url: string): string {
   const m = url.match(/^upi:\/\/[^?]*\?(.+)$/i);
   const query = m?.[1];
   if (!query) return url;
-  // Package-targeted intent for every known Android UPI app (original behaviour).
 
-  const packageName = UPI_ANDROID_PACKAGES[app];
-  if (packageName && isAndroid()) return androidIntentForUpi(query, packageName, `upi://pay?${query}`);
+  if (isAndroid()) {
+    // Android: hand the raw UPI intent to the OS chooser.
+    if (UPI_USE_SYSTEM_CHOOSER) return `upi://pay?${query}`;
+    const packageName = UPI_ANDROID_PACKAGES[app];
+    if (packageName) return androidIntentForUpi(query, packageName, `upi://pay?${query}`);
+    return `upi://pay?${query}`;
+  }
+
+  // iOS has no UPI chooser — a plain upi:// link opens nothing, so keep the
+  // app-specific universal schemes there.
   if (app === "gpay") return `tez://upi/pay?${query}`;
   if (app === "phonepe") return `phonepe://pay?${query}`;
   if (app === "paytm") return `paytmmp://pay?${query}`;
