@@ -1,5 +1,6 @@
 import { ShoppingBag, Truck, PackageCheck, Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { addDeliveryDays } from "@/lib/deliveryEstimate";
 
 /**
  * Cinematic 3-step delivery timeline.
@@ -30,13 +31,12 @@ function fmt(d: Date) {
 export default function DeliveryTimeline() {
   const today = new Date();
   const ship = new Date(today); ship.setDate(today.getDate() + 1);
-  const delivStart = new Date(today); delivStart.setDate(today.getDate() + 4);
-  const delivEnd = new Date(today); delivEnd.setDate(today.getDate() + 5);
+  // Single promised date — must match PDP + checkout (today + 5 days).
+  const deliv = addDeliveryDays(today);
 
   const orderLabel = fmt(today).day;
   const shipLabel = fmt(ship).day;
-  const delivMonth = fmt(delivStart).raw.toLocaleString("en-IN", { month: "short" });
-  const delivLabel = `${delivMonth} ${fmt(delivStart).raw.getDate()} - ${fmt(delivEnd).raw.getDate()}`;
+  const delivLabel = fmt(deliv).day;
 
   const steps = [
     { icon: ShoppingBag,  date: orderLabel, label: "Order Today" },
