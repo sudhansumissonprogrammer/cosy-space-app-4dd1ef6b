@@ -229,7 +229,9 @@ function schemeFor(app: UpiApp, url: string): string {
   // iOS has no UPI chooser — a plain upi:// link resolves to nothing (or to an
   // arbitrary app), so keep the app-specific universal schemes there. BHIM
   // registers `bhim://` on iOS; `upi://` used to dead-end for iPhone shoppers.
-  if (app === "gpay") return `tez://upi/pay?${query}`;
+  // Google Pay registers `gpay://` on iOS. `tez://` is the legacy Android
+  // scheme and silently no-ops in Safari/WKWebView on many current iPhones.
+  if (app === "gpay") return `gpay://upi/pay?${query}`;
   if (app === "phonepe") return `phonepe://pay?${query}`;
   if (app === "paytm") return `paytmmp://pay?${query}`;
   if (app === "bhim") return isIOS() ? `bhim://upi/pay?${query}` : `upi://pay?${query}`;
@@ -2121,8 +2123,11 @@ export default function CheckoutV2Page() {
     // so without a `pageshow` hook the poller sits idle and a PAID order looks
     // pending. `persisted` means we came back from bfcache — treat it exactly
     // like a return from the payment app.
-    const onPageShow = (e: PageTransitionEvent) => {
-      if (!e.persisted) return;
+    const onPageShow = () => {
+      // iOS does not consistently mark pageshow as `persisted` after returning
+      // from an external UPI app (especially Instagram/WhatsApp WKWebViews).
+      // While a payment wait is active every pageshow is a safe, idempotent
+      // reason to verify immediately.
       wentToApp = true;
       if (!returnedAt) returnedAt = Date.now();
       void checkNow();
@@ -2406,6 +2411,7 @@ export default function CheckoutV2Page() {
   // after paying (webhook already landed) see success instantly instead of
   // being stuck on the "waiting" screen re-polling.
   useEffect(() => {
+    if (!store?.id) return;
     try {
       // Normal UPI intents persist WAIT_KEY. PayU Bolt historically persisted a
       // separate payu_pending key, so a full mobile-webview reload after opening
@@ -2455,8 +2461,12 @@ export default function CheckoutV2Page() {
           .catch(() => { /* poll effect will retry */ });
       }
     } catch { /* noop */ }
+    // The store is commonly unavailable on the first render after iOS
+    // recreates a WKWebView. Re-run when it hydrates; the old empty dependency
+    // array permanently missed WAIT_KEY and rendered a fresh checkout instead
+    // of restoring the paid order's confirmation flow.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [store?.id]);
 
 
   useEffect(() => {
@@ -3356,8 +3366,8 @@ export default function CheckoutV2Page() {
           }, 1200);
         };
         // iOS bfcache restore after the Bolt/UPI hop — see the poller above.
-        const handleBfcacheReturn = (e: PageTransitionEvent) => {
-          if (!e.persisted || settled) return;
+        const handleBfcacheReturn = () => {
+          if (settled) return;
           leftCheckoutTab = true;
           handleVisibilityReturn();
         };
@@ -4822,14 +4832,26 @@ export default function CheckoutV2Page() {
                 const anyPressed = tappedUpiApp === "any";
                 return (
                   <a
-                    href={anyDisabled || anyRetryable || !addressReady ? undefined : anyS.url}
-                    onClick={(e) => tapUpiApp("any", e)}
+                    href={anyDisabled || anyRetryable || !addressReady || isIOS() ? undefined : anyS.url}
+                    onClick={(e) => {
+                      // iOS has no Android-style `upi://` chooser. Sending an
+                      // iPhone to that generic scheme is a dead tap (or opens an
+                      // arbitrary app), so use the configured hosted gateway,
+                      // where PayU/Cashfree/Razorpay presents its supported UPI
+                      // choices and reliably returns to this checkout.
+                      if (isIOS()) {
+                        e.preventDefault();
+                        void startGatewayPayment();
+                        return;
+                      }
+                      tapUpiApp("any", e);
+                    }}
                     aria-disabled={anyDisabled}
                     className={`mt-3 w-full flex items-center justify-between border rounded-lg px-3 py-2.5 select-none touch-manipulation active:scale-[0.97] transition-[transform,box-shadow,border-color] duration-150 ease-out ${anyPressed ? "scale-[0.98] border-primary ring-2 ring-primary/40 bg-primary/5" : "border-[#ECECEC]"} ${anyDisabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
                   >
                     <span className="text-[13px] font-semibold">All UPI Apps</span>
                     <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
-                      {anyPressed ? "Opening…" : "Pay with any UPI app"}
+                      {anyPressed ? "Opening…" : isIOS() ? "Choose payment app" : "Pay with any UPI app"}
                       {anyPressed
                         ? <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         : <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />}
