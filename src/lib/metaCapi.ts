@@ -253,11 +253,14 @@ export function fireMetaCAPI(params: CAPIEventParams) {
         console.warn("Meta CAPI warning:", error.message);
         return false;
       }
-      // Cache "no CAPI configured" for 7 days so we don't re-call the edge
-      // function on every visit. localStorage persists across sessions/tabs.
+      // Cache "no CAPI configured" for 6 hours so we don't re-call the edge
+      // function on every visit. Deliberately SHORT: a 7-day cache meant that
+      // the moment a merchant finally pasted a Meta access token, returning
+      // visitors kept skipping CAPI for a whole week — silently blocking the
+      // fix. 6h keeps the cost saving but lets a new token go live same-day.
       if (data?.skipped && data?.reason === "meta_not_configured") {
         try {
-          const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
+          const expiresAt = Date.now() + 6 * 60 * 60 * 1000;
           localStorage.setItem(cacheKey, String(expiresAt));
         } catch {
           // localStorage unavailable — best effort
