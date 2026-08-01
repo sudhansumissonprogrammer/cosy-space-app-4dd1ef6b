@@ -92,7 +92,7 @@ export function AdminCommandPalette({ open, onOpenChange }: AdminCommandPaletteP
         : `customer_name.ilike.${q}`;
       const { data } = await supabase
         .from("orders")
-        .select("id, order_number, customer_name, total_amount")
+        .select("id, order_number, customer_name, total")
         .or(filter)
         .limit(5);
       return data || [];
