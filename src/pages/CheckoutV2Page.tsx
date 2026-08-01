@@ -2143,6 +2143,9 @@ export default function CheckoutV2Page() {
     if (exitCoupon) {
       dismissedAutoCouponRef.current = true;
       autoAppliedCouponRef.current = true;
+      // Remember the claim so the phone/address step advertises the claimed
+      // (bigger) coupon instead of the store-wide auto one.
+      try { sessionStorage.setItem(`sf_exit_claimed_${store?.id || "x"}`, exitCoupon.code); } catch { /* noop */ }
       await applyCoupon(exitCoupon.code);
     }
     if (!showPayment) setShowPayment(true);

@@ -196,12 +196,21 @@ export default function CheckoutPhoneStep({
 
   const { bestCoupon, autoCouponDiscount } = useMemo(() => {
     const a = valueOf(autoCoupon);
-    const e = valueOf(exclusiveCoupon);
+    // The exclusive coupon is only advertised to shoppers who actually
+    // claimed it from the exit-intent popup.
+    const claimed = (() => {
+      try { return sessionStorage.getItem(`sf_exit_claimed_${storeId || "x"}`); } catch { return null; }
+    })();
+    const e =
+      claimed && exclusiveCoupon?.code &&
+      claimed.toUpperCase() === String(exclusiveCoupon.code).toUpperCase()
+        ? valueOf(exclusiveCoupon)
+        : 0;
     return e > a
       ? { bestCoupon: exclusiveCoupon, autoCouponDiscount: e }
       : { bestCoupon: autoCoupon, autoCouponDiscount: a };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoCoupon, exclusiveCoupon, subtotal]);
+  }, [autoCoupon, exclusiveCoupon, subtotal, storeId]);
 
 
   const setQty = (item: CartItem, next: number) => {
