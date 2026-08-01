@@ -1875,6 +1875,7 @@ export default function CheckoutV2Page() {
     const waitOrderId = override?.orderId ?? orderId;
     if (!waitStartedAtRef.current) waitStartedAtRef.current = Date.now();
     waitResumedRef.current = false;
+    try {
       const payload = JSON.stringify({
         orderId: waitOrderId,
         orderNumber: override?.orderNumber ?? orderNumber,
