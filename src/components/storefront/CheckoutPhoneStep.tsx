@@ -45,6 +45,7 @@ import type { CartItem } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { setCapiUser } from "@/lib/metaEnrichment";
+import { useIsWaSource } from "@/hooks/useWaCouponPreview";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 
@@ -160,6 +161,7 @@ export default function CheckoutPhoneStep({
   };
   const [autoCoupon, setAutoCoupon] = useState<CouponRow | null>(null);
   const [exclusiveCoupon, setExclusiveCoupon] = useState<CouponRow | null>(null);
+  const isWaSource = useIsWaSource();
   useEffect(() => {
     let cancelled = false;
     if (!storeId) return;
