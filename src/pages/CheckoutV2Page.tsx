@@ -3860,6 +3860,39 @@ export default function CheckoutV2Page() {
     }
   }
 
+  // ─── Store support bar (logo • name • customer-care number) ─────────────
+  // Same treatment as the checkout header so shoppers always have the store
+  // owner's number in reach on the waiting + confirmation screens.
+  const supportPhone = String((store as any)?.secondary_phone || (store as any)?.whatsapp_number || "").trim();
+  const storeSupportBar = (
+    <div className="sticky top-0 z-20 -mx-4 mb-4 flex items-center gap-2 border-b border-[#ECECEC] bg-white px-3 py-1.5">
+      {store?.logo_url ? (
+        <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[100px] shrink-0 object-contain" />
+      ) : null}
+      <div className="flex min-w-0 flex-1 flex-col justify-center">
+        <div className="truncate text-[15px] font-bold leading-tight">{store?.name || "Store"}</div>
+        {supportPhone ? (
+          <a
+            href={`tel:${supportPhone.replace(/\s/g, "")}`}
+            className="mt-0.5 inline-flex items-center gap-1 text-[11px] leading-none text-muted-foreground transition-colors hover:text-foreground"
+            aria-label={`Customer care ${supportPhone}`}
+          >
+            <Headset className="h-3 w-3" />
+            <span className="truncate">{supportPhone}</span>
+          </a>
+        ) : null}
+      </div>
+      {supportPhone ? (
+        <a
+          href={`tel:${supportPhone.replace(/\s/g, "")}`}
+          className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700"
+        >
+          Need help?
+        </a>
+      ) : null}
+    </div>
+  );
+
 
   // ─── Thank-you screen ───────────────────────────────────────────────────
   if (orderPlaced) {
@@ -3870,7 +3903,8 @@ export default function CheckoutV2Page() {
     const extraItems = checkoutItems.length - previewItems.length;
 
     return (
-      <div className="mx-auto max-w-lg px-4 pt-8 pb-12">
+      <div className="mx-auto max-w-lg px-4 pt-3 pb-12">
+        {storeSupportBar}
         {/* Hero */}
         <div className="text-center">
           <div className="relative mx-auto mb-4 h-20 w-20">
@@ -4067,7 +4101,8 @@ export default function CheckoutV2Page() {
   // QR code while completing payment in their phone's UPI app.
   if (waiting && isMobile()) {
     return (
-      <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] px-4 pt-10 pb-10">
+      <div className="mx-auto max-w-md min-h-screen bg-[#F5F5F5] px-4 pt-3 pb-10">
+        {storeSupportBar}
         {/* Status card */}
         <div className="rounded-2xl bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.18)] p-6 text-center animate-fade-in">
           <div className="relative mx-auto mb-5 h-20 w-20">
