@@ -4650,6 +4650,17 @@ export default function CheckoutV2Page() {
                   <div className="text-[12.5px] text-foreground/80 mt-1 line-clamp-2 leading-snug">
                     {streetAddress}, {city}, {state} {pincode}
                   </div>
+                  {deliveryEta && (
+                    <div className="mt-2 flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2 py-1.5">
+                      <Truck className="h-3.5 w-3.5 text-emerald-700 flex-shrink-0" />
+                      <span className="text-[12.5px] font-semibold text-emerald-800">
+                        Arriving {deliveryEta.shortLabel}
+                      </span>
+                      <span className="text-[11px] text-emerald-700/70">
+                        ({deliveryEta.rangeLabel})
+                      </span>
+                    </div>
+                  )}
                   {/* Line 3: phone with inline change link */}
                   <div className="text-[12px] text-muted-foreground mt-1 flex items-center gap-2 min-w-0">
                     <span className="truncate">+91 {phone}</span>
