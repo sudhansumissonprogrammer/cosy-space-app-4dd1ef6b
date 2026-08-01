@@ -1889,17 +1889,23 @@ export default function CheckoutV2Page() {
   // "returned from app" wait and exits fast with a retry option.
   const waitResumedRef = useRef(false);
 
+  // Set later by the exit-intent block; lets the header back arrow open the save sheet.
+  const exitTriggerRef = useRef<null | (() => boolean)>(null);
+
   const goBack = useCallback(() => {
     if (showAddressFormSheet && addressComplete) {
       closeAddressFormSheet();
       return;
     }
+    // Gokwik-style: intercept the FIRST leave attempt from the header arrow too.
+    if (exitTriggerRef.current?.()) return;
     if (showPayment && !waiting && !confirmingPayment) {
       setShowPayment(false);
       return;
     }
     navigate(storefrontPath(store?.slug || ""), { replace: true });
   }, [addressComplete, confirmingPayment, navigate, showAddressFormSheet, showPayment, store?.slug, waiting]);
+
 
   const WAIT_KEY = `sf_wait_v2_${store?.id}`;
   const persistWaiting = (app: UpiApp, label: string, override?: { orderId?: string | null; orderNumber?: string | null }) => {
@@ -2038,14 +2044,15 @@ export default function CheckoutV2Page() {
 
   const exitExtraSaving = exitCoupon ? Math.max(0, exitCoupon.value - couponDiscount) : 0;
 
+  // Gokwik-style: the sheet fires on ANY abandon attempt with items in cart,
+  // with or without a coupon (no-coupon variant is a reassurance sheet).
   const canShowExitOffer =
     !!store?.id &&
     checkoutItems.length > 0 &&
     !orderPlaced &&
     !waiting &&
     !confirmingPayment &&
-    !creatingOrder &&
-    (!!exitCoupon || couponDiscount > 0);
+    !creatingOrder;
   const canShowExitOfferRef = useRef(canShowExitOffer);
   canShowExitOfferRef.current = canShowExitOffer;
 
@@ -2058,20 +2065,33 @@ export default function CheckoutV2Page() {
     return true;
   }, [exitSessionKey]);
 
-  // Back-press guard (mobile) — one extra history entry, consumed once.
+  // Expose to handlers declared earlier in the component (e.g. the header back arrow).
+  exitTriggerRef.current = triggerExitOffer;
+
+  // Back-press guard (mobile). Two separate concerns so the listener can never
+  // be torn down by a state flip while the guard entry stays on the stack:
+  //   1. push one sentinel history entry once checkout is interactive
+  //   2. keep a permanently-mounted popstate listener that consumes it
   useEffect(() => {
-    if (!canShowExitOffer || exitGuardPushedRef.current || exitOfferShownRef.current) return;
+    if (!canShowExitOffer || exitGuardPushedRef.current) return;
     try { if (sessionStorage.getItem(exitSessionKey)) return; } catch { /* noop */ }
     exitGuardPushedRef.current = true;
     try { window.history.pushState({ sfExitGuard: true }, ""); } catch { /* noop */ }
+  }, [canShowExitOffer, exitSessionKey]);
+
+  useEffect(() => {
     const onPop = () => {
+      if (!exitGuardPushedRef.current) return;
       if (triggerExitOffer()) {
+        // Re-arm so the sheet's own "go back" is what actually leaves.
         try { window.history.pushState({ sfExitGuard: true }, ""); } catch { /* noop */ }
+      } else {
+        exitGuardPushedRef.current = false;
       }
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [canShowExitOffer, exitSessionKey, triggerExitOffer]);
+  }, [triggerExitOffer]);
 
   // Desktop mouse-out of the viewport top.
   useEffect(() => {
@@ -2081,13 +2101,13 @@ export default function CheckoutV2Page() {
     return () => document.removeEventListener("mouseleave", onLeave);
   }, [canShowExitOffer, triggerExitOffer]);
 
-  // 20s idle while sitting on the payment step.
+  // 30s idle while sitting on the payment step.
   useEffect(() => {
     if (!canShowExitOffer || !showPayment) return;
     let timer = 0;
     const arm = () => {
       window.clearTimeout(timer);
-      timer = window.setTimeout(() => { if (document.visibilityState === "visible") triggerExitOffer(); }, 20000);
+      timer = window.setTimeout(() => { if (document.visibilityState === "visible") triggerExitOffer(); }, 30000);
     };
     arm();
     const events: (keyof DocumentEventMap)[] = ["touchstart", "click", "keydown", "scroll"];
@@ -2097,6 +2117,7 @@ export default function CheckoutV2Page() {
       events.forEach((ev) => document.removeEventListener(ev, arm as any));
     };
   }, [canShowExitOffer, showPayment, triggerExitOffer]);
+
 
   const claimExitOffer = async () => {
     setExitOfferOpen(false);
@@ -2111,8 +2132,10 @@ export default function CheckoutV2Page() {
 
   const leaveFromExitOffer = () => {
     setExitOfferOpen(false);
-    navigate(storefrontPath(store?.slug || ""));
+    exitGuardPushedRef.current = false;
+    navigate(storefrontPath(store?.slug || ""), { replace: true });
   };
+
 
   const [viewingOrders, setViewingOrders] = useState(false);
   const [showUpsell, setShowUpsell] = useState(false);
@@ -5528,7 +5551,7 @@ export default function CheckoutV2Page() {
       {/* Exit-intent save sheet — once per session */}
       <CheckoutExitOffer
         open={exitOfferOpen}
-        offerLabel={`${formatPrice(exitCoupon ? exitCoupon.value : couponDiscount, currency)} OFF`}
+        offerLabel={exitCoupon ? `${formatPrice(exitCoupon.value, currency)} OFF` : couponDiscount > 0 ? `${formatPrice(couponDiscount, currency)} OFF` : undefined}
         offerCode={exitCoupon?.code || appliedCoupon?.code}
         currentTotalLabel={exitExtraSaving > 0 ? formatPrice(total, currency) : undefined}
         newTotalLabel={exitExtraSaving > 0 ? formatPrice(Math.max(0, total - exitExtraSaving), currency) : formatPrice(total, currency)}
