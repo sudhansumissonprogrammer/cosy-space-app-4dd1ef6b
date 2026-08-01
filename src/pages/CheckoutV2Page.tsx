@@ -87,6 +87,14 @@ function isAndroid(): boolean {
   return typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
 }
 
+/** iOS (incl. iPadOS 13+ which reports as Mac with touch points). */
+function isIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) return true;
+  return /Macintosh/i.test(navigator.userAgent) && (navigator as any).maxTouchPoints > 1;
+}
+
+
 const UPI_ANDROID_PACKAGES: Partial<Record<UpiApp, string>> = {
   gpay: "com.google.android.apps.nbu.paisa.user",
   phonepe: "com.phonepe.app",
