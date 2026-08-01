@@ -53,47 +53,48 @@ export default function CheckoutExitOffer({
 
   return (
     <div
-      className="fixed inset-0 z-[95] flex items-center justify-center px-4 bg-black/60 backdrop-blur-[2px] animate-in fade-in duration-150"
+      className="fixed inset-0 z-[95] flex items-start justify-center px-4 pt-[max(12px,env(safe-area-inset-top))] bg-black/60 backdrop-blur-[2px] animate-in fade-in duration-150 overflow-y-auto overscroll-contain"
       role="dialog"
       aria-modal="true"
       aria-label="Before you leave"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-[330px] rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-150"
+        className="relative w-full max-w-[320px] rounded-2xl bg-white shadow-2xl animate-in slide-in-from-top-2 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute right-2 top-2 h-7 w-7 rounded-full text-black/40 flex items-center justify-center"
+          className="absolute right-1.5 top-1.5 h-7 w-7 rounded-full text-black/40 flex items-center justify-center"
         >
           <X className="h-3.5 w-3.5" strokeWidth={2.5} />
         </button>
 
-        <div className="px-4 pt-4 pb-3.5">
+        <div className="px-3.5 pt-3 pb-3">
+
           {offerLabel && (
             <div className="inline-flex items-center gap-1 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wide px-2 py-[3px]">
               <Clock className="h-2.5 w-2.5" /> {mm}:{ss} left
             </div>
           )}
 
-          <h3 className="mt-2 pr-6 text-[16px] font-extrabold leading-snug text-foreground">
+          <h3 className="mt-1.5 pr-6 text-[15px] font-extrabold leading-tight text-foreground">
             {offerLabel ? `Wait — ${offerLabel} if you pay now` : "Your order isn't placed yet"}
           </h3>
-          <p className="mt-0.5 text-[11.5px] leading-snug text-muted-foreground">
+          <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
             {offerLabel
               ? `Valid on this order only${offerCode ? ` · code ${offerCode}` : ""}`
               : "We're holding your items for a few minutes."}
           </p>
 
           {showProof && (
-            <div className="mt-2.5 flex items-baseline gap-2 rounded-lg bg-emerald-50 px-3 py-2">
+            <div className="mt-2 flex items-baseline gap-2 rounded-lg bg-emerald-50 px-2.5 py-1.5">
               {currentTotalLabel && (
-                <span className="text-[12px] text-muted-foreground line-through">{currentTotalLabel}</span>
+                <span className="text-[11.5px] text-muted-foreground line-through">{currentTotalLabel}</span>
               )}
-              <span className="text-[18px] font-extrabold text-emerald-700">{newTotalLabel}</span>
+              <span className="text-[17px] font-extrabold text-emerald-700">{newTotalLabel}</span>
               <span className="ml-auto text-[10px] font-semibold text-emerald-700">You pay</span>
             </div>
           )}
@@ -101,10 +102,11 @@ export default function CheckoutExitOffer({
           <button
             type="button"
             onClick={onClaim}
-            className="mt-3 w-full h-11 rounded-xl bg-emerald-600 text-white text-[14px] font-extrabold active:scale-[0.99] transition-transform"
+            className="mt-2.5 w-full h-10 rounded-xl bg-emerald-600 text-white text-[13.5px] font-extrabold active:scale-[0.99] transition-transform"
           >
             {alreadyClaimed || !offerLabel ? "Continue & pay now" : `Claim ${offerLabel} & pay`}
           </button>
+
 
           <div className="mt-2 flex items-center justify-between">
             <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
