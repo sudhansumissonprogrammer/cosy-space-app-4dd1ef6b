@@ -284,6 +284,18 @@ export const DRIP_MAX_STEPS = 3;
 // Absolute ceiling: max 2 messages to one number in any rolling 24h window.
 export const DRIP_MAX_PER_24H = 2;
 export const DRIP_WINDOW_MS = 72 * 60 * 60 * 1000;
+// A failed send may be retried, but never sooner than this and never more than
+// DRIP_MAX_ATTEMPTS_24H total attempts (sent + failed) per number per 24h.
+// Without this, transient Meta errors made the 10-min cron re-fire forever.
+export const DRIP_RETRY_GAP_MS = 6 * 60 * 60 * 1000;
+export const DRIP_MAX_ATTEMPTS_24H = 3;
+// Meta errors that mean "this number will never receive this message".
+// Retrying these only burns quality rating — block the number for the window.
+const PERMANENT_WA_ERRORS = ["131026", "131049", "131047", "131048", "131051", "133010", "470", "63024"];
+export function isPermanentWaError(msg: string | null | undefined): boolean {
+  const s = String(msg ?? "");
+  return PERMANENT_WA_ERRORS.some((c) => s.includes(c));
+}
 
 export type DripDecision = {
   allow: boolean;
@@ -313,7 +325,7 @@ export async function recoveryDripDecision(admin: any, phone: string, opts: { ig
     // undeliverable 131026, ecosystem throttle 131049…). These must NOT burn a
     // drip step — the shopper never saw anything.
     admin.from("whatsapp_messages")
-      .select("created_at")
+      .select("created_at, error_message")
       .eq("recipient_phone", phone).eq("sent_via", "platform").eq("direction", "outgoing")
       .eq("status", "failed")
       .in("message_type", RECOVERY_MESSAGE_TYPES)
@@ -353,6 +365,38 @@ export async function recoveryDripDecision(admin: any, phone: string, opts: { ig
     const b = Math.round(t / 60000);
     for (const d of [-2, -1, 0, 1, 2]) stamps.delete(b + d);
   }
+
+  // ── Anti-spam retry guards ────────────────────────────────────────────────
+  // Failed sends no longer burn a drip step (shopper saw nothing), but they DO
+  // count as attempts. Without this the 10-min cron re-fired the same template
+  // forever whenever Meta rejected it.
+  const failed = ((failedRows as any[]) ?? []).filter((r) => Number.isFinite(new Date(r.created_at).getTime()));
+
+  // 1. Permanently undeliverable / ecosystem-blocked → never retry.
+  if (failed.some((r) => isPermanentWaError(r.error_message))) {
+    return { allow: false, step: 0, reason: "drip_undeliverable" };
+  }
+
+  const now = Date.now();
+  const attemptTimes = [
+    ...Array.from(stamps).map((m) => m * 60000),
+    ...failed.map((r) => new Date(r.created_at).getTime()),
+  ].sort((a, b) => b - a);
+
+  // 2. Hard ceiling on total attempts (sent + failed) in the last 24h.
+  const attempts24h = attemptTimes.filter((t) => t >= now - 24 * 60 * 60 * 1000).length;
+  if (attempts24h >= DRIP_MAX_ATTEMPTS_24H) {
+    return { allow: false, step: 0, reason: "drip_attempt_cap" };
+  }
+
+  // 3. Minimum cooldown between any two attempts, retry or not.
+  if (attemptTimes.length && now - attemptTimes[0] < DRIP_RETRY_GAP_MS) {
+    const lastFail = failed.length ? new Date(failed[0].created_at).getTime() : 0;
+    if (lastFail && lastFail >= attemptTimes[0]) {
+      return { allow: false, step: 0, reason: "drip_retry_cooldown", lastSentAt: new Date(lastFail).toISOString() };
+    }
+  }
+
 
   const times = Array.from(stamps).map((m) => m * 60000).sort((a, b) => b - a);
   const done = times.length;
