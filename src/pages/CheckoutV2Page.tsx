@@ -2259,12 +2259,15 @@ export default function CheckoutV2Page() {
     // Micro-delay so the shopper actually SEES the real "Complete payment in
     // <app>" status screen (already armed above) before the UPI app takes
     // over. Without it the handoff is instant and the tap feels like nothing
-    // happened / like a random app jump.
+    // happened / like a random app jump. iOS gets a much shorter beat because
+    // Safari/WKWebView drop custom-scheme navigations once the user gesture
+    // has gone stale.
     window.setTimeout(() => {
       // Launch the app via a real anchor activation (some OEM Chrome/WebView
       // builds ignore location.assign for non-http schemes).
       launchUpiUrl(s.url);
-    }, UPI_LAUNCH_DELAY_MS);
+    }, isIOS() ? UPI_LAUNCH_DELAY_IOS_MS : UPI_LAUNCH_DELAY_MS);
+
 
     if (isAndroid() && app !== "any") {
       // Single fallback only, and only for a launch that clearly did nothing.
