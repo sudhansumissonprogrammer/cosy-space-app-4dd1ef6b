@@ -330,15 +330,23 @@ export function AdminChatTab() {
                 })}
                 <div ref={messagesEndRef} />
               </div>
+              {!sessionWindowOpen && (
+                <div className="border-t bg-amber-50 px-3 py-2 text-[12px] text-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+                  24-hour reply window closed{lastIncomingLabel ? ` (last customer message ${lastIncomingLabel})` : ""}. WhatsApp only allows an approved template now — use Campaigns / Templates.
+                </div>
+              )}
               <div className="flex items-end gap-2 px-3 py-2 border-t bg-muted/50">
-                <Textarea ref={inputRef} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message" rows={1}
+                <Textarea ref={inputRef} value={message} onChange={(e) => setMessage(e.target.value)} rows={1}
+                  placeholder={sessionWindowOpen ? "Type a message" : "Reply window closed — send a template instead"}
+                  disabled={!sessionWindowOpen}
                   className="text-[14px] resize-none min-h-[38px] max-h-[120px] rounded-xl bg-background flex-1"
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }} />
                 <Button size="icon" className="h-9 w-9 shrink-0 rounded-full bg-[hsl(142,72%,40%)] hover:bg-[hsl(142,72%,35%)] text-white"
-                  onClick={sendMessage} disabled={sending || !message.trim()}>
+                  onClick={sendMessage} disabled={sending || !message.trim() || !sessionWindowOpen}>
                   {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
+
             </>
           )}
         </div>
