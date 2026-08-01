@@ -2468,6 +2468,11 @@ export default function CheckoutV2Page() {
       const saved = JSON.parse(raw);
       if (!saved?.orderId) return;
       if (Date.now() - (saved.ts || 0) > 15 * 60 * 1000) { clearWaiting(); return; }
+      // Keep the ORIGINAL attempt timestamp so the poller's absolute budget
+      // survives this remount (otherwise a shopper who cancels in the UPI app
+      // and re-enters checkout restarts the wait forever).
+      waitStartedAtRef.current = Number(saved.ts) || Date.now();
+      waitResumedRef.current = true;
       setOrderId(saved.orderId);
       setOrderNumber(saved.orderNumber || null);
       setShowPayment(true);
