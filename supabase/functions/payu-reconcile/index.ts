@@ -67,10 +67,19 @@ Deno.serve(async (req) => {
   if (!authorized) return json({ error: "unauthorized" }, 401);
 
   let onlyOrderId: string | null = null;
+  // FAST MODE (runs every minute): only look at PayU orders minted in the last
+  // ~20 minutes that are still pending. That is the window where a shopper is
+  // literally standing in front of the "processing" screen after paying in
+  // PhonePe/GPay. PayU has no notify-URL configured for these merchants and the
+  // mobile tab is frequently discarded while the UPI app is in the foreground,
+  // so the browser poller can never be the only confirmation path.
+  let fast = false;
   try {
     const body = await req.json();
     if (body && typeof body.order_id === "string") onlyOrderId = body.order_id;
+    if (body && body.fast === true) fast = true;
   } catch { /* no body */ }
+
 
   let q = supabase
     .from("orders")
