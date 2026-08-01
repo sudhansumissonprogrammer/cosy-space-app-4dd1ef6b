@@ -2106,11 +2106,15 @@ export default function CheckoutV2Page() {
     // payment" for the full 90s window. So once they're back we only give a
     // short grace period, then restore checkout with a retry option.
     let wentToApp = false;
-    // A wait restored from storage means the shopper is ALREADY back on our
-    // page (they cancelled or finished in the UPI app and navigated around the
-    // store). Start the return grace immediately so they get a retry screen
-    // instead of an endless spinner.
-    let returnedAt = waitResumedRef.current ? Date.now() : 0;
+    // A wait restored from storage usually means the shopper is ALREADY back on
+    // our page (they cancelled or finished in the UPI app and navigated around
+    // the store). Start the return grace immediately so they get a retry screen
+    // instead of an endless spinner — but ONLY if this page is actually in the
+    // foreground. Android WebViews routinely re-create the checkout while the
+    // shopper is still inside GPay/PhonePe entering their PIN; presetting the
+    // grace there would fail the attempt mid-payment.
+    let returnedAt = (waitResumedRef.current && document.visibilityState === "visible") ? Date.now() : 0;
+
     // PayU's status API lags well behind the charge, so give it a longer grace
     // than plain intents — but never zero grace (that was the infinite spinner).
     const RETURN_GRACE_MS = gatewayRef.current.pg === "payu" ? 45000 : 12000;
@@ -2154,10 +2158,15 @@ export default function CheckoutV2Page() {
       attempts++;
       const done = await checkNow();
       if (done || cancelled) return;
+      // Never fail an attempt while the shopper is away from this tab — a
+      // hidden page means they are still inside the UPI app (PIN entry can take
+      // well over the grace window). The grace only counts foreground time.
+      if (document.visibilityState !== "visible") returnedAt = 0;
       if (!isDesktopQr && returnedAt && Date.now() - returnedAt >= RETURN_GRACE_MS) {
         stopWaitingForPayment("Payment not completed. Tap retry or choose another method.");
         return;
       }
+
       if (budgetExpired()) {
         stopWaitingForPayment("We couldn't confirm this payment. Tap retry or choose another method.");
         return;
@@ -2179,9 +2188,13 @@ export default function CheckoutV2Page() {
     const onFocus = () => { void checkNow(); };
     const onVis = () => {
       if (document.visibilityState === "hidden") { wentToApp = true; return; }
-      if (wentToApp && !returnedAt) returnedAt = Date.now();
+      // A restored wait counts as "already came back" the moment this page is
+      // foregrounded, even if we never observed the hide (the tab was recreated
+      // while the shopper was inside the UPI app).
+      if ((wentToApp || waitResumedRef.current) && !returnedAt) returnedAt = Date.now();
       void checkNow();
     };
+
 
     // iOS Safari restores the checkout from the back/forward cache after a UPI
     // round trip: JS timers stay frozen and `visibilitychange` may never fire,
@@ -2325,18 +2338,24 @@ export default function CheckoutV2Page() {
 
     const label = UPI_APPS.find((u) => u.key === app)?.label || "UPI";
 
-    // iOS: a custom-scheme navigation triggered WITHOUT a live user gesture
-    // (queued tap replayed once the intent finished minting, address-sheet
-    // resume, etc.) is silently dropped by Safari/WKWebView — the shopper sat
-    // on an armed "Complete payment" screen while nothing ever opened. Ask for
-    // one fresh tap instead; the intent is ready so it launches instantly.
-    if (isIOS() && !gesture) {
+    // A custom-scheme navigation triggered WITHOUT a live user gesture (queued
+    // tap replayed once the intent finished minting, address-sheet resume, a
+    // re-mint after a cancelled attempt) is silently dropped by iOS
+    // Safari/WKWebView AND by Android in-app webviews (Instagram/Facebook/
+    // WhatsApp), which enforce a user-activation window for external schemes.
+    // The shopper then sits on an armed "Complete payment" screen while nothing
+    // ever opens. Ask for one fresh tap instead; the intent is ready by then so
+    // it launches instantly. Real Chrome/Safari-on-Android is exempt — it
+    // honours the deferred navigation.
+    const needsFreshGesture = isIOS() || !deviceTag().endsWith(":browser");
+    if (needsFreshGesture && !gesture) {
       pendingUpiTapRef.current = null;
       clearUpiTapFx();
       toast.info(`Ready — tap ${label} to open the app`, { duration: 5000 });
-      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}`, step: "ios_retap_prompt", dev: deviceTag() } as any }); } catch { /* noop */ }
+      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}`, step: isIOS() ? "ios_retap_prompt" : "webview_retap_prompt", dev: deviceTag() } as any }); } catch { /* noop */ }
       return;
     }
+
 
 
     let leftCheckout = false;
