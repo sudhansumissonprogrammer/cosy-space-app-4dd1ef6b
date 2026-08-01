@@ -4947,11 +4947,13 @@ export default function CheckoutV2Page() {
                 const staleAny = typeof anyS.amount === "number" && Math.round(anyS.amount * 100) !== Math.round(chargeAmount * 100);
                 const addressReady = addressComplete;
                 const anyRetryable = anyS.status === "failed";
-                const anyDisabled = addressReady && !anyRetryable && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
+                const anyNeedsMint = anyS.status === "idle";
+                const anyDisabled = addressReady && !anyRetryable && !anyNeedsMint && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
                 const anyPressed = tappedUpiApp === "any";
                 return (
                   <a
-                    href={anyDisabled || anyRetryable || !addressReady || isIOS() ? undefined : anyS.url}
+                    href={anyDisabled || anyRetryable || anyNeedsMint || !addressReady || isIOS() ? undefined : anyS.url}
+
                     onClick={(e) => {
                       // iOS has no Android-style `upi://` chooser. Sending an
                       // iPhone to that generic scheme is a dead tap (or opens an
