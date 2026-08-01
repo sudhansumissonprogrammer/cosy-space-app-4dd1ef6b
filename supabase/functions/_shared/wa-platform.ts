@@ -300,15 +300,26 @@ export type DripDecision = {
 export async function recoveryDripDecision(admin: any, phone: string, opts: { ignoreInFlight?: boolean } = {}): Promise<DripDecision> {
   const sinceIso = new Date(Date.now() - DRIP_WINDOW_MS).toISOString();
 
-  const [{ data: sentRows }, { data: queueRows }] = await Promise.all([
+  const [{ data: sentRows }, { data: failedRows }, { data: queueRows }] = await Promise.all([
     admin.from("whatsapp_messages")
       .select("created_at")
       .eq("recipient_phone", phone).eq("sent_via", "platform").eq("direction", "outgoing")
-      .eq("status", "sent")
+      .in("status", ["sent", "delivered", "read"])
       .in("message_type", RECOVERY_MESSAGE_TYPES)
       .gte("created_at", sinceIso)
       .order("created_at", { ascending: false })
       .limit(10),
+    // ❌ Messages Meta accepted but never delivered (billing block 131042,
+    // undeliverable 131026, ecosystem throttle 131049…). These must NOT burn a
+    // drip step — the shopper never saw anything.
+    admin.from("whatsapp_messages")
+      .select("created_at")
+      .eq("recipient_phone", phone).eq("sent_via", "platform").eq("direction", "outgoing")
+      .eq("status", "failed")
+      .in("message_type", RECOVERY_MESSAGE_TYPES)
+      .gte("created_at", sinceIso)
+      .order("created_at", { ascending: false })
+      .limit(20),
     admin.from("wa_send_queue")
       .select("created_at, status")
       .eq("recipient_phone", phone)
@@ -334,6 +345,15 @@ export async function recoveryDripDecision(admin: any, phone: string, opts: { ig
     const t = new Date(r.created_at).getTime();
     if (Number.isFinite(t)) stamps.add(Math.round(t / 60000));
   }
+  // Drop buckets whose delivery ultimately failed (queue said "sent", Meta
+  // rejected it). Match within ±2 minutes of the failed webhook timestamp.
+  for (const r of ((failedRows as any[]) ?? [])) {
+    const t = new Date(r.created_at).getTime();
+    if (!Number.isFinite(t)) continue;
+    const b = Math.round(t / 60000);
+    for (const d of [-2, -1, 0, 1, 2]) stamps.delete(b + d);
+  }
+
   const times = Array.from(stamps).map((m) => m * 60000).sort((a, b) => b - a);
   const done = times.length;
   if (done >= DRIP_MAX_STEPS) return { allow: false, step: done, reason: "drip_complete" };
