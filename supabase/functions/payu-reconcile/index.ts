@@ -67,19 +67,32 @@ Deno.serve(async (req) => {
   if (!authorized) return json({ error: "unauthorized" }, 401);
 
   let onlyOrderId: string | null = null;
+  // FAST MODE (runs every minute): only look at PayU orders minted in the last
+  // ~20 minutes that are still pending. That is the window where a shopper is
+  // literally standing in front of the "processing" screen after paying in
+  // PhonePe/GPay. PayU has no notify-URL configured for these merchants and the
+  // mobile tab is frequently discarded while the UPI app is in the foreground,
+  // so the browser poller can never be the only confirmation path.
+  let fast = false;
   try {
     const body = await req.json();
     if (body && typeof body.order_id === "string") onlyOrderId = body.order_id;
+    if (body && body.fast === true) fast = true;
   } catch { /* no body */ }
+
 
   let q = supabase
     .from("orders")
     .select("id, store_id, status, payment_type, customer_phone, storefront_customer_id, created_at, payu_txnids")
     .eq("payment_method", "payu")
-    .limit(200);
+    .limit(fast ? 40 : 200);
 
   if (onlyOrderId) {
     q = q.eq("id", onlyOrderId);
+  } else if (fast) {
+    q = q
+      .eq("status", "pending")
+      .gte("created_at", new Date(Date.now() - 20 * 60 * 1000).toISOString());
   } else {
     q = q
       // Include cancelled/failed too: if a shopper paid but the browser returned
@@ -88,6 +101,7 @@ Deno.serve(async (req) => {
       .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
   }
 
+
   const { data: orders, error } = await q;
   if (error) {
     console.error("payu-reconcile fetch error", error);
@@ -95,7 +109,7 @@ Deno.serve(async (req) => {
   }
 
   if (!onlyOrderId && (!orders || orders.length === 0)) {
-    const capiBackfilled = await capiBackfill(supabase as any, null);
+    const capiBackfilled = fast ? 0 : await capiBackfill(supabase as any, null);
     return json({ ok: true, scanned: 0, skipped: "no_recent_payu_orders", capi_backfilled: capiBackfilled });
   }
 
@@ -213,7 +227,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  const capiBackfilled = await capiBackfill(supabase as any, onlyOrderId);
+  const capiBackfilled = fast ? 0 : await capiBackfill(supabase as any, onlyOrderId);
 
   return json({
     ok: true,
