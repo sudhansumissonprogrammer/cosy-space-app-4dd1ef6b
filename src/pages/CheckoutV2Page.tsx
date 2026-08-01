@@ -331,43 +331,36 @@ export default function CheckoutV2Page() {
   const isRecoveryRetry = searchParams.get("recover") === "order";
   const isSingleMode = !!productId;
 
-  const { data: buyNowProduct, isLoading: buyNowProductLoading } = useQuery({
-    queryKey: ["checkoutv2-product", productId],
+  // Anonymous shoppers have no direct SELECT grant on `products` /
+  // `product_variants` (PostgREST returns 401). A cold buy-now checkout URL —
+  // page refresh, WhatsApp recovery link, or a killed in-app WebView returning
+  // to /checkout?product=... — therefore rendered an EMPTY ₹0 checkout and the
+  // order could never be placed. Resolve the line item through a
+  // security-definer RPC that works for anon instead.
+  const { data: buyNowLine, isLoading: buyNowProductLoading } = useQuery({
+    queryKey: ["checkoutv2-line", productId, variantId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("id", productId!)
-        .eq("is_active", true)
-        .single();
+      const { data, error } = await (supabase as any).rpc("get_checkout_line_item", {
+        _product_id: productId!,
+        _variant_id: variantId || null,
+      });
       if (error) throw error;
-      return data;
+      return (data || {}) as { product?: any; variant?: any };
     },
     enabled: !!productId,
     staleTime: 10 * 60 * 1000,
     initialData: () => {
       if (!productId) return undefined;
       const matches = qc.getQueriesData<any>({ queryKey: ["storefront-product", store?.id] });
-      for (const [, p] of matches) if (p && p.id === productId) return p;
+      for (const [, p] of matches) if (p && p.id === productId) return { product: p, variant: null };
       return undefined;
     },
   });
 
-  const { data: buyNowVariant } = useQuery({
-    queryKey: ["checkoutv2-variant", variantId],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("product_variants")
-        .select("*")
-        .eq("id", variantId!)
-        .eq("is_active", true)
-        .single();
-      if (error) throw error;
-      return data as { id: string; name: string; price: number | null };
-    },
-    enabled: !!variantId,
-    staleTime: 10 * 60 * 1000,
-  });
+  const buyNowProduct = buyNowLine?.product ?? null;
+  const buyNowVariant = (buyNowLine?.variant ?? null) as
+    | { id: string; name: string; price: number | null }
+    | null;
 
   // Unified checkout items (buy-now OR cart). Includes variantId + image.
   const checkoutItems = useMemo(() => {
