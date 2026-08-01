@@ -2166,13 +2166,24 @@ export default function CheckoutV2Page() {
     };
     const poll = async () => {
       if (cancelled) return;
-      attempts++;
+      // Only foreground polls count toward the attempt cap — background polls
+      // while the shopper is in the UPI app must not burn the budget.
+      if (document.visibilityState === "visible") attempts++;
       const done = await checkNow();
       if (done || cancelled) return;
       // Never fail an attempt while the shopper is away from this tab — a
       // hidden page means they are still inside the UPI app (PIN entry can take
       // well over the grace window). The grace only counts foreground time.
-      if (document.visibilityState !== "visible") returnedAt = 0;
+      const away = document.visibilityState !== "visible";
+      if (away) returnedAt = 0;
+      // While the shopper is INSIDE the UPI app (page hidden) we must never
+      // end the wait — not on the return grace, not on the wall-clock budget,
+      // not on the attempt cap. Otherwise a slow PIN entry / bank OTP past the
+      // 3-minute budget lands them back on a "couldn't confirm" retry screen
+      // for a payment that actually went through. Keep polling at a slow
+      // cadence instead; the foreground checks below resolve it once they
+      // come back.
+      if (away) { setTimeout(poll, 4000); return; }
       if (!isDesktopQr && returnedAt && Date.now() - returnedAt >= RETURN_GRACE_MS) {
         stopWaitingForPayment("Payment not completed. Tap retry or choose another method.");
         return;
@@ -2203,6 +2214,13 @@ export default function CheckoutV2Page() {
       // foregrounded, even if we never observed the hide (the tab was recreated
       // while the shopper was inside the UPI app).
       if ((wentToApp || waitResumedRef.current) && !returnedAt) returnedAt = Date.now();
+      // If the shopper spent longer than the whole wall-clock budget inside the
+      // UPI app, the budget is already blown the instant they return and they
+      // would see "couldn't confirm" before a single foreground check runs.
+      // Guarantee at least one full grace window of verification on return.
+      if (budgetExpired()) {
+        waitStartedAtRef.current = Date.now() - (WAIT_BUDGET_MS - RETURN_GRACE_MS);
+      }
       void checkNow();
     };
 
