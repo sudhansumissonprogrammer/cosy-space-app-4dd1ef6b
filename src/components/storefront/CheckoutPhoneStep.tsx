@@ -196,12 +196,14 @@ export default function CheckoutPhoneStep({
 
   const { bestCoupon, autoCouponDiscount } = useMemo(() => {
     const a = valueOf(autoCoupon);
-    const e = valueOf(exclusiveCoupon);
+    // The exclusive coupon is only auto-applied at checkout for WhatsApp
+    // arrivals — never advertise a saving the next step won't honour.
+    const e = isWaSource ? valueOf(exclusiveCoupon) : 0;
     return e > a
       ? { bestCoupon: exclusiveCoupon, autoCouponDiscount: e }
       : { bestCoupon: autoCoupon, autoCouponDiscount: a };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoCoupon, exclusiveCoupon, subtotal]);
+  }, [autoCoupon, exclusiveCoupon, subtotal, isWaSource]);
 
 
   const setQty = (item: CartItem, next: number) => {
