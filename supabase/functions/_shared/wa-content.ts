@@ -5,7 +5,7 @@
  * Returns an Indian-English expected delivery label, e.g. "Mon, 4 Sep 26".
  * Adds `days` calendar days to `from`, then if it lands on a Sunday pushes to Monday.
  */
-export function formatExpectedDelivery(from: Date = new Date(), days = 6): string {
+export function formatExpectedDelivery(from: Date = new Date(), days = 5): string {
   const d = new Date(from);
   d.setDate(d.getDate() + days);
   if (d.getDay() === 0) d.setDate(d.getDate() + 1); // skip Sunday
