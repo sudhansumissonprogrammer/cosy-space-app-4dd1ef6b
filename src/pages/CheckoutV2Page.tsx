@@ -2189,7 +2189,7 @@ export default function CheckoutV2Page() {
     }
     // PAYMENT-FIRST address gate — if no address, open the sheet and remember
     // this tap so we auto-resume the UPI launch after the shopper saves.
-    if (!requireAddressOrPrompt(() => tapUpiApp(app))) { pendingUpiTapRef.current = null; clearUpiTapFx(); return; }
+    if (!requireAddressOrPrompt(() => tapUpiApp(app, undefined, { gesture: false }))) { pendingUpiTapRef.current = null; clearUpiTapFx(); return; }
     const s = intents[app];
     // A failed tile used to be a dead end (silent return + pointer-events-none),
     // so a shopper who hit one transient gateway error could never pay by UPI
