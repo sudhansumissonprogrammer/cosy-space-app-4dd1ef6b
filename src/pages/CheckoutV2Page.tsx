@@ -207,14 +207,16 @@ function schemeFor(app: UpiApp, url: string): string {
     return `upi://pay?${query}`;
   }
 
-  // iOS has no UPI chooser — a plain upi:// link opens nothing, so keep the
-  // app-specific universal schemes there.
+  // iOS has no UPI chooser — a plain upi:// link resolves to nothing (or to an
+  // arbitrary app), so keep the app-specific universal schemes there. BHIM
+  // registers `bhim://` on iOS; `upi://` used to dead-end for iPhone shoppers.
   if (app === "gpay") return `tez://upi/pay?${query}`;
   if (app === "phonepe") return `phonepe://pay?${query}`;
   if (app === "paytm") return `paytmmp://pay?${query}`;
-  if (app === "bhim") return `upi://pay?${query}`;
+  if (app === "bhim") return isIOS() ? `bhim://upi/pay?${query}` : `upi://pay?${query}`;
   return url;
 }
+
 
 declare global {
   interface Window {
