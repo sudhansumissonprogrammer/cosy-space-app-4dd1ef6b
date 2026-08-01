@@ -2164,6 +2164,36 @@ export default function CheckoutV2Page() {
       if (waitingCheckInFlightRef.current) return false;
       waitingCheckInFlightRef.current = true;
       try {
+        // Read our authoritative order row FIRST. Instagram/FB WebViews often
+        // suspend the direct PayU verifier fetch after returning from a UPI app.
+        // The reconcile job/webhook may already have confirmed the order, but
+        // the old ordering made the shopper wait up to 10s on PayU before every
+        // local status read (or indefinitely in older WebViews with frozen
+        // promises). A confirmed database row must always win immediately.
+        const readOrderStatus = async () => {
+          const { data } = await Promise.race([
+            supabase.functions.invoke("order-payment-status", {
+              body: { store_id: store.id, order_id: orderId },
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("Payment status check timed out")), 10000),
+            ),
+          ]);
+          return (data as any)?.payment_status as string | undefined;
+        };
+
+        const initialStatus = await readOrderStatus().catch(() => undefined);
+        if (initialStatus === "success") { finishSuccess(); return true; }
+        if (initialStatus === "failed") {
+          toast.error("Payment failed — please try again");
+          clearWaiting(); setWaiting(false); setPendingOrder({ id: orderId!, number: orderNumber }); setPaymentFailed(true);
+          try { window.dispatchEvent(new Event("payment-ended")); } catch { /* noop */ }
+          try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { order_id: orderId } as any }); } catch { /* noop */ }
+          return true;
+        }
+
+        // Still pending locally: ask the gateway for a fresh verdict. This can
+        // update the order row when the webhook is delayed.
         const gatewayResult = await forceGatewayVerify();
         const verdict = normalizeGatewayResult(gatewayResult);
         if (verdict === "success") { finishSuccess(); return true; }
@@ -2174,15 +2204,9 @@ export default function CheckoutV2Page() {
           try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { order_id: orderId, gateway: gatewayRef.current?.pg } as any }); } catch { /* noop */ }
           return true;
         }
-        const { data } = await Promise.race([
-          supabase.functions.invoke("order-payment-status", {
-            body: { store_id: store.id, order_id: orderId },
-          }),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Payment status check timed out")), 10000),
-          ),
-        ]);
-        const status = (data as any)?.payment_status;
+        // The gateway verifier may have confirmed the row. Read it once more
+        // before scheduling the next poll so success is reflected this tick.
+        const status = await readOrderStatus().catch(() => undefined);
         if (status === "success") { finishSuccess(); return true; }
         if (status === "failed") {
           toast.error("Payment failed — please try again");
@@ -2304,14 +2328,14 @@ export default function CheckoutV2Page() {
       if (document.visibilityState === "visible" && !waitingCheckInFlightRef.current) {
         waitingCheckInFlightRef.current = true;
         try {
-          const gatewayResult = await forceGatewayVerify();
-          if (!cancelled && normalizeGatewayResult(gatewayResult) === "success") {
-            finishSuccess(pendingOrder.id); return;
-          }
           const { data } = await supabase.functions.invoke("order-payment-status", {
             body: { store_id: store.id, order_id: pendingOrder.id },
           });
           if (!cancelled && (data as any)?.payment_status === "success") {
+            finishSuccess(pendingOrder.id); return;
+          }
+          const gatewayResult = await forceGatewayVerify();
+          if (!cancelled && normalizeGatewayResult(gatewayResult) === "success") {
             finishSuccess(pendingOrder.id); return;
           }
         } catch { /* keep watching */ }
