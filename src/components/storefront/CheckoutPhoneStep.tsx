@@ -45,6 +45,7 @@ import type { CartItem } from "@/contexts/CartContext";
 import { storefrontPath } from "@/lib/subdomain";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { setCapiUser } from "@/lib/metaEnrichment";
+import { useIsWaSource } from "@/hooks/useWaCouponPreview";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { fireMetaCAPI } from "@/lib/metaCapi";
 
@@ -148,26 +149,36 @@ export default function CheckoutPhoneStep({
     0,
   );
 
-  // Store-owner auto-apply coupon — preview the reward BEFORE the shopper
-  // commits their phone so the discount feels earned, not surprise-applied
-  // on the next step. Same RPC + math the main checkout uses.
-  const [autoCoupon, setAutoCoupon] = useState<{
+  // Coupon preview BEFORE the shopper commits their phone so the discount
+  // feels earned. We look at BOTH the store-wide auto-apply coupon and the
+  // exclusive (WhatsApp) coupon and advertise whichever saves more — the
+  // exclusive one is what checkout ends up applying on the exit offer.
+  type CouponRow = {
     code: string;
     discount_type: string;
     discount_value: number;
     min_order_amount?: number | null;
-  } | null>(null);
+  };
+  const [autoCoupon, setAutoCoupon] = useState<CouponRow | null>(null);
+  const [exclusiveCoupon, setExclusiveCoupon] = useState<CouponRow | null>(null);
+  const isWaSource = useIsWaSource();
   useEffect(() => {
     let cancelled = false;
     if (!storeId) return;
     (async () => {
+      const first = <T,>(d: any): T | null => (Array.isArray(d) ? d[0] ?? null : d ?? null);
       try {
         const { data } = await (supabase as any).rpc(
           "get_store_auto_apply_coupon",
           { _store_id: storeId },
         );
-        const row = Array.isArray(data) ? data[0] ?? null : data ?? null;
-        if (!cancelled) setAutoCoupon(row);
+        if (!cancelled) setAutoCoupon(first<CouponRow>(data));
+      } catch {}
+      try {
+        const { data } = await (supabase as any).rpc("get_store_wa_coupon", {
+          _store_id: storeId,
+        });
+        if (!cancelled) setExclusiveCoupon(first<CouponRow>(data));
       } catch {}
     })();
     return () => {
@@ -175,16 +186,26 @@ export default function CheckoutPhoneStep({
     };
   }, [storeId]);
 
-  const autoCouponDiscount = useMemo(() => {
-    if (!autoCoupon || subtotal <= 0) return 0;
-    const min = Number(autoCoupon.min_order_amount || 0);
-    if (subtotal < min) return 0;
+  const valueOf = (c: CouponRow | null) => {
+    if (!c || subtotal <= 0) return 0;
+    if (subtotal < Number(c.min_order_amount || 0)) return 0;
     const raw =
-      autoCoupon.discount_type === "percentage"
-        ? (subtotal * Number(autoCoupon.discount_value || 0)) / 100
-        : Number(autoCoupon.discount_value || 0);
+      c.discount_type === "percentage"
+        ? (subtotal * Number(c.discount_value || 0)) / 100
+        : Number(c.discount_value || 0);
     return Math.max(0, Math.min(raw, subtotal));
-  }, [autoCoupon, subtotal]);
+  };
+
+  const { bestCoupon, autoCouponDiscount } = useMemo(() => {
+    const a = valueOf(autoCoupon);
+    // The exclusive coupon is only auto-applied at checkout for WhatsApp
+    // arrivals — never advertise a saving the next step won't honour.
+    const e = isWaSource ? valueOf(exclusiveCoupon) : 0;
+    return e > a
+      ? { bestCoupon: exclusiveCoupon, autoCouponDiscount: e }
+      : { bestCoupon: autoCoupon, autoCouponDiscount: a };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoCoupon, exclusiveCoupon, subtotal, isWaSource]);
 
 
   const setQty = (item: CartItem, next: number) => {
@@ -391,21 +412,33 @@ export default function CheckoutPhoneStep({
 
 
       <div className="px-3 py-3 space-y-3">
-        {/* Auto-applied coupon reward banner — makes the discount feel earned
-            before the shopper commits their phone number. */}
-        {autoCouponDiscount > 0 && autoCoupon && (
-          <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white overflow-hidden">
-            <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-emerald-600 text-white">
+        {/* Best-available coupon reward banner — advertises the biggest
+            saving (exclusive coupon wins over the store-wide auto one). */}
+        {autoCouponDiscount > 0 && bestCoupon && (
+          <div
+            className="rounded-xl border overflow-hidden"
+            style={{
+              borderColor: "color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 26%, transparent)",
+              background: "color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 6%, #fff)",
+            }}
+          >
+            <div
+              className="flex items-center gap-2.5 px-3.5 py-2.5"
+              style={{
+                background: "var(--storefront-primary, hsl(var(--primary)))",
+                color: "var(--storefront-btn-text, #fff)",
+              }}
+            >
               <Sparkles className="h-4 w-4 shrink-0" strokeWidth={2.6} />
               <div className="text-[12.5px] font-extrabold leading-tight tracking-tight flex-1">
                 You got {formatPrice(autoCouponDiscount)} off!
               </div>
               <span className="text-[10.5px] font-bold bg-white/20 px-2 py-0.5 rounded">
-                {autoCoupon.code}
+                {bestCoupon.code}
               </span>
             </div>
-            <div className="px-3.5 py-2 text-[11.5px] leading-snug text-gray-700">
-              Coupon <span className="font-bold text-gray-900">{autoCoupon.code}</span> auto-applied · Enter your mobile number to claim
+            <div className="px-3.5 py-2 text-[11.5px] leading-snug opacity-80">
+              Coupon <span className="font-bold">{bestCoupon.code}</span> auto-applied · Enter your mobile number to claim
             </div>
           </div>
         )}
