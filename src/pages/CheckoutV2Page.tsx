@@ -1889,17 +1889,23 @@ export default function CheckoutV2Page() {
   // "returned from app" wait and exits fast with a retry option.
   const waitResumedRef = useRef(false);
 
+  // Set later by the exit-intent block; lets the header back arrow open the save sheet.
+  const exitTriggerRef = useRef<null | (() => boolean)>(null);
+
   const goBack = useCallback(() => {
     if (showAddressFormSheet && addressComplete) {
       closeAddressFormSheet();
       return;
     }
+    // Gokwik-style: intercept the FIRST leave attempt from the header arrow too.
+    if (exitTriggerRef.current?.()) return;
     if (showPayment && !waiting && !confirmingPayment) {
       setShowPayment(false);
       return;
     }
     navigate(storefrontPath(store?.slug || ""), { replace: true });
   }, [addressComplete, confirmingPayment, navigate, showAddressFormSheet, showPayment, store?.slug, waiting]);
+
 
   const WAIT_KEY = `sf_wait_v2_${store?.id}`;
   const persistWaiting = (app: UpiApp, label: string, override?: { orderId?: string | null; orderNumber?: string | null }) => {
