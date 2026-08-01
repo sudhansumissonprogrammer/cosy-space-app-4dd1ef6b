@@ -5146,6 +5146,10 @@ export type Database = {
         Args: { _category_slug: string; _limit?: number; _store_slug: string }
         Returns: Json
       }
+      get_checkout_line_item: {
+        Args: { _product_id: string; _variant_id?: string }
+        Returns: Json
+      }
       get_co_purchased_products: {
         Args: { _limit?: number; _product_id: string }
         Returns: string[]
