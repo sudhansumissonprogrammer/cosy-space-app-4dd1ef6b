@@ -2166,7 +2166,9 @@ export default function CheckoutV2Page() {
     };
     const poll = async () => {
       if (cancelled) return;
-      attempts++;
+      // Only foreground polls count toward the attempt cap — background polls
+      // while the shopper is in the UPI app must not burn the budget.
+      if (document.visibilityState === "visible") attempts++;
       const done = await checkNow();
       if (done || cancelled) return;
       // Never fail an attempt while the shopper is away from this tab — a
