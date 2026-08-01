@@ -81,8 +81,8 @@ function getProductStats(productId: string) {
 }
 
 function getDeliveryDate() {
-  const d = new Date();
-  d.setDate(d.getDate() + 3 + Math.floor(Math.random() * 3));
+  // Single platform-wide promise: today + 5 days (Sunday pushes to Monday).
+  const d = addDeliveryDays(new Date());
   return d.toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" });
 }
 
