@@ -14,8 +14,8 @@ import { Button } from "@/components/ui/button";
 
 interface Props {
   open: boolean;
-  /** Headline discount, e.g. "₹100 OFF" */
-  offerLabel: string;
+  /** Headline discount, e.g. "₹100 OFF". Omit for the no-coupon reassurance variant. */
+  offerLabel?: string;
   /** Coupon code being offered (shown as proof) */
   offerCode?: string;
   /** Current total before the extra saving, formatted */
