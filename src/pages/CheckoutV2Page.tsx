@@ -269,8 +269,8 @@ function loadRazorpayScript(): Promise<boolean> {
 const SUPABASE_FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-async function callEdgeFunction(fnName: string, body: Record<string, any>) {
-  const res = await fetch(`${SUPABASE_FUNCTIONS_URL}/${fnName}`, {
+async function callEdgeFunction(fnName: string, body: Record<string, any>, timeoutMs?: number) {
+  const request = fetch(`${SUPABASE_FUNCTIONS_URL}/${fnName}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -279,6 +279,14 @@ async function callEdgeFunction(fnName: string, body: Record<string, any>) {
     },
     body: JSON.stringify(body),
   });
+  const res = timeoutMs
+    ? await Promise.race([
+        request,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`${fnName} timed out`)), timeoutMs),
+        ),
+      ])
+    : await request;
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || `Edge function ${fnName} failed`);
   return data;
@@ -2750,7 +2758,10 @@ export default function CheckoutV2Page() {
     // Android recent-app restore / WebView bfcache can replay the exact PayU
     // return URL after this mount has already reached confirmation. Never let a
     // stale redirect re-arm the processing screen for a completed order.
-    if (orderPlaced || confirmingPayment) return;
+    // `confirmingPayment` is transient and may be stuck when Instagram freezes
+    // an in-flight PayU request. It must never veto redirect recovery; only the
+    // terminal success state is safe to ignore.
+    if (orderPlaced) return;
     const params = new URLSearchParams(window.location.search);
     const payuStatus = params.get("payu_status");
     const txnid = params.get("txnid");
@@ -2792,7 +2803,7 @@ export default function CheckoutV2Page() {
       } catch { /* noop */ }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store?.id, orderPlaced, confirmingPayment]);
+  }, [store?.id, orderPlaced]);
 
   // ─── Cashfree redirect-back recovery (mirrors CheckoutPage) ─────────────
   useEffect(() => {
@@ -3567,7 +3578,7 @@ export default function CheckoutV2Page() {
         try {
           const verdict = await callEdgeFunction("payu-verify-payment", {
             store_id: store.id, order_id: order.id, txnid: payuData.txnid,
-          });
+          }, 10000);
           if (verdict?.status === "PAID" || verdict?.success === true) {
             setConfirmingPayment(false);
             try { sessionStorage.removeItem(`payu_pending_${store.id}`); localStorage.removeItem(`payu_pending_${store.id}`); } catch { /* noop */ }
