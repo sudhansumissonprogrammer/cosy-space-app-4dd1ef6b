@@ -212,21 +212,16 @@ function launchUpiUrl(url: string): void {
 
 
 
-/** Android apps that open DIRECTLY (no system "choose an app" sheet) when the
- *  shopper taps their branded tile. Tapping the Google Pay tile should open
- *  Google Pay — showing a chooser listing every UPI app is confusing and costs
- *  taps. These are the two apps whose package ids are stable and whose UPI
- *  intent filter is reliable across OEMs.
- *
- *  Everything else (Paytm, BHIM, "All UPI Apps") keeps the plain `upi://pay`
- *  intent so Android shows its own chooser listing only installed apps.
- *
- *  Safety: the package intent carries `S.browser_fallback_url=<checkout>#upi_fb`.
- *  If the app is NOT installed, Chrome does a same-document hop to that hash
- *  (no reload, checkout state intact) and `onHashFallback` instantly launches
- *  the universal chooser instead. So a missing app degrades to the old
- *  behaviour rather than a blank bounce. */
-const UPI_DIRECT_OPEN_APPS: UpiApp[] = ["gpay", "phonepe"];
+/** Android apps that open DIRECTLY (no system "choose an app" sheet).
+ *  Deliberately EMPTY: the merchant wants every tile (G Pay, PhonePe, Paytm,
+ *  BHIM, "All UPI Apps") to hand a plain `upi://pay` intent to Android so the
+ *  OS shows its own chooser listing only installed UPI apps — the same
+ *  behaviour BHIM always had. Package-targeted intents silently no-op on
+ *  OEM skins where the package id differs, so the chooser is also the safer
+ *  path. Keep the array so the direct-open mechanism can be re-enabled by
+ *  simply listing an app here. */
+const UPI_DIRECT_OPEN_APPS: UpiApp[] = [];
+
 
 /** Rewrite `upi://pay?...` to the safest app launch URL for the shopper's device. */
 function schemeFor(app: UpiApp, url: string): string {
