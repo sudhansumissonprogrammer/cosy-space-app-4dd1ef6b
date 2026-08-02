@@ -680,6 +680,22 @@ export default function CheckoutV2Page() {
     // Rotate the checkout idempotency token so place-order creates a fresh
     // pending row for the new shopper instead of UPDATE-in-place onto the
     // previous number's order (which would cross-attribute the lead).
+    //
+    // The previous token's pending row must be cancelled FIRST — otherwise it
+    // is orphaned in `pending` forever (the rotated token can never update it
+    // again), which is exactly how one shopper ends up owning two "pending"
+    // orders minutes apart in the dashboard.
+    const staleOrderId = orderIdRef.current ?? orderId;
+    const staleToken = checkoutTokenRef.current;
+    if (staleOrderId && staleToken && store?.id) {
+      try {
+        void supabase.functions
+          .invoke("cancel-pending-order", {
+            body: { store_id: store.id, order_id: staleOrderId, checkout_token: staleToken },
+          })
+          .catch(() => { /* swallow — non-critical cleanup */ });
+      } catch { /* noop */ }
+    }
     try {
       const fresh = mintCheckoutToken();
       setCheckoutToken(fresh);
@@ -687,10 +703,12 @@ export default function CheckoutV2Page() {
     // Reset any pending order state tied to the previous shopper.
     setPendingOrder(null);
     setOrderId(null);
+    orderIdRef.current = null;
     orderSnapshotRef.current = null;
     // Allow the UPI intents to re-mint for the new shopper's order once
     // their address is filled (guard flag was one-shot per checkout).
     intentsMintedForAddressRef.current = false;
+
   }, [phone]);
 
   const phoneAddressLookupRef = useRef("");
