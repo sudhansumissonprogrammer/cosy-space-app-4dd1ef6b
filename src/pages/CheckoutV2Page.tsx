@@ -117,27 +117,29 @@ const UPI_ANDROID_PACKAGES: Partial<Record<UpiApp, string>> = {
  *  checkout state survives and we can instantly show the UPI app chooser. */
 const UPI_FALLBACK_HASH = "upi_fb";
 
-function androidIntentForUpi(query: string, packageName: string, _fallbackUrl: string): string {
+function upiFallbackUrl(): string {
   // Chrome only honours S.browser_fallback_url when it is http(s). Pointing it
-  // at the full checkout URL caused a hard reload whenever the targeted app was
-  // missing — the shopper lost the page and never saw a chooser. Instead point
-  // it at the SAME url with a `#upi_fb` fragment: Chrome treats it as a legal
-  // https fallback but the browser performs a same-document navigation (no
-  // reload), and tapUpiApp listens for the hashchange to immediately launch the
-  // universal `upi://pay` chooser, which lists only the UPI apps actually
-  // installed on the device.
+  // at the full checkout URL caused a hard reload whenever no app could handle
+  // the intent — the shopper lost the page. Instead point it at the SAME url
+  // with a `#upi_fb` fragment: Chrome accepts it as a legal https fallback but
+  // performs a same-document navigation (no reload), and tapUpiApp listens for
+  // the hashchange to react instantly.
   const base = typeof window !== "undefined"
     ? window.location.href.split("#")[0]
     : "https://shopbanao.in";
-  const httpsFallback = `${base}#${UPI_FALLBACK_HASH}`;
+  return `${base}#${UPI_FALLBACK_HASH}`;
+}
+
+function androidIntentForUpi(query: string, packageName?: string): string {
   return (
     `intent://pay?${query}#Intent;scheme=upi;` +
     `action=android.intent.action.VIEW;` +
     `category=android.intent.category.BROWSABLE;` +
-    `package=${packageName};` +
-    `S.browser_fallback_url=${encodeURIComponent(httpsFallback)};end`
+    (packageName ? `package=${packageName};` : "") +
+    `S.browser_fallback_url=${encodeURIComponent(upiFallbackUrl())};end`
   );
 }
+
 
 
 function extractUpiQuery(url: string): string | null {
