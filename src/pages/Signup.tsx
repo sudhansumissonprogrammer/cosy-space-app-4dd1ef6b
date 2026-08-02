@@ -40,6 +40,39 @@ export default function Signup() {
     );
   }
 
+  if (!MERCHANT_SIGNUPS_ENABLED) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="w-full max-w-sm">
+          <div className="mb-8 flex flex-col items-center gap-2 text-center">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary">
+              <LayoutDashboard className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <h1 className="text-xl font-semibold text-foreground">Registrations are closed</h1>
+            <p className="text-sm text-muted-foreground">
+              New store signups are temporarily paused. Existing stores and their customers are unaffected.
+            </p>
+          </div>
+          <Card>
+            <CardContent className="pt-6 text-center text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <Link to="/login" className="font-medium text-primary hover:underline">
+                Sign in
+              </Link>
+            </CardContent>
+            <CardFooter className="justify-center">
+              <Button variant="outline" className="w-full" onClick={() => navigate("/")}>
+                Back to home
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+
+
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
