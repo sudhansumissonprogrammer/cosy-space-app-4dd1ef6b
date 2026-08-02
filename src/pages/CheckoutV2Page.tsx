@@ -5396,11 +5396,14 @@ export default function CheckoutV2Page() {
                 const addressReady = addressComplete;
                 const anyRetryable = anyS.status === "failed";
                 const anyNeedsMint = anyS.status === "idle";
-                const anyDisabled = addressReady && !anyRetryable && !anyNeedsMint && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
+                // Busy = a mint/re-mint is in flight. Stays TAPPABLE (the tap is
+                // queued and auto-launches when ready) — blocking pointer events
+                // here was the "I tap PhonePe and nothing opens" bug.
+                const anyBusy = addressReady && !anyRetryable && !anyNeedsMint && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
                 const anyPressed = tappedUpiApp === "any";
                 return (
                   <a
-                    href={anyDisabled || anyRetryable || anyNeedsMint || !addressReady || isIOS() ? undefined : anyS.url}
+                    href={anyBusy || anyRetryable || anyNeedsMint || !addressReady || isIOS() ? undefined : anyS.url}
 
                     onClick={(e) => {
                       // iOS has no Android-style `upi://` chooser. Sending an
@@ -5415,9 +5418,10 @@ export default function CheckoutV2Page() {
                       }
                       tapUpiApp("any", e);
                     }}
-                    aria-disabled={anyDisabled}
-                    className={`mt-3 w-full flex items-center justify-between border rounded-lg px-3 py-2.5 select-none touch-manipulation active:scale-[0.97] transition-[transform,box-shadow,border-color] duration-150 ease-out ${anyPressed ? "scale-[0.98] border-primary ring-2 ring-primary/40 bg-primary/5" : "border-[#ECECEC]"} ${anyDisabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
+                    aria-busy={anyBusy}
+                    className={`mt-3 w-full flex items-center justify-between border rounded-lg px-3 py-2.5 select-none touch-manipulation cursor-pointer active:scale-[0.97] transition-[transform,box-shadow,border-color] duration-150 ease-out ${anyPressed ? "scale-[0.98] border-primary ring-2 ring-primary/40 bg-primary/5" : "border-[#ECECEC]"} ${anyBusy ? "opacity-70" : ""}`}
                   >
+
                     <span className="text-[13px] font-semibold">All UPI Apps</span>
                     <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
                       {anyPressed ? "Opening…" : isIOS() ? "Choose payment app" : "Pay with any UPI app"}
