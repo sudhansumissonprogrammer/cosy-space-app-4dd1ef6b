@@ -5302,6 +5302,14 @@ export type Database = {
         Returns: Json
       }
       get_today_analytics: { Args: { _store_id: string }; Returns: Json }
+      get_top_products: {
+        Args: { _limit?: number; _store_id: string }
+        Returns: {
+          name: string
+          qty: number
+          revenue: number
+        }[]
+      }
       get_wa_analytics_v2: { Args: { _days?: number }; Returns: Json }
       get_wa_cost_summary: { Args: never; Returns: Json }
       get_wa_platform_kpis: { Args: { _days?: number }; Returns: Json }
