@@ -5359,7 +5359,7 @@ export default function CheckoutV2Page() {
                   const needsMint = s.status === "idle";
                   const busy = addressReady && !retryable && !needsMint &&
                     (s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount);
-                  const disabled = false;
+                  
                   const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
                   const pressed = tappedUpiApp === app.key;
                   return (
