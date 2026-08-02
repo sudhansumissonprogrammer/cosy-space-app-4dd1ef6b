@@ -78,6 +78,16 @@ export function usePaymentResumeGuard(storeId?: string | null, slug?: string | n
         // original wall-clock budget (CheckoutV2Page never restarts it).
         // Anything terminal-negative is cleared so we don't hijack browsing.
         if (status === "success" || status === "pending") {
+          // Bounce at most ONCE per order: a shopper who consciously abandoned a
+          // pending payment must be able to keep browsing without being yanked
+          // back to checkout on every route change.
+          const onceKey = `sf_resume_done_${orderId}`;
+          if (status === "pending") {
+            try {
+              if (sessionStorage.getItem(onceKey)) return;
+              sessionStorage.setItem(onceKey, "1");
+            } catch { /* noop */ }
+          }
           navigate(storefrontPath(slug || "", "checkout"), { replace: false });
         } else {
           clear(waitKey);
