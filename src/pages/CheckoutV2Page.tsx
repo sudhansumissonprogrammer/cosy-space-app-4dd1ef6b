@@ -2731,10 +2731,20 @@ export default function CheckoutV2Page() {
       try {
         window.history.replaceState(null, "", window.location.pathname + window.location.search);
       } catch { /* noop */ }
-      // The targeted app is not installed on this device — immediately open
-      // the system UPI chooser, which lists only the apps the shopper has.
+      // Android could not start the UPI intent at all. Try the raw `upi://`
+      // link once (some OEM browsers resolve it even when they bounce the
+      // intent URL); if that also does nothing, release the shopper straight
+      // away instead of holding them on a 90s spinner.
       fireChooser();
+      window.setTimeout(() => {
+        if (isStale() || leftCheckout) return;
+        if (document.visibilityState !== "visible") return;
+        try { if (!document.hasFocus()) return; } catch { /* noop */ }
+        try { stopWaitingForPayment("No UPI app found on this phone. Try another app or pay by card."); } catch { /* noop */ }
+        try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { reason: "android_no_upi_app_fallback", method: `upi_${app}`, dev: deviceTag() } as any }); } catch { /* noop */ }
+      }, 3500);
     };
+
     const cleanupLaunchListeners = () => {
       window.removeEventListener("blur", markLeft);
       window.removeEventListener("pagehide", markLeft);
