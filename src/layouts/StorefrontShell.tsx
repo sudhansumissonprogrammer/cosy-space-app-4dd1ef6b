@@ -13,6 +13,7 @@ import { ensureFbcPersisted, getOrCreateSfVid, seedCapiUserFromStorage } from "@
 import { useGA4 } from "@/hooks/useGA4";
 import { usePageviewBeacon } from "@/hooks/usePageviewBeacon";
 import { useLiveHeartbeat } from "@/hooks/useLiveHeartbeat";
+import { usePaymentResumeGuard } from "@/hooks/usePaymentResumeGuard";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 
 import { buildThemeStyle, loadGoogleFonts } from "@/lib/themeUtils";
@@ -282,6 +283,11 @@ export default function StorefrontShell({
   // Live visitors: 20s heartbeat while the tab is visible. Powers an accurate
   // "people browsing now" count (shoppers who leave age out within 60s).
   useLiveHeartbeat(store?.id);
+
+  // Instagram/FB webviews often reload the ORIGINAL entry URL after a UPI
+  // hand-off instead of /checkout. Verify any fresh payment wait marker and
+  // bounce the shopper back into checkout so they see confirmation / retry.
+  usePaymentResumeGuard(store?.id, store?.slug);
 
   // Capture ?coupon=CODE from any storefront URL into sessionStorage so it survives
   // navigation through product → cart → checkout (where it auto-applies).
