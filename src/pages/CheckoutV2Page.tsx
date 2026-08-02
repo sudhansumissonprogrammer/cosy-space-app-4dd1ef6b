@@ -1436,7 +1436,12 @@ export default function CheckoutV2Page() {
    *  the intent turns ready. Expires so a stale tap can never launch later. */
   const pendingUpiTapRef = useRef<{ app: UpiApp; at: number } | null>(null);
   const tapUpiAppRef = useRef<((app: UpiApp, event?: any, opts?: { gesture?: boolean }) => void) | null>(null);
-  const PENDING_TAP_TTL_MS = 20000;
+  // A queued tap must survive a full re-mint chain (place-order + PayU S2S can
+  // take 3-10s, and an address/coupon change can chain two of them). 20s was
+  // too short: the queued tap silently expired and the shopper's press was
+  // thrown away.
+  const PENDING_TAP_TTL_MS = 45000;
+
 
 
   const gatewayRef = useRef<{
@@ -5344,20 +5349,33 @@ export default function CheckoutV2Page() {
                   // retry (see tapUpiApp). `idle` must stay tappable too: after
                   // a cancelled/declined attempt we deliberately drop the stale
                   // single-use intents back to idle, and the tap is what mints
-                  // a fresh one. Only block truly in-flight states.
+                  // a fresh one.
+                  //
+                  // CRITICAL: a `loading` / re-minting / amount-syncing tile
+                  // must ALSO stay tappable. Address edits, coupon changes and
+                  // the debounced ship-identity snapshot re-mint the intent
+                  // every few seconds; while that runs the tile used to get
+                  // `pointer-events-none`, so the shopper tapped PhonePe and
+                  // literally nothing happened — no launch, no queue, not even
+                  // a telemetry event. tapUpiApp already queues a tap made
+                  // during a mint and auto-launches the instant it is ready,
+                  // so never block the pointer. Only show a spinner.
                   const retryable = s.status === "failed";
                   const needsMint = s.status === "idle";
-                  const disabled = addressReady && !retryable && !needsMint && (s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount);
+                  const busy = addressReady && !retryable && !needsMint &&
+                    (s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount);
+                  
                   const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
                   const pressed = tappedUpiApp === app.key;
                   return (
                     <a
                       key={app.key}
-                      href={disabled || retryable || needsMint || !addressReady ? undefined : s.url}
+                      href={busy || retryable || needsMint || !addressReady ? undefined : s.url}
                       onClick={(e) => tapUpiApp(app.key, e)}
-                      aria-disabled={disabled}
-                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-[0.92] transition-[transform,box-shadow,opacity] duration-150 ease-out p-2.5 min-h-[92px] relative overflow-hidden select-none touch-manipulation ${pressed ? "scale-[0.96] ring-2 ring-primary shadow-[0_6px_16px_-6px_rgba(0,0,0,0.35)]" : "shadow-[0_1px_2px_rgba(0,0,0,0.04)]"} ${disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""} ${retryable ? "opacity-70" : ""}`}
+                      aria-busy={busy}
+                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-[0.92] transition-[transform,box-shadow,opacity] duration-150 ease-out p-2.5 min-h-[92px] relative overflow-hidden select-none touch-manipulation cursor-pointer ${pressed ? "scale-[0.96] ring-2 ring-primary shadow-[0_6px_16px_-6px_rgba(0,0,0,0.35)]" : "shadow-[0_1px_2px_rgba(0,0,0,0.04)]"} ${busy ? "opacity-70" : ""} ${retryable ? "opacity-70" : ""}`}
                     >
+
 
                       {pressed && (
                         <span className="pointer-events-none absolute inset-0 rounded-lg bg-primary/10 animate-[fade-in_0.15s_ease-out]" aria-hidden="true" />
@@ -5383,11 +5401,14 @@ export default function CheckoutV2Page() {
                 const addressReady = addressComplete;
                 const anyRetryable = anyS.status === "failed";
                 const anyNeedsMint = anyS.status === "idle";
-                const anyDisabled = addressReady && !anyRetryable && !anyNeedsMint && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
+                // Busy = a mint/re-mint is in flight. Stays TAPPABLE (the tap is
+                // queued and auto-launches when ready) — blocking pointer events
+                // here was the "I tap PhonePe and nothing opens" bug.
+                const anyBusy = addressReady && !anyRetryable && !anyNeedsMint && (anyS.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAny);
                 const anyPressed = tappedUpiApp === "any";
                 return (
                   <a
-                    href={anyDisabled || anyRetryable || anyNeedsMint || !addressReady || isIOS() ? undefined : anyS.url}
+                    href={anyBusy || anyRetryable || anyNeedsMint || !addressReady || isIOS() ? undefined : anyS.url}
 
                     onClick={(e) => {
                       // iOS has no Android-style `upi://` chooser. Sending an
@@ -5402,9 +5423,10 @@ export default function CheckoutV2Page() {
                       }
                       tapUpiApp("any", e);
                     }}
-                    aria-disabled={anyDisabled}
-                    className={`mt-3 w-full flex items-center justify-between border rounded-lg px-3 py-2.5 select-none touch-manipulation active:scale-[0.97] transition-[transform,box-shadow,border-color] duration-150 ease-out ${anyPressed ? "scale-[0.98] border-primary ring-2 ring-primary/40 bg-primary/5" : "border-[#ECECEC]"} ${anyDisabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""}`}
+                    aria-busy={anyBusy}
+                    className={`mt-3 w-full flex items-center justify-between border rounded-lg px-3 py-2.5 select-none touch-manipulation cursor-pointer active:scale-[0.97] transition-[transform,box-shadow,border-color] duration-150 ease-out ${anyPressed ? "scale-[0.98] border-primary ring-2 ring-primary/40 bg-primary/5" : "border-[#ECECEC]"} ${anyBusy ? "opacity-70" : ""}`}
                   >
+
                     <span className="text-[13px] font-semibold">All UPI Apps</span>
                     <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
                       {anyPressed ? "Opening…" : isIOS() ? "Choose payment app" : "Pay with any UPI app"}
