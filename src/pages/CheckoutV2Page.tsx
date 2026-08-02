@@ -228,17 +228,24 @@ const UPI_DIRECT_OPEN_APPS: UpiApp[] = [];
 /** Rewrite `upi://pay?...` to the safest app launch URL for the shopper's device. */
 function schemeFor(app: UpiApp, url: string): string {
   if (!url) return url;
-  if (app === "any") return url;
   const m = url.match(/^upi:\/\/[^?]*\?(.+)$/i);
   const query = m?.[1];
   if (!query) return url;
 
   if (isAndroid()) {
+    // EVERY tile (including "Any UPI app") goes through a package-LESS
+    // `intent://` URL. Android still shows its own chooser listing only the
+    // UPI apps actually installed — the behaviour the merchant asked for — but
+    // unlike a raw `upi://` link an intent URL is reliably handled by in-app
+    // webviews (Instagram / Facebook / WhatsApp) AND carries a
+    // browser_fallback_url, so "no UPI app on this phone" is detected within a
+    // second instead of stranding the shopper on a 90s spinner.
     const packageName = UPI_DIRECT_OPEN_APPS.includes(app) ? UPI_ANDROID_PACKAGES[app] : undefined;
-    if (packageName) return androidIntentForUpi(query, packageName, `upi://pay?${query}`);
-    // Everything else: hand the raw UPI intent to the OS chooser.
-    return `upi://pay?${query}`;
+    return androidIntentForUpi(query, packageName);
   }
+
+  if (app === "any") return url;
+
 
 
   // iOS has no UPI chooser — a plain upi:// link resolves to nothing (or to an
