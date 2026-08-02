@@ -74,27 +74,31 @@ export function usePaymentResumeGuard(storeId?: string | null, slug?: string | n
       .then(({ data }) => {
         if (cancelled) return;
         const status = (data as any)?.payment_status;
-        // `success` → confirmation screen. `pending` → processing screen with the
-        // original wall-clock budget (CheckoutV2Page never restarts it).
-        // Anything terminal-negative is cleared so we don't hijack browsing.
-        if (status === "success" || status === "pending") {
-          // Bounce at most ONCE per order: a shopper who consciously abandoned a
-          // pending payment must be able to keep browsing without being yanked
-          // back to checkout on every route change.
-          const onceKey = `sf_resume_done_${orderId}`;
-          if (status === "pending") {
-            try {
-              if (sessionStorage.getItem(onceKey)) return;
-              sessionStorage.setItem(onceKey, "1");
-            } catch { /* noop */ }
-          }
-          navigate(storefrontPath(slug || "", "checkout"), { replace: false });
-        } else {
+        if (status !== "success" && status !== "pending" && status !== "failed") {
           clear(waitKey);
           clear(payuKey);
+          return;
         }
+        // Bounce at most ONCE per order — for EVERY status, not just pending.
+        // Without a once-guard on `success` the shopper who presses Back from
+        // the confirmation screen is thrown straight back to it (history trap),
+        // and `failed` needs exactly one trip so CheckoutV2Page can render the
+        // retry screen instead of us silently dropping a recoverable sale.
+        // The flag is mirrored in localStorage because Instagram/Facebook
+        // webviews wipe sessionStorage between relaunches — a session-only flag
+        // would let the loop start over on the next cold open.
+        const onceKey = `sf_resume_done_${orderId}`;
+        try {
+          if (sessionStorage.getItem(onceKey) || localStorage.getItem(onceKey)) return;
+          sessionStorage.setItem(onceKey, "1");
+          localStorage.setItem(onceKey, "1");
+        } catch { /* noop */ }
+        // `replace` so the page we came from stays the Back target; pushing a
+        // checkout entry on top of it made Back re-trigger this guard forever.
+        navigate(storefrontPath(slug || "", "checkout"), { replace: true });
       })
       .catch(() => { /* offline / cold start — retry on the next pageload */ });
+
 
     return () => { cancelled = true; };
   }, [storeId, slug, pathname, navigate]);
