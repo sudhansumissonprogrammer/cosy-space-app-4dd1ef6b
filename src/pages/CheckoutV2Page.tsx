@@ -5344,20 +5344,33 @@ export default function CheckoutV2Page() {
                   // retry (see tapUpiApp). `idle` must stay tappable too: after
                   // a cancelled/declined attempt we deliberately drop the stale
                   // single-use intents back to idle, and the tap is what mints
-                  // a fresh one. Only block truly in-flight states.
+                  // a fresh one.
+                  //
+                  // CRITICAL: a `loading` / re-minting / amount-syncing tile
+                  // must ALSO stay tappable. Address edits, coupon changes and
+                  // the debounced ship-identity snapshot re-mint the intent
+                  // every few seconds; while that runs the tile used to get
+                  // `pointer-events-none`, so the shopper tapped PhonePe and
+                  // literally nothing happened — no launch, no queue, not even
+                  // a telemetry event. tapUpiApp already queues a tap made
+                  // during a mint and auto-launches the instant it is ready,
+                  // so never block the pointer. Only show a spinner.
                   const retryable = s.status === "failed";
                   const needsMint = s.status === "idle";
-                  const disabled = addressReady && !retryable && !needsMint && (s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount);
+                  const busy = addressReady && !retryable && !needsMint &&
+                    (s.status !== "ready" || creatingOrder || couponLoading || paymentAmountSyncing || staleAmount);
+                  const disabled = false;
                   const bg = ["bg-sky-50", "bg-purple-50", "bg-orange-50", "bg-rose-50"][i] || "bg-gray-50";
                   const pressed = tappedUpiApp === app.key;
                   return (
                     <a
                       key={app.key}
-                      href={disabled || retryable || needsMint || !addressReady ? undefined : s.url}
+                      href={busy || retryable || needsMint || !addressReady ? undefined : s.url}
                       onClick={(e) => tapUpiApp(app.key, e)}
-                      aria-disabled={disabled}
-                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-[0.92] transition-[transform,box-shadow,opacity] duration-150 ease-out p-2.5 min-h-[92px] relative overflow-hidden select-none touch-manipulation ${pressed ? "scale-[0.96] ring-2 ring-primary shadow-[0_6px_16px_-6px_rgba(0,0,0,0.35)]" : "shadow-[0_1px_2px_rgba(0,0,0,0.04)]"} ${disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""} ${retryable ? "opacity-70" : ""}`}
+                      aria-busy={busy}
+                      className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-[0.92] transition-[transform,box-shadow,opacity] duration-150 ease-out p-2.5 min-h-[92px] relative overflow-hidden select-none touch-manipulation cursor-pointer ${pressed ? "scale-[0.96] ring-2 ring-primary shadow-[0_6px_16px_-6px_rgba(0,0,0,0.35)]" : "shadow-[0_1px_2px_rgba(0,0,0,0.04)]"} ${busy ? "opacity-70" : ""} ${retryable ? "opacity-70" : ""}`}
                     >
+
 
                       {pressed && (
                         <span className="pointer-events-none absolute inset-0 rounded-lg bg-primary/10 animate-[fade-in_0.15s_ease-out]" aria-hidden="true" />
