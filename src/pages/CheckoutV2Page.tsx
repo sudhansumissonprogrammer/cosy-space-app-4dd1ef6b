@@ -2793,10 +2793,12 @@ export default function CheckoutV2Page() {
     if (isAndroid() && !inAppWebview) {
       // Recovery for "the tap did nothing" on real Android Chrome only.
       //
-      // In system-chooser mode every branded tile launches the SAME
-      // `upi://pay?…` url, so the old fallback (`launch the generic url`) was a
-      // silent no-op. Correct recovery: re-attempt the exact same launch once
-      // (some OEM WebViews swallow the first external-scheme hop).
+      // Re-attempt the EXACT same launch once (some OEM WebViews swallow the
+      // first external-scheme hop). Deliberately never escalate to the generic
+      // `upi://` chooser here: for the direct-open tiles (GPay / PhonePe) that
+      // would pop the very app-picker sheet the tile exists to avoid, and the
+      // real "app not installed" case is already handled instantly by the
+      // `#upi_fb` browser_fallback_url hop.
       //
       // Deliberately NOT done in in-app webviews: there the first hop opens a
       // "leaving the app" confirm sheet, and a second navigation while that
@@ -2807,8 +2809,9 @@ export default function CheckoutV2Page() {
         try { if (!document.hasFocus()) return; } catch { /* noop */ }
         if (chooserFired) return;
         chooserFired = true;
-        launchUpiUrl(anyUpiUrl && anyUpiUrl !== s.url ? anyUpiUrl : s.url);
+        launchUpiUrl(s.url);
       }, 12000 + UPI_LAUNCH_DELAY_MS);
+
     }
 
 
