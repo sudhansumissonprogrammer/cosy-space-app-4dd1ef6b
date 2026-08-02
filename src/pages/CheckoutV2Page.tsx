@@ -1436,7 +1436,12 @@ export default function CheckoutV2Page() {
    *  the intent turns ready. Expires so a stale tap can never launch later. */
   const pendingUpiTapRef = useRef<{ app: UpiApp; at: number } | null>(null);
   const tapUpiAppRef = useRef<((app: UpiApp, event?: any, opts?: { gesture?: boolean }) => void) | null>(null);
-  const PENDING_TAP_TTL_MS = 20000;
+  // A queued tap must survive a full re-mint chain (place-order + PayU S2S can
+  // take 3-10s, and an address/coupon change can chain two of them). 20s was
+  // too short: the queued tap silently expired and the shopper's press was
+  // thrown away.
+  const PENDING_TAP_TTL_MS = 45000;
+
 
 
   const gatewayRef = useRef<{
