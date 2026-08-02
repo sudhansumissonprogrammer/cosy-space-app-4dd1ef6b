@@ -13,6 +13,7 @@ import { ensureFbcPersisted, getOrCreateSfVid, seedCapiUserFromStorage } from "@
 import { useGA4 } from "@/hooks/useGA4";
 import { usePageviewBeacon } from "@/hooks/usePageviewBeacon";
 import { useLiveHeartbeat } from "@/hooks/useLiveHeartbeat";
+import { usePaymentResumeGuard } from "@/hooks/usePaymentResumeGuard";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 
 import { buildThemeStyle, loadGoogleFonts } from "@/lib/themeUtils";
