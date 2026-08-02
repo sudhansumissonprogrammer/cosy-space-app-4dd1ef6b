@@ -117,27 +117,29 @@ const UPI_ANDROID_PACKAGES: Partial<Record<UpiApp, string>> = {
  *  checkout state survives and we can instantly show the UPI app chooser. */
 const UPI_FALLBACK_HASH = "upi_fb";
 
-function androidIntentForUpi(query: string, packageName: string, _fallbackUrl: string): string {
+function upiFallbackUrl(): string {
   // Chrome only honours S.browser_fallback_url when it is http(s). Pointing it
-  // at the full checkout URL caused a hard reload whenever the targeted app was
-  // missing — the shopper lost the page and never saw a chooser. Instead point
-  // it at the SAME url with a `#upi_fb` fragment: Chrome treats it as a legal
-  // https fallback but the browser performs a same-document navigation (no
-  // reload), and tapUpiApp listens for the hashchange to immediately launch the
-  // universal `upi://pay` chooser, which lists only the UPI apps actually
-  // installed on the device.
+  // at the full checkout URL caused a hard reload whenever no app could handle
+  // the intent — the shopper lost the page. Instead point it at the SAME url
+  // with a `#upi_fb` fragment: Chrome accepts it as a legal https fallback but
+  // performs a same-document navigation (no reload), and tapUpiApp listens for
+  // the hashchange to react instantly.
   const base = typeof window !== "undefined"
     ? window.location.href.split("#")[0]
     : "https://shopbanao.in";
-  const httpsFallback = `${base}#${UPI_FALLBACK_HASH}`;
+  return `${base}#${UPI_FALLBACK_HASH}`;
+}
+
+function androidIntentForUpi(query: string, packageName?: string): string {
   return (
     `intent://pay?${query}#Intent;scheme=upi;` +
     `action=android.intent.action.VIEW;` +
     `category=android.intent.category.BROWSABLE;` +
-    `package=${packageName};` +
-    `S.browser_fallback_url=${encodeURIComponent(httpsFallback)};end`
+    (packageName ? `package=${packageName};` : "") +
+    `S.browser_fallback_url=${encodeURIComponent(upiFallbackUrl())};end`
   );
 }
+
 
 
 function extractUpiQuery(url: string): string | null {
@@ -226,17 +228,24 @@ const UPI_DIRECT_OPEN_APPS: UpiApp[] = [];
 /** Rewrite `upi://pay?...` to the safest app launch URL for the shopper's device. */
 function schemeFor(app: UpiApp, url: string): string {
   if (!url) return url;
-  if (app === "any") return url;
   const m = url.match(/^upi:\/\/[^?]*\?(.+)$/i);
   const query = m?.[1];
   if (!query) return url;
 
   if (isAndroid()) {
+    // EVERY tile (including "Any UPI app") goes through a package-LESS
+    // `intent://` URL. Android still shows its own chooser listing only the
+    // UPI apps actually installed — the behaviour the merchant asked for — but
+    // unlike a raw `upi://` link an intent URL is reliably handled by in-app
+    // webviews (Instagram / Facebook / WhatsApp) AND carries a
+    // browser_fallback_url, so "no UPI app on this phone" is detected within a
+    // second instead of stranding the shopper on a 90s spinner.
     const packageName = UPI_DIRECT_OPEN_APPS.includes(app) ? UPI_ANDROID_PACKAGES[app] : undefined;
-    if (packageName) return androidIntentForUpi(query, packageName, `upi://pay?${query}`);
-    // Everything else: hand the raw UPI intent to the OS chooser.
-    return `upi://pay?${query}`;
+    return androidIntentForUpi(query, packageName);
   }
+
+  if (app === "any") return url;
+
 
 
   // iOS has no UPI chooser — a plain upi:// link resolves to nothing (or to an
@@ -2722,10 +2731,20 @@ export default function CheckoutV2Page() {
       try {
         window.history.replaceState(null, "", window.location.pathname + window.location.search);
       } catch { /* noop */ }
-      // The targeted app is not installed on this device — immediately open
-      // the system UPI chooser, which lists only the apps the shopper has.
+      // Android could not start the UPI intent at all. Try the raw `upi://`
+      // link once (some OEM browsers resolve it even when they bounce the
+      // intent URL); if that also does nothing, release the shopper straight
+      // away instead of holding them on a 90s spinner.
       fireChooser();
+      window.setTimeout(() => {
+        if (isStale() || leftCheckout) return;
+        if (document.visibilityState !== "visible") return;
+        try { if (!document.hasFocus()) return; } catch { /* noop */ }
+        try { stopWaitingForPayment("No UPI app found on this phone. Try another app or pay by card."); } catch { /* noop */ }
+        try { fireStorefrontEvent({ storeId: store.id, eventName: "payment_failed" as any, metadata: { reason: "android_no_upi_app_fallback", method: `upi_${app}`, dev: deviceTag() } as any }); } catch { /* noop */ }
+      }, 3500);
     };
+
     const cleanupLaunchListeners = () => {
       window.removeEventListener("blur", markLeft);
       window.removeEventListener("pagehide", markLeft);
