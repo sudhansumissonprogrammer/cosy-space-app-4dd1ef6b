@@ -2478,8 +2478,8 @@ async function _getThemeLite(slug, env) {
 
   if (!env?.STORE_KV) return null;
   try {
+    // v8.76.0 — legacy unversioned fallback removed (never written = always a miss).
     let kvData = await env.STORE_KV.get(`theme-lite:${WORKER_VERSION}:${slug}`, { type: "json" });
-    if (!kvData) kvData = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" });
     if (kvData && kvData.wv !== WORKER_VERSION) kvData = null;
     if (kvData) {
       _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
