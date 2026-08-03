@@ -2289,16 +2289,18 @@ async function _batchKvRead(slug, env, extra = null) {
     // image list too so cold category cold loads get the RIGHT preloads
     // (not the homepage carousel images).
     const catSlug = extra && extra.kind === "category" && extra.slug ? extra.slug : null;
+    // v8.76.0 — dropped the legacy unversioned `theme-lite:<slug>` read.
+    // Nothing has written that key since versioned keys landed, so it was a
+    // guaranteed KV "not found" on EVERY storefront shell request.
     const promises = [
       env.STORE_KV.get(`theme-lite:${WORKER_VERSION}:${slug}`, { type: "json" }).catch(() => null),
-      env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" }).catch(() => null),
       env.STORE_KV.get(`imgs:${slug}`, { type: "json" }).catch(() => null),
       catSlug
         ? env.STORE_KV.get(`imgs:${slug}:cat:${catSlug}`, { type: "json" }).catch(() => null)
         : Promise.resolve(null),
     ];
-    const [themeV, themeLegacy, imgs, catImgs] = await Promise.all(promises);
-    let theme = themeV || themeLegacy;
+    const [themeV, imgs, catImgs] = await Promise.all(promises);
+    let theme = themeV;
     if (theme && theme.wv !== WORKER_VERSION) theme = null;
     return {
       theme,
@@ -2476,8 +2478,8 @@ async function _getThemeLite(slug, env) {
 
   if (!env?.STORE_KV) return null;
   try {
+    // v8.76.0 — legacy unversioned fallback removed (never written = always a miss).
     let kvData = await env.STORE_KV.get(`theme-lite:${WORKER_VERSION}:${slug}`, { type: "json" });
-    if (!kvData) kvData = await env.STORE_KV.get(`theme-lite:${slug}`, { type: "json" });
     if (kvData && kvData.wv !== WORKER_VERSION) kvData = null;
     if (kvData) {
       _capMapSize(_memThemeCache, MEM_THEME_CACHE_MAX);
