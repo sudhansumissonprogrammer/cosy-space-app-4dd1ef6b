@@ -265,7 +265,7 @@ Deno.serve(async (req) => {
             if (dedupeErr) alreadyProcessed = true;
           }
 
-          if (!alreadyProcessed && (finalBody || mediaUrl)) {
+          if (!alreadyProcessed && (finalBody || mediaUrl || mediaIdStored)) {
             await adminClient.from("whatsapp_messages").insert({
               store_id: storeId,
               inferred_store_id: inferredStoreId,
@@ -278,6 +278,7 @@ Deno.serve(async (req) => {
               meta_message_id: msg?.id || null,
               media_url: mediaUrl,
               media_type: mediaType,
+              media_id: mediaIdStored,
               sent_via: isPlatformDelivery ? "platform" : "merchant",
             });
 
