@@ -218,10 +218,12 @@ Deno.serve(async (req) => {
           // Media handling
           let mediaUrl: string | null = null;
           let mediaType: string | null = null;
+          let mediaIdStored: string | null = null;
           const mediaTypes = ["image", "video", "document", "audio"];
           if (mediaTypes.includes(msgType) && msg[msgType]) {
             const mediaId = msg[msgType]?.id;
             mediaType = msgType;
+            mediaIdStored = mediaId || null;
             if (mediaId && mediaToken) {
               try {
                 const mediaResp = await fetch(
