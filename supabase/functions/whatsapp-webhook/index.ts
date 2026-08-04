@@ -218,10 +218,12 @@ Deno.serve(async (req) => {
           // Media handling
           let mediaUrl: string | null = null;
           let mediaType: string | null = null;
+          let mediaIdStored: string | null = null;
           const mediaTypes = ["image", "video", "document", "audio"];
           if (mediaTypes.includes(msgType) && msg[msgType]) {
             const mediaId = msg[msgType]?.id;
             mediaType = msgType;
+            mediaIdStored = mediaId || null;
             if (mediaId && mediaToken) {
               try {
                 const mediaResp = await fetch(
@@ -263,7 +265,7 @@ Deno.serve(async (req) => {
             if (dedupeErr) alreadyProcessed = true;
           }
 
-          if (!alreadyProcessed && (finalBody || mediaUrl)) {
+          if (!alreadyProcessed && (finalBody || mediaUrl || mediaIdStored)) {
             await adminClient.from("whatsapp_messages").insert({
               store_id: storeId,
               inferred_store_id: inferredStoreId,
@@ -276,6 +278,7 @@ Deno.serve(async (req) => {
               meta_message_id: msg?.id || null,
               media_url: mediaUrl,
               media_type: mediaType,
+              media_id: mediaIdStored,
               sent_via: isPlatformDelivery ? "platform" : "merchant",
             });
 

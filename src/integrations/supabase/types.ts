@@ -4461,6 +4461,7 @@ export type Database = {
           error_message: string | null
           id: string
           inferred_store_id: string | null
+          media_id: string | null
           media_type: string | null
           media_url: string | null
           message_body: string
@@ -4488,6 +4489,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           inferred_store_id?: string | null
+          media_id?: string | null
           media_type?: string | null
           media_url?: string | null
           message_body: string
@@ -4515,6 +4517,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           inferred_store_id?: string | null
+          media_id?: string | null
           media_type?: string | null
           media_url?: string | null
           message_body?: string
