@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { WaMediaBubble } from "./WaMediaBubble";
 import {
   MessageSquare, Send, XCircle, Clock, Search,
   Check, CheckCheck, ArrowLeft, Loader2,
