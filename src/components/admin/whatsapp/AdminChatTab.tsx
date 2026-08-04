@@ -376,10 +376,10 @@ export function AdminChatTab() {
                             <WaMediaBubble messageId={msg.id} mediaType={msg.media_type} />
                           )}
                           {(() => {
-                            const body = prettyTemplateName(msg.message_body);
+                            const raw = (msg.message_body || "").trim();
                             // "[audio]" / "[image]" is only a placeholder — the player replaces it.
-                            if (msg.media_type && (!body || body === `[${msg.media_type}]`)) return null;
-                            return <p className="text-[13px] whitespace-pre-wrap break-words">{body}</p>;
+                            if (msg.media_type && (!raw || raw === `[${msg.media_type}]`)) return null;
+                            return <p className="text-[13px] whitespace-pre-wrap break-words">{prettyTemplateName(msg.message_body)}</p>;
                           })()}
                           <div className="flex items-center justify-end gap-1 mt-0.5">
                             <span className="text-[10px] text-muted-foreground">{formatTime(msg.created_at)}</span>
