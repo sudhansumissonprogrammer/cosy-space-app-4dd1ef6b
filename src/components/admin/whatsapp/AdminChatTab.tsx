@@ -63,6 +63,13 @@ export function AdminChatTab() {
 
   const prettyTemplateName = (raw: string | null | undefined) => {
     if (!raw) return "";
+    const media: Record<string, string> = {
+      "[audio]": "🎤 Voice message",
+      "[image]": "🖼️ Photo",
+      "[video]": "🎬 Video",
+      "[document]": "📄 Document",
+    };
+    if (media[raw]) return media[raw];
     const m = /\[template:([^\]]+)\]/.exec(raw);
     if (!m) return raw;
     // order_confirmation_v2 → "📦 Order confirmation"
