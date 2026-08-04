@@ -364,7 +364,15 @@ export function AdminChatTab() {
                       )}
                       <div className={cn("flex mb-0.5", isOutgoing ? "justify-end" : "justify-start")}>
                         <div className={cn("max-w-[75%] rounded-lg px-3 py-1.5 shadow-sm", isOutgoing ? "bg-[hsl(142,40%,90%)] rounded-tr-sm" : "bg-card rounded-tl-sm border")}>
-                          <p className="text-[13px] whitespace-pre-wrap break-words">{prettyTemplateName(msg.message_body)}</p>
+                          {msg.media_type && (
+                            <WaMediaBubble messageId={msg.id} mediaType={msg.media_type} />
+                          )}
+                          {(() => {
+                            const body = prettyTemplateName(msg.message_body);
+                            // "[audio]" / "[image]" is only a placeholder — the player replaces it.
+                            if (msg.media_type && (!body || body === `[${msg.media_type}]`)) return null;
+                            return <p className="text-[13px] whitespace-pre-wrap break-words">{body}</p>;
+                          })()}
                           <div className="flex items-center justify-end gap-1 mt-0.5">
                             <span className="text-[10px] text-muted-foreground">{formatTime(msg.created_at)}</span>
                             {isOutgoing && statusIcon(msg.status)}
