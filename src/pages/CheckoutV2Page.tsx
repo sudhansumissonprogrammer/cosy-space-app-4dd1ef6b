@@ -2784,29 +2784,15 @@ export default function CheckoutV2Page() {
     // polling active even though the bank payment succeeded.
     armWaiting();
 
-    // Micro-delay so the shopper actually SEES the real "Complete payment in
-    // <app>" status screen (already armed above) before the UPI app takes
-    // over. Without it the handoff is instant and the tap feels like nothing
-    // happened / like a random app jump. iOS gets a much shorter beat because
-    // Safari/WKWebView drop custom-scheme navigations once the user gesture
-    // has gone stale.
-    // Android in-app webviews (Instagram/Facebook/WhatsApp) also enforce a
-    // user-activation window for external-scheme navigations — an 850ms timer
-    // is long enough for the activation to go stale there, so the tap silently
-    // does nothing. Hand off in the same tick for every webview; keep the beat
-    // only for real Chrome, where it is safe.
+    // Hand off in the SAME tick as the tap on every device. Android Chrome,
+    // OEM browsers and in-app webviews all enforce a user-activation window
+    // for external-scheme navigations: any timer risks the hop being dropped
+    // silently ("I tapped PhonePe and nothing happened; after cancel + retry
+    // it opened"). The "Complete payment in <app>" screen is already armed
+    // above, so the shopper still gets the status UI.
     const inAppWebview = !deviceTag().endsWith(":browser");
-    if (isIOS() || inAppWebview) {
-      // Same-tick navigation — see UPI_LAUNCH_DELAY_IOS_MS. Any deferral risks
-      // the webview dropping the custom-scheme hop entirely.
-      launchUpiUrl(s.url);
-    } else {
-      window.setTimeout(() => {
-        // Launch the app via a real anchor activation (some OEM Chrome/WebView
-        // builds ignore location.assign for non-http schemes).
-        launchUpiUrl(s.url);
-      }, UPI_LAUNCH_DELAY_MS);
-    }
+    trackTap("launch");
+    launchUpiUrl(s.url);
 
 
 
