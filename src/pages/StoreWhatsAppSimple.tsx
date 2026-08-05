@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, ShoppingCart, CheckCircle2, Truck } from "lucide-react";
+import { MessageSquare, ShoppingCart, CheckCircle2, Truck, Inbox, Zap } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { StoreInbox } from "@/components/whatsapp/StoreInbox";
 import { toast } from "sonner";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
