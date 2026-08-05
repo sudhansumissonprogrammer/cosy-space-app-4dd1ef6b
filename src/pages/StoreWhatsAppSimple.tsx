@@ -71,18 +71,34 @@ export default function StoreWhatsAppSimple() {
   ];
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-5">
       <div>
         <h1 className="text-xl font-bold flex items-center gap-2">
           <MessageSquare className="h-6 w-6 text-green-600" />
-          WhatsApp Marketing
+          WhatsApp
         </h1>
         <p className="text-sm text-muted-foreground mt-0.5">
           Powered by ShopBanao&apos;s verified WhatsApp number — no setup required.
         </p>
       </div>
 
+      <Tabs defaultValue="inbox" className="space-y-5">
+        <TabsList>
+          <TabsTrigger value="inbox" className="gap-1.5">
+            <Inbox className="h-4 w-4" /> Inbox
+          </TabsTrigger>
+          <TabsTrigger value="automations" className="gap-1.5">
+            <Zap className="h-4 w-4" /> Automations
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="inbox" className="m-0">
+          <StoreInbox storeId={storeId} />
+        </TabsContent>
+
+        <TabsContent value="automations" className="m-0 space-y-6 max-w-3xl">
       <Card>
+
         <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
           <div>
             <CardTitle className="text-base">Enable ShopBanao Marketing</CardTitle>
