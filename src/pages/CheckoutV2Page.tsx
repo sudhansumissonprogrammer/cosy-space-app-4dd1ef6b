@@ -164,11 +164,13 @@ function genericUpiUrl(url: string): string | null {
  * location.assign if that throws.
  */
 /** Visible "order processing" beat before the UPI app takes over (ms).
- *  iOS/WKWebView only honours a custom-scheme navigation while the user
- *  gesture is still "fresh" — a long timer gets silently swallowed, so the
- *  shopper taps GPay and literally nothing happens. Keep the beat for Android
- *  (which has no such restriction) and hand off almost immediately on iOS. */
-const UPI_LAUNCH_DELAY_MS = 850;
+ *  MUST stay 0. Android Chrome (and every in-app webview) only honours an
+ *  external-scheme navigation while the tap's user-activation is still alive;
+ *  the old 850ms beat pushed the hop outside that window on slower devices, so
+ *  the FIRST tap silently did nothing and only the retry (fresh activation +
+ *  already-minted intent) opened the app. The wait screen is armed before the
+ *  hop anyway, so the shopper still sees the status UI. */
+const UPI_LAUNCH_DELAY_MS = 0;
 /** iOS: navigate in the SAME tick as the tap. Any timer — even 120ms — can
  *  push the custom-scheme navigation outside the "user activation" window in
  *  WKWebView (Instagram/WhatsApp in-app browsers are the strictest), and the
@@ -2593,6 +2595,18 @@ export default function CheckoutV2Page() {
   const tapUpiApp = (app: UpiApp, event?: MouseEvent<HTMLAnchorElement | HTMLButtonElement>, opts?: { gesture?: boolean }) => {
     const gesture = opts?.gesture !== false;
     event?.preventDefault();
+    // Telemetry: EVERY tile tap is recorded with the branch it took. Without
+    // this we could only see launches, so "I tapped PhonePe and nothing
+    // happened" was invisible in analytics (322 continue_to_pay vs 44 launches).
+    const trackTap = (outcome: string) => {
+      try {
+        fireStorefrontEvent({
+          storeId: store.id,
+          eventName: "pay_click" as any,
+          metadata: { step: "upi_tile", outcome, gesture, method: `upi_${app}`, dev: deviceTag() } as any,
+        });
+      } catch { /* noop */ }
+    };
     // Instant tactile + visual acknowledgement of the tap. Runs before any
     // guard so the shopper always *feels* the press, even when we end up
     // re-minting instead of launching.
@@ -2604,6 +2618,7 @@ export default function CheckoutV2Page() {
       flashUpiTap(app, PENDING_TAP_TTL_MS);
     };
     if (creatingOrder || couponLoading || paymentAmountSyncing) {
+      trackTap("queued_preparing");
       queueTap();
       return;
     }
