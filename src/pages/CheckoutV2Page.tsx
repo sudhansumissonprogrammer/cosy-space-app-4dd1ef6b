@@ -2624,7 +2624,7 @@ export default function CheckoutV2Page() {
     }
     // PAYMENT-FIRST address gate — if no address, open the sheet and remember
     // this tap so we auto-resume the UPI launch after the shopper saves.
-    if (!requireAddressOrPrompt(() => tapUpiApp(app, undefined, { gesture: false }))) { pendingUpiTapRef.current = null; clearUpiTapFx(); return; }
+    if (!requireAddressOrPrompt(() => tapUpiApp(app, undefined, { gesture: false }))) { trackTap("address_gate"); pendingUpiTapRef.current = null; clearUpiTapFx(); return; }
     const s = intents[app];
     // A failed tile used to be a dead end (silent return + pointer-events-none),
     // so a shopper who hit one transient gateway error could never pay by UPI
@@ -2634,6 +2634,7 @@ export default function CheckoutV2Page() {
       mintLoopBlockedRef.current = false;
       lastMintAtRef.current = 0;
       toast.info("Retrying…");
+      trackTap("queued_failed_remint");
       queueTap();
       void createOrderAndIntents({ userInitiated: true });
       return;
@@ -2641,6 +2642,7 @@ export default function CheckoutV2Page() {
     if (s.status !== "ready" || !s.url) {
       // Still minting (or not started yet) — remember the tap and make sure a
       // mint is actually in flight, then let the pending-tap effect launch it.
+      trackTap(s.status === "idle" ? "queued_idle" : "queued_minting");
       queueTap();
       if (s.status === "idle") void createOrderAndIntents({ userInitiated: true });
       return;
@@ -2653,6 +2655,7 @@ export default function CheckoutV2Page() {
     // UPI app never opens for the wrong amount.
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) {
       toast.info("Updating amount…");
+      trackTap("queued_amount_changed");
       queueTap();
       void createOrderAndIntents({ userInitiated: true });
       return;
@@ -2668,6 +2671,7 @@ export default function CheckoutV2Page() {
       mintLoopBlockedRef.current = false;
       lastMintAtRef.current = 0;
       toast.info("Refreshing payment…");
+      trackTap("queued_intent_expired");
       queueTap();
       void createOrderAndIntents({ userInitiated: true });
       return;
@@ -2680,6 +2684,7 @@ export default function CheckoutV2Page() {
     // the delivery boy sees the corrected address.
     if (shipIdentityRef.current !== debouncedShipIdentity) {
       toast.info("Updating details…");
+      trackTap("queued_address_flush");
       queueTap();
       flushShipIdentity();
       return;
