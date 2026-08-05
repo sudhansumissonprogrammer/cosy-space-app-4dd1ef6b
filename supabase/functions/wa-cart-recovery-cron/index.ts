@@ -83,7 +83,10 @@ Deno.serve(async (req) => {
     .not("customer_phone", "is", null)
     .lte("created_at", beforeIso)
     .gte("created_at", afterIso)
-    .limit(200);
+    // Newest first + higher ceiling: with 300+ live carts in the 72h window the
+    // old unordered limit(200) starved older leads waiting for step 2 / step 3.
+    .order("created_at", { ascending: false })
+    .limit(600);
   if (requireConsent) q = q.eq("wa_marketing_consent", true);
   const { data: normalCarts, error } = await q;
 
@@ -98,7 +101,8 @@ Deno.serve(async (req) => {
     .eq("status", "pending")
     .lte("created_at", pendingCutoffIso)
     .gte("created_at", afterIso)
-    .limit(300);
+    .order("created_at", { ascending: false })
+    .limit(600);
 
   let fastLaneCarts: any[] = [];
   if (pendingOrders?.length) {
@@ -127,7 +131,8 @@ Deno.serve(async (req) => {
         .eq("recovered", false)
         .in("customer_phone", phones)
         .gte("created_at", afterIso)
-        .limit(200);
+        .order("created_at", { ascending: false })
+        .limit(400);
       if (requireConsent) fq = fq.eq("wa_marketing_consent", true);
       const { data: fc } = await fq;
       fastLaneCarts = fc ?? [];
@@ -445,7 +450,7 @@ Deno.serve(async (req) => {
     .lte("created_at", payDropMinAgeIso)
     .gte("created_at", afterIso)
     .order("created_at", { ascending: false })
-    .limit(200);
+    .limit(400);
 
   if (dropOrders?.length) {
     const dropStoreIds = Array.from(new Set(dropOrders.map((o: any) => o.store_id).filter(Boolean)));
