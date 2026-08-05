@@ -2707,7 +2707,7 @@ export default function CheckoutV2Page() {
       pendingUpiTapRef.current = null;
       clearUpiTapFx();
       toast.info(`Ready — tap ${label} to open the app`, { duration: 5000 });
-      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}`, step: isIOS() ? "ios_retap_prompt" : "webview_retap_prompt", dev: deviceTag() } as any }); } catch { /* noop */ }
+      trackTap("retap_prompt");
       return;
     }
 
