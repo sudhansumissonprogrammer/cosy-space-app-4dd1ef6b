@@ -289,12 +289,28 @@ export const DRIP_WINDOW_MS = 72 * 60 * 60 * 1000;
 // Without this, transient Meta errors made the 10-min cron re-fire forever.
 export const DRIP_RETRY_GAP_MS = 6 * 60 * 60 * 1000;
 export const DRIP_MAX_ATTEMPTS_24H = 3;
+// Soft failures get a shorter cooldown so the +5h step isn't pushed to +6h.
+export const DRIP_SOFT_RETRY_GAP_MS = 4 * 60 * 60 * 1000;
+export const DRIP_MAX_SOFT_ATTEMPTS_24H = 4;
 // Meta errors that mean "this number will never receive this message".
 // Retrying these only burns quality rating — block the number for the window.
-const PERMANENT_WA_ERRORS = ["131026", "131049", "131047", "131048", "131051", "133010", "470", "63024"];
+const PERMANENT_WA_ERRORS = ["131026", "131047", "131048", "131051", "133010", "470", "63024"];
+// TRANSIENT errors. These are NOT the shopper's fault and are NOT permanent:
+//   131049 → per-user marketing throttle ("healthy ecosystem engagement")
+//   130472 → user is in a Meta marketing experiment (time-boxed)
+//   131042 → business billing/eligibility (platform-level, fixes itself)
+//   131053 → media upload error (our header image, retryable)
+// Treating them as permanent silently killed step 2 and step 3 of the drip for
+// hundreds of leads, which is why almost nobody received all 3 messages.
+const SOFT_WA_ERRORS = ["131049", "130472", "131042", "131053", "131056", "131000"];
 export function isPermanentWaError(msg: string | null | undefined): boolean {
   const s = String(msg ?? "");
+  if (SOFT_WA_ERRORS.some((c) => s.includes(c))) return false;
   return PERMANENT_WA_ERRORS.some((c) => s.includes(c));
+}
+export function isSoftWaError(msg: string | null | undefined): boolean {
+  const s = String(msg ?? "");
+  return SOFT_WA_ERRORS.some((c) => s.includes(c));
 }
 
 export type DripDecision = {
