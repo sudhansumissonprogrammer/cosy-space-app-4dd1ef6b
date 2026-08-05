@@ -349,7 +349,7 @@ export async function recoveryDripDecision(admin: any, phone: string, opts: { ig
       .order("created_at", { ascending: false })
       .limit(20),
     admin.from("wa_send_queue")
-      .select("created_at, status")
+      .select("created_at, updated_at, status")
       .eq("recipient_phone", phone)
       .in("message_type", RECOVERY_MESSAGE_TYPES)
       .in("status", ["pending", "sending", "sent"])
@@ -368,18 +368,25 @@ export async function recoveryDripDecision(admin: any, phone: string, opts: { ig
 
   // A queue row marked `sent` may not yet have its whatsapp_messages twin —
   // union both sources by timestamp bucket (1 min) so we never double count.
+  // For queue rows use `updated_at` (the moment it flipped to sent), NOT
+  // created_at — a queued row can wait hours, and the mismatch made failed
+  // sends impossible to pair up, so they wrongly counted as delivered steps.
   const stamps = new Set<number>();
-  for (const r of ([...(sentRows as any[] ?? []), ...((queueRows as any[]) ?? []).filter((q) => q.status === "sent")])) {
+  for (const r of (sentRows as any[] ?? [])) {
     const t = new Date(r.created_at).getTime();
     if (Number.isFinite(t)) stamps.add(Math.round(t / 60000));
   }
+  for (const r of ((queueRows as any[]) ?? []).filter((q) => q.status === "sent")) {
+    const t = new Date(r.updated_at || r.created_at).getTime();
+    if (Number.isFinite(t)) stamps.add(Math.round(t / 60000));
+  }
   // Drop buckets whose delivery ultimately failed (queue said "sent", Meta
-  // rejected it). Match within ±2 minutes of the failed webhook timestamp.
+  // rejected it). ±15 min tolerance: the failure webhook can lag the send.
   for (const r of ((failedRows as any[]) ?? [])) {
     const t = new Date(r.created_at).getTime();
     if (!Number.isFinite(t)) continue;
     const b = Math.round(t / 60000);
-    for (const d of [-2, -1, 0, 1, 2]) stamps.delete(b + d);
+    for (let d = -15; d <= 15; d++) stamps.delete(b + d);
   }
 
   // ── Anti-spam retry guards ────────────────────────────────────────────────
@@ -387,31 +394,46 @@ export async function recoveryDripDecision(admin: any, phone: string, opts: { ig
   // count as attempts. Without this the 10-min cron re-fired the same template
   // forever whenever Meta rejected it.
   const failed = ((failedRows as any[]) ?? []).filter((r) => Number.isFinite(new Date(r.created_at).getTime()));
+  // Soft = transient throttle / platform-side error. These must not consume the
+  // strict 3-attempt budget, otherwise one throttled step 1 kills steps 2 & 3.
+  const softFailed = failed.filter((r) => isSoftWaError(r.error_message));
+  const hardFailed = failed.filter((r) => !isSoftWaError(r.error_message));
 
   // 1. Permanently undeliverable / ecosystem-blocked → never retry.
-  if (failed.some((r) => isPermanentWaError(r.error_message))) {
+  if (hardFailed.some((r) => isPermanentWaError(r.error_message))) {
     return { allow: false, step: 0, reason: "drip_undeliverable" };
   }
 
   const now = Date.now();
+  const day = now - 24 * 60 * 60 * 1000;
   const attemptTimes = [
     ...Array.from(stamps).map((m) => m * 60000),
-    ...failed.map((r) => new Date(r.created_at).getTime()),
+    ...hardFailed.map((r) => new Date(r.created_at).getTime()),
   ].sort((a, b) => b - a);
+  const softTimes = softFailed.map((r) => new Date(r.created_at).getTime()).sort((a, b) => b - a);
 
-  // 2. Hard ceiling on total attempts (sent + failed) in the last 24h.
-  const attempts24h = attemptTimes.filter((t) => t >= now - 24 * 60 * 60 * 1000).length;
+  // 2. Hard ceiling on total attempts (delivered + hard-failed) in the last 24h.
+  const attempts24h = attemptTimes.filter((t) => t >= day).length;
   if (attempts24h >= DRIP_MAX_ATTEMPTS_24H) {
     return { allow: false, step: 0, reason: "drip_attempt_cap" };
   }
+  // 2b. Separate, looser ceiling for soft-throttled retries.
+  if (softTimes.filter((t) => t >= day).length >= DRIP_MAX_SOFT_ATTEMPTS_24H) {
+    return { allow: false, step: 0, reason: "drip_soft_cap" };
+  }
 
   // 3. Minimum cooldown between any two attempts, retry or not.
+  const lastHardFail = hardFailed.length ? new Date(hardFailed[0].created_at).getTime() : 0;
   if (attemptTimes.length && now - attemptTimes[0] < DRIP_RETRY_GAP_MS) {
-    const lastFail = failed.length ? new Date(failed[0].created_at).getTime() : 0;
-    if (lastFail && lastFail >= attemptTimes[0]) {
-      return { allow: false, step: 0, reason: "drip_retry_cooldown", lastSentAt: new Date(lastFail).toISOString() };
+    if (lastHardFail && lastHardFail >= attemptTimes[0]) {
+      return { allow: false, step: 0, reason: "drip_retry_cooldown", lastSentAt: new Date(lastHardFail).toISOString() };
     }
   }
+  // 3b. Shorter cooldown after a soft throttle so the drip keeps its cadence.
+  if (softTimes.length && now - softTimes[0] < DRIP_SOFT_RETRY_GAP_MS && softTimes[0] >= (attemptTimes[0] ?? 0)) {
+    return { allow: false, step: 0, reason: "drip_soft_cooldown", lastSentAt: new Date(softTimes[0]).toISOString() };
+  }
+
 
 
   const times = Array.from(stamps).map((m) => m * 60000).sort((a, b) => b - a);
