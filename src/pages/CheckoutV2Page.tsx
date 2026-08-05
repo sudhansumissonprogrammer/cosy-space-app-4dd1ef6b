@@ -164,11 +164,13 @@ function genericUpiUrl(url: string): string | null {
  * location.assign if that throws.
  */
 /** Visible "order processing" beat before the UPI app takes over (ms).
- *  iOS/WKWebView only honours a custom-scheme navigation while the user
- *  gesture is still "fresh" — a long timer gets silently swallowed, so the
- *  shopper taps GPay and literally nothing happens. Keep the beat for Android
- *  (which has no such restriction) and hand off almost immediately on iOS. */
-const UPI_LAUNCH_DELAY_MS = 850;
+ *  MUST stay 0. Android Chrome (and every in-app webview) only honours an
+ *  external-scheme navigation while the tap's user-activation is still alive;
+ *  the old 850ms beat pushed the hop outside that window on slower devices, so
+ *  the FIRST tap silently did nothing and only the retry (fresh activation +
+ *  already-minted intent) opened the app. The wait screen is armed before the
+ *  hop anyway, so the shopper still sees the status UI. */
+const UPI_LAUNCH_DELAY_MS = 0;
 /** iOS: navigate in the SAME tick as the tap. Any timer — even 120ms — can
  *  push the custom-scheme navigation outside the "user activation" window in
  *  WKWebView (Instagram/WhatsApp in-app browsers are the strictest), and the
@@ -2593,6 +2595,18 @@ export default function CheckoutV2Page() {
   const tapUpiApp = (app: UpiApp, event?: MouseEvent<HTMLAnchorElement | HTMLButtonElement>, opts?: { gesture?: boolean }) => {
     const gesture = opts?.gesture !== false;
     event?.preventDefault();
+    // Telemetry: EVERY tile tap is recorded with the branch it took. Without
+    // this we could only see launches, so "I tapped PhonePe and nothing
+    // happened" was invisible in analytics (322 continue_to_pay vs 44 launches).
+    const trackTap = (outcome: string) => {
+      try {
+        fireStorefrontEvent({
+          storeId: store.id,
+          eventName: "pay_click" as any,
+          metadata: { step: "upi_tile", outcome, gesture, method: `upi_${app}`, dev: deviceTag() } as any,
+        });
+      } catch { /* noop */ }
+    };
     // Instant tactile + visual acknowledgement of the tap. Runs before any
     // guard so the shopper always *feels* the press, even when we end up
     // re-minting instead of launching.
@@ -2604,12 +2618,13 @@ export default function CheckoutV2Page() {
       flashUpiTap(app, PENDING_TAP_TTL_MS);
     };
     if (creatingOrder || couponLoading || paymentAmountSyncing) {
+      trackTap("queued_preparing");
       queueTap();
       return;
     }
     // PAYMENT-FIRST address gate — if no address, open the sheet and remember
     // this tap so we auto-resume the UPI launch after the shopper saves.
-    if (!requireAddressOrPrompt(() => tapUpiApp(app, undefined, { gesture: false }))) { pendingUpiTapRef.current = null; clearUpiTapFx(); return; }
+    if (!requireAddressOrPrompt(() => tapUpiApp(app, undefined, { gesture: false }))) { trackTap("address_gate"); pendingUpiTapRef.current = null; clearUpiTapFx(); return; }
     const s = intents[app];
     // A failed tile used to be a dead end (silent return + pointer-events-none),
     // so a shopper who hit one transient gateway error could never pay by UPI
@@ -2619,6 +2634,7 @@ export default function CheckoutV2Page() {
       mintLoopBlockedRef.current = false;
       lastMintAtRef.current = 0;
       toast.info("Retrying…");
+      trackTap("queued_failed_remint");
       queueTap();
       void createOrderAndIntents({ userInitiated: true });
       return;
@@ -2626,6 +2642,7 @@ export default function CheckoutV2Page() {
     if (s.status !== "ready" || !s.url) {
       // Still minting (or not started yet) — remember the tap and make sure a
       // mint is actually in flight, then let the pending-tap effect launch it.
+      trackTap(s.status === "idle" ? "queued_idle" : "queued_minting");
       queueTap();
       if (s.status === "idle") void createOrderAndIntents({ userInitiated: true });
       return;
@@ -2638,6 +2655,7 @@ export default function CheckoutV2Page() {
     // UPI app never opens for the wrong amount.
     if (typeof s.amount === "number" && Math.round(s.amount * 100) !== Math.round(chargeAmount * 100)) {
       toast.info("Updating amount…");
+      trackTap("queued_amount_changed");
       queueTap();
       void createOrderAndIntents({ userInitiated: true });
       return;
@@ -2653,6 +2671,7 @@ export default function CheckoutV2Page() {
       mintLoopBlockedRef.current = false;
       lastMintAtRef.current = 0;
       toast.info("Refreshing payment…");
+      trackTap("queued_intent_expired");
       queueTap();
       void createOrderAndIntents({ userInitiated: true });
       return;
@@ -2665,6 +2684,7 @@ export default function CheckoutV2Page() {
     // the delivery boy sees the corrected address.
     if (shipIdentityRef.current !== debouncedShipIdentity) {
       toast.info("Updating details…");
+      trackTap("queued_address_flush");
       queueTap();
       flushShipIdentity();
       return;
@@ -2687,7 +2707,7 @@ export default function CheckoutV2Page() {
       pendingUpiTapRef.current = null;
       clearUpiTapFx();
       toast.info(`Ready — tap ${label} to open the app`, { duration: 5000 });
-      try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: `upi_${app}`, step: isIOS() ? "ios_retap_prompt" : "webview_retap_prompt", dev: deviceTag() } as any }); } catch { /* noop */ }
+      trackTap("retap_prompt");
       return;
     }
 
@@ -2764,29 +2784,15 @@ export default function CheckoutV2Page() {
     // polling active even though the bank payment succeeded.
     armWaiting();
 
-    // Micro-delay so the shopper actually SEES the real "Complete payment in
-    // <app>" status screen (already armed above) before the UPI app takes
-    // over. Without it the handoff is instant and the tap feels like nothing
-    // happened / like a random app jump. iOS gets a much shorter beat because
-    // Safari/WKWebView drop custom-scheme navigations once the user gesture
-    // has gone stale.
-    // Android in-app webviews (Instagram/Facebook/WhatsApp) also enforce a
-    // user-activation window for external-scheme navigations — an 850ms timer
-    // is long enough for the activation to go stale there, so the tap silently
-    // does nothing. Hand off in the same tick for every webview; keep the beat
-    // only for real Chrome, where it is safe.
+    // Hand off in the SAME tick as the tap on every device. Android Chrome,
+    // OEM browsers and in-app webviews all enforce a user-activation window
+    // for external-scheme navigations: any timer risks the hop being dropped
+    // silently ("I tapped PhonePe and nothing happened; after cancel + retry
+    // it opened"). The "Complete payment in <app>" screen is already armed
+    // above, so the shopper still gets the status UI.
     const inAppWebview = !deviceTag().endsWith(":browser");
-    if (isIOS() || inAppWebview) {
-      // Same-tick navigation — see UPI_LAUNCH_DELAY_IOS_MS. Any deferral risks
-      // the webview dropping the custom-scheme hop entirely.
-      launchUpiUrl(s.url);
-    } else {
-      window.setTimeout(() => {
-        // Launch the app via a real anchor activation (some OEM Chrome/WebView
-        // builds ignore location.assign for non-http schemes).
-        launchUpiUrl(s.url);
-      }, UPI_LAUNCH_DELAY_MS);
-    }
+    trackTap("launch");
+    launchUpiUrl(s.url);
 
 
 
