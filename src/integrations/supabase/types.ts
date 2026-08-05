@@ -5404,9 +5404,49 @@ export type Database = {
         Args: { _store_id: string }
         Returns: boolean
       }
+      store_wa_assert_access: {
+        Args: { _store_id: string }
+        Returns: undefined
+      }
       store_wa_mark_thread_read: {
         Args: { _phone: string; _store_id: string }
         Returns: number
+      }
+      store_wa_thread_messages: {
+        Args: {
+          _before?: string
+          _limit?: number
+          _phone: string
+          _store_id: string
+        }
+        Returns: {
+          created_at: string
+          direction: string
+          id: string
+          media_type: string
+          message_body: string
+          status: string
+        }[]
+      }
+      store_wa_threads: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _store_id: string
+        }
+        Returns: {
+          last_at: string
+          last_body: string
+          last_direction: string
+          last_incoming_at: string
+          last_media_type: string
+          last_status: string
+          name: string
+          phone: string
+          total_threads: number
+          unread: number
+        }[]
       }
       swap_category_order: {
         Args: { _a: string; _b: string }

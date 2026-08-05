@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, ShoppingCart, CheckCircle2, Truck } from "lucide-react";
+import { MessageSquare, ShoppingCart, CheckCircle2, Truck, Inbox, Zap } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { StoreInbox } from "@/components/whatsapp/StoreInbox";
 import { toast } from "sonner";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
@@ -71,18 +73,34 @@ export default function StoreWhatsAppSimple() {
   ];
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-5">
       <div>
         <h1 className="text-xl font-bold flex items-center gap-2">
           <MessageSquare className="h-6 w-6 text-green-600" />
-          WhatsApp Marketing
+          WhatsApp
         </h1>
         <p className="text-sm text-muted-foreground mt-0.5">
           Powered by ShopBanao&apos;s verified WhatsApp number — no setup required.
         </p>
       </div>
 
+      <Tabs defaultValue="inbox" className="space-y-5">
+        <TabsList>
+          <TabsTrigger value="inbox" className="gap-1.5">
+            <Inbox className="h-4 w-4" /> Inbox
+          </TabsTrigger>
+          <TabsTrigger value="automations" className="gap-1.5">
+            <Zap className="h-4 w-4" /> Automations
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="inbox" className="m-0">
+          <StoreInbox storeId={storeId} />
+        </TabsContent>
+
+        <TabsContent value="automations" className="m-0 space-y-6 max-w-3xl">
       <Card>
+
         <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
           <div>
             <CardTitle className="text-base">Enable ShopBanao Marketing</CardTitle>
@@ -151,12 +169,15 @@ export default function StoreWhatsAppSimple() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Advanced features</CardTitle>
-          <CardDescription>Coming soon — your own WhatsApp number, live chat, broadcast builder, AI replies.</CardDescription>
+          <CardDescription>Coming soon — your own WhatsApp number, broadcast builder, AI replies.</CardDescription>
         </CardHeader>
         <CardContent>
           <Badge variant="secondary">Phase 2 · Coming Soon</Badge>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
+
   );
 }
