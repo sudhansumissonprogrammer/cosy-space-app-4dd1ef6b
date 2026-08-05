@@ -167,12 +167,15 @@ export default function StoreWhatsAppSimple() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Advanced features</CardTitle>
-          <CardDescription>Coming soon — your own WhatsApp number, live chat, broadcast builder, AI replies.</CardDescription>
+          <CardDescription>Coming soon — your own WhatsApp number, broadcast builder, AI replies.</CardDescription>
         </CardHeader>
         <CardContent>
           <Badge variant="secondary">Phase 2 · Coming Soon</Badge>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
+
   );
 }
