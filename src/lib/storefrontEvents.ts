@@ -98,9 +98,14 @@ export function fireStorefrontEvent(args: FireEventArgs): void {
       } catch {}
     }
 
+    // pay_click fires twice in a real payment: once for "continue_to_pay" and
+    // again for the actual gateway/UPI-app launch (method: upi_gpay, payu, …).
+    // Both happen inside 30s, so a step/method-blind key silently swallowed the
+    // launch event — we lost all visibility into which UPI app was tapped.
+    const variant = String(args.metadata?.step || args.metadata?.method || "");
     const dedupKey = purchaseOrderId
       ? `${args.eventName}:order:${purchaseOrderId}`
-      : `${args.eventName}:${args.productId || ""}:${sid}`;
+      : `${args.eventName}:${variant}:${args.productId || ""}:${sid}`;
     const now = Date.now();
     const last = recentEvents.get(dedupKey);
     if (last && now - last < DEDUP_MS) return;
