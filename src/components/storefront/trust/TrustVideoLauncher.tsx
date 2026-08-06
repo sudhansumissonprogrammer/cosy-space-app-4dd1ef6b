@@ -57,8 +57,14 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
 
 
   // Existence probe + first-video fetch — both idle, no LCP impact.
+  // NOTE: `preview` must NOT be a dependency. setPreview() creates a new object
+  // identity on every run, which re-triggered this effect → infinite refetch
+  // loop (4.4M store_trust_videos queries observed in production).
+  const probedRef = useRef(false);
   useEffect(() => {
-    if (dismissed) return;
+    if (dismissed || probedRef.current) return;
+    probedRef.current = true;
+
     let cancelled = false;
     const run = () => {
       // ONE request for both signals (was: count probe + row fetch, serial).
@@ -84,7 +90,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
       if (ric && typeof handle === "number") (window as any).cancelIdleCallback?.(handle);
       else window.clearTimeout(handle as number);
     };
-  }, [storeId, dismissed, preview]);
+  }, [storeId, dismissed]);
 
   // Reveal only after the shopper has scrolled — keeps the tile (and its
   // poster request) completely out of the first-paint / LCP window.
