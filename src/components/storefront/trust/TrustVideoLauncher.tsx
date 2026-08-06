@@ -90,7 +90,7 @@ export default function TrustVideoLauncher({ storeId, storeSlug }: Props) {
       if (ric && typeof handle === "number") (window as any).cancelIdleCallback?.(handle);
       else window.clearTimeout(handle as number);
     };
-  }, [storeId, dismissed, preview]);
+  }, [storeId, dismissed]);
 
   // Reveal only after the shopper has scrolled — keeps the tile (and its
   // poster request) completely out of the first-paint / LCP window.
