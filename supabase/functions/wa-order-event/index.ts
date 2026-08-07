@@ -209,7 +209,9 @@ Deno.serve(async (req) => {
       courier_name: courierName,
       review_url: reviewUrl,
       cta_token: ctaToken,
-      ...(headerImage ? { header_media_url: headerImage } : {}),
+      // Shipping is text-only now, so never attach a media header for it.
+      ...(headerImage && body.event !== "order_shipped" ? { header_media_url: headerImage } : {}),
+
     },
 
     priority: body.event === "order_confirmation" ? 1 : 3,
