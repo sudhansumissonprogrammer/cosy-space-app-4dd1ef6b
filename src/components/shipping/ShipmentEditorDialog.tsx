@@ -16,7 +16,10 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   orderId: string;
   shipment?: ShipmentTracking | null;
+  /** Fired after a successful save — used to flip the order to "shipped". */
+  onSaved?: (status: string) => void;
 }
+
 
 const STATUS_OPTIONS = [...SHIPMENT_STEPS, "returned", "cancelled", "exception"] as const;
 
