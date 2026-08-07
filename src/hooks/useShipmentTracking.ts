@@ -28,13 +28,14 @@ export interface ShipmentTracking {
  * Reads the cached tracking snapshot from the database — never calls a
  * courier API. Background sync keeps it fresh.
  */
-export function useShipmentTracking(orderId: string | null | undefined) {
+export function useShipmentTracking(orderId: string | null | undefined, client?: any) {
+  const db = client ?? supabase;
   return useQuery({
     queryKey: ["shipment-tracking", orderId],
     enabled: !!orderId,
     staleTime: 60_000,
     queryFn: async (): Promise<ShipmentTracking[]> => {
-      const { data, error } = await supabase.rpc("get_shipment_tracking", {
+      const { data, error } = await db.rpc("get_shipment_tracking", {
         _order_id: orderId as string,
       });
       if (error) throw error;
