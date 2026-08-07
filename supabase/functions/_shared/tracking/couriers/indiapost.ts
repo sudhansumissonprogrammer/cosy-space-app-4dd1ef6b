@@ -83,8 +83,10 @@ async function ipAction(actionId: string, args: unknown[]): Promise<unknown> {
     body: JSON.stringify(args),
     timeoutMs: 15_000,
   });
+  // Next.js answers server actions on this route with a 404 status but a valid
+  // flight body, so the status is deliberately not gated on.
   const text = await r.text();
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  if (!text) throw new Error(`empty response (HTTP ${r.status})`);
 
   // RSC flight payload: newline-delimited `<id>:<json>` rows. The action's
   // return value is the last row that parses to something non-trivial.
