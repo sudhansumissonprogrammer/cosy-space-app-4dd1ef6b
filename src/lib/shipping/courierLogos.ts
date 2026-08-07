@@ -26,8 +26,8 @@ export const COURIER_LOGOS: Record<string, string> = {
   ecom_express,
 };
 
-/** Wordmark logos are wide — render them edge-to-edge instead of as a dot. */
-export const WIDE_LOGOS = new Set(["bluedart", "dtdc", "india_post", "shiprocket", "shadowfax", "ecom_express", "xpressbees"]);
+/** All marks are pre-padded into a square canvas, so none need special sizing. */
+export const WIDE_LOGOS = new Set<string>();
 
 export function courierLogoSrc(slug?: string | null): string | null {
   if (!slug) return null;

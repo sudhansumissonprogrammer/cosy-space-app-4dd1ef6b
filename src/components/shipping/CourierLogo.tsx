@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Truck } from "lucide-react";
 import { courierMeta } from "@/lib/shipping/courierRegistry";
-import { courierLogoSrc, WIDE_LOGOS } from "@/lib/shipping/courierLogos";
+import { courierLogoSrc } from "@/lib/shipping/courierLogos";
 
 /**
  * Courier brand mark. Uses a locally bundled logo (scraped from the courier's
@@ -20,7 +20,6 @@ export default function CourierLogo({
   const [failed, setFailed] = useState(false);
   const meta = courierMeta(slug);
   const src = courierLogoSrc(slug);
-  const wide = slug ? WIDE_LOGOS.has(slug) : false;
 
   return (
     <span
@@ -35,7 +34,7 @@ export default function CourierLogo({
           loading="lazy"
           decoding="async"
           onError={() => setFailed(true)}
-          className={wide ? "w-[86%] object-contain" : "h-[70%] w-[70%] object-contain"}
+          className="h-[78%] w-[78%] object-contain"
         />
       ) : (
         <Truck className="h-1/2 w-1/2 opacity-60 text-neutral-500" />
