@@ -149,22 +149,30 @@ Deno.serve(async (req) => {
   const ctaToken = body.event === "order_shipped" ? `t-${o.id}` : `o-${o.id}`;
 
   // 🧩 Template resolution for shipping: prefer the richer v3 pair when Meta
-  // has approved them, with the image variant winning only if we actually
-  // have a product photo. Falls back to the legacy v2 template so a pending
-  // Meta review never blocks notifications.
+  // has approved them, image variant only when we actually have a photo.
+  // The legacy v2 fallback is NOT safe anymore: Meta returns 132001
+  // ("template name does not exist in en") for it, so every queued shipping
+  // notification failed. If nothing is approved we skip queueing instead of
+  // burning a guaranteed-failed send against account quality.
   let templateName = TEMPLATE_BY_EVENT[body.event];
   if (body.event === "order_shipped") {
     const { data: tpls } = await admin
       .from("platform_wa_templates")
       .select("name, is_active, paused, meta_status")
-      .in("name", ["order_shipped_v3_img", "order_shipped_v3"]);
+      .in("name", ["order_shipped_v3_img", "order_shipped_v3", "order_shipped_v2"]);
     const usable = (name: string) =>
       (tpls || []).some((t: any) =>
         t.name === name && t.is_active && !t.paused &&
         String(t.meta_status || "").toUpperCase() === "APPROVED");
     if (headerImage && usable("order_shipped_v3_img")) templateName = "order_shipped_v3_img";
     else if (usable("order_shipped_v3")) templateName = "order_shipped_v3";
+    else if (usable("order_shipped_v2")) templateName = "order_shipped_v2";
+    else {
+      console.warn("order_shipped skipped: no approved shipping template", { order_id: o.id });
+      return json({ skipped: true, reason: "no_approved_shipping_template" });
+    }
   }
+
 
   const { error: qErr } = await admin.from("wa_send_queue").insert({
     store_id: o.store_id,
