@@ -9,9 +9,9 @@ import dtdc from "@/assets/couriers/dtdc.png";
 import ekart from "@/assets/couriers/ekart.png";
 import india_post from "@/assets/couriers/india_post.png";
 import xpressbees from "@/assets/couriers/xpressbees.png";
-import shiprocket from "@/assets/couriers/shiprocket.svg";
-import shadowfax from "@/assets/couriers/shadowfax.svg";
-import ecom_express from "@/assets/couriers/ecom_express.svg";
+import shiprocket from "@/assets/couriers/shiprocket.png";
+import shadowfax from "@/assets/couriers/shadowfax.png";
+import ecom_express from "@/assets/couriers/ecom_express.png";
 
 export const COURIER_LOGOS: Record<string, string> = {
   amazon_shipping,
