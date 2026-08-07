@@ -237,6 +237,11 @@ export default function StorefrontOrderDetail() {
             )}
           </section>
 
+          {/* Shipment tracking */}
+          <OrderShipments orderId={order.id} client={supabase} />
+
+
+
           {/* Items */}
           <section className="rounded-2xl border bg-card overflow-hidden"
                    style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 10%, transparent)" }}>
