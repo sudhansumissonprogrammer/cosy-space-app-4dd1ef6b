@@ -5,6 +5,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { resolveAdapter, listAdapters } from "../_shared/tracking/registry.ts";
+import { hasPublicFeed, publicTrack } from "../_shared/tracking/couriers/public.ts";
 import { hashEvent, statusRank, TERMINAL_STATUSES, NormalizedTracking } from "../_shared/tracking/types.ts";
 import { dispatchShipmentNotification, NOTIFY_STATUSES } from "../_shared/tracking/notify.ts";
 
@@ -44,10 +45,13 @@ Deno.serve(async (req) => {
   const shipmentId: string | undefined = body.shipment_id;
   if (!shipmentId) return json({ error: "shipment_id required" }, 400);
 
-  // Internal (cron) calls carry the service key; user calls must own the store
-  // and are rate limited to 1 manual refresh per shipment / 10 min.
+  // Internal (cron) calls carry the service key. Merchant calls must own the
+  // store. Customer calls (order-tracking page) are allowed too — they only
+  // trigger the same courier fetch — and every non-internal caller shares one
+  // 10-minute-per-shipment throttle so courier quota can't be burned.
   const authHeader = req.headers.get("Authorization") ?? "";
   const isInternal = authHeader === `Bearer ${SERVICE_KEY}` || body.internal === true;
+  const isPublic = body.public === true;
 
   const { data: shipment, error: shipErr } = await admin
     .from("order_shipments").select("*").eq("id", shipmentId).maybeSingle();
@@ -55,14 +59,16 @@ Deno.serve(async (req) => {
   if (!shipment) return json({ error: "shipment not found" }, 404);
 
   if (!isInternal) {
-    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) return json({ error: "unauthorized" }, 401);
-    const { data: store } = await admin
-      .from("stores").select("owner_id").eq("id", shipment.store_id).maybeSingle();
-    if (!store || store.owner_id !== user.id) return json({ error: "forbidden" }, 403);
+    if (!isPublic) {
+      const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await userClient.auth.getUser();
+      if (!user) return json({ error: "unauthorized" }, 401);
+      const { data: store } = await admin
+        .from("stores").select("owner_id").eq("id", shipment.store_id).maybeSingle();
+      if (!store || store.owner_id !== user.id) return json({ error: "forbidden" }, 403);
+    }
 
     const rlKey = `ship_track:${shipmentId}`;
     const { data: rl } = await admin
@@ -77,34 +83,48 @@ Deno.serve(async (req) => {
     );
   }
 
+
   const slug = shipment.tracking_slug || shipment.provider;
   const adapter = resolveAdapter(slug);
+  const awb = shipment.awb ?? "";
+  const canPublic = hasPublicFeed(slug) && !!awb;
 
-  if (!adapter || !adapter.supportsApi || !adapter.track) {
+  if ((!adapter || !adapter.supportsApi || !adapter.track) && !canPublic) {
     // Manual courier — nothing to fetch, just keep it out of the sync loop.
     await admin.from("order_shipments").update({
       last_synced_at: new Date().toISOString(),
       next_sync_at: null,
       is_active: !TERMINAL_STATUSES.includes(shipment.normalized_status),
-      tracking_url: shipment.tracking_url ?? adapter?.officialUrl(shipment.awb ?? "") ?? null,
+      tracking_url: shipment.tracking_url ?? adapter?.officialUrl(awb) ?? null,
     }).eq("id", shipmentId);
     return json({ manual: true, status: shipment.normalized_status });
   }
 
   let tracking: NormalizedTracking;
   try {
-    tracking = await adapter.track({
-      storeId: shipment.store_id,
-      awb: shipment.awb ?? "",
-      loadProvider: async (provider: string) => {
-        const { data } = await admin
-          .from("store_shipping_providers").select("*")
-          .eq("store_id", shipment.store_id).eq("provider", provider).maybeSingle();
-        if (!data) throw new Error(`${provider} not configured for this store`);
-        if (!data.is_enabled) throw new Error(`${provider} is disabled`);
-        return data;
-      },
-    });
+    if (adapter?.track) {
+      try {
+        tracking = await adapter.track({
+          storeId: shipment.store_id,
+          awb,
+          loadProvider: async (provider: string) => {
+            const { data } = await admin
+              .from("store_shipping_providers").select("*")
+              .eq("store_id", shipment.store_id).eq("provider", provider).maybeSingle();
+            if (!data) throw new Error(`${provider} not configured for this store`);
+            if (!data.is_enabled) throw new Error(`${provider} is disabled`);
+            return data;
+          },
+        });
+      } catch (inner) {
+        // Merchant hasn't connected this courier (or the key broke): fall back
+        // to the courier's own public feed so tracking still works.
+        if (!canPublic) throw inner;
+        tracking = await publicTrack(slug, awb, adapter.officialUrl(awb));
+      }
+    } else {
+      tracking = await publicTrack(slug, awb, adapter?.officialUrl(awb) ?? null);
+    }
   } catch (e) {
     const attempts = (shipment.sync_attempts ?? 0) + 1;
     await admin.from("order_shipments").update({
@@ -116,6 +136,7 @@ Deno.serve(async (req) => {
     }).eq("id", shipmentId);
     return json({ error: (e as Error).message }, 502);
   }
+
 
   // Persist events (unique on shipment_id + event_hash → no duplicates).
   if (tracking.events.length) {
