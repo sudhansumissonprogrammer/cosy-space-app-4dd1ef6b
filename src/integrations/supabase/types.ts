@@ -976,14 +976,21 @@ export type Database = {
           cod_amount: number | null
           courier_name: string | null
           created_at: string
+          current_location: string | null
           declared_value: number | null
+          estimated_delivery: string | null
           height_cm: number | null
           id: string
           invoice_url: string | null
+          is_active: boolean
           label_url: string | null
           last_error: string | null
+          last_synced_at: string | null
           length_cm: number | null
           manifest_url: string | null
+          next_sync_at: string | null
+          normalized_status: string
+          notified_statuses: string[]
           order_id: string
           payment_mode: string | null
           pickup_address_id: string | null
@@ -995,6 +1002,8 @@ export type Database = {
           status: string
           status_updated_at: string | null
           store_id: string
+          sync_attempts: number
+          tracking_slug: string | null
           tracking_url: string | null
           updated_at: string
           weight_grams: number | null
@@ -1005,14 +1014,21 @@ export type Database = {
           cod_amount?: number | null
           courier_name?: string | null
           created_at?: string
+          current_location?: string | null
           declared_value?: number | null
+          estimated_delivery?: string | null
           height_cm?: number | null
           id?: string
           invoice_url?: string | null
+          is_active?: boolean
           label_url?: string | null
           last_error?: string | null
+          last_synced_at?: string | null
           length_cm?: number | null
           manifest_url?: string | null
+          next_sync_at?: string | null
+          normalized_status?: string
+          notified_statuses?: string[]
           order_id: string
           payment_mode?: string | null
           pickup_address_id?: string | null
@@ -1024,6 +1040,8 @@ export type Database = {
           status?: string
           status_updated_at?: string | null
           store_id: string
+          sync_attempts?: number
+          tracking_slug?: string | null
           tracking_url?: string | null
           updated_at?: string
           weight_grams?: number | null
@@ -1034,14 +1052,21 @@ export type Database = {
           cod_amount?: number | null
           courier_name?: string | null
           created_at?: string
+          current_location?: string | null
           declared_value?: number | null
+          estimated_delivery?: string | null
           height_cm?: number | null
           id?: string
           invoice_url?: string | null
+          is_active?: boolean
           label_url?: string | null
           last_error?: string | null
+          last_synced_at?: string | null
           length_cm?: number | null
           manifest_url?: string | null
+          next_sync_at?: string | null
+          normalized_status?: string
+          notified_statuses?: string[]
           order_id?: string
           payment_mode?: string | null
           pickup_address_id?: string | null
@@ -1053,6 +1078,8 @@ export type Database = {
           status?: string
           status_updated_at?: string | null
           store_id?: string
+          sync_attempts?: number
+          tracking_slug?: string | null
           tracking_url?: string | null
           updated_at?: string
           weight_grams?: number | null
@@ -2483,6 +2510,53 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipment_events: {
+        Row: {
+          created_at: string
+          description: string | null
+          event_hash: string
+          event_time: string
+          id: string
+          location: string | null
+          raw_status: string | null
+          shipment_id: string
+          status: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          event_hash: string
+          event_time?: string
+          id?: string
+          location?: string | null
+          raw_status?: string | null
+          shipment_id: string
+          status: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          event_hash?: string
+          event_time?: string
+          id?: string
+          location?: string | null
+          raw_status?: string | null
+          shipment_id?: string
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipment_events_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "order_shipments"
             referencedColumns: ["id"]
           },
         ]
@@ -5182,6 +5256,7 @@ export type Database = {
         Args: { _product_slug: string; _store_slug: string }
         Returns: Json
       }
+      get_shipment_tracking: { Args: { _order_id: string }; Returns: Json }
       get_store_as_admin: { Args: { _slug: string }; Returns: Json }
       get_store_auto_apply_coupon: {
         Args: { _store_id: string }
@@ -5403,6 +5478,18 @@ export type Database = {
       store_has_active_coupons: {
         Args: { _store_id: string }
         Returns: boolean
+      }
+      store_upsert_shipment: {
+        Args: {
+          _awb: string
+          _courier_name: string
+          _order_id: string
+          _shipment_id?: string
+          _slug: string
+          _status?: string
+          _tracking_url?: string
+        }
+        Returns: string
       }
       store_wa_assert_access: {
         Args: { _store_id: string }

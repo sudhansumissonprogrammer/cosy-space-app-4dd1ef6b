@@ -7,6 +7,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { normalizePhone } from "@/lib/phoneUtils";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import OrderStatusTimeline from "@/components/storefront/OrderStatusTimeline";
+import OrderShipments from "@/components/shipping/OrderShipments";
 import { getOrderStatusMeta, paymentDisplay } from "@/lib/orderStatus";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -235,6 +236,11 @@ export default function StorefrontOrderDetail() {
               </div>
             )}
           </section>
+
+          {/* Shipment tracking */}
+          <OrderShipments orderId={order.id} client={supabase} />
+
+
 
           {/* Items */}
           <section className="rounded-2xl border bg-card overflow-hidden"

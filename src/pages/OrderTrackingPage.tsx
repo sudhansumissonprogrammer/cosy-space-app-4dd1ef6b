@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { orderStatusBadgeClass, orderStatusLabel, orderStatusRank } from "@/lib/orderStatus";
+import OrderShipments from "@/components/shipping/OrderShipments";
 
 const STATUS_STEPS = [
   { key: "pending", label: "Placed", icon: Clock },
@@ -201,6 +202,9 @@ export default function OrderTrackingPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Shipment tracking */}
+            <OrderShipments orderId={order.id} />
 
             {/* Tracking Info */}
             {order.tracking_number && (

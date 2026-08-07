@@ -78,3 +78,10 @@ verify_jwt = false
 
 [functions.review-upload]
 verify_jwt = false
+
+[functions.shipment-track]
+verify_jwt = false
+
+[functions.shipment-sync-cron]
+verify_jwt = false
+
