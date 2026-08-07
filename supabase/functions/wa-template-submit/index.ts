@@ -207,12 +207,21 @@ Deno.serve(async (req) => {
     });
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    const { data: ud, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !ud?.user?.id) return j(401, { error: "Unauthorized" });
-    const userId = ud.user.id;
+    // Internal/service-role invocation (platform maintenance scripts) is trusted:
+    // the service role key is never exposed to browsers.
+    const bearer = authHeader.slice(7).trim();
+    const isServiceCall = !!SERVICE_ROLE && bearer === SERVICE_ROLE;
 
-    const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
-    if (!isAdmin) return j(403, { error: "Forbidden — admin only" });
+    let userId = "00000000-0000-0000-0000-000000000000";
+    if (!isServiceCall) {
+      const { data: ud, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !ud?.user?.id) return j(401, { error: "Unauthorized" });
+      userId = ud.user.id;
+
+      const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
+      if (!isAdmin) return j(403, { error: "Forbidden — admin only" });
+    }
+
 
     const body = await req.json();
     const action = String(body?.action || "");
