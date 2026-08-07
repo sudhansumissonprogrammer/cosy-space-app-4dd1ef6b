@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Check, Copy, ExternalLink, MapPin, Truck } from "lucide-react";
+import { Check, Copy, ExternalLink, MapPin, PackageCheck } from "lucide-react";
 import {
   SHIPMENT_STATUS_LABEL, SHIPMENT_STEPS, courierMeta, isTerminal,
   officialTrackingUrl, shipmentStatusRank, type ShipmentStatus,
 } from "@/lib/shipping/courierRegistry";
 import type { ShipmentTracking } from "@/hooks/useShipmentTracking";
+import CourierLogo from "./CourierLogo";
 
 const softText = "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)";
 const softBorder = "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 12%, transparent)";
@@ -23,6 +24,15 @@ function fmtDate(iso: string) {
 }
 function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+}
+/** "just now" / "12 min ago" / "3 hr ago" — keeps the freshness obvious. */
+function fmtAgo(iso: string) {
+  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (mins < 2) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  return `${Math.round(hrs / 24)} d ago`;
 }
 
 export default function ShipmentTimeline({ shipment }: { shipment: ShipmentTracking }) {
@@ -54,10 +64,7 @@ export default function ShipmentTimeline({ shipment }: { shipment: ShipmentTrack
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-                style={{ background: "color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 12%, transparent)" }}>
-            <Truck className="h-4 w-4" style={{ color: accent }} />
-          </span>
+          <CourierLogo slug={shipment.tracking_slug || shipment.provider} size={38} />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold capitalize">{courierName}</p>
             {shipment.awb && (
@@ -74,6 +81,15 @@ export default function ShipmentTimeline({ shipment }: { shipment: ShipmentTrack
           {SHIPMENT_STATUS_LABEL[status] ?? status}
         </span>
       </div>
+
+      {status === "delivered" && (
+        <div className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+          <PackageCheck className="h-4 w-4 shrink-0" />
+          <p className="text-xs font-semibold">
+            Delivered{latest?.event_time ? ` on ${fmtDate(latest.event_time)}` : ""}
+          </p>
+        </div>
+      )}
 
       {/* ETA + latest checkpoint */}
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -148,6 +164,12 @@ export default function ShipmentTimeline({ shipment }: { shipment: ShipmentTrack
           {isTerminal(status)
             ? "No further updates for this shipment."
             : "Tracking updates will appear here as soon as the courier scans your parcel."}
+        </p>
+      )}
+
+      {shipment.last_synced_at && (
+        <p className="mt-3 text-[11px]" style={{ color: softText }}>
+          Updated {fmtAgo(shipment.last_synced_at)} · {courierName}
         </p>
       )}
 
