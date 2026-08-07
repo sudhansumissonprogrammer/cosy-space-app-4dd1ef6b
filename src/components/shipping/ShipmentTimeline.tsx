@@ -48,7 +48,12 @@ export default function ShipmentTimeline({ shipment }: { shipment: ShipmentTrack
 
   const events = shipment.events ?? [];
   const visible = expanded ? events : events.slice(0, 4);
-  const latest = events[0];
+  // Manual merchant updates ("status updated by seller") are stamped with the
+  // save time, so they can sit above the courier's own scans. Anything shown
+  // as "where the parcel is" must come from a real scan.
+  const latest = events.find((e) => !!e.location) ?? events[0];
+  const deliveredAt = events.find((e) => e.status === "delivered")?.event_time;
+
 
   const copy = async () => {
     if (!shipment.awb) return;
