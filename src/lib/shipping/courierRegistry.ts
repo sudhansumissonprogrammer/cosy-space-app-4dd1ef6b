@@ -61,16 +61,15 @@ export function courierMeta(slug?: string | null): CourierMeta {
 }
 
 /**
- * Courier logo URL. Resolved from the brand's own domain through Google's
- * public favicon service — always the live, current logo, no key, no asset to
- * keep updated. Returns null for couriers without a known domain (the UI then
- * falls back to an initials avatar).
+ * @deprecated Logos are now bundled locally — see `courierLogoSrc` in
+ * `@/lib/shipping/courierLogos`. Kept only as a remote fallback.
  */
 export function courierLogo(slug?: string | null, size = 64): string | null {
   const domain = courierMeta(slug).domain;
   if (!domain) return null;
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`;
 }
+
 
 /** Universal fallback aggregator when the courier has no deep link. */
 export function aggregatorTrackingUrl(awb: string) {
