@@ -31,7 +31,7 @@ export async function dispatchShipmentNotification(opts: {
   if (waEvent) {
     try {
       const { data: secretRow } = await admin
-        .from("cron_auth").select("secret").eq("name", "cron_secret").maybeSingle();
+        .from("cron_auth").select("secret").eq("id", true).maybeSingle();
       const r = await fetch(`${SUPABASE_URL}/functions/v1/wa-order-event`, {
         method: "POST",
         headers: {
