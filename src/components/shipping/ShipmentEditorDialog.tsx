@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { COURIERS, SHIPMENT_STATUS_LABEL, SHIPMENT_STEPS, courierMeta, officialTrackingUrl } from "@/lib/shipping/courierRegistry";
@@ -24,6 +25,7 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
   const [slug, setSlug] = useState(shipment?.tracking_slug || "delhivery");
   const [awb, setAwb] = useState(shipment?.awb || "");
   const [status, setStatus] = useState<string>(shipment?.status || "shipped");
+  const [notify, setNotify] = useState(true);
 
   const meta = courierMeta(slug);
 
@@ -43,16 +45,33 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
       if (meta.api && data) {
         supabase.functions.invoke("shipment-track", { body: { shipment_id: data } }).catch(() => {});
       }
-      return data;
+
+      // 📲 Customer WhatsApp: the shipped/delivered milestones are UTILITY
+      // messages. wa-order-event handles template choice, branding and
+      // idempotency (one row per order + event), so a re-save never spams.
+      let waResult: any = null;
+      if (notify && (status === "shipped" || status === "in_transit")) {
+        const { data: waData } = await supabase.functions.invoke("wa-order-event", {
+          body: { event: "order_shipped", order_id: orderId },
+        });
+        waResult = waData;
+      }
+
+      return waResult;
     },
-    onSuccess: () => {
-      toast.success("Shipment saved");
+    onSuccess: (waResult: any) => {
+      if (waResult?.queued) toast.success("Shipment saved · WhatsApp sent to customer");
+      else if (waResult?.reason === "already_enqueued") toast.success("Shipment saved · WhatsApp already sent");
+      else if (waResult?.skipped) toast.success(`Shipment saved · WhatsApp skipped (${waResult.reason})`);
+      else toast.success("Shipment saved");
       qc.invalidateQueries({ queryKey: ["shipment-tracking", orderId] });
       qc.invalidateQueries({ queryKey: ["store-orders"] });
+      qc.invalidateQueries({ queryKey: ["website-orders-all"] });
       onOpenChange(false);
     },
     onError: (e: any) => toast.error(e?.message || "Could not save shipment"),
   });
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -97,7 +116,18 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
               </SelectContent>
             </Select>
           </div>
+
+          <label className="flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer">
+            <Checkbox checked={notify} onCheckedChange={(v) => setNotify(v === true)} className="mt-0.5" />
+            <span className="text-sm">
+              Notify customer on WhatsApp
+              <span className="block text-[11px] text-muted-foreground">
+                Sends the tracking number, courier and expected delivery date. Sent only once per order.
+              </span>
+            </span>
+          </label>
         </div>
+
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>

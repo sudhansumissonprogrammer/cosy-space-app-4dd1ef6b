@@ -120,12 +120,21 @@ Deno.serve(async (req) => {
   // Pull line items so we can show the primary product name (more meaningful than an internal order ID).
   const { data: items } = await admin
     .from("order_items")
-    .select("product_name, quantity")
+    .select("product_name, quantity, image_url")
     .eq("order_id", o.id);
   const lineItems = (items as any[]) || [];
   const itemCountNum = lineItems.reduce((n, it) => n + Number(it.quantity || 1), 0) || lineItems.length || 1;
   const firstName = lineItems[0]?.product_name || "your item";
   const productName = lineItems.length > 1 ? `${firstName} +${lineItems.length - 1} more` : firstName;
+
+  // Meta IMAGE headers reject webp/avif and anything without a clean
+  // content-type, so route product photos through the wsrv.nl JPG proxy
+  // (same approach as the cart-recovery templates).
+  const rawImage = lineItems.find((it) => it.image_url)?.image_url || "";
+  const headerImage = rawImage
+    ? `https://wsrv.nl/?url=${encodeURIComponent(String(rawImage))}&w=800&h=800&fit=cover&output=jpg&q=82`
+    : "";
+
 
   // Delivery ETA: confirmation = 6 days from order date; shipped = 4 days from ship time.
   const etaFrom = body.event === "order_shipped" ? new Date() : new Date(o.created_at || Date.now());
@@ -139,15 +148,34 @@ Deno.serve(async (req) => {
   // 'o-' = order page, 't-' = tracking URL (falls back to order page).
   const ctaToken = body.event === "order_shipped" ? `t-${o.id}` : `o-${o.id}`;
 
+  // 🧩 Template resolution for shipping: prefer the richer v3 pair when Meta
+  // has approved them, with the image variant winning only if we actually
+  // have a product photo. Falls back to the legacy v2 template so a pending
+  // Meta review never blocks notifications.
+  let templateName = TEMPLATE_BY_EVENT[body.event];
+  if (body.event === "order_shipped") {
+    const { data: tpls } = await admin
+      .from("platform_wa_templates")
+      .select("name, is_active, paused, meta_status")
+      .in("name", ["order_shipped_v3_img", "order_shipped_v3"]);
+    const usable = (name: string) =>
+      (tpls || []).some((t: any) =>
+        t.name === name && t.is_active && !t.paused &&
+        String(t.meta_status || "").toUpperCase() === "APPROVED");
+    if (headerImage && usable("order_shipped_v3_img")) templateName = "order_shipped_v3_img";
+    else if (usable("order_shipped_v3")) templateName = "order_shipped_v3";
+  }
+
   const { error: qErr } = await admin.from("wa_send_queue").insert({
     store_id: o.store_id,
     recipient_phone: phone,
     recipient_name: customerName,
-    template_name: TEMPLATE_BY_EVENT[body.event],
+    template_name: templateName,
     message_type: body.event,
     order_id: o.id,
     params: [],
     template_vars: {
+
       customer_name: customerName,
       store_name: storeName,
       product_name: productName,
@@ -162,7 +190,9 @@ Deno.serve(async (req) => {
       courier_name: courierName,
       review_url: reviewUrl,
       cta_token: ctaToken,
+      ...(headerImage ? { header_media_url: headerImage } : {}),
     },
+
     priority: body.event === "order_confirmation" ? 1 : 3,
     scheduled_at: new Date().toISOString(),
   } as any);
