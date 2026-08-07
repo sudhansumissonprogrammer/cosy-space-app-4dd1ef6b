@@ -992,6 +992,12 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
           </div>
         </section>
 
+        <Separator />
+
+        <OrderShipmentSection orderId={order.id} />
+
+
+
         {order.notes && (
           <>
             <Separator />
