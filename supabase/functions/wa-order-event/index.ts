@@ -190,7 +190,9 @@ Deno.serve(async (req) => {
       courier_name: courierName,
       review_url: reviewUrl,
       cta_token: ctaToken,
+      ...(headerImage ? { header_media_url: headerImage } : {}),
     },
+
     priority: body.event === "order_confirmation" ? 1 : 3,
     scheduled_at: new Date().toISOString(),
   } as any);
