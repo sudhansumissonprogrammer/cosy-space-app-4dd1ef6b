@@ -5,6 +5,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { resolveAdapter, listAdapters } from "../_shared/tracking/registry.ts";
+import { hasPublicFeed, publicTrack } from "../_shared/tracking/couriers/public.ts";
 import { hashEvent, statusRank, TERMINAL_STATUSES, NormalizedTracking } from "../_shared/tracking/types.ts";
 import { dispatchShipmentNotification, NOTIFY_STATUSES } from "../_shared/tracking/notify.ts";
 
