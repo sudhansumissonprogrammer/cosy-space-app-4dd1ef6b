@@ -44,10 +44,13 @@ Deno.serve(async (req) => {
   const shipmentId: string | undefined = body.shipment_id;
   if (!shipmentId) return json({ error: "shipment_id required" }, 400);
 
-  // Internal (cron) calls carry the service key; user calls must own the store
-  // and are rate limited to 1 manual refresh per shipment / 10 min.
+  // Internal (cron) calls carry the service key. Merchant calls must own the
+  // store. Customer calls (order-tracking page) are allowed too — they only
+  // trigger the same courier fetch — and every non-internal caller shares one
+  // 10-minute-per-shipment throttle so courier quota can't be burned.
   const authHeader = req.headers.get("Authorization") ?? "";
   const isInternal = authHeader === `Bearer ${SERVICE_KEY}` || body.internal === true;
+  const isPublic = body.public === true;
 
   const { data: shipment, error: shipErr } = await admin
     .from("order_shipments").select("*").eq("id", shipmentId).maybeSingle();
@@ -55,14 +58,16 @@ Deno.serve(async (req) => {
   if (!shipment) return json({ error: "shipment not found" }, 404);
 
   if (!isInternal) {
-    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) return json({ error: "unauthorized" }, 401);
-    const { data: store } = await admin
-      .from("stores").select("owner_id").eq("id", shipment.store_id).maybeSingle();
-    if (!store || store.owner_id !== user.id) return json({ error: "forbidden" }, 403);
+    if (!isPublic) {
+      const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await userClient.auth.getUser();
+      if (!user) return json({ error: "unauthorized" }, 401);
+      const { data: store } = await admin
+        .from("stores").select("owner_id").eq("id", shipment.store_id).maybeSingle();
+      if (!store || store.owner_id !== user.id) return json({ error: "forbidden" }, 403);
+    }
 
     const rlKey = `ship_track:${shipmentId}`;
     const { data: rl } = await admin
@@ -76,6 +81,7 @@ Deno.serve(async (req) => {
       { onConflict: "key" },
     );
   }
+
 
   const slug = shipment.tracking_slug || shipment.provider;
   const adapter = resolveAdapter(slug);
