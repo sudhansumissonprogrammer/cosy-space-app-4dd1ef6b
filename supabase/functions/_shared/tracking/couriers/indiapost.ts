@@ -47,12 +47,7 @@ export async function indiaPostTrack(awb: string, officialUrl: string | null): P
     errors.push(`portal: ${(e as Error).message}`);
   }
 
-  try {
-    return await universalTrack("india_post", awb, officialUrl);
-  } catch (e) {
-    errors.push((e as Error).message);
-  }
-
+  // The universal aggregator retry is handled by the caller (publicTrack).
   throw new Error(`india_post tracking unavailable: ${errors.join(" | ").slice(0, 300)}`);
 }
 
