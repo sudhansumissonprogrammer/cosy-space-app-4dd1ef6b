@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
     const bearer = authHeader.slice(7).trim();
     const isServiceCall = !!SERVICE_ROLE && bearer === SERVICE_ROLE;
 
-    let userId = "00000000-0000-0000-0000-000000000000";
+    let userId: string | null = null;
     if (!isServiceCall) {
       const { data: ud, error: userErr } = await userClient.auth.getUser();
       if (userErr || !ud?.user?.id) return j(401, { error: "Unauthorized" });
@@ -232,7 +232,7 @@ Deno.serve(async (req) => {
     const { count: recent } = await admin
       .from("wa_template_audit")
       .select("id", { count: "exact", head: true })
-      .eq("actor", userId)
+      .eq("actor", userId ?? "00000000-0000-0000-0000-000000000000")
       .gte("created_at", since);
     if ((recent || 0) >= 20) return j(429, { error: "Rate limit: 20 template ops per hour. Try again later." });
 
