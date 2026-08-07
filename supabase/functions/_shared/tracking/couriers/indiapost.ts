@@ -56,54 +56,81 @@ export async function indiaPostTrack(awb: string, officialUrl: string | null): P
   throw new Error(`india_post tracking unavailable: ${errors.join(" | ").slice(0, 300)}`);
 }
 
-/** The web method behind indiapost.gov.in's tracking page. */
-async function indiaPostPortal(awb: string): Promise<NormalizedEvent[]> {
-  const r = await fetchWithTimeout(
-    "https://www.indiapost.gov.in/_layouts/15/DOP.Portal.Tracking/TrackConsignment.aspx/GetArticleDetails",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        Accept: "application/json, text/javascript, */*; q=0.01",
-        "X-Requested-With": "XMLHttpRequest",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        Referer: "https://www.indiapost.gov.in/_layouts/15/DOP.Portal.Tracking/TrackConsignment.aspx",
-      },
-      body: JSON.stringify({ articleNumber: awb, captchaText: "", isFromMobileApp: true }),
-      timeoutMs: 12_000,
+/**
+ * indiapost.gov.in's current tracking feed.
+ *
+ * The old ASP.NET web method (`GetArticleDetails`) is gone — the portal is now
+ * a Next.js app and tracking runs through two React Server Actions:
+ *   1. `getTrackingToken()`  → short-lived signed nonce
+ *   2. `trackArticle(token, awb)` → booking + scan details
+ * Both are keyless and captcha-free. Action IDs are build-scoped, so if a
+ * redeploy rotates them we fall through to the universal aggregator.
+ */
+const IP_PAGE = "https://www.indiapost.gov.in/track-result/article-tracking/";
+const IP_ACTION_TOKEN = "00b4f44fd7cd8e5a9d969100904e4880581555ea21";
+const IP_ACTION_TRACK = "60d4c45fc5727f9c4c3efc1c93b182559c9cedbaaf";
+
+async function ipAction(actionId: string, args: unknown[]): Promise<unknown> {
+  const r = await fetchWithTimeout(IP_PAGE, {
+    method: "POST",
+    headers: {
+      "Next-Action": actionId,
+      "Content-Type": "text/plain;charset=UTF-8",
+      Accept: "text/x-component",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      Referer: IP_PAGE,
     },
-  );
+    body: JSON.stringify(args),
+    timeoutMs: 15_000,
+  });
   const text = await r.text();
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
 
-  let payload: unknown;
-  try {
-    const outer = JSON.parse(text) as { d?: unknown };
-    payload = typeof outer?.d === "string" ? JSON.parse(outer.d) : (outer?.d ?? outer);
-  } catch {
-    throw new Error("non-JSON response");
+  // RSC flight payload: newline-delimited `<id>:<json>` rows. The action's
+  // return value is the last row that parses to something non-trivial.
+  let result: unknown = null;
+  for (const line of text.split("\n")) {
+    const i = line.indexOf(":");
+    if (i <= 0) continue;
+    const raw = line.slice(i + 1).trim();
+    if (!raw || raw.startsWith("$")) continue;
+    try {
+      const v = JSON.parse(raw);
+      if (typeof v === "string" || (v && typeof v === "object" && !("a" in (v as object)))) result = v;
+    } catch { /* partial row */ }
   }
+  if (result === null) throw new Error("unparsable RSC response");
+  return result;
+}
 
-  const rows = collectRows(payload);
+async function indiaPostPortal(awb: string): Promise<NormalizedEvent[]> {
+  const token = await ipAction(IP_ACTION_TOKEN, []);
+  if (typeof token !== "string" || !token) throw new Error("no tracking token");
+
+  const res = await ipAction(IP_ACTION_TRACK, [token, awb.toUpperCase()]) as Record<string, any>;
+  if (res?.error) throw new Error(String(res.error).slice(0, 120));
+  const scans = res?.data?.tracking_details;
+  if (!Array.isArray(scans) || !scans.length) return [];
+
   const events: NormalizedEvent[] = [];
-  for (const row of rows) {
-    const date = pick(row, /(date|transactiondate|eventdate)/i);
-    const time = pick(row, /(time|transactiontime)/i);
-    const desc = pick(row, /(event|description|status|remark|activity)/i);
-    const loc = pick(row, /(office|location|city|place)/i);
-    if (!date || !desc) continue;
-    const when = toIsoIst(time ? `${date} ${time}` : date);
+  for (const row of scans as Record<string, unknown>[]) {
+    const desc = str(row.event) ?? str(row.eventcode) ?? str(row.remarks);
+    const date = str(row.date);
+    if (!desc || !date) continue;
+    const when = toIsoIst(date);
     if (!when) continue;
     events.push({
       status: mapByKeywords(desc),
       rawStatus: desc.slice(0, 120),
-      description: desc.slice(0, 240),
-      location: loc ?? null,
+      description: [desc, str(row.remarks)].filter(Boolean).join(" — ").slice(0, 240),
+      location: str(row.office),
       eventTime: when,
     });
   }
   return events;
 }
+
+
 
 /* ------------------------- Universal (17TRACK) ------------------------- */
 
