@@ -124,8 +124,9 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Daily cap — applies to MARKETING only. Transactional events (order/payment/shipping)
-  // must always reach the customer and are excluded from the cap.
+  // Marketing limits apply globally by normalized phone, across every store.
+  // Transactional events (order/payment/shipping) and 24h support replies must
+  // always reach the customer and are excluded.
   const isTransactional = TRANSACTIONAL.has(body.message_type || "");
 
   // 🔁 Recovery drip (abandoned_cart) is exempt from the flat 1-per-24h cap:
@@ -281,6 +282,30 @@ Deno.serve(async (req) => {
     };
 
 
+  }
+
+  // 🔒 FINAL ATOMIC MARKETING GATE. This is intentionally immediately before
+  // the Meta request: every producer (recovery cron, blast, campaign runner)
+  // converges here, and the DB advisory lock prevents concurrent workers from
+  // exceeding 3 attempts to one normalized phone in any rolling 7 days.
+  // We count attempts, not only deliveries: repeatedly retrying Meta 131049 was
+  // the source of the red-X flood and itself damages account quality. Utility
+  // messages and free-form support replies never enter this ledger.
+  if (!isTransactional && !isTextReply) {
+    const { data: weeklyClaim, error: weeklyClaimError } = await admin.rpc("claim_wa_marketing_attempt", {
+      _recipient_phone: phone,
+      _message_type: body.message_type || "platform",
+      _source: "wa-platform-send",
+      _limit: 3,
+    });
+    if (weeklyClaimError) {
+      console.error("weekly marketing gate failed closed", weeklyClaimError.message, { phone });
+      return json({ skipped: true, reason: "weekly_gate_unavailable", error_class: "transient" });
+    }
+    const claim = Array.isArray(weeklyClaim) ? weeklyClaim[0] : weeklyClaim;
+    if (!claim?.allowed) {
+      return json({ skipped: true, reason: "weekly_marketing_cap", attempts_in_window: claim?.attempts_in_window ?? 3 });
+    }
   }
 
   let status = "failed";

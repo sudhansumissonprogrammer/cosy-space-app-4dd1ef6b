@@ -273,9 +273,8 @@ export async function hasApprovedTemplates(admin: any): Promise<boolean> {
 //   step 1 → 30 min after the drop-off   (handled by cron min-age)
 //   step 2 → 5 hours after step 1
 //   step 3 → 24 hours after step 2
-// After step 3 the lead is done — no more marketing until the window
-// resets (72h). This intentionally overrides the flat 1-msg-per-24h
-// marketing cap, which only applies to non-recovery marketing.
+// After step 3 the lead is done. The sender also applies the platform-wide,
+// cross-store ceiling of 3 total marketing attempts per phone per rolling week.
 // ══════════════════════════════════════════════════════════════════════
 export const RECOVERY_MESSAGE_TYPES = ["abandoned_cart"];
 // +5min buffer on step 3 so it lands just outside the rolling 24h window.
@@ -289,7 +288,8 @@ export const DRIP_WINDOW_MS = 72 * 60 * 60 * 1000;
 // Without this, transient Meta errors made the 10-min cron re-fire forever.
 export const DRIP_RETRY_GAP_MS = 6 * 60 * 60 * 1000;
 export const DRIP_MAX_ATTEMPTS_24H = 3;
-// Soft failures get a shorter cooldown so the +5h step isn't pushed to +6h.
+// Soft failures get a shorter cooldown, but the sender's weekly attempt gate is
+// authoritative and prevents repeated Meta-throttle attempts.
 export const DRIP_SOFT_RETRY_GAP_MS = 4 * 60 * 60 * 1000;
 export const DRIP_MAX_SOFT_ATTEMPTS_24H = 4;
 // Meta errors that mean "this number will never receive this message".
