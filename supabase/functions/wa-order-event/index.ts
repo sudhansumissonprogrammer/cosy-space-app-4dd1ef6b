@@ -120,12 +120,21 @@ Deno.serve(async (req) => {
   // Pull line items so we can show the primary product name (more meaningful than an internal order ID).
   const { data: items } = await admin
     .from("order_items")
-    .select("product_name, quantity")
+    .select("product_name, quantity, image_url")
     .eq("order_id", o.id);
   const lineItems = (items as any[]) || [];
   const itemCountNum = lineItems.reduce((n, it) => n + Number(it.quantity || 1), 0) || lineItems.length || 1;
   const firstName = lineItems[0]?.product_name || "your item";
   const productName = lineItems.length > 1 ? `${firstName} +${lineItems.length - 1} more` : firstName;
+
+  // Meta IMAGE headers reject webp/avif and anything without a clean
+  // content-type, so route product photos through the wsrv.nl JPG proxy
+  // (same approach as the cart-recovery templates).
+  const rawImage = lineItems.find((it) => it.image_url)?.image_url || "";
+  const headerImage = rawImage
+    ? `https://wsrv.nl/?url=${encodeURIComponent(String(rawImage))}&w=800&h=800&fit=cover&output=jpg&q=82`
+    : "";
+
 
   // Delivery ETA: confirmation = 6 days from order date; shipped = 4 days from ship time.
   const etaFrom = body.event === "order_shipped" ? new Date() : new Date(o.created_at || Date.now());
