@@ -14,6 +14,8 @@ import { fetchWithTimeout } from "../../http.ts";
 import {
   mapByKeywords, NormalizedEvent, NormalizedTracking, TrackContext, TrackingAdapter,
 } from "../types.ts";
+import { hasUniversalFeed, indiaPostTrack, universalTrack } from "./indiapost.ts";
+
 
 interface Endpoint {
   url: (awb: string) => string;
@@ -55,19 +57,28 @@ const PUBLIC_ENDPOINTS: Record<string, Endpoint[]> = {
 
 const enc = encodeURIComponent;
 
+/**
+ * True when the courier can be tracked with zero merchant credentials —
+ * either through its own public feed or the universal 17TRACK fallback
+ * (India Post, Blue Dart, Amazon Shipping and friends land here).
+ */
 export function hasPublicFeed(slug: string) {
-  return !!PUBLIC_ENDPOINTS[slug]?.length;
+  return !!PUBLIC_ENDPOINTS[slug]?.length || hasUniversalFeed(slug);
 }
 
 /** Fetch + normalize a public courier feed. Throws when nothing usable. */
 export async function publicTrack(slug: string, awb: string, officialUrl: string | null): Promise<NormalizedTracking> {
   const endpoints = PUBLIC_ENDPOINTS[slug] ?? [];
-  if (!endpoints.length) throw new Error(`${slug}: no public tracking feed`);
   if (!awb) throw new Error("missing AWB");
+  if (!endpoints.length && !hasUniversalFeed(slug)) throw new Error(`${slug}: no public tracking feed`);
+
+  // India Post gets its own portal feed first, then the universal fallback.
+  if (slug === "india_post") return indiaPostTrack(awb, officialUrl);
 
   const errors: string[] = [];
 
   for (const ep of endpoints) {
+
     try {
       const method = ep.method ?? "GET";
       const r = await fetchWithTimeout(ep.url(awb), {
@@ -104,8 +115,19 @@ export async function publicTrack(slug: string, awb: string, officialUrl: string
     }
   }
 
+  // Last resort: carrier-agnostic public aggregator. Keeps the timeline alive
+  // when a courier's own feed changes shape or goes down.
+  if (hasUniversalFeed(slug)) {
+    try {
+      return await universalTrack(slug, awb, officialUrl);
+    } catch (e) {
+      errors.push((e as Error).message);
+    }
+  }
+
   throw new Error(`${slug} public tracking unavailable: ${errors.join(" | ").slice(0, 300)}`);
 }
+
 
 /** Build an adapter backed purely by a public feed. */
 export function publicAdapter(
