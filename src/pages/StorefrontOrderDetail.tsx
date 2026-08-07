@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   ArrowLeft, Package, MapPin, Phone, CreditCard, Banknote, Smartphone,
-  FileDown, MessageCircle, XCircle, RotateCcw, ShoppingBag, ExternalLink,
+  FileDown, MessageCircle, XCircle, RotateCcw, ShoppingBag,
   Loader2, ShieldCheck, Receipt, Truck,
 } from "lucide-react";
 
