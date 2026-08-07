@@ -6,9 +6,10 @@ import { hasPublicFeed, publicAdapter } from "./public.ts";
  *
  * Where the courier publishes the same JSON feed its own website uses
  * (Xpressbees, Shadowfax, Ecom Express, DTDC) we track them live with zero
- * credentials. The rest (India Post, Blue Dart, Amazon) have no open feed —
- * the merchant sets the status by hand and we still render one timeline and
- * deep-link to the courier's page.
+ * credentials. India Post uses its portal web method, and everything else
+ * falls back to the universal keyless aggregator — so Blue Dart and Amazon
+ * Shipping auto-sync too. The merchant can still override the status by hand,
+ * and we always deep-link to the courier's own page.
  */
 function courier(slug: string, displayName: string, url: (awb: string) => string | null): TrackingAdapter {
   return publicAdapter(slug, displayName, url);
