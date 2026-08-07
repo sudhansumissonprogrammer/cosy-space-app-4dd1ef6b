@@ -202,6 +202,9 @@ export default function OrderTrackingPage() {
               </CardContent>
             </Card>
 
+            {/* Shipment tracking */}
+            <OrderShipments orderId={order.id} />
+
             {/* Tracking Info */}
             {order.tracking_number && (
               <Card>
