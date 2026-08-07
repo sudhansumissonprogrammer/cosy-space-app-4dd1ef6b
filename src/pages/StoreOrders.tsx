@@ -798,38 +798,21 @@ export default function StoreOrders() {
         </SheetContent>
       </Sheet>
 
-      {/* Tracking Number Dialog */}
-      <Dialog open={!!trackingOrder} onOpenChange={(v) => { if (!v) setTrackingOrder(null); }}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Add Tracking Info</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Tracking Number</label>
-              <Input value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} placeholder="e.g. AWB123456789" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Tracking URL (optional)</label>
-              <Input value={trackingUrl} onChange={(e) => setTrackingUrl(e.target.value)} placeholder="https://track.delhivery.com/..." />
-            </div>
-            <Button
-              className="w-full"
-              onClick={() => {
-                updateWebStatus.mutate({
-                  orderId: trackingOrder.id,
-                  status: pendingStatus,
-                  tracking_number: trackingNumber.trim() || undefined,
-                  tracking_url: trackingUrl.trim() || undefined,
-                });
-                setTrackingOrder(null);
-              }}
-            >
-              Update to Shipped
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Ship dialog — creates a real shipment row (courier + AWB) so live
+          tracking and the customer WhatsApp both work, then flips the order. */}
+      {trackingOrder && (
+        <ShipmentEditorDialog
+          key={trackingOrder.id}
+          open={!!trackingOrder}
+          onOpenChange={(v) => { if (!v) setTrackingOrder(null); }}
+          orderId={trackingOrder.id}
+          onSaved={() => {
+            updateWebStatus.mutate({ orderId: trackingOrder.id, status: pendingStatus || "shipped" });
+            setTrackingOrder(null);
+          }}
+        />
+      )}
+
 
       {/* Invoice Dialog */}
       <Dialog open={!!invoiceOrder} onOpenChange={(v) => { if (!v) setInvoiceOrder(null); }}>
