@@ -31,7 +31,7 @@ const CARRIER_HINT: Record<string, number> = {
 
 /** Couriers we can track with zero credentials via the universal fallback. */
 export function hasUniversalFeed(slug: string | null | undefined) {
-  return !!slug && slug !== "other";
+  return !!slug && slug !== "other" && slug in CARRIER_HINT;
 }
 
 /* ---------------------------- India Post ---------------------------- */
