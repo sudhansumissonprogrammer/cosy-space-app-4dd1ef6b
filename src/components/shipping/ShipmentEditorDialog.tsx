@@ -23,7 +23,7 @@ interface Props {
 
 const STATUS_OPTIONS = [...SHIPMENT_STEPS, "returned", "cancelled", "exception"] as const;
 
-export default function ShipmentEditorDialog({ open, onOpenChange, orderId, shipment }: Props) {
+export default function ShipmentEditorDialog({ open, onOpenChange, orderId, shipment, onSaved }: Props) {
   const qc = useQueryClient();
   const [slug, setSlug] = useState(shipment?.tracking_slug || "delhivery");
   const [awb, setAwb] = useState(shipment?.awb || "");
