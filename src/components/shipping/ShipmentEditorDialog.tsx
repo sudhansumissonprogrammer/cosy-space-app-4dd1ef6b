@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { COURIERS, SHIPMENT_STATUS_LABEL, SHIPMENT_STEPS, courierMeta, officialTrackingUrl } from "@/lib/shipping/courierRegistry";
 import type { ShipmentTracking } from "@/hooks/useShipmentTracking";
+import CourierLogo from "./CourierLogo";
 
 interface Props {
   open: boolean;
@@ -93,7 +94,10 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
               <SelectContent>
                 {COURIERS.map((c) => (
                   <SelectItem key={c.slug} value={c.slug}>
-                    {c.name}{c.api ? " · auto-tracking" : ""}
+                    <span className="flex items-center gap-2">
+                      <CourierLogo slug={c.slug} size={20} />
+                      <span>{c.name}{c.api ? " · auto-tracking" : ""}</span>
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
