@@ -207,10 +207,16 @@ Deno.serve(async (req) => {
     });
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    // Internal/service-role invocation (platform maintenance scripts) is trusted:
-    // the service role key is never exposed to browsers.
+    // Internal invocation (pg_cron / platform maintenance). Authenticated with
+    // the DB-backed cron secret or the service-role key — neither is exposed to browsers.
     const bearer = authHeader.slice(7).trim();
-    const isServiceCall = !!SERVICE_ROLE && bearer === SERVICE_ROLE;
+    const cronHeader = req.headers.get("x-cron-secret") || "";
+    let isServiceCall = !!SERVICE_ROLE && bearer === SERVICE_ROLE;
+    if (!isServiceCall && cronHeader) {
+      const adminTmp = createClient(SUPABASE_URL, SERVICE_ROLE);
+      const { data: row } = await adminTmp.from("cron_auth").select("secret").limit(1).maybeSingle();
+      if ((row as any)?.secret && (row as any).secret === cronHeader) isServiceCall = true;
+    }
 
     let userId: string | null = null;
     if (!isServiceCall) {
@@ -221,6 +227,7 @@ Deno.serve(async (req) => {
       const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
       if (!isAdmin) return j(403, { error: "Forbidden — admin only" });
     }
+
 
 
     const body = await req.json();
