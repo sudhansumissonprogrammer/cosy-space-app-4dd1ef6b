@@ -70,7 +70,9 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
       qc.invalidateQueries({ queryKey: ["shipment-tracking", orderId] });
       qc.invalidateQueries({ queryKey: ["store-orders"] });
       qc.invalidateQueries({ queryKey: ["website-orders-all"] });
+      onSaved?.(status);
       onOpenChange(false);
+
     },
     onError: (e: any) => toast.error(e?.message || "Could not save shipment"),
   });
