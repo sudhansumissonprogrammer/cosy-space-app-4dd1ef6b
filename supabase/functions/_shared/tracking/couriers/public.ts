@@ -35,9 +35,8 @@ interface Endpoint {
  * failure on every sync; they run in manual mode with a deep link instead.
  */
 const PUBLIC_ENDPOINTS: Record<string, Endpoint[]> = {
-  delhivery: [
-    { url: (a) => `https://dlv-api.delhivery.com/v3/unified-tracking?wbn=${enc(a)}` },
-  ],
+  // (empty today — every verified keyless courier has a custom tracker below;
+  // add a courier here the moment it exposes an open JSON feed again)
 };
 
 /** Couriers with a bespoke keyless tracker (not a plain JSON endpoint). */
