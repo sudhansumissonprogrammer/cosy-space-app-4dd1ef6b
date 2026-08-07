@@ -114,7 +114,9 @@ Deno.serve(async (req) => {
   const storeName = s.name || "our store";
   const base = s.custom_domain ? `https://${s.custom_domain}` : (s.slug ? `https://${s.slug}.shopbanao.in` : "https://shopbanao.in");
   const orderLink = `${base}/account/orders/${o.id}`;
-  const trackingUrl = o.tracking_url || orderLink;
+  // Always keep customers on our own order page (live timeline lives there);
+  // the courier's site is still one tap away from that page.
+  const trackingUrl = `${orderLink}#shipment`;
   const reviewUrl = `${base}/account/orders/${o.id}#review`;
 
   // Pull line items so we can show the primary product name (more meaningful than an internal order ID).
