@@ -115,8 +115,19 @@ export async function publicTrack(slug: string, awb: string, officialUrl: string
     }
   }
 
+  // Last resort: carrier-agnostic public aggregator. Keeps the timeline alive
+  // when a courier's own feed changes shape or goes down.
+  if (hasUniversalFeed(slug)) {
+    try {
+      return await universalTrack(slug, awb, officialUrl);
+    } catch (e) {
+      errors.push((e as Error).message);
+    }
+  }
+
   throw new Error(`${slug} public tracking unavailable: ${errors.join(" | ").slice(0, 300)}`);
 }
+
 
 /** Build an adapter backed purely by a public feed. */
 export function publicAdapter(
