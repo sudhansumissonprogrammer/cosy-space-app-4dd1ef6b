@@ -231,12 +231,15 @@ Deno.serve(async (req) => {
       const base = storeBase(storeRow);
       const host = base.replace(/^https?:\/\//, "");
       const phone = (o as any).customer_phone as string | null;
-      if (kind === "t-" && (o as any).tracking_url) {
-        // Tracking URLs are usually external courier sites — no autologin.
-        return redirect((o as any).tracking_url, { status: 302, maxAge: 60 });
-      }
+      // `t-` used to bounce to the courier's own site (India Post etc.).
+      // Customers now land on OUR order detail page, which renders the full
+      // live shipment timeline + courier deep-link — branded, auto-logged in.
       const mintP = startPreMint(phone);
-      const target = await withAutoLogin(`${base}/account/orders/${(o as any).id}`, phone, mintP);
+      const target = await withAutoLogin(
+        `${base}/account/orders/${(o as any).id}${kind === "t-" ? "#shipment" : ""}`,
+        phone,
+        mintP,
+      );
       return redirect(target, {
         status: 302,
         maxAge: 0,

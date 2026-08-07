@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   ArrowLeft, Package, MapPin, Phone, CreditCard, Banknote, Smartphone,
-  FileDown, MessageCircle, XCircle, RotateCcw, ShoppingBag, ExternalLink,
+  FileDown, MessageCircle, XCircle, RotateCcw, ShoppingBag,
   Loader2, ShieldCheck, Receipt, Truck,
 } from "lucide-react";
 
@@ -218,27 +218,22 @@ export default function StorefrontOrderDetail() {
             <OrderStatusTimeline status={order.status} createdAt={order.created_at} updatedAt={order.updated_at} />
 
             {order.tracking_number && order.status !== "cancelled" && (
-              <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-dashed p-3"
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-dashed p-3"
                    style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 18%, transparent)" }}>
-                <div className="flex items-center gap-2 min-w-0">
-                  <Truck className="h-4 w-4 shrink-0 opacity-60" />
-                  <div className="min-w-0">
-                    <p className="text-[11px] opacity-60">Tracking ID</p>
-                    <p className="text-sm font-mono truncate">{order.tracking_number}</p>
-                  </div>
+                <Truck className="h-4 w-4 shrink-0 opacity-60" />
+                <div className="min-w-0">
+                  <p className="text-[11px] opacity-60">Tracking ID</p>
+                  <p className="text-sm font-mono truncate">{order.tracking_number}</p>
                 </div>
-                {order.tracking_url && (
-                  <a href={order.tracking_url} target="_blank" rel="noopener noreferrer"
-                     className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-primary hover:underline">
-                    Track <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
               </div>
             )}
           </section>
 
-          {/* Shipment tracking */}
-          <OrderShipments orderId={order.id} client={supabase} />
+          {/* Shipment tracking — WhatsApp "Track order" deep-links to #shipment */}
+          <div id="shipment" className="scroll-mt-24">
+            <OrderShipments orderId={order.id} client={supabase} />
+          </div>
+
 
 
 
