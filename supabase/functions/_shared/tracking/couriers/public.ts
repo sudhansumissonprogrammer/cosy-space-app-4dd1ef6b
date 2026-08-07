@@ -14,6 +14,8 @@ import { fetchWithTimeout } from "../../http.ts";
 import {
   mapByKeywords, NormalizedEvent, NormalizedTracking, TrackContext, TrackingAdapter,
 } from "../types.ts";
+import { hasUniversalFeed, indiaPostTrack, universalTrack } from "./indiapost.ts";
+
 
 interface Endpoint {
   url: (awb: string) => string;
