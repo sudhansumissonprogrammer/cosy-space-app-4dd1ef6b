@@ -234,6 +234,16 @@ Deno.serve(async (req) => {
       if (body.recipient_name && !extras.customer_name) extras.customer_name = body.recipient_name;
       if (tpl) finalParams = resolveTemplateParams(tpl as any, store, extras);
     }
+    // 🛡️ Button-only variables (cta_token / cta) must NEVER be sent as body
+    // params — Meta scopes button placeholders separately and returns #132000
+    // when the body param count doesn't match the {{n}} count in the body.
+    const tplVarNames = (((tpl as any)?.variables || []) as string[]).map((v) =>
+      String(v || "").replace(/^\{\{|\}\}$/g, "").trim()
+    );
+    const BUTTON_ONLY = new Set(["cta_token", "cta"]);
+    if (tplVarNames.length === finalParams.length) {
+      finalParams = finalParams.filter((_, i) => !BUTTON_ONLY.has(tplVarNames[i]));
+    }
     const params = finalParams.map((t) => ({ type: "text", text: String(t ?? "") }));
 
     // 🔘 Button URL parameters. Meta scopes button {{n}} separately from body.

@@ -207,12 +207,28 @@ Deno.serve(async (req) => {
     });
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    const { data: ud, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !ud?.user?.id) return j(401, { error: "Unauthorized" });
-    const userId = ud.user.id;
+    // Internal invocation (pg_cron / platform maintenance). Authenticated with
+    // the DB-backed cron secret or the service-role key — neither is exposed to browsers.
+    const bearer = authHeader.slice(7).trim();
+    const cronHeader = req.headers.get("x-cron-secret") || "";
+    let isServiceCall = !!SERVICE_ROLE && bearer === SERVICE_ROLE;
+    if (!isServiceCall && cronHeader) {
+      const adminTmp = createClient(SUPABASE_URL, SERVICE_ROLE);
+      const { data: row } = await adminTmp.from("cron_auth").select("secret").limit(1).maybeSingle();
+      if ((row as any)?.secret && (row as any).secret === cronHeader) isServiceCall = true;
+    }
 
-    const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
-    if (!isAdmin) return j(403, { error: "Forbidden — admin only" });
+    let userId: string | null = null;
+    if (!isServiceCall) {
+      const { data: ud, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !ud?.user?.id) return j(401, { error: "Unauthorized" });
+      userId = ud.user.id;
+
+      const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
+      if (!isAdmin) return j(403, { error: "Forbidden — admin only" });
+    }
+
+
 
     const body = await req.json();
     const action = String(body?.action || "");
@@ -223,7 +239,7 @@ Deno.serve(async (req) => {
     const { count: recent } = await admin
       .from("wa_template_audit")
       .select("id", { count: "exact", head: true })
-      .eq("actor", userId)
+      .eq("actor", userId ?? "00000000-0000-0000-0000-000000000000")
       .gte("created_at", since);
     if ((recent || 0) >= 20) return j(429, { error: "Rate limit: 20 template ops per hour. Try again later." });
 
@@ -244,6 +260,64 @@ Deno.serve(async (req) => {
 
     const audit = async (act: string, status: string | null, detail: any) =>
       admin.from("wa_template_audit").insert({ template_name: templateName || "(unknown)", action: act, actor: userId, meta_status: status, detail } as any);
+
+    // -------- SUBMIT PENDING (internal: pg_cron / maintenance) --------
+    // Submits DB rows straight to Meta so drafts stay the single source of truth.
+    if (action === "submit_pending") {
+      if (!isServiceCall) return j(403, { error: "Forbidden — internal only" });
+      const names: string[] = Array.isArray(body?.names) ? body.names.map(String) : [];
+      let q = admin.from("platform_wa_templates")
+        .select("name, language, category, header_type, header_text, header_media_url, body_text, footer_text, buttons, meta_status");
+      q = names.length ? q.in("name", names) : q.eq("meta_status", "DRAFT");
+      const { data: rows } = await q;
+      const results: any[] = [];
+      for (const r of (rows || []) as any[]) {
+        const draft = normalizeDraft({
+          name: r.name,
+          language: r.language || "en",
+          category: r.category || "UTILITY",
+          header_type: (r.header_type || "NONE") as any,
+          header_text: r.header_text,
+          header_media_url: r.header_media_url,
+          body_text: r.body_text,
+          footer_text: r.footer_text,
+          buttons: (r.buttons || []) as Btn[],
+        });
+        try {
+          let hh: string | null = null;
+          if ((draft.header_type === "IMAGE" || draft.header_type === "VIDEO" || draft.header_type === "DOCUMENT") && draft.header_media_url) {
+            if (!APP_ID) throw new Error("Meta App ID not configured");
+            hh = await uploadHeaderMedia(admin, draft.header_media_url, draft.header_type as any, APP_ID, TOKEN);
+          }
+          const comps = draftToComponents(draft, hh);
+          const resp = await metaFetch(admin, `${GRAPH}/${WABA_ID}/message_templates`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ name: draft.name, language: draft.language, category: draft.category, components: comps }),
+          }, { source: "wa-template-submit:submit-pending" });
+          const out = resp.body;
+          if (!resp.ok) {
+            results.push({ name: draft.name, ok: false, error: sanitizeError(out) });
+            await admin.from("platform_wa_templates")
+              .update({ meta_rejected_reason: sanitizeError(out) }).eq("name", draft.name);
+            continue;
+          }
+          const status = (out?.status as string) || "PENDING";
+          await admin.from("platform_wa_templates").update({
+            meta_template_id: out?.id || null,
+            meta_status: status,
+            meta_rejected_reason: null,
+            submitted_at: new Date().toISOString(),
+            paused: false,
+            pause_reason: null,
+          }).eq("name", draft.name);
+          results.push({ name: draft.name, ok: true, meta_status: status, meta_id: out?.id });
+        } catch (e: any) {
+          results.push({ name: draft.name, ok: false, error: sanitizeError(e?.message || e) });
+        }
+      }
+      return j(200, { ok: true, results });
+    }
 
     // -------- CREATE --------
     if (action === "create") {
