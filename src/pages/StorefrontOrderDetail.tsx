@@ -7,6 +7,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import { normalizePhone } from "@/lib/phoneUtils";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import OrderStatusTimeline from "@/components/storefront/OrderStatusTimeline";
+import OrderShipments from "@/components/shipping/OrderShipments";
 import { getOrderStatusMeta, paymentDisplay } from "@/lib/orderStatus";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
