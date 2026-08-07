@@ -48,11 +48,11 @@ export const COURIERS: CourierMeta[] = [
   { slug: "ekart", name: "Ekart Logistics", api: true, domain: "ekartlogistics.com" },
   { slug: "india_post", name: "India Post", api: true, domain: "indiapost.gov.in" },
   { slug: "bluedart", name: "Blue Dart", api: true, domain: "bluedart.com" },
-  { slug: "dtdc", name: "DTDC", api: true, domain: "dtdc.in" },
-  { slug: "xpressbees", name: "Xpressbees", api: true, domain: "xpressbees.com" },
-  { slug: "ecom_express", name: "Ecom Express", api: true, domain: "ecomexpress.in" },
+  { slug: "dtdc", name: "DTDC", api: false, domain: "dtdc.in" },
+  { slug: "xpressbees", name: "Xpressbees", api: false, domain: "xpressbees.com" },
+  { slug: "ecom_express", name: "Ecom Express", api: false, domain: "ecomexpress.in" },
   { slug: "amazon_shipping", name: "Amazon Shipping", api: true, domain: "amazon.in" },
-  { slug: "shadowfax", name: "Shadowfax", api: true, domain: "shadowfax.in" },
+  { slug: "shadowfax", name: "Shadowfax", api: false, domain: "shadowfax.in" },
   { slug: "other", name: "Other courier", api: false },
 ];
 

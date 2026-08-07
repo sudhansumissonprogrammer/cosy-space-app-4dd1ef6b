@@ -48,7 +48,12 @@ export default function ShipmentTimeline({ shipment }: { shipment: ShipmentTrack
 
   const events = shipment.events ?? [];
   const visible = expanded ? events : events.slice(0, 4);
-  const latest = events[0];
+  // Manual merchant updates ("status updated by seller") are stamped with the
+  // save time, so they can sit above the courier's own scans. Anything shown
+  // as "where the parcel is" must come from a real scan.
+  const latest = events.find((e) => !!e.location) ?? events[0];
+  const deliveredAt = events.find((e) => e.status === "delivered")?.event_time;
+
 
   const copy = async () => {
     if (!shipment.awb) return;
@@ -86,7 +91,7 @@ export default function ShipmentTimeline({ shipment }: { shipment: ShipmentTrack
         <div className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
           <PackageCheck className="h-4 w-4 shrink-0" />
           <p className="text-xs font-semibold">
-            Delivered{latest?.event_time ? ` on ${fmtDate(latest.event_time)}` : ""}
+            Delivered{deliveredAt ? ` on ${fmtDate(deliveredAt)}` : ""}
           </p>
         </div>
       )}

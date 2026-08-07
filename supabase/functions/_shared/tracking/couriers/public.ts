@@ -15,6 +15,8 @@ import {
   mapByKeywords, NormalizedEvent, NormalizedTracking, TrackContext, TrackingAdapter,
 } from "../types.ts";
 import { hasUniversalFeed, indiaPostTrack, universalTrack } from "./indiapost.ts";
+import { amazonTrack } from "./amazon.ts";
+import { bluedartTrack } from "./bluedart.ts";
 
 
 interface Endpoint {
@@ -24,35 +26,24 @@ interface Endpoint {
   headers?: Record<string, string>;
 }
 
-/** Public feeds, tried in order until one yields events. */
+/**
+ * Public feeds, tried in order until one yields events.
+ *
+ * Only endpoints verified to answer without credentials live here — the
+ * couriers whose "public" JSON is now behind auth (Xpressbees, Shadowfax,
+ * Ecom Express, DTDC) were removed so we don't burn a request and log a
+ * failure on every sync; they run in manual mode with a deep link instead.
+ */
 const PUBLIC_ENDPOINTS: Record<string, Endpoint[]> = {
-  delhivery: [
-    { url: (a) => `https://dlv-web.delhivery.com/api/v1/track/package/${enc(a)}` },
-    { url: (a) => `https://www.delhivery.com/api/track/package/${enc(a)}` },
-  ],
-  xpressbees: [
-    { url: (a) => `https://ship.xpressbees.com/api/shipments2/track/${enc(a)}` },
-    {
-      url: () => "https://shipment.xpressbees.com/api/tracking/shipmentdetails1",
-      method: "POST",
-      body: (a) => ({ AWB: a }),
-    },
-  ],
-  shadowfax: [
-    { url: (a) => `https://tracker.shadowfax.in/api/v1/tracking/${enc(a)}/` },
-    { url: (a) => `https://tracker.shadowfax.in/api/v2/consignment/${enc(a)}/` },
-  ],
-  ecom_express: [
-    { url: (a) => `https://ecomexpress.in/api/track/?awb=${enc(a)}` },
-    { url: (a) => `https://plapi.ecomexpress.in/track_me/api/mawbd/?awb=${enc(a)}` },
-  ],
-  dtdc: [
-    {
-      url: () => "https://trackcourier.io/api/v1/dtdc",
-      method: "POST",
-      body: (a) => ({ awb: a }),
-    },
-  ],
+  // (empty today — every verified keyless courier has a custom tracker below;
+  // add a courier here the moment it exposes an open JSON feed again)
+};
+
+/** Couriers with a bespoke keyless tracker (not a plain JSON endpoint). */
+const CUSTOM_TRACKERS: Record<string, (awb: string, url: string | null) => Promise<NormalizedTracking>> = {
+  india_post: indiaPostTrack,
+  amazon_shipping: amazonTrack,
+  bluedart: bluedartTrack,
 };
 
 const enc = encodeURIComponent;
@@ -63,19 +54,30 @@ const enc = encodeURIComponent;
  * (India Post, Blue Dart, Amazon Shipping and friends land here).
  */
 export function hasPublicFeed(slug: string) {
-  return !!PUBLIC_ENDPOINTS[slug]?.length || hasUniversalFeed(slug);
+  return !!PUBLIC_ENDPOINTS[slug]?.length || !!CUSTOM_TRACKERS[slug] || hasUniversalFeed(slug);
 }
 
 /** Fetch + normalize a public courier feed. Throws when nothing usable. */
 export async function publicTrack(slug: string, awb: string, officialUrl: string | null): Promise<NormalizedTracking> {
   const endpoints = PUBLIC_ENDPOINTS[slug] ?? [];
   if (!awb) throw new Error("missing AWB");
-  if (!endpoints.length && !hasUniversalFeed(slug)) throw new Error(`${slug}: no public tracking feed`);
-
-  // India Post gets its own portal feed first, then the universal fallback.
-  if (slug === "india_post") return indiaPostTrack(awb, officialUrl);
+  if (!endpoints.length && !CUSTOM_TRACKERS[slug] && !hasUniversalFeed(slug)) {
+    throw new Error(`${slug}: no public tracking feed`);
+  }
 
   const errors: string[] = [];
+
+  // Couriers with a dedicated keyless tracker (India Post portal, Amazon's
+  // consumer API, Blue Dart's guest result page) go first; the universal
+  // aggregator below still covers them if the courier changes shape.
+  const custom = CUSTOM_TRACKERS[slug];
+  if (custom) {
+    try {
+      return await custom(awb, officialUrl);
+    } catch (e) {
+      errors.push((e as Error).message);
+    }
+  }
 
   for (const ep of endpoints) {
 
