@@ -2,7 +2,7 @@
 // Enqueues into wa_send_queue. Branding is resolved at send-time.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, normalizePhone, isValidCronHeader, loadPlatformConfig, platformConfigUsable, getCronSecret } from "../_shared/wa-platform.ts";
-import { formatExpectedDelivery, formatPaymentStatusLine, inferCourierName } from "../_shared/wa-content.ts";
+import { formatExpectedDelivery, formatPaymentStatusLine, formatPaidSummary, formatCodDueLine, inferCourierName } from "../_shared/wa-content.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
 
   const { data: order } = await admin
     .from("orders")
-    .select("id, store_id, customer_phone, customer_name, total, currency, tracking_url, tracking_number, order_number, payment_method, payment_type, advance_paid, balance_due, created_at, stores:store_id(name, slug, custom_domain)")
+    .select("id, store_id, status, customer_phone, customer_name, total, currency, tracking_url, tracking_number, order_number, payment_method, payment_type, advance_paid, balance_due, created_at, stores:store_id(name, slug, custom_domain)")
     .eq("id", body.order_id).maybeSingle();
   if (!order) return json({ error: "order_not_found" }, 404);
 
@@ -142,6 +142,8 @@ Deno.serve(async (req) => {
   const expectedDelivery = formatExpectedDelivery(etaFrom, etaDays);
 
   const paymentStatusLine = formatPaymentStatusLine(o);
+  const paidSummary = formatPaidSummary(o);
+  const codDueLine = formatCodDueLine(o);
   const courierName = inferCourierName(o.tracking_url, "Courier partner");
 
   // Branded short link token resolved by /functions/v1/wa-r/<token>.
@@ -191,6 +193,8 @@ Deno.serve(async (req) => {
       order_total: orderTotal,
       item_count: String(itemCountNum),
       payment_status_line: paymentStatusLine,
+      paid_summary: paidSummary,
+      cod_due_line: codDueLine,
       expected_delivery: expectedDelivery,
       order_link: orderLink,
       tracking_url: trackingUrl,

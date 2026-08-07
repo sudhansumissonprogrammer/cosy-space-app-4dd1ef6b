@@ -27,30 +27,72 @@ export function formatExpectedDelivery(from: Date = new Date(), days = 5): strin
  *   - Partially paid (advance taken; remaining = COD on delivery)
  *   - Pure COD (no advance, full amount collected at delivery)
  */
-export function formatPaymentStatusLine(o: {
+export type PaymentShape = {
   payment_method?: string | null;
   payment_type?: string | null;
+  status?: string | null;
   total?: number | null;
   advance_paid?: number | null;
   balance_due?: number | null;
   currency?: string | null;
-}): string {
+};
+
+/**
+ * Normalises the money split for an order so every WhatsApp template shows the
+ * exact same numbers: what was already collected online and what the delivery
+ * agent must collect. Falls back to total - advance when balance_due is stale.
+ */
+export function resolvePaymentSplit(o: PaymentShape) {
   const sym = o.currency === "INR" || !o.currency ? "₹" : `${o.currency} `;
-  const total = Number(o.total ?? 0);
-  const advance = Number(o.advance_paid ?? 0);
-  const balance = Number(o.balance_due ?? Math.max(total - advance, 0));
+  const total = Math.max(Number(o.total ?? 0), 0);
+  const advance = Math.max(Number(o.advance_paid ?? 0), 0);
   const method = String(o.payment_method || "").toLowerCase();
   const ptype = String(o.payment_type || "").toLowerCase();
-  const isCod = method === "cod" || ptype === "cod" || ptype === "partial";
+  const status = String(o.status || "").toLowerCase();
 
-  if (isCod && advance > 0 && balance > 0) {
-    return `💵 Paid ${sym}${advance.toFixed(0)} advance · Pay ${sym}${balance.toFixed(0)} to the delivery boy on COD`;
+  const isPartial = ptype === "partial" || status === "partially_paid" || (advance > 0 && advance < total);
+  const isPureCod = !isPartial && (method === "cod" || ptype === "cod");
+  // Prepaid = anything that isn't COD/partial (full online payment).
+  const isPrepaid = !isPartial && !isPureCod;
+
+  let due: number;
+  if (isPrepaid) due = 0;
+  else if (isPureCod) due = total;
+  else {
+    const stated = Number(o.balance_due ?? NaN);
+    const derived = Math.max(total - advance, 0);
+    // Trust balance_due only when it is coherent with total/advance.
+    due = Number.isFinite(stated) && stated > 0 && Math.abs(stated - derived) <= 1 ? stated : derived;
   }
-  if (isCod) {
-    return `💵 COD — pay ${sym}${total.toFixed(0)} to the delivery boy on delivery`;
-  }
-  return `✅ Payment received — ${sym}${total.toFixed(0)}`;
+
+  return { sym, total, advance, due, isPartial, isPureCod, isPrepaid };
 }
+
+const money = (sym: string, n: number) => `${sym}${Number(n).toFixed(0)}`;
+
+/** What the customer has already paid online. Single line, no newlines (Meta rejects them). */
+export function formatPaidSummary(o: PaymentShape): string {
+  const { sym, total, advance, isPrepaid, isPureCod } = resolvePaymentSplit(o);
+  if (isPrepaid) return `${money(sym, total)} paid online — order fully prepaid`;
+  if (isPureCod) return `Nothing paid yet — Cash on Delivery order`;
+  return `${money(sym, advance)} advance paid online`;
+}
+
+/** What the delivery agent must collect. Explicit "pay at delivery" wording. */
+export function formatCodDueLine(o: PaymentShape): string {
+  const { sym, due, isPrepaid } = resolvePaymentSplit(o);
+  if (isPrepaid || due <= 0) return `Nothing to pay at delivery ✅`;
+  return `Pay ${money(sym, due)} at delivery`;
+}
+
+/** Legacy single-line variant kept for older approved templates (v2). */
+export function formatPaymentStatusLine(o: PaymentShape): string {
+  const { sym, total, advance, due, isPrepaid, isPureCod } = resolvePaymentSplit(o);
+  if (isPrepaid) return `✅ Payment received — ${money(sym, total)} (nothing to pay at delivery)`;
+  if (isPureCod) return `💵 Cash on Delivery — pay ${money(sym, total)} at delivery`;
+  return `💵 ${money(sym, advance)} advance paid · Pay ${money(sym, due)} at delivery`;
+}
+
 
 /** Best-effort courier label from a tracking URL or explicit courier name. */
 export function inferCourierName(trackingUrl?: string | null, fallback = "Courier"): string {
