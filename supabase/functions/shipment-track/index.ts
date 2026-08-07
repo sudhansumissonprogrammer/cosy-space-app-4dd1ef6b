@@ -85,32 +85,45 @@ Deno.serve(async (req) => {
 
   const slug = shipment.tracking_slug || shipment.provider;
   const adapter = resolveAdapter(slug);
+  const awb = shipment.awb ?? "";
+  const canPublic = hasPublicFeed(slug) && !!awb;
 
-  if (!adapter || !adapter.supportsApi || !adapter.track) {
+  if ((!adapter || !adapter.supportsApi || !adapter.track) && !canPublic) {
     // Manual courier — nothing to fetch, just keep it out of the sync loop.
     await admin.from("order_shipments").update({
       last_synced_at: new Date().toISOString(),
       next_sync_at: null,
       is_active: !TERMINAL_STATUSES.includes(shipment.normalized_status),
-      tracking_url: shipment.tracking_url ?? adapter?.officialUrl(shipment.awb ?? "") ?? null,
+      tracking_url: shipment.tracking_url ?? adapter?.officialUrl(awb) ?? null,
     }).eq("id", shipmentId);
     return json({ manual: true, status: shipment.normalized_status });
   }
 
   let tracking: NormalizedTracking;
   try {
-    tracking = await adapter.track({
-      storeId: shipment.store_id,
-      awb: shipment.awb ?? "",
-      loadProvider: async (provider: string) => {
-        const { data } = await admin
-          .from("store_shipping_providers").select("*")
-          .eq("store_id", shipment.store_id).eq("provider", provider).maybeSingle();
-        if (!data) throw new Error(`${provider} not configured for this store`);
-        if (!data.is_enabled) throw new Error(`${provider} is disabled`);
-        return data;
-      },
-    });
+    if (adapter?.track) {
+      try {
+        tracking = await adapter.track({
+          storeId: shipment.store_id,
+          awb,
+          loadProvider: async (provider: string) => {
+            const { data } = await admin
+              .from("store_shipping_providers").select("*")
+              .eq("store_id", shipment.store_id).eq("provider", provider).maybeSingle();
+            if (!data) throw new Error(`${provider} not configured for this store`);
+            if (!data.is_enabled) throw new Error(`${provider} is disabled`);
+            return data;
+          },
+        });
+      } catch (inner) {
+        // Merchant hasn't connected this courier (or the key broke): fall back
+        // to the courier's own public feed so tracking still works.
+        if (!canPublic) throw inner;
+        tracking = await publicTrack(slug, awb, adapter.officialUrl(awb));
+      }
+    } else {
+      tracking = await publicTrack(slug, awb, adapter?.officialUrl(awb) ?? null);
+    }
   } catch (e) {
     const attempts = (shipment.sync_attempts ?? 0) + 1;
     await admin.from("order_shipments").update({
@@ -122,6 +135,7 @@ Deno.serve(async (req) => {
     }).eq("id", shipmentId);
     return json({ error: (e as Error).message }, 502);
   }
+
 
   // Persist events (unique on shipment_id + event_hash → no duplicates).
   if (tracking.events.length) {
