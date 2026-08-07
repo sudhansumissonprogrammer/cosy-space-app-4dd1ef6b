@@ -16,11 +16,14 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   orderId: string;
   shipment?: ShipmentTracking | null;
+  /** Fired after a successful save — used to flip the order to "shipped". */
+  onSaved?: (status: string) => void;
 }
+
 
 const STATUS_OPTIONS = [...SHIPMENT_STEPS, "returned", "cancelled", "exception"] as const;
 
-export default function ShipmentEditorDialog({ open, onOpenChange, orderId, shipment }: Props) {
+export default function ShipmentEditorDialog({ open, onOpenChange, orderId, shipment, onSaved }: Props) {
   const qc = useQueryClient();
   const [slug, setSlug] = useState(shipment?.tracking_slug || "delhivery");
   const [awb, setAwb] = useState(shipment?.awb || "");
@@ -67,7 +70,9 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
       qc.invalidateQueries({ queryKey: ["shipment-tracking", orderId] });
       qc.invalidateQueries({ queryKey: ["store-orders"] });
       qc.invalidateQueries({ queryKey: ["website-orders-all"] });
+      onSaved?.(status);
       onOpenChange(false);
+
     },
     onError: (e: any) => toast.error(e?.message || "Could not save shipment"),
   });

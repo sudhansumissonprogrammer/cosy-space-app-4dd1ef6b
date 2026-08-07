@@ -76,21 +76,35 @@ Deno.serve(async (req) => {
     for (const t of body?.data ?? []) {
       total++;
       seen.push(t.name);
-      // UPSERT so templates approved at Meta but not yet tracked in DB
-      // (e.g. new versions like _v3, _v4) show up in the admin panel too.
-      const { error } = await admin
+      const patch = {
+        meta_status: t.status,
+        meta_template_id: t.id,
+        quality_score: t?.quality_score?.score ?? null,
+        language: t.language ?? "en",
+        category: t.category ?? null,
+        last_synced_at: new Date().toISOString(),
+      } as any;
+      // UPDATE-first: a blind upsert fails on existing rows because PostgREST
+      // sends the row through the INSERT path first and NOT-NULL columns like
+      // `purpose` are absent → 23502 and statuses never refreshed.
+      const { data: existing } = await admin
         .from("platform_wa_templates")
-        .upsert({
-          name: t.name,
-          meta_status: t.status,
-          meta_template_id: t.id,
-          quality_score: t?.quality_score?.score ?? null,
-          language: t.language ?? "en",
-          category: t.category ?? null,
-          last_synced_at: new Date().toISOString(),
-        } as any, { onConflict: "name" });
-      if (!error) updated++;
+        .select("name")
+        .eq("name", t.name)
+        .maybeSingle();
+      const { error } = existing
+        ? await admin.from("platform_wa_templates").update(patch).eq("name", t.name)
+        : await admin.from("platform_wa_templates").insert({
+            name: t.name,
+            purpose: "transactional",
+            is_active: false,
+            paused: true,
+            ...patch,
+          } as any);
+      if (error) console.warn("template sync failed", t.name, error.message);
+      else updated++;
     }
+
     url = body?.paging?.next ?? null;
   }
 

@@ -144,7 +144,17 @@ Deno.serve(async (req) => {
   const paymentStatusLine = formatPaymentStatusLine(o);
   const paidSummary = formatPaidSummary(o);
   const codDueLine = formatCodDueLine(o);
-  const courierName = inferCourierName(o.tracking_url, "Courier partner");
+  // Courier: prefer the real shipment row (set by the seller in the dashboard)
+  // over guessing from the tracking URL, so "India Post" etc. shows correctly.
+  const { data: shipRow } = await admin
+    .from("order_shipments")
+    .select("courier_name, tracking_slug, tracking_url, awb")
+    .eq("order_id", o.id)
+    .order("created_at", { ascending: false })
+    .limit(1).maybeSingle();
+  const courierName = (shipRow as any)?.courier_name
+    || inferCourierName((shipRow as any)?.tracking_url || o.tracking_url, "Courier partner");
+
 
   // Branded short link token resolved by /functions/v1/wa-r/<token>.
   // 'o-' = order page, 't-' = tracking URL (falls back to order page).
