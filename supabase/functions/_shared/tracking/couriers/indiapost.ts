@@ -229,6 +229,7 @@ function str(v: unknown): string | null {
   return null;
 }
 
+// deno-lint-ignore no-unused-vars
 function collectRows(root: unknown, depth = 0): Record<string, unknown>[] {
   if (!root || depth > 8) return [];
   if (Array.isArray(root)) {
@@ -240,6 +241,7 @@ function collectRows(root: unknown, depth = 0): Record<string, unknown>[] {
   return Object.values(root as Record<string, unknown>).flatMap((v) => collectRows(v, depth + 1));
 }
 
+// deno-lint-ignore no-unused-vars
 function pick(row: Record<string, unknown>, re: RegExp): string | null {
   for (const [k, v] of Object.entries(row)) {
     if (!re.test(k)) continue;
