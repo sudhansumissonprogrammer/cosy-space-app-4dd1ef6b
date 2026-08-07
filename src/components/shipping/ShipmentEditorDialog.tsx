@@ -50,13 +50,13 @@ export default function ShipmentEditorDialog({ open, onOpenChange, orderId, ship
       // messages. wa-order-event handles template choice, branding and
       // idempotency (one row per order + event), so a re-save never spams.
       let waResult: any = null;
-      if (notify && (status === "shipped" || status === "in_transit" || status === "delivered")) {
-        const event = status === "delivered" ? "order_delivered" : "order_shipped";
+      if (notify && (status === "shipped" || status === "in_transit")) {
         const { data: waData } = await supabase.functions.invoke("wa-order-event", {
-          body: { event, order_id: orderId },
+          body: { event: "order_shipped", order_id: orderId },
         });
         waResult = waData;
       }
+
       return waResult;
     },
     onSuccess: (waResult: any) => {
