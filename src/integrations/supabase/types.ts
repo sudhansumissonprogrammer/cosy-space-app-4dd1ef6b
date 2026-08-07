@@ -4229,6 +4229,30 @@ export type Database = {
           },
         ]
       }
+      wa_marketing_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          message_type: string
+          recipient_phone: string
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_type: string
+          recipient_phone: string
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_type?: string
+          recipient_phone?: string
+          source?: string
+        }
+        Relationships: []
+      }
       wa_pricing_config: {
         Row: {
           created_at: string
@@ -5178,6 +5202,19 @@ export type Database = {
         Args: { _coupon_id: string; _store_id: string }
         Returns: boolean
       }
+      claim_wa_marketing_attempt: {
+        Args: {
+          _limit?: number
+          _message_type: string
+          _recipient_phone: string
+          _source?: string
+        }
+        Returns: {
+          allowed: boolean
+          attempts_in_window: number
+          claim_id: string
+        }[]
+      }
       cleanup_app_logs: { Args: never; Returns: Json }
       cleanup_old_analytics: { Args: never; Returns: Json }
       cleanup_orphan_media_library: { Args: never; Returns: Json }
@@ -5449,6 +5486,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      release_wa_marketing_attempt: {
+        Args: { _claim_id: string }
+        Returns: undefined
       }
       reorder_products: { Args: { _ids: string[] }; Returns: undefined }
       rollup_customer_cohorts_monthly: {

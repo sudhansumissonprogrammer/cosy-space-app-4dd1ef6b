@@ -8,7 +8,8 @@
 // Guarantees:
 //   • STRICTLY one message per phone number for the whole run (global dedupe).
 //   • Phones that already received / have queued a marketing message in the
-//     last 24h are skipped (the sender's 1/day cap would drop them anyway).
+//     last 24h are skipped; the central sender additionally enforces the hard
+//     cross-store limit of 3 marketing attempts per phone per rolling 7 days.
 //   • Opted-out phones are skipped.
 //   • Phones that converted (confirmed order after the event) are skipped.
 //   • The pitched product must still be ACTIVE, so the WhatsApp button never

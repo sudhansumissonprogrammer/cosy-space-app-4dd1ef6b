@@ -181,10 +181,12 @@ Deno.serve(async (req) => {
         last_error: j?.reason || "skipped",
         locked_until: null,
       } as any).eq("id", row.id);
-      // 🩹 R3: cart-recovery skipped due to daily_cap/quality_throttle/tier_limit
+      // Cart-recovery skips caused by temporary platform conditions can be
       // is a TRANSIENT skip. Unstamp abandoned_carts.recovery_sent_at so the
       // next cron cycle can retry (still bounded by wa_max_cart_age_hours).
-      const transientSkipReasons = new Set(["daily_cap", "quality_throttle", "tier_limit", "meta_breaker_open"]);
+      // A weekly cap is deliberately final for this rolling window and must
+      // stay skipped; unstamping it would make every cron re-enqueue noise.
+      const transientSkipReasons = new Set(["daily_cap", "quality_throttle", "tier_limit", "meta_breaker_open", "weekly_gate_unavailable"]);
       if (row.message_type === "abandoned_cart" && row.abandoned_cart_id && transientSkipReasons.has(String(j?.reason || ""))) {
         await syncAbandonedCartAfterTransientBlock(admin, row, `skipped:${j?.reason}`);
       }
