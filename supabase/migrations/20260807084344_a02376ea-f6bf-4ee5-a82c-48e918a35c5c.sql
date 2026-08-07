@@ -1,0 +1,2 @@
+ALTER TABLE public.order_shipments DROP CONSTRAINT IF EXISTS order_shipments_provider_check;
+ALTER TABLE public.order_shipments ADD CONSTRAINT order_shipments_provider_check CHECK (provider ~ '^[a-z0-9_-]{2,32}$');
