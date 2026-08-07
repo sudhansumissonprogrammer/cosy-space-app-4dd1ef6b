@@ -58,7 +58,8 @@ export function mapByKeywords(text: string | null | undefined): ShipmentStatus {
   if (/(out for delivery|ofd|with delivery|dispatched for delivery)/.test(t)) return "out_for_delivery";
   if (/(reached|arrived|received at|bagged|hub|facility|center|centre)/.test(t)) return "reached_hub";
   if (/(in transit|in-transit|shipment moved|departed|left)/.test(t)) return "in_transit";
-  if (/(picked|pickup done|shipped|manifest|awb assigned)/.test(t)) return "shipped";
+  // "item booked" / "item_book" is India Post's first scan = handed to courier.
+  if (/(picked|pickup done|shipped|manifest|awb assigned|booked|item_book)/.test(t)) return "shipped";
   if (/(packed|ready to ship|label)/.test(t)) return "packed";
   if (/(created|order placed|pickup scheduled|confirmed)/.test(t)) return "confirmed";
   return "in_transit";
