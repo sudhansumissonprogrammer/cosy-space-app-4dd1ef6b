@@ -137,6 +137,112 @@ async function evaluate(admin: any): Promise<Signal[]> {
     });
   } catch (e) { console.error("signal order_notifications", (e as Error).message); }
 
+  // 8) Payment success rate — orders are being created but almost nothing converts to paid.
+  try {
+    const created = await count(admin, "orders", (q) => q.gte("created_at", iso(60)));
+    const paid = await count(admin, "orders", (q) => q.gte("created_at", iso(60)).in("status", PAID));
+    const rate = created ? paid / created : 1;
+    const bad = created >= 12 && rate < 0.15;
+    out.push({
+      key: "signal:payment_success_rate",
+      label: "Payment success rate",
+      ok: !bad,
+      detail: `${paid}/${created} orders paid in the last 60 minutes (${Math.round(rate * 100)}%, alert below 15%)`,
+    });
+  } catch (e) { console.error("signal payment_success_rate", (e as Error).message); }
+
+  // 9) Per-store blackout — a single store has real traffic but zero orders.
+  try {
+    const { data: pv } = await admin
+      .from("page_views")
+      .select("store_id")
+      .gte("created_at", iso(60))
+      .eq("is_bot", false)
+      .limit(8000);
+    const views: Record<string, number> = {};
+    for (const r of ((pv as any[]) || [])) {
+      const s = r?.store_id; if (s) views[s] = (views[s] || 0) + 1;
+    }
+    const hot = Object.entries(views).filter(([, n]) => n >= 250).map(([s]) => s);
+    const dead: string[] = [];
+    for (const s of hot) {
+      const o = await count(admin, "orders", (q) => q.gte("created_at", iso(60)).eq("store_id", s));
+      if (o === 0) dead.push(s);
+    }
+    let names = "";
+    if (dead.length) {
+      const { data: st } = await admin.from("stores").select("slug").in("id", dead);
+      names = ((st as any[]) || []).map((x) => x.slug).join(", ");
+    }
+    out.push({
+      key: "signal:store_order_blackout",
+      label: "Per-store order blackout",
+      ok: dead.length === 0,
+      detail: dead.length
+        ? `Busy stores with zero orders in 60 min: ${names || dead.join(", ")}`
+        : `${hot.length} busy stores checked, all taking orders`,
+    });
+  } catch (e) { console.error("signal store_order_blackout", (e as Error).message); }
+
+  // 10) Latency degradation — pages respond, but far too slowly.
+  try {
+    const { data: rows } = await admin
+      .from("uptime_checks")
+      .select("latency_ms")
+      .gte("checked_at", iso(15))
+      .eq("ok", true)
+      .not("latency_ms", "is", null)
+      .limit(2000);
+    const arr = ((rows as any[]) || []).map((r) => Number(r.latency_ms)).filter((n) => n > 0).sort((a, b) => a - b);
+    const p95 = arr.length ? arr[Math.min(arr.length - 1, Math.floor(arr.length * 0.95))] : 0;
+    out.push({
+      key: "signal:latency_degradation",
+      label: "Response time (p95)",
+      ok: !(arr.length >= 30 && p95 > 4000),
+      detail: `p95 response time ${p95}ms across ${arr.length} probes in 15 minutes (alert above 4000ms)`,
+    });
+  } catch (e) { console.error("signal latency_degradation", (e as Error).message); }
+
+  // 11) WhatsApp send queue backlog — worker stuck / not draining.
+  try {
+    const stuck = await count(admin, "wa_send_queue", (q) =>
+      q.in("status", ["queued", "pending", "processing"]).lt("scheduled_at", iso(25)));
+    out.push({
+      key: "signal:wa_queue_backlog",
+      label: "WhatsApp send queue backlog",
+      ok: stuck < 80,
+      detail: `${stuck} messages waiting over 25 minutes in the send queue (alert above 80)`,
+    });
+  } catch (e) { console.error("signal wa_queue_backlog", (e as Error).message); }
+
+  // 12) Cart recovery engine — abandoned carts piling up with no recovery sent.
+  try {
+    const carts = await count(admin, "abandoned_carts", (q) => q.gte("created_at", iso(180)).eq("recovered", false));
+    const sent = await count(admin, "abandoned_carts", (q) =>
+      q.gte("created_at", iso(180)).not("recovery_sent_at", "is", null));
+    const bad = carts >= 20 && sent === 0;
+    out.push({
+      key: "signal:cart_recovery",
+      label: "Abandoned cart recovery engine",
+      ok: !bad,
+      detail: `${sent} of ${carts} abandoned carts had recovery sent in the last 3 hours`,
+    });
+  } catch (e) { console.error("signal cart_recovery", (e as Error).message); }
+
+  // 13) Store wallets exhausted — negative balance blocks WhatsApp sending for that store.
+  try {
+    const { data: w } = await admin.from("store_wallets").select("store_id, balance").lt("balance", -20).limit(50);
+    const list = ((w as any[]) || []);
+    out.push({
+      key: "signal:store_wallet_block",
+      label: "Store wallet balance",
+      ok: list.length === 0,
+      detail: list.length
+        ? `${list.length} store wallets are below -₹20 — WhatsApp sending is blocked for them`
+        : "All store wallets above the blocking threshold",
+    });
+  } catch (e) { console.error("signal store_wallet_block", (e as Error).message); }
+
   return out;
 }
 
