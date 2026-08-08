@@ -27,6 +27,8 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
@@ -108,6 +110,29 @@ export default function Signup() {
     }
   };
 
+  const showVerificationStep = (signupEmail: string) => {
+    setVerificationEmail(signupEmail);
+    toast.success("Account created! Check your email to verify your account.");
+  };
+
+  const handleResendVerification = async () => {
+    if (!verificationEmail) return;
+    setResending(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: verificationEmail,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+    setResending(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success("Verification email sent again.");
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
@@ -142,8 +167,7 @@ export default function Signup() {
         if (isFetchFailure(error.message)) {
           await signUpWithProxy(normalizedEmail, password, normalizedFullName);
           attachReferralAfterSignup().catch(() => {});
-          toast.success("Account created! Signing you in...");
-          navigate("/dashboard");
+          showVerificationStep(normalizedEmail);
           return;
         }
 
@@ -158,8 +182,7 @@ export default function Signup() {
         toast.success("Account created successfully!");
         navigate("/dashboard");
       } else {
-        toast.success("Account created! Please check your email to confirm.");
-        navigate("/login");
+        showVerificationStep(normalizedEmail);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to create account";
@@ -168,8 +191,7 @@ export default function Signup() {
         try {
           await signUpWithProxy(normalizedEmail, password, normalizedFullName);
           attachReferralAfterSignup().catch(() => {});
-          toast.success("Account created! Signing you in...");
-          navigate("/dashboard");
+          showVerificationStep(normalizedEmail);
           return;
         } catch (proxyErr) {
           const proxyMessage =
@@ -195,6 +217,30 @@ export default function Signup() {
       panelPoints={["Free to start", "Storefront live in minutes", "UPI, COD & cards built in"]}
     >
       <BauhausCard corner="red">
+        {verificationEmail ? (
+          <div className="space-y-5" role="status" aria-live="polite">
+            <div>
+              <p className="text-lg font-black text-foreground">Verify your email</p>
+              <p className="mt-2 text-sm font-medium leading-relaxed text-muted-foreground">
+                We sent a verification link to <strong className="text-foreground">{verificationEmail}</strong>.
+                Open it to activate your account, then you’ll continue to your dashboard.
+              </p>
+            </div>
+            <BauhausButton
+              type="button"
+              variant="red"
+              className="w-full"
+              loading={resending}
+              disabled={resending}
+              onClick={handleResendVerification}
+            >
+              Resend verification email
+            </BauhausButton>
+            <BauhausButton type="button" variant="outline" className="w-full" onClick={() => navigate("/login")}>
+              Go to sign in
+            </BauhausButton>
+          </div>
+        ) : (
         <form onSubmit={handleSignup} className="space-y-5">
           <BauhausField
             id="full-name"
@@ -257,6 +303,7 @@ export default function Signup() {
             .
           </p>
         </form>
+        )}
       </BauhausCard>
 
       <p className="mt-6 text-sm font-medium text-muted-foreground">
