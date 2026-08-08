@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
   // Marketing limits apply globally by normalized phone, across every store.
   // Transactional events (order/payment/shipping) and 24h support replies must
   // always reach the customer and are excluded.
-  const isTransactional = TRANSACTIONAL.has(body.message_type || "");
+  const isTransactional = TRANSACTIONAL.has(body.message_type || "") || isAuthOtp;
 
   // 🔁 Recovery drip (abandoned_cart) is exempt from the flat 1-per-24h cap:
   // it runs its own strict 3-step schedule (+30min, +5h, +24h) enforced by
