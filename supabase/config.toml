@@ -85,3 +85,6 @@ verify_jwt = false
 [functions.shipment-sync-cron]
 verify_jwt = false
 
+[functions.process-email-queue]
+verify_jwt = true
+
