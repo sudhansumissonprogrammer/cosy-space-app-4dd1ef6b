@@ -161,6 +161,7 @@ const StorefrontSignup = lazy(() => import("./pages/StorefrontSignup"));
 const StorefrontAccount = lazy(() => import("./pages/StorefrontAccount"));
 const StorefrontOrderDetail = lazy(() => import("./pages/StorefrontOrderDetail"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
+const UnsubscribePage = lazy(() => import("./pages/UnsubscribePage"));
 
 const CartPage = lazy(() => import("./pages/CartPage"));
 const V19CartPage = lazy(() => import("./pages/V19CartPage"));
