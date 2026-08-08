@@ -297,6 +297,7 @@ export function StoreInbox({ storeId }: { storeId: string | undefined }) {
         queryClient.invalidateQueries({ queryKey: ["store-wa-thread", storeId, selectedPhone] }),
         queryClient.invalidateQueries({ queryKey: ["store-wa-threads", storeId] }),
       ]);
+      scrollToBottom();
     } catch (e: any) {
       toast({ title: "Could not send", description: e?.message || "Unknown error", variant: "destructive" });
     } finally {
