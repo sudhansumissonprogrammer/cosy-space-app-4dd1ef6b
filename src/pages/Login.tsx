@@ -204,7 +204,10 @@ export default function Login() {
 
 
               <p className="text-sm text-muted-foreground">
-                New store registrations are currently closed.
+                Don't have an account?{" "}
+                <Link to="/signup" className="font-medium text-primary hover:underline">
+                  Create a store
+                </Link>
               </p>
 
             </CardFooter>
