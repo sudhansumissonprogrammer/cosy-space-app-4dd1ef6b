@@ -188,7 +188,11 @@ export async function compressVideo(file: File, opts: CompressOptions = {}): Pro
       try {
         const mediaTime: number = frameMeta?.mediaTime ?? video.currentTime;
         const tsUs = Math.round(mediaTime * 1_000_000);
-        if (tsUs > lastTs) {
+        // Decimate to ~30fps. 60fps phone exports otherwise feed twice the
+        // frames into an encoder configured for 30fps, which both doubles the
+        // output size and starves each frame of bits.
+        const MIN_DELTA_US = 1_000_000 / 30.5;
+        if (tsUs > lastTs && (lastTs < 0 || tsUs - lastTs >= MIN_DELTA_US)) {
           lastTs = tsUs;
           ctx.drawImage(video, 0, 0, targetW, targetH);
           const frame = new VideoFrameCtor(canvas, { timestamp: tsUs });
