@@ -856,6 +856,15 @@ export default function CreateStore() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="owner-name">Store Owner / Founder Name</Label>
+                  <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
+                    <span className="flex-shrink-0 px-3 text-muted-foreground"><Crown className="h-4 w-4" /></span>
+                    <Input id="owner-name" placeholder="e.g. Jetharam" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} maxLength={80} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Shown on your About page as “Founded by {ownerName.trim() || "your name"}” — builds trust with customers.</p>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="whatsapp">WhatsApp Number (optional)</Label>
                   <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
                     <span className="flex-shrink-0 px-3 text-muted-foreground"><Phone className="h-4 w-4" /></span>
