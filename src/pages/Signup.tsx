@@ -199,6 +199,22 @@ export default function Signup() {
     setLoading(true);
 
     try {
+      // Pre-check duplicates so users get a clear message instead of a silent no-op
+      const [emailCheck, phoneCheck] = await Promise.all([
+        supabase.rpc("get_auth_user_id_by_email", { _email: normalizedEmail }),
+        supabase.rpc("get_user_id_by_phone", { _phone: mobile }),
+      ]);
+
+      if (!emailCheck.error && emailCheck.data) {
+        toast.error("This email already exists — please use another email or log in.");
+        return;
+      }
+      if (!phoneCheck.error && phoneCheck.data) {
+        toast.error("This mobile number already exists — please use another number or log in.");
+        return;
+      }
+
+
       const { data: signUpData, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
@@ -216,12 +232,24 @@ export default function Signup() {
           return;
         }
 
+        if (/already\s*(registered|exists)|duplicate/i.test(error.message)) {
+          toast.error("This email already exists — please use another email or log in.");
+          return;
+        }
+
         toast.error(error.message);
+        return;
+      }
+
+      // Supabase returns a user with no identities when the email is already taken
+      if (signUpData?.user && Array.isArray(signUpData.user.identities) && signUpData.user.identities.length === 0) {
+        toast.error("This email already exists — please use another email or log in.");
         return;
       }
 
       // Best-effort: attach this signup to the referring partner (if any cookie set)
       attachReferralAfterSignup().catch(() => {});
+
 
       if (signUpData?.session) {
         toast.success("Account created successfully!");
