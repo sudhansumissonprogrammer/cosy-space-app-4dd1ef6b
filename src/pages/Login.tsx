@@ -14,6 +14,14 @@ import {
   BauhausLoader,
 } from "@/components/onboarding/BauhausAuth";
 
+/** Strip +91 / 0 prefixes → bare 10-digit subscriber number. */
+const stripIndiaPrefix = (value: string): string => {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) return digits.slice(2);
+  if (digits.length === 11 && digits.startsWith("0")) return digits.slice(1);
+  return digits;
+};
+
 export default function Login() {
   const navigate = useNavigate();
   const { session, loading: authLoading } = useAuth();
@@ -21,7 +29,17 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // WhatsApp OTP sign-in
+  const [mode, setMode] = useState<"password" | "otp">("password");
+  const [phone, setPhone] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
+
   const { isLocked, remainingSeconds, attemptsLeft, checkCanAttempt, recordFailedAttempt, resetAttempts } = useLoginRateLimit();
+
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
