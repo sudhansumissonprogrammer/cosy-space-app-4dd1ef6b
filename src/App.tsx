@@ -1013,6 +1013,15 @@ function AppRouter() {
     );
   }
 
+  // ── UNSUBSCRIBE: public page, no auth providers needed ──
+  if (location.pathname === "/unsubscribe") {
+    return (
+      <Suspense fallback={<LoadingSpinner />}>
+        <UnsubscribePage />
+      </Suspense>
+    );
+  }
+
   // ── LANDING LEGAL PAGES (Razorpay/SaaS compliance) ──
   const LegalComp = LANDING_LEGAL_PATHS[location.pathname];
   if (LegalComp) {
