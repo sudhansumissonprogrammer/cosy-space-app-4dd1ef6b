@@ -265,11 +265,13 @@ Deno.serve(async (req) => {
       // 🔐 Authentication templates: the copy-code button carries the OTP.
       if (isAuthOtp && (btnType === "OTP" || btnType === "COPY_CODE")) {
         const code = sanitizeWaParam(String(finalParams[0] ?? ""), 15);
+        // Meta's authentication-template send format: the copy-code button is
+        // addressed as sub_type "url" with the OTP as a plain text parameter.
         buttonComponents.push({
           type: "button",
-          sub_type: "copy_code",
+          sub_type: "url",
           index: String(i),
-          parameters: [{ type: "coupon_code", coupon_code: code }],
+          parameters: [{ type: "text", text: code }],
         });
         return;
       }
