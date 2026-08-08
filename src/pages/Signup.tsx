@@ -11,9 +11,9 @@ import { toast } from "sonner";
 import { LayoutDashboard, Loader2 } from "lucide-react";
 import { attachReferralAfterSignup } from "@/lib/referralTracking";
 
-// Merchant (store-owner) registrations are temporarily closed.
+// Merchant (store-owner) registrations are open.
 // This does NOT affect storefront customer accounts, checkout or orders.
-const MERCHANT_SIGNUPS_ENABLED = false;
+const MERCHANT_SIGNUPS_ENABLED = true;
 
 export default function Signup() {
   const navigate = useNavigate();
