@@ -17,6 +17,7 @@ export default {
         sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
         heading: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
         dashboard: ['"Montserrat Alternates"', 'Inter', 'system-ui', 'sans-serif'],
+        bauhaus: ['Outfit', 'Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

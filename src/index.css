@@ -1292,3 +1292,35 @@ body:has(.storefront-font) {
   }
 }
 
+
+/* =========================================================================
+   Bauhaus onboarding surface (Create Store wizard).
+   Scoped so the constructivist treatment never leaks into the dashboard or
+   storefront themes. Tokens: --bauhaus-* declared above.
+   ========================================================================= */
+.bauhaus-wizard {
+  font-family: 'Outfit', Inter, system-ui, sans-serif;
+}
+.bauhaus-wizard :is(input, textarea, select, [role="combobox"]) {
+  border-radius: 0 !important;
+  border-width: 2px !important;
+  border-color: hsl(var(--bauhaus-black)) !important;
+  background-color: hsl(var(--bauhaus-white)) !important;
+  font-weight: 500;
+}
+.bauhaus-wizard :is(input, textarea, [role="combobox"]):focus-visible {
+  outline: none !important;
+  box-shadow: 3px 3px 0 0 hsl(var(--bauhaus-black)) !important;
+}
+.bauhaus-wizard label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  font-size: 11px;
+}
+.bauhaus-wizard :is(.rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
+  border-radius: 0;
+}
+.bauhaus-wizard .bauhaus-keep-round {
+  border-radius: 9999px;
+}

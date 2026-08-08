@@ -3,13 +3,16 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
-import { LayoutDashboard, Loader2 } from "lucide-react";
 import { attachReferralAfterSignup } from "@/lib/referralTracking";
+import {
+  AuthShell,
+  BauhausCard,
+  BauhausField,
+  BauhausButton,
+  BauhausLink,
+  BauhausLoader,
+} from "@/components/onboarding/BauhausAuth";
 
 // Merchant (store-owner) registrations are open.
 // This does NOT affect storefront customer accounts, checkout or orders.
@@ -33,43 +36,28 @@ export default function Signup() {
   }, [authLoading, session, navigate]);
 
   if (authLoading || session) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-foreground" />
-      </div>
-    );
+    return <BauhausLoader />;
   }
 
   if (!MERCHANT_SIGNUPS_ENABLED) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="w-full max-w-sm">
-          <div className="mb-8 flex flex-col items-center gap-2 text-center">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary">
-              <LayoutDashboard className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <h1 className="text-xl font-semibold text-foreground">Registrations are closed</h1>
-            <p className="text-sm text-muted-foreground">
-              New store signups are temporarily paused. Existing stores and their customers are unaffected.
-            </p>
-          </div>
-          <Card>
-            <CardContent className="pt-6 text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link to="/login" className="font-medium text-primary hover:underline">
-                Sign in
-              </Link>
-            </CardContent>
-            <CardFooter className="justify-center">
-              <Button variant="outline" className="w-full" onClick={() => navigate("/")}>
-                Back to home
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-      </div>
+      <AuthShell
+        eyebrow="Registrations paused"
+        title={<>Doors<br />Closed</>}
+        subtitle="New store signups are temporarily paused. Existing stores and their customers are unaffected."
+      >
+        <BauhausCard corner="yellow">
+          <p className="text-sm font-medium text-muted-foreground">
+            Already have an account? <BauhausLink to="/login">Sign in</BauhausLink>
+          </p>
+          <BauhausButton variant="outline" className="mt-5 w-full" onClick={() => navigate("/")}>
+            Back to home
+          </BauhausButton>
+        </BauhausCard>
+      </AuthShell>
     );
   }
+
 
 
 
@@ -199,90 +187,81 @@ export default function Signup() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-2">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary">
-            <LayoutDashboard className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <h1 className="text-xl font-semibold text-foreground">Create an account</h1>
-          <p className="text-sm text-muted-foreground">
-            Get started — choose a plan when you create your store
+    <AuthShell
+      eyebrow="Step 01 — Account"
+      title={<>Build<br />Your Shop</>}
+      subtitle="Create your account first. You'll set up the store — name, logo, payments — right after."
+      panelTitle={"Form follows\nfunction.\nSo does sales."}
+      panelPoints={["Free to start", "Storefront live in minutes", "UPI, COD & cards built in"]}
+    >
+      <BauhausCard corner="red">
+        <form onSubmit={handleSignup} className="space-y-5">
+          <BauhausField
+            id="full-name"
+            label="Full name"
+            type="text"
+            placeholder="John Doe"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            autoComplete="name"
+            maxLength={100}
+          />
+          <BauhausField
+            id="email"
+            label="Email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+          />
+          <BauhausField
+            id="password"
+            label="Password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+            hint="Minimum 6 characters."
+          />
+          <BauhausField
+            id="confirm-password"
+            label="Confirm password"
+            type="password"
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
+          />
+
+          <BauhausButton
+            type="submit"
+            variant="red"
+            className="w-full"
+            loading={loading}
+            disabled={loading || googleLoading}
+          >
+            Create account
+          </BauhausButton>
+
+          <p className="text-xs font-medium leading-relaxed text-muted-foreground">
+            By creating an account you agree to our{" "}
+            <Link to="/terms" className="underline decoration-2 underline-offset-2 hover:text-foreground">
+              Terms &amp; Conditions
+            </Link>{" "}
+            and{" "}
+            <Link to="/privacy" className="underline decoration-2 underline-offset-2 hover:text-foreground">
+              Privacy Policy
+            </Link>
+            .
           </p>
-        </div>
+        </form>
+      </BauhausCard>
 
-        <Card>
-          <form onSubmit={handleSignup}>
-            <CardContent className="space-y-4 pt-6">
-              <div className="space-y-2">
-                <Label htmlFor="full-name">Full Name</Label>
-                <Input
-                  id="full-name"
-                  type="text"
-                  placeholder="John Doe"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  autoComplete="name"
-                  maxLength={100}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm password</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password"
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-3">
-              <Button type="submit" className="w-full" disabled={loading || googleLoading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Account
-              </Button>
-
-              <p className="text-xs text-muted-foreground text-center leading-snug">
-                By creating an account, you agree to our{" "}
-                <Link to="/terms" className="underline hover:text-foreground">Terms &amp; Conditions</Link>{" "}
-                and{" "}
-                <Link to="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>.
-              </p>
-
-              <p className="text-sm text-muted-foreground">
-                Already have an account?{" "}
-                <Link to="/login" className="font-medium text-primary hover:underline">
-                  Sign in
-                </Link>
-              </p>
-            </CardFooter>
-          </form>
-        </Card>
-      </div>
-    </div>
+      <p className="mt-6 text-sm font-medium text-muted-foreground">
+        Already have an account? <BauhausLink to="/login">Sign in</BauhausLink>
+      </p>
+    </AuthShell>
   );
 }
