@@ -205,10 +205,14 @@ export async function uploadCompressedVideo(
   // Compress ONLY when the file is genuinely too heavy for R2 (100MB cap) or
   // way above 1080p. Phone/editor exports are already H.264 and look far better
   // raw than re-encoded — re-encoding every 8MB clip was destroying quality.
-  const COMPRESS_THRESHOLD = 45 * 1024 * 1024;
+  const COMPRESS_THRESHOLD = 12 * 1024 * 1024;
   const longEdge = Math.max(meta.width || 0, meta.height || 0);
   const shouldCompress =
-    isWebCodecsSupported() && (file.size > COMPRESS_THRESHOLD || longEdge > 1920);
+    isWebCodecsSupported() &&
+    (file.size > COMPRESS_THRESHOLD ||
+      longEdge > 1920 ||
+      // Anything above ~2.5 Mbps is over-encoded for a muted 720p reel.
+      (meta.duration > 0 && (file.size * 8) / meta.duration > 2_500_000));
   // Capture runs near realtime now, so budget = 1.5x duration + slack.
   const COMPRESS_BUDGET_MS = Math.min(240_000, Math.max(60_000, (meta.duration || 30) * 3000 + 30_000));
 
