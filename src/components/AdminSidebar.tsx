@@ -53,6 +53,7 @@ export function AdminSidebar() {
     { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
     { title: "Usage Monitor", url: "/admin/usage", icon: Activity },
     { title: "Error Logs", url: "/admin/error-logs", icon: AlertTriangle },
+    { title: "Uptime Monitor", url: "/admin/uptime", icon: Activity },
   ];
 
   const settingsItems = [
