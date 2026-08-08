@@ -508,7 +508,7 @@ export default function CreateStore() {
   
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 pb-8 relative">
+    <div className="bauhaus-wizard relative mx-auto max-w-2xl space-y-6 pb-8">
       {/* Existing Store Dialog */}
       <Dialog open={showExistingStoreDialog} onOpenChange={setShowExistingStoreDialog}>
         <DialogContent className="max-w-sm text-center">
