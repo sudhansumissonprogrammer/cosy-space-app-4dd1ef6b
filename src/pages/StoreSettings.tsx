@@ -301,6 +301,11 @@ export default function StoreSettings() {
               <Input id="store-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="owner-name">Store Owner / Founder Name</Label>
+              <Input id="owner-name" placeholder="e.g. Jetharam" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} maxLength={80} />
+              <p className="text-xs text-muted-foreground">Shown on your About page as “Founded by {ownerName.trim() || "your name"}”.</p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="store-desc">Description</Label>
               <Textarea id="store-desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={1000} />
             </div>
