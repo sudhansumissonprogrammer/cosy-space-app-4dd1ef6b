@@ -133,7 +133,7 @@ export default function CheckoutPhoneStep({
   const [summaryOpen, setSummaryOpen] = useState(true);
   
   const inFlight = useRef(false);
-  const autoSubmittedRef = useRef(false);
+  
   const themeConfig = useStorefrontThemeConfig(storeId);
 
   const digits = phone.replace(/\D/g, "");
