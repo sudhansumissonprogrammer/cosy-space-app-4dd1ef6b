@@ -393,11 +393,7 @@ export default function CreateStore() {
   if (checkingStore) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="flex items-center gap-2">
-          <span className="h-5 w-5 animate-bounce rounded-full border-2 border-foreground bg-bauhaus-red" />
-          <span className="h-5 w-5 animate-bounce border-2 border-foreground bg-bauhaus-blue" style={{ animationDelay: "0.12s" }} />
-          <span className="h-5 w-5 rotate-45 animate-bounce border-2 border-foreground bg-bauhaus-yellow" style={{ animationDelay: "0.24s" }} />
-        </div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
@@ -406,68 +402,89 @@ export default function CreateStore() {
   if (storeCreated) {
     const storeUrl = `https://${createdSlug}.shopbanao.in`;
     return (
-      <div className="bauhaus-wizard fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto bg-bauhaus-canvas px-4 py-10">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.12]"
-          style={{ backgroundImage: "radial-gradient(hsl(var(--bauhaus-black)) 2px, transparent 2px)", backgroundSize: "24px 24px" }}
-        />
-        <div className="pointer-events-none absolute -left-10 top-10 h-40 w-40 rounded-full border-4 border-foreground bg-bauhaus-yellow opacity-60" aria-hidden="true" />
-        <div className="pointer-events-none absolute -right-8 bottom-16 h-36 w-36 rotate-45 border-4 border-foreground bg-bauhaus-blue opacity-60" aria-hidden="true" />
-
-        <div className="relative z-10 w-full max-w-md">
-          <div className="mb-6 flex h-20 w-20 items-center justify-center border-4 border-foreground bg-bauhaus-red shadow-bauhaus-lg">
-            <Check className="h-10 w-10 text-bauhaus-white" strokeWidth={3} />
-          </div>
-
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-bauhaus-red">Launched</p>
-          <h1 className="text-4xl font-black uppercase leading-[0.9] tracking-tighter text-foreground sm:text-5xl">
-            Your store<br />is live
-          </h1>
-          <p className="mt-4 text-base font-medium text-muted-foreground">
-            <span className="font-black text-foreground">{name || createdSlug}</span> is open for business.
-          </p>
-
-          <div className="relative mt-8 border-2 border-foreground bg-bauhaus-white p-5 shadow-bauhaus-lg sm:border-4">
-            <span className="absolute right-3 top-3 h-3 w-3 rounded-full border-2 border-foreground bg-bauhaus-blue" aria-hidden="true" />
-            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Your store URL</p>
-            <p className="mt-1 truncate text-lg font-black tracking-tight text-foreground">{storeUrl}</p>
-
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-              <a
-                href={storeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-12 flex-1 items-center justify-center gap-2 border-2 border-foreground bg-bauhaus-red text-sm font-bold uppercase tracking-wider text-bauhaus-white shadow-bauhaus transition-[transform,box-shadow] duration-200 ease-out active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-              >
-                <ExternalLink className="h-4 w-4" strokeWidth={3} />
-                Visit store
-              </a>
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(storeUrl);
-                  toast.success("Link copied!");
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background px-4">
+        {/* Confetti */}
+        {showConfetti && (
+          <div className="fixed inset-0 pointer-events-none">
+            {Array.from({ length: 24 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute rounded-full"
+                style={{
+                  width: `${6 + Math.random() * 8}px`,
+                  height: `${6 + Math.random() * 8}px`,
+                  backgroundColor: ['hsl(var(--primary))', '#22c55e', '#f59e0b', '#3b82f6', '#ec4899'][i % 5],
+                  left: `${5 + Math.random() * 90}%`,
+                  top: `${5 + Math.random() * 90}%`,
+                  animation: `confetti-fall ${1 + Math.random() * 2}s ease-out forwards`,
+                  animationDelay: `${Math.random() * 0.5}s`,
+                  opacity: 0.8,
                 }}
-                className="inline-flex h-12 flex-1 items-center justify-center gap-2 border-2 border-foreground bg-bauhaus-white text-sm font-bold uppercase tracking-wider text-foreground shadow-bauhaus transition-[transform,box-shadow] duration-200 ease-out active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-              >
-                <Copy className="h-4 w-4" strokeWidth={3} />
-                Copy link
-              </button>
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="relative flex items-center justify-center mb-6">
+          <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-green-500/10">
+            <Check className="h-12 w-12 text-green-500" />
+          </div>
+        </div>
+
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground text-center">
+          Your Store is Live! 🎉
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground text-center max-w-md">
+          <span className="font-semibold text-primary">{name || createdSlug}</span> is now live and ready for customers.
+        </p>
+
+        {/* Store URL Card */}
+        <div className="mt-6 w-full max-w-md rounded-2xl border-2 border-primary/20 bg-primary/5 p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <Globe className="h-5 w-5 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted-foreground">Your store URL</p>
+              <p className="text-sm font-semibold text-foreground truncate">{storeUrl}</p>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate("/dashboard", { replace: true })}
-            className="mt-6 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-bauhaus-blue underline decoration-2 underline-offset-4 transition-colors duration-200 hover:text-bauhaus-red"
-          >
-            Go to dashboard <ArrowRight className="h-4 w-4" strokeWidth={3} />
-          </button>
-
-          <p className="mt-4 max-w-sm text-xs font-medium text-muted-foreground">
-            Manage products, orders and themes any time from the dashboard.
-          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button asChild className="flex-1 gap-2" size="lg">
+              <a href={storeUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4" />
+                Visit Your Store
+              </a>
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="flex-1 gap-2"
+              onClick={() => {
+                navigator.clipboard.writeText(storeUrl);
+                toast.success("Link copied!");
+              }}
+            >
+              <Copy className="h-4 w-4" />
+              Copy Link
+            </Button>
+          </div>
         </div>
+
+        {/* Go to Dashboard */}
+        <Button
+          variant="ghost"
+          className="mt-6 gap-2 text-muted-foreground"
+          onClick={() => navigate("/dashboard", { replace: true })}
+        >
+          <ArrowRight className="h-4 w-4" />
+          Go to Dashboard
+        </Button>
+
+        <p className="mt-4 text-xs text-muted-foreground/60 text-center max-w-sm">
+          You can manage products, orders, and customize your store from the dashboard.
+        </p>
       </div>
     );
   }
@@ -475,28 +492,45 @@ export default function CreateStore() {
   // Full-screen creating animation overlay
   if (creatingAnimation) {
     return (
-      <div className="bauhaus-wizard fixed inset-0 z-50 flex flex-col items-center justify-center bg-bauhaus-canvas">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.12]"
-          style={{ backgroundImage: "radial-gradient(hsl(var(--bauhaus-black)) 2px, transparent 2px)", backgroundSize: "24px 24px" }}
-        />
-        <div className="relative flex items-end gap-3">
-          <span className="h-10 w-10 animate-bounce rounded-full border-4 border-foreground bg-bauhaus-red" />
-          <span className="h-10 w-10 animate-bounce border-4 border-foreground bg-bauhaus-blue" style={{ animationDelay: "0.15s" }} />
-          <span className="h-10 w-10 rotate-45 animate-bounce border-4 border-foreground bg-bauhaus-yellow" style={{ animationDelay: "0.3s" }} />
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
+        <div className="relative flex items-center justify-center">
+          <div className="absolute h-32 w-32 rounded-full border-2 border-primary/20 animate-ping" style={{ animationDuration: "2s" }} />
+          <div className="absolute h-24 w-24 rounded-full border-2 border-primary/30 animate-ping" style={{ animationDuration: "1.5s", animationDelay: "0.3s" }} />
+          <div className="absolute h-16 w-16 rounded-full border-2 border-primary/40 animate-ping" style={{ animationDuration: "1s", animationDelay: "0.6s" }} />
+          <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/30">
+            <Rocket className="h-10 w-10 text-primary-foreground animate-bounce" />
+          </div>
         </div>
 
-        <div className="relative mt-12 text-center">
-          <h2 className="text-3xl font-black uppercase tracking-tighter text-foreground sm:text-4xl">
-            Building your store
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full bg-primary/20"
+            style={{
+              width: `${4 + Math.random() * 6}px`,
+              height: `${4 + Math.random() * 6}px`,
+              left: `${15 + Math.random() * 70}%`,
+              top: `${15 + Math.random() * 70}%`,
+              animation: `float-particle ${2 + Math.random() * 3}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 2}s`,
+            }}
+          />
+        ))}
+
+        <div className="mt-10 text-center space-y-2">
+          <h2 className="text-xl font-bold text-foreground animate-pulse">
+            Creating your store...
           </h2>
-          <p className="mt-2 text-sm font-medium text-muted-foreground">
-            Setting up <span className="font-black text-foreground">{name || "your store"}</span>
+          <p className="text-sm text-muted-foreground">
+            Setting up <span className="font-semibold text-primary">{name || "your store"}</span> ✨
           </p>
-          <div className="mx-auto mt-6 h-4 w-56 border-2 border-foreground bg-bauhaus-white">
+          <div className="mx-auto mt-4 h-1.5 w-48 overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full bg-bauhaus-red"
-              style={{ width: loading ? "85%" : "100%", animation: "progress-grow 1.5s ease-out forwards" }}
+              className="h-full rounded-full bg-primary transition-[transform,opacity,colors,box-shadow] duration-1000"
+              style={{
+                width: loading ? "85%" : "100%",
+                animation: "progress-grow 1.5s ease-out forwards",
+              }}
             />
           </div>
         </div>
@@ -504,11 +538,10 @@ export default function CreateStore() {
     );
   }
 
-
   
 
   return (
-    <div className="bauhaus-wizard relative mx-auto max-w-2xl space-y-6 pb-8">
+    <div className="mx-auto max-w-2xl space-y-6 pb-8 relative">
       {/* Existing Store Dialog */}
       <Dialog open={showExistingStoreDialog} onOpenChange={setShowExistingStoreDialog}>
         <DialogContent className="max-w-sm text-center">
@@ -581,53 +614,56 @@ export default function CreateStore() {
       )}
 
       {/* Header */}
-      <div>
-        <p className="text-xs font-bold uppercase tracking-widest text-bauhaus-red">
-          Step {step} of {STEPS.length}
-        </p>
-        <h1 className="mt-2 text-4xl font-black uppercase leading-[0.9] tracking-tighter text-foreground sm:text-5xl">
-          Create<br />your store
-        </h1>
-        <p className="mt-3 text-base font-medium text-muted-foreground">{currentStep.motivation}</p>
+      <div className="text-center">
+        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+          <Sparkles className="h-7 w-7 text-primary" />
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Create Your Store</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Set up your storefront in just a few steps</p>
       </div>
 
       {/* Progress bar */}
-      <div className="h-4 w-full border-2 border-foreground bg-bauhaus-white">
-        <div
-          className="h-full bg-bauhaus-red transition-[width] duration-300 ease-out"
-          style={{ width: `${progress}%` }}
-        />
+      <div className="space-y-2">
+        <Progress value={progress} className="h-2" />
+        <p className="text-center text-xs font-medium text-primary animate-fade-in" key={step}>
+          {currentStep.motivation}
+        </p>
       </div>
 
       {/* Step Indicator */}
-      <div className="flex items-stretch gap-2">
-        {STEPS.map((s) => {
-          const done = step > s.id;
-          const active = step === s.id;
-          return (
+      <div className="flex items-center justify-center gap-1">
+        {STEPS.map((s, i) => (
+          <div key={s.id} className="flex items-center">
             <button
-              key={s.id}
               type="button"
               onClick={() => { if (s.id < step) { setDirection("back"); setStep(s.id); } }}
-              className={`flex flex-1 items-center justify-center gap-1.5 border-2 border-foreground px-2 py-2.5 text-[11px] font-bold uppercase tracking-widest transition-[transform,box-shadow,background-color] duration-200 ease-out ${
-                active
-                  ? "bg-bauhaus-red text-bauhaus-white shadow-bauhaus"
-                  : done
-                  ? "cursor-pointer bg-bauhaus-yellow text-foreground hover:-translate-y-1"
-                  : "bg-bauhaus-white text-muted-foreground"
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium transition-[transform,opacity,colors,box-shadow] duration-300 ${
+                step === s.id
+                  ? "bg-primary text-primary-foreground shadow-md scale-110"
+                  : step > s.id
+                  ? "bg-primary/10 text-primary cursor-pointer hover:bg-primary/20"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
-              {done ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : <s.icon className="h-3.5 w-3.5" strokeWidth={3} />}
+              {step > s.id ? (
+                <Check className="h-3 w-3" />
+              ) : (
+                <s.icon className="h-3 w-3" />
+              )}
               <span className="hidden sm:inline">{s.title}</span>
             </button>
-          );
-        })}
+            {i < STEPS.length - 1 && (
+              <div className={`mx-1 h-px w-6 transition-colors duration-500 ${
+                step > s.id ? "bg-primary" : "bg-border"
+              }`} />
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Step Content */}
-      <div className="relative border-2 border-foreground bg-bauhaus-white shadow-bauhaus sm:border-4 sm:shadow-bauhaus-lg">
-        <span className="absolute right-4 top-4 h-3 w-3 rounded-full border-2 border-foreground bg-bauhaus-blue" aria-hidden="true" />
-        <div className="p-5 sm:p-8">
+      <Card className="overflow-hidden border-0 shadow-lg">
+        <CardContent className="p-5 sm:p-8">
           <div
             key={step}
             className="animate-fade-in"
@@ -910,41 +946,45 @@ export default function CreateStore() {
           </div>
 
           {/* Navigation */}
-          <div className="mt-8 flex items-center justify-between gap-3 border-t-2 border-foreground pt-6 sm:border-t-4">
+          <div className="mt-8 flex items-center justify-between gap-3">
             {step > 1 ? (
-              <button
-                type="button"
-                onClick={goBack}
-                className="inline-flex h-12 items-center gap-2 px-3 text-sm font-bold uppercase tracking-wider text-foreground transition-colors duration-200 hover:bg-muted"
-              >
-                <ArrowLeft className="h-4 w-4" strokeWidth={3} /> Back
-              </button>
+              <Button type="button" variant="ghost" onClick={goBack} className="gap-2">
+                <ArrowLeft className="h-4 w-4" /> Back
+              </Button>
             ) : (
               <div />
             )}
 
             {step < STEPS.length ? (
-              <button
-                type="button"
-                onClick={goNext}
-                className="inline-flex h-12 items-center gap-2 border-2 border-foreground bg-bauhaus-blue px-6 text-sm font-bold uppercase tracking-wider text-bauhaus-white shadow-bauhaus transition-[transform,box-shadow] duration-200 ease-out active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-              >
-                Next <ArrowRight className="h-4 w-4" strokeWidth={3} />
-              </button>
+              <Button type="button" onClick={goNext} className="gap-2 px-6">
+                Next <ArrowRight className="h-4 w-4" />
+              </Button>
             ) : (
-              <button
+              <Button
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading}
-                className="inline-flex h-12 items-center gap-2 border-2 border-foreground bg-bauhaus-red px-6 text-sm font-bold uppercase tracking-wider text-bauhaus-white shadow-bauhaus transition-[transform,box-shadow] duration-200 ease-out active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:pointer-events-none disabled:opacity-50"
+                className="gap-2 px-8 relative overflow-hidden group"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" strokeWidth={3} />}
-                Launch store
-              </button>
+                <span className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <span className="relative flex items-center gap-2">
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Rocket className="h-4 w-4 group-hover:animate-bounce" />
+                  )}
+                  Launch My Store 🚀
+                </span>
+              </Button>
             )}
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
+
+      {/* Step counter */}
+      <p className="text-center text-xs text-muted-foreground">
+        Step {step} of {STEPS.length}
+      </p>
     </div>
   );
 }
