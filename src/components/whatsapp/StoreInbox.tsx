@@ -423,7 +423,14 @@ export function StoreInbox({ storeId }: { storeId: string | undefined }) {
                     size="sm"
                     className="text-xs"
                     disabled={messagesQuery.isFetchingNextPage}
-                    onClick={() => messagesQuery.fetchNextPage()}
+                    onClick={() => {
+                      const container = messagesContainerRef.current;
+                      if (container) {
+                        prevScrollHeightRef.current = container.scrollHeight;
+                        isLoadingOlderRef.current = true;
+                      }
+                      messagesQuery.fetchNextPage();
+                    }}
                   >
                     {messagesQuery.isFetchingNextPage ? "Loading…" : "Load older messages"}
                   </Button>
