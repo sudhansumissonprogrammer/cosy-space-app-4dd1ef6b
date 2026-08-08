@@ -110,7 +110,8 @@ async function sendAlert(admin: any, headline: string, target: string, detail: s
 async function syncTargets(admin: any) {
   const fixed = [
     { key: "platform:landing", label: "ShopBanao landing", url: "https://shopbanao.in/", kind: "platform", expect_text: null },
-    { key: "platform:rest", label: "Database API", url: `${SUPABASE_URL}/rest/v1/?apikey=${ANON_KEY}`, kind: "api", expect_status: 200, expect_text: null },
+    // PostgREST's root path always answers 401, so probe a real public read instead.
+    { key: "platform:rest", label: "Database API", url: `${SUPABASE_URL}/rest/v1/stores?select=id&limit=1&apikey=${ANON_KEY}`, kind: "api", expect_status: 200, expect_text: null },
     { key: "platform:auth", label: "Login / auth service", url: `${SUPABASE_URL}/auth/v1/health`, kind: "api", expect_status: 200, expect_text: null },
     { key: "platform:functions", label: "Edge functions", url: `${SUPABASE_URL}/functions/v1/pincode-lookup?pincode=110001`, kind: "api", expect_status: 200, expect_text: null },
     { key: "platform:checkout-api", label: "Checkout / order API", url: `${SUPABASE_URL}/functions/v1/place-order`, kind: "api", method: "OPTIONS", expect_status: 200, expect_text: null },
