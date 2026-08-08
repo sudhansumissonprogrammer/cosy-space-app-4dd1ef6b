@@ -910,45 +910,42 @@ export default function CreateStore() {
           </div>
 
           {/* Navigation */}
-          <div className="mt-8 flex items-center justify-between gap-3">
+          <div className="mt-8 flex items-center justify-between gap-3 border-t-2 border-foreground pt-6 sm:border-t-4">
             {step > 1 ? (
-              <Button type="button" variant="ghost" onClick={goBack} className="gap-2">
-                <ArrowLeft className="h-4 w-4" /> Back
-              </Button>
+              <button
+                type="button"
+                onClick={goBack}
+                className="inline-flex h-12 items-center gap-2 px-3 text-sm font-bold uppercase tracking-wider text-foreground transition-colors duration-200 hover:bg-muted"
+              >
+                <ArrowLeft className="h-4 w-4" strokeWidth={3} /> Back
+              </button>
             ) : (
               <div />
             )}
 
             {step < STEPS.length ? (
-              <Button type="button" onClick={goNext} className="gap-2 px-6">
-                Next <ArrowRight className="h-4 w-4" />
-              </Button>
+              <button
+                type="button"
+                onClick={goNext}
+                className="inline-flex h-12 items-center gap-2 border-2 border-foreground bg-bauhaus-blue px-6 text-sm font-bold uppercase tracking-wider text-bauhaus-white shadow-bauhaus transition-[transform,box-shadow] duration-200 ease-out active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+              >
+                Next <ArrowRight className="h-4 w-4" strokeWidth={3} />
+              </button>
             ) : (
-              <Button
+              <button
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading}
-                className="gap-2 px-8 relative overflow-hidden group"
+                className="inline-flex h-12 items-center gap-2 border-2 border-foreground bg-bauhaus-red px-6 text-sm font-bold uppercase tracking-wider text-bauhaus-white shadow-bauhaus transition-[transform,box-shadow] duration-200 ease-out active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:pointer-events-none disabled:opacity-50"
               >
-                <span className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <span className="relative flex items-center gap-2">
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Rocket className="h-4 w-4 group-hover:animate-bounce" />
-                  )}
-                  Launch My Store 🚀
-                </span>
-              </Button>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" strokeWidth={3} />}
+                Launch store
+              </button>
             )}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Step counter */}
-      <p className="text-center text-xs text-muted-foreground">
-        Step {step} of {STEPS.length}
-      </p>
+        </div>
+      </div>
     </div>
+  );
   );
 }
