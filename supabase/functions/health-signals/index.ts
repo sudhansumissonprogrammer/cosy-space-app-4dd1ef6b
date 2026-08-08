@@ -243,6 +243,91 @@ async function evaluate(admin: any): Promise<Signal[]> {
     });
   } catch (e) { console.error("signal store_wallet_block", (e as Error).message); }
 
+  // 14) Checkout API failures — customers can't complete purchases.
+  try {
+    const errs = await count(admin, "error_logs", (q) =>
+      q.gte("created_at", iso(30))
+        .in("level", ["error", "fatal"])
+        .or("message.ilike.%checkout%,message.ilike.%place-order%,message.ilike.%order creation%"));
+    out.push({
+      key: "signal:checkout_api_errors",
+      label: "Checkout API errors",
+      ok: errs < 10,
+      detail: `${errs} checkout/place-order errors in the last 30 minutes (alert above 10)`,
+    });
+  } catch (e) { console.error("signal checkout_api_errors", (e as Error).message); }
+
+  // 15) Auth/signup/OTP failures — merchants can't log in or verify.
+  try {
+    const errs = await count(admin, "error_logs", (q) =>
+      q.gte("created_at", iso(30))
+        .in("level", ["error", "fatal"])
+        .or("message.ilike.%signup%,message.ilike.%login%,message.ilike.%otp%,message.ilike.%verify%,message.ilike.%auth%"));
+    out.push({
+      key: "signal:auth_failures",
+      label: "Auth & signup failures",
+      ok: errs < 10,
+      detail: `${errs} auth/signup/OTP errors in the last 30 minutes (alert above 10)`,
+    });
+  } catch (e) { console.error("signal auth_failures", (e as Error).message); }
+
+  // 16-19) Per-gateway error rates — helps identify which provider is down.
+  async function gatewaySignal(admin: any, key: string, label: string, pattern: string, limit: number) {
+    try {
+      const errs = await count(admin, "error_logs", (q) =>
+        q.gte("created_at", iso(30))
+          .in("level", ["error", "fatal"])
+          .ilike("message", `%${pattern}%`));
+      out.push({
+        key: `signal:gateway_${key}`,
+        label: `${label} gateway health`,
+        ok: errs < limit,
+        detail: `${errs} ${label} errors in the last 30 minutes (alert above ${limit})`,
+      });
+    } catch (e) { console.error(`signal gateway_${key}`, (e as Error).message); }
+  }
+  await gatewaySignal(admin, "razorpay", "Razorpay", "razorpay", 5);
+  await gatewaySignal(admin, "cashfree", "Cashfree", "cashfree", 5);
+  await gatewaySignal(admin, "payu", "PayU", "payu", 5);
+  await gatewaySignal(admin, "upi", "UPI / QR", "upi", 5);
+
+  // 20) WhatsApp marketing queue stuck — campaign messages not draining.
+  try {
+    const stuck = await count(admin, "wa_marketing_attempts", (q) =>
+      q.in("status", ["queued", "pending", "processing"]).lt("scheduled_at", iso(30)));
+    out.push({
+      key: "signal:wa_marketing_queue",
+      label: "WhatsApp marketing queue",
+      ok: stuck < 100,
+      detail: `${stuck} marketing messages waiting over 30 minutes (alert above 100)`,
+    });
+  } catch (e) { console.error("signal wa_marketing_queue", (e as Error).message); }
+
+  // 21) Aggregate payment conversion rate — same as checkout_stall but over a longer window.
+  try {
+    const created = await count(admin, "orders", (q) => q.gte("created_at", iso(120)));
+    const paid = await count(admin, "orders", (q) => q.gte("created_at", iso(120)).in("status", PAID));
+    const rate = created ? paid / created : 1;
+    const bad = created >= 30 && rate < 0.08;
+    out.push({
+      key: "signal:payment_conversion_rate",
+      label: "2-hour payment conversion rate",
+      ok: !bad,
+      detail: `${paid}/${created} orders paid in the last 2 hours (${Math.round(rate * 100)}%, alert below 8%)`,
+    });
+  } catch (e) { console.error("signal payment_conversion_rate", (e as Error).message); }
+
+  // 22) Fatal errors — any unhandled crash in the last 15 minutes.
+  try {
+    const errs = await count(admin, "error_logs", (q) => q.gte("created_at", iso(15)).eq("level", "fatal"));
+    out.push({
+      key: "signal:fatal_errors",
+      label: "Fatal application errors",
+      ok: errs < 3,
+      detail: `${errs} fatal errors in the last 15 minutes (alert above 3)`,
+    });
+  } catch (e) { console.error("signal fatal_errors", (e as Error).message); }
+
   return out;
 }
 
