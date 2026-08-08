@@ -195,11 +195,40 @@ export function StoreInbox({ storeId }: { storeId: string | undefined }) {
     return [...flat].reverse();
   }, [messagesQuery.data]);
 
+  /* scroll behaviour:
+     - initial thread open → jump to bottom
+     - new message appended while user is near bottom → scroll to bottom
+     - loading older messages → preserve the visual scroll position so the user
+       stays at the same message rather than being yanked down */
+
   useEffect(() => {
-    if (!messagesQuery.isFetchingNextPage) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (selectedPhone && !messagesQuery.isLoading && messages.length > 0) {
+      scrollToBottom("auto");
+      prevMessagesLength.current = messages.length;
     }
-  }, [messages.length, messagesQuery.isFetchingNextPage]);
+  }, [selectedPhone, messagesQuery.isLoading, messages.length]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    if (messages.length > prevMessagesLength.current) {
+      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      if (distanceFromBottom < 200) {
+        scrollToBottom();
+      }
+    }
+    prevMessagesLength.current = messages.length;
+  }, [messages.length]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container || !isLoadingOlderRef.current || messagesQuery.isFetchingNextPage) return;
+
+    const addedHeight = container.scrollHeight - prevScrollHeightRef.current;
+    container.scrollTop = addedHeight; // keep the prior top content pinned
+    isLoadingOlderRef.current = false;
+  }, [messagesQuery.isFetchingNextPage]);
 
   /* realtime — only this store's rows */
   useEffect(() => {
