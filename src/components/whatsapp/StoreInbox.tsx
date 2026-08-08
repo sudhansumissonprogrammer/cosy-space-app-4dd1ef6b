@@ -415,7 +415,7 @@ export function StoreInbox({ storeId }: { storeId: string | undefined }) {
               </div>
             </div>
 
-            <div className="flex-1 space-y-0.5 overflow-y-auto bg-muted/20 px-3 py-2">
+            <div ref={messagesContainerRef} className="flex-1 space-y-0.5 overflow-y-auto bg-muted/20 px-3 py-2">
               {messagesQuery.hasNextPage && (
                 <div className="flex justify-center py-2">
                   <Button
