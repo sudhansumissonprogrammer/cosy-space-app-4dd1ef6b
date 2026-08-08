@@ -199,6 +199,22 @@ export default function Signup() {
     setLoading(true);
 
     try {
+      // Pre-check duplicates so users get a clear message instead of a silent no-op
+      const [emailCheck, phoneCheck] = await Promise.all([
+        supabase.rpc("get_auth_user_id_by_email", { _email: normalizedEmail }),
+        supabase.rpc("get_user_id_by_phone", { _phone: mobile }),
+      ]);
+
+      if (!emailCheck.error && emailCheck.data) {
+        toast.error("This email already exists — please use another email or log in.");
+        return;
+      }
+      if (!phoneCheck.error && phoneCheck.data) {
+        toast.error("This mobile number already exists — please use another number or log in.");
+        return;
+      }
+
+
       const { data: signUpData, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
