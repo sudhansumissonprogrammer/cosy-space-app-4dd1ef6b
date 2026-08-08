@@ -22,7 +22,12 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+// Some runtimes only expose the newer publishable-key name; fall back so the
+// REST probe never fails with a self-inflicted 401.
+const ANON_KEY =
+  Deno.env.get("SUPABASE_ANON_KEY") ||
+  Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ||
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
 
 const CONCURRENCY = 10;
 const TIMEOUT_MS = 12_000;
