@@ -77,6 +77,48 @@ export type Database = {
           },
         ]
       }
+      auth_otp_codes: {
+        Row: {
+          attempts: number
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          ip: string | null
+          phone: string
+          purpose: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          ip?: string | null
+          phone: string
+          purpose?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip?: string | null
+          phone?: string
+          purpose?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       back_in_stock_waitlist: {
         Row: {
           created_at: string
@@ -2431,6 +2473,8 @@ export type Database = {
           full_name: string | null
           id: string
           is_blocked: boolean
+          phone: string | null
+          phone_verified: boolean
           updated_at: string
           user_id: string
         }
@@ -2440,6 +2484,8 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_blocked?: boolean
+          phone?: string | null
+          phone_verified?: boolean
           updated_at?: string
           user_id: string
         }
@@ -2449,6 +2495,8 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_blocked?: boolean
+          phone?: string | null
+          phone_verified?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -5216,6 +5264,7 @@ export type Database = {
         }[]
       }
       cleanup_app_logs: { Args: never; Returns: Json }
+      cleanup_expired_otp_codes: { Args: never; Returns: undefined }
       cleanup_old_analytics: { Args: never; Returns: Json }
       cleanup_orphan_media_library: { Args: never; Returns: Json }
       cleanup_referral_telemetry: { Args: never; Returns: Json }
@@ -5426,6 +5475,7 @@ export type Database = {
           revenue: number
         }[]
       }
+      get_user_id_by_phone: { Args: { _phone: string }; Returns: string }
       get_wa_analytics_v2: { Args: { _days?: number }; Returns: Json }
       get_wa_cost_summary: { Args: never; Returns: Json }
       get_wa_platform_kpis: { Args: { _days?: number }; Returns: Json }

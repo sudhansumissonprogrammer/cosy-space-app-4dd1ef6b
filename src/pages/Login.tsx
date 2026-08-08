@@ -14,6 +14,14 @@ import {
   BauhausLoader,
 } from "@/components/onboarding/BauhausAuth";
 
+/** Strip +91 / 0 prefixes → bare 10-digit subscriber number. */
+const stripIndiaPrefix = (value: string): string => {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) return digits.slice(2);
+  if (digits.length === 11 && digits.startsWith("0")) return digits.slice(1);
+  return digits;
+};
+
 export default function Login() {
   const navigate = useNavigate();
   const { session, loading: authLoading } = useAuth();
@@ -21,7 +29,17 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // WhatsApp OTP sign-in
+  const [mode, setMode] = useState<"password" | "otp">("password");
+  const [phone, setPhone] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
+
   const { isLocked, remainingSeconds, attemptsLeft, checkCanAttempt, recordFailedAttempt, resetAttempts } = useLoginRateLimit();
+
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
@@ -29,6 +47,14 @@ export default function Login() {
       navigate("/dashboard", { replace: true });
     }
   }, [authLoading, session, navigate]);
+
+  // OTP resend countdown
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = window.setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [resendIn]);
+
 
   // Only show spinner if we're actively restoring a session (user is likely logged in)
   // For anonymous users, authLoading is false from the start — no spinner needed
@@ -151,6 +177,70 @@ export default function Login() {
     }
   };
 
+  const sendOtp = async () => {
+    const mobile = stripIndiaPrefix(phone);
+    if (mobile.length !== 10 || !/^[6-9]/.test(mobile)) {
+      toast.error("Enter a valid 10-digit mobile number");
+      return;
+    }
+    setOtpLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("merchant-otp-send", {
+        body: { phone: mobile, purpose: "login" },
+      });
+      const payload = data as { ok?: boolean; error?: string; message?: string; retry_after?: number } | null;
+
+      if (error || !payload?.ok) {
+        if (payload?.error === "cooldown" || payload?.error === "rate_limited") {
+          setOtpSent(true);
+          setResendIn(payload?.retry_after ?? 30);
+        }
+        toast.error(payload?.message || "Couldn't send the code. Try password sign-in.");
+        return;
+      }
+      setOtpSent(true);
+      setResendIn(30);
+      toast.success(`Code sent on WhatsApp to +91 ${mobile}`);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const verifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const mobile = stripIndiaPrefix(phone);
+    if (otpCode.length !== 6) {
+      toast.error("Enter the 6-digit code");
+      return;
+    }
+    setOtpLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("merchant-otp-verify", {
+        body: { phone: mobile, code: otpCode, purpose: "login" },
+      });
+      const payload = data as
+        | { verified?: boolean; message?: string; session?: { access_token: string; refresh_token: string } | null }
+        | null;
+
+      if (error || !payload?.verified || !payload.session) {
+        toast.error(payload?.message || "Incorrect or expired code.");
+        return;
+      }
+
+      const { error: sessErr } = await supabase.auth.setSession({
+        access_token: payload.session.access_token,
+        refresh_token: payload.session.refresh_token,
+      });
+      if (sessErr) throw sessErr;
+      resetAttempts();
+      navigate("/dashboard");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Sign-in failed");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
   return (
     <AuthShell
       eyebrow="Merchant Login"
@@ -160,44 +250,132 @@ export default function Login() {
       panelPoints={["Orders & payouts live", "WhatsApp recovery engine", "Ads + Pixel in one view"]}
     >
       <BauhausCard corner="blue">
-        <form onSubmit={handleLogin} className="space-y-5">
-          <BauhausField
-            id="email"
-            label="Email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-          />
-          <BauhausField
-            id="password"
-            label="Password"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            maxLength={128}
-          />
+        {mode === "otp" ? (
+          <form onSubmit={verifyOtp} className="space-y-5">
+            <BauhausField
+              id="login-phone"
+              label="WhatsApp number"
+              type="tel"
+              inputMode="numeric"
+              placeholder="10-digit mobile number"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/[^\d+]/g, "").slice(0, 13))}
+              autoComplete="tel"
+              disabled={otpSent}
+            />
 
-          <BauhausButton
-            type="submit"
-            variant="red"
-            className="w-full"
-            loading={loading}
-            disabled={loading || googleLoading || isLocked}
-          >
-            {isLocked ? `Locked (${remainingSeconds}s)` : "Sign in"}
-          </BauhausButton>
+            {otpSent && (
+              <BauhausField
+                id="login-otp"
+                label="6-digit code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="••••••"
+                maxLength={6}
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                className="text-center text-2xl tracking-[0.5em]"
+                autoFocus
+              />
+            )}
 
-          {attemptsLeft < 5 && !isLocked && (
-            <p className="border-2 border-foreground bg-bauhaus-yellow px-3 py-2 text-center text-xs font-bold uppercase tracking-wider text-foreground">
-              {attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining
-            </p>
-          )}
-        </form>
+            {otpSent ? (
+              <>
+                <BauhausButton
+                  type="submit"
+                  variant="red"
+                  className="w-full"
+                  loading={otpLoading}
+                  disabled={otpLoading || otpCode.length !== 6}
+                >
+                  Verify &amp; sign in
+                </BauhausButton>
+                <BauhausButton
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={resendIn > 0 || otpLoading}
+                  onClick={sendOtp}
+                >
+                  {resendIn > 0 ? `Resend code in ${resendIn}s` : "Resend code"}
+                </BauhausButton>
+              </>
+            ) : (
+              <BauhausButton
+                type="button"
+                variant="red"
+                className="w-full"
+                loading={otpLoading}
+                disabled={otpLoading}
+                onClick={sendOtp}
+              >
+                Send WhatsApp code
+              </BauhausButton>
+            )}
+
+            <button
+              type="button"
+              className="w-full text-xs font-semibold text-muted-foreground underline underline-offset-4"
+              onClick={() => {
+                setMode("password");
+                setOtpSent(false);
+                setOtpCode("");
+              }}
+            >
+              Sign in with email &amp; password instead
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleLogin} className="space-y-5">
+            <BauhausField
+              id="email"
+              label="Email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+            />
+            <BauhausField
+              id="password"
+              label="Password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              maxLength={128}
+            />
+
+            <BauhausButton
+              type="submit"
+              variant="red"
+              className="w-full"
+              loading={loading}
+              disabled={loading || googleLoading || isLocked}
+            >
+              {isLocked ? `Locked (${remainingSeconds}s)` : "Sign in"}
+            </BauhausButton>
+
+            <BauhausButton
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => setMode("otp")}
+            >
+              Sign in with WhatsApp OTP
+            </BauhausButton>
+
+            {attemptsLeft < 5 && !isLocked && (
+              <p className="border-2 border-foreground bg-bauhaus-yellow px-3 py-2 text-center text-xs font-bold uppercase tracking-wider text-foreground">
+                {attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining
+              </p>
+            )}
+          </form>
+        )}
       </BauhausCard>
+
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm font-medium text-muted-foreground">

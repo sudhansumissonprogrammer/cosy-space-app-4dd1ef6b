@@ -87,9 +87,16 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Opt-out
-  const { data: optout } = await admin.from("whatsapp_optouts").select("id").eq("phone", phone).limit(1).maybeSingle();
-  if (optout) return json({ skipped: true, reason: "opted_out" });
+  // 🔐 AUTHENTICATION (login/signup OTP). Never gated by marketing controls,
+  // opt-outs, daily caps or quality throttles — the user explicitly requested
+  // this code seconds ago and it is the only way into their account.
+  const isAuthOtp = (body.message_type || "") === "auth_otp";
+
+  // Opt-out (auth codes are exempt — user-initiated, single-use)
+  if (!isAuthOtp) {
+    const { data: optout } = await admin.from("whatsapp_optouts").select("id").eq("phone", phone).limit(1).maybeSingle();
+    if (optout) return json({ skipped: true, reason: "opted_out" });
+  }
 
   // Category classifier — must be declared before per-store toggle + daily cap use it.
   const TRANSACTIONAL = new Set(["order_confirmation", "payment_received", "payment_success", "order_shipped", "order_delivered"]);
@@ -127,7 +134,7 @@ Deno.serve(async (req) => {
   // Marketing limits apply globally by normalized phone, across every store.
   // Transactional events (order/payment/shipping) and 24h support replies must
   // always reach the customer and are excluded.
-  const isTransactional = TRANSACTIONAL.has(body.message_type || "");
+  const isTransactional = TRANSACTIONAL.has(body.message_type || "") || isAuthOtp;
 
   // 🔁 Recovery drip (abandoned_cart) is exempt from the flat 1-per-24h cap:
   // it runs its own strict 3-step schedule (+30min, +5h, +24h) enforced by
@@ -254,6 +261,20 @@ Deno.serve(async (req) => {
     const buttonComponents: any[] = [];
     const tplButtons = ((tpl as any)?.buttons || []) as Array<{ type: string; url?: string; text?: string }>;
     tplButtons.forEach((b, i) => {
+      const btnType = String(b?.type || "").toUpperCase();
+      // 🔐 Authentication templates: the copy-code button carries the OTP.
+      if (isAuthOtp && (btnType === "OTP" || btnType === "COPY_CODE")) {
+        const code = sanitizeWaParam(String(finalParams[0] ?? ""), 15);
+        // Meta's authentication-template send format: the copy-code button is
+        // addressed as sub_type "url" with the OTP as a plain text parameter.
+        buttonComponents.push({
+          type: "button",
+          sub_type: "url",
+          index: String(i),
+          parameters: [{ type: "text", text: code }],
+        });
+        return;
+      }
       if (b?.type === "URL" && typeof b.url === "string" && b.url.includes("{{")) {
         const tok = sanitizeWaParam(extras.cta_token || extras.cta || "x", 64);
         buttonComponents.push({
