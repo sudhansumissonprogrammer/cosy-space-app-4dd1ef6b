@@ -142,11 +142,17 @@ async function evaluate(admin: any): Promise<Signal[]> {
 
 async function sendAlert(admin: any, headline: string, target: string, detail: string) {
   const { data: recips } = await admin.from("uptime_alert_recipients").select("phone").eq("enabled", true);
+  const { data: secretRow } = await admin.from("cron_auth").select("secret").limit(1).maybeSingle();
+  const cronSecret = (secretRow as any)?.secret || Deno.env.get("CRON_SECRET") || "";
   for (const r of ((recips as any[]) || [])) {
     try {
-      await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${SERVICE_ROLE}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${SERVICE_ROLE}`,
+          "x-cron-secret": cronSecret,
+        },
         body: JSON.stringify({
           mode: "automation",
           recipient_phone: String(r.phone),
@@ -155,9 +161,11 @@ async function sendAlert(admin: any, headline: string, target: string, detail: s
           template_params: [headline.slice(0, 120), target.slice(0, 120), detail.slice(0, 300), istNow()],
         }),
       });
+      if (!res.ok) console.error("signal alert http", res.status, (await res.text()).slice(0, 200));
     } catch (e) { console.error("signal alert send failed", (e as Error).message); }
   }
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });

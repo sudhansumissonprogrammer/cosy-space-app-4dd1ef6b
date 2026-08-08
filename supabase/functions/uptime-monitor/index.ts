@@ -83,11 +83,19 @@ async function sendAlert(admin: any, headline: string, target: string, detail: s
   const phones = ((recips as any[]) || []).map((r) => String(r.phone));
   if (!phones.length) return;
 
+  // wa-platform-send only trusts the cron secret for internal automation sends.
+  const { data: secretRow } = await admin.from("cron_auth").select("secret").limit(1).maybeSingle();
+  const cronSecret = (secretRow as any)?.secret || Deno.env.get("CRON_SECRET") || "";
+
   for (const phone of phones) {
     try {
-      await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${SERVICE_ROLE}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${SERVICE_ROLE}`,
+          "x-cron-secret": cronSecret,
+        },
         body: JSON.stringify({
           mode: "automation",
           recipient_phone: phone,
@@ -101,11 +109,13 @@ async function sendAlert(admin: any, headline: string, target: string, detail: s
           ],
         }),
       });
+      if (!res.ok) console.error("alert send http", res.status, (await res.text()).slice(0, 200));
     } catch (e) {
       console.error("alert send failed", (e as Error).message);
     }
   }
 }
+
 
 async function syncTargets(admin: any) {
   const fixed = [
