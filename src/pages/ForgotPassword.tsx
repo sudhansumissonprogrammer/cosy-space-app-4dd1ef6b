@@ -1,20 +1,22 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
-import { LayoutDashboard, Loader2, ArrowLeft, Mail } from "lucide-react";
+import { ArrowLeft, Mail } from "lucide-react";
 import { useLoginRateLimit } from "@/hooks/useLoginRateLimit";
+import {
+  AuthShell,
+  BauhausCard,
+  BauhausField,
+  BauhausButton,
+  BauhausLink,
+} from "@/components/onboarding/BauhausAuth";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const { isLocked, remainingSeconds, attemptsLeft, checkCanAttempt, recordFailedAttempt, resetAttempts } = useLoginRateLimit();
-
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,66 +49,64 @@ export default function ForgotPassword() {
     }
   };
 
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-2">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary">
-            <LayoutDashboard className="h-6 w-6 text-primary-foreground" />
+    <AuthShell
+      eyebrow="Account recovery"
+      title={<>Reset<br />Password</>}
+      subtitle="Enter your email and we'll send you a secure reset link."
+      panelTitle={"Locked out?\nOne link.\nBack in."}
+      panelPoints={["Secure email link", "Expires automatically", "Your store stays live"]}
+    >
+      <BauhausCard corner="yellow">
+        {sent ? (
+          <div className="space-y-5">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-foreground bg-bauhaus-yellow">
+              <Mail className="h-6 w-6 text-foreground" strokeWidth={3} />
+            </div>
+            <p className="text-base font-medium leading-relaxed text-foreground">
+              If an account exists for <strong className="font-black">{email}</strong>, a password
+              reset link is on its way.
+            </p>
+            <Link to="/login">
+              <BauhausButton variant="outline" className="w-full" type="button">
+                <ArrowLeft className="h-4 w-4" strokeWidth={3} />
+                Back to sign in
+              </BauhausButton>
+            </Link>
           </div>
-          <h1 className="text-xl font-semibold text-foreground">Reset Password</h1>
-          <p className="text-sm text-muted-foreground">Enter your email to receive a reset link</p>
-        </div>
-
-        <Card>
-          {sent ? (
-            <CardContent className="flex flex-col items-center gap-4 pt-6 text-center">
-              <Mail className="h-10 w-10 text-primary" />
-              <p className="text-sm text-muted-foreground">
-                If an account exists for <strong>{email}</strong>, you'll receive a password reset link shortly.
+        ) : (
+          <form onSubmit={handleReset} className="space-y-5">
+            <BauhausField
+              id="email"
+              label="Email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              maxLength={255}
+              autoComplete="email"
+            />
+            <BauhausButton
+              type="submit"
+              variant="red"
+              className="w-full"
+              loading={loading}
+              disabled={loading || isLocked}
+            >
+              {isLocked ? `Locked (${remainingSeconds}s)` : "Send reset link"}
+            </BauhausButton>
+            {attemptsLeft < 5 && !isLocked && (
+              <p className="border-2 border-foreground bg-bauhaus-yellow px-3 py-2 text-center text-xs font-bold uppercase tracking-wider text-foreground">
+                {attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining
               </p>
-              <Button asChild variant="outline" className="mt-2">
-                <Link to="/login">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Sign in
-                </Link>
-              </Button>
-            </CardContent>
-          ) : (
-            <form onSubmit={handleReset}>
-              <CardContent className="space-y-4 pt-6">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    maxLength={255}
-                    autoComplete="email"
-                  />
-                </div>
-              </CardContent>
-              <CardFooter className="flex flex-col gap-3">
-                <Button type="submit" className="w-full" disabled={loading || isLocked}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isLocked ? `Locked (${remainingSeconds}s)` : "Send Reset Link"}
-                </Button>
-                {attemptsLeft < 5 && !isLocked && (
-                  <p className="text-center text-xs text-destructive">{attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining</p>
-                )}
+            )}
+          </form>
+        )}
+      </BauhausCard>
 
-                <Link to="/login" className="text-sm text-muted-foreground hover:text-primary">
-                  <ArrowLeft className="mr-1 inline h-3 w-3" />
-                  Back to Sign in
-                </Link>
-              </CardFooter>
-            </form>
-          )}
-        </Card>
-      </div>
-    </div>
+      <p className="mt-6 text-sm font-medium text-muted-foreground">
+        Remembered it? <BauhausLink to="/login">Back to sign in</BauhausLink>
+      </p>
+    </AuthShell>
   );
 }

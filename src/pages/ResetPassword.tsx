@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
-import { LayoutDashboard, Loader2 } from "lucide-react";
+import {
+  AuthShell,
+  BauhausCard,
+  BauhausField,
+  BauhausButton,
+} from "@/components/onboarding/BauhausAuth";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -36,55 +37,42 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-2">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary">
-            <LayoutDashboard className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <h1 className="text-xl font-semibold text-foreground">Set New Password</h1>
-          <p className="text-sm text-muted-foreground">Enter your new password below</p>
-        </div>
-
-        <Card>
-          <form onSubmit={handleUpdate}>
-            <CardContent className="space-y-4 pt-6">
-              <div className="space-y-2">
-                <Label htmlFor="password">New Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={6}
-                  maxLength={128}
-                  autoComplete="new-password"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm Password</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  minLength={6}
-                  maxLength={128}
-                  autoComplete="new-password"
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Update Password
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
-      </div>
-    </div>
+    <AuthShell
+      eyebrow="Final step"
+      title={<>Set New<br />Password</>}
+      subtitle="Choose a strong password. You'll be signed straight into your dashboard."
+      panelTitle={"New key.\nSame shop.\nKeep selling."}
+      panelPoints={["Minimum 6 characters", "Applies to all devices", "Takes effect instantly"]}
+    >
+      <BauhausCard corner="blue">
+        <form onSubmit={handleUpdate} className="space-y-5">
+          <BauhausField
+            id="password"
+            label="New password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={6}
+            maxLength={128}
+            autoComplete="new-password"
+          />
+          <BauhausField
+            id="confirm-password"
+            label="Confirm password"
+            type="password"
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            minLength={6}
+            maxLength={128}
+            autoComplete="new-password"
+          />
+          <BauhausButton type="submit" variant="red" className="w-full" loading={loading} disabled={loading}>
+            Update password
+          </BauhausButton>
+        </form>
+      </BauhausCard>
+    </AuthShell>
   );
 }
