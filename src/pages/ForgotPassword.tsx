@@ -60,7 +60,7 @@ export default function ForgotPassword() {
       <BauhausCard corner="yellow">
         {sent ? (
           <div className="space-y-5">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-bauhaus-yellow/25">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-foreground bg-bauhaus-yellow">
               <Mail className="h-6 w-6 text-foreground" strokeWidth={3} />
             </div>
             <p className="text-base font-medium leading-relaxed text-foreground">
@@ -96,7 +96,7 @@ export default function ForgotPassword() {
               {isLocked ? `Locked (${remainingSeconds}s)` : "Send reset link"}
             </BauhausButton>
             {attemptsLeft < 5 && !isLocked && (
-              <p className="rounded-lg bg-bauhaus-yellow/20 px-3 py-2 text-center text-xs font-semibold text-foreground">
+              <p className="border-2 border-foreground bg-bauhaus-yellow px-3 py-2 text-center text-xs font-bold uppercase tracking-wider text-foreground">
                 {attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining
               </p>
             )}

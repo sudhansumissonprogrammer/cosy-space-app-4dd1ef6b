@@ -192,7 +192,7 @@ export default function Login() {
           </BauhausButton>
 
           {attemptsLeft < 5 && !isLocked && (
-            <p className="rounded-lg bg-bauhaus-yellow/20 px-3 py-2 text-center text-xs font-semibold text-foreground">
+            <p className="border-2 border-foreground bg-bauhaus-yellow px-3 py-2 text-center text-xs font-bold uppercase tracking-wider text-foreground">
               {attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining
             </p>
           )}
