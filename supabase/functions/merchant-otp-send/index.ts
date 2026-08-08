@@ -9,6 +9,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { buildCors } from "../_shared/security.ts";
+import { canonicalPhone, hashOtp } from "../_shared/otp.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -19,20 +20,6 @@ const MAX_PER_PHONE_15MIN = 3;
 const MAX_PER_IP_HOUR = 12;
 const TEMPLATE_NAME = "merchant_otp_v1";
 
-function canonicalPhone(raw: string): string | null {
-  const digits = String(raw || "").replace(/\D/g, "");
-  let local = digits;
-  if (local.length === 13 && local.startsWith("091")) local = local.slice(3);
-  else if (local.length === 12 && local.startsWith("91")) local = local.slice(2);
-  else if (local.length === 11 && local.startsWith("0")) local = local.slice(1);
-  return local.length === 10 && /^[6-9]/.test(local) ? local : null;
-}
-
-export async function hashCode(code: string, phone: string): Promise<string> {
-  const data = new TextEncoder().encode(`${phone}:${code}:${SERVICE_KEY.slice(0, 32)}`);
-  const buf = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 function clientIp(req: Request): string {
   return (
@@ -98,7 +85,7 @@ Deno.serve(async (req) => {
 
     // Generate + persist
     const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
-    const codeHash = await hashCode(code, phone);
+    const codeHash = await hashOtp(code, phone);
 
     // Invalidate any live codes for this phone/purpose.
     await admin
