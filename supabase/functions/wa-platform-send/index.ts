@@ -261,6 +261,18 @@ Deno.serve(async (req) => {
     const buttonComponents: any[] = [];
     const tplButtons = ((tpl as any)?.buttons || []) as Array<{ type: string; url?: string; text?: string }>;
     tplButtons.forEach((b, i) => {
+      const btnType = String(b?.type || "").toUpperCase();
+      // 🔐 Authentication templates: the copy-code button carries the OTP.
+      if (isAuthOtp && (btnType === "OTP" || btnType === "COPY_CODE")) {
+        const code = sanitizeWaParam(String(finalParams[0] ?? ""), 15);
+        buttonComponents.push({
+          type: "button",
+          sub_type: "copy_code",
+          index: String(i),
+          parameters: [{ type: "coupon_code", coupon_code: code }],
+        });
+        return;
+      }
       if (b?.type === "URL" && typeof b.url === "string" && b.url.includes("{{")) {
         const tok = sanitizeWaParam(extras.cta_token || extras.cta || "x", 64);
         buttonComponents.push({
