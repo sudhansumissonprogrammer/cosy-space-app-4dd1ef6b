@@ -133,7 +133,7 @@ export default function CheckoutPhoneStep({
   const [summaryOpen, setSummaryOpen] = useState(true);
   
   const inFlight = useRef(false);
-  const autoSubmittedRef = useRef(false);
+  
   const themeConfig = useStorefrontThemeConfig(storeId);
 
   const digits = phone.replace(/\D/g, "");
@@ -330,18 +330,11 @@ export default function CheckoutPhoneStep({
     el?.focus();
   }, []);
 
-  // Auto-submit the moment a valid 10-digit number is entered — matches
-  // Gokwik / Shiprocket UX. Guarded so it fires only once per successful
-  // entry (not on every keystroke while typing more digits).
-  useEffect(() => {
-    if (valid && !submitting && !inFlight.current && !autoSubmittedRef.current) {
-      autoSubmittedRef.current = true;
-      // Small delay lets the digit render + keyboard settle before submit.
-      const t = window.setTimeout(() => { void submit(); }, 120);
-      return () => window.clearTimeout(t);
-    }
-    if (!valid) autoSubmittedRef.current = false;
-  }, [valid, submitting]);
+  // NOTE: auto-submit on the 10th digit was removed intentionally.
+  // It closed the keyboard the instant a number was typed, so shoppers never
+  // got a chance to re-read it → wrong numbers → undeliverable parcels.
+  // The shopper must now tap Continue after verifying the number.
+
 
 
   return (
@@ -587,6 +580,28 @@ export default function CheckoutPhoneStep({
                 {inlineError}
               </p>
             )}
+
+            {/* Re-verify nudge — wrong numbers are the #1 cause of failed
+                deliveries + failed WhatsApp order updates. Shown in English
+                + short Hindi, and highlighted once 10 digits are entered. */}
+            <div
+              className={`rounded-lg border px-3 py-2 -mt-1 ${
+                valid
+                  ? "border-amber-300 bg-amber-50"
+                  : "border-[#ECECEC] bg-[#FAFAFA]"
+              }`}
+            >
+              <div className={`text-[12px] font-bold leading-snug ${valid ? "text-amber-900" : "text-foreground"}`}>
+                Please re-check your mobile number
+              </div>
+              <div className={`text-[11.5px] leading-snug mt-0.5 ${valid ? "text-amber-800" : "text-muted-foreground"}`}>
+                Wrong number = parcel will not be delivered.
+              </div>
+              <div className={`text-[11.5px] leading-snug mt-0.5 ${valid ? "text-amber-800" : "text-muted-foreground"}`}>
+                नंबर एक बार दोबारा जाँच लें — गलत नंबर पर पार्सल नहीं पहुँचेगा।
+              </div>
+            </div>
+
 
             <label className="flex items-center gap-2 text-[12px]">
               <Checkbox
