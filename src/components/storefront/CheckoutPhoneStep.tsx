@@ -330,18 +330,11 @@ export default function CheckoutPhoneStep({
     el?.focus();
   }, []);
 
-  // Auto-submit the moment a valid 10-digit number is entered — matches
-  // Gokwik / Shiprocket UX. Guarded so it fires only once per successful
-  // entry (not on every keystroke while typing more digits).
-  useEffect(() => {
-    if (valid && !submitting && !inFlight.current && !autoSubmittedRef.current) {
-      autoSubmittedRef.current = true;
-      // Small delay lets the digit render + keyboard settle before submit.
-      const t = window.setTimeout(() => { void submit(); }, 120);
-      return () => window.clearTimeout(t);
-    }
-    if (!valid) autoSubmittedRef.current = false;
-  }, [valid, submitting]);
+  // NOTE: auto-submit on the 10th digit was removed intentionally.
+  // It closed the keyboard the instant a number was typed, so shoppers never
+  // got a chance to re-read it → wrong numbers → undeliverable parcels.
+  // The shopper must now tap Continue after verifying the number.
+
 
 
   return (
