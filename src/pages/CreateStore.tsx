@@ -947,5 +947,4 @@ export default function CreateStore() {
       </div>
     </div>
   );
-  );
 }
