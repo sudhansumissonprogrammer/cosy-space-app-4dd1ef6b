@@ -154,66 +154,59 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-2">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary">
-            <LayoutDashboard className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <h1 className="text-xl font-semibold text-foreground">Welcome back</h1>
-          <p className="text-sm text-muted-foreground">Sign in to your account</p>
-        </div>
+    <AuthShell
+      eyebrow="Merchant Login"
+      title={<>Welcome<br />Back</>}
+      subtitle="Sign in to run your storefront, orders and payouts."
+      panelTitle={"Your shop.\nYour rules.\nOne login."}
+      panelPoints={["Orders & payouts live", "WhatsApp recovery engine", "Ads + Pixel in one view"]}
+    >
+      <BauhausCard corner="blue">
+        <form onSubmit={handleLogin} className="space-y-5">
+          <BauhausField
+            id="email"
+            label="Email"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+          />
+          <BauhausField
+            id="password"
+            label="Password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            maxLength={128}
+          />
 
-        <Card>
-          <form onSubmit={handleLogin}>
-            <CardContent className="space-y-4 pt-6">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  maxLength={128}
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-3">
-              <Button type="submit" className="w-full" disabled={loading || googleLoading || isLocked}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isLocked ? `Locked (${remainingSeconds}s)` : "Sign in"}
-              </Button>
-              {attemptsLeft < 5 && !isLocked && (
-                <p className="text-xs text-destructive text-center">{attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining</p>
-              )}
+          <BauhausButton
+            type="submit"
+            variant="red"
+            className="w-full"
+            loading={loading}
+            disabled={loading || googleLoading || isLocked}
+          >
+            {isLocked ? `Locked (${remainingSeconds}s)` : "Sign in"}
+          </BauhausButton>
 
+          {attemptsLeft < 5 && !isLocked && (
+            <p className="border-2 border-foreground bg-bauhaus-yellow px-3 py-2 text-center text-xs font-bold uppercase tracking-wider text-foreground">
+              {attemptsLeft} attempt{attemptsLeft !== 1 ? "s" : ""} remaining
+            </p>
+          )}
+        </form>
+      </BauhausCard>
 
-
-
-              <p className="text-sm text-muted-foreground">
-                Don't have an account?{" "}
-                <Link to="/signup" className="font-medium text-primary hover:underline">
-                  Create a store
-                </Link>
-              </p>
-
-            </CardFooter>
-          </form>
-        </Card>
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm font-medium text-muted-foreground">
+          No account yet? <BauhausLink to="/signup">Create a store</BauhausLink>
+        </p>
+        <BauhausLink to="/forgot-password">Forgot password</BauhausLink>
       </div>
-    </div>
+    </AuthShell>
   );
 }
