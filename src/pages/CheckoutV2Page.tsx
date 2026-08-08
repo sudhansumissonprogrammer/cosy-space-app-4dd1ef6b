@@ -4923,6 +4923,28 @@ export default function CheckoutV2Page() {
                 }}
               >
 
+                {/* Phone entered in Step 1 — shown here with a Change link that
+                    takes the shopper back to the mobile-number screen. */}
+                {phone && (
+                  <div className="rounded-lg border border-[#ECECEC] bg-[#FAFAFA] px-3 py-2 flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[11px] text-muted-foreground">Mobile number</div>
+                      <div className="text-[14px] font-semibold truncate">+91 {phone}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeAddressFormSheet();
+                        setPhone("");
+                        try { localStorage.removeItem("checkout_phone"); } catch { /* noop */ }
+                      }}
+                      className="text-[13px] font-semibold text-primary underline underline-offset-2 flex-shrink-0"
+                    >
+                      Change
+                    </button>
+                  </div>
+                )}
+
                 {returningOrder && !returningUsed && (
                   <div className="rounded-lg border border-primary/40 bg-primary/5 p-2.5 flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-primary mt-0.5" />
