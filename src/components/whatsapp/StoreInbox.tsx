@@ -122,6 +122,14 @@ export function StoreInbox({ storeId }: { storeId: string | undefined }) {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const prevMessagesLength = useRef(0);
+  const isLoadingOlderRef = useRef(false);
+  const prevScrollHeightRef = useRef(0);
+
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    bottomRef.current?.scrollIntoView({ behavior });
+  };
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search.trim()), 300);
@@ -187,11 +195,40 @@ export function StoreInbox({ storeId }: { storeId: string | undefined }) {
     return [...flat].reverse();
   }, [messagesQuery.data]);
 
+  /* scroll behaviour:
+     - initial thread open → jump to bottom
+     - new message appended while user is near bottom → scroll to bottom
+     - loading older messages → preserve the visual scroll position so the user
+       stays at the same message rather than being yanked down */
+
   useEffect(() => {
-    if (!messagesQuery.isFetchingNextPage) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (selectedPhone && !messagesQuery.isLoading && messages.length > 0) {
+      scrollToBottom("auto");
+      prevMessagesLength.current = messages.length;
     }
-  }, [messages.length, messagesQuery.isFetchingNextPage]);
+  }, [selectedPhone, messagesQuery.isLoading, messages.length]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    if (messages.length > prevMessagesLength.current) {
+      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      if (distanceFromBottom < 200) {
+        scrollToBottom();
+      }
+    }
+    prevMessagesLength.current = messages.length;
+  }, [messages.length]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container || !isLoadingOlderRef.current || messagesQuery.isFetchingNextPage) return;
+
+    const addedHeight = container.scrollHeight - prevScrollHeightRef.current;
+    container.scrollTop = addedHeight; // keep the prior top content pinned
+    isLoadingOlderRef.current = false;
+  }, [messagesQuery.isFetchingNextPage]);
 
   /* realtime — only this store's rows */
   useEffect(() => {
@@ -260,6 +297,7 @@ export function StoreInbox({ storeId }: { storeId: string | undefined }) {
         queryClient.invalidateQueries({ queryKey: ["store-wa-thread", storeId, selectedPhone] }),
         queryClient.invalidateQueries({ queryKey: ["store-wa-threads", storeId] }),
       ]);
+      scrollToBottom();
     } catch (e: any) {
       toast({ title: "Could not send", description: e?.message || "Unknown error", variant: "destructive" });
     } finally {
@@ -377,7 +415,7 @@ export function StoreInbox({ storeId }: { storeId: string | undefined }) {
               </div>
             </div>
 
-            <div className="flex-1 space-y-0.5 overflow-y-auto bg-muted/20 px-3 py-2">
+            <div ref={messagesContainerRef} className="flex-1 space-y-0.5 overflow-y-auto bg-muted/20 px-3 py-2">
               {messagesQuery.hasNextPage && (
                 <div className="flex justify-center py-2">
                   <Button
@@ -385,7 +423,14 @@ export function StoreInbox({ storeId }: { storeId: string | undefined }) {
                     size="sm"
                     className="text-xs"
                     disabled={messagesQuery.isFetchingNextPage}
-                    onClick={() => messagesQuery.fetchNextPage()}
+                    onClick={() => {
+                      const container = messagesContainerRef.current;
+                      if (container) {
+                        prevScrollHeightRef.current = container.scrollHeight;
+                        isLoadingOlderRef.current = true;
+                      }
+                      messagesQuery.fetchNextPage();
+                    }}
                   >
                     {messagesQuery.isFetchingNextPage ? "Loading…" : "Load older messages"}
                   </Button>

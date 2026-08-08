@@ -123,8 +123,10 @@ async function syncTargets(admin: any) {
     // PostgREST's root path always answers 401, so probe a real public read instead.
     { key: "platform:rest", label: "Database API", url: `${SUPABASE_URL}/rest/v1/stores?select=id&limit=1&apikey=${ANON_KEY}`, kind: "api", expect_status: 200, expect_text: null },
     { key: "platform:auth", label: "Login / auth service", url: `${SUPABASE_URL}/auth/v1/health`, kind: "api", expect_status: 200, expect_text: null },
-    { key: "platform:functions", label: "Edge functions", url: `${SUPABASE_URL}/functions/v1/pincode-lookup?pincode=110001`, kind: "api", expect_status: 200, expect_text: null },
+    { key: "platform:functions", label: "Edge functions gateway", url: `${SUPABASE_URL}/functions/v1/pincode-lookup?pincode=110001`, kind: "api", expect_status: 200, expect_text: null },
     { key: "platform:checkout-api", label: "Checkout / order API", url: `${SUPABASE_URL}/functions/v1/place-order`, kind: "api", method: "OPTIONS", expect_status: 200, expect_text: null },
+    { key: "platform:order-tracking", label: "Order tracking API", url: `${SUPABASE_URL}/functions/v1/order-tracking`, kind: "api", method: "OPTIONS", expect_status: 200, expect_text: null },
+    { key: "platform:merchant-otp", label: "Merchant OTP API", url: `${SUPABASE_URL}/functions/v1/merchant-otp-send`, kind: "api", method: "OPTIONS", expect_status: 200, expect_text: null },
     { key: "platform:cdn", label: "Image CDN", url: "https://cdn.shopbanao.in/product-images/2479461d-8d10-4024-aa94-f3d02adc5f80/771a3012-393c-421a-b1c9-2ca918e6917f/1779195802537-kle0wl-800w.webp", kind: "api", expect_status: 200, expect_text: null },
   ];
   for (const f of fixed) {
