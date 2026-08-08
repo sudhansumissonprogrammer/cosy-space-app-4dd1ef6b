@@ -152,20 +152,19 @@ Deno.serve(async (req) => {
   // at the bottom of this function must still run to catch pay-and-drop users.
 
 
-  // 🔒 Default: send abandoned cart recovery whenever the store has WhatsApp
-  // platform marketing enabled at all. The per-feature `send_abandoned_cart`
-  // sub-toggle is intentionally ignored — cart recovery is the baseline
-  // marketing message every store gets by default.
+  // 🔒 Cart recovery requires BOTH the store master switch and the
+  // `send_abandoned_cart` toggle to be explicitly ON. Default is OFF.
   const storeIds = Array.from(new Set(carts.map((c: any) => c.store_id).filter(Boolean)));
   const { data: settings } = await admin
     .from("stores_wa_settings")
-    .select("store_id, platform_marketing_enabled")
+    .select("store_id, platform_marketing_enabled, send_abandoned_cart")
     .in("store_id", storeIds);
   const enabled = new Set(
     (settings || [])
-      .filter((s: any) => s.platform_marketing_enabled === true)
+      .filter((s: any) => s.platform_marketing_enabled === true && s.send_abandoned_cart === true)
       .map((s: any) => s.store_id),
   );
+
   const disabled = new Set(storeIds.filter((id: any) => !enabled.has(id)));
 
   // Do not suppress eligible carts here with a broad 24h cooldown. The sender
