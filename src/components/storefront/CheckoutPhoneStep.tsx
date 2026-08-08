@@ -566,6 +566,15 @@ export default function CheckoutPhoneStep({
                   setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
                   if (inlineError) setInlineError(null);
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !submitting) submit();
+                }}
+                aria-invalid={!!inlineError}
+                aria-describedby={inlineError ? "checkout-phone-error" : undefined}
+                className="flex-1 bg-transparent outline-none text-[14px]"
+                autoComplete="tel-national"
+              />
+            </div>
             {inlineError && (
               <p id="checkout-phone-error" className="text-[12px] font-medium text-red-600 -mt-1">
                 {inlineError}
