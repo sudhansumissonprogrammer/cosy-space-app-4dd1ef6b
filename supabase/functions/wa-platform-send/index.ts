@@ -99,7 +99,9 @@ Deno.serve(async (req) => {
   }
 
   // Category classifier — must be declared before per-store toggle + daily cap use it.
-  const TRANSACTIONAL = new Set(["order_confirmation", "payment_received", "payment_success", "order_shipped", "order_delivered"]);
+  // "platform_alert" = internal uptime/incident alerts to the founder's number.
+  // Must never be blocked by marketing caps, opt-outs or quality throttles.
+  const TRANSACTIONAL = new Set(["order_confirmation", "payment_received", "payment_success", "order_shipped", "order_delivered", "platform_alert"]);
 
 
   // Per-store toggles — DEFAULT OFF for marketing.
