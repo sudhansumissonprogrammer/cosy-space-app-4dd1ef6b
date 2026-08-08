@@ -20,11 +20,13 @@ export default function UnsubscribePage() {
     let cancelled = false;
     const validate = async () => {
       try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
         const response = await fetch(
-          `${supabase.supabaseUrl}/functions/v1/handle-email-unsubscribe?token=${encodeURIComponent(token)}`,
+          `${supabaseUrl}/functions/v1/handle-email-unsubscribe?token=${encodeURIComponent(token)}`,
           {
             headers: {
-              apikey: supabase.supabaseKey,
+              apikey: supabaseAnonKey,
               "Content-Type": "application/json",
             },
           }
