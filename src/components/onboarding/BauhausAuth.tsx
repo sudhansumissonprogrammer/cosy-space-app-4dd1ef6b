@@ -5,14 +5,37 @@ import { Loader2 } from "lucide-react";
 import brandLogo from "@/assets/shopbanao-logo.webp";
 
 /**
- * Bauhaus onboarding design layer.
- * Centralises the constructivist primitives (geometric mark, split-screen shell,
- * bordered fields, hard-shadow buttons) so every auth/onboarding surface stays
- * visually identical without one-off styles.
- * Tokens come from index.css (--bauhaus-*) via tailwind.config.ts.
+ * Minimalist Monochrome onboarding design layer.
+ * Pure black & white, serif display typography, zero radius, no shadows.
+ * Exports keep their original names so every auth surface (login, signup,
+ * forgot/reset password) restyles from this single file with no one-off CSS.
+ * Scope class `.mono-auth` (see index.css) remaps legacy tokens to monochrome.
  */
 
-/* ---------- Brand lockup: ShopBanao logo + wordmark (same as landing) ---------- */
+/* ---------- Font loading (auth surfaces only — keeps storefront payload lean) ---------- */
+const FONT_HREF =
+  "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,300..700;1,8..60,300..700&family=JetBrains+Mono:wght@400;500;700&display=swap";
+
+function useMonoFonts() {
+  React.useEffect(() => {
+    if (document.getElementById("mono-auth-fonts")) return;
+    const pre = document.createElement("link");
+    pre.rel = "preconnect";
+    pre.href = "https://fonts.gstatic.com";
+    pre.crossOrigin = "anonymous";
+    document.head.appendChild(pre);
+    const link = document.createElement("link");
+    link.id = "mono-auth-fonts";
+    link.rel = "stylesheet";
+    link.href = FONT_HREF;
+    document.head.appendChild(link);
+  }, []);
+}
+
+const DISPLAY = "'Playfair Display', Georgia, serif";
+const MONO = "'JetBrains Mono', ui-monospace, monospace";
+
+/* ---------- Brand lockup: ShopBanao logo + wordmark ---------- */
 export const BrandMark = ({
   className,
   size = 56,
@@ -22,22 +45,23 @@ export const BrandMark = ({
   size?: number;
   light?: boolean;
 }) => (
-  <span className={cn("inline-flex items-center -space-x-1", className)}>
+  <span className={cn("inline-flex items-center gap-2", className)}>
     <img
       src={brandLogo}
       alt="ShopBanao"
       width={size}
       height={size}
-      className="w-auto"
+      className={cn("w-auto", light && "invert")}
       style={{ height: size }}
       decoding="async"
     />
     <span
-      className={cn("leading-none", light ? "text-bauhaus-white" : "text-foreground")}
+      className={cn("leading-none", light ? "text-white" : "text-black")}
       style={{
-        fontFamily: "'Alegreya SC', serif",
+        fontFamily: "'Alegreya SC', Georgia, serif",
         fontWeight: 700,
         fontSize: Math.round(size * 0.45),
+        letterSpacing: "-0.01em",
       }}
     >
       ShopBanao
@@ -45,25 +69,12 @@ export const BrandMark = ({
   </span>
 );
 
-/* ---------- Decorative constructivist composition (desktop panel) ---------- */
-const GeoComposition = () => (
-  <div className="relative h-64 w-64" aria-hidden="true">
-    <div className="absolute left-0 top-0 h-40 w-40 rounded-full border-4 border-foreground bg-bauhaus-yellow" />
-    <div className="absolute bottom-0 right-0 h-36 w-36 rotate-45 border-4 border-foreground bg-bauhaus-red" />
-    <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 border-4 border-foreground bg-bauhaus-white" />
-    <div
-      className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 bg-bauhaus-blue"
-      style={{ clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)" }}
-    />
-  </div>
-);
-
-/* ---------- Shell: split-screen poster layout ---------- */
+/* ---------- Shell: editorial split — inverted manifesto panel + form ---------- */
 export function AuthShell({
   eyebrow,
   title,
   subtitle,
-  panelTitle = "Sell online.\nNo code.\nNo drama.",
+  panelTitle = "Sell\nOnline.",
   panelPoints = ["Storefront in minutes", "UPI · COD · Razorpay", "WhatsApp order engine"],
   children,
 }: {
@@ -74,75 +85,93 @@ export function AuthShell({
   panelPoints?: string[];
   children: React.ReactNode;
 }) {
+  useMonoFonts();
+
   return (
-    <div className="min-h-screen w-full bg-bauhaus-canvas font-bauhaus text-foreground lg:grid lg:grid-cols-2">
-      {/* LEFT — color-blocked poster panel (desktop only) */}
-      <aside className="relative hidden overflow-hidden border-r-4 border-foreground bg-bauhaus-blue p-10 lg:flex lg:flex-col lg:justify-between">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: "radial-gradient(#fff 2px, transparent 2px)",
-            backgroundSize: "24px 24px",
-          }}
-        />
-        <Link to="/" className="relative z-10 inline-flex w-fit items-center gap-3">
-          <BrandMark size={56} light />
+    <div className="mono-auth min-h-screen w-full bg-white text-black lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      {/* LEFT — inverted editorial panel (desktop) */}
+      <aside className="mono-auth-invert-texture relative hidden overflow-hidden border-r-4 border-black bg-black p-12 text-white lg:flex lg:flex-col lg:justify-between">
+        <Link
+          to="/"
+          className="relative z-10 inline-flex w-fit items-center focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-white focus-visible:outline-offset-4"
+        >
+          <BrandMark size={48} light />
         </Link>
 
         <div className="relative z-10">
-          <h2 className="whitespace-pre-line text-5xl font-black uppercase leading-[0.9] tracking-tighter text-bauhaus-white xl:text-6xl">
+          <div className="mb-8 flex items-center gap-4">
+            <span className="h-[4px] w-24 bg-white" />
+            <span className="h-3 w-3 border border-white" />
+          </div>
+          <h2
+            className="whitespace-pre-line text-[6rem] leading-[0.85] tracking-tighter xl:text-[7.5rem]"
+            style={{ fontFamily: DISPLAY, fontWeight: 500 }}
+          >
             {panelTitle}
           </h2>
-          <ul className="mt-8 space-y-3">
-            {panelPoints.map((p, i) => (
-              <li key={p} className="flex items-center gap-3">
-                <span
-                  className={cn(
-                    "h-4 w-4 border-2 border-foreground",
-                    i % 3 === 0 && "rounded-full bg-bauhaus-red",
-                    i % 3 === 1 && "bg-bauhaus-yellow",
-                    i % 3 === 2 && "rotate-45 bg-bauhaus-white"
-                  )}
-                />
-                <span className="text-base font-medium text-bauhaus-white/90">{p}</span>
-              </li>
-            ))}
-          </ul>
+          <p
+            className="mt-6 max-w-sm text-lg italic leading-relaxed text-white/70"
+            style={{ fontFamily: DISPLAY }}
+          >
+            No code. No drama. Just commerce.
+          </p>
         </div>
 
-        <div className="relative z-10 self-end">
-          <GeoComposition />
-        </div>
+        <ul className="relative z-10 border-t border-white/25">
+          {panelPoints.map((p, i) => (
+            <li
+              key={p}
+              className="flex items-baseline gap-6 border-b border-white/25 py-4"
+            >
+              <span
+                className="text-[11px] tracking-widest text-white/50"
+                style={{ fontFamily: MONO }}
+              >
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className="text-base tracking-wide">{p}</span>
+            </li>
+          ))}
+        </ul>
       </aside>
 
       {/* RIGHT — the form */}
-      <main className="relative flex min-h-screen flex-col justify-center px-4 py-10 sm:px-8 lg:px-14">
-        <div className="pointer-events-none absolute right-6 top-6 h-16 w-16 rotate-45 border-2 border-foreground bg-bauhaus-yellow lg:h-24 lg:w-24" aria-hidden="true" />
+      <main className="mono-auth-texture relative flex min-h-screen flex-col justify-center px-6 py-14 sm:px-10 lg:px-16">
         <div className="relative z-10 mx-auto w-full max-w-md">
-          <Link to="/" className="mb-8 inline-flex items-center gap-3 lg:hidden">
-            <BrandMark size={48} />
+          <Link
+            to="/"
+            className="mb-10 inline-flex items-center lg:hidden focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-black focus-visible:outline-offset-4"
+          >
+            <BrandMark size={40} />
           </Link>
 
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-bauhaus-red">
+          <p
+            className="mb-5 text-[11px] uppercase tracking-[0.28em] text-black"
+            style={{ fontFamily: MONO }}
+          >
             {eyebrow}
           </p>
-          <h1 className="text-4xl font-black uppercase leading-[0.9] tracking-tighter sm:text-5xl">
+          <div className="mb-5 h-[4px] w-16 bg-black" />
+          <h1
+            className="text-6xl leading-[0.88] tracking-tighter sm:text-7xl"
+            style={{ fontFamily: DISPLAY, fontWeight: 500 }}
+          >
             {title}
           </h1>
           {subtitle && (
-            <p className="mt-4 max-w-sm text-base font-medium leading-relaxed text-muted-foreground">
+            <p className="mt-6 max-w-sm text-lg leading-relaxed text-neutral-600">
               {subtitle}
             </p>
           )}
 
-          <div className="mt-8">{children}</div>
+          <div className="mt-10">{children}</div>
         </div>
       </main>
     </div>
   );
 }
 
-/* ---------- Card: white block, thick border, hard shadow ---------- */
+/* ---------- Card: white block, hairline-to-black border, no shadow ---------- */
 export function BauhausCard({
   children,
   className,
@@ -150,32 +179,20 @@ export function BauhausCard({
 }: {
   children: React.ReactNode;
   className?: string;
+  /** kept for API compatibility — monochrome renders a single black rule marker */
   corner?: "red" | "blue" | "yellow" | "none";
 }) {
   return (
-    <div
-      className={cn(
-        "relative border-2 border-foreground bg-bauhaus-white p-5 shadow-bauhaus sm:border-4 sm:p-7 sm:shadow-bauhaus-lg",
-        className
-      )}
-    >
+    <div className={cn("relative border border-black bg-white p-6 sm:p-8", className)}>
       {corner !== "none" && (
-        <span
-          aria-hidden="true"
-          className={cn(
-            "absolute right-3 top-3 h-3 w-3 border-2 border-foreground",
-            corner === "red" && "rounded-full bg-bauhaus-red",
-            corner === "blue" && "bg-bauhaus-blue",
-            corner === "yellow" && "rotate-45 bg-bauhaus-yellow"
-          )}
-        />
+        <span aria-hidden="true" className="absolute right-4 top-4 h-2 w-2 bg-black" />
       )}
       {children}
     </div>
   );
 }
 
-/* ---------- Field ---------- */
+/* ---------- Field: bottom-rule input, mono label ---------- */
 export const BauhausField = React.forwardRef<
   HTMLInputElement,
   React.InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string }
@@ -183,7 +200,8 @@ export const BauhausField = React.forwardRef<
   <div className="space-y-2">
     <label
       htmlFor={id}
-      className="block text-[11px] font-bold uppercase tracking-widest text-foreground"
+      className="block text-[10px] uppercase tracking-[0.22em] text-black"
+      style={{ fontFamily: MONO }}
     >
       {label}
     </label>
@@ -191,28 +209,29 @@ export const BauhausField = React.forwardRef<
       id={id}
       ref={ref}
       className={cn(
-        "h-12 w-full rounded-none border-2 border-foreground bg-bauhaus-white px-3 text-base font-medium text-foreground",
-        "placeholder:font-normal placeholder:text-muted-foreground",
-        "transition-[box-shadow,transform] duration-200 ease-out",
-        "focus:outline-none focus:shadow-bauhaus-sm focus:-translate-y-[1px]",
+        "h-12 w-full border-0 border-b-2 border-black bg-white px-0 text-lg text-black",
+        "placeholder:italic placeholder:text-neutral-500",
+        "transition-none focus:border-b-[4px] focus:outline-none focus-visible:border-b-[4px]",
         className
       )}
+      style={{ fontFamily: "'Source Serif 4', Georgia, serif" }}
       {...props}
     />
-    {hint && <p className="text-xs font-medium text-muted-foreground">{hint}</p>}
+    {hint && <p className="text-sm italic text-neutral-600">{hint}</p>}
   </div>
 ));
 BauhausField.displayName = "BauhausField";
 
-/* ---------- Button ---------- */
+/* ---------- Button: inversion on hover, instant ---------- */
 type BtnVariant = "red" | "blue" | "yellow" | "outline" | "ghost";
 
 const variantMap: Record<BtnVariant, string> = {
-  red: "bg-bauhaus-red text-bauhaus-white border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-red/90",
-  blue: "bg-bauhaus-blue text-bauhaus-white border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-blue/90",
-  yellow: "bg-bauhaus-yellow text-foreground border-2 border-foreground shadow-bauhaus hover:bg-bauhaus-yellow/90",
-  outline: "bg-bauhaus-white text-foreground border-2 border-foreground shadow-bauhaus hover:bg-muted",
-  ghost: "border-none text-foreground hover:bg-muted",
+  /* primary: solid black → inverts to white on hover */
+  red: "bg-black text-white border-2 border-black hover:bg-white hover:text-black",
+  blue: "bg-black text-white border-2 border-black hover:bg-white hover:text-black",
+  yellow: "bg-white text-black border-2 border-black hover:bg-black hover:text-white",
+  outline: "bg-white text-black border-2 border-black hover:bg-black hover:text-white",
+  ghost: "bg-transparent text-black border-0 underline-offset-4 hover:underline",
 };
 
 export function BauhausButton({
@@ -228,18 +247,18 @@ export function BauhausButton({
   return (
     <button
       className={cn(
-        "inline-flex h-12 items-center justify-center gap-2 rounded-none px-5",
-        "text-sm font-bold uppercase tracking-wider",
-        "transition-[transform,box-shadow,background-color] duration-200 ease-out",
-        "active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2",
-        "disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex h-12 min-h-[44px] items-center justify-center gap-3 px-8",
+        "text-xs uppercase tracking-[0.2em]",
+        "transition-colors duration-100",
+        "focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-black focus-visible:outline-offset-[3px]",
+        "disabled:pointer-events-none disabled:opacity-40",
         variantMap[variant],
         className
       )}
+      style={{ fontFamily: MONO }}
       {...props}
     >
-      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+      {loading && <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} />}
       {children}
     </button>
   );
@@ -255,7 +274,7 @@ export const BauhausLink = ({
 }) => (
   <Link
     to={to}
-    className="font-bold uppercase tracking-wide text-bauhaus-blue underline decoration-2 underline-offset-4 transition-colors duration-200 hover:text-bauhaus-red"
+    className="border-b-2 border-black pb-[1px] text-black transition-none hover:border-b-[3px] focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-black focus-visible:outline-offset-[3px]"
   >
     {children}
   </Link>
@@ -263,17 +282,15 @@ export const BauhausLink = ({
 
 /* ---------- Full-screen loader in style ---------- */
 export const BauhausLoader = () => (
-  <div className="flex min-h-screen items-center justify-center bg-bauhaus-canvas">
-    <div className="flex items-center gap-2">
-      <span className="h-5 w-5 animate-bounce rounded-full border-2 border-foreground bg-bauhaus-red" />
+  <div className="mono-auth flex min-h-screen items-center justify-center bg-white">
+    <div className="flex flex-col items-center gap-5">
+      <span className="h-10 w-10 border-2 border-black border-t-transparent motion-safe:animate-spin" />
       <span
-        className="h-5 w-5 animate-bounce border-2 border-foreground bg-bauhaus-blue"
-        style={{ animationDelay: "0.12s" }}
-      />
-      <span
-        className="h-5 w-5 rotate-45 animate-bounce border-2 border-foreground bg-bauhaus-yellow"
-        style={{ animationDelay: "0.24s" }}
-      />
+        className="text-[10px] uppercase tracking-[0.3em] text-black"
+        style={{ fontFamily: MONO }}
+      >
+        Loading
+      </span>
     </div>
   </div>
 );
