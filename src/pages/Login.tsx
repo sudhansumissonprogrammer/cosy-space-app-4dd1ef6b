@@ -48,6 +48,14 @@ export default function Login() {
     }
   }, [authLoading, session, navigate]);
 
+  // OTP resend countdown
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = window.setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [resendIn]);
+
+
   // Only show spinner if we're actively restoring a session (user is likely logged in)
   // For anonymous users, authLoading is false from the start — no spinner needed
   if (authLoading) {
