@@ -455,12 +455,13 @@ Deno.serve(async (req) => {
     const dropStoreIds = Array.from(new Set(dropOrders.map((o: any) => o.store_id).filter(Boolean)));
     const { data: dropSettings } = await admin
       .from("stores_wa_settings")
-      .select("store_id, platform_marketing_enabled")
+      .select("store_id, platform_marketing_enabled, send_abandoned_cart")
       .in("store_id", dropStoreIds);
     const dropEnabled = new Set(
       (dropSettings || [])
-        .filter((s: any) => s.platform_marketing_enabled === true)
+        .filter((s: any) => s.platform_marketing_enabled === true && s.send_abandoned_cart === true)
         .map((s: any) => s.store_id),
+
     );
 
     // Dedup by phone: only keep the newest drop-off per phone.
