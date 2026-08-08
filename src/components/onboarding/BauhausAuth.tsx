@@ -86,10 +86,7 @@ export function AuthShell({
           }}
         />
         <Link to="/" className="relative z-10 inline-flex w-fit items-center gap-3">
-          <GeoLogo size={22} />
-          <span className="text-xl font-black uppercase tracking-tighter text-bauhaus-white">
-            ShopBanao
-          </span>
+          <BrandMark size={56} light />
         </Link>
 
         <div className="relative z-10">
@@ -123,8 +120,7 @@ export function AuthShell({
         <div className="pointer-events-none absolute right-6 top-6 h-16 w-16 rotate-45 border-2 border-foreground bg-bauhaus-yellow lg:h-24 lg:w-24" aria-hidden="true" />
         <div className="relative z-10 mx-auto w-full max-w-md">
           <Link to="/" className="mb-8 inline-flex items-center gap-3 lg:hidden">
-            <GeoLogo size={18} />
-            <span className="text-lg font-black uppercase tracking-tighter">ShopBanao</span>
+            <BrandMark size={48} />
           </Link>
 
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-bauhaus-red">
