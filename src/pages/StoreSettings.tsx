@@ -102,6 +102,7 @@ export default function StoreSettings() {
     if (store) {
       setName(store.name);
       setDescription(store.description || "");
+      setOwnerName((store as any).owner_name || "");
       setWhatsappNumber(store.whatsapp_number || "");
       setLocation((store as any).location || "");
       setCity((store as any).city || "");
@@ -200,6 +201,7 @@ export default function StoreSettings() {
           meta_description: metaDescription.trim() || null,
           og_image_url: finalOgImageUrl.trim() || null,
           owner_email: ownerEmail.trim() || null,
+          owner_name: ownerName.trim() || null,
           default_profit_margin: defaultProfitMargin,
           seo_about_paragraph: seoAboutParagraph.trim() || null,
           usp_bullets: uspBullets.map((b) => b.trim()).filter(Boolean),
