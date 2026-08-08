@@ -232,12 +232,24 @@ export default function Signup() {
           return;
         }
 
+        if (/already\s*(registered|exists)|duplicate/i.test(error.message)) {
+          toast.error("This email already exists — please use another email or log in.");
+          return;
+        }
+
         toast.error(error.message);
+        return;
+      }
+
+      // Supabase returns a user with no identities when the email is already taken
+      if (signUpData?.user && Array.isArray(signUpData.user.identities) && signUpData.user.identities.length === 0) {
+        toast.error("This email already exists — please use another email or log in.");
         return;
       }
 
       // Best-effort: attach this signup to the referring partner (if any cookie set)
       attachReferralAfterSignup().catch(() => {});
+
 
       if (signUpData?.session) {
         toast.success("Account created successfully!");
