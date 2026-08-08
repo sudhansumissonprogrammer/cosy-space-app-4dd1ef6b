@@ -22,7 +22,12 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+// Some runtimes only expose the newer publishable-key name; fall back so the
+// REST probe never fails with a self-inflicted 401.
+const ANON_KEY =
+  Deno.env.get("SUPABASE_ANON_KEY") ||
+  Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ||
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
 
 const CONCURRENCY = 10;
 const TIMEOUT_MS = 12_000;
@@ -105,13 +110,16 @@ async function sendAlert(admin: any, headline: string, target: string, detail: s
 async function syncTargets(admin: any) {
   const fixed = [
     { key: "platform:landing", label: "ShopBanao landing", url: "https://shopbanao.in/", kind: "platform", expect_text: null },
-    { key: "platform:rest", label: "Database API", url: `${SUPABASE_URL}/rest/v1/?apikey=${ANON_KEY}`, kind: "api", expect_status: 200, expect_text: null },
+    // PostgREST's root path always answers 401, so probe a real public read instead.
+    { key: "platform:rest", label: "Database API", url: `${SUPABASE_URL}/rest/v1/stores?select=id&limit=1&apikey=${ANON_KEY}`, kind: "api", expect_status: 200, expect_text: null },
     { key: "platform:auth", label: "Login / auth service", url: `${SUPABASE_URL}/auth/v1/health`, kind: "api", expect_status: 200, expect_text: null },
     { key: "platform:functions", label: "Edge functions", url: `${SUPABASE_URL}/functions/v1/pincode-lookup?pincode=110001`, kind: "api", expect_status: 200, expect_text: null },
+    { key: "platform:checkout-api", label: "Checkout / order API", url: `${SUPABASE_URL}/functions/v1/place-order`, kind: "api", method: "OPTIONS", expect_status: 200, expect_text: null },
+    { key: "platform:cdn", label: "Image CDN", url: "https://cdn.shopbanao.in/product-images/2479461d-8d10-4024-aa94-f3d02adc5f80/771a3012-393c-421a-b1c9-2ca918e6917f/1779195802537-kle0wl-800w.webp", kind: "api", expect_status: 200, expect_text: null },
   ];
   for (const f of fixed) {
     await admin.from("uptime_targets").upsert(
-      { target_key: f.key, label: f.label, url: f.url, kind: f.kind, expect_status: (f as any).expect_status ?? 200, expect_text: f.expect_text },
+      { target_key: f.key, label: f.label, url: f.url, kind: f.kind, method: (f as any).method ?? "GET", expect_status: (f as any).expect_status ?? 200, expect_text: f.expect_text },
       { onConflict: "target_key", ignoreDuplicates: false },
     );
   }
@@ -122,25 +130,37 @@ async function syncTargets(admin: any) {
     .eq("is_suspended", false)
     .limit(MAX_STORE_TARGETS);
 
+  // Stores that took an order in the last 7 days get DEEP checks (shop grid +
+  // checkout page), because those are the ones with live ad spend behind them.
+  const { data: recentOrders } = await admin
+    .from("orders")
+    .select("store_id")
+    .gte("created_at", new Date(Date.now() - 7 * 86400_000).toISOString())
+    .limit(5000);
+  const activeStores = new Set(((recentOrders as any[]) || []).map((o) => String(o.store_id)));
+
+  const wantedKeys = new Set<string>();
   for (const s of ((stores as any[]) || [])) {
     const host = s.custom_domain ? `https://${String(s.custom_domain).replace(/^https?:\/\//, "")}` : `https://${s.slug}.shopbanao.in`;
-    await admin.from("uptime_targets").upsert(
-      {
-        target_key: `store:${s.id}`,
-        store_id: s.id,
-        label: s.name || s.slug,
-        url: `${host}/`,
-        kind: "storefront",
-        expect_status: 200,
-      },
-      { onConflict: "target_key", ignoreDuplicates: false },
-    );
+    const label = s.name || s.slug;
+    const rows: any[] = [
+      { target_key: `store:${s.id}`, store_id: s.id, label, url: `${host}/`, kind: "storefront", expect_status: 200 },
+    ];
+    if (activeStores.has(String(s.id))) {
+      rows.push(
+        { target_key: `store:${s.id}:shop`, store_id: s.id, label: `${label} - product grid`, url: `${host}/shop`, kind: "storefront", expect_status: 200 },
+        { target_key: `store:${s.id}:checkout`, store_id: s.id, label: `${label} - checkout page`, url: `${host}/checkout`, kind: "storefront", expect_status: 200 },
+      );
+    }
+    for (const r of rows) {
+      wantedKeys.add(r.target_key);
+      await admin.from("uptime_targets").upsert(r, { onConflict: "target_key", ignoreDuplicates: false });
+    }
   }
 
-  // Retire targets for stores that got suspended/deleted.
-  const liveKeys = new Set(((stores as any[]) || []).map((s) => `store:${s.id}`));
+  // Retire targets for stores that got suspended/deleted or went inactive.
   const { data: existing } = await admin.from("uptime_targets").select("id, target_key").eq("kind", "storefront");
-  const stale = ((existing as any[]) || []).filter((t) => !liveKeys.has(t.target_key)).map((t) => t.id);
+  const stale = ((existing as any[]) || []).filter((t) => !wantedKeys.has(t.target_key)).map((t) => t.id);
   if (stale.length) await admin.from("uptime_targets").delete().in("id", stale);
 }
 
