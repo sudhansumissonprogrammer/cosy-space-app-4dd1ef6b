@@ -106,6 +106,7 @@ export default function CreateStore() {
   // Step 3
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerName, setOwnerName] = useState("");
 
   // Step 4
   const [instagramUrl, setInstagramUrl] = useState("");
@@ -212,6 +213,7 @@ export default function CreateStore() {
         mobile_hero_url: mobileHeroUrl,
         theme,
         owner_email: ownerEmail.trim() || null,
+        owner_name: ownerName.trim() || null,
         meta_title: `${storeName} — Shop Online`,
         meta_description: `Discover products at ${storeName}. Order online today.`,
       }).select("id").single();
