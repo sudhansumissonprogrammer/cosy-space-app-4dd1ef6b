@@ -3742,6 +3742,7 @@ export type Database = {
           order_mode: string
           owner_email: string | null
           owner_id: string
+          owner_name: string | null
           partial_payment_enabled: boolean
           partial_payment_type: string
           partial_payment_value: number | null
@@ -3797,6 +3798,7 @@ export type Database = {
           order_mode?: string
           owner_email?: string | null
           owner_id: string
+          owner_name?: string | null
           partial_payment_enabled?: boolean
           partial_payment_type?: string
           partial_payment_value?: number | null
@@ -3852,6 +3854,7 @@ export type Database = {
           order_mode?: string
           owner_email?: string | null
           owner_id?: string
+          owner_name?: string | null
           partial_payment_enabled?: boolean
           partial_payment_type?: string
           partial_payment_value?: number | null
