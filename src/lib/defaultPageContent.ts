@@ -10,6 +10,7 @@ interface StoreInfo {
   location?: string | null;
   city?: string | null;
   state?: string | null;
+  owner_name?: string | null;
 }
 
 function contactLine(store: StoreInfo): string {
@@ -203,10 +204,14 @@ If you have any questions about these Terms & Conditions, please ${contact}.${ad
 
 export function getDefaultAboutUs(store: StoreInfo): string {
   const address = addressLine(store);
+  const founder = (store.owner_name || "").trim();
+  const founderLine = founder ? `Founded by ${founder}\n\n` : "";
 
-  return store.description
+  const body = store.description
     ? store.description
-    : `Welcome to ${store.name}! We are passionate about bringing you the best products with exceptional quality and service. Our commitment is to make your shopping experience seamless and enjoyable.${address ? `\n\nOur Location: ${address}` : ""}`;
+    : `Welcome to ${store.name}! We are passionate about bringing you the best products with exceptional quality and service. Our commitment is to make your shopping experience seamless and enjoyable.`;
+
+  return `About ${store.name}\n\n${founderLine}${body}${address ? `\n\nOur Location: ${address}` : ""}`;
 }
 
 export function getDefaultContent(pageType: string, store: StoreInfo): string {

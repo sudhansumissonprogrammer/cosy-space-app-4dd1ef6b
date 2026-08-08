@@ -106,6 +106,7 @@ export default function CreateStore() {
   // Step 3
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerName, setOwnerName] = useState("");
 
   // Step 4
   const [instagramUrl, setInstagramUrl] = useState("");
@@ -212,6 +213,7 @@ export default function CreateStore() {
         mobile_hero_url: mobileHeroUrl,
         theme,
         owner_email: ownerEmail.trim() || null,
+        owner_name: ownerName.trim() || null,
         meta_title: `${storeName} — Shop Online`,
         meta_description: `Discover products at ${storeName}. Order online today.`,
       }).select("id").single();
@@ -255,8 +257,9 @@ export default function CreateStore() {
         try {
           const storeName = name.trim();
           const shortDesc = description.trim();
+          const founder = ownerName.trim();
 
-          const aboutUs = `Welcome to ${storeName}! 🛍️\n\nWe are passionate about bringing you carefully curated products with quality you can trust. Every item in our collection is hand-picked to ensure it meets our high standards.\n\nOur mission is simple — make shopping easy, affordable, and delightful for every customer. From fast delivery to friendly support, we are here for you at every step.\n\nThank you for choosing ${storeName}. We can't wait to serve you! ❤️`;
+          const aboutUs = `About ${storeName}\n\n${founder ? `Founded by ${founder}\n\n` : ""}Welcome to ${storeName}! 🛍️${founder ? ` Founded by ${founder}, our` : "\n\nOur"} mission is to bring you carefully curated products with quality you can trust. Every item in our collection is hand-picked to ensure it meets our high standards.\n\nWe keep shopping easy, affordable, and delightful for every customer — from fast delivery to friendly support, we are here for you at every step.\n\nThank you for choosing ${storeName}. We can't wait to serve you! ❤️`;
 
           const metaTitle = `${storeName} — Shop Online`.substring(0, 60);
           const metaDescription = (shortDesc
@@ -850,6 +853,15 @@ export default function CreateStore() {
 
                 <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-3 text-center">
                   <p className="text-xs text-muted-foreground">📞 Email is required — WhatsApp is optional for customer support.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="owner-name">Store Owner / Founder Name</Label>
+                  <div className="flex items-center gap-0 rounded-md border border-input bg-muted/50">
+                    <span className="flex-shrink-0 px-3 text-muted-foreground"><Crown className="h-4 w-4" /></span>
+                    <Input id="owner-name" placeholder="e.g. Jetharam" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} maxLength={80} className="h-11 border-0 bg-transparent shadow-none focus-visible:ring-0" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Shown on your About page as “Founded by {ownerName.trim() || "your name"}” — builds trust with customers.</p>
                 </div>
 
                 <div className="space-y-2">

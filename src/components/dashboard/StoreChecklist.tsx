@@ -4,7 +4,7 @@ import { useNavigateTransition } from "@/hooks/useNavigateTransition";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Check, ChevronRight, Image, FileText, Package, CreditCard, Truck, Palette, Phone } from "lucide-react";
+import { Check, ChevronRight, Image, FileText, Package, CreditCard, Truck, Palette, Phone, UserRound } from "lucide-react";
 
 interface StoreChecklistProps {
   storeId: string;
@@ -27,7 +27,7 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const [storeRes, productsRes, paymentsRes, shippingRes, themeRes] = await Promise.all([
-        supabase.from("stores").select("logo_url, banner_url, whatsapp_number, description, order_mode").eq("id", storeId).single(),
+        supabase.from("stores").select("logo_url, banner_url, whatsapp_number, description, order_mode, owner_name").eq("id", storeId).single(),
         supabase.from("products").select("id", { count: "estimated", head: true }).eq("store_id", storeId),
         supabase.from("store_payment_config").select("id").eq("store_id", storeId).maybeSingle(),
         supabase.from("store_shipping_config").select("id").eq("store_id", storeId).maybeSingle(),
@@ -44,6 +44,13 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
           done: !!store?.logo_url,
           url: `/dashboard/stores/${storeSlug}/settings`,
           icon: Image,
+        },
+        {
+          label: "Add owner / founder name",
+          hint: "Settings → Basic Info (shows “Founded by …” on About)",
+          done: !!(store as any)?.owner_name,
+          url: `/dashboard/stores/${storeSlug}/settings`,
+          icon: UserRound,
         },
         {
           label: "Add store description",

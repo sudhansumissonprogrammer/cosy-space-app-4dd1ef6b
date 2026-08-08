@@ -72,6 +72,11 @@ function DefaultAboutContent({ store }: { store: StoreData }) {
       {/* Welcome */}
       <section className="space-y-4">
         <h2 className="text-2xl font-bold" style={{ color: textColor }}>ABOUT US</h2>
+        {(store as any).owner_name && (
+          <p className="text-sm font-semibold uppercase tracking-[0.15em]" style={{ color: "var(--storefront-primary, hsl(var(--primary)))" }}>
+            Founded by {(store as any).owner_name}
+          </p>
+        )}
         <div className="space-y-3 text-base leading-relaxed" style={{ color: mutedColor }}>
           <p>
             Welcome to <strong style={{ color: textColor }}>{storeName}</strong> — where quality meets passion.
@@ -226,7 +231,7 @@ export default function StorefrontAboutUs() {
             About {store.name}
           </h1>
           <p className="mt-4 text-lg" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)" }}>
-            Get to know us and what makes us special ✨
+            {(store as any).owner_name ? `Founded by ${(store as any).owner_name}` : "Get to know us and what makes us special ✨"}
           </p>
         </div>
       </div>

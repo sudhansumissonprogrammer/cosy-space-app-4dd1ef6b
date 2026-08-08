@@ -71,6 +71,7 @@ export default function StoreSettings() {
   const [ogImagePreview, setOgImagePreview] = useState<string | null>(null);
   const [ogImageRemoved, setOgImageRemoved] = useState(false);
   const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerName, setOwnerName] = useState("");
   const [defaultProfitMargin, setDefaultProfitMargin] = useState<number>(30);
   // AI Search Readiness fields
   const [seoAboutParagraph, setSeoAboutParagraph] = useState("");
@@ -101,6 +102,7 @@ export default function StoreSettings() {
     if (store) {
       setName(store.name);
       setDescription(store.description || "");
+      setOwnerName((store as any).owner_name || "");
       setWhatsappNumber(store.whatsapp_number || "");
       setLocation((store as any).location || "");
       setCity((store as any).city || "");
@@ -199,6 +201,7 @@ export default function StoreSettings() {
           meta_description: metaDescription.trim() || null,
           og_image_url: finalOgImageUrl.trim() || null,
           owner_email: ownerEmail.trim() || null,
+          owner_name: ownerName.trim() || null,
           default_profit_margin: defaultProfitMargin,
           seo_about_paragraph: seoAboutParagraph.trim() || null,
           usp_bullets: uspBullets.map((b) => b.trim()).filter(Boolean),
@@ -296,6 +299,11 @@ export default function StoreSettings() {
             <div className="space-y-2">
               <Label htmlFor="store-name">Store Name *</Label>
               <Input id="store-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="owner-name">Store Owner / Founder Name</Label>
+              <Input id="owner-name" placeholder="e.g. Jetharam" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} maxLength={80} />
+              <p className="text-xs text-muted-foreground">Shown on your About page as “Founded by {ownerName.trim() || "your name"}”.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="store-desc">Description</Label>
