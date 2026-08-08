@@ -71,6 +71,7 @@ export default function StoreSettings() {
   const [ogImagePreview, setOgImagePreview] = useState<string | null>(null);
   const [ogImageRemoved, setOgImageRemoved] = useState(false);
   const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerName, setOwnerName] = useState("");
   const [defaultProfitMargin, setDefaultProfitMargin] = useState<number>(30);
   // AI Search Readiness fields
   const [seoAboutParagraph, setSeoAboutParagraph] = useState("");
