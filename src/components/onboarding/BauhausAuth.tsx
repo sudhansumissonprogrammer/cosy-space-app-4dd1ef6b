@@ -2,6 +2,7 @@ import * as React from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
+import brandLogo from "@/assets/shopbanao-logo.webp";
 
 /**
  * Bauhaus onboarding design layer.
@@ -11,22 +12,37 @@ import { Loader2 } from "lucide-react";
  * Tokens come from index.css (--bauhaus-*) via tailwind.config.ts.
  */
 
-/* ---------- Geometric brand mark: circle + square + triangle ---------- */
-export const GeoLogo = ({ className, size = 28 }: { className?: string; size?: number }) => (
-  <div className={cn("flex items-center gap-1.5", className)} aria-hidden="true">
-    <span
-      className="block rounded-full border-2 border-foreground bg-bauhaus-red"
-      style={{ width: size, height: size }}
+/* ---------- Brand lockup: ShopBanao logo + wordmark (same as landing) ---------- */
+export const BrandMark = ({
+  className,
+  size = 56,
+  light = false,
+}: {
+  className?: string;
+  size?: number;
+  light?: boolean;
+}) => (
+  <span className={cn("inline-flex items-center -space-x-1", className)}>
+    <img
+      src={brandLogo}
+      alt="ShopBanao"
+      width={size}
+      height={size}
+      className="w-auto"
+      style={{ height: size }}
+      decoding="async"
     />
     <span
-      className="block rounded-none border-2 border-foreground bg-bauhaus-blue"
-      style={{ width: size, height: size }}
-    />
-    <span
-      className="block border-b-2 border-foreground bg-bauhaus-yellow"
-      style={{ width: size, height: size, clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)" }}
-    />
-  </div>
+      className={cn("leading-none", light ? "text-bauhaus-white" : "text-foreground")}
+      style={{
+        fontFamily: "'Alegreya SC', serif",
+        fontWeight: 700,
+        fontSize: Math.round(size * 0.45),
+      }}
+    >
+      ShopBanao
+    </span>
+  </span>
 );
 
 /* ---------- Decorative constructivist composition (desktop panel) ---------- */
@@ -70,10 +86,7 @@ export function AuthShell({
           }}
         />
         <Link to="/" className="relative z-10 inline-flex w-fit items-center gap-3">
-          <GeoLogo size={22} />
-          <span className="text-xl font-black uppercase tracking-tighter text-bauhaus-white">
-            ShopBanao
-          </span>
+          <BrandMark size={56} light />
         </Link>
 
         <div className="relative z-10">
@@ -107,8 +120,7 @@ export function AuthShell({
         <div className="pointer-events-none absolute right-6 top-6 h-16 w-16 rotate-45 border-2 border-foreground bg-bauhaus-yellow lg:h-24 lg:w-24" aria-hidden="true" />
         <div className="relative z-10 mx-auto w-full max-w-md">
           <Link to="/" className="mb-8 inline-flex items-center gap-3 lg:hidden">
-            <GeoLogo size={18} />
-            <span className="text-lg font-black uppercase tracking-tighter">ShopBanao</span>
+            <BrandMark size={48} />
           </Link>
 
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-bauhaus-red">
