@@ -104,34 +104,30 @@ Deno.serve(async (req) => {
   const TRANSACTIONAL = new Set(["order_confirmation", "payment_received", "payment_success", "order_shipped", "order_delivered", "platform_alert"]);
 
 
-  // Per-store toggles — DEFAULT OFF for marketing.
-  // TRANSACTIONAL messages (order_confirmation, order_shipped, payment_*, delivered)
-  // are UTILITY-category — customer paid, they MUST reach them. Do NOT gate them
-  // on the marketing master switch.
+  // Per-store toggles — DEFAULT OFF for every automation (marketing AND
+  // transactional). Nothing is sent on a store's behalf unless the owner has
+  // turned the master switch ON plus the matching per-event toggle.
   if (body.mode === "automation" && body.store_id) {
     const mt = body.message_type || "";
-    const isTransactionalMt = TRANSACTIONAL.has(mt);
     const { data: s } = await admin
       .from("stores_wa_settings")
       .select("platform_marketing_enabled, send_order_confirmation, send_order_shipped, send_abandoned_cart")
       .eq("store_id", body.store_id)
       .maybeSingle();
-    if (!isTransactionalMt && (!s || (s as any).platform_marketing_enabled !== true)) {
+    if (!s || (s as any).platform_marketing_enabled !== true) {
       return json({ skipped: true, reason: "store_disabled" });
     }
 
     // Per-event guard (defense-in-depth against callers that skip wa-order-event).
-    // Abandoned-cart recovery is the baseline marketing automation: the cron
-    // enqueues it when the store master switch is ON, so the sender must not
-    // block it again on the legacy sub-toggle.
     const perEventOk =
-      (mt === "order_confirmation" && (s as any)?.send_order_confirmation === true) ||
-      (mt === "order_shipped" && (s as any)?.send_order_shipped === true) ||
-      mt === "abandoned_cart";
+      (mt === "order_confirmation" && (s as any).send_order_confirmation === true) ||
+      (mt === "order_shipped" && (s as any).send_order_shipped === true) ||
+      (mt === "abandoned_cart" && (s as any).send_abandoned_cart === true);
     if (!perEventOk) {
       return json({ skipped: true, reason: "event_toggle_off" });
     }
   }
+
 
   // Marketing limits apply globally by normalized phone, across every store.
   // Transactional events (order/payment/shipping) and 24h support replies must
