@@ -83,14 +83,22 @@ async function sendAlert(admin: any, headline: string, target: string, detail: s
   const phones = ((recips as any[]) || []).map((r) => String(r.phone));
   if (!phones.length) return;
 
+  // wa-platform-send only trusts the cron secret for internal automation sends.
+  const { data: secretRow } = await admin.from("cron_auth").select("secret").limit(1).maybeSingle();
+  const cronSecret = (secretRow as any)?.secret || Deno.env.get("CRON_SECRET") || "";
+
   for (const phone of phones) {
     try {
-      await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/wa-platform-send`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${SERVICE_ROLE}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${SERVICE_ROLE}`,
+          "x-cron-secret": cronSecret,
+        },
         body: JSON.stringify({
           mode: "automation",
-          phone,
+          recipient_phone: phone,
           template_name: "platform_alert_v1",
           message_type: "platform_alert",
           template_params: [
@@ -101,11 +109,13 @@ async function sendAlert(admin: any, headline: string, target: string, detail: s
           ],
         }),
       });
+      if (!res.ok) console.error("alert send http", res.status, (await res.text()).slice(0, 200));
     } catch (e) {
       console.error("alert send failed", (e as Error).message);
     }
   }
 }
+
 
 async function syncTargets(admin: any) {
   const fixed = [
@@ -179,6 +189,18 @@ Deno.serve(async (req) => {
   if (!authed) return j({ error: "unauthorized" }, 401);
 
   const body = await req.json().catch(() => ({}));
+
+  // Manual end-to-end test of the WhatsApp alert pipeline.
+  if (body?.test_alert === true) {
+    await sendAlert(
+      admin,
+      "TEST: alert pipeline check",
+      "ShopBanao platform and all storefronts",
+      "This is a manual test of the monitoring alert channel. No action needed.",
+    );
+    return j({ ok: true, test_alert: "sent" });
+  }
+
 
   // Target sync is cheap but not needed every minute.
   if (body?.sync !== false) {
