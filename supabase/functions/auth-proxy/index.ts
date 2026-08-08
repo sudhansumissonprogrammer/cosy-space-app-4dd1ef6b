@@ -130,11 +130,14 @@ Deno.serve(async (req) => {
     const signupPayload: {
       email: string;
       password: string;
-      data?: { full_name: string | null };
+      data?: { full_name: string | null; user_type: "merchant" };
     } = { email, password };
 
     if (payload.fullName !== undefined) {
-      signupPayload.data = { full_name: payload.fullName?.trim() || null };
+      signupPayload.data = {
+        full_name: payload.fullName?.trim() || null,
+        user_type: "merchant",
+      };
     }
 
     const redirectParam = payload.redirectTo
