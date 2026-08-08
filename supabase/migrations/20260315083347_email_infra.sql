@@ -35,6 +35,10 @@ CREATE TABLE IF NOT EXISTS public.email_send_log (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Supabase no longer grants public-schema access to service_role by default;
+-- emit the grant explicitly so edge functions can reach the table via PostgREST.
+GRANT ALL ON public.email_send_log TO service_role;
+
 ALTER TABLE public.email_send_log ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
@@ -114,6 +118,8 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
 
+GRANT ALL ON public.email_send_state TO service_role;
+
 ALTER TABLE public.email_send_state ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
@@ -126,20 +132,42 @@ END $$;
 
 -- RPC wrappers so Edge Functions can interact with pgmq via supabase.rpc()
 -- (PostgREST only exposes functions in the public schema; pgmq functions are in the pgmq schema)
+-- All wrappers auto-create the queue on undefined_table (42P01) so emails
+-- are never lost if the queue was dropped (extension upgrade, restore, etc.).
 CREATE OR REPLACE FUNCTION public.enqueue_email(queue_name TEXT, payload JSONB)
 RETURNS BIGINT
-LANGUAGE sql SECURITY DEFINER
-AS $$ SELECT pgmq.send(queue_name, payload); $$;
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN pgmq.send(queue_name, payload);
+EXCEPTION WHEN undefined_table THEN
+  PERFORM pgmq.create(queue_name);
+  RETURN pgmq.send(queue_name, payload);
+END;
+$$;
 
 CREATE OR REPLACE FUNCTION public.read_email_batch(queue_name TEXT, batch_size INT, vt INT)
 RETURNS TABLE(msg_id BIGINT, read_ct INT, message JSONB)
-LANGUAGE sql SECURITY DEFINER
-AS $$ SELECT msg_id, read_ct, message FROM pgmq.read(queue_name, vt, batch_size); $$;
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY SELECT r.msg_id, r.read_ct, r.message FROM pgmq.read(queue_name, vt, batch_size) r;
+EXCEPTION WHEN undefined_table THEN
+  PERFORM pgmq.create(queue_name);
+  RETURN;
+END;
+$$;
 
 CREATE OR REPLACE FUNCTION public.delete_email(queue_name TEXT, message_id BIGINT)
 RETURNS BOOLEAN
-LANGUAGE sql SECURITY DEFINER
-AS $$ SELECT pgmq.delete(queue_name, message_id); $$;
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN pgmq.delete(queue_name, message_id);
+EXCEPTION WHEN undefined_table THEN
+  RETURN FALSE;
+END;
+$$;
 
 CREATE OR REPLACE FUNCTION public.move_to_dlq(
   source_queue TEXT, dlq_name TEXT, message_id BIGINT, payload JSONB
@@ -151,6 +179,19 @@ DECLARE new_id BIGINT;
 BEGIN
   SELECT pgmq.send(dlq_name, payload) INTO new_id;
   PERFORM pgmq.delete(source_queue, message_id);
+  RETURN new_id;
+EXCEPTION WHEN undefined_table THEN
+  BEGIN
+    PERFORM pgmq.create(dlq_name);
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
+  SELECT pgmq.send(dlq_name, payload) INTO new_id;
+  BEGIN
+    PERFORM pgmq.delete(source_queue, message_id);
+  EXCEPTION WHEN undefined_table THEN
+    NULL;
+  END;
   RETURN new_id;
 END;
 $$;
@@ -180,6 +221,8 @@ CREATE TABLE IF NOT EXISTS public.suppressed_emails (
   UNIQUE(email)
 );
 
+GRANT ALL ON public.suppressed_emails TO service_role;
+
 ALTER TABLE public.suppressed_emails ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
@@ -207,6 +250,8 @@ CREATE TABLE IF NOT EXISTS public.email_unsubscribe_tokens (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   used_at TIMESTAMPTZ
 );
+
+GRANT ALL ON public.email_unsubscribe_tokens TO service_role;
 
 ALTER TABLE public.email_unsubscribe_tokens ENABLE ROW LEVEL SECURITY;
 
