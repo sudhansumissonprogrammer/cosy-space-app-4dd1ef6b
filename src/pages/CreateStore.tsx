@@ -581,56 +581,53 @@ export default function CreateStore() {
       )}
 
       {/* Header */}
-      <div className="text-center">
-        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-          <Sparkles className="h-7 w-7 text-primary" />
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Create Your Store</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Set up your storefront in just a few steps</p>
+      <div>
+        <p className="text-xs font-bold uppercase tracking-widest text-bauhaus-red">
+          Step {step} of {STEPS.length}
+        </p>
+        <h1 className="mt-2 text-4xl font-black uppercase leading-[0.9] tracking-tighter text-foreground sm:text-5xl">
+          Create<br />your store
+        </h1>
+        <p className="mt-3 text-base font-medium text-muted-foreground">{currentStep.motivation}</p>
       </div>
 
       {/* Progress bar */}
-      <div className="space-y-2">
-        <Progress value={progress} className="h-2" />
-        <p className="text-center text-xs font-medium text-primary animate-fade-in" key={step}>
-          {currentStep.motivation}
-        </p>
+      <div className="h-4 w-full border-2 border-foreground bg-bauhaus-white">
+        <div
+          className="h-full bg-bauhaus-red transition-[width] duration-300 ease-out"
+          style={{ width: `${progress}%` }}
+        />
       </div>
 
       {/* Step Indicator */}
-      <div className="flex items-center justify-center gap-1">
-        {STEPS.map((s, i) => (
-          <div key={s.id} className="flex items-center">
+      <div className="flex items-stretch gap-2">
+        {STEPS.map((s) => {
+          const done = step > s.id;
+          const active = step === s.id;
+          return (
             <button
+              key={s.id}
               type="button"
               onClick={() => { if (s.id < step) { setDirection("back"); setStep(s.id); } }}
-              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium transition-[transform,opacity,colors,box-shadow] duration-300 ${
-                step === s.id
-                  ? "bg-primary text-primary-foreground shadow-md scale-110"
-                  : step > s.id
-                  ? "bg-primary/10 text-primary cursor-pointer hover:bg-primary/20"
-                  : "bg-muted text-muted-foreground"
+              className={`flex flex-1 items-center justify-center gap-1.5 border-2 border-foreground px-2 py-2.5 text-[11px] font-bold uppercase tracking-widest transition-[transform,box-shadow,background-color] duration-200 ease-out ${
+                active
+                  ? "bg-bauhaus-red text-bauhaus-white shadow-bauhaus"
+                  : done
+                  ? "cursor-pointer bg-bauhaus-yellow text-foreground hover:-translate-y-1"
+                  : "bg-bauhaus-white text-muted-foreground"
               }`}
             >
-              {step > s.id ? (
-                <Check className="h-3 w-3" />
-              ) : (
-                <s.icon className="h-3 w-3" />
-              )}
+              {done ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : <s.icon className="h-3.5 w-3.5" strokeWidth={3} />}
               <span className="hidden sm:inline">{s.title}</span>
             </button>
-            {i < STEPS.length - 1 && (
-              <div className={`mx-1 h-px w-6 transition-colors duration-500 ${
-                step > s.id ? "bg-primary" : "bg-border"
-              }`} />
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Step Content */}
-      <Card className="overflow-hidden border-0 shadow-lg">
-        <CardContent className="p-5 sm:p-8">
+      <div className="relative border-2 border-foreground bg-bauhaus-white shadow-bauhaus sm:border-4 sm:shadow-bauhaus-lg">
+        <span className="absolute right-4 top-4 h-3 w-3 rounded-full border-2 border-foreground bg-bauhaus-blue" aria-hidden="true" />
+        <div className="p-5 sm:p-8">
           <div
             key={step}
             className="animate-fade-in"
