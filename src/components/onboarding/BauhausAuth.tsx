@@ -51,7 +51,7 @@ export const BrandMark = ({
       alt="ShopBanao"
       width={size}
       height={size}
-      className={cn("w-auto", light && "invert")}
+      className={cn("w-auto brightness-0", light && "invert")}
       style={{ height: size }}
       decoding="async"
     />
