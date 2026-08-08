@@ -257,8 +257,9 @@ export default function CreateStore() {
         try {
           const storeName = name.trim();
           const shortDesc = description.trim();
+          const founder = ownerName.trim();
 
-          const aboutUs = `Welcome to ${storeName}! 🛍️\n\nWe are passionate about bringing you carefully curated products with quality you can trust. Every item in our collection is hand-picked to ensure it meets our high standards.\n\nOur mission is simple — make shopping easy, affordable, and delightful for every customer. From fast delivery to friendly support, we are here for you at every step.\n\nThank you for choosing ${storeName}. We can't wait to serve you! ❤️`;
+          const aboutUs = `About ${storeName}\n\n${founder ? `Founded by ${founder}\n\n` : ""}Welcome to ${storeName}! 🛍️${founder ? ` Founded by ${founder}, our` : "\n\nOur"} mission is to bring you carefully curated products with quality you can trust. Every item in our collection is hand-picked to ensure it meets our high standards.\n\nWe keep shopping easy, affordable, and delightful for every customer — from fast delivery to friendly support, we are here for you at every step.\n\nThank you for choosing ${storeName}. We can't wait to serve you! ❤️`;
 
           const metaTitle = `${storeName} — Shop Online`.substring(0, 60);
           const metaDescription = (shortDesc
