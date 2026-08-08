@@ -566,20 +566,33 @@ export default function CheckoutPhoneStep({
                   setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
                   if (inlineError) setInlineError(null);
                 }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !submitting) submit();
-                }}
-                aria-invalid={!!inlineError}
-                aria-describedby={inlineError ? "checkout-phone-error" : undefined}
-                className="flex-1 bg-transparent outline-none text-[14px]"
-                autoComplete="tel-national"
-              />
-            </div>
             {inlineError && (
               <p id="checkout-phone-error" className="text-[12px] font-medium text-red-600 -mt-1">
                 {inlineError}
               </p>
             )}
+
+            {/* Re-verify nudge — wrong numbers are the #1 cause of failed
+                deliveries + failed WhatsApp order updates. Shown in English
+                + short Hindi, and highlighted once 10 digits are entered. */}
+            <div
+              className={`rounded-lg border px-3 py-2 -mt-1 ${
+                valid
+                  ? "border-amber-300 bg-amber-50"
+                  : "border-[#ECECEC] bg-[#FAFAFA]"
+              }`}
+            >
+              <div className={`text-[12px] font-bold leading-snug ${valid ? "text-amber-900" : "text-foreground"}`}>
+                Please re-check your mobile number
+              </div>
+              <div className={`text-[11.5px] leading-snug mt-0.5 ${valid ? "text-amber-800" : "text-muted-foreground"}`}>
+                Wrong number = parcel will not be delivered.
+              </div>
+              <div className={`text-[11.5px] leading-snug mt-0.5 ${valid ? "text-amber-800" : "text-muted-foreground"}`}>
+                नंबर एक बार दोबारा जाँच लें — गलत नंबर पर पार्सल नहीं पहुँचेगा।
+              </div>
+            </div>
+
 
             <label className="flex items-center gap-2 text-[12px]">
               <Checkbox
