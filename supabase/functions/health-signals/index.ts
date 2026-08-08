@@ -149,7 +149,7 @@ async function sendAlert(admin: any, headline: string, target: string, detail: s
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${SERVICE_ROLE}` },
         body: JSON.stringify({
           mode: "automation",
-          phone: String(r.phone),
+          recipient_phone: String(r.phone),
           template_name: "platform_alert_v1",
           message_type: "platform_alert",
           template_params: [headline.slice(0, 120), target.slice(0, 120), detail.slice(0, 300), istNow()],
