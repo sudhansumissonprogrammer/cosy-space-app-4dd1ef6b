@@ -66,29 +66,24 @@ Deno.serve(async (req) => {
 
   const o = order as any;
 
-  // 🔒 Transactional exemption: order_confirmation & order_shipped are UTILITY
-  // messages under Meta pricing. They MUST always deliver (customer paid,
-  // deserves confirmation). Do NOT gate them behind the platform_marketing_enabled
-  // switch — that switch only controls MARKETING (abandoned cart, campaigns).
-  const isTransactional = body.event === "order_confirmation" || body.event === "order_shipped";
+  // 🔒 Master switch is authoritative for EVERY event (marketing AND transactional).
+  // If the store owner has WhatsApp OFF, nothing goes out on their behalf.
   const { data: storeSettings } = await admin
     .from("stores_wa_settings")
     .select("platform_marketing_enabled, send_order_confirmation, send_order_shipped")
     .eq("store_id", o.store_id)
     .maybeSingle();
-  if (!isTransactional) {
-    // Marketing-only events still require the master switch.
-    if (!storeSettings || (storeSettings as any).platform_marketing_enabled !== true) {
-      return json({ skipped: true, reason: "store_disabled" });
-    }
+  if (!storeSettings || (storeSettings as any).platform_marketing_enabled !== true) {
+    return json({ skipped: true, reason: "store_disabled" });
   }
-  // Per-event toggle — default OFF for marketing; transactional defaults ON when store exists.
+  // Per-event toggle — default OFF, must be explicitly enabled by the store.
   const perEventOn =
-    (body.event === "order_confirmation" && (storeSettings as any)?.send_order_confirmation !== false) ||
-    (body.event === "order_shipped" && (storeSettings as any)?.send_order_shipped !== false);
+    (body.event === "order_confirmation" && (storeSettings as any).send_order_confirmation === true) ||
+    (body.event === "order_shipped" && (storeSettings as any).send_order_shipped === true);
   if (!perEventOn) {
     return json({ skipped: true, reason: "event_toggle_off" });
   }
+
 
 
   // Gate: "shipped" must have a tracking number, otherwise customer gets a useless message.
