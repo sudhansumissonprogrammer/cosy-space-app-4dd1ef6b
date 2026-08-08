@@ -10,6 +10,7 @@ interface StoreInfo {
   location?: string | null;
   city?: string | null;
   state?: string | null;
+  owner_name?: string | null;
 }
 
 function contactLine(store: StoreInfo): string {

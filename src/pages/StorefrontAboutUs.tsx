@@ -231,7 +231,7 @@ export default function StorefrontAboutUs() {
             About {store.name}
           </h1>
           <p className="mt-4 text-lg" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)" }}>
-            Get to know us and what makes us special ✨
+            {(store as any).owner_name ? `Founded by ${(store as any).owner_name}` : "Get to know us and what makes us special ✨"}
           </p>
         </div>
       </div>
