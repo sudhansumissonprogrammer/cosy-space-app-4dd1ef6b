@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -18,17 +18,41 @@ import {
 // This does NOT affect storefront customer accounts, checkout or orders.
 const MERCHANT_SIGNUPS_ENABLED = true;
 
+/** Strip +91 / 0 prefixes → bare 10-digit subscriber number. */
+const stripIndiaPrefix = (value: string): string => {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) return digits.slice(2);
+  if (digits.length === 11 && digits.startsWith("0")) return digits.slice(1);
+  return digits;
+};
+
+const isValidMobile = (value: string) => {
+  const local = stripIndiaPrefix(value);
+  return local.length === 10 && /^[6-9]/.test(local);
+};
+
 export default function Signup() {
   const navigate = useNavigate();
   const { session, loading: authLoading } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // WhatsApp OTP step
+  const [otpPhone, setOtpPhone] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
+
+  // Email-verification fallback (used only when WhatsApp is unavailable)
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
+
+  const timerRef = useRef<number | null>(null);
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
@@ -36,6 +60,15 @@ export default function Signup() {
       navigate("/dashboard", { replace: true });
     }
   }, [authLoading, session, navigate]);
+
+  // Resend countdown
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    timerRef.current = window.setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+    };
+  }, [resendIn]);
 
   if (authLoading || session) {
     return <BauhausLoader />;
@@ -59,9 +92,6 @@ export default function Signup() {
       </AuthShell>
     );
   }
-
-
-
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
@@ -115,31 +145,46 @@ export default function Signup() {
     toast.success("Account created! Check your email to verify your account.");
   };
 
-  const handleResendVerification = async () => {
-    if (!verificationEmail) return;
-    setResending(true);
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email: verificationEmail,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+  /** Sends the WhatsApp OTP. Falls back to email verification when WA fails. */
+  const sendWhatsAppOtp = async (mobile: string, signupEmail: string, silent = false) => {
+    const { data, error } = await supabase.functions.invoke("merchant-otp-send", {
+      body: { phone: mobile, purpose: "signup" },
     });
-    setResending(false);
 
-    if (error) {
-      toast.error(error.message);
-      return;
+    const payload = data as { ok?: boolean; error?: string; message?: string; retry_after?: number } | null;
+
+    if (error || !payload?.ok) {
+      const code = payload?.error;
+      if (code === "cooldown" || code === "rate_limited") {
+        toast.error(payload?.message || "Please wait before requesting another code.");
+        setResendIn(payload?.retry_after ?? 30);
+        return true; // stay on the OTP screen
+      }
+      if (!silent) {
+        toast.error("WhatsApp code couldn't be sent — verify by email instead.");
+        showVerificationStep(signupEmail);
+      }
+      return false;
     }
 
-    toast.success("Verification email sent again.");
+    setOtpPhone(mobile);
+    setResendIn(30);
+    if (!silent) toast.success(`Code sent on WhatsApp to +91 ${mobile}`);
+    return true;
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedFullName = fullName.trim();
+    const mobile = stripIndiaPrefix(phone);
 
     if (!normalizedEmail || !password || !confirmPassword) {
       toast.error("Please fill in all fields");
+      return;
+    }
+    if (!isValidMobile(phone)) {
+      toast.error("Enter a valid 10-digit WhatsApp number");
       return;
     }
     if (password !== confirmPassword) {
@@ -159,7 +204,7 @@ export default function Signup() {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
-          data: { full_name: normalizedFullName || null, user_type: "merchant" },
+          data: { full_name: normalizedFullName || null, phone: mobile, user_type: "merchant" },
         },
       });
 
@@ -167,7 +212,7 @@ export default function Signup() {
         if (isFetchFailure(error.message)) {
           await signUpWithProxy(normalizedEmail, password, normalizedFullName);
           attachReferralAfterSignup().catch(() => {});
-          showVerificationStep(normalizedEmail);
+          await sendWhatsAppOtp(mobile, normalizedEmail);
           return;
         }
 
@@ -181,9 +226,10 @@ export default function Signup() {
       if (signUpData?.session) {
         toast.success("Account created successfully!");
         navigate("/dashboard");
-      } else {
-        showVerificationStep(normalizedEmail);
+        return;
       }
+
+      await sendWhatsAppOtp(mobile, normalizedEmail);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to create account";
 
@@ -191,7 +237,7 @@ export default function Signup() {
         try {
           await signUpWithProxy(normalizedEmail, password, normalizedFullName);
           attachReferralAfterSignup().catch(() => {});
-          showVerificationStep(normalizedEmail);
+          await sendWhatsAppOtp(mobile, normalizedEmail);
           return;
         } catch (proxyErr) {
           const proxyMessage =
@@ -208,16 +254,140 @@ export default function Signup() {
     }
   };
 
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpPhone) return;
+    if (otpCode.replace(/\D/g, "").length !== 6) {
+      toast.error("Enter the 6-digit code");
+      return;
+    }
+
+    setVerifying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("merchant-otp-verify", {
+        body: {
+          phone: otpPhone,
+          code: otpCode.replace(/\D/g, ""),
+          purpose: "signup",
+          email: email.trim().toLowerCase(),
+        },
+      });
+
+      const payload = data as
+        | { verified?: boolean; error?: string; message?: string; session?: { access_token: string; refresh_token: string } | null }
+        | null;
+
+      if (error || !payload?.verified) {
+        toast.error(payload?.message || "Incorrect or expired code. Please try again.");
+        return;
+      }
+
+      if (payload.session) {
+        const { error: sessErr } = await supabase.auth.setSession({
+          access_token: payload.session.access_token,
+          refresh_token: payload.session.refresh_token,
+        });
+        if (sessErr) throw sessErr;
+        toast.success("Number verified — welcome!");
+        navigate("/dashboard");
+        return;
+      }
+
+      toast.success("Number verified. Please sign in.");
+      navigate("/login");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Verification failed");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!verificationEmail) return;
+    setResending(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: verificationEmail,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+    setResending(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success("Verification email sent again.");
+  };
+
   return (
     <AuthShell
-      eyebrow="Step 01 — Account"
-      title={<>Build<br />Your Shop</>}
-      subtitle="Create your account first. You'll set up the store — name, logo, payments — right after."
+      eyebrow={otpPhone ? "Step 02 — Verify" : "Step 01 — Account"}
+      title={otpPhone ? <>Verify<br />Your Number</> : <>Build<br />Your Shop</>}
+      subtitle={
+        otpPhone
+          ? "We sent a 6-digit code on WhatsApp. Enter it below to activate your account."
+          : "Create your account first. You'll set up the store — name, logo, payments — right after."
+      }
       panelTitle={"Form follows\nfunction.\nSo does sales."}
       panelPoints={["Free to start", "Storefront live in minutes", "UPI, COD & cards built in"]}
     >
       <BauhausCard corner="red">
-        {verificationEmail ? (
+        {otpPhone ? (
+          <form onSubmit={handleVerifyOtp} className="space-y-5">
+            <div>
+              <p className="text-lg font-black text-foreground">Enter WhatsApp code</p>
+              <p className="mt-2 text-sm font-medium leading-relaxed text-muted-foreground">
+                Sent to <strong className="text-foreground">+91 {otpPhone}</strong>. The code expires in 5 minutes.
+              </p>
+            </div>
+
+            <BauhausField
+              id="otp"
+              label="6-digit code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="••••••"
+              maxLength={6}
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="text-center text-2xl tracking-[0.5em]"
+              autoFocus
+            />
+
+            <BauhausButton
+              type="submit"
+              variant="red"
+              className="w-full"
+              loading={verifying}
+              disabled={verifying || otpCode.length !== 6}
+            >
+              Verify &amp; continue
+            </BauhausButton>
+
+            <BauhausButton
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={resendIn > 0}
+              onClick={() => sendWhatsAppOtp(otpPhone, email.trim().toLowerCase(), true)}
+            >
+              {resendIn > 0 ? `Resend code in ${resendIn}s` : "Resend code on WhatsApp"}
+            </BauhausButton>
+
+            <button
+              type="button"
+              className="w-full text-xs font-semibold text-muted-foreground underline underline-offset-4"
+              onClick={() => {
+                setOtpPhone(null);
+                setOtpCode("");
+              }}
+            >
+              Wrong number? Go back
+            </button>
+          </form>
+        ) : verificationEmail ? (
           <div className="space-y-5" role="status" aria-live="polite">
             <div>
               <p className="text-lg font-black text-foreground">Verify your email</p>
@@ -241,68 +411,79 @@ export default function Signup() {
             </BauhausButton>
           </div>
         ) : (
-        <form onSubmit={handleSignup} className="space-y-5">
-          <BauhausField
-            id="full-name"
-            label="Full name"
-            type="text"
-            placeholder="John Doe"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            autoComplete="name"
-            maxLength={100}
-          />
-          <BauhausField
-            id="email"
-            label="Email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-          />
-          <BauhausField
-            id="password"
-            label="Password"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="new-password"
-            hint="Minimum 6 characters."
-          />
-          <BauhausField
-            id="confirm-password"
-            label="Confirm password"
-            type="password"
-            placeholder="••••••••"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            autoComplete="new-password"
-          />
+          <form onSubmit={handleSignup} className="space-y-5">
+            <BauhausField
+              id="full-name"
+              label="Full name"
+              type="text"
+              placeholder="John Doe"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              autoComplete="name"
+              maxLength={100}
+            />
+            <BauhausField
+              id="email"
+              label="Email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+            />
+            <BauhausField
+              id="phone"
+              label="WhatsApp number"
+              type="tel"
+              inputMode="numeric"
+              placeholder="10-digit mobile number"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/[^\d+]/g, "").slice(0, 13))}
+              autoComplete="tel"
+              hint="We'll send a verification code here — no email link needed."
+            />
+            <BauhausField
+              id="password"
+              label="Password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              hint="Minimum 6 characters."
+            />
+            <BauhausField
+              id="confirm-password"
+              label="Confirm password"
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+            />
 
-          <BauhausButton
-            type="submit"
-            variant="red"
-            className="w-full"
-            loading={loading}
-            disabled={loading || googleLoading}
-          >
-            Create account
-          </BauhausButton>
+            <BauhausButton
+              type="submit"
+              variant="red"
+              className="w-full"
+              loading={loading}
+              disabled={loading || googleLoading}
+            >
+              Create account
+            </BauhausButton>
 
-          <p className="text-xs font-medium leading-relaxed text-muted-foreground">
-            By creating an account you agree to our{" "}
-            <Link to="/terms" className="underline decoration-2 underline-offset-2 hover:text-foreground">
-              Terms &amp; Conditions
-            </Link>{" "}
-            and{" "}
-            <Link to="/privacy" className="underline decoration-2 underline-offset-2 hover:text-foreground">
-              Privacy Policy
-            </Link>
-            .
-          </p>
-        </form>
+            <p className="text-xs font-medium leading-relaxed text-muted-foreground">
+              By creating an account you agree to our{" "}
+              <Link to="/terms" className="underline decoration-2 underline-offset-2 hover:text-foreground">
+                Terms &amp; Conditions
+              </Link>{" "}
+              and{" "}
+              <Link to="/privacy" className="underline decoration-2 underline-offset-2 hover:text-foreground">
+                Privacy Policy
+              </Link>
+              .
+            </p>
+          </form>
         )}
       </BauhausCard>
 
