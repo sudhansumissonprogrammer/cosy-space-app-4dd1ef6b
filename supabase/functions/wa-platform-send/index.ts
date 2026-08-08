@@ -87,9 +87,16 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Opt-out
-  const { data: optout } = await admin.from("whatsapp_optouts").select("id").eq("phone", phone).limit(1).maybeSingle();
-  if (optout) return json({ skipped: true, reason: "opted_out" });
+  // 🔐 AUTHENTICATION (login/signup OTP). Never gated by marketing controls,
+  // opt-outs, daily caps or quality throttles — the user explicitly requested
+  // this code seconds ago and it is the only way into their account.
+  const isAuthOtp = (body.message_type || "") === "auth_otp";
+
+  // Opt-out (auth codes are exempt — user-initiated, single-use)
+  if (!isAuthOtp) {
+    const { data: optout } = await admin.from("whatsapp_optouts").select("id").eq("phone", phone).limit(1).maybeSingle();
+    if (optout) return json({ skipped: true, reason: "opted_out" });
+  }
 
   // Category classifier — must be declared before per-store toggle + daily cap use it.
   const TRANSACTIONAL = new Set(["order_confirmation", "payment_received", "payment_success", "order_shipped", "order_delivered"]);
