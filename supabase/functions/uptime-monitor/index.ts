@@ -180,6 +180,18 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => ({}));
 
+  // Manual end-to-end test of the WhatsApp alert pipeline.
+  if (body?.test_alert === true) {
+    await sendAlert(
+      admin,
+      "TEST: alert pipeline check",
+      "ShopBanao platform and all storefronts",
+      "This is a manual test of the monitoring alert channel. No action needed.",
+    );
+    return j({ ok: true, test_alert: "sent" });
+  }
+
+
   // Target sync is cheap but not needed every minute.
   if (body?.sync !== false) {
     const minute = new Date().getUTCMinutes();
