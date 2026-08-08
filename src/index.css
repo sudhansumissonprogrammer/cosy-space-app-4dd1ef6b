@@ -1326,45 +1326,54 @@ body:has(.storefront-font) {
 }
 
 /* =========================================================================
-   BAUHAUS — auth surface (login / signup / password reset).
-   Primary colour blocking, thick black borders, hard offset shadows.
+   SHOPBANAO AUTH — "Commerce Editorial" surface (login / signup / reset).
+   Warm cream canvas, deep ink navy, saffron accent, soft elevation.
    Scoped to .bh-auth so nothing leaks into dashboard/storefront themes.
-   Re-maps the shared --bauhaus-* tokens so primitives stay valid.
    ========================================================================= */
 .bh-auth {
-  --background: 0 0% 94%;      /* #F0F0F0 */
-  --foreground: 0 0% 7%;       /* #121212 */
-  --muted: 0 0% 88%;           /* #E0E0E0 */
-  --muted-foreground: 0 0% 24%;
-  --border: 0 0% 7%;
-  --ring: 0 0% 7%;
+  --sb-ink: 220 42% 11%;        /* #101827 deep navy ink */
+  --sb-ink-soft: 220 20% 34%;
+  --sb-cream: 40 40% 97%;       /* #FBF8F3 */
+  --sb-saffron: 33 88% 55%;     /* #F0932B */
+  --sb-emerald: 162 62% 27%;    /* #1A7059 */
+  --sb-line: 36 20% 86%;
 
-  --bauhaus-red: 0 74% 47%;    /* #D02020 */
-  --bauhaus-blue: 222 85% 41%; /* #1040C0 */
-  --bauhaus-yellow: 45 87% 53%;/* #F0C020 */
-  --bauhaus-black: 0 0% 7%;
-  --bauhaus-white: 0 0% 100%;
-  --bauhaus-canvas: 0 0% 94%;
+  --background: var(--sb-cream);
+  --foreground: var(--sb-ink);
+  --muted: 36 30% 93%;
+  --muted-foreground: var(--sb-ink-soft);
+  --border: var(--sb-line);
+  --ring: var(--sb-saffron);
+  --primary: var(--sb-ink);
+  --primary-foreground: var(--sb-cream);
 
-  font-family: 'Outfit', system-ui, sans-serif;
-  color: #121212;
-  background-color: #f0f0f0;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: hsl(var(--sb-ink));
+  background-color: hsl(var(--sb-cream));
 }
-.bh-auth :is(.rounded, .rounded-sm, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
-  border-radius: 0 !important;
-}
-.bh-auth :is(input, textarea, select) {
-  border-radius: 0 !important;
-  background-color: #fff;
-}
-/* Dot-grid construction paper */
+
+/* Subtle paper weave on the form side */
 .bh-auth-grid::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: radial-gradient(#121212 1.5px, transparent 1.5px);
-  background-size: 24px 24px;
-  opacity: 0.12;
+  background-image:
+    linear-gradient(hsl(var(--sb-ink) / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--sb-ink) / 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at 60% 30%, #000 10%, transparent 78%);
 }
+
+/* Aurora wash for the brand panel */
+.bh-auth-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 45% at 15% 12%, hsl(var(--sb-saffron) / 0.28), transparent 70%),
+    radial-gradient(55% 40% at 90% 85%, hsl(var(--sb-emerald) / 0.35), transparent 72%);
+}
+
 
