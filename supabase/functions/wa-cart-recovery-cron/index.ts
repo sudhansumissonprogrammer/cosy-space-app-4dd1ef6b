@@ -476,10 +476,20 @@ Deno.serve(async (req) => {
         .gte("created_at", (o as any).created_at);
       if ((completedCount ?? 0) > 0) { payDropCompleted++; continue; }
 
+      // 🛡️ RECENT-BUYER GUARD (7 days, platform-wide, product-aware).
+      const dropItems0 = Array.isArray((o as any).order_items) ? (o as any).order_items : [];
+      const dropProductIds = dropItems0
+        .map((it: any) => String(it?.product_id || ""))
+        .filter(Boolean);
+      const dropBuyer = await loadRecentBuyer(admin, (o as any).customer_phone);
+      if (dropBuyer.blocks(dropProductIds).blocked) { payDropCompleted++; continue; }
+
       // 🔁 Same 3-step drip: +30min, +5h, +24h. Shared with the cart lane so a
       // lead present in both places still gets exactly one message per step.
       const dripDrop = await recoveryDripDecision(admin, phone);
       if (!dripDrop.allow) { payDropCapped++; continue; }
+
+
 
 
       const items = Array.isArray((o as any).order_items) ? (o as any).order_items : [];
