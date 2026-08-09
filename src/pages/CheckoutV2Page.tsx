@@ -945,26 +945,40 @@ export default function CheckoutV2Page() {
   // sheet height from the real visible area.
   const addressSheetRef = useRef<HTMLDivElement | null>(null);
   const addressScrollRef = useRef<HTMLDivElement | null>(null);
-  // Keyboard inset in px. Instagram / FB WebViews often do NOT shrink
-  // visualViewport when the keyboard opens, so we fall back to a heuristic
-  // inset while an input is focused — otherwise the lower fields sit behind
-  // the keyboard with no way to scroll to them.
+  // Keyboard inset in px. Some WebViews do NOT shrink the viewport when the
+  // keyboard opens, so we fall back to a heuristic inset while an input is
+  // focused. CRITICAL: the heuristic must be compared against the *baseline*
+  // (keyboard-closed) height — Instagram/Android WebViews shrink BOTH
+  // window.innerHeight and visualViewport.height, which made the old
+  // innerHeight-vs-vv check report "no shrink" and subtract 42% a second
+  // time, collapsing the sheet to a sliver.
   const [kbInset, setKbInset] = useState(0);
   const inputFocusedRef = useRef(false);
+  const baseViewportRef = useRef(0);
+
+  const visibleViewportHeight = useCallback(() => {
+    const vv = (window as any).visualViewport as VisualViewport | undefined;
+    return Math.round(vv?.height ?? window.innerHeight);
+  }, []);
+
   useEffect(() => {
     if (!showAddressFormSheet) return;
     const vv = (window as any).visualViewport as VisualViewport | undefined;
+    // Baseline captured while the keyboard is closed (sheet just opened).
+    baseViewportRef.current = Math.max(baseViewportRef.current, visibleViewportHeight());
     const apply = () => {
       const el = addressSheetRef.current;
       if (!el) return;
-      const shrink = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
-      const reports = shrink > 80; // browser really shrank the viewport
-      const heuristic = !reports && inputFocusedRef.current ? Math.round(window.innerHeight * 0.42) : 0;
-      const h = (vv?.height ?? window.innerHeight) - heuristic;
+      const visible = visibleViewportHeight();
+      const base = baseViewportRef.current || visible;
+      const reportedShrink = Math.max(0, base - visible);
+      // Only apply the heuristic when the browser reported no shrink at all.
+      const heuristic = reportedShrink <= 80 && inputFocusedRef.current ? Math.round(base * 0.42) : 0;
+      const h = visible - heuristic;
       const measured = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
-      el.style.height = `${Math.max(320, Math.round(h * 0.96))}px`;
-      // Keep the sheet pinned to the visible viewport bottom when the browser
-      // offsets the layout viewport (iOS Safari keyboard behaviour).
+      // Never let the sheet collapse below half the usable area.
+      const target = Math.max(Math.round(base * 0.4), Math.round(h * 0.96));
+      el.style.height = `${Math.max(300, target)}px`;
       el.style.transform = vv ? `translateY(-${measured}px)` : "";
       setKbInset(heuristic);
     };
@@ -973,21 +987,23 @@ export default function CheckoutV2Page() {
     vv?.addEventListener("scroll", apply);
     window.addEventListener("resize", apply);
     return () => {
+      baseViewportRef.current = 0;
       vv?.removeEventListener("resize", apply);
       vv?.removeEventListener("scroll", apply);
       window.removeEventListener("resize", apply);
     };
-  }, [showAddressFormSheet]);
+  }, [showAddressFormSheet, visibleViewportHeight]);
 
-  // Re-measure the sheet whenever the heuristic keyboard inset flips, so the
-  // Continue button never ends up behind an Instagram/FB WebView keyboard.
+  // Re-measure the sheet whenever the heuristic keyboard inset flips.
   useEffect(() => {
     const el = addressSheetRef.current;
     if (!el || !showAddressFormSheet) return;
-    const vv = (window as any).visualViewport as VisualViewport | undefined;
-    const h = (vv?.height ?? window.innerHeight) - kbInset;
-    el.style.height = `${Math.max(320, Math.round(h * 0.96))}px`;
-  }, [kbInset, showAddressFormSheet]);
+    const visible = visibleViewportHeight();
+    const base = baseViewportRef.current || visible;
+    const h = visible - kbInset;
+    el.style.height = `${Math.max(300, Math.max(Math.round(base * 0.4), Math.round(h * 0.96)))}px`;
+  }, [kbInset, showAddressFormSheet, visibleViewportHeight]);
+
 
   /**
    * Scroll a focused field into the *visible* band of the address scroller.
@@ -5054,11 +5070,12 @@ export default function CheckoutV2Page() {
                   const t = e.target as HTMLElement;
                   if (t?.tagName === "INPUT" || t?.tagName === "TEXTAREA") {
                     inputFocusedRef.current = true;
-                    const vv = (window as any).visualViewport as VisualViewport | undefined;
-                    const shrink = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
-                    // WebViews (Instagram/FB) never shrink the viewport — pad
-                    // the scroller so the last fields can clear the keyboard.
-                    if (shrink <= 80) setKbInset(Math.round(window.innerHeight * 0.42));
+                    // Compare against the keyboard-closed baseline: IG/Android
+                    // WebViews shrink innerHeight too, so innerHeight-vs-vv
+                    // wrongly reported "no shrink" and collapsed the sheet.
+                    const visible = visibleViewportHeight();
+                    const base = baseViewportRef.current || visible;
+                    if (base - visible <= 80) setKbInset(Math.round(base * 0.42));
                     // Two passes: right after the keyboard animation starts and
                     // once it has settled. Only scrolls when actually needed.
                     setTimeout(() => ensureFieldVisible(t), 180);
