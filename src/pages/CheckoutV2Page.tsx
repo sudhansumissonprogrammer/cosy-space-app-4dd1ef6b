@@ -5070,11 +5070,12 @@ export default function CheckoutV2Page() {
                   const t = e.target as HTMLElement;
                   if (t?.tagName === "INPUT" || t?.tagName === "TEXTAREA") {
                     inputFocusedRef.current = true;
-                    const vv = (window as any).visualViewport as VisualViewport | undefined;
-                    const shrink = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
-                    // WebViews (Instagram/FB) never shrink the viewport — pad
-                    // the scroller so the last fields can clear the keyboard.
-                    if (shrink <= 80) setKbInset(Math.round(window.innerHeight * 0.42));
+                    // Compare against the keyboard-closed baseline: IG/Android
+                    // WebViews shrink innerHeight too, so innerHeight-vs-vv
+                    // wrongly reported "no shrink" and collapsed the sheet.
+                    const visible = visibleViewportHeight();
+                    const base = baseViewportRef.current || visible;
+                    if (base - visible <= 80) setKbInset(Math.round(base * 0.42));
                     // Two passes: right after the keyboard animation starts and
                     // once it has settled. Only scrolls when actually needed.
                     setTimeout(() => ensureFieldVisible(t), 180);
