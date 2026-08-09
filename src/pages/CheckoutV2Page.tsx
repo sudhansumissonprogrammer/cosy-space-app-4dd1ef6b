@@ -522,15 +522,32 @@ export default function CheckoutV2Page() {
     }
     setGeoLoading(true);
     try {
+      // GPS converges: watch for up to 5s, keep the most accurate fix, bail early
+      // as soon as we're within 50 m. Never reuse a cached coarse fix.
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 8000,
-          maximumAge: 120000,
-        });
+        let best: GeolocationPosition | null = null;
+        let done = false;
+        const finish = (err?: any) => {
+          if (done) return;
+          done = true;
+          try { navigator.geolocation.clearWatch(id); } catch {}
+          clearTimeout(timer);
+          if (best) resolve(best);
+          else reject(err || { code: 3 });
+        };
+        const timer = setTimeout(() => finish(), 5000);
+        const id = navigator.geolocation.watchPosition(
+          (p) => {
+            if (!best || p.coords.accuracy < best.coords.accuracy) best = p;
+            if (p.coords.accuracy <= 50) finish();
+          },
+          (e) => { if (!best) finish(e); },
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+        );
       });
+      const accuracy = position.coords.accuracy || 0;
       const { data, error } = await supabase.functions.invoke("reverse-geocode", {
-        body: { lat: position.coords.latitude, lng: position.coords.longitude },
+        body: { lat: position.coords.latitude, lng: position.coords.longitude, accuracy },
       });
       if (error) throw error;
       const addr = data?.address;
@@ -542,7 +559,11 @@ export default function CheckoutV2Page() {
       if (addr.city) setCity(addr.city);
       if (addr.state) setState(addr.state);
       if (addr.street_address) setStreetAddress(addr.street_address);
-      toast.success("Address auto-filled — please check it");
+      if (accuracy > 150) {
+        toast.warning("Location not precise — please check/edit the address (सही पता जाँच लें)");
+      } else {
+        toast.success("Address auto-filled — please check it");
+      }
     } catch (err: any) {
       if (err?.code === 1) toast.error("Location permission denied — allow it in browser settings");
       else if (err?.code === 3) toast.error("Location timed out — please type your address");
@@ -551,6 +572,7 @@ export default function CheckoutV2Page() {
       setGeoLoading(false);
     }
   }, []);
+
 
 
 
