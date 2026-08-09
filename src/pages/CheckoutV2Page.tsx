@@ -5084,6 +5084,10 @@ export default function CheckoutV2Page() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     data-field="full_name"
+                    autoComplete="name"
+                    autoCapitalize="words"
+                    enterKeyHint="next"
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("full_name"); } }}
                     placeholder="Your name"
                     className={`h-11 rounded-lg ${addressAttempted && !fullName.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                   />
@@ -5099,6 +5103,9 @@ export default function CheckoutV2Page() {
                       value={pincode}
                       onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       data-field="pincode"
+                      autoComplete="postal-code"
+                      enterKeyHint="next"
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("pincode"); } }}
                       placeholder="6-digit pincode"
                       inputMode="numeric"
                       maxLength={6}
@@ -5123,6 +5130,10 @@ export default function CheckoutV2Page() {
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       data-field="city"
+                      autoComplete="address-level2"
+                      autoCapitalize="words"
+                      enterKeyHint="next"
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("city"); } }}
                       className={`h-11 rounded-lg ${addressAttempted && !city.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                     />
                     {addressAttempted && !city.trim() && (
@@ -5135,6 +5146,10 @@ export default function CheckoutV2Page() {
                       value={state}
                       onChange={(e) => setState(e.target.value)}
                       data-field="state"
+                      autoComplete="address-level1"
+                      autoCapitalize="words"
+                      enterKeyHint="next"
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("state"); } }}
                       className={`h-11 rounded-lg ${addressAttempted && !state.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                     />
                     {addressAttempted && !state.trim() && (
@@ -5150,6 +5165,10 @@ export default function CheckoutV2Page() {
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
                     data-field="street"
+                    autoComplete="street-address"
+                    autoCapitalize="words"
+                    enterKeyHint="done"
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("street"); } }}
                     placeholder="House no, area, village, landmark"
                     className={`h-11 rounded-lg ${addressAttempted && !streetAddress.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                   />
