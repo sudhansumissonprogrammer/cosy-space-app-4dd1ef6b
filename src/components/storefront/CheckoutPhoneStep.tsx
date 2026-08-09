@@ -298,24 +298,31 @@ export default function CheckoutPhoneStep({
         image: i.image,
       }));
 
-      const { data: rpcData } = await (supabase as any).rpc("capture_checkout_lead", {
-        p_store_id: storeId,
-        p_phone: canon,
-        p_cart_items: cartSnapshot,
-        p_consent: consent,
-        p_session_token: session_token,
-        p_source: "checkout_step1",
-      });
+      // ⚡ INSTANT ADVANCE: neither the lead capture nor the guest-session
+      // mint blocks the shopper. Previously these two awaits ran serially
+      // (RPC ~300-800ms + create-guest-account ~800-2500ms), so tapping
+      // Continue felt frozen for 1-3s when no address existed. Both are
+      // fire-and-forget now; CheckoutV2Page runs its own fast address_only
+      // lookup (900ms ceiling) to decide whether to show the address form.
+      (async () => {
+        try {
+          const { data: rpcData } = await (supabase as any).rpc("capture_checkout_lead", {
+            p_store_id: storeId,
+            p_phone: canon,
+            p_cart_items: cartSnapshot,
+            p_consent: consent,
+            p_session_token: session_token,
+            p_source: "checkout_step1",
+          });
+          const cartId = (rpcData as any)?.cart_id;
+          if (cartId && storeId) {
+            sessionStorage.setItem(`ac_${storeId}`, String(cartId));
+          }
+        } catch { /* noop */ }
+      })();
 
-      try {
-        const cartId = (rpcData as any)?.cart_id;
-        if (cartId && storeId) {
-          sessionStorage.setItem(`ac_${storeId}`, String(cartId));
-        }
-      } catch {}
-
-      const loginResult = await autoLoginByPhone(storeId, canon);
-      onComplete(canon, loginResult?.address ?? null);
+      autoLoginByPhone(storeId, canon).catch(() => null);
+      onComplete(canon, null);
     } catch (err) {
       console.warn("[CheckoutPhoneStep] capture failed:", err);
       onComplete(canon);
@@ -324,6 +331,7 @@ export default function CheckoutPhoneStep({
       inFlight.current = false;
     }
   };
+
 
   useEffect(() => {
     const el = document.getElementById("checkout-phone-input");
