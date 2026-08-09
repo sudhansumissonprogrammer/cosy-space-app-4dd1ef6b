@@ -170,52 +170,95 @@ export async function compressVideo(file: File, opts: CompressOptions = {}): Pro
   }
   if (!configured) throw new Error("No supported H.264 encoder config");
 
-  // Capture at real time for short clips — accelerated playback makes the
-  // browser DROP presented frames, which is what produced juddery output.
-  video.playbackRate = durationSec > 45 ? 1.5 : 1;
+  // ALWAYS capture at 1x. Accelerated playback (the old `durationSec > 45`
+  // path) makes the compositor DROP presented frames: a 53s clip came out at
+  // ~8fps, which is exactly the "lagging"/juddery playback merchants saw.
+  video.playbackRate = 1;
   let frameIndex = 0;
   let lastTs = -1;
 
-  await new Promise<void>((resolve, reject) => {
-    let finished = false;
-    const done = () => {
-      if (finished) return;
-      finished = true;
-      resolve();
-    };
+  // Prefer MediaStreamTrackProcessor: it pulls real decoded frames off the
+  // track instead of relying on rendered frames, so background tabs / slow
+  // paint don't silently drop motion. Falls back to rVFC + canvas.
+  const TrackProcessor: any = (globalThis as any).MediaStreamTrackProcessor;
+  const canUseProcessor =
+    typeof TrackProcessor === "function" && typeof (video as any).captureStream === "function";
 
-    const onFrame = (_now: number, frameMeta: any) => {
-      try {
-        const mediaTime: number = frameMeta?.mediaTime ?? video.currentTime;
-        const tsUs = Math.round(mediaTime * 1_000_000);
-        // Decimate to ~30fps. 60fps phone exports otherwise feed twice the
-        // frames into an encoder configured for 30fps, which both doubles the
-        // output size and starves each frame of bits.
-        const MIN_DELTA_US = 1_000_000 / 30.5;
-        if (tsUs > lastTs && (lastTs < 0 || tsUs - lastTs >= MIN_DELTA_US)) {
-          lastTs = tsUs;
-          ctx.drawImage(video, 0, 0, targetW, targetH);
-          const frame = new VideoFrameCtor(canvas, { timestamp: tsUs });
-          encoder.encode(frame, { keyFrame: frameIndex % 60 === 0 });
-          frame.close();
-          frameIndex++;
-          if (durationSec > 0) {
-            opts.onProgress?.(Math.min(0.95, mediaTime / durationSec));
+  const MIN_DELTA_US = 1_000_000 / 30.5;
+  const pushFrame = (frame: any, tsUs: number) => {
+    lastTs = tsUs;
+    encoder.encode(frame, { keyFrame: frameIndex % 60 === 0 });
+    frameIndex++;
+    if (durationSec > 0) opts.onProgress?.(Math.min(0.95, tsUs / 1_000_000 / durationSec));
+  };
+
+  if (canUseProcessor) {
+    const stream: MediaStream = (video as any).captureStream();
+    const track = stream.getVideoTracks()[0];
+    const reader = new TrackProcessor({ track }).readable.getReader();
+    await video.play();
+    const t0 = performance.now();
+    try {
+      while (true) {
+        const { value: frame, done: streamDone } = await reader.read();
+        if (streamDone) break;
+        if (!frame) continue;
+        try {
+          const tsUs = frame.timestamp ?? Math.round(video.currentTime * 1_000_000);
+          if (tsUs > lastTs && (lastTs < 0 || tsUs - lastTs >= MIN_DELTA_US)) {
+            if (frame.displayWidth !== targetW || frame.displayHeight !== targetH) {
+              ctx.drawImage(frame, 0, 0, targetW, targetH);
+              const scaled = new VideoFrameCtor(canvas, { timestamp: tsUs });
+              pushFrame(scaled, tsUs);
+              scaled.close();
+            } else {
+              pushFrame(frame, tsUs);
+            }
           }
+        } finally {
+          frame.close();
         }
-      } catch (e) {
-        reject(e);
-        return;
+        if (video.ended) break;
+        // Safety valve: never run longer than 3x realtime.
+        if (performance.now() - t0 > (durationSec + 20) * 3000) break;
       }
-      if (!video.ended) (video as any).requestVideoFrameCallback(onFrame);
-      else done();
-    };
+    } finally {
+      try { reader.cancel(); } catch { /* ignore */ }
+      try { track.stop(); } catch { /* ignore */ }
+    }
+  } else {
+    await new Promise<void>((resolve, reject) => {
+      let finished = false;
+      const done = () => {
+        if (finished) return;
+        finished = true;
+        resolve();
+      };
 
-    video.onended = done;
-    video.onerror = () => reject(new Error("playback failed"));
-    (video as any).requestVideoFrameCallback(onFrame);
-    video.play().catch((e) => reject(e));
-  });
+      const onFrame = (_now: number, frameMeta: any) => {
+        try {
+          const mediaTime: number = frameMeta?.mediaTime ?? video.currentTime;
+          const tsUs = Math.round(mediaTime * 1_000_000);
+          if (tsUs > lastTs && (lastTs < 0 || tsUs - lastTs >= MIN_DELTA_US)) {
+            ctx.drawImage(video, 0, 0, targetW, targetH);
+            const frame = new VideoFrameCtor(canvas, { timestamp: tsUs });
+            pushFrame(frame, tsUs);
+            frame.close();
+          }
+        } catch (e) {
+          reject(e);
+          return;
+        }
+        if (!video.ended) (video as any).requestVideoFrameCallback(onFrame);
+        else done();
+      };
+
+      video.onended = done;
+      video.onerror = () => reject(new Error("playback failed"));
+      (video as any).requestVideoFrameCallback(onFrame);
+      video.play().catch((e) => reject(e));
+    });
+  }
 
   await encoder.flush();
   encoder.close();
@@ -223,6 +266,15 @@ export async function compressVideo(file: File, opts: CompressOptions = {}): Pro
 
   if (encodeError) throw new Error("Video encoding failed");
   if (frameIndex === 0) throw new Error("No frames captured");
+
+  // Quality gate: if the capture dropped so many frames that the result would
+  // stutter, refuse the re-encode. The caller then uploads the original file,
+  // which is always smooth. 18fps is the floor for acceptable motion.
+  const capturedFps = durationSec > 0 ? frameIndex / durationSec : 30;
+  if (durationSec > 2 && capturedFps < 18) {
+    throw new Error(`LOW_FPS_CAPTURE: only ${capturedFps.toFixed(1)}fps captured`);
+  }
+
 
   muxer.finalize();
   const buffer = (muxer.target as ArrayBufferTarget).buffer;
