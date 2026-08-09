@@ -684,14 +684,6 @@ export default function V22ProductDetail() {
         <ArrowLeft className="h-5 w-5 text-gray-900" strokeWidth={2.4} />
       </button>
 
-      {/* Breadcrumb */}
-      <nav className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground px-4 sm:px-0" aria-label="Breadcrumb" style={isV18 ? { display: "none" } : {}}>
-        <Link to={storefrontPath(store.slug)} className="hover:text-foreground transition-colors">Home</Link>
-        <span>/</span>
-        <Link to={storefrontPath(store.slug, "shop")} className="hover:text-foreground transition-colors">Shop</Link>
-        <span>/</span>
-        <span className="text-foreground font-medium line-clamp-1">{product.name}</span>
-      </nav>
 
       <div className="grid gap-2 sm:gap-6 lg:grid-cols-2 lg:gap-10">
         {/* Image Gallery */}
