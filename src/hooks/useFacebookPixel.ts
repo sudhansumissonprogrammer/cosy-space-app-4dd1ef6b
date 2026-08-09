@@ -1,6 +1,8 @@
 import { useEffect, useCallback, useState } from "react";
 import { ensureFbpCookie, ensureFbcPersisted, getOrCreateSfVid } from "@/lib/metaEnrichment";
 import { purgeSharedDomainCookies } from "@/lib/purgeSharedDomainCookies";
+import { claimPageView } from "@/lib/pixelPageView";
+
 
 
 declare global {
