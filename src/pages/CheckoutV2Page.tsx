@@ -957,15 +957,16 @@ export default function CheckoutV2Page() {
     const apply = () => {
       const el = addressSheetRef.current;
       if (!el) return;
-      const h = vv?.height ?? window.innerHeight;
+      const shrink = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
+      const reports = shrink > 80; // browser really shrank the viewport
+      const heuristic = !reports && inputFocusedRef.current ? Math.round(window.innerHeight * 0.42) : 0;
+      const h = (vv?.height ?? window.innerHeight) - heuristic;
       const measured = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
       el.style.height = `${Math.max(320, Math.round(h * 0.96))}px`;
       // Keep the sheet pinned to the visible viewport bottom when the browser
       // offsets the layout viewport (iOS Safari keyboard behaviour).
       el.style.transform = vv ? `translateY(-${measured}px)` : "";
-      // Real inset when the browser reports it; heuristic otherwise.
-      const shrink = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
-      setKbInset(shrink > 80 ? 0 : inputFocusedRef.current ? Math.round(window.innerHeight * 0.42) : 0);
+      setKbInset(heuristic);
     };
     apply();
     vv?.addEventListener("resize", apply);
@@ -978,27 +979,46 @@ export default function CheckoutV2Page() {
     };
   }, [showAddressFormSheet]);
 
+  // Re-measure the sheet whenever the heuristic keyboard inset flips, so the
+  // Continue button never ends up behind an Instagram/FB WebView keyboard.
+  useEffect(() => {
+    const el = addressSheetRef.current;
+    if (!el || !showAddressFormSheet) return;
+    const vv = (window as any).visualViewport as VisualViewport | undefined;
+    const h = (vv?.height ?? window.innerHeight) - kbInset;
+    el.style.height = `${Math.max(320, Math.round(h * 0.96))}px`;
+  }, [kbInset, showAddressFormSheet]);
+
   /**
-   * Scroll a focused field into the *visible* band of the address scroller,
-   * i.e. above the keyboard. Only scrolls when the field is actually out of
-   * view, so Chrome no longer jumps the form on every field tap.
+   * Scroll a focused field into the *visible* band of the address scroller.
+   * Only scrolls when the field is actually out of view, so Chrome no longer
+   * jumps the form on every field tap.
    */
   const ensureFieldVisible = useCallback((el: HTMLElement) => {
     const wrap = addressScrollRef.current;
     if (!wrap || !el) return;
     const wrapRect = wrap.getBoundingClientRect();
-    const vv = (window as any).visualViewport as VisualViewport | undefined;
-    const shrink = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
-    // Visible bottom = whichever is higher: the scroller bottom or the top of
-    // the keyboard (real, or heuristic for Instagram WebView).
-    const kb = shrink > 80 ? 0 : Math.round(window.innerHeight * 0.42);
-    const visibleBottom = Math.min(wrapRect.bottom, (vv ? vv.height + (vv.offsetTop || 0) : window.innerHeight) - kb) - 12;
+    const visibleBottom = wrapRect.bottom - 12;
     const visibleTop = wrapRect.top + 8;
     const rect = el.getBoundingClientRect();
     if (rect.bottom <= visibleBottom && rect.top >= visibleTop) return; // already visible
     const delta = rect.bottom > visibleBottom ? rect.bottom - visibleBottom : rect.top - visibleTop;
     wrap.scrollBy({ top: delta, behavior: "smooth" });
   }, []);
+
+  /** Move focus to the next address field (keyboard "Next" key / Enter). */
+  const ADDRESS_FIELD_ORDER = ["full_name", "pincode", "city", "state", "street"];
+  const focusNextAddressField = useCallback((current: string) => {
+    const wrap = addressScrollRef.current;
+    if (!wrap) return;
+    const next = ADDRESS_FIELD_ORDER[ADDRESS_FIELD_ORDER.indexOf(current) + 1];
+    const el = next ? wrap.querySelector<HTMLInputElement>(`[data-field="${next}"]`) : null;
+    if (el) el.focus();
+    else (document.activeElement as HTMLElement | null)?.blur();
+  }, []);
+
+
+
 
 
   // Force Montserrat Alternates across the entire new checkout — including
@@ -4984,7 +5004,8 @@ export default function CheckoutV2Page() {
               <div
                 ref={addressScrollRef}
                 className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-3 pb-4 space-y-2.5"
-                style={{ paddingBottom: kbInset ? kbInset + 16 : undefined, scrollPaddingBottom: kbInset ? kbInset + 16 : undefined }}
+                style={{ scrollPaddingBottom: 24, WebkitOverflowScrolling: "touch" as any }}
+
                 onFocusCapture={(e) => {
                   const t = e.target as HTMLElement;
                   if (t?.tagName === "INPUT" || t?.tagName === "TEXTAREA") {
@@ -5063,6 +5084,10 @@ export default function CheckoutV2Page() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     data-field="full_name"
+                    autoComplete="name"
+                    autoCapitalize="words"
+                    enterKeyHint="next"
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("full_name"); } }}
                     placeholder="Your name"
                     className={`h-11 rounded-lg ${addressAttempted && !fullName.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                   />
@@ -5078,6 +5103,9 @@ export default function CheckoutV2Page() {
                       value={pincode}
                       onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       data-field="pincode"
+                      autoComplete="postal-code"
+                      enterKeyHint="next"
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("pincode"); } }}
                       placeholder="6-digit pincode"
                       inputMode="numeric"
                       maxLength={6}
@@ -5102,6 +5130,10 @@ export default function CheckoutV2Page() {
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       data-field="city"
+                      autoComplete="address-level2"
+                      autoCapitalize="words"
+                      enterKeyHint="next"
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("city"); } }}
                       className={`h-11 rounded-lg ${addressAttempted && !city.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                     />
                     {addressAttempted && !city.trim() && (
@@ -5114,6 +5146,10 @@ export default function CheckoutV2Page() {
                       value={state}
                       onChange={(e) => setState(e.target.value)}
                       data-field="state"
+                      autoComplete="address-level1"
+                      autoCapitalize="words"
+                      enterKeyHint="next"
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("state"); } }}
                       className={`h-11 rounded-lg ${addressAttempted && !state.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                     />
                     {addressAttempted && !state.trim() && (
@@ -5129,6 +5165,10 @@ export default function CheckoutV2Page() {
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
                     data-field="street"
+                    autoComplete="street-address"
+                    autoCapitalize="words"
+                    enterKeyHint="done"
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("street"); } }}
                     placeholder="House no, area, village, landmark"
                     className={`h-11 rounded-lg ${addressAttempted && !streetAddress.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                   />
