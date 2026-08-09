@@ -4991,7 +4991,7 @@ export default function CheckoutV2Page() {
               />
               {/* One native scroll container matches the working Chrome path
                   and remains draggable in Instagram's Android WebView. */}
-              <div className="relative z-[1] mt-[5svh] min-h-[95svh] mx-auto w-full max-w-md bg-white rounded-t-2xl">
+              <div className="relative z-[1] mt-[5vh] min-h-[95vh] mx-auto w-full max-w-md bg-white rounded-t-2xl">
 
               <div className="bg-white px-5 py-3 flex items-center justify-between border-b border-[#ECECEC]">
                 <div className="text-[16px] font-bold">Add Delivery Address</div>
