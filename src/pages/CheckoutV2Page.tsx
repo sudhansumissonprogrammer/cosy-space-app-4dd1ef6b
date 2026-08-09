@@ -5190,7 +5190,7 @@ export default function CheckoutV2Page() {
                       window.setTimeout(() => {
                         const el = addressScrollRef.current?.querySelector<HTMLInputElement>(`[data-field="${field}"]`);
                         if (!el) return;
-                        try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch { /* noop */ }
+                        try { ensureFieldVisible(el); } catch { /* noop */ }
                         try { el.focus({ preventScroll: true }); } catch { /* noop */ }
                       }, 50);
                       return;
