@@ -72,7 +72,11 @@ Deno.serve(async (req) => {
     const state = pick("administrative_area_level_1");
     const pincode = pick("postal_code");
 
-    const premise = pick("premise", "subpremise", "street_number");
+    // Plot / house / premise numbers are intentionally NOT used — merchants asked
+    // for landmark + society + village instead of a plot number.
+    const society = pick("premise") && /(society|apartment|residency|enclave|colony|nagar|vihar|tower|heights|villa|park)/i.test(pick("premise"))
+      ? pick("premise")
+      : "";
     const route = pick("route");
     const subloc2 = pick("sublocality_level_2");
     const subloc1 = pick("sublocality_level_1", "sublocality");
