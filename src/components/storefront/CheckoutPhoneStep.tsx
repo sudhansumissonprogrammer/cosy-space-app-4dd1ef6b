@@ -648,7 +648,7 @@ export default function CheckoutPhoneStep({
             ShopBanao
           </div>
           <div className="text-[12px] text-muted-foreground mt-3">
-            Powering secure checkout for 10,000+ brands
+            🔒 Your payment is securely processed by ShopBanao
           </div>
           <div className="flex items-center justify-center gap-4 mt-3 text-muted-foreground">
             <div className="flex items-center gap-1 text-[11px]">
