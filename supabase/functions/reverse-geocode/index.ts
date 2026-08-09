@@ -72,7 +72,11 @@ Deno.serve(async (req) => {
     const state = pick("administrative_area_level_1");
     const pincode = pick("postal_code");
 
-    const premise = pick("premise", "subpremise", "street_number");
+    // Plot / house / premise numbers are intentionally NOT used — merchants asked
+    // for landmark + society + village instead of a plot number.
+    const society = pick("premise") && /(society|apartment|residency|enclave|colony|nagar|vihar|tower|heights|villa|park)/i.test(pick("premise"))
+      ? pick("premise")
+      : "";
     const route = pick("route");
     const subloc2 = pick("sublocality_level_2");
     const subloc1 = pick("sublocality_level_1", "sublocality");
@@ -94,7 +98,7 @@ Deno.serve(async (req) => {
     } catch { /* landmark is best-effort */ }
 
     const parts = [
-      premise,
+      society,
       route,
       subloc2,
       subloc1,
@@ -123,7 +127,11 @@ Deno.serve(async (req) => {
       const fa = (primary.formatted_address || "")
         .split(",")
         .map((s: string) => s.trim())
-        .filter((p: string) => !isPlusCode(p) && p.length > 1 && p.toLowerCase() !== city.toLowerCase());
+        // Drop plot/house-number-only fragments like "12", "H.No 45", "Plot 7"
+        .filter((p: string) =>
+          !isPlusCode(p) && p.length > 1 && p.toLowerCase() !== city.toLowerCase() &&
+          !/^(plot|h\.?\s?no\.?|house\s?no\.?)?\s*[\d\-\/]+[a-z]?$/i.test(p)
+        );
       unique.push(...fa.slice(0, 2));
     }
 
@@ -134,6 +142,7 @@ Deno.serve(async (req) => {
       pincode,
       landmark,
       village,
+      society,
     };
 
     return new Response(
