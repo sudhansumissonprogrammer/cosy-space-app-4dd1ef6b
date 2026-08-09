@@ -306,12 +306,21 @@ export default function StoreTracking() {
               <Label htmlFor="fb-pixel">Pixel ID</Label>
               <Input
                 id="fb-pixel"
+                name="fb-pixel-id-field"
+                inputMode="numeric"
                 placeholder="e.g. 123456789012345"
                 value={facebookPixelId}
                 onChange={(e) => {
                   setFacebookPixelIdTouched(true);
-                  setFacebookPixelId(e.target.value);
+                  // Pixel IDs are numeric only — strip anything a password
+                  // manager / browser autofill may inject (e.g. an email).
+                  setFacebookPixelId(e.target.value.replace(/\D/g, ""));
                 }}
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore
+                data-form-type="other"
+                spellCheck={false}
                 maxLength={20}
               />
               <p className="text-xs text-muted-foreground">
