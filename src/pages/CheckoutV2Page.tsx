@@ -945,6 +945,12 @@ export default function CheckoutV2Page() {
   // sheet height from the real visible area.
   const addressSheetRef = useRef<HTMLDivElement | null>(null);
   const addressScrollRef = useRef<HTMLDivElement | null>(null);
+  // Keyboard inset in px. Instagram / FB WebViews often do NOT shrink
+  // visualViewport when the keyboard opens, so we fall back to a heuristic
+  // inset while an input is focused — otherwise the lower fields sit behind
+  // the keyboard with no way to scroll to them.
+  const [kbInset, setKbInset] = useState(0);
+  const inputFocusedRef = useRef(false);
   useEffect(() => {
     if (!showAddressFormSheet) return;
     const vv = (window as any).visualViewport as VisualViewport | undefined;
@@ -952,10 +958,14 @@ export default function CheckoutV2Page() {
       const el = addressSheetRef.current;
       if (!el) return;
       const h = vv?.height ?? window.innerHeight;
+      const measured = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
       el.style.height = `${Math.max(320, Math.round(h * 0.96))}px`;
       // Keep the sheet pinned to the visible viewport bottom when the browser
       // offsets the layout viewport (iOS Safari keyboard behaviour).
-      el.style.transform = vv ? `translateY(-${Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))}px)` : "";
+      el.style.transform = vv ? `translateY(-${measured}px)` : "";
+      // Real inset when the browser reports it; heuristic otherwise.
+      const shrink = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
+      setKbInset(shrink > 80 ? 0 : inputFocusedRef.current ? Math.round(window.innerHeight * 0.42) : 0);
     };
     apply();
     vv?.addEventListener("resize", apply);
@@ -967,6 +977,29 @@ export default function CheckoutV2Page() {
       window.removeEventListener("resize", apply);
     };
   }, [showAddressFormSheet]);
+
+  /**
+   * Scroll a focused field into the *visible* band of the address scroller,
+   * i.e. above the keyboard. Only scrolls when the field is actually out of
+   * view, so Chrome no longer jumps the form on every field tap.
+   */
+  const ensureFieldVisible = useCallback((el: HTMLElement) => {
+    const wrap = addressScrollRef.current;
+    if (!wrap || !el) return;
+    const wrapRect = wrap.getBoundingClientRect();
+    const vv = (window as any).visualViewport as VisualViewport | undefined;
+    const shrink = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
+    // Visible bottom = whichever is higher: the scroller bottom or the top of
+    // the keyboard (real, or heuristic for Instagram WebView).
+    const kb = shrink > 80 ? 0 : Math.round(window.innerHeight * 0.42);
+    const visibleBottom = Math.min(wrapRect.bottom, (vv ? vv.height + (vv.offsetTop || 0) : window.innerHeight) - kb) - 12;
+    const visibleTop = wrapRect.top + 8;
+    const rect = el.getBoundingClientRect();
+    if (rect.bottom <= visibleBottom && rect.top >= visibleTop) return; // already visible
+    const delta = rect.bottom > visibleBottom ? rect.bottom - visibleBottom : rect.top - visibleTop;
+    wrap.scrollBy({ top: delta, behavior: "smooth" });
+  }, []);
+
 
   // Force Montserrat Alternates across the entire new checkout — including
   // early-return screens (order placed, waiting, phone step) and portaled
