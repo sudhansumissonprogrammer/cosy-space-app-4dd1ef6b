@@ -185,7 +185,15 @@ export default function StorefrontOrderDetail() {
     <div className="mx-auto max-w-3xl px-4 pb-28 pt-4 lg:pb-8">
       {/* Header */}
       <div className="mb-5 flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-9 w-9 -ml-2">
+        {/* Never navigate(-1) here: the previous entry is usually the checkout
+            page the order was just placed from, which instantly bounces back. */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(storefrontPath(store.slug), { replace: true })}
+          aria-label="Back to home"
+          className="h-9 w-9 -ml-2"
+        >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="min-w-0 flex-1">

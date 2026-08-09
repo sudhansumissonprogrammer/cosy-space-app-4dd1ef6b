@@ -1941,7 +1941,15 @@ export default function CheckoutV2Page() {
     try { sessionStorage.removeItem(`ac_${store.id}`); } catch { /* noop */ }
     saveExpressInfo();
 
-    if (!isSingleMode) clearCart();
+    if (!isSingleMode) {
+      clearCart();
+    } else {
+      // Buy-Now: the ordered product may also be sitting in the cart — drop it
+      // so the shopper never sees an already-purchased item again.
+      try {
+        checkoutItems.forEach((ci) => removeFromCart(ci.productId, ci.variantId));
+      } catch { /* noop */ }
+    }
     // Buy-Now guard: mark this product+variant as "just ordered" so if the
     // shopper hits back after the success screen we don't drop them into the
     // same checkout again with the same URL params. Also fold the ordered
@@ -3193,7 +3201,9 @@ export default function CheckoutV2Page() {
     // them to that order, not to a confusing "your cart is empty" home bounce.
     const recent = readRecentOrder();
     if (recent) {
-      navigate(storefrontPath(store.slug, `account/orders/${recent.ordId}`), { replace: true });
+      // Send them home, NOT back to the order — bouncing to order detail here
+      // created a visible checkout↔order flicker when Back was pressed.
+      navigate(storefrontPath(store.slug), { replace: true });
       return;
     }
     toast("Your cart is empty — add items to continue");
@@ -3224,7 +3234,9 @@ export default function CheckoutV2Page() {
       }
     }
     if (matchedOrderId) {
-      navigate(storefrontPath(store.slug, `account/orders/${matchedOrderId}`), { replace: true });
+      // Already purchased → land on the storefront home instead of ping-ponging
+      // back to the order-detail page the shopper just left.
+      navigate(storefrontPath(store.slug), { replace: true });
     }
   }, [isSingleMode, productId, variantId, store?.id, store?.slug, isRecoveryRetry, orderId, orderPlaced, waiting, confirmingPayment, navigate, readRecentOrder]);
 
