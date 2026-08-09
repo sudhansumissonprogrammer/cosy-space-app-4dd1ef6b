@@ -2,6 +2,7 @@
 // sends into wa_send_queue (the queue worker handles retries + dispatch).
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders, normalizePhone, loadPlatformConfig, platformConfigUsable, isValidCronHeader, hasApprovedTemplates, getMetaBreaker, isMetaBreakerOpen, recoveryDripDecision, DRIP_WINDOW_MS } from "../_shared/wa-platform.ts";
+import { loadRecentBuyer } from "../_shared/wa-recent-buyer.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -208,45 +209,24 @@ Deno.serve(async (req) => {
     // is a marketing-policy red flag (low-quality messaging → quality drop).
     if (!items.length || total <= 0) { emptyCart++; continue; }
 
-    // 🛒 Product-overlap check: if this customer already placed an order in
-    // this store containing ANY product from the cart (since the cart was
-    // created), the cart is effectively recovered — skip and mark it.
-    // Match on phone variants because orders.customer_phone may be stored
-    // without the country-code that normalizePhone() adds.
+    // 🛡️ RECENT-BUYER GUARD (7 days, platform-wide, product-aware):
+    // anyone who actually paid for an order in the last 7 days must never be
+    // re-pitched that same product — in ANY store, regardless of whether the
+    // order came before or after the cart. A genuinely different product is
+    // still allowed. Unknown cart products = block (fail safe).
     const cartProductIds = items
       .map((it: any) => String(it?.productId || it?.product_id || ""))
       .filter(Boolean);
-    if (cartProductIds.length) {
-      const rawPhone = String((c as any).customer_phone || "").replace(/\D/g, "");
-      const phoneVariants = Array.from(new Set([
-        phone,
-        rawPhone,
-        rawPhone.startsWith("91") ? rawPhone.slice(2) : `91${rawPhone}`,
-      ].filter(Boolean)));
-      const { data: matchOrders } = await admin
-        .from("orders")
-        .select("id, order_items(product_id)")
-        .eq("store_id", (c as any).store_id)
-        .in("customer_phone", phoneVariants)
-        // Cancelled/failed/pending orders are not real recoveries. Pending =
-        // customer opened the payment gateway but hasn't paid — still a lead.
-        .not("status", "in", '("cancelled","failed","rejected","pending")')
-        .gte("created_at", (c as any).created_at)
-        .limit(20);
-      const orderedIds = new Set<string>();
-      for (const o of (matchOrders as any[]) ?? []) {
-        for (const oi of (o.order_items ?? [])) {
-          if (oi?.product_id) orderedIds.add(String(oi.product_id));
-        }
-      }
-      if (cartProductIds.some((pid: string) => orderedIds.has(pid))) {
-        await admin.from("abandoned_carts")
-          .update({ recovered: true, recovery_status: "skipped", recovery_error: "product already ordered" })
-          .eq("id", (c as any).id);
-        alreadyOrdered++;
-        continue;
-      }
+    const buyer = await loadRecentBuyer(admin, (c as any).customer_phone);
+    const buyerBlock = buyer.blocks(cartProductIds);
+    if (buyerBlock.blocked) {
+      await admin.from("abandoned_carts")
+        .update({ recovered: true, recovery_status: "skipped", recovery_error: buyerBlock.reason })
+        .eq("id", (c as any).id);
+      alreadyOrdered++;
+      continue;
     }
+
 
     const customerName = (items[0]?.customer_name as string) || "there";
     const s = (c as any).stores || {};
@@ -496,10 +476,20 @@ Deno.serve(async (req) => {
         .gte("created_at", (o as any).created_at);
       if ((completedCount ?? 0) > 0) { payDropCompleted++; continue; }
 
+      // 🛡️ RECENT-BUYER GUARD (7 days, platform-wide, product-aware).
+      const dropItems0 = Array.isArray((o as any).order_items) ? (o as any).order_items : [];
+      const dropProductIds = dropItems0
+        .map((it: any) => String(it?.product_id || ""))
+        .filter(Boolean);
+      const dropBuyer = await loadRecentBuyer(admin, (o as any).customer_phone);
+      if (dropBuyer.blocks(dropProductIds).blocked) { payDropCompleted++; continue; }
+
       // 🔁 Same 3-step drip: +30min, +5h, +24h. Shared with the cart lane so a
       // lead present in both places still gets exactly one message per step.
       const dripDrop = await recoveryDripDecision(admin, phone);
       if (!dripDrop.allow) { payDropCapped++; continue; }
+
+
 
 
       const items = Array.isArray((o as any).order_items) ? (o as any).order_items : [];
