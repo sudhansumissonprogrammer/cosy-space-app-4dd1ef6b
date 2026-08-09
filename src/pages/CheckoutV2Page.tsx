@@ -3210,35 +3210,9 @@ export default function CheckoutV2Page() {
     navigate(storefrontPath(store.slug), { replace: true });
   }, [checkoutItems.length, isSingleMode, orderId, orderPlaced, waiting, confirmingPayment, summaryOpen, navigate, store?.slug, readRecentOrder]);
 
-  // ─── Buy-Now: "just ordered this" guard ─────────────────────────────────
-  // If the shopper completed a Buy-Now order for THIS product and hits back
-  // from the order-detail page, the URL still carries ?product=<pid>. Without
-  // this guard the same product silently re-hydrates into checkout, tricking
-  // them into re-ordering. Skipped while a payment flow / success screen is
-  // active on the SAME mount (orderPlaced/waiting).
-  useEffect(() => {
-    if (!isSingleMode || !productId || !store?.id || isRecoveryRetry) return;
-    if (orderId || orderPlaced || waiting || confirmingPayment) return;
-    let matchedOrderId: string | null = null;
-    try {
-      const key = `recent_order:${store.id}:${productId}${variantId ? `:${variantId}` : ""}`;
-      matchedOrderId = sessionStorage.getItem(key);
-    } catch { /* noop */ }
-    if (!matchedOrderId) {
-      // sessionStorage is wiped by Instagram/FB webviews after the UPI
-      // redirect — fall back to the durable marker, scoped to the same basket
-      // so a genuine second (different) order is never blocked.
-      const recent = readRecentOrder();
-      if (recent && typeof recent.sig === "string" && recent.sig.length > 0 && recent.sig === cartSignatureRef.current) {
-        matchedOrderId = recent.ordId;
-      }
-    }
-    if (matchedOrderId) {
-      // Already purchased → land on the storefront home instead of ping-ponging
-      // back to the order-detail page the shopper just left.
-      navigate(storefrontPath(store.slug), { replace: true });
-    }
-  }, [isSingleMode, productId, variantId, store?.id, store?.slug, isRecoveryRetry, orderId, orderPlaced, waiting, confirmingPayment, navigate, readRecentOrder]);
+  // Re-ordering the same product is intentionally allowed: no "just ordered
+  // this" redirect. Buy-Now checkout always re-hydrates normally.
+
 
 
 
