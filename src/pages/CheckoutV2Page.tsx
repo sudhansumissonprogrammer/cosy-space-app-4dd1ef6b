@@ -3201,7 +3201,9 @@ export default function CheckoutV2Page() {
     // them to that order, not to a confusing "your cart is empty" home bounce.
     const recent = readRecentOrder();
     if (recent) {
-      navigate(storefrontPath(store.slug, `account/orders/${recent.ordId}`), { replace: true });
+      // Send them home, NOT back to the order — bouncing to order detail here
+      // created a visible checkout↔order flicker when Back was pressed.
+      navigate(storefrontPath(store.slug), { replace: true });
       return;
     }
     toast("Your cart is empty — add items to continue");
