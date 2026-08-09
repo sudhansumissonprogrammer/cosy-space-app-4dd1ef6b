@@ -135,6 +135,7 @@ export function MetaCapiSetupWizard({ storeId, pixelId, accessToken, tokenLoadin
                 </Label>
                 <Input
                   id="meta-token"
+                  name="meta-capi-token-field"
                   type="password"
                   placeholder="EAAxxxxxxxxxxxxxxxxxxxxxxxx..."
                   value={accessToken}
@@ -143,7 +144,13 @@ export function MetaCapiSetupWizard({ storeId, pixelId, accessToken, tokenLoadin
                     onAccessTokenChange(e.target.value);
                     setVerify({ kind: "idle" });
                   }}
-                  autoComplete="off"
+                  // Chrome ignores autocomplete="off" on password inputs and will
+                  // inject the saved dashboard password here. "new-password" +
+                  // manager-ignore hints stop that.
+                  autoComplete="new-password"
+                  data-lpignore="true"
+                  data-1p-ignore
+                  data-form-type="other"
                   spellCheck={false}
                 />
                 <p className="text-[11px] text-muted-foreground">
