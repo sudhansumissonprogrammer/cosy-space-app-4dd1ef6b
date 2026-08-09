@@ -1044,6 +1044,22 @@ export default function CheckoutV2Page() {
     [],
   );
 
+  // When autofill fires, immediately normalise + validate the whole address.
+  useEffect(() => {
+    if (!autofillNotice) return;
+    setFullName((v) => cleanLine(v));
+    setCity((v) => cleanLine(v));
+    setState((v) => cleanLine(v));
+    setStreetAddress((v) => {
+      const cleaned = cleanLine(v);
+      // Autofill often stuffs the pincode into the street line — lift it out.
+      const pin = cleaned.match(/\b(\d{6})\b/)?.[1];
+      if (pin) setPincode((p) => (/^\d{6}$/.test(p) ? p : pin));
+      return cleaned;
+    });
+    setAddressAttempted(true);
+  }, [autofillNotice, cleanLine]);
+
 
 
 
@@ -5106,12 +5122,21 @@ export default function CheckoutV2Page() {
                 </p>
 
 
+                {autofillNotice && (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+                    Address autofilled — please check pincode, village & landmark before continuing.
+                    <span className="block text-[11px] opacity-80">पता अपने आप भरा है — पिनकोड और लैंडमार्क ज़रूर जाँच लें।</span>
+                  </div>
+                )}
+
                 <div>
                   <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
                   <Input
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    onChange={(e) => { noteAutofill("full_name", e.target.value); setFullName(e.target.value); }}
+                    onBlur={(e) => setFullName(cleanLine(e.target.value))}
                     data-field="full_name"
+                    name="name"
                     autoComplete="name"
                     autoCapitalize="words"
                     enterKeyHint="next"
@@ -5131,6 +5156,7 @@ export default function CheckoutV2Page() {
                       value={pincode}
                       onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       data-field="pincode"
+                      name="postal-code"
                       autoComplete="postal-code"
                       enterKeyHint="next"
                       onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("pincode"); } }}
@@ -5156,8 +5182,10 @@ export default function CheckoutV2Page() {
                     <Label className="text-[12px] text-muted-foreground">City *</Label>
                     <Input
                       value={city}
-                      onChange={(e) => setCity(e.target.value)}
+                      onChange={(e) => { noteAutofill("city", e.target.value); setCity(e.target.value); }}
+                      onBlur={(e) => setCity(cleanLine(e.target.value))}
                       data-field="city"
+                      name="address-level2"
                       autoComplete="address-level2"
                       autoCapitalize="words"
                       enterKeyHint="next"
@@ -5172,8 +5200,10 @@ export default function CheckoutV2Page() {
                     <Label className="text-[12px] text-muted-foreground">State *</Label>
                     <Input
                       value={state}
-                      onChange={(e) => setState(e.target.value)}
+                      onChange={(e) => { noteAutofill("state", e.target.value); setState(e.target.value); }}
+                      onBlur={(e) => setState(cleanLine(e.target.value))}
                       data-field="state"
+                      name="address-level1"
                       autoComplete="address-level1"
                       autoCapitalize="words"
                       enterKeyHint="next"
@@ -5191,8 +5221,10 @@ export default function CheckoutV2Page() {
                   <Label className="text-[12px] text-muted-foreground">Complete Address *</Label>
                   <Input
                     value={streetAddress}
-                    onChange={(e) => setStreetAddress(e.target.value)}
+                    onChange={(e) => { noteAutofill("street", e.target.value); setStreetAddress(e.target.value); }}
+                    onBlur={(e) => setStreetAddress(cleanLine(e.target.value))}
                     data-field="street"
+                    name="street-address"
                     autoComplete="street-address"
                     autoCapitalize="words"
                     enterKeyHint="done"
