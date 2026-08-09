@@ -127,7 +127,11 @@ Deno.serve(async (req) => {
       const fa = (primary.formatted_address || "")
         .split(",")
         .map((s: string) => s.trim())
-        .filter((p: string) => !isPlusCode(p) && p.length > 1 && p.toLowerCase() !== city.toLowerCase());
+        // Drop plot/house-number-only fragments like "12", "H.No 45", "Plot 7"
+        .filter((p: string) =>
+          !isPlusCode(p) && p.length > 1 && p.toLowerCase() !== city.toLowerCase() &&
+          !/^(plot|h\.?\s?no\.?|house\s?no\.?)?\s*[\d\-\/]+[a-z]?$/i.test(p)
+        );
       unique.push(...fa.slice(0, 2));
     }
 
@@ -138,6 +142,7 @@ Deno.serve(async (req) => {
       pincode,
       landmark,
       village,
+      society,
     };
 
     return new Response(
