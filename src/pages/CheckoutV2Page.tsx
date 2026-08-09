@@ -796,7 +796,7 @@ export default function CheckoutV2Page() {
     //           the session + seeds customer_addresses. Never blocks the UI;
     //           if it finds an address later it still autofills.
     const settle = () => { if (!cancelled) setPhoneLookupState("done"); };
-    const timer = window.setTimeout(settle, 900);
+    const timer = window.setTimeout(settle, 600);
 
     (async () => {
       try {
