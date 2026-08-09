@@ -921,102 +921,84 @@ export default function CheckoutV2Page() {
     return false;
   }, [addressComplete]);
 
-  // Lock the page only for the saved-address dialog. The address form portal
-  // is itself the full-screen scroll surface; locking body while a fixed,
-  // independently scrolling descendant is mounted freezes touch scrolling in
-  // some Instagram Android WebViews.
+  // Lock body scroll ONLY while an address overlay is actually rendered.
+  // NOTE: `addressSheetOpen` is a *derived intent* flag (phone valid + address
+  // missing) that stays true on the payment screen even though no sheet is
+  // mounted — using it here froze the whole payment page's scroll.
   useEffect(() => {
-    if (!showAddressDialog) return;
+    const anySheetOpen = showAddressFormSheet || showAddressDialog;
+    if (!anySheetOpen) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
-  }, [showAddressDialog]);
+  }, [showAddressFormSheet, showAddressDialog]);
 
   // Safety net: never leave the page scroll-locked when checkout unmounts.
   useEffect(() => () => { document.body.style.overflow = ""; }, []);
 
 
-  // Keep one native scroll surface for the whole address sheet. Instagram's
-  // WebView can stop dispatching touch-scroll when a fixed overlay, a resized
-  // visual viewport, and a nested flex scroller are combined. Chrome does not
-  // need that complexity either, so both browsers use this same scroll path.
+  // ─── Keyboard-safe sheet height ────────────────────────────────────────
+  // `dvh` does NOT shrink when the mobile keyboard opens on Android Chrome /
+  // Instagram WebView, so the sheet stays 95% of the *full* screen and its
+  // bottom (Continue button + last fields) ends up hidden behind the keyboard
+  // with no way to scroll to it. Track visualViewport instead and drive the
+  // sheet height from the real visible area.
+  const addressSheetRef = useRef<HTMLDivElement | null>(null);
   const addressScrollRef = useRef<HTMLDivElement | null>(null);
-
+  // Keyboard inset in px. Instagram / FB WebViews often do NOT shrink
+  // visualViewport when the keyboard opens, so we fall back to a heuristic
+  // inset while an input is focused — otherwise the lower fields sit behind
+  // the keyboard with no way to scroll to them.
+  const [kbInset, setKbInset] = useState(0);
+  const inputFocusedRef = useRef(false);
+  useEffect(() => {
+    if (!showAddressFormSheet) return;
+    const vv = (window as any).visualViewport as VisualViewport | undefined;
+    const apply = () => {
+      const el = addressSheetRef.current;
+      if (!el) return;
+      const h = vv?.height ?? window.innerHeight;
+      const measured = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
+      el.style.height = `${Math.max(320, Math.round(h * 0.96))}px`;
+      // Keep the sheet pinned to the visible viewport bottom when the browser
+      // offsets the layout viewport (iOS Safari keyboard behaviour).
+      el.style.transform = vv ? `translateY(-${measured}px)` : "";
+      // Real inset when the browser reports it; heuristic otherwise.
+      const shrink = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
+      setKbInset(shrink > 80 ? 0 : inputFocusedRef.current ? Math.round(window.innerHeight * 0.42) : 0);
+    };
+    apply();
+    vv?.addEventListener("resize", apply);
+    vv?.addEventListener("scroll", apply);
+    window.addEventListener("resize", apply);
+    return () => {
+      vv?.removeEventListener("resize", apply);
+      vv?.removeEventListener("scroll", apply);
+      window.removeEventListener("resize", apply);
+    };
+  }, [showAddressFormSheet]);
 
   /**
-   * Scroll a focused field into the *visible* band of the address scroller.
-   * Only scrolls when the field is actually out of view, so Chrome no longer
-   * jumps the form on every field tap.
+   * Scroll a focused field into the *visible* band of the address scroller,
+   * i.e. above the keyboard. Only scrolls when the field is actually out of
+   * view, so Chrome no longer jumps the form on every field tap.
    */
   const ensureFieldVisible = useCallback((el: HTMLElement) => {
     const wrap = addressScrollRef.current;
     if (!wrap || !el) return;
     const wrapRect = wrap.getBoundingClientRect();
-    const visibleBottom = wrapRect.bottom - 12;
+    const vv = (window as any).visualViewport as VisualViewport | undefined;
+    const shrink = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
+    // Visible bottom = whichever is higher: the scroller bottom or the top of
+    // the keyboard (real, or heuristic for Instagram WebView).
+    const kb = shrink > 80 ? 0 : Math.round(window.innerHeight * 0.42);
+    const visibleBottom = Math.min(wrapRect.bottom, (vv ? vv.height + (vv.offsetTop || 0) : window.innerHeight) - kb) - 12;
     const visibleTop = wrapRect.top + 8;
     const rect = el.getBoundingClientRect();
     if (rect.bottom <= visibleBottom && rect.top >= visibleTop) return; // already visible
     const delta = rect.bottom > visibleBottom ? rect.bottom - visibleBottom : rect.top - visibleTop;
     wrap.scrollBy({ top: delta, behavior: "smooth" });
   }, []);
-
-  /** Move focus to the next address field (keyboard "Next" key / Enter). */
-  const ADDRESS_FIELD_ORDER = ["full_name", "pincode", "city", "state", "street"];
-  const focusNextAddressField = useCallback((current: string) => {
-    const wrap = addressScrollRef.current;
-    if (!wrap) return;
-    const next = ADDRESS_FIELD_ORDER[ADDRESS_FIELD_ORDER.indexOf(current) + 1];
-    const el = next ? wrap.querySelector<HTMLInputElement>(`[data-field="${next}"]`) : null;
-    if (el) el.focus();
-    else (document.activeElement as HTMLElement | null)?.blur();
-  }, []);
-
-  /**
-   * Instagram / Chrome / Gboard autofill support.
-   * We allow the browser-suggested address (huge conversion win inside the
-   * IG WebView where typing is painful) but never let it bypass validation:
-   * as soon as a jump-paste is detected we sanitise every field and run the
-   * normal required-field checks so a bad suggestion can't reach the order.
-   */
-  const [autofillNotice, setAutofillNotice] = useState(false);
-  const autofillLenRef = useRef<Record<string, number>>({});
-  const noteAutofill = useCallback((field: string, value: string) => {
-    const prev = autofillLenRef.current[field] ?? 0;
-    autofillLenRef.current[field] = value.length;
-    // A single keystroke changes length by 1; autofill pastes many chars.
-    if (value.length - prev >= 4) setAutofillNotice(true);
-  }, []);
-
-  const cleanLine = useCallback(
-    (v: string) =>
-      v
-        .replace(/[\r\n\t]+/g, " ")
-        .replace(/\s{2,}/g, " ")
-        .replace(/,\s*(India|IN)\s*$/i, "")
-        .replace(/^[\s,]+|[\s,]+$/g, "")
-        .slice(0, 200),
-    [],
-  );
-
-  // When autofill fires, immediately normalise + validate the whole address.
-  useEffect(() => {
-    if (!autofillNotice) return;
-    setFullName((v) => cleanLine(v));
-    setCity((v) => cleanLine(v));
-    setState((v) => cleanLine(v));
-    setStreetAddress((v) => {
-      const cleaned = cleanLine(v);
-      // Autofill often stuffs the pincode into the street line — lift it out.
-      const pin = cleaned.match(/\b(\d{6})\b/)?.[1];
-      if (pin) setPincode((p) => (/^\d{6}$/.test(p) ? p : pin));
-      return cleaned;
-    });
-    setAddressAttempted(true);
-  }, [autofillNotice, cleanLine]);
-
-
-
-
 
 
   // Force Montserrat Alternates across the entire new checkout — including
@@ -4170,7 +4152,7 @@ export default function CheckoutV2Page() {
   // owner's number in reach on the waiting + confirmation screens.
   const supportPhone = String((store as any)?.secondary_phone || (store as any)?.whatsapp_number || "").trim();
   const storeSupportBar = (
-    <div className="-mx-4 mb-4 flex items-center gap-2 border-b border-[#ECECEC] bg-white px-3 py-1.5">
+    <div className="sticky top-0 z-20 -mx-4 mb-4 flex items-center gap-2 border-b border-[#ECECEC] bg-white px-3 py-1.5">
       {store?.logo_url ? (
         <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[100px] shrink-0 object-contain" />
       ) : null}
@@ -4582,7 +4564,7 @@ export default function CheckoutV2Page() {
       )}
 
       {/* Header: back • brand + customer care • trust badges */}
-      <div className="bg-white border-b border-[#ECECEC] px-3 py-1 flex items-center gap-2">
+      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-1 flex items-center gap-2">
         <button onClick={goBack} aria-label="Back" className="p-1 -ml-1 shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -4973,14 +4955,7 @@ export default function CheckoutV2Page() {
               the address is filled, tapping "Change" reopens it in editable
               mode with a close chip. */}
           {showAddressFormSheet && typeof document !== "undefined" && createPortal(
-            <div
-              ref={addressScrollRef}
-              className="fixed inset-0 z-[100] overflow-y-scroll pointer-events-auto touch-pan-y"
-              style={{ WebkitOverflowScrolling: "touch" as any, touchAction: "pan-y", scrollPaddingBottom: 96 }}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Add delivery address"
-            >
+            <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
               {/* Scrim — always dismissible in payment-first flow so the shopper
                   can see the checkout underneath. If they try to pay without
                   an address, requireAddressOrPrompt() re-opens the sheet. */}
@@ -4989,11 +4964,11 @@ export default function CheckoutV2Page() {
                 onClick={closeAddressFormSheet}
                 aria-hidden
               />
-              {/* One native scroll container matches the working Chrome path
-                  and remains draggable in Instagram's Android WebView. */}
-              <div className="relative z-[1] mt-[5vh] min-h-[95vh] mx-auto w-full max-w-md bg-white rounded-t-2xl">
+              {/* Sheet — height driven by visualViewport so the keyboard never
+                  hides the lower fields / Continue button (see effect above) */}
+              <div ref={addressSheetRef} className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden h-[95dvh]">
 
-              <div className="bg-white px-5 py-3 flex items-center justify-between border-b border-[#ECECEC]">
+              <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
                 <div className="text-[16px] font-bold">Add Delivery Address</div>
                 <button
                   type="button"
@@ -5007,16 +4982,29 @@ export default function CheckoutV2Page() {
 
 
               <div
-                className="px-5 pt-3 pb-4 space-y-2.5"
-
+                ref={addressScrollRef}
+                className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-3 pb-4 space-y-2.5"
+                style={{ paddingBottom: kbInset ? kbInset + 16 : undefined, scrollPaddingBottom: kbInset ? kbInset + 16 : undefined }}
                 onFocusCapture={(e) => {
                   const t = e.target as HTMLElement;
                   if (t?.tagName === "INPUT" || t?.tagName === "TEXTAREA") {
+                    inputFocusedRef.current = true;
+                    const vv = (window as any).visualViewport as VisualViewport | undefined;
+                    const shrink = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
+                    // WebViews (Instagram/FB) never shrink the viewport — pad
+                    // the scroller so the last fields can clear the keyboard.
+                    if (shrink <= 80) setKbInset(Math.round(window.innerHeight * 0.42));
                     // Two passes: right after the keyboard animation starts and
                     // once it has settled. Only scrolls when actually needed.
                     setTimeout(() => ensureFieldVisible(t), 180);
                     setTimeout(() => ensureFieldVisible(t), 480);
                   }
+                }}
+                onBlurCapture={() => {
+                  inputFocusedRef.current = false;
+                  window.setTimeout(() => {
+                    if (!inputFocusedRef.current) setKbInset(0);
+                  }, 250);
                 }}
               >
 
@@ -5069,25 +5057,12 @@ export default function CheckoutV2Page() {
                 </p>
 
 
-                {autofillNotice && (
-                  <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-                    Address autofilled — please check pincode, village & landmark before continuing.
-                    <span className="block text-[11px] opacity-80">पता अपने आप भरा है — पिनकोड और लैंडमार्क ज़रूर जाँच लें।</span>
-                  </div>
-                )}
-
                 <div>
                   <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
                   <Input
                     value={fullName}
-                    onChange={(e) => { noteAutofill("full_name", e.target.value); setFullName(e.target.value); }}
-                    onBlur={(e) => setFullName(cleanLine(e.target.value))}
+                    onChange={(e) => setFullName(e.target.value)}
                     data-field="full_name"
-                    name="name"
-                    autoComplete="name"
-                    autoCapitalize="words"
-                    enterKeyHint="next"
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("full_name"); } }}
                     placeholder="Your name"
                     className={`h-11 rounded-lg ${addressAttempted && !fullName.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                   />
@@ -5103,10 +5078,6 @@ export default function CheckoutV2Page() {
                       value={pincode}
                       onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       data-field="pincode"
-                      name="postal-code"
-                      autoComplete="postal-code"
-                      enterKeyHint="next"
-                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("pincode"); } }}
                       placeholder="6-digit pincode"
                       inputMode="numeric"
                       maxLength={6}
@@ -5129,14 +5100,8 @@ export default function CheckoutV2Page() {
                     <Label className="text-[12px] text-muted-foreground">City *</Label>
                     <Input
                       value={city}
-                      onChange={(e) => { noteAutofill("city", e.target.value); setCity(e.target.value); }}
-                      onBlur={(e) => setCity(cleanLine(e.target.value))}
+                      onChange={(e) => setCity(e.target.value)}
                       data-field="city"
-                      name="address-level2"
-                      autoComplete="address-level2"
-                      autoCapitalize="words"
-                      enterKeyHint="next"
-                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("city"); } }}
                       className={`h-11 rounded-lg ${addressAttempted && !city.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                     />
                     {addressAttempted && !city.trim() && (
@@ -5147,14 +5112,8 @@ export default function CheckoutV2Page() {
                     <Label className="text-[12px] text-muted-foreground">State *</Label>
                     <Input
                       value={state}
-                      onChange={(e) => { noteAutofill("state", e.target.value); setState(e.target.value); }}
-                      onBlur={(e) => setState(cleanLine(e.target.value))}
+                      onChange={(e) => setState(e.target.value)}
                       data-field="state"
-                      name="address-level1"
-                      autoComplete="address-level1"
-                      autoCapitalize="words"
-                      enterKeyHint="next"
-                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("state"); } }}
                       className={`h-11 rounded-lg ${addressAttempted && !state.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                     />
                     {addressAttempted && !state.trim() && (
@@ -5168,14 +5127,8 @@ export default function CheckoutV2Page() {
                   <Label className="text-[12px] text-muted-foreground">Complete Address *</Label>
                   <Input
                     value={streetAddress}
-                    onChange={(e) => { noteAutofill("street", e.target.value); setStreetAddress(e.target.value); }}
-                    onBlur={(e) => setStreetAddress(cleanLine(e.target.value))}
+                    onChange={(e) => setStreetAddress(e.target.value)}
                     data-field="street"
-                    name="street-address"
-                    autoComplete="street-address"
-                    autoCapitalize="words"
-                    enterKeyHint="done"
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); focusNextAddressField("street"); } }}
                     placeholder="House no, area, village, landmark"
                     className={`h-11 rounded-lg ${addressAttempted && !streetAddress.trim() ? "border-red-500 focus-visible:ring-red-500" : "border-[#ECECEC]"}`}
                   />
@@ -5210,7 +5163,7 @@ export default function CheckoutV2Page() {
                 </label>
               </div>
 
-              <div className="sticky bottom-0 z-10 border-t border-[#ECECEC] p-3 bg-white pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+              <div className="flex-shrink-0 border-t border-[#ECECEC] p-3 bg-white pb-[max(env(safe-area-inset-bottom),0.75rem)]">
                 <Button
                   className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
                   onClick={() => {
