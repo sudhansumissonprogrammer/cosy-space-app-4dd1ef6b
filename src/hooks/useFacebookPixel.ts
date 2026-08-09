@@ -239,13 +239,17 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
       } else {
         window.fbq("init", pixelId);
       }
-      // Only fire PageView if the inline bootstrap didn't already do so.
+      // Only fire PageView if the inline bootstrap didn't already do so, and
+      // only if the shared per-pixel+path gate grants the claim (blocks a
+      // second identical PageView from a re-mount / second tab).
       (window as any).__SF_PIXEL_INITED__ = pixelId;
-      if (!inlinePvAlreadyFired) {
+      if (!inlinePvAlreadyFired && claimPageView(pixelId, window.location.pathname)) {
         pageViewEventId = generateEventId();
         (window as any).__SF_PV_EVENT_ID__ = pageViewEventId;
+        (window as any).__SF_PV_BOOT_PATH__ = window.location.pathname;
         fbqTrackSingle(pixelId, "PageView", {}, pageViewEventId);
       }
+
 
     }
 
