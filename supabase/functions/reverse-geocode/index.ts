@@ -4,6 +4,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const isPlusCode = (s: string) => /^[A-Z0-9]{4,}\+[A-Z0-9]{2,}$/i.test((s || "").trim());
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -27,10 +29,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 1st call — main reverse geocode. Almost always enough on its own.
-    const detailRes = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&language=en&region=in`
-    );
+    const geoUrl =
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&language=en&region=in`;
+    // Fire the landmark/POI lookup in parallel — rural Indian coords almost always
+    // need it (plain geocode returns only the village name, e.g. "Lingipur").
+    const poiUrl =
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}` +
+      `&result_type=point_of_interest|establishment|premise|park|school|place_of_worship|transit_station` +
+      `&language=en&region=in`;
+
+    const [detailRes, poiRes] = await Promise.all([
+      fetch(geoUrl),
+      fetch(poiUrl).catch(() => null as unknown as Response),
+    ]);
     const detailData = await detailRes.json();
 
     if (detailData.status !== "OK" || !detailData.results?.length) {
@@ -40,72 +51,90 @@ Deno.serve(async (req) => {
       );
     }
 
-    const result = detailData.results[0];
-    const components = result.address_components || [];
-    const get = (type: string) =>
-      components.find((c: any) => c.types.includes(type))?.long_name || "";
+    const results: any[] = detailData.results || [];
+    const primary = results[0];
 
-    const isPlusCode = (s: string) => /^[A-Z0-9]{4,}\+[A-Z0-9]{2,}$/i.test(s.trim());
-
-    // Scan detail results for neighborhood/village names (no extra network cost)
-    let villageName = "";
-    let areaName = "";
-    for (const r of (detailData.results || [])) {
-      for (const comp of (r.address_components || [])) {
-        if (!villageName && (comp.types?.includes("sublocality_level_1") || comp.types?.includes("neighborhood")) && !isPlusCode(comp.long_name)) {
-          villageName = comp.long_name;
-        }
-        if (!areaName && (comp.types?.includes("sublocality_level_2") || comp.types?.includes("sublocality")) && !isPlusCode(comp.long_name)) {
-          areaName = comp.long_name;
-        }
-      }
-    }
-
-    const route = get("route");
-    const sublocality = get("sublocality_level_1") || get("sublocality") || get("neighborhood");
-    const premise = get("premise") || get("subpremise") || get("street_number");
-
-    // Try to build street from primary geocode alone
-    let streetParts = [
-      premise && !isPlusCode(premise) ? premise : "",
-      route && !isPlusCode(route) ? route : "",
-      areaName ? areaName : "",
-      villageName && villageName !== areaName ? villageName : "",
-      sublocality && sublocality !== villageName && sublocality !== areaName ? sublocality : "",
-    ].filter(Boolean);
-
-    // Only fire the extra POI/landmark call when the primary geocode gave us nothing usable.
-    if (streetParts.length === 0) {
-      try {
-        const poiRes = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&result_type=point_of_interest|establishment|neighborhood|sublocality&language=en&region=in`
-        );
-        const poiData = await poiRes.json();
-        if (poiData.status === "OK" && poiData.results?.length) {
-          for (const r of poiData.results) {
-            const name = r.address_components?.[0]?.long_name || "";
-            if (name && !isPlusCode(name)) { streetParts = [`Near ${name}`]; break; }
+    // Pull the first non-pluscode value of a component type across ALL results,
+    // so village / road / sublocality survive even when the top result is sparse.
+    const pick = (...types: string[]): string => {
+      for (const r of results) {
+        for (const c of r.address_components || []) {
+          if (types.some((t) => c.types?.includes(t))) {
+            const v = String(c.long_name || "").trim();
+            if (v && !isPlusCode(v)) return v;
           }
         }
-      } catch { /* landmark is best-effort */ }
+      }
+      return "";
+    };
+
+    const city = pick("locality", "administrative_area_level_3", "administrative_area_level_2");
+    const state = pick("administrative_area_level_1");
+    const pincode = pick("postal_code");
+
+    const premise = pick("premise", "subpremise", "street_number");
+    const route = pick("route");
+    const subloc2 = pick("sublocality_level_2");
+    const subloc1 = pick("sublocality_level_1", "sublocality");
+    const neighborhood = pick("neighborhood");
+    // Village: level_4/5 in rural India, or the locality when it differs from the district city
+    const village = pick("administrative_area_level_4", "administrative_area_level_5") ||
+      (pick("locality") && pick("locality") !== city ? pick("locality") : "");
+
+    // Nearest landmark from the POI pass
+    let landmark = "";
+    try {
+      const poiData = poiRes ? await poiRes.json() : null;
+      if (poiData?.status === "OK") {
+        for (const r of poiData.results || []) {
+          const name = String(r.address_components?.[0]?.long_name || "").trim();
+          if (name && !isPlusCode(name)) { landmark = name; break; }
+        }
+      }
+    } catch { /* landmark is best-effort */ }
+
+    const parts = [
+      premise,
+      route,
+      subloc2,
+      subloc1,
+      neighborhood,
+      village,
+    ]
+      .map((p) => (p || "").trim())
+      .filter(Boolean);
+
+    // De-dupe case-insensitively while keeping order
+    const seen = new Set<string>();
+    const unique = parts.filter((p) => {
+      const k = p.toLowerCase();
+      if (seen.has(k) || k === city.toLowerCase() || k === state.toLowerCase()) return false;
+      seen.add(k);
+      return true;
+    });
+
+    // Always append the landmark when it adds new information — this is what
+    // makes rural addresses actually deliverable.
+    if (landmark && !seen.has(landmark.toLowerCase()) && landmark.toLowerCase() !== city.toLowerCase()) {
+      unique.push(`Near ${landmark}`);
     }
 
-    const uniqueParts = [...new Set(streetParts)];
-
-    let fallbackAddress = "";
-    if (uniqueParts.length === 0) {
-      const parts = (result.formatted_address || "").split(",").map((s: string) => s.trim());
-      fallbackAddress = parts.filter((p: string) => !isPlusCode(p) && p.length > 1).slice(0, 2).join(", ");
+    if (unique.length === 0) {
+      const fa = (primary.formatted_address || "")
+        .split(",")
+        .map((s: string) => s.trim())
+        .filter((p: string) => !isPlusCode(p) && p.length > 1 && p.toLowerCase() !== city.toLowerCase());
+      unique.push(...fa.slice(0, 2));
     }
 
     const address = {
-      street_address: uniqueParts.join(", ") || fallbackAddress || "",
-      city: get("locality") || get("administrative_area_level_2"),
-      state: get("administrative_area_level_1"),
-      pincode: get("postal_code"),
+      street_address: unique.join(", "),
+      city,
+      state,
+      pincode,
+      landmark,
+      village,
     };
-
-
 
     return new Response(
       JSON.stringify({ success: true, address }),
@@ -113,9 +142,6 @@ Deno.serve(async (req) => {
         headers: {
           ...corsHeaders,
           "Content-Type": "application/json",
-          // Cache repeat lat/lng lookups for 1 hour at the edge so users
-          // who re-detect their location don't pay the round-trip cost twice.
-          // 'public' is safe — geocoding results aren't user-specific.
           "Cache-Control": "public, max-age=3600, s-maxage=3600",
         },
       }
