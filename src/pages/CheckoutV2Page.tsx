@@ -5230,7 +5230,7 @@ export default function CheckoutV2Page() {
                 <img src={shopbanaoLogo} alt="ShopBanao" className="h-5 w-5 inline-block object-contain" loading="lazy" width="20" height="20" />
                 ShopBanao
               </div>
-              <div className="text-[12px] text-muted-foreground mt-3">Powering secure checkout for 10,000+ brands</div>
+              <div className="text-[12px] text-muted-foreground mt-3">🔒 Your payment is securely processed by ShopBanao</div>
               <div className="flex items-center justify-center gap-4 mt-3 text-muted-foreground">
                 <div className="flex items-center gap-1 text-[11px]"><ShieldCheck className="h-4 w-4" /> PCI DSS<br/>Certified</div>
                 <div className="flex items-center gap-1 text-[11px]"><Lock className="h-4 w-4" /> Secured<br/>Payments</div>
