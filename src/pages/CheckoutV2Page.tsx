@@ -921,17 +921,16 @@ export default function CheckoutV2Page() {
     return false;
   }, [addressComplete]);
 
-  // Lock body scroll ONLY while an address overlay is actually rendered.
-  // NOTE: `addressSheetOpen` is a *derived intent* flag (phone valid + address
-  // missing) that stays true on the payment screen even though no sheet is
-  // mounted — using it here froze the whole payment page's scroll.
+  // Lock the page only for the saved-address dialog. The address form portal
+  // is itself the full-screen scroll surface; locking body while a fixed,
+  // independently scrolling descendant is mounted freezes touch scrolling in
+  // some Instagram Android WebViews.
   useEffect(() => {
-    const anySheetOpen = showAddressFormSheet || showAddressDialog;
-    if (!anySheetOpen) return;
+    if (!showAddressDialog) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
-  }, [showAddressFormSheet, showAddressDialog]);
+  }, [showAddressDialog]);
 
   // Safety net: never leave the page scroll-locked when checkout unmounts.
   useEffect(() => () => { document.body.style.overflow = ""; }, []);
@@ -4974,7 +4973,14 @@ export default function CheckoutV2Page() {
               the address is filled, tapping "Change" reopens it in editable
               mode with a close chip. */}
           {showAddressFormSheet && typeof document !== "undefined" && createPortal(
-            <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
+            <div
+              ref={addressScrollRef}
+              className="fixed inset-0 z-[100] overflow-y-scroll pointer-events-auto touch-pan-y"
+              style={{ WebkitOverflowScrolling: "touch" as any, touchAction: "pan-y", scrollPaddingBottom: 96 }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Add delivery address"
+            >
               {/* Scrim — always dismissible in payment-first flow so the shopper
                   can see the checkout underneath. If they try to pay without
                   an address, requireAddressOrPrompt() re-opens the sheet. */}
@@ -4985,11 +4991,7 @@ export default function CheckoutV2Page() {
               />
               {/* One native scroll container matches the working Chrome path
                   and remains draggable in Instagram's Android WebView. */}
-              <div
-                ref={addressScrollRef}
-                className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl overflow-y-auto overscroll-auto touch-pan-y h-[95dvh] max-h-[95dvh]"
-                style={{ WebkitOverflowScrolling: "touch" as any, touchAction: "pan-y", scrollPaddingBottom: 96 }}
-              >
+              <div className="relative z-[1] mt-[5svh] min-h-[95svh] mx-auto w-full max-w-md bg-white rounded-t-2xl">
 
               <div className="bg-white px-5 py-3 flex items-center justify-between border-b border-[#ECECEC]">
                 <div className="text-[16px] font-bold">Add Delivery Address</div>
