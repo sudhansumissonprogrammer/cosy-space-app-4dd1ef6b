@@ -522,29 +522,46 @@ export default function CheckoutV2Page() {
     }
     setGeoLoading(true);
     try {
-      // GPS converges: watch for up to 5s, keep the most accurate fix, bail early
-      // as soon as we're within 50 m. Never reuse a cached coarse fix.
+      // Two-stage fix: a fast coarse reading (cached ok) guarantees we always
+      // have *something*, while a high-accuracy watch refines it. Resolve early
+      // at <=50 m, otherwise take the best we have after 12 s.
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         let best: GeolocationPosition | null = null;
         let done = false;
+        let watchId: number | null = null;
+        let lastErr: any = null;
         const finish = (err?: any) => {
           if (done) return;
           done = true;
-          try { navigator.geolocation.clearWatch(id); } catch {}
+          if (watchId !== null) { try { navigator.geolocation.clearWatch(watchId); } catch {} }
           clearTimeout(timer);
           if (best) resolve(best);
-          else reject(err || { code: 3 });
+          else reject(err || lastErr || { code: 3 });
         };
-        const timer = setTimeout(() => finish(), 5000);
-        const id = navigator.geolocation.watchPosition(
-          (p) => {
-            if (!best || p.coords.accuracy < best.coords.accuracy) best = p;
-            if (p.coords.accuracy <= 50) finish();
-          },
-          (e) => { if (!best) finish(e); },
-          { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+        const consider = (p: GeolocationPosition) => {
+          if (!best || (p.coords.accuracy || 9999) < (best.coords.accuracy || 9999)) best = p;
+          if ((p.coords.accuracy || 9999) <= 50) finish();
+        };
+        const timer = setTimeout(() => finish(), 12000);
+        // Stage 1 — coarse/cached, usually instant
+        navigator.geolocation.getCurrentPosition(
+          consider,
+          (e) => { lastErr = e; if (e?.code === 1) finish(e); },
+          { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 },
         );
+        // Stage 2 — precise GPS
+        watchId = navigator.geolocation.watchPosition(
+          consider,
+          (e) => { lastErr = e; if (e?.code === 1) finish(e); },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+        );
+        // Once we have any fix, stop waiting the full 12 s — give GPS 4 more s
+        const softStop = setInterval(() => {
+          if (best && !done) { clearInterval(softStop); setTimeout(() => finish(), 4000); }
+          if (done) clearInterval(softStop);
+        }, 500);
       });
+
       const accuracy = position.coords.accuracy || 0;
       const { data, error } = await supabase.functions.invoke("reverse-geocode", {
         body: { lat: position.coords.latitude, lng: position.coords.longitude, accuracy },
