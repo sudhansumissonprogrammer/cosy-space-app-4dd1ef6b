@@ -190,29 +190,26 @@ export async function uploadCompressedVideo(
   const posterBlob = await generatePoster(file);
   opts.onProgress?.(0.1);
 
-  // NOTE: in-browser WebCodecs re-encoding was removed from the default path.
-  // It seeked frame-by-frame (30fps x up to 60s = ~1800 seeks) which took
-  // minutes on desktop and effectively hung on phones. Phone cameras already
-  // record H.264 MP4, so we upload as-is. Only very large files (>25MB) get
-  // compressed, and even then only with a hard time budget.
+  // Preserve normal phone/editor exports exactly as supplied. Browser-side
+  // playback capture can report a healthy average FPS while still producing
+  // uneven frame timestamps on some Android/WebView devices, which makes a
+  // smooth source clip look jerky after upload. A 25MB / 53s H.264 file is only
+  // ~3.8Mbps and streams comfortably from the range-enabled CDN, so re-encoding
+  // it has no delivery benefit. Compression is reserved for genuinely large
+  // files where reducing the upload is worth the compatibility risk.
   let uploadBlob: File | Blob = file;
   let uploadName = file.name;
   let uploadExt = inferExt(file);
   let compressedBytes = file.size;
 
-  // Compress when the file is heavy OR larger than 1080p. Bitrate is derived
-  // from the source inside compressVideo(), so quality stays visually intact.
-  // Compress ONLY when the file is genuinely too heavy for R2 (100MB cap) or
-  // way above 1080p. Phone/editor exports are already H.264 and look far better
-  // raw than re-encoded — re-encoding every 8MB clip was destroying quality.
-  const COMPRESS_THRESHOLD = 12 * 1024 * 1024;
-  const longEdge = Math.max(meta.width || 0, meta.height || 0);
+  // Do not use resolution or nominal bitrate alone to trigger compression:
+  // both are common on modern phones and do not mean the file will stream
+  // poorly. Keeping clips up to 50MB untouched also preserves source audio,
+  // frame cadence and device-specific HDR/rotation metadata.
+  const COMPRESS_THRESHOLD = 50 * 1024 * 1024;
   const shouldCompress =
     isWebCodecsSupported() &&
-    (file.size > COMPRESS_THRESHOLD ||
-      longEdge > 1920 ||
-      // Anything above ~2.5 Mbps is over-encoded for a muted 720p reel.
-      (meta.duration > 0 && (file.size * 8) / meta.duration > 2_500_000));
+    file.size > COMPRESS_THRESHOLD;
   // Capture runs near realtime now, so budget = 1.5x duration + slack.
   const COMPRESS_BUDGET_MS = Math.min(240_000, Math.max(60_000, (meta.duration || 30) * 3000 + 30_000));
 
