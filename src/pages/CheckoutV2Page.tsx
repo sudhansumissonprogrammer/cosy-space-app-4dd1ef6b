@@ -1006,6 +1006,19 @@ export default function CheckoutV2Page() {
     wrap.scrollBy({ top: delta, behavior: "smooth" });
   }, []);
 
+  /** Move focus to the next address field (keyboard "Next" key / Enter). */
+  const ADDRESS_FIELD_ORDER = ["full_name", "pincode", "city", "state", "street"];
+  const focusNextAddressField = useCallback((current: string) => {
+    const wrap = addressScrollRef.current;
+    if (!wrap) return;
+    const next = ADDRESS_FIELD_ORDER[ADDRESS_FIELD_ORDER.indexOf(current) + 1];
+    const el = next ? wrap.querySelector<HTMLInputElement>(`[data-field="${next}"]`) : null;
+    if (el) el.focus();
+    else (document.activeElement as HTMLElement | null)?.blur();
+  }, []);
+
+
+
 
 
   // Force Montserrat Alternates across the entire new checkout — including
