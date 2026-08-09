@@ -3234,7 +3234,9 @@ export default function CheckoutV2Page() {
       }
     }
     if (matchedOrderId) {
-      navigate(storefrontPath(store.slug, `account/orders/${matchedOrderId}`), { replace: true });
+      // Already purchased → land on the storefront home instead of ping-ponging
+      // back to the order-detail page the shopper just left.
+      navigate(storefrontPath(store.slug), { replace: true });
     }
   }, [isSingleMode, productId, variantId, store?.id, store?.slug, isRecoveryRetry, orderId, orderPlaced, waiting, confirmingPayment, navigate, readRecentOrder]);
 
