@@ -4984,17 +4984,30 @@ export default function CheckoutV2Page() {
               <div
                 ref={addressScrollRef}
                 className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-3 pb-4 space-y-2.5"
+                style={{ paddingBottom: kbInset ? kbInset + 16 : undefined, scrollPaddingBottom: kbInset ? kbInset + 16 : undefined }}
                 onFocusCapture={(e) => {
                   const t = e.target as HTMLElement;
                   if (t?.tagName === "INPUT" || t?.tagName === "TEXTAREA") {
-                    // Wait for mobile keyboard to open, then scroll the focused
-                    // input into the visible area above it.
-                    setTimeout(() => {
-                      try { t.scrollIntoView({ block: "center", behavior: "smooth" }); } catch { /* ignore */ }
-                    }, 300);
+                    inputFocusedRef.current = true;
+                    const vv = (window as any).visualViewport as VisualViewport | undefined;
+                    const shrink = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
+                    // WebViews (Instagram/FB) never shrink the viewport — pad
+                    // the scroller so the last fields can clear the keyboard.
+                    if (shrink <= 80) setKbInset(Math.round(window.innerHeight * 0.42));
+                    // Two passes: right after the keyboard animation starts and
+                    // once it has settled. Only scrolls when actually needed.
+                    setTimeout(() => ensureFieldVisible(t), 180);
+                    setTimeout(() => ensureFieldVisible(t), 480);
                   }
                 }}
+                onBlurCapture={() => {
+                  inputFocusedRef.current = false;
+                  window.setTimeout(() => {
+                    if (!inputFocusedRef.current) setKbInset(0);
+                  }, 250);
+                }}
               >
+
 
                 {/* Phone entered in Step 1 — shown here with a Change link that
                     takes the shopper back to the mobile-number screen. */}
