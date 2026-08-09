@@ -1941,7 +1941,15 @@ export default function CheckoutV2Page() {
     try { sessionStorage.removeItem(`ac_${store.id}`); } catch { /* noop */ }
     saveExpressInfo();
 
-    if (!isSingleMode) clearCart();
+    if (!isSingleMode) {
+      clearCart();
+    } else {
+      // Buy-Now: the ordered product may also be sitting in the cart — drop it
+      // so the shopper never sees an already-purchased item again.
+      try {
+        checkoutItems.forEach((ci) => removeFromCart(ci.productId, ci.variantId));
+      } catch { /* noop */ }
+    }
     // Buy-Now guard: mark this product+variant as "just ordered" so if the
     // shopper hits back after the success screen we don't drop them into the
     // same checkout again with the same URL params. Also fold the ordered
