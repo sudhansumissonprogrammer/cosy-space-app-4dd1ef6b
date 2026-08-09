@@ -69,7 +69,14 @@ interface Props {
   onBeforeNavigate?: () => void;
 }
 
-/** Save the captured phone as a lead immediately (fire-and-forget). */
+/**
+ * Save the captured phone as a lead immediately (fire-and-forget).
+ *
+ * Uses `capture_checkout_lead` (NOT a raw insert) so this shares the same
+ * store+phone dedupe window as checkout step 1 / checkout v2. A raw insert
+ * here used to produce a second/third duplicate lead row for the same shopper
+ * within minutes.
+ */
 async function saveLead(opts: {
   storeId?: string;
   phone: string;
@@ -80,12 +87,15 @@ async function saveLead(opts: {
 }) {
   if (!opts.storeId) return;
   try {
-    await supabase.from("customer_leads").insert({
-      store_id: opts.storeId,
-      phone: opts.phone,
-      product_id: opts.productId ?? null,
-      product_name: opts.productName ?? null,
-      source: opts.source,
+    await (supabase as any).rpc("capture_checkout_lead", {
+      p_store_id: opts.storeId,
+      p_phone: opts.phone,
+      p_cart_items: opts.productId
+        ? [{ productId: opts.productId, name: opts.productName ?? null, quantity: 1 }]
+        : [],
+      p_consent: true,
+      p_session_token: null,
+      p_source: opts.source,
     });
   } catch (err) {
     console.warn("[BuyNow] Lead save failed:", err);
