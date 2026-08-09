@@ -4171,7 +4171,7 @@ export default function CheckoutV2Page() {
   // owner's number in reach on the waiting + confirmation screens.
   const supportPhone = String((store as any)?.secondary_phone || (store as any)?.whatsapp_number || "").trim();
   const storeSupportBar = (
-    <div className="sticky top-0 z-20 -mx-4 mb-4 flex items-center gap-2 border-b border-[#ECECEC] bg-white px-3 py-1.5">
+    <div className="-mx-4 mb-4 flex items-center gap-2 border-b border-[#ECECEC] bg-white px-3 py-1.5">
       {store?.logo_url ? (
         <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[100px] shrink-0 object-contain" />
       ) : null}
@@ -4583,7 +4583,7 @@ export default function CheckoutV2Page() {
       )}
 
       {/* Header: back • brand + customer care • trust badges */}
-      <div className="sticky top-0 z-20 bg-white border-b border-[#ECECEC] px-3 py-1 flex items-center gap-2">
+      <div className="bg-white border-b border-[#ECECEC] px-3 py-1 flex items-center gap-2">
         <button onClick={goBack} aria-label="Back" className="p-1 -ml-1 shrink-0">
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -4991,7 +4991,7 @@ export default function CheckoutV2Page() {
                 style={{ WebkitOverflowScrolling: "touch" as any, touchAction: "pan-y", scrollPaddingBottom: 96 }}
               >
 
-              <div className="sticky top-0 z-10 bg-white px-5 py-3 flex items-center justify-between border-b border-[#ECECEC]">
+              <div className="bg-white px-5 py-3 flex items-center justify-between border-b border-[#ECECEC]">
                 <div className="text-[16px] font-bold">Add Delivery Address</div>
                 <button
                   type="button"
