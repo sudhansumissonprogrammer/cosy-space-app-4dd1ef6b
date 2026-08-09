@@ -479,6 +479,18 @@
               /* trackSingle (not track) so the event can never fan out to a
                  second merchant pixel registered in the same document. */
               w.fbq('trackSingle',pid,'PageView',{},{eventID:pvid});
+              /* Register the claim in the SHARED PageView gate (see
+                 src/lib/pixelPageView.ts) so no React path can fire a second
+                 identical PageView for this same pixel + path. */
+              try{
+                var _pvp=location.pathname||'/';
+                var _pvk='__sf_pv_dedup_'+pid+'_'+_pvp;
+                var _pvt=Date.now();
+                w.__SF_PV_BOOT_PATH__=_pvp;
+                (w.__SF_PV_CLAIMS__=w.__SF_PV_CLAIMS__||{})[_pvk]=_pvt;
+                localStorage.setItem(_pvk,String(_pvt));
+              }catch(_){}
+
 
                /* Keep the SDK off the render-critical synchronous path, but do
                   not leave only the shim alive for several seconds. Pixel

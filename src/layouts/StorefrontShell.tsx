@@ -9,6 +9,8 @@ import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import { useThemePreview } from "@/hooks/useThemePreview";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { generateEventId, useFacebookPixel } from "@/hooks/useFacebookPixel";
+import { claimPageView, registerPageViewFired } from "@/lib/pixelPageView";
+
 import { ensureFbcPersisted, getOrCreateSfVid, seedCapiUserFromStorage } from "@/lib/metaEnrichment";
 import { useGA4 } from "@/hooks/useGA4";
 import { usePageviewBeacon } from "@/hooks/usePageviewBeacon";
@@ -190,37 +192,27 @@ export default function StorefrontShell({
   useScrollRestoration();
 
   // SPA route-change PageView for Meta Pixel (Shopify-style).
-  // BAN-FIX B7: dedup uses `localStorage` (cross-tab) + a 3s TTL and a
-  // `BroadcastChannel` fan-out. Previous sessionStorage impl only deduped
-  // within a single tab, so two tabs opened simultaneously (WhatsApp shopper
-  // clicks a link twice) fired two initial PageViews per visit → Meta EMQ
-  // flagged the pixel as "anomalous dedup ratio".
+  // All PageView sources (inline bootstrap, useFacebookPixel, this effect) go
+  // through claimPageView() — one cross-tab, per pixel+path, time-boxed gate.
+  // Previously each had its own guard, so an extra shell mount (theme switch,
+  // Suspense re-mount, bfcache restore) could emit a second byte-identical
+  // PageView for the same path → Meta flagged "event fired twice".
   useEffect(() => {
     const pixelId = (store as any)?.facebook_pixel_id;
     if (!pixelId) return;
     const storeId = store?.id;
     if (!storeId) return;
-    const dedupKey = `__sf_pv_dedup_${storeId}_${pathname}`;
-    const now = Date.now();
-    let last = 0;
-    try {
-      const raw = localStorage.getItem(dedupKey);
-      if (raw) last = Number(raw) || 0;
-    } catch {}
-    if (now - last < 3000) return;
-    try { localStorage.setItem(dedupKey, String(now)); } catch {}
-    try {
-      const bc = new BroadcastChannel("sf-pv");
-      bc.postMessage({ k: dedupKey, t: now });
-      bc.close();
-    } catch {}
-    // Skip if the inline pixel (index.html) already fired the initial PageView
-    // for THIS path — it stamps __SF_PV_EVENT_ID__ once at boot.
-    const inlineFired = (window as any).__SF_PV_EVENT_ID__ && !(window as any).__SF_PV_SPA_STARTED__;
-    if (inlineFired) {
+
+    // The inline pixel (index.html) already fired the initial PageView for the
+    // boot path — register that claim once so we never duplicate it.
+    if ((window as any).__SF_PV_EVENT_ID__ && !(window as any).__SF_PV_SPA_STARTED__) {
       (window as any).__SF_PV_SPA_STARTED__ = true;
-      return;
+      registerPageViewFired(pixelId, (window as any).__SF_PV_BOOT_PATH__ || pathname);
+      if (((window as any).__SF_PV_BOOT_PATH__ || pathname) === pathname) return;
     }
+
+    if (!claimPageView(pixelId, pathname)) return;
+
     if (typeof window !== "undefined" && typeof window.fbq === "function") {
       const eid = generateEventId();
       // STORE ISOLATION: trackSingle pins the SPA PageView to THIS store's pixel.
@@ -231,6 +223,7 @@ export default function StorefrontShell({
       }).catch(() => {});
     }
   }, [pathname, store?.id, (store as any)?.facebook_pixel_id]);
+
 
   // Persist ?fbclid → _fbc cookie + expose store id globally for tracking helpers
   useEffect(() => {
