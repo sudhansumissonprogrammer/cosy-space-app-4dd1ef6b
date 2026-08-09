@@ -109,33 +109,37 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 🛒 Second guard: if the SAME customer placed a confirmed order in this
-    // store AFTER the cart was enqueued (any product), skip — they're not
-    // abandoning anymore, they converted through another path.
-    if (row.message_type === "abandoned_cart" && row.recipient_phone && row.store_id) {
-      const rawPhone = String(row.recipient_phone).replace(/\D/g, "");
-      const bare = rawPhone.startsWith("91") && rawPhone.length >= 12 ? rawPhone.slice(2) : rawPhone;
-      const withCc = bare.length === 10 ? `91${bare}` : rawPhone;
-      const phoneVariants = Array.from(new Set([rawPhone, bare, withCc, `+${withCc}`].filter(Boolean)));
-      const { count: recentConfirmed } = await admin
-        .from("orders")
-        .select("id", { count: "exact", head: true })
-        .eq("store_id", row.store_id)
-        .in("customer_phone", phoneVariants)
-        .in("status", ["confirmed", "partially_paid", "paid", "processing", "shipped", "delivered"])
-        .gte("created_at", new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString());
-      if ((recentConfirmed ?? 0) > 0) {
+    // 🛡️ Second guard (send-time backstop): a shopper who actually PAID for an
+    // order in the last 7 days — in any store — must never be re-pitched the
+    // same product. A different product is still allowed. If we can't tell
+    // which product this message is about, we block (fail safe).
+    if (row.message_type === "abandoned_cart" && row.recipient_phone) {
+      const buyer = await loadRecentBuyer(admin, row.recipient_phone);
+      let candidateIds: string[] = [];
+      const tok = String((row as any).cta_token || "");
+      const m = tok.match(/^p-([0-9a-fA-F-]{36})/);
+      if (m) candidateIds = [m[1]];
+      else if ((row as any).abandoned_cart_id) {
+        const { data: cartRow } = await admin
+          .from("abandoned_carts").select("cart_items")
+          .eq("id", (row as any).abandoned_cart_id).maybeSingle();
+        const its = Array.isArray((cartRow as any)?.cart_items) ? (cartRow as any).cart_items : [];
+        candidateIds = its.map((it: any) => String(it?.productId || it?.product_id || "")).filter(Boolean);
+      }
+      const decision = buyer.blocks(candidateIds);
+      if (decision.blocked) {
         await admin.from("wa_send_queue").update({
-          status: "skipped", last_error: "recent_confirmed_order", locked_until: null,
+          status: "skipped", last_error: decision.reason || "recent_buyer_7d", locked_until: null,
         } as any).eq("id", row.id);
         if (row.abandoned_cart_id) {
           await admin.from("abandoned_carts")
-            .update({ recovered: true, recovery_status: "skipped", recovery_error: "customer_converted" })
+            .update({ recovered: true, recovery_status: "skipped", recovery_error: decision.reason || "recent_buyer_7d" })
             .eq("id", row.abandoned_cart_id);
         }
         skippedPaused++;
         continue;
       }
+
     }
 
 
