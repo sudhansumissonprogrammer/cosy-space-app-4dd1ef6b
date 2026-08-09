@@ -1145,7 +1145,7 @@ Deno.serve(async (req) => {
             .from("customer_leads")
             .select("id")
             .eq("store_id", store_id)
-            .eq("phone", lead.phone)
+            .eq("phone", String(lead.phone || "").replace(/\D/g, "").slice(-10))
             .gt("created_at", new Date(Date.now() - 12 * 3600 * 1000).toISOString())
             .order("created_at", { ascending: false })
             .limit(1)
