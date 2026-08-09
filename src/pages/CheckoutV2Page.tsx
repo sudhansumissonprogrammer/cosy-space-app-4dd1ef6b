@@ -513,6 +513,46 @@ export default function CheckoutV2Page() {
     return () => { cancelled = true; };
   }, [pincode]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ─── "Use my current location" → browser GPS + reverse-geocode edge fn ───
+  const [geoLoading, setGeoLoading] = useState(false);
+  const handleUseMyLocation = useCallback(async () => {
+    if (!("geolocation" in navigator)) {
+      toast.error("Location not supported on this device");
+      return;
+    }
+    setGeoLoading(true);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 8000,
+          maximumAge: 120000,
+        });
+      });
+      const { data, error } = await supabase.functions.invoke("reverse-geocode", {
+        body: { lat: position.coords.latitude, lng: position.coords.longitude },
+      });
+      if (error) throw error;
+      const addr = data?.address;
+      if (!data?.success || !addr) {
+        toast.error("Couldn't detect your address — please type it");
+        return;
+      }
+      if (addr.pincode) setPincode(String(addr.pincode).replace(/\D/g, "").slice(0, 6));
+      if (addr.city) setCity(addr.city);
+      if (addr.state) setState(addr.state);
+      if (addr.street_address) setStreetAddress(addr.street_address);
+      toast.success("Address auto-filled — please check it");
+    } catch (err: any) {
+      if (err?.code === 1) toast.error("Location permission denied — allow it in browser settings");
+      else if (err?.code === 3) toast.error("Location timed out — please type your address");
+      else toast.error("Couldn't detect location");
+    } finally {
+      setGeoLoading(false);
+    }
+  }, []);
+
+
 
   // ─── Store config queries ───────────────────────────────────────────────
   const { data: shippingConfig } = useQuery({
@@ -4956,6 +4996,20 @@ export default function CheckoutV2Page() {
                     <button className="text-[11px] text-muted-foreground underline pl-1" onClick={() => setReturningDismissed(true)}>Skip</button>
                   </div>
                 )}
+
+                <button
+                  type="button"
+                  onClick={handleUseMyLocation}
+                  disabled={geoLoading}
+                  className="w-full h-11 rounded-lg border border-dashed border-primary/50 bg-primary/5 text-primary flex items-center justify-center gap-2 text-[13px] font-semibold active:scale-[0.99] disabled:opacity-60"
+                >
+                  {geoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+                  {geoLoading ? "Detecting your location…" : "Use my current location"}
+                </button>
+                <p className="-mt-1 text-[11px] text-muted-foreground text-center">
+                  अपना पता अपने आप भरने के लिए दबाएँ
+                </p>
+
 
                 <div>
                   <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
