@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     } catch { /* landmark is best-effort */ }
 
     const parts = [
-      premise,
+      society,
       route,
       subloc2,
       subloc1,
