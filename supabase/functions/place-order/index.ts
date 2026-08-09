@@ -1135,15 +1135,41 @@ Deno.serve(async (req) => {
     const postInsertOps: Promise<any>[] = [];
 
     if (lead && !reusedExistingOrder) {
+      // Upsert-style: the shopper almost always already has a lead row from
+      // Quick Buy / checkout step 1 (capture_checkout_lead). Inserting blindly
+      // here produced a duplicate lead per order. Update the recent row
+      // instead, and only insert when none exists.
       postInsertOps.push(
-        supabase.from("customer_leads").insert({
-          store_id,
-          name: lead.name,
-          phone: lead.phone,
-          product_name: lead.product_name,
-          product_id: lead.product_id,
-          source: lead.source,
-        })
+        (async () => {
+          const { data: existingLead } = await supabase
+            .from("customer_leads")
+            .select("id")
+            .eq("store_id", store_id)
+            .eq("phone", lead.phone)
+            .gt("created_at", new Date(Date.now() - 12 * 3600 * 1000).toISOString())
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (existingLead?.id) {
+            return supabase
+              .from("customer_leads")
+              .update({
+                name: lead.name ?? undefined,
+                product_name: lead.product_name ?? undefined,
+                product_id: lead.product_id ?? undefined,
+                source: lead.source,
+              })
+              .eq("id", existingLead.id);
+          }
+          return supabase.from("customer_leads").insert({
+            store_id,
+            name: lead.name,
+            phone: lead.phone,
+            product_name: lead.product_name,
+            product_id: lead.product_id,
+            source: lead.source,
+          });
+        })(),
       );
     }
 
