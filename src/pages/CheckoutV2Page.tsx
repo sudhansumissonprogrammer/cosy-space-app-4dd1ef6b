@@ -965,7 +965,8 @@ export default function CheckoutV2Page() {
       // and translating as well moved almost the entire form off-screen.
       overlay.style.top = `${Math.round(vv?.offsetTop ?? 0)}px`;
       overlay.style.height = `${visible}px`;
-      sheet.style.height = `${Math.max(280, Math.round(visible * 0.96))}px`;
+      sheet.style.height = `${Math.max(240, Math.round(visible * 0.96))}px`;
+      sheet.style.maxHeight = `${visible}px`;
     };
     apply();
     vv?.addEventListener("resize", apply);
@@ -5009,7 +5010,7 @@ export default function CheckoutV2Page() {
               the address is filled, tapping "Change" reopens it in editable
               mode with a close chip. */}
           {showAddressFormSheet && typeof document !== "undefined" && createPortal(
-            <div ref={addressOverlayRef} className="fixed left-0 right-0 z-[100] flex flex-col justify-end pointer-events-auto overflow-hidden" role="dialog" aria-modal="true" aria-label="Add delivery address">
+            <div ref={addressOverlayRef} className="fixed left-0 right-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
               {/* Scrim — always dismissible in payment-first flow so the shopper
                   can see the checkout underneath. If they try to pay without
                   an address, requireAddressOrPrompt() re-opens the sheet. */}
@@ -5020,7 +5021,7 @@ export default function CheckoutV2Page() {
               />
               {/* Sheet — height driven by visualViewport so the keyboard never
                   hides the lower fields / Continue button (see effect above) */}
-              <div ref={addressSheetRef} className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden h-[95dvh]">
+              <div ref={addressSheetRef} className="relative mx-auto min-h-0 w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden h-[95dvh]">
 
               <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
                 <div className="text-[16px] font-bold">Add Delivery Address</div>
@@ -5037,8 +5038,12 @@ export default function CheckoutV2Page() {
 
               <div
                 ref={addressScrollRef}
-                className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-3 pb-4 space-y-2.5"
-                style={{ scrollPaddingBottom: 24, WebkitOverflowScrolling: "touch" as any }}
+                className="min-h-0 flex-1 overflow-y-scroll overscroll-auto touch-pan-y px-5 pt-3 pb-4 space-y-2.5"
+                style={{
+                  scrollPaddingBottom: 96,
+                  WebkitOverflowScrolling: "touch" as any,
+                  touchAction: "pan-y",
+                }}
 
                 onFocusCapture={(e) => {
                   const t = e.target as HTMLElement;
