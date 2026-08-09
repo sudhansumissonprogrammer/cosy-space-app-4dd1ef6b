@@ -328,7 +328,168 @@ async function evaluate(admin: any): Promise<Signal[]> {
     });
   } catch (e) { console.error("signal fatal_errors", (e as Error).message); }
 
+  // ── CHECKOUT & PAYMENT PATH (client-side truth, not just server logs) ──────
+
+  // 23) UPI app launch failures — shoppers tap GPay/PhonePe/Paytm but no app opens.
+  try {
+    const { data: rows } = await admin
+      .from("storefront_events")
+      .select("event_name, metadata")
+      .gte("created_at", iso(60))
+      .in("event_name", ["pay_click", "payment_failed"])
+      .limit(4000);
+    const list = ((rows as any[]) || []);
+    const upiTaps = list.filter((r) =>
+      r.event_name === "pay_click" && /^upi_/.test(String(r?.metadata?.method || ""))).length;
+    const launchFails = list.filter((r) => {
+      if (r.event_name !== "payment_failed") return false;
+      const reason = String(r?.metadata?.reason || "");
+      return /no_upi_app|not_installed|launch|intent/i.test(reason);
+    }).length;
+    const ratio = upiTaps ? launchFails / upiTaps : 0;
+    const bad = launchFails >= 5 && ratio >= 0.25;
+    out.push({
+      key: "signal:upi_launch_failures",
+      label: "UPI app launch (GPay/PhonePe/Paytm)",
+      ok: !bad,
+      detail: `${launchFails} UPI apps failed to open out of ${upiTaps} taps in 60 min (${Math.round(ratio * 100)}%, alert above 25%)`,
+    });
+  } catch (e) { console.error("signal upi_launch_failures", (e as Error).message); }
+
+  // 24) Pay tap blocked before the gateway — address gate / minting / retap loops.
+  try {
+    const { data: rows } = await admin
+      .from("storefront_events")
+      .select("metadata")
+      .gte("created_at", iso(60))
+      .eq("event_name", "pay_click")
+      .limit(4000);
+    const list = ((rows as any[]) || []);
+    const tagged = list.filter((r) => !!r?.metadata?.outcome);
+    const blocked = tagged.filter((r) =>
+      /address_gate|queued_|retap_prompt|failed/i.test(String(r?.metadata?.outcome || ""))).length;
+    const ratio = tagged.length ? blocked / tagged.length : 0;
+    const bad = tagged.length >= 12 && ratio >= 0.5;
+    out.push({
+      key: "signal:pay_tap_blocked",
+      label: "Pay button reaching the gateway",
+      ok: !bad,
+      detail: `${blocked}/${tagged.length} pay taps did not reach a payment app in 60 min (${Math.round(ratio * 100)}%, alert above 50%)`,
+    });
+  } catch (e) { console.error("signal pay_tap_blocked", (e as Error).message); }
+
+  // 25) Pay-click blackout — shoppers are tapping pay but nothing is completing.
+  try {
+    const taps = await count(admin, "storefront_events", (q) =>
+      q.gte("created_at", iso(45)).eq("event_name", "pay_click"));
+    const buys = await count(admin, "storefront_events", (q) =>
+      q.gte("created_at", iso(45)).eq("event_name", "purchase"));
+    const bad = taps >= 15 && buys === 0;
+    out.push({
+      key: "signal:pay_click_blackout",
+      label: "Pay tap to purchase completion",
+      ok: !bad,
+      detail: `${taps} pay taps and ${buys} completed purchases in the last 45 minutes`,
+    });
+  } catch (e) { console.error("signal pay_click_blackout", (e as Error).message); }
+
+  // 26) Payment/checkout APIs alive — synthetic probe of the functions checkout calls.
+  try {
+    const fns = ["place-order", "create-upi-intent", "payu-create-txn", "store-cashfree-create-order", "order-payment-status"];
+    const dead: string[] = [];
+    await Promise.all(fns.map(async (fn) => {
+      try {
+        const ctl = new AbortController();
+        const t = setTimeout(() => ctl.abort(), 10_000);
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
+          method: "OPTIONS",
+          headers: { "Access-Control-Request-Method": "POST", Origin: "https://shopbanao.in" },
+          signal: ctl.signal,
+        });
+        clearTimeout(t);
+        if (res.status >= 500 || res.status === 404) dead.push(`${fn} (${res.status})`);
+      } catch { dead.push(`${fn} (no response)`); }
+    }));
+    out.push({
+      key: "signal:payment_api_reachable",
+      label: "Checkout & payment APIs reachable",
+      ok: dead.length === 0,
+      detail: dead.length ? `Not responding: ${dead.join(", ")}` : `All ${fns.length} checkout/payment functions responding`,
+    });
+  } catch (e) { console.error("signal payment_api_reachable", (e as Error).message); }
+
+  // 27) Payment provider reachability — is PayU / Cashfree / Razorpay itself up?
+  try {
+    const hosts: Array<[string, string]> = [
+      ["PayU", "https://secure.payu.in/_payment"],
+      ["Cashfree", "https://api.cashfree.com/pg/orders"],
+      ["Razorpay", "https://api.razorpay.com/v1/orders"],
+    ];
+    const dead: string[] = [];
+    await Promise.all(hosts.map(async ([name, url]) => {
+      try {
+        const ctl = new AbortController();
+        const t = setTimeout(() => ctl.abort(), 10_000);
+        const res = await fetch(url, { method: "GET", signal: ctl.signal });
+        clearTimeout(t);
+        // Any HTTP answer (401/405/400) proves the provider is alive; 5xx means trouble.
+        if (res.status >= 500) dead.push(`${name} (${res.status})`);
+      } catch { dead.push(`${name} (unreachable)`); }
+    }));
+    out.push({
+      key: "signal:gateway_reachability",
+      label: "Payment provider reachability",
+      ok: dead.length === 0,
+      detail: dead.length ? `Provider problems: ${dead.join(", ")}` : "PayU, Cashfree and Razorpay all responding",
+    });
+  } catch (e) { console.error("signal gateway_reachability", (e as Error).message); }
+
+  // 28) Payment attempts started at the gateway but never confirmed.
+  try {
+    const { data: rows } = await admin
+      .from("orders")
+      .select("id, status, payu_txnids")
+      .gte("created_at", iso(150))
+      .lte("created_at", iso(25))
+      .limit(500);
+    const attempted = ((rows as any[]) || []).filter((r) =>
+      Array.isArray(r?.payu_txnids) && r.payu_txnids.length > 0);
+    const settled = attempted.filter((r) => PAID.includes(String(r.status))).length;
+    const bad = attempted.length >= 8 && settled === 0;
+    out.push({
+      key: "signal:gateway_attempts_unsettled",
+      label: "Gateway payments settling back",
+      ok: !bad,
+      detail: `${settled}/${attempted.length} gateway payment attempts confirmed (orders 25–150 min old)`,
+    });
+  } catch (e) { console.error("signal gateway_attempts_unsettled", (e as Error).message); }
+
+  // 29) Stores advertising online payment with missing/broken credentials.
+  try {
+    const { data: cfg } = await admin
+      .from("store_payment_config")
+      .select("store_id, payment_methods, razorpay_key_id, cashfree_app_id, payu_merchant_key, upi_id")
+      .limit(1000);
+    const broken = ((cfg as any[]) || []).filter((c) => {
+      const m: string[] = Array.isArray(c?.payment_methods) ? c.payment_methods : [];
+      if (m.includes("razorpay") && !c.razorpay_key_id) return true;
+      if (m.includes("cashfree") && !c.cashfree_app_id) return true;
+      if (m.includes("payu") && !c.payu_merchant_key) return true;
+      if (m.includes("upi") && !c.upi_id) return true;
+      return false;
+    });
+    out.push({
+      key: "signal:payment_config_broken",
+      label: "Store payment configuration",
+      ok: broken.length === 0,
+      detail: broken.length
+        ? `${broken.length} stores show an online payment method with missing credentials`
+        : "All stores with online payment have credentials configured",
+    });
+  } catch (e) { console.error("signal payment_config_broken", (e as Error).message); }
+
   return out;
+
 }
 
 async function sendAlert(admin: any, headline: string, target: string, detail: string) {
