@@ -3,8 +3,8 @@
  *
  * Owners upload as many short clips as they want; each row gets a title,
  * a CTA label and a CTA target (category / product / custom path or URL).
- * Uploads reuse the existing compressed-video pipeline (WebCodecs H.264,
- * 1080p cap) and land on the R2 CDN.
+ * Uploads preserve the original video bytes and land on the R2 CDN. Browser
+ * re-encoding is intentionally avoided because it can damage frame cadence.
  */
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -149,7 +149,7 @@ export default function TrustVideosManager({ storeId }: { storeId?: string }) {
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
         These play in the floating video button on your storefront. Videos load only when a shopper taps
-        the button, so your pages stay fast. Keep clips under 90 seconds — they are optimised automatically.
+        the button, so your pages stay fast. Keep clips under 90 seconds — source quality is preserved.
       </p>
 
       <input
