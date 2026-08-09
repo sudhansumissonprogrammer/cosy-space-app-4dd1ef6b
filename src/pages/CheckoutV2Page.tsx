@@ -937,47 +937,11 @@ export default function CheckoutV2Page() {
   useEffect(() => () => { document.body.style.overflow = ""; }, []);
 
 
-  // ─── Keyboard-safe sheet height ────────────────────────────────────────
-  // `dvh` does NOT shrink when the mobile keyboard opens on Android Chrome /
-  // Instagram WebView, so the sheet stays 95% of the *full* screen and its
-  // bottom (Continue button + last fields) ends up hidden behind the keyboard
-  // with no way to scroll to it. Track visualViewport instead and drive the
-  // sheet height from the real visible area.
-  const addressSheetRef = useRef<HTMLDivElement | null>(null);
+  // Keep one native scroll surface for the whole address sheet. Instagram's
+  // WebView can stop dispatching touch-scroll when a fixed overlay, a resized
+  // visual viewport, and a nested flex scroller are combined. Chrome does not
+  // need that complexity either, so both browsers use this same scroll path.
   const addressScrollRef = useRef<HTMLDivElement | null>(null);
-  const addressOverlayRef = useRef<HTMLDivElement | null>(null);
-
-  const visibleViewportHeight = useCallback(() => {
-    const vv = (window as any).visualViewport as VisualViewport | undefined;
-    return Math.round(vv?.height ?? window.innerHeight);
-  }, []);
-
-  useEffect(() => {
-    if (!showAddressFormSheet) return;
-    const vv = (window as any).visualViewport as VisualViewport | undefined;
-    const apply = () => {
-      const sheet = addressSheetRef.current;
-      const overlay = addressOverlayRef.current;
-      if (!sheet || !overlay) return;
-      const visible = visibleViewportHeight();
-      // Anchor the whole dialog to the visual viewport. Do not translate the
-      // sheet: Instagram already pans its layout viewport for the keyboard,
-      // and translating as well moved almost the entire form off-screen.
-      overlay.style.top = `${Math.round(vv?.offsetTop ?? 0)}px`;
-      overlay.style.height = `${visible}px`;
-      sheet.style.height = `${Math.max(240, Math.round(visible * 0.96))}px`;
-      sheet.style.maxHeight = `${visible}px`;
-    };
-    apply();
-    vv?.addEventListener("resize", apply);
-    vv?.addEventListener("scroll", apply);
-    window.addEventListener("resize", apply);
-    return () => {
-      vv?.removeEventListener("resize", apply);
-      vv?.removeEventListener("scroll", apply);
-      window.removeEventListener("resize", apply);
-    };
-  }, [showAddressFormSheet, visibleViewportHeight]);
 
 
   /**
@@ -5010,7 +4974,7 @@ export default function CheckoutV2Page() {
               the address is filled, tapping "Change" reopens it in editable
               mode with a close chip. */}
           {showAddressFormSheet && typeof document !== "undefined" && createPortal(
-            <div ref={addressOverlayRef} className="fixed left-0 right-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
+            <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto" role="dialog" aria-modal="true" aria-label="Add delivery address">
               {/* Scrim — always dismissible in payment-first flow so the shopper
                   can see the checkout underneath. If they try to pay without
                   an address, requireAddressOrPrompt() re-opens the sheet. */}
@@ -5019,11 +4983,15 @@ export default function CheckoutV2Page() {
                 onClick={closeAddressFormSheet}
                 aria-hidden
               />
-              {/* Sheet — height driven by visualViewport so the keyboard never
-                  hides the lower fields / Continue button (see effect above) */}
-              <div ref={addressSheetRef} className="relative mx-auto min-h-0 w-full max-w-md bg-white rounded-t-2xl flex flex-col overflow-hidden h-[95dvh]">
+              {/* One native scroll container matches the working Chrome path
+                  and remains draggable in Instagram's Android WebView. */}
+              <div
+                ref={addressScrollRef}
+                className="relative mx-auto w-full max-w-md bg-white rounded-t-2xl overflow-y-auto overscroll-auto touch-pan-y h-[95dvh] max-h-[95dvh]"
+                style={{ WebkitOverflowScrolling: "touch" as any, touchAction: "pan-y", scrollPaddingBottom: 96 }}
+              >
 
-              <div className="px-5 py-3 flex items-center justify-between border-b border-[#ECECEC] flex-shrink-0">
+              <div className="sticky top-0 z-10 bg-white px-5 py-3 flex items-center justify-between border-b border-[#ECECEC]">
                 <div className="text-[16px] font-bold">Add Delivery Address</div>
                 <button
                   type="button"
@@ -5037,13 +5005,7 @@ export default function CheckoutV2Page() {
 
 
               <div
-                ref={addressScrollRef}
-                className="min-h-0 flex-1 overflow-y-scroll overscroll-auto touch-pan-y px-5 pt-3 pb-4 space-y-2.5"
-                style={{
-                  scrollPaddingBottom: 96,
-                  WebkitOverflowScrolling: "touch" as any,
-                  touchAction: "pan-y",
-                }}
+                className="px-5 pt-3 pb-4 space-y-2.5"
 
                 onFocusCapture={(e) => {
                   const t = e.target as HTMLElement;
@@ -5246,7 +5208,7 @@ export default function CheckoutV2Page() {
                 </label>
               </div>
 
-              <div className="flex-shrink-0 border-t border-[#ECECEC] p-3 bg-white pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+              <div className="sticky bottom-0 z-10 border-t border-[#ECECEC] p-3 bg-white pb-[max(env(safe-area-inset-bottom),0.75rem)]">
                 <Button
                   className="w-full h-12 text-[15px] font-bold bg-black hover:bg-black/90 disabled:bg-gray-300 disabled:text-white rounded-lg"
                   onClick={() => {
