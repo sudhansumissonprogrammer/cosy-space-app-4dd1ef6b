@@ -1130,7 +1130,7 @@ export default function V22ProductDetail() {
                       className={`btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-1.5 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] ${
                         justAdded ? "bg-emerald-600 text-white" : "btn-gold"
                       }`}
-                      style={{ fontFamily: "var(--storefront-heading-font, inherit)" }}
+                      style={{ fontFamily: "var(--storefront-body-font, inherit)" }}
                       onClick={handleAddToCart}
                     >
                       {justAdded ? (
@@ -1147,7 +1147,7 @@ export default function V22ProductDetail() {
                     </button>
                     <button
                       className="btn-press flex h-10 sm:h-11 flex-1 sm:flex-none sm:px-8 items-center justify-center gap-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-[transform,opacity,colors,box-shadow]"
-                      style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", fontFamily: "var(--storefront-heading-font, inherit)" }}
+                      style={{ backgroundColor: "var(--storefront-accent, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", fontFamily: "var(--storefront-body-font, inherit)" }}
                       onClick={handleBuyNow}
                     >
                       <span className="flex items-center gap-1.5">
@@ -1172,7 +1172,7 @@ export default function V22ProductDetail() {
               const saved = JSON.parse(localStorage.getItem(`express_checkout_${store.id}`) || "{}");
               if (saved.fullName && saved.phone && saved.streetAddress && saved.pincode) {
                 return (
-                  <div className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-card/95 backdrop-blur-lg border-t border-border px-4 py-3 safe-area-bottom">
+                  <div className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-card/95 backdrop-blur-lg border-t border-border px-4 py-3 safe-area-bottom" style={{ fontFamily: "var(--storefront-body-font, inherit)" }}>
                     <div className="flex items-center gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="text-[11px] text-muted-foreground truncate">
