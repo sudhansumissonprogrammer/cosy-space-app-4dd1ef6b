@@ -1017,6 +1017,34 @@ export default function CheckoutV2Page() {
     else (document.activeElement as HTMLElement | null)?.blur();
   }, []);
 
+  /**
+   * Instagram / Chrome / Gboard autofill support.
+   * We allow the browser-suggested address (huge conversion win inside the
+   * IG WebView where typing is painful) but never let it bypass validation:
+   * as soon as a jump-paste is detected we sanitise every field and run the
+   * normal required-field checks so a bad suggestion can't reach the order.
+   */
+  const [autofillNotice, setAutofillNotice] = useState(false);
+  const autofillLenRef = useRef<Record<string, number>>({});
+  const noteAutofill = useCallback((field: string, value: string) => {
+    const prev = autofillLenRef.current[field] ?? 0;
+    autofillLenRef.current[field] = value.length;
+    // A single keystroke changes length by 1; autofill pastes many chars.
+    if (value.length - prev >= 4) setAutofillNotice(true);
+  }, []);
+
+  const cleanLine = useCallback(
+    (v: string) =>
+      v
+        .replace(/[\r\n\t]+/g, " ")
+        .replace(/\s{2,}/g, " ")
+        .replace(/,\s*(India|IN)\s*$/i, "")
+        .replace(/^[\s,]+|[\s,]+$/g, "")
+        .slice(0, 200),
+    [],
+  );
+
+
 
 
 
