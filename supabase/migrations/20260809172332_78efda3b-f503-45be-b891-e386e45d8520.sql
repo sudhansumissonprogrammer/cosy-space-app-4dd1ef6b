@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS public.stores_pixel_id_unique;
