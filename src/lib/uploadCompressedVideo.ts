@@ -1,5 +1,5 @@
 /**
- * uploadCompressedVideo — direct R2 upload with a canvas-generated poster.
+ * uploadCompressedVideo — lossless direct R2 upload with a generated poster.
  *
  * Previous implementation used ffmpeg.wasm (single-threaded, ~30MB core
  * fetched from unpkg) which frequently hung on Loading compressor… or
@@ -8,13 +8,14 @@
  *
  *   1. Validate file (≤60s by default, ≤100MB, video/*)
  *   2. Grab a poster frame via <video> + <canvas> (instant, no WASM)
- *   3. Upload BOTH to R2 via the r2-upload edge function
+ *   3. Upload the ORIGINAL video and poster to R2 via r2-upload
  *
- * Net: works on every browser, no third-party CDN dependency, and the
- * "uploading" stage starts immediately instead of after a 30MB download.
+ * Browser playback-capture re-encoding is deliberately not used. It produced
+ * low-frame-rate files on some Android/WebView devices even when the source
+ * was smooth. Preserving the original also keeps audio, HDR/rotation metadata,
+ * frame cadence and quality exactly as recorded.
  */
 import { supabase } from "@/integrations/supabase/client";
-import { compressVideo, isWebCodecsSupported } from "./compressVideoWebCodecs";
 
 export interface VideoUploadResult {
   videoUrl: string;
@@ -190,50 +191,13 @@ export async function uploadCompressedVideo(
   const posterBlob = await generatePoster(file);
   opts.onProgress?.(0.1);
 
-  // Preserve normal phone/editor exports exactly as supplied. Browser-side
-  // playback capture can report a healthy average FPS while still producing
-  // uneven frame timestamps on some Android/WebView devices, which makes a
-  // smooth source clip look jerky after upload. A 25MB / 53s H.264 file is only
-  // ~3.8Mbps and streams comfortably from the range-enabled CDN, so re-encoding
-  // it has no delivery benefit. Compression is reserved for genuinely large
-  // files where reducing the upload is worth the compatibility risk.
-  let uploadBlob: File | Blob = file;
-  let uploadName = file.name;
-  let uploadExt = inferExt(file);
-  let compressedBytes = file.size;
-
-  // Do not use resolution or nominal bitrate alone to trigger compression:
-  // both are common on modern phones and do not mean the file will stream
-  // poorly. Keeping clips up to 50MB untouched also preserves source audio,
-  // frame cadence and device-specific HDR/rotation metadata.
-  const COMPRESS_THRESHOLD = 50 * 1024 * 1024;
-  const shouldCompress =
-    isWebCodecsSupported() &&
-    file.size > COMPRESS_THRESHOLD;
-  // Capture runs near realtime now, so budget = 1.5x duration + slack.
-  const COMPRESS_BUDGET_MS = Math.min(240_000, Math.max(60_000, (meta.duration || 30) * 3000 + 30_000));
-
-  if (shouldCompress) {
-    try {
-      opts.onStage?.("compressing");
-      const result = await Promise.race([
-        compressVideo(file, {
-          maxDimension: 1280,
-          onProgress: (p) => opts.onProgress?.(0.1 + p * 0.6),
-        }),
-        new Promise<null>((res) => setTimeout(() => res(null), COMPRESS_BUDGET_MS)),
-      ]);
-      if (result && result.blob.size > 0 && result.blob.size < file.size) {
-        uploadBlob = result.blob;
-        uploadName = file.name.replace(/\.[^.]+$/, "") + ".mp4";
-        uploadExt = "mp4";
-        compressedBytes = result.blob.size;
-      }
-    } catch (e) {
-      // Compression failed — fall back to raw upload
-      console.warn("[video] compression failed, uploading raw", e);
-    }
-  }
+  // Always preserve the source file. A browser cannot safely infer that a
+  // playback-captured re-encode retained every frame, so even large accepted
+  // files are uploaded untouched rather than risking permanent judder.
+  const uploadBlob: File = file;
+  const uploadName = file.name;
+  const uploadExt = inferExt(file);
+  const compressedBytes = file.size;
 
 
   // Upload video
