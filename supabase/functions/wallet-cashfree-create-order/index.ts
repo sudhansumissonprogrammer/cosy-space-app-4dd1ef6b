@@ -34,11 +34,31 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const { data: ud, error: authErr } = await supabase.auth.getUser(token);
-    const user = ud?.user;
-    if (authErr || !user) {
-      console.error("wallet recharge: getUser failed", authErr?.message, "tokenLen", token.length);
-      return j({ error: "Session expired. Please refresh the page and try again." }, 401);
+
+    // Verify the JWT via signing keys (getClaims). getUser() fails with
+    // "Session from session_id claim in JWT does not exist" on rotated/
+    // asymmetric-key sessions, which was breaking wallet recharge.
+    let user: { id: string; email?: string | null; phone?: string | null } | null = null;
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: `Bearer ${token}` } } },
+    );
+    const { data: claimsData } = await authClient.auth.getClaims(token);
+    const sub = claimsData?.claims?.sub as string | undefined;
+    if (sub) {
+      user = {
+        id: sub,
+        email: (claimsData?.claims as any)?.email ?? null,
+        phone: (claimsData?.claims as any)?.phone ?? null,
+      };
+    } else {
+      const { data: ud, error: authErr } = await supabase.auth.getUser(token);
+      if (authErr || !ud?.user) {
+        console.error("wallet recharge: auth failed", authErr?.message, "tokenLen", token.length);
+        return j({ error: "Session expired. Please refresh the page and try again." }, 401);
+      }
+      user = { id: ud.user.id, email: ud.user.email, phone: ud.user.phone };
     }
 
     if (!CASHFREE_APP_ID || !CASHFREE_SECRET_KEY) {
