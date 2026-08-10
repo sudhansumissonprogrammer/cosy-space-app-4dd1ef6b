@@ -137,8 +137,19 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
           headers: { Authorization: `Bearer ${accessToken}` },
         },
       );
-      if (error || (res as any)?.error)
-        throw new Error((res as any)?.error || error?.message);
+      if (error || (res as any)?.error) {
+        // functions.invoke hides the JSON body on non-2xx — read it so the
+        // merchant sees the real reason (wrong account, min amount, etc).
+        let serverMsg = (res as any)?.error as string | undefined;
+        const ctx = (error as any)?.context;
+        if (!serverMsg && ctx && typeof ctx.json === "function") {
+          try {
+            const body = await ctx.json();
+            serverMsg = body?.error;
+          } catch { /* ignore */ }
+        }
+        throw new Error(serverMsg || error?.message || "Recharge failed");
+      }
 
       const sessionId = (res as any).payment_session_id;
       const orderId = (res as any).order_id;
