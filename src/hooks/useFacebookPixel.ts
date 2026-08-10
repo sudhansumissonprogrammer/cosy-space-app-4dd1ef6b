@@ -235,6 +235,9 @@ export function useFacebookPixel(pixelId: string | null | undefined, storeId?: s
       // Always-on Advanced Matching: pass anon visitor ID as external_id
       // so EMQ stays high even for logged-out browsers.
       const sfVid = getOrCreateSfVid();
+      // Disable Meta auto-config before init — otherwise fbevents.js fires its
+      // own eventID-less PageView on each SPA route change (duplicate events).
+      try { window.fbq("set", "autoConfig", false, pixelId); } catch { /* noop */ }
       grantMetaConsent();
       if (sfVid) {
         window.fbq("init", pixelId, { external_id: sfVid });
