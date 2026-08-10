@@ -76,7 +76,31 @@ Deno.serve(async (req) => {
       .select("id, owner_id, name, owner_email, whatsapp_number, billing_mode")
       .eq("id", storeId)
       .single();
-    if (!store || store.owner_id !== user.id) return j({ error: "Forbidden" }, 403);
+    if (!store) return j({ error: "Store not found" }, 404);
+
+    // Merchants often keep two logins for the same business. Accept the owner,
+    // any platform admin, and any account whose verified email matches the
+    // store's owner_email — otherwise recharge fails with a bare 403 after an
+    // account switch.
+    let allowed = store.owner_id === user.id;
+    if (!allowed) {
+      const { data: roleRow } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      allowed = !!roleRow;
+    }
+    if (!allowed && user.email && store.owner_email) {
+      allowed = String(user.email).toLowerCase() === String(store.owner_email).toLowerCase();
+    }
+    if (!allowed) {
+      return j({
+        error:
+          "This store belongs to a different account. Sign out and sign in with the store owner's account, then retry the recharge.",
+      }, 403);
+    }
     if (store.billing_mode !== "commission") {
       return j({ error: "Store is not in commission mode" }, 400);
     }
