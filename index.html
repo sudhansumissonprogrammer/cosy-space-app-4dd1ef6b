@@ -407,6 +407,14 @@
                highest-volume event. Do not re-add it. */
             if(pid&&w.__SF_PIXEL_INITED__!==pid&&!w.__SF_PV_EVENT_ID__){
               w.__SF_PIXEL_INITED__=pid;
+              /* DUPLICATE-PAGEVIEW FIX: Meta's auto-config ("Track Events
+                 Automatically Without Code") makes fbevents.js emit its OWN
+                 PageView on every SPA history change — with no eventID, so it
+                 can never dedupe against ours. Ads Data Advisor then reports
+                 "PageView fired twice with identical data". We do manual
+                 Advanced Matching + explicit events, so auto-config adds
+                 nothing. Must be set BEFORE init. */
+              w.fbq('set','autoConfig',false,pid);
               w.fbq('consent','grant');
               /* v8.61.0 BAN-FIX P1-2: pass external_id from sf_vid cookie so
                  Advanced Matching is non-zero on first-paint init. Without
