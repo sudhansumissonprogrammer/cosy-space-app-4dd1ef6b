@@ -195,11 +195,16 @@ async function evaluate(admin: any): Promise<Signal[]> {
       .limit(2000);
     const arr = ((rows as any[]) || []).map((r) => Number(r.latency_ms)).filter((n) => n > 0).sort((a, b) => a - b);
     const p95 = arr.length ? arr[Math.min(arr.length - 1, Math.floor(arr.length * 0.95))] : 0;
+    const median = arr.length ? arr[Math.floor(arr.length / 2)] : 0;
+    // Require BOTH a bad tail and an elevated median. A single slow probe batch
+    // (cold start / monitor event-loop contention) inflates p95 only — that is
+    // not a user-visible outage and must not page anyone.
+    const degraded = arr.length >= 30 && p95 > 4000 && median > 1500;
     out.push({
       key: "signal:latency_degradation",
       label: "Response time (p95)",
-      ok: !(arr.length >= 30 && p95 > 4000),
-      detail: `p95 response time ${p95}ms across ${arr.length} probes in 15 minutes (alert above 4000ms)`,
+      ok: !degraded,
+      detail: `p95 ${p95}ms / median ${median}ms across ${arr.length} probes in 15 minutes (alert above p95 4000ms + median 1500ms)`,
     });
   } catch (e) { console.error("signal latency_degradation", (e as Error).message); }
 
