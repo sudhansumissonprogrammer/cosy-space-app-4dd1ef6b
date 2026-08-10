@@ -53,6 +53,13 @@ export default function LowBalanceDialog({
             <Wallet className="mr-2 h-4 w-4" />
             Recharge Wallet
           </Button>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => navigate("/dashboard/stores")}
+          >
+            Switch store
+          </Button>
         </div>
       </div>
     </div>
