@@ -263,12 +263,17 @@ export default function DashboardLayout() {
   const isAccountRoute =
     location.pathname === "/dashboard/settings" ||
     location.pathname.startsWith("/dashboard/settings/");
+  // Merchants with more than one store must still be able to reach the store
+  // picker (and each store's own wallet) while one store is locked.
+  const isStorePickerRoute =
+    location.pathname === "/dashboard" || location.pathname === "/dashboard/stores";
   const showLowBalance =
     !isAdminView &&
     !!walletSummary &&
     !!storeSlug &&
     walletBalance <= -20 &&
     !isWalletRoute &&
+    !isStorePickerRoute &&
     !isAccountRoute;
 
 
