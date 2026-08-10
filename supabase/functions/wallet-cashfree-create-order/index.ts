@@ -39,20 +39,19 @@ Deno.serve(async (req) => {
     // "Session from session_id claim in JWT does not exist" on rotated/
     // asymmetric-key sessions, which was breaking wallet recharge.
     let user: { id: string; email?: string | null; phone?: string | null } | null = null;
-    const authClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: `Bearer ${token}` } } },
-    );
-    const { data: claimsData } = await authClient.auth.getClaims(token);
-    const sub = claimsData?.claims?.sub as string | undefined;
-    if (sub) {
-      user = {
-        id: sub,
-        email: (claimsData?.claims as any)?.email ?? null,
-        phone: (claimsData?.claims as any)?.phone ?? null,
-      };
-    } else {
+    // Decode the JWT payload locally (no supabase-js version dependency).
+    try {
+      const part = token.split(".")[1];
+      const json = JSON.parse(
+        atob(part.replace(/-/g, "+").replace(/_/g, "/").padEnd(part.length + ((4 - (part.length % 4)) % 4), "=")),
+      );
+      const exp = Number(json?.exp || 0);
+      if (json?.sub && (!exp || exp * 1000 > Date.now())) {
+        user = { id: String(json.sub), email: json.email ?? null, phone: json.phone ?? null };
+      }
+    } catch (_) { /* fall through to getUser */ }
+
+    if (!user) {
       const { data: ud, error: authErr } = await supabase.auth.getUser(token);
       if (authErr || !ud?.user) {
         console.error("wallet recharge: auth failed", authErr?.message, "tokenLen", token.length);
