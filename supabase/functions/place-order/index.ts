@@ -140,6 +140,10 @@ Deno.serve(async (req) => {
       // Attribution snapshot: last-touch UTM + ad-click IDs (fbclid/gclid/...)
       // sent by the browser so we can tie revenue back to campaigns and ads.
       attribution?: Record<string, string | null> | null;
+      // True only when the shopper explicitly tapped Pay / Place order. Automatic
+      // client re-mints send false, which lets us reject stale post-payment
+      // retries that would otherwise create a duplicate pending order.
+      user_initiated?: boolean;
     } = await req.json();
 
 
