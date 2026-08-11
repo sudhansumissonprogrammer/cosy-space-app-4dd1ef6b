@@ -3505,6 +3505,9 @@ export default function CheckoutV2Page() {
         }
       } catch (e: any) {
         const rawErrMsg = String(e?.message || "");
+        // Benign: a stale automatic mint raced a confirmed payment. Stay silent
+        // and leave the success screen alone — no toast, no failed UPI tiles.
+        if (rawErrMsg === "checkout_already_completed") return;
         const rawMsg = rawErrMsg === "recent_order_guard"
           ? "You just placed this same order a moment ago. Please check My Orders."
           : rawErrMsg;
