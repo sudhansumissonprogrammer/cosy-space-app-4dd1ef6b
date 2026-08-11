@@ -3556,7 +3556,7 @@ export default function CheckoutV2Page() {
       const forceRemint = discardedMintRef.current;
       discardedMintRef.current = false;
       if (remintAfterCurrentOrderRef.current && !confirmingPayment && !orderPlaced &&
-          (forceRemint || !amountStillMatches)) {
+          !orderPlacedRef.current && (forceRemint || !amountStillMatches)) {
         remintAfterCurrentOrderRef.current = false;
         // Reset the rapid-fire coalescer so this recovery mint isn't swallowed
         // by the 2.5s throttle it would otherwise land inside.
