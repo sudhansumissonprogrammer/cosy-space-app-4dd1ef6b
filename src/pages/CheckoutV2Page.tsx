@@ -5114,6 +5114,11 @@ export default function CheckoutV2Page() {
                 </p>
 
 
+                <form
+                  onSubmit={(e) => e.preventDefault()}
+                  autoComplete="on"
+                  className="space-y-2.5"
+                >
                 <div>
                   <Label htmlFor="ck-name" className="text-[12px] text-muted-foreground">Full Name *</Label>
                   <Input
