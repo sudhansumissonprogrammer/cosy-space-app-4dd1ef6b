@@ -271,14 +271,16 @@ export async function hasApprovedTemplates(admin: any): Promise<boolean> {
 // 🔁 RECOVERY DRIP SEQUENCE (abandoned cart / pending / cancelled orders)
 // A lead that hasn't purchased gets EXACTLY 3 recovery messages:
 //   step 1 → 30 min after the drop-off   (handled by cron min-age)
-//   step 2 → 5 hours after step 1
-//   step 3 → 24 hours after step 2
+//   step 2 → 5 hours after step 1        (~5.5h after drop-off)
+//   step 3 → 24 hours after step 1       (= 19h after step 2)
 // After step 3 the lead is done. The sender also applies the platform-wide,
 // cross-store ceiling of 3 total marketing attempts per phone per rolling week.
 // ══════════════════════════════════════════════════════════════════════
 export const RECOVERY_MESSAGE_TYPES = ["abandoned_cart"];
-// +5min buffer on step 3 so it lands just outside the rolling 24h window.
-export const DRIP_GAPS_MS = [0, 5 * 60 * 60 * 1000, 24 * 60 * 60 * 1000 + 5 * 60 * 1000];
+// Gaps are measured from the PREVIOUS delivered step.
+// step 3 = 19h05m after step 2 → lands 24h05m after step 1, i.e. just outside
+// the rolling 24h window so the DRIP_MAX_PER_24H guard still passes.
+export const DRIP_GAPS_MS = [0, 5 * 60 * 60 * 1000, 19 * 60 * 60 * 1000 + 5 * 60 * 1000];
 export const DRIP_MAX_STEPS = 3;
 // Absolute ceiling: max 2 messages to one number in any rolling 24h window.
 export const DRIP_MAX_PER_24H = 2;
@@ -441,8 +443,8 @@ export async function recoveryDripDecision(admin: any, phone: string, opts: { ig
   if (done >= DRIP_MAX_STEPS) return { allow: false, step: done, reason: "drip_complete" };
 
   // 🚫 HARD RULE: never more than 2 messages to the same number in any rolling
-  // 24h window. The drip schedule (0h → +5h → +29h) already respects this, but
-  // this guard is absolute — retries, re-runs or schedule edits can't break it.
+  // 24h window. The drip schedule (0h → +5h → +24h05m) already respects this,
+  // but this guard is absolute — retries or schedule edits can't break it.
   const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
   let last24h = times.filter((t) => t >= cutoff24h).length;
   if (!opts.ignoreInFlight) {
