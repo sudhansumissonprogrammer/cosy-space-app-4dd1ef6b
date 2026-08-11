@@ -269,11 +269,10 @@ export async function hasApprovedTemplates(admin: any): Promise<boolean> {
 
 // ══════════════════════════════════════════════════════════════════════
 // 🔁 RECOVERY DRIP SEQUENCE (abandoned cart / pending / cancelled orders)
-// A lead that hasn't purchased gets EXACTLY 3 recovery messages:
+// A lead that hasn't purchased gets EXACTLY 2 recovery messages:
 //   step 1 → 30 min after the drop-off   (handled by cron min-age)
-//   step 2 → 5 hours after step 1        (~5.5h after drop-off)
-//   step 3 → 24 hours after step 1       (= 19h after step 2)
-// After step 3 the lead is done. The sender also applies the platform-wide,
+//   step 2 → 12 hours after step 1       (~12.5h after drop-off)
+// After step 2 the lead is done. The sender also applies the platform-wide,
 // cross-store ceiling of 3 total marketing attempts per phone per rolling week.
 // ══════════════════════════════════════════════════════════════════════
 export const RECOVERY_MESSAGE_TYPES = ["abandoned_cart"];
@@ -301,7 +300,7 @@ const PERMANENT_WA_ERRORS = ["131026", "131047", "131048", "131051", "133010", "
 //   130472 → user is in a Meta marketing experiment (time-boxed)
 //   131042 → business billing/eligibility (platform-level, fixes itself)
 //   131053 → media upload error (our header image, retryable)
-// Treating them as permanent silently killed step 2 and step 3 of the drip for
+// Treating them as permanent silently killed step 2 of the drip for
 // hundreds of leads, which is why almost nobody received all 3 messages.
 const SOFT_WA_ERRORS = ["131049", "130472", "131042", "131053", "131056", "131000"];
 export function isPermanentWaError(msg: string | null | undefined): boolean {
@@ -396,7 +395,7 @@ export async function recoveryDripDecision(admin: any, phone: string, opts: { ig
   // forever whenever Meta rejected it.
   const failed = ((failedRows as any[]) ?? []).filter((r) => Number.isFinite(new Date(r.created_at).getTime()));
   // Soft = transient throttle / platform-side error. These must not consume the
-  // strict 3-attempt budget, otherwise one throttled step 1 kills steps 2 & 3.
+  // strict 3-attempt budget, otherwise one throttled step 1 kills step 2.
   const softFailed = failed.filter((r) => isSoftWaError(r.error_message));
   const hardFailed = failed.filter((r) => !isSoftWaError(r.error_message));
 
@@ -442,7 +441,7 @@ export async function recoveryDripDecision(admin: any, phone: string, opts: { ig
   if (done >= DRIP_MAX_STEPS) return { allow: false, step: done, reason: "drip_complete" };
 
   // 🚫 HARD RULE: never more than 2 messages to the same number in any rolling
-  // 24h window. The drip schedule (0h → +5h → +24h05m) already respects this,
+  // 24h window. The drip schedule (0h → +12h) already respects this,
   // but this guard is absolute — retries or schedule edits can't break it.
   const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
   let last24h = times.filter((t) => t >= cutoff24h).length;
