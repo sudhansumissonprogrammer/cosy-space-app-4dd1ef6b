@@ -1845,14 +1845,20 @@ export default function CheckoutV2Page() {
     });
     if (error) throw new Error(error.message);
     const result = data as { order_id?: string; order_number?: string; error?: string; token_consumed?: boolean } | null;
-    // The token this tab is holding already belongs to a PAID/confirmed order
-    // (shopper bought something, then started a second order in the same tab).
-    // Rotate to a fresh idempotency key and place the new order for real,
-    // instead of silently reusing the old paid row (which surfaced as
-    // "UPI apps unavailable" / already_paid on the second checkout).
+    // The token this tab is holding already belongs to a PAID/confirmed order.
+    // Two very different situations produce this:
+    //  (a) the shopper genuinely started a SECOND checkout in the same tab
+    //      (success screen → browsed another product → tapped Buy). Here we must
+    //      rotate to a fresh idempotency key and place the new order for real.
+    //  (b) a stale AUTOMATIC re-mint fired right after payment succeeded. Here
+    //      rotating would silently create the duplicate "Pending" row we saw
+    //      1–2 minutes after every partially-paid order. Abort instead.
     if (result?.token_consumed && attempt === 0) {
+      if (!userInitiated || orderPlacedRef.current) {
+        throw new Error("checkout_already_completed");
+      }
       rotateCheckoutToken();
-      return placeOrderRow(paymentMethodHint, paymentTypeOverride, 1);
+      return placeOrderRow(paymentMethodHint, paymentTypeOverride, 1, true);
     }
     if (!result?.order_id) throw new Error(result?.error || "Failed to place order");
     return { id: result.order_id, number: result.order_number || null };
