@@ -3252,12 +3252,23 @@ export default function CheckoutV2Page() {
     } catch { /* noop */ }
   };
 
-  const createOrderIfNeeded = async (paymentMethodHint: string): Promise<PendingOrder> => {
+  const createOrderIfNeeded = async (
+    paymentMethodHint: string,
+    opts?: { userInitiated?: boolean },
+  ): Promise<PendingOrder> => {
+    const userInitiated = opts?.userInitiated === true;
+    // Nothing automatic may mint an order once payment is confirmed.
+    if (orderPlacedRef.current && !userInitiated) {
+      throw new Error("checkout_already_completed");
+    }
     // A previous order in THIS tab already consumed the idempotency token
     // (success screen → shopper browsed to another product → new checkout).
     // Start clean, otherwise place-order would return the old paid order and
     // the UPI tiles would fail with already_paid.
     if (tokenRetiredRef.current) {
+      if (!userInitiated) throw new Error("checkout_already_completed");
+      // Genuine new checkout in the same tab — unfreeze and start fresh.
+      orderPlacedRef.current = false;
       rotateCheckoutToken();
       orderIdRef.current = null;
       orderNumberRef.current = null;
@@ -3265,6 +3276,7 @@ export default function CheckoutV2Page() {
       setOrderId(null);
       setOrderNumber(null);
     }
+
 
     // NOTE: no duplicate-order block here. A shopper may re-order the exact
     // same product again immediately — we only reuse the in-flight order row
