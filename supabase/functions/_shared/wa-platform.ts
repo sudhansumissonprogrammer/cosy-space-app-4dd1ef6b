@@ -269,11 +269,10 @@ export async function hasApprovedTemplates(admin: any): Promise<boolean> {
 
 // ══════════════════════════════════════════════════════════════════════
 // 🔁 RECOVERY DRIP SEQUENCE (abandoned cart / pending / cancelled orders)
-// A lead that hasn't purchased gets EXACTLY 3 recovery messages:
+// A lead that hasn't purchased gets EXACTLY 2 recovery messages:
 //   step 1 → 30 min after the drop-off   (handled by cron min-age)
-//   step 2 → 5 hours after step 1        (~5.5h after drop-off)
-//   step 3 → 24 hours after step 1       (= 19h after step 2)
-// After step 3 the lead is done. The sender also applies the platform-wide,
+//   step 2 → 12 hours after step 1       (~12.5h after drop-off)
+// After step 2 the lead is done. The sender also applies the platform-wide,
 // cross-store ceiling of 3 total marketing attempts per phone per rolling week.
 // ══════════════════════════════════════════════════════════════════════
 export const RECOVERY_MESSAGE_TYPES = ["abandoned_cart"];
