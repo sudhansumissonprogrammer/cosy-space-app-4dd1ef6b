@@ -582,7 +582,6 @@ export default function CheckoutPhoneStep({
                 aria-invalid={!!inlineError}
                 aria-describedby={inlineError ? "checkout-phone-error" : undefined}
                 className="flex-1 bg-transparent outline-none text-[14px]"
-                autoComplete="tel-national"
               />
             </div>
             {inlineError && (
