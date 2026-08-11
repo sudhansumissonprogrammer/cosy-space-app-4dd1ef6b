@@ -1028,11 +1028,13 @@ Deno.serve(async (req) => {
         else if (visitor_id) pq = pq.eq("visitor_id", visitor_id);
         const { data: paidRecent } = await pq.maybeSingle();
         if (paidRecent) {
-          return json({
+          return new Response(JSON.stringify({
+            success: true,
             order_id: (paidRecent as any).id,
             order_number: (paidRecent as any).order_number,
+            profit: null,
             already_paid: true,
-          });
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
       }
 
