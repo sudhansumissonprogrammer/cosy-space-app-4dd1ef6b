@@ -1803,6 +1803,7 @@ export default function CheckoutV2Page() {
     paymentMethodHint: string,
     paymentTypeOverride?: "full" | "partial",
     attempt = 0,
+    userInitiated = false,
   ): Promise<PendingOrder> => {
     const orderNotes = appliedCoupon
       ? `Coupon: ${appliedCoupon.code} (-${formatPrice(couponDiscount, currency)})`
