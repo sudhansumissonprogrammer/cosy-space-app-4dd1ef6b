@@ -565,6 +565,8 @@ export default function CheckoutPhoneStep({
               <span className="text-muted-foreground">|</span>
               <input
                 id="checkout-phone-input"
+                name="tel-national"
+                autoComplete="tel-national"
                 type="tel"
                 inputMode="numeric"
                 maxLength={10}
@@ -580,7 +582,6 @@ export default function CheckoutPhoneStep({
                 aria-invalid={!!inlineError}
                 aria-describedby={inlineError ? "checkout-phone-error" : undefined}
                 className="flex-1 bg-transparent outline-none text-[14px]"
-                autoComplete="tel-national"
               />
             </div>
             {inlineError && (

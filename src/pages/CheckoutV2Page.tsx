@@ -5114,9 +5114,17 @@ export default function CheckoutV2Page() {
                 </p>
 
 
+                <form
+                  onSubmit={(e) => e.preventDefault()}
+                  autoComplete="on"
+                  className="space-y-2.5"
+                >
                 <div>
-                  <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
+                  <Label htmlFor="ck-name" className="text-[12px] text-muted-foreground">Full Name *</Label>
                   <Input
+                    id="ck-name"
+                    name="name"
+                    autoComplete="name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     data-field="full_name"
@@ -5129,9 +5137,12 @@ export default function CheckoutV2Page() {
                 </div>
 
                 <div>
-                  <Label className="text-[12px] text-muted-foreground">Pincode *</Label>
+                  <Label htmlFor="ck-postal" className="text-[12px] text-muted-foreground">Pincode *</Label>
                   <div className="relative">
                     <Input
+                      id="ck-postal"
+                      name="postal-code"
+                      autoComplete="postal-code"
                       value={pincode}
                       onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       data-field="pincode"
@@ -5154,8 +5165,11 @@ export default function CheckoutV2Page() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <Label className="text-[12px] text-muted-foreground">City *</Label>
+                    <Label htmlFor="ck-city" className="text-[12px] text-muted-foreground">City *</Label>
                     <Input
+                      id="ck-city"
+                      name="city"
+                      autoComplete="address-level2"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       data-field="city"
@@ -5166,8 +5180,11 @@ export default function CheckoutV2Page() {
                     )}
                   </div>
                   <div>
-                    <Label className="text-[12px] text-muted-foreground">State *</Label>
+                    <Label htmlFor="ck-state" className="text-[12px] text-muted-foreground">State *</Label>
                     <Input
+                      id="ck-state"
+                      name="state"
+                      autoComplete="address-level1"
                       value={state}
                       onChange={(e) => setState(e.target.value)}
                       data-field="state"
@@ -5181,8 +5198,11 @@ export default function CheckoutV2Page() {
 
 
                 <div>
-                  <Label className="text-[12px] text-muted-foreground">Complete Address *</Label>
+                  <Label htmlFor="ck-street" className="text-[12px] text-muted-foreground">Complete Address *</Label>
                   <Input
+                    id="ck-street"
+                    name="address-line1"
+                    autoComplete="street-address"
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
                     data-field="street"
@@ -5193,6 +5213,7 @@ export default function CheckoutV2Page() {
                     <p className="mt-1 text-[12px] text-red-600">Enter Complete Address</p>
                   )}
                 </div>
+                </form>
 
 
 
@@ -5804,14 +5825,14 @@ export default function CheckoutV2Page() {
                 <div className="px-5 pt-5 pb-2 text-[16px] font-semibold">Add Delivery Address</div>
                 <div className="min-h-0 flex-1 px-4 pb-4 space-y-2.5 overflow-y-auto">
                   <div className="grid grid-cols-2 gap-2">
-                    <Input placeholder="Full name *" value={newAddr.full_name} onChange={(e) => setNewAddr({ ...newAddr, full_name: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
-                    <Input placeholder="Phone *" value={newAddr.phone} onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })} inputMode="numeric" maxLength={10} className="h-11 rounded-lg border-[#ECECEC]" />
+                    <Input name="name" autoComplete="name" placeholder="Full name *" value={newAddr.full_name} onChange={(e) => setNewAddr({ ...newAddr, full_name: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
+                    <Input name="tel-national" autoComplete="tel-national" type="tel" placeholder="Phone *" value={newAddr.phone} onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })} inputMode="numeric" maxLength={10} className="h-11 rounded-lg border-[#ECECEC]" />
                   </div>
-                  <Input placeholder="Flat, House no., Street, Area *" value={newAddr.street_address} onChange={(e) => setNewAddr({ ...newAddr, street_address: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
+                  <Input name="address-line1" autoComplete="street-address" placeholder="Flat, House no., Street, Area *" value={newAddr.street_address} onChange={(e) => setNewAddr({ ...newAddr, street_address: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
                   <div className="grid grid-cols-3 gap-2">
-                    <Input placeholder="Pincode *" value={newAddr.pincode} onChange={(e) => setNewAddr({ ...newAddr, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })} inputMode="numeric" className="h-11 rounded-lg border-[#ECECEC]" />
-                    <Input placeholder="City *" value={newAddr.city} onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
-                    <Input placeholder="State *" value={newAddr.state} onChange={(e) => setNewAddr({ ...newAddr, state: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
+                    <Input name="postal-code" autoComplete="postal-code" placeholder="Pincode *" value={newAddr.pincode} onChange={(e) => setNewAddr({ ...newAddr, pincode: e.target.value.replace(/\D/g, "").slice(0, 6) })} inputMode="numeric" className="h-11 rounded-lg border-[#ECECEC]" />
+                    <Input name="city" autoComplete="address-level2" placeholder="City *" value={newAddr.city} onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
+                    <Input name="state" autoComplete="address-level1" placeholder="State *" value={newAddr.state} onChange={(e) => setNewAddr({ ...newAddr, state: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
                   </div>
                   <Input placeholder="Label (Home / Work)" value={newAddr.label} onChange={(e) => setNewAddr({ ...newAddr, label: e.target.value })} className="h-11 rounded-lg border-[#ECECEC]" />
                   <div className="flex gap-2 pt-1">
