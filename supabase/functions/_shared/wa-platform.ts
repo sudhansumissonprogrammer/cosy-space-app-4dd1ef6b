@@ -271,14 +271,16 @@ export async function hasApprovedTemplates(admin: any): Promise<boolean> {
 // 🔁 RECOVERY DRIP SEQUENCE (abandoned cart / pending / cancelled orders)
 // A lead that hasn't purchased gets EXACTLY 3 recovery messages:
 //   step 1 → 30 min after the drop-off   (handled by cron min-age)
-//   step 2 → 5 hours after step 1
-//   step 3 → 24 hours after step 2
+//   step 2 → 5 hours after step 1        (~5.5h after drop-off)
+//   step 3 → 24 hours after step 1       (= 19h after step 2)
 // After step 3 the lead is done. The sender also applies the platform-wide,
 // cross-store ceiling of 3 total marketing attempts per phone per rolling week.
 // ══════════════════════════════════════════════════════════════════════
 export const RECOVERY_MESSAGE_TYPES = ["abandoned_cart"];
-// +5min buffer on step 3 so it lands just outside the rolling 24h window.
-export const DRIP_GAPS_MS = [0, 5 * 60 * 60 * 1000, 24 * 60 * 60 * 1000 + 5 * 60 * 1000];
+// Gaps are measured from the PREVIOUS delivered step.
+// step 3 = 19h05m after step 2 → lands 24h05m after step 1, i.e. just outside
+// the rolling 24h window so the DRIP_MAX_PER_24H guard still passes.
+export const DRIP_GAPS_MS = [0, 5 * 60 * 60 * 1000, 19 * 60 * 60 * 1000 + 5 * 60 * 1000];
 export const DRIP_MAX_STEPS = 3;
 // Absolute ceiling: max 2 messages to one number in any rolling 24h window.
 export const DRIP_MAX_PER_24H = 2;
