@@ -5115,8 +5115,11 @@ export default function CheckoutV2Page() {
 
 
                 <div>
-                  <Label className="text-[12px] text-muted-foreground">Full Name *</Label>
+                  <Label htmlFor="ck-name" className="text-[12px] text-muted-foreground">Full Name *</Label>
                   <Input
+                    id="ck-name"
+                    name="name"
+                    autoComplete="name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     data-field="full_name"
@@ -5129,9 +5132,12 @@ export default function CheckoutV2Page() {
                 </div>
 
                 <div>
-                  <Label className="text-[12px] text-muted-foreground">Pincode *</Label>
+                  <Label htmlFor="ck-postal" className="text-[12px] text-muted-foreground">Pincode *</Label>
                   <div className="relative">
                     <Input
+                      id="ck-postal"
+                      name="postal-code"
+                      autoComplete="postal-code"
                       value={pincode}
                       onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       data-field="pincode"
@@ -5154,8 +5160,11 @@ export default function CheckoutV2Page() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <Label className="text-[12px] text-muted-foreground">City *</Label>
+                    <Label htmlFor="ck-city" className="text-[12px] text-muted-foreground">City *</Label>
                     <Input
+                      id="ck-city"
+                      name="city"
+                      autoComplete="address-level2"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       data-field="city"
@@ -5166,8 +5175,11 @@ export default function CheckoutV2Page() {
                     )}
                   </div>
                   <div>
-                    <Label className="text-[12px] text-muted-foreground">State *</Label>
+                    <Label htmlFor="ck-state" className="text-[12px] text-muted-foreground">State *</Label>
                     <Input
+                      id="ck-state"
+                      name="state"
+                      autoComplete="address-level1"
                       value={state}
                       onChange={(e) => setState(e.target.value)}
                       data-field="state"
@@ -5181,8 +5193,11 @@ export default function CheckoutV2Page() {
 
 
                 <div>
-                  <Label className="text-[12px] text-muted-foreground">Complete Address *</Label>
+                  <Label htmlFor="ck-street" className="text-[12px] text-muted-foreground">Complete Address *</Label>
                   <Input
+                    id="ck-street"
+                    name="address-line1"
+                    autoComplete="street-address"
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
                     data-field="street"
