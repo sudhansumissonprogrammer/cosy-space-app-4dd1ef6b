@@ -1803,6 +1803,7 @@ export default function CheckoutV2Page() {
     paymentMethodHint: string,
     paymentTypeOverride?: "full" | "partial",
     attempt = 0,
+    userInitiated = false,
   ): Promise<PendingOrder> => {
     const orderNotes = appliedCoupon
       ? `Coupon: ${appliedCoupon.code} (-${formatPrice(couponDiscount, currency)})`
@@ -1840,18 +1841,31 @@ export default function CheckoutV2Page() {
         visitor_id: (() => { try { return getVisitorId(); } catch { return null; } })(),
         session_id: (() => { try { return getOrCreateSessionId(); } catch { return null; } })(),
         attribution: buildAttribution(),
+        user_initiated: userInitiated,
       },
     });
     if (error) throw new Error(error.message);
-    const result = data as { order_id?: string; order_number?: string; error?: string; token_consumed?: boolean } | null;
-    // The token this tab is holding already belongs to a PAID/confirmed order
-    // (shopper bought something, then started a second order in the same tab).
-    // Rotate to a fresh idempotency key and place the new order for real,
-    // instead of silently reusing the old paid row (which surfaced as
-    // "UPI apps unavailable" / already_paid on the second checkout).
+    const result = data as { order_id?: string; order_number?: string; error?: string; token_consumed?: boolean; already_paid?: boolean } | null;
+    // Server backstop: this shopper already has a paid order from this session
+    // and the request was an automatic re-mint. Do not surface an error, and do
+    // not treat it as a new order — just stop.
+    if (result?.already_paid && !userInitiated) {
+      throw new Error("checkout_already_completed");
+    }
+    // The token this tab is holding already belongs to a PAID/confirmed order.
+    // Two very different situations produce this:
+    //  (a) the shopper genuinely started a SECOND checkout in the same tab
+    //      (success screen → browsed another product → tapped Buy). Here we must
+    //      rotate to a fresh idempotency key and place the new order for real.
+    //  (b) a stale AUTOMATIC re-mint fired right after payment succeeded. Here
+    //      rotating would silently create the duplicate "Pending" row we saw
+    //      1–2 minutes after every partially-paid order. Abort instead.
     if (result?.token_consumed && attempt === 0) {
+      if (!userInitiated || orderPlacedRef.current) {
+        throw new Error("checkout_already_completed");
+      }
       rotateCheckoutToken();
-      return placeOrderRow(paymentMethodHint, paymentTypeOverride, 1);
+      return placeOrderRow(paymentMethodHint, paymentTypeOverride, 1, true);
     }
     if (!result?.order_id) throw new Error(result?.error || "Failed to place order");
     return { id: result.order_id, number: result.order_number || null };
@@ -2170,6 +2184,12 @@ export default function CheckoutV2Page() {
   };
 
   const [orderPlaced, setOrderPlaced] = useState(false);
+  /** Synchronous mirror of `orderPlaced`. React state updates are async, so a
+   *  mint that was already scheduled (coalesce timer / queueMicrotask / in-flight
+   *  promise) could still run AFTER payment succeeded, hit `token_consumed`,
+   *  rotate the token and create a duplicate pending order. This ref lets every
+   *  automatic path bail out the instant the payment is confirmed. */
+  const orderPlacedRef = useRef(false);
 
   // ─── Exit-intent save sheet ─────────────────────────────────────────────
   // Fires at most once per session when a shopper tries to abandon checkout:
@@ -2330,6 +2350,11 @@ export default function CheckoutV2Page() {
   const finishSuccess = (paidOrderId?: string | null) => {
     const finalOrderId = paidOrderId || orderId;
     if (!finalOrderId) return;
+    // Freeze every automatic order-minting path SYNCHRONOUSLY. Any deferred
+    // re-mint (2.5s coalesce timer, queued microtask, in-flight promise) that
+    // lands after this point must not create a second order row.
+    orderPlacedRef.current = true;
+    remintAfterCurrentOrderRef.current = false;
     clearWaiting();
     try {
       sessionStorage.removeItem(`payu_pending_${store.id}`);
@@ -3234,12 +3259,23 @@ export default function CheckoutV2Page() {
     } catch { /* noop */ }
   };
 
-  const createOrderIfNeeded = async (paymentMethodHint: string): Promise<PendingOrder> => {
+  const createOrderIfNeeded = async (
+    paymentMethodHint: string,
+    opts?: { userInitiated?: boolean },
+  ): Promise<PendingOrder> => {
+    const userInitiated = opts?.userInitiated === true;
+    // Nothing automatic may mint an order once payment is confirmed.
+    if (orderPlacedRef.current && !userInitiated) {
+      throw new Error("checkout_already_completed");
+    }
     // A previous order in THIS tab already consumed the idempotency token
     // (success screen → shopper browsed to another product → new checkout).
     // Start clean, otherwise place-order would return the old paid order and
     // the UPI tiles would fail with already_paid.
     if (tokenRetiredRef.current) {
+      if (!userInitiated) throw new Error("checkout_already_completed");
+      // Genuine new checkout in the same tab — unfreeze and start fresh.
+      orderPlacedRef.current = false;
       rotateCheckoutToken();
       orderIdRef.current = null;
       orderNumberRef.current = null;
@@ -3247,6 +3283,7 @@ export default function CheckoutV2Page() {
       setOrderId(null);
       setOrderNumber(null);
     }
+
 
     // NOTE: no duplicate-order block here. A shopper may re-order the exact
     // same product again immediately — we only reuse the in-flight order row
@@ -3284,7 +3321,7 @@ export default function CheckoutV2Page() {
       setOrderId(null);
       setOrderNumber(null);
     }
-    const created = await placeOrderRow(paymentMethodHint, resolvedType);
+    const created = await placeOrderRow(paymentMethodHint, resolvedType, 0, userInitiated);
     orderIdRef.current = created.id;
     orderNumberRef.current = created.number;
     orderSnapshotRef.current = effectiveSnapshot;
@@ -3297,6 +3334,14 @@ export default function CheckoutV2Page() {
   // ─── UPI intent-based flow (mobile-first) ───────────────────────────────
   const createOrderAndIntents = async (opts?: { userInitiated?: boolean }): Promise<void> => {
     const userInitiated = opts?.userInitiated === true;
+
+    // HARD STOP after a confirmed payment. Deferred/queued automatic mints that
+    // land post-success were creating a duplicate pending order (same phone,
+    // same product, ~1 min later). A genuine new checkout always comes through
+    // an explicit tap (userInitiated) which unfreezes this in createOrderIfNeeded.
+    if (orderPlacedRef.current && !userInitiated) return;
+
+
 
     // PAYMENT-FIRST guard. `showPayment` is revealed as soon as the phone gate
     // clears, so every automatic re-mint (coupon resolve, config load, snapshot
@@ -3393,7 +3438,7 @@ export default function CheckoutV2Page() {
           toast.error("No online payment gateway configured");
           return;
         }
-        const order = await createOrderIfNeeded(activeGateway);
+        const order = await createOrderIfNeeded(activeGateway, { userInitiated });
         setShowPayment(true);
         try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { step: "continue_to_pay", dev: deviceTag() } as any }); } catch { /* noop */ }
 
@@ -3467,6 +3512,9 @@ export default function CheckoutV2Page() {
         }
       } catch (e: any) {
         const rawErrMsg = String(e?.message || "");
+        // Benign: a stale automatic mint raced a confirmed payment. Stay silent
+        // and leave the success screen alone — no toast, no failed UPI tiles.
+        if (rawErrMsg === "checkout_already_completed") return;
         const rawMsg = rawErrMsg === "recent_order_guard"
           ? "You just placed this same order a moment ago. Please check My Orders."
           : rawErrMsg;
@@ -3515,7 +3563,7 @@ export default function CheckoutV2Page() {
       const forceRemint = discardedMintRef.current;
       discardedMintRef.current = false;
       if (remintAfterCurrentOrderRef.current && !confirmingPayment && !orderPlaced &&
-          (forceRemint || !amountStillMatches)) {
+          !orderPlacedRef.current && (forceRemint || !amountStillMatches)) {
         remintAfterCurrentOrderRef.current = false;
         // Reset the rapid-fire coalescer so this recovery mint isn't swallowed
         // by the 2.5s throttle it would otherwise land inside.
@@ -4025,7 +4073,7 @@ export default function CheckoutV2Page() {
     }
     setOpeningGateway(true);
     try {
-      const order = await createOrderIfNeeded(activeGateway);
+      const order = await createOrderIfNeeded(activeGateway, { userInitiated: true });
       setShowPayment(true);
       try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { method: activeGateway, dev: deviceTag() } as any }); } catch { /* noop */ }
       if (activeGateway === "razorpay") await openRazorpay(order);
@@ -4091,7 +4139,7 @@ export default function CheckoutV2Page() {
     setPlacingCod(true);
     try {
       saveExpressInfo();
-      const order = await createOrderIfNeeded("cod");
+      const order = await createOrderIfNeeded("cod", { userInitiated: true });
       const { data, error } = await supabase.functions.invoke("checkout-v2-cod", {
         body: { store_id: store.id, order_id: order.id },
       });

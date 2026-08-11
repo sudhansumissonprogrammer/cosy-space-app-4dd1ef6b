@@ -92,6 +92,7 @@ Deno.serve(async (req) => {
       visitor_id,
       session_id,
       attribution,
+      user_initiated,
     }: {
       store_id: string;
       order: {
@@ -139,6 +140,10 @@ Deno.serve(async (req) => {
       // Attribution snapshot: last-touch UTM + ad-click IDs (fbclid/gclid/...)
       // sent by the browser so we can tie revenue back to campaigns and ads.
       attribution?: Record<string, string | null> | null;
+      // True only when the shopper explicitly tapped Pay / Place order. Automatic
+      // client re-mints send false, which lets us reject stale post-payment
+      // retries that would otherwise create a duplicate pending order.
+      user_initiated?: boolean;
     } = await req.json();
 
 
@@ -1000,6 +1005,39 @@ Deno.serve(async (req) => {
         }
       }
     } else {
+      // ─── Post-payment duplicate backstop ──────────────────────────────
+      // A stale AUTOMATIC re-mint (never a real tap) arriving right after the
+      // shopper already paid used to rotate the checkout_token and INSERT a
+      // second "Pending" row 15-60s after a partially_paid order. If this
+      // request was not explicitly initiated by the shopper and the same
+      // session/phone already has a paid order in the last 5 minutes, echo
+      // that order back instead of creating a new one. Explicit taps
+      // (user_initiated) are never blocked, so genuine repeat purchases work.
+      if (user_initiated !== true && (session_id || visitor_id) && order.customer_phone) {
+        const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+        let pq = supabase
+          .from("orders")
+          .select("id, order_number")
+          .eq("store_id", store_id)
+          .eq("customer_phone", order.customer_phone)
+          .in("status", ["paid", "partially_paid", "confirmed", "processing"])
+          .gte("created_at", fiveMinAgo)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (session_id) pq = pq.eq("session_id", session_id);
+        else if (visitor_id) pq = pq.eq("visitor_id", visitor_id);
+        const { data: paidRecent } = await pq.maybeSingle();
+        if (paidRecent) {
+          return new Response(JSON.stringify({
+            success: true,
+            order_id: (paidRecent as any).id,
+            order_number: (paidRecent as any).order_number,
+            profit: null,
+            already_paid: true,
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+      }
+
       // ─── Session-level dedup fallback ─────────────────────────────────
       // Some in-app browsers (Instagram/FB WebView, Android Chrome tabs
       // after PayU redirect) blow away React state when the shopper comes
