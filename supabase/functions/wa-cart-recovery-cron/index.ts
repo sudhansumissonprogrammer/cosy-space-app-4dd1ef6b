@@ -71,8 +71,8 @@ Deno.serve(async (req) => {
   const minAgeMs = cfg!.wa_min_cart_age_minutes * 60 * 1000;
   const maxAgeMs = cfg!.wa_max_cart_age_hours * 60 * 60 * 1000;
   const beforeIso = new Date(now - minAgeMs).toISOString();
-  // 🔁 Drip: follow-ups land at +5h and +29h, so the scan window must cover
-  // the whole 3-message sequence, not just wa_max_cart_age_hours.
+  // 🔁 Drip: follow-ups land at +5h and +24h (from step 1), so the scan window
+  // must cover the whole 3-message sequence, not just wa_max_cart_age_hours.
   const scanWindowMs = Math.max(maxAgeMs, DRIP_WINDOW_MS);
   const afterIso = new Date(now - scanWindowMs).toISOString();
 
