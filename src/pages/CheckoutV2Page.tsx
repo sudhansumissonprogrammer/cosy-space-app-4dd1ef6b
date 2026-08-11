@@ -2336,6 +2336,11 @@ export default function CheckoutV2Page() {
   const finishSuccess = (paidOrderId?: string | null) => {
     const finalOrderId = paidOrderId || orderId;
     if (!finalOrderId) return;
+    // Freeze every automatic order-minting path SYNCHRONOUSLY. Any deferred
+    // re-mint (2.5s coalesce timer, queued microtask, in-flight promise) that
+    // lands after this point must not create a second order row.
+    orderPlacedRef.current = true;
+    remintAfterCurrentOrderRef.current = false;
     clearWaiting();
     try {
       sessionStorage.removeItem(`payu_pending_${store.id}`);
