@@ -3314,7 +3314,7 @@ export default function CheckoutV2Page() {
       setOrderId(null);
       setOrderNumber(null);
     }
-    const created = await placeOrderRow(paymentMethodHint, resolvedType);
+    const created = await placeOrderRow(paymentMethodHint, resolvedType, 0, userInitiated);
     orderIdRef.current = created.id;
     orderNumberRef.current = created.number;
     orderSnapshotRef.current = effectiveSnapshot;
