@@ -4121,7 +4121,7 @@ export default function CheckoutV2Page() {
     setPlacingCod(true);
     try {
       saveExpressInfo();
-      const order = await createOrderIfNeeded("cod");
+      const order = await createOrderIfNeeded("cod", { userInitiated: true });
       const { data, error } = await supabase.functions.invoke("checkout-v2-cod", {
         body: { store_id: store.id, order_id: order.id },
       });
