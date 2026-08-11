@@ -1841,10 +1841,17 @@ export default function CheckoutV2Page() {
         visitor_id: (() => { try { return getVisitorId(); } catch { return null; } })(),
         session_id: (() => { try { return getOrCreateSessionId(); } catch { return null; } })(),
         attribution: buildAttribution(),
+        user_initiated: userInitiated,
       },
     });
     if (error) throw new Error(error.message);
-    const result = data as { order_id?: string; order_number?: string; error?: string; token_consumed?: boolean } | null;
+    const result = data as { order_id?: string; order_number?: string; error?: string; token_consumed?: boolean; already_paid?: boolean } | null;
+    // Server backstop: this shopper already has a paid order from this session
+    // and the request was an automatic re-mint. Do not surface an error, and do
+    // not treat it as a new order — just stop.
+    if (result?.already_paid && !userInitiated) {
+      throw new Error("checkout_already_completed");
+    }
     // The token this tab is holding already belongs to a PAID/confirmed order.
     // Two very different situations produce this:
     //  (a) the shopper genuinely started a SECOND checkout in the same tab
