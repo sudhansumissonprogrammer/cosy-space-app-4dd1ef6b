@@ -3328,6 +3328,14 @@ export default function CheckoutV2Page() {
   const createOrderAndIntents = async (opts?: { userInitiated?: boolean }): Promise<void> => {
     const userInitiated = opts?.userInitiated === true;
 
+    // HARD STOP after a confirmed payment. Deferred/queued automatic mints that
+    // land post-success were creating a duplicate pending order (same phone,
+    // same product, ~1 min later). A genuine new checkout always comes through
+    // an explicit tap (userInitiated) which unfreezes this in createOrderIfNeeded.
+    if (orderPlacedRef.current && !userInitiated) return;
+
+
+
     // PAYMENT-FIRST guard. `showPayment` is revealed as soon as the phone gate
     // clears, so every automatic re-mint (coupon resolve, config load, snapshot
     // change) used to run validateAddress() against an empty form and fire a red
