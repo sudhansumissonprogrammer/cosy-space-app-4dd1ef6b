@@ -443,7 +443,7 @@ export async function recoveryDripDecision(admin: any, phone: string, opts: { ig
   if (done >= DRIP_MAX_STEPS) return { allow: false, step: done, reason: "drip_complete" };
 
   // 🚫 HARD RULE: never more than 2 messages to the same number in any rolling
-  // 24h window. The drip schedule (0h → +5h → +29h) already respects this, but
+  // 24h window. The drip schedule (0h → +5h → +24h05m) already respects this,
   // this guard is absolute — retries, re-runs or schedule edits can't break it.
   const cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
   let last24h = times.filter((t) => t >= cutoff24h).length;
