@@ -2170,6 +2170,12 @@ export default function CheckoutV2Page() {
   };
 
   const [orderPlaced, setOrderPlaced] = useState(false);
+  /** Synchronous mirror of `orderPlaced`. React state updates are async, so a
+   *  mint that was already scheduled (coalesce timer / queueMicrotask / in-flight
+   *  promise) could still run AFTER payment succeeded, hit `token_consumed`,
+   *  rotate the token and create a duplicate pending order. This ref lets every
+   *  automatic path bail out the instant the payment is confirmed. */
+  const orderPlacedRef = useRef(false);
 
   // ─── Exit-intent save sheet ─────────────────────────────────────────────
   // Fires at most once per session when a shopper tries to abandon checkout:
