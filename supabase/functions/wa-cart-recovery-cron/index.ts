@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
   const minAgeMs = cfg!.wa_min_cart_age_minutes * 60 * 1000;
   const maxAgeMs = cfg!.wa_max_cart_age_hours * 60 * 60 * 1000;
   const beforeIso = new Date(now - minAgeMs).toISOString();
-  // 🔁 Drip: follow-ups land at +5h and +24h (from step 1), so the scan window
+  // 🔁 Drip: follow-up lands at +12h (from step 1), so the scan window
   // must cover the whole 3-message sequence, not just wa_max_cart_age_hours.
   const scanWindowMs = Math.max(maxAgeMs, DRIP_WINDOW_MS);
   const afterIso = new Date(now - scanWindowMs).toISOString();
@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
     .lte("created_at", beforeIso)
     .gte("created_at", afterIso)
     // Newest first + higher ceiling: with 300+ live carts in the 72h window the
-    // old unordered limit(200) starved older leads waiting for step 2 / step 3.
+    // old unordered limit(200) starved older leads waiting for step 2.
     .order("created_at", { ascending: false })
     .limit(600);
   if (requireConsent) q = q.eq("wa_marketing_consent", true);
@@ -190,8 +190,8 @@ Deno.serve(async (req) => {
     if (!phone) { skipped++; continue; }
     if (handledPhones.has(phone)) { phoneCapped++; continue; }
 
-    // 🔁 DRIP GATE: step 1 now (cart is already ≥30 min old), step 2 at +5h,
-    // step 3 at +24h after step 2. Never a 4th message.
+    // 🔁 DRIP GATE: step 1 now (cart is already ≥30 min old), step 2 at +12h.
+    // Never a 3rd message.
     const drip = await recoveryDripDecision(admin, phone);
     if (!drip.allow) {
       await admin.from("abandoned_carts")
@@ -484,7 +484,7 @@ Deno.serve(async (req) => {
       const dropBuyer = await loadRecentBuyer(admin, (o as any).customer_phone);
       if (dropBuyer.blocks(dropProductIds).blocked) { payDropCompleted++; continue; }
 
-      // 🔁 Same 3-step drip: +30min, +5h, +24h. Shared with the cart lane so a
+      // 🔁 Same 2-step drip: +30min, +12h. Shared with the cart lane so a
       // lead present in both places still gets exactly one message per step.
       const dripDrop = await recoveryDripDecision(admin, phone);
       if (!dripDrop.allow) { payDropCapped++; continue; }

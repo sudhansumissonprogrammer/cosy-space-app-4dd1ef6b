@@ -278,10 +278,9 @@ export async function hasApprovedTemplates(admin: any): Promise<boolean> {
 // ══════════════════════════════════════════════════════════════════════
 export const RECOVERY_MESSAGE_TYPES = ["abandoned_cart"];
 // Gaps are measured from the PREVIOUS delivered step.
-// step 3 = 19h05m after step 2 → lands 24h05m after step 1, i.e. just outside
-// the rolling 24h window so the DRIP_MAX_PER_24H guard still passes.
-export const DRIP_GAPS_MS = [0, 5 * 60 * 60 * 1000, 19 * 60 * 60 * 1000 + 5 * 60 * 1000];
-export const DRIP_MAX_STEPS = 3;
+// Two-step drip only: step 1 at +30min (cart age), step 2 at +12h after step 1.
+export const DRIP_GAPS_MS = [0, 12 * 60 * 60 * 1000];
+export const DRIP_MAX_STEPS = 2;
 // Absolute ceiling: max 2 messages to one number in any rolling 24h window.
 export const DRIP_MAX_PER_24H = 2;
 export const DRIP_WINDOW_MS = 72 * 60 * 60 * 1000;
