@@ -92,6 +92,7 @@ Deno.serve(async (req) => {
       visitor_id,
       session_id,
       attribution,
+      user_initiated,
     }: {
       store_id: string;
       order: {
