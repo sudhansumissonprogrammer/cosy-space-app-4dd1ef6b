@@ -3423,7 +3423,7 @@ export default function CheckoutV2Page() {
           toast.error("No online payment gateway configured");
           return;
         }
-        const order = await createOrderIfNeeded(activeGateway);
+        const order = await createOrderIfNeeded(activeGateway, { userInitiated });
         setShowPayment(true);
         try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { step: "continue_to_pay", dev: deviceTag() } as any }); } catch { /* noop */ }
 
