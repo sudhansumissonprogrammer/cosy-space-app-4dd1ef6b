@@ -361,27 +361,37 @@ async function evaluate(admin: any): Promise<Signal[]> {
     });
   } catch (e) { console.error("signal upi_launch_failures", (e as Error).message); }
 
-  // 24) Pay tap blocked before the gateway — address gate / minting / retap loops.
+  // 24) Pay tap blocked before the gateway — measured PER SESSION.
+  // A single shopper legitimately produces `address_gate` / `queued_*` taps
+  // before the real launch (the tap is remembered and auto-fires the instant
+  // the order/intent is ready). Counting those raw taps as failures made this
+  // alert fire while payments were completing normally. Only a session that
+  // tapped pay and NEVER reached a payment app is a genuine block.
   try {
     const { data: rows } = await admin
       .from("storefront_events")
-      .select("metadata")
+      .select("session_id, metadata")
       .gte("created_at", iso(60))
       .eq("event_name", "pay_click")
       .limit(4000);
-    const list = ((rows as any[]) || []);
-    const tagged = list.filter((r) => !!r?.metadata?.outcome);
-    const blocked = tagged.filter((r) =>
-      /address_gate|queued_|retap_prompt|failed/i.test(String(r?.metadata?.outcome || ""))).length;
-    const ratio = tagged.length ? blocked / tagged.length : 0;
-    const bad = tagged.length >= 12 && ratio >= 0.5;
+    const list = ((rows as any[]) || []).filter((r) => !!r?.metadata?.outcome && !!r?.session_id);
+    const bySession = new Map<string, boolean>();
+    for (const r of list) {
+      const launched = /^launch/i.test(String(r.metadata.outcome));
+      bySession.set(r.session_id, (bySession.get(r.session_id) || false) || launched);
+    }
+    const sessions = bySession.size;
+    const blocked = [...bySession.values()].filter((v) => !v).length;
+    const ratio = sessions ? blocked / sessions : 0;
+    const bad = sessions >= 12 && ratio >= 0.6;
     out.push({
       key: "signal:pay_tap_blocked",
       label: "Pay button reaching the gateway",
       ok: !bad,
-      detail: `${blocked}/${tagged.length} pay taps did not reach a payment app in 60 min (${Math.round(ratio * 100)}%, alert above 50%)`,
+      detail: `${blocked}/${sessions} shoppers tapped pay but never reached a payment app in 60 min (${Math.round(ratio * 100)}%, alert above 60%)`,
     });
   } catch (e) { console.error("signal pay_tap_blocked", (e as Error).message); }
+
 
   // 25) Pay-click blackout — shoppers are tapping pay but nothing is completing.
   try {
