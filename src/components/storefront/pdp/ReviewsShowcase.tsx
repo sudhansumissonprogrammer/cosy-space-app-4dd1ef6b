@@ -133,7 +133,10 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
 
         <button
           type="button"
+          onPointerEnter={() => { importWriteReviewDialog().catch(() => {}); }}
+          onTouchStart={() => { importWriteReviewDialog().catch(() => {}); }}
           onClick={() => setWriting(true)}
+
           className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-foreground py-3 text-sm font-bold uppercase tracking-wide text-foreground transition-colors hover:bg-accent active:scale-[0.99]"
         >
           <PenLine className="h-4 w-4" /> Write a review
