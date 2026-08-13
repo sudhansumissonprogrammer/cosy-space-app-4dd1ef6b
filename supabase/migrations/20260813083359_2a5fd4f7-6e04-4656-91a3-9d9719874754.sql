@@ -1,0 +1,1 @@
+DELETE FROM public.product_reviews WHERE customer_name = '__test_delete_me';
