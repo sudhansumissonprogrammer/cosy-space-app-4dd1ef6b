@@ -53,6 +53,7 @@ export default function HeroVideo({
   aspectRatio,
   mediaClassName = "w-full h-auto block object-cover",
   maxHeight,
+  linkTo,
   overlay,
 }: HeroVideoProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
