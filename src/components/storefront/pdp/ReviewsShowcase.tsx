@@ -145,7 +145,14 @@ export default function ReviewsShowcase({ productId, storeId, storeSlug, product
 
 
       {writing && (
-        <Suspense fallback={null}>
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-[2147483100] flex items-center justify-center bg-foreground/60">
+              <span className="h-8 w-8 animate-spin rounded-full border-2 border-background border-t-transparent" />
+            </div>
+          }
+        >
+
           <WriteReviewDialog
             productId={productId}
             storeId={storeId}
