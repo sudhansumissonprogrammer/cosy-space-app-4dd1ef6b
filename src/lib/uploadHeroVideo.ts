@@ -162,7 +162,7 @@ export async function uploadHeroVideo(
   }
 
   const maxDim = MAX_DIMENSION[opts.target];
-  const posterMaxWidth = opts.target === "mobile" ? 800 : 1200;
+  const posterMaxWidth = opts.target === "mobile" ? 1080 : 1600;
 
   const posterBlob = await generatePoster(file, posterMaxWidth);
   opts.onProgress?.(0.1);
