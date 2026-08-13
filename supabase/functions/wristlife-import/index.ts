@@ -20,7 +20,8 @@ function decode(s: string): string {
     .replace(/&#8377;/g, "₹")
     .replace(/&ndash;|&#8211;/g, "–")
     .replace(/&mdash;|&#8212;/g, "—")
-    .replace(/&hellip;/g, "…");
+    .replace(/&hellip;/g, "…")
+    .replace(/&#(\d+);/g, (_m, d) => String.fromCharCode(Number(d)));
 }
 
 function htmlToText(h?: string): string {
@@ -34,6 +35,27 @@ function htmlToText(h?: string): string {
   s = decode(s);
   s = s.replace(/[ \t]+/g, " ").replace(/\n\s*\n\s*\n+/g, "\n\n");
   return s.trim();
+}
+
+/**
+ * Pick a reasonably sized hosted variant from the WordPress srcset instead of
+ * the full-size original (often 700KB+). Smallest candidate >= 700w, else the
+ * largest available. Images stay HOTLINKED on wristlife.in — nothing mirrored.
+ */
+function bestSrc(img: any): string | null {
+  const full = img?.src || null;
+  const srcset: string = img?.srcset || "";
+  if (!srcset) return full;
+  const cands = srcset
+    .split(",")
+    .map((part) => part.trim().split(/\s+/))
+    .filter((a) => a.length === 2 && a[1].endsWith("w"))
+    .map((a) => ({ url: a[0], w: parseInt(a[1], 10) }))
+    .filter((c) => c.url && !Number.isNaN(c.w))
+    .sort((a, b) => a.w - b.w);
+  if (!cands.length) return full;
+  const pick = cands.find((c) => c.w >= 700) || cands[cands.length - 1];
+  return pick.url || full;
 }
 
 const money = (c: string | null | undefined) =>
@@ -91,7 +113,7 @@ Deno.serve(async (req) => {
     const catImg: Record<string, string> = {};
     for (const p of products) {
       for (const c of p.categories || []) {
-        if (!catImg[c.slug] && p.images?.[0]?.src) catImg[c.slug] = p.images[0].src;
+        if (!catImg[c.slug] && p.images?.[0]) catImg[c.slug] = bestSrc(p.images[0]) as string;
       }
     }
     const catRows = srcCats
@@ -133,13 +155,13 @@ Deno.serve(async (req) => {
         sku: p.sku || null,
         stock_quantity: p.is_in_stock ? 25 : 0,
         is_active: true,
-        image_url: p.images?.[0]?.src ?? null,
+        image_url: p.images?.[0] ? bestSrc(p.images[0]) : null,
         image_alt: decode(String(p.name)),
         category: p.categories?.[0]?.name ? decode(String(p.categories[0].name)) : null,
         display_order: i,
         source_platform: "woocommerce",
         source_id: String(p.id),
-        _gallery: (p.images || []).slice(0, 8).map((im: any) => im.src).filter(Boolean),
+        _gallery: (p.images || []).slice(0, 8).map((im: any) => bestSrc(im)).filter(Boolean),
       };
     });
 
