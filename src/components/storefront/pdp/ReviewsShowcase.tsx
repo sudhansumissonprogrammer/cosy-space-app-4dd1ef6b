@@ -1,12 +1,14 @@
-import { useMemo, useState, lazy, Suspense } from "react";
+import { useMemo, useState, useEffect, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { storefrontPath } from "@/lib/subdomain";
 import { PenLine, ChevronRight, ArrowRight } from "lucide-react";
 import ReviewCard, { ReviewStars } from "@/components/storefront/reviews/ReviewCard";
 import { useStoreReviews } from "@/hooks/useStoreReviews";
 
-const WriteReviewDialog = lazy(() => import("@/components/storefront/reviews/WriteReviewDialog"));
+const importWriteReviewDialog = () => import("@/components/storefront/reviews/WriteReviewDialog");
+const WriteReviewDialog = lazy(importWriteReviewDialog);
 const ReviewMediaLightbox = lazy(() => import("@/components/storefront/reviews/ReviewMediaLightbox"));
+
 
 interface Props {
   productId: string;
@@ -17,6 +19,19 @@ interface Props {
 
 export default function ReviewsShowcase({ productId, storeId, storeSlug, productName }: Props) {
   const [writing, setWriting] = useState(false);
+
+  // Warm the dialog chunk when the browser is idle so tapping "Write a review"
+  // opens instantly instead of waiting on a cold network fetch.
+  useEffect(() => {
+    const warm = () => { importWriteReviewDialog().catch(() => {}); };
+    const ric = (window as any).requestIdleCallback;
+    const id = ric ? ric(warm, { timeout: 4000 }) : window.setTimeout(warm, 2500);
+    return () => {
+      if (ric && (window as any).cancelIdleCallback) (window as any).cancelIdleCallback(id);
+      else clearTimeout(id as number);
+    };
+  }, []);
+
 
   // Store-wide reviews — shared cache with the gallery rating badge, so this
   // section renders instantly when the badge has already fetched them.

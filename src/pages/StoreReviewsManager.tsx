@@ -19,6 +19,7 @@ import {
   Star,
   Loader2,
   Pencil,
+  Plus,
 } from "lucide-react";
 import EditReviewDialog from "@/components/dashboard/EditReviewDialog";
 
@@ -51,6 +52,8 @@ export default function StoreReviewsManager() {
   const qc = useQueryClient();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editing, setEditing] = useState<ReviewRow | null>(null);
+  const [adding, setAdding] = useState(false);
+
 
   const { data: rows = [], refetch } = useQuery({
     queryKey: ["dashboard-reviews", storeId],
@@ -283,13 +286,19 @@ export default function StoreReviewsManager() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-4 sm:p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Reviews</h1>
-        <p className="text-sm text-muted-foreground">
-          Choose which reviews appear on the product page (up to {MAX_PINNED}), reorder them, hide,
-          or delete.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Reviews</h1>
+          <p className="text-sm text-muted-foreground">
+            Add reviews yourself, choose which appear on the product page (up to {MAX_PINNED}), reorder
+            them, hide, or delete.
+          </p>
+        </div>
+        <Button onClick={() => setAdding(true)} disabled={!storeId}>
+          <Plus className="mr-1 h-4 w-4" /> Add review
+        </Button>
       </div>
+
 
       <section>
         <div className="mb-2 flex items-center justify-between">
@@ -338,6 +347,19 @@ export default function StoreReviewsManager() {
           }}
         />
       )}
+
+      {adding && storeId && (
+        <EditReviewDialog
+          storeId={storeId}
+          review={null}
+          onClose={() => setAdding(false)}
+          onSaved={() => {
+            refetch();
+            invalidate();
+          }}
+        />
+      )}
+
     </div>
   );
 }

@@ -5754,6 +5754,7 @@ export type Database = {
         Args: { _enabled: boolean; _key: string; _store_id: string }
         Returns: boolean
       }
+      store_accepts_reviews: { Args: { _store_id: string }; Returns: boolean }
       store_has_active_coupons: {
         Args: { _store_id: string }
         Returns: boolean
