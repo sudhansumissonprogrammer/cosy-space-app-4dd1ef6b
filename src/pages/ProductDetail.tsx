@@ -742,9 +742,9 @@ export default function ProductDetail() {
         type="button"
         onClick={handleBack}
         aria-label="Back"
-        className="sm:hidden fixed top-3 left-3 z-40 h-10 w-10 flex items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-[0_2px_8px_rgba(0,0,0,0.18)] active:scale-95 transition-transform"
+        className="sm:hidden lg-glass lg-interactive fixed top-3 left-3 z-40 h-10 w-10 flex items-center justify-center rounded-full"
       >
-        <ArrowLeft className="h-5 w-5 text-gray-900" strokeWidth={2.4} />
+        <ArrowLeft className="relative z-10 h-5 w-5" strokeWidth={2.4} style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
       </button>
 
 
@@ -1699,10 +1699,10 @@ function ImageGallery({
           {onShare && (
             <button
               onClick={(e) => { e.stopPropagation(); onShare(); }}
-              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-[0.96]"
+              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full lg-glass-media lg-interactive text-primary-foreground"
               aria-label="Share product"
             >
-              <Share2 className="h-4 w-4" />
+              <Share2 className="relative z-10 h-4 w-4" />
             </button>
           )}
 
@@ -1783,10 +1783,10 @@ function ImageGallery({
           {slides[activeIndex]?.kind !== "video" && (
             <button
               onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
-              className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-[0.96]"
+              className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full lg-glass-media lg-interactive text-primary-foreground"
               aria-label="Enlarge image"
             >
-              <Maximize2 className="h-4 w-4" />
+              <Maximize2 className="relative z-10 h-4 w-4" />
             </button>
           )}
 
@@ -1798,11 +1798,12 @@ function ImageGallery({
                 const el = document.getElementById("pdp-carousels");
                 if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
-              className="absolute bottom-3 left-14 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-md ring-1 ring-black/10 text-black shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-white active:scale-[0.96]"
+              className="absolute bottom-3 left-14 z-10 flex h-9 w-9 items-center justify-center rounded-full lg-glass lg-interactive"
+              style={{ "--lg-tint-strength": "12%", color: "var(--storefront-text, hsl(var(--foreground)))" } as React.CSSProperties}
               aria-label="View similar products"
               title="Similar products"
             >
-              <PdpSimilarProductsIcon className="h-4 w-4" />
+              <PdpSimilarProductsIcon className="relative z-10 h-4 w-4" />
             </button>
           )}
 
@@ -1841,15 +1842,17 @@ function ImageGallery({
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); scrollPrev(); }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-[transform,opacity,colors,box-shadow]"
+                className="absolute left-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full p-1.5 lg-glass transition-shadow"
+                style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="relative z-10 h-4 w-4" />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); scrollNext(); }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-[transform,opacity,colors,box-shadow]"
+                className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full p-1.5 lg-glass transition-shadow"
+                style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="relative z-10 h-4 w-4" />
               </button>
             </>
           )}
