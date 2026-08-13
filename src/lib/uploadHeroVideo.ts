@@ -38,14 +38,19 @@ export interface HeroVideoUploadOptions {
   onProgress?: (pct: number) => void;
 }
 
-/** Long-edge cap per surface. */
-const MAX_DIMENSION: Record<HeroVideoTarget, number> = { mobile: 720, desktop: 1280 };
+/**
+ * Long-edge cap per surface. Kept at native phone/desktop resolution — phones
+ * are 3x DPR, so a 720px hero looked soft. We only cap truly oversized 4K
+ * uploads.
+ */
+const MAX_DIMENSION: Record<HeroVideoTarget, number> = { mobile: 1080, desktop: 1920 };
 /** Hard ceiling on what we accept from the picker. */
 const MAX_INPUT_BYTES = 80 * 1024 * 1024;
-/** Ceiling for uploading an un-re-encoded original (no WebCodecs). */
-const MAX_PASSTHROUGH_BYTES = 8 * 1024 * 1024;
+/** Files at/below this stay byte-identical — no re-encode, zero quality loss. */
+const MAX_PASSTHROUGH_BYTES = 24 * 1024 * 1024;
 /** Hero clips should be short loops. */
 const MAX_DURATION_SEC = 30;
+
 
 function probe(file: File): Promise<{ duration: number; width: number; height: number }> {
   return new Promise((resolve, reject) => {
