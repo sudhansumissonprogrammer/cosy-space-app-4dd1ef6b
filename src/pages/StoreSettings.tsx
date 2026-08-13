@@ -156,6 +156,27 @@ export default function StoreSettings() {
     return result.mainUrl;
   };
 
+  /** Save hero video URLs right away — merchants expect the upload to stick. */
+  const persistHeroVideo = async (
+    target: "mobile" | "desktop",
+    next: { videoUrl: string; posterUrl: string },
+  ) => {
+    if (!storeId) return;
+    const payload =
+      target === "mobile"
+        ? { mobile_hero_video_url: next.videoUrl.trim() || null, mobile_hero_video_poster: next.posterUrl.trim() || null }
+        : { desktop_hero_video_url: next.videoUrl.trim() || null, desktop_hero_video_poster: next.posterUrl.trim() || null };
+    const { error } = await (supabase as any).from("stores").update(payload).eq("id", storeId);
+    if (error) {
+      toast.error("Could not save the video. Press Save Changes to retry.");
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["store", storeId] });
+    queryClient.invalidateQueries({ queryKey: ["my-store"] });
+    toast.success(next.videoUrl ? "Hero video saved" : "Hero video removed");
+  };
+
+
   const updateMutation = useMutation({
     mutationFn: async () => {
       let logoUrl = store?.logo_url || null;
