@@ -64,6 +64,8 @@ export default function StoreSettings() {
   const [heroRemoved, setHeroRemoved] = useState(false);
   const [heroImages, setHeroImages] = useState<string[]>([]);
   const [heroImageFiles, setHeroImageFiles] = useState<File[]>([]);
+  const [mobileHeroVideo, setMobileHeroVideo] = useState({ videoUrl: "", posterUrl: "" });
+  const [desktopHeroVideo, setDesktopHeroVideo] = useState({ videoUrl: "", posterUrl: "" });
   const [bestSellingCarousel, setBestSellingCarousel] = useState(false);
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
