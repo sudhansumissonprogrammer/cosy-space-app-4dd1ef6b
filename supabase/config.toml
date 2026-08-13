@@ -112,3 +112,6 @@ verify_jwt = false
 
 [functions.wristlife-import]
 verify_jwt = false
+
+[functions.woo-site-import]
+verify_jwt = false
