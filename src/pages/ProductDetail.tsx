@@ -1842,15 +1842,17 @@ function ImageGallery({
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); scrollPrev(); }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-[transform,opacity,colors,box-shadow]"
+                className="absolute left-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full p-1.5 lg-glass lg-interactive"
+                style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="relative z-10 h-4 w-4" />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); scrollNext(); }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-[transform,opacity,colors,box-shadow]"
+                className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full p-1.5 lg-glass lg-interactive"
+                style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="relative z-10 h-4 w-4" />
               </button>
             </>
           )}
