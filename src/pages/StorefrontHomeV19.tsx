@@ -14,6 +14,7 @@ import V19ProductCard from "@/components/storefront/v19/V19ProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import MobileHeroCarousel from "@/components/storefront/MobileHeroCarousel";
+import HeroVideo from "@/components/storefront/HeroVideo";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { supabase } from "@/integrations/supabase/client";
 import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
