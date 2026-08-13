@@ -83,16 +83,17 @@ function fitDims(w: number, h: number, maxDim: number) {
 /** Quality-preserving bitrate: high bpp target, never below a safe floor. */
 function pickBitrate(fileBytes: number, durationSec: number, w: number, h: number) {
   const pixels = w * h;
-  // ~0.12 bits per pixel per frame @30fps. For 720x1280 that is ~3.3 Mbps —
-  // still above the "visually transparent" threshold for phone footage, but
-  // it actually leaves headroom below typical 3–5 Mbps camera exports.
-  const byResolution = Math.round(pixels * 30 * 0.12);
+  // ~0.22 bits per pixel per frame @30fps — visually transparent for phone
+  // footage (1080x1920 ≈ 13.7 Mbps, capped below). Previously 0.12 bpp, which
+  // visibly softened detail on jewellery/product clips.
+  const byResolution = Math.round(pixels * 30 * 0.22);
   const sourceBps = durationSec > 0 ? (fileBytes * 8) / durationSec : byResolution;
-  // Never spend more than ~85% of the source — guarantees the output is
-  // smaller than the input instead of ballooning past it.
-  const target = Math.min(byResolution, Math.round(sourceBps * 0.85));
-  return Math.max(1_600_000, Math.min(target, 8_000_000));
+  // Never spend more than the source bitrate (no point inflating), but stay
+  // close to it so quality is preserved rather than crushed.
+  const target = Math.min(byResolution, Math.round(sourceBps * 0.95));
+  return Math.max(3_000_000, Math.min(target, 14_000_000));
 }
+
 
 export async function compressVideo(file: File, opts: CompressOptions = {}): Promise<CompressResult> {
   if (!isWebCodecsSupported()) {
