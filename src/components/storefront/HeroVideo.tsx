@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { optimizeImageUrl, getImageSrcSet, preloadHeroImage, HERO_IMAGE_SIZES } from "@/lib/imageOptimize";
 
 interface HeroVideoProps {
@@ -16,6 +17,8 @@ interface HeroVideoProps {
   mediaClassName?: string;
   /** Max height style */
   maxHeight?: string;
+  /** Optional storefront route the hero links to */
+  linkTo?: string;
   overlay?: React.ReactNode;
 }
 
