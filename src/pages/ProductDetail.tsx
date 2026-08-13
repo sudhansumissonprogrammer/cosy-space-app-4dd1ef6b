@@ -1801,12 +1801,12 @@ function ImageGallery({
                 const el = document.getElementById("pdp-carousels");
                 if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
-              className="absolute bottom-3 left-14 z-10 flex h-9 w-9 items-center justify-center rounded-full lg-glass lg-interactive"
-              style={{ "--lg-tint-strength": "12%", color: "var(--storefront-text, hsl(var(--foreground)))" } as React.CSSProperties}
+              className="absolute bottom-3 left-14 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-md ring-1 ring-black/10 text-black shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-white active:scale-[0.96]"
               aria-label="View similar products"
               title="Similar products"
             >
-              <PdpSimilarProductsIcon className="relative z-10 h-4 w-4" />
+              <PdpSimilarProductsIcon className="h-4 w-4" />
+
             </button>
           )}
 
