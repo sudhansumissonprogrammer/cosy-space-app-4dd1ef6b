@@ -12,6 +12,7 @@ import V20ProductCard from "@/components/storefront/v20/V20ProductCard";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
 import MobileHeroCarousel from "@/components/storefront/MobileHeroCarousel";
+import HeroVideo from "@/components/storefront/HeroVideo";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { supabase } from "@/integrations/supabase/client";
 import { HomeShopByVideoSection } from "@/components/storefront/HomeSharedSections";
@@ -267,6 +268,21 @@ export default function StorefrontHomeV20() {
         if (singleHero && singleHero.trim()) merged.push(singleHero);
         for (const u of heroList) if (!merged.includes(u)) merged.push(u);
         const heroes = merged;
+
+        const heroVideoUrl = ((store as any).mobile_hero_video_url || "").trim();
+        if (heroVideoUrl) {
+          return (
+            <HeroVideo
+              src={heroVideoUrl}
+              poster={(store as any).mobile_hero_video_poster || heroes[0] || null}
+              storeName={store.name}
+              posterWidth={800}
+              aspectRatio="4/5"
+              linkTo={storefrontPath(slug, "shop")}
+              mediaClassName="w-full h-full block object-cover"
+            />
+          );
+        }
 
         // Use the SAME mobile hero carousel on both mobile + desktop (stretched full width)
         if (heroes.length > 0) {

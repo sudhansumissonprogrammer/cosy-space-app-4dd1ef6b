@@ -3720,6 +3720,8 @@ export type Database = {
           custom_domain: string | null
           default_profit_margin: number | null
           description: string | null
+          desktop_hero_video_poster: string | null
+          desktop_hero_video_url: string | null
           domain_verification_token: string | null
           domain_verified: boolean | null
           facebook_pixel_id: string | null
@@ -3737,6 +3739,8 @@ export type Database = {
           meta_title: string | null
           mobile_hero_images: Json | null
           mobile_hero_url: string | null
+          mobile_hero_video_poster: string | null
+          mobile_hero_video_url: string | null
           name: string
           og_image_url: string | null
           order_mode: string
@@ -3776,6 +3780,8 @@ export type Database = {
           custom_domain?: string | null
           default_profit_margin?: number | null
           description?: string | null
+          desktop_hero_video_poster?: string | null
+          desktop_hero_video_url?: string | null
           domain_verification_token?: string | null
           domain_verified?: boolean | null
           facebook_pixel_id?: string | null
@@ -3793,6 +3799,8 @@ export type Database = {
           meta_title?: string | null
           mobile_hero_images?: Json | null
           mobile_hero_url?: string | null
+          mobile_hero_video_poster?: string | null
+          mobile_hero_video_url?: string | null
           name: string
           og_image_url?: string | null
           order_mode?: string
@@ -3832,6 +3840,8 @@ export type Database = {
           custom_domain?: string | null
           default_profit_margin?: number | null
           description?: string | null
+          desktop_hero_video_poster?: string | null
+          desktop_hero_video_url?: string | null
           domain_verification_token?: string | null
           domain_verified?: boolean | null
           facebook_pixel_id?: string | null
@@ -3849,6 +3859,8 @@ export type Database = {
           meta_title?: string | null
           mobile_hero_images?: Json | null
           mobile_hero_url?: string | null
+          mobile_hero_video_poster?: string | null
+          mobile_hero_video_url?: string | null
           name?: string
           og_image_url?: string | null
           order_mode?: string

@@ -19,6 +19,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QRCodeSVG } from "qrcode.react";
 import PushNotificationManager from "@/components/dashboard/PushNotificationManager";
+import HeroVideoUploadField from "@/components/settings/HeroVideoUploadField";
 
 /** Generate a URL-safe slug from a store name */
 function generateSlug(name: string): string {
@@ -63,6 +64,8 @@ export default function StoreSettings() {
   const [heroRemoved, setHeroRemoved] = useState(false);
   const [heroImages, setHeroImages] = useState<string[]>([]);
   const [heroImageFiles, setHeroImageFiles] = useState<File[]>([]);
+  const [mobileHeroVideo, setMobileHeroVideo] = useState({ videoUrl: "", posterUrl: "" });
+  const [desktopHeroVideo, setDesktopHeroVideo] = useState({ videoUrl: "", posterUrl: "" });
   const [bestSellingCarousel, setBestSellingCarousel] = useState(false);
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
@@ -120,6 +123,14 @@ export default function StoreSettings() {
       if (existingHeroImages && Array.isArray(existingHeroImages) && existingHeroImages.length > 0) {
         setHeroImages(existingHeroImages);
       }
+      setMobileHeroVideo({
+        videoUrl: (store as any).mobile_hero_video_url || "",
+        posterUrl: (store as any).mobile_hero_video_poster || "",
+      });
+      setDesktopHeroVideo({
+        videoUrl: (store as any).desktop_hero_video_url || "",
+        posterUrl: (store as any).desktop_hero_video_poster || "",
+      });
       setBestSellingCarousel((store as any).best_selling_carousel || false);
       setMetaTitle((store as any).meta_title || "");
       setMetaDescription((store as any).meta_description || "");
@@ -196,6 +207,10 @@ export default function StoreSettings() {
           banner_url: bannerUrl,
           mobile_hero_url: mobileHeroUrl,
           mobile_hero_images: finalHeroImages.length > 0 ? finalHeroImages : null,
+          mobile_hero_video_url: mobileHeroVideo.videoUrl.trim() || null,
+          mobile_hero_video_poster: mobileHeroVideo.posterUrl.trim() || null,
+          desktop_hero_video_url: desktopHeroVideo.videoUrl.trim() || null,
+          desktop_hero_video_poster: desktopHeroVideo.posterUrl.trim() || null,
           best_selling_carousel: bestSellingCarousel,
           meta_title: metaTitle.trim() || null,
           meta_description: metaDescription.trim() || null,
@@ -391,7 +406,7 @@ export default function StoreSettings() {
             <CardTitle className="flex items-center gap-2 text-lg">
               <Image className="h-5 w-5 text-primary" /> Images & Media
             </CardTitle>
-            <CardDescription>Logo, desktop hero banner, and mobile hero images</CardDescription>
+            <CardDescription>Logo, hero banners, hero images and hero videos</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -460,6 +475,41 @@ export default function StoreSettings() {
                 </label>
               </div>
             </div>
+
+            {/* Hero Videos */}
+            {user?.id && storeId && (
+              <div className="space-y-4 rounded-lg border bg-muted/30 p-3">
+                <div>
+                  <Label>Hero Video <span className="text-xs text-muted-foreground font-normal">(optional — replaces the hero banner)</span></Label>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Keep it under 30 seconds. We resize it automatically (mobile 720p, desktop 1280p) and show a poster
+                    image first, so your store speed stays the same.
+                  </p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <HeroVideoUploadField
+                    label="Mobile hero video"
+                    hint="Best as portrait (4:5 or 9:16)"
+                    target="mobile"
+                    userId={user.id}
+                    storeId={storeId}
+                    videoUrl={mobileHeroVideo.videoUrl}
+                    posterUrl={mobileHeroVideo.posterUrl}
+                    onChange={setMobileHeroVideo}
+                  />
+                  <HeroVideoUploadField
+                    label="Desktop hero video"
+                    hint="Best as wide (16:9 or 16:7)"
+                    target="desktop"
+                    userId={user.id}
+                    storeId={storeId}
+                    videoUrl={desktopHeroVideo.videoUrl}
+                    posterUrl={desktopHeroVideo.posterUrl}
+                    onChange={setDesktopHeroVideo}
+                  />
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
