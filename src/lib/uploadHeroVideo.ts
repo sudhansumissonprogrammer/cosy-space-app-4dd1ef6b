@@ -188,8 +188,9 @@ export async function uploadHeroVideo(
           maxDimension: maxDim,
           onProgress: (p) => opts.onProgress?.(0.1 + p * 0.55),
         });
-        // Only keep the re-encode if it actually helped.
-        if (result.blob.size < file.size) {
+        // Keep the re-encode only if it saved real bytes (>15%). Otherwise the
+        // original is uploaded untouched — no generation loss for a tiny win.
+        if (result.blob.size < file.size * 0.85) {
           uploadBlob = result.blob;
           ext = "mp4";
           width = result.width;
