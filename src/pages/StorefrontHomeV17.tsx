@@ -259,6 +259,8 @@ export default function StorefrontHomeV17() {
               mobileHeroUrl={(store as any).mobile_hero_url}
               mobileHeroImages={(store as any).mobile_hero_images}
               storeName={store.name}
+              videoUrl={(store as any).mobile_hero_video_url}
+              videoPoster={(store as any).mobile_hero_video_poster}
             />
             <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20">
               <Link
