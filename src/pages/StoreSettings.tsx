@@ -495,7 +495,7 @@ export default function StoreSettings() {
                     storeId={storeId}
                     videoUrl={mobileHeroVideo.videoUrl}
                     posterUrl={mobileHeroVideo.posterUrl}
-                    onChange={setMobileHeroVideo}
+                    onChange={(next) => { setMobileHeroVideo(next); persistHeroVideo("mobile", next); }}
                   />
                   <HeroVideoUploadField
                     label="Desktop hero video"
@@ -505,8 +505,9 @@ export default function StoreSettings() {
                     storeId={storeId}
                     videoUrl={desktopHeroVideo.videoUrl}
                     posterUrl={desktopHeroVideo.posterUrl}
-                    onChange={setDesktopHeroVideo}
+                    onChange={(next) => { setDesktopHeroVideo(next); persistHeroVideo("desktop", next); }}
                   />
+
                 </div>
               </div>
             )}
