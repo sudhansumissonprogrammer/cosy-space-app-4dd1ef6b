@@ -1,24 +1,42 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { BadgeCheck } from "lucide-react";
 import StoreTextLogo from "@/components/storefront/StoreTextLogo";
 import { optimizeImageUrl, getImageSrcSet, preloadHeroImage, HERO_IMAGE_SIZES } from "@/lib/imageOptimize";
 import type { StoreData } from "@/layouts/StorefrontLayout";
+
+const HeroVideo = lazy(() => import("@/components/storefront/HeroVideo"));
 
 interface StorefrontHeroProps {
   store: StoreData;
 }
 
 export default function StorefrontHero({ store }: StorefrontHeroProps) {
-  // Preload the banner for LCP
+  const heroVideo = ((store as any).desktop_hero_video_url || "").trim?.() || "";
+
+  // Preload the banner for LCP (skipped when a hero video handles the surface)
   useEffect(() => {
-    if (store.banner_url) {
+    if (!heroVideo && store.banner_url) {
       return preloadHeroImage(store.banner_url, 1200);
     }
-  }, [store.banner_url]);
+  }, [store.banner_url, heroVideo]);
 
   return (
     <section className="relative">
-      {store.banner_url ? (
+      {heroVideo ? (
+        <div className="h-56 w-full sm:h-72 lg:h-80 xl:h-[360px] 2xl:h-[90vh] 2xl:max-h-[720px]">
+          <Suspense fallback={<div className="h-full w-full" />}>
+            <HeroVideo
+              src={heroVideo}
+              poster={(store as any).desktop_hero_video_poster || store.banner_url || null}
+              storeName={store.name}
+              posterWidth={1200}
+              className="h-full"
+              mediaClassName="w-full h-full block object-cover"
+            />
+          </Suspense>
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, var(--storefront-bg, hsl(var(--background))) 0%, color-mix(in srgb, var(--storefront-bg, hsl(var(--background))) 40%, transparent) 50%, transparent 100%)" }} />
+        </div>
+      ) : store.banner_url ? (
         <div className="h-56 w-full sm:h-72 lg:h-80 xl:h-[360px] 2xl:h-[90vh] 2xl:max-h-[720px]">
           <img
             src={optimizeImageUrl(store.banner_url, 1200, 75)}

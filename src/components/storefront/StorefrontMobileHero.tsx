@@ -1,10 +1,15 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from "react";
 import { optimizeImageUrl, getImageSrcSet, preloadHeroImage, HERO_IMAGE_SIZES } from "@/lib/imageOptimize";
+
+const HeroVideo = lazy(() => import("@/components/storefront/HeroVideo"));
 
 interface StorefrontMobileHeroProps {
   mobileHeroUrl: string | null | undefined;
   mobileHeroImages?: unknown;
   storeName: string;
+  /** Optional hero video (takes priority over hero images on mobile) */
+  videoUrl?: string | null;
+  videoPoster?: string | null;
 }
 
 function normalizeHeroImages(value: unknown): string[] {
@@ -42,9 +47,10 @@ function normalizeHeroImages(value: unknown): string[] {
   return [];
 }
 
-export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, storeName }: StorefrontMobileHeroProps) {
+export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, storeName, videoUrl, videoPoster }: StorefrontMobileHeroProps) {
   const slides = normalizeHeroImages(mobileHeroImages);
   const fallbackHero = mobileHeroUrl?.trim();
+  const heroVideo = videoUrl?.trim();
 
   if (fallbackHero && !slides.includes(fallbackHero)) {
     slides.push(fallbackHero);
@@ -52,12 +58,31 @@ export default function StorefrontMobileHero({ mobileHeroUrl, mobileHeroImages, 
 
   const uniqueSlides = Array.from(new Set(slides));
 
-  // Preload first image — must be before any early return
+  // Preload first image — must be before any early return.
+  // Skipped when a hero video is set (HeroVideo preloads its own poster).
   useEffect(() => {
-    if (uniqueSlides.length > 0) {
+    if (!heroVideo && uniqueSlides.length > 0) {
       return preloadHeroImage(uniqueSlides[0], 800);
     }
-  }, [uniqueSlides[0]]);
+  }, [uniqueSlides[0], heroVideo]);
+
+  // Hero video wins on mobile when configured
+  if (heroVideo) {
+    return (
+      <div className="block md:hidden w-full" style={{ contain: "layout style" }}>
+        <Suspense fallback={<div className="w-full" style={{ aspectRatio: "4/5" }} />}>
+          <HeroVideo
+            src={heroVideo}
+            poster={videoPoster || uniqueSlides[0] || null}
+            storeName={storeName}
+            posterWidth={800}
+            aspectRatio="4/5"
+            mediaClassName="w-full h-full block object-cover"
+          />
+        </Suspense>
+      </div>
+    );
+  }
 
   if (uniqueSlides.length === 0) return null;
 

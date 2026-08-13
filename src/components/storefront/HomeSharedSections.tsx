@@ -69,7 +69,8 @@ export function HomeShopByVideoSection({ slug, store }: { slug: string; store: S
   );
 }
 
-/** Responsive hero: mobile_hero_images on mobile, banner_url on desktop */
+/** Responsive hero: mobile_hero_images on mobile, banner_url on desktop.
+ *  A configured hero video replaces the image hero for that surface. */
 export function ResponsiveHeroBanner({ store, HeroBannerCarousel }: { store: StoreData; HeroBannerCarousel: any }) {
   const mobileImages: string[] = [];
   const mhi = (store as any).mobile_hero_images;
@@ -83,18 +84,43 @@ export function ResponsiveHeroBanner({ store, HeroBannerCarousel }: { store: Sto
     desktopImages.push(store.banner_url);
   }
 
+  const mobileVideo = ((store as any).mobile_hero_video_url || "").trim?.() || "";
+  const desktopVideo = ((store as any).desktop_hero_video_url || "").trim?.() || "";
+
   return (
     <>
-      {mobileImages.length > 0 && (
-        <div className="block md:hidden">
+      <div className="block md:hidden">
+        {mobileVideo ? (
+          <Suspense fallback={<div className="w-full" style={{ aspectRatio: "4/5" }} />}>
+            <HeroVideo
+              src={mobileVideo}
+              poster={(store as any).mobile_hero_video_poster || mobileImages[0] || null}
+              storeName={store.name}
+              posterWidth={800}
+              aspectRatio="4/5"
+              mediaClassName="w-full h-full block object-cover"
+            />
+          </Suspense>
+        ) : mobileImages.length > 0 ? (
           <HeroBannerCarousel images={mobileImages} storeName={store.name} interval={2000} imageClassName="w-full h-auto object-cover" maxHeight="520px" />
-        </div>
-      )}
-      {desktopImages.length > 0 && (
-        <div className="hidden md:block">
+        ) : null}
+      </div>
+      <div className="hidden md:block">
+        {desktopVideo ? (
+          <Suspense fallback={<div className="w-full" style={{ aspectRatio: "16/7" }} />}>
+            <HeroVideo
+              src={desktopVideo}
+              poster={(store as any).desktop_hero_video_poster || desktopImages[0] || null}
+              storeName={store.name}
+              posterWidth={1200}
+              aspectRatio="16/7"
+              mediaClassName="w-full h-full block object-cover"
+            />
+          </Suspense>
+        ) : desktopImages.length > 0 ? (
           <HeroBannerCarousel images={desktopImages} storeName={store.name} interval={2000} imageClassName="w-full h-auto object-cover" maxHeight="90vh" />
-        </div>
-      )}
+        ) : null}
+      </div>
     </>
   );
 }
