@@ -1685,7 +1685,7 @@ function ImageGallery({
 
   return (
     <>
-      <div className="space-y-1 sm:space-y-2 lg:sticky lg:top-4">
+      <div className="min-w-0 max-w-full space-y-1 sm:space-y-2 lg:sticky lg:top-4">
         <div className="relative -mx-4 sm:mx-0 px-2 pt-2 pb-1 sm:p-0">
           {/* Discount badge */}
           {hasDiscount && discountPct > 0 && (
