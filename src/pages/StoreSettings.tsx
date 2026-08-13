@@ -173,6 +173,11 @@ export default function StoreSettings() {
     }
     queryClient.invalidateQueries({ queryKey: ["store", storeId] });
     queryClient.invalidateQueries({ queryKey: ["my-store"] });
+    if (store?.slug) {
+      import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
+        purgeStoreCache(store.slug, (store as any).custom_domain, { shell: true }),
+      ).catch(() => {});
+    }
     toast.success(next.videoUrl ? "Hero video saved" : "Hero video removed");
   };
 
