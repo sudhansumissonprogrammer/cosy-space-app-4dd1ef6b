@@ -19,6 +19,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QRCodeSVG } from "qrcode.react";
 import PushNotificationManager from "@/components/dashboard/PushNotificationManager";
+import HeroVideoUploadField from "@/components/settings/HeroVideoUploadField";
 
 /** Generate a URL-safe slug from a store name */
 function generateSlug(name: string): string {
