@@ -1785,10 +1785,11 @@ function ImageGallery({
           {slides[activeIndex]?.kind !== "video" && (
             <button
               onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}
-              className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full lg-glass-media lg-interactive text-primary-foreground"
+              className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white shadow-lg transition-[transform,opacity,colors,box-shadow] hover:bg-black/70 active:scale-[0.96]"
               aria-label="Enlarge image"
             >
-              <Maximize2 className="relative z-10 h-4 w-4" />
+              <Maximize2 className="h-4 w-4" />
+
             </button>
           )}
 
