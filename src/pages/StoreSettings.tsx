@@ -475,6 +475,41 @@ export default function StoreSettings() {
                 </label>
               </div>
             </div>
+
+            {/* Hero Videos */}
+            {user?.id && storeId && (
+              <div className="space-y-4 rounded-lg border bg-muted/30 p-3">
+                <div>
+                  <Label>Hero Video <span className="text-xs text-muted-foreground font-normal">(optional — replaces the hero banner)</span></Label>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Keep it under 30 seconds. We resize it automatically (mobile 720p, desktop 1280p) and show a poster
+                    image first, so your store speed stays the same.
+                  </p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <HeroVideoUploadField
+                    label="Mobile hero video"
+                    hint="Best as portrait (4:5 or 9:16)"
+                    target="mobile"
+                    userId={user.id}
+                    storeId={storeId}
+                    videoUrl={mobileHeroVideo.videoUrl}
+                    posterUrl={mobileHeroVideo.posterUrl}
+                    onChange={setMobileHeroVideo}
+                  />
+                  <HeroVideoUploadField
+                    label="Desktop hero video"
+                    hint="Best as wide (16:9 or 16:7)"
+                    target="desktop"
+                    userId={user.id}
+                    storeId={storeId}
+                    videoUrl={desktopHeroVideo.videoUrl}
+                    posterUrl={desktopHeroVideo.posterUrl}
+                    onChange={setDesktopHeroVideo}
+                  />
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
