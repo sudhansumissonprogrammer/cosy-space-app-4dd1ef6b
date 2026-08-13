@@ -742,9 +742,10 @@ export default function ProductDetail() {
         type="button"
         onClick={handleBack}
         aria-label="Back"
-        className="sm:hidden lg-glass lg-interactive fixed top-3 left-3 z-40 h-10 w-10 flex items-center justify-center rounded-full"
+        className="sm:hidden fixed top-3 left-3 z-40 h-10 w-10 flex items-center justify-center rounded-full bg-white/95 backdrop-blur shadow-[0_2px_8px_rgba(0,0,0,0.18)] active:scale-95 transition-transform"
       >
-        <ArrowLeft className="relative z-10 h-5 w-5" strokeWidth={2.4} style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+        <ArrowLeft className="h-5 w-5 text-black" strokeWidth={2.4} />
+
       </button>
 
 
