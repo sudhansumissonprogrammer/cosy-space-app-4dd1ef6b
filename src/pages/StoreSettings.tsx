@@ -406,7 +406,7 @@ export default function StoreSettings() {
             <CardTitle className="flex items-center gap-2 text-lg">
               <Image className="h-5 w-5 text-primary" /> Images & Media
             </CardTitle>
-            <CardDescription>Logo, desktop hero banner, and mobile hero images</CardDescription>
+            <CardDescription>Logo, hero banners, hero images and hero videos</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="grid gap-4 sm:grid-cols-2">
