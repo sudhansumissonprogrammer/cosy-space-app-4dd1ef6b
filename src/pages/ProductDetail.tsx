@@ -1842,14 +1842,14 @@ function ImageGallery({
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); scrollPrev(); }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full p-1.5 lg-glass lg-interactive"
+                className="absolute left-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full p-1.5 lg-glass transition-shadow"
                 style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
               >
                 <ChevronLeft className="relative z-10 h-4 w-4" />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); scrollNext(); }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full p-1.5 lg-glass lg-interactive"
+                className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full p-1.5 lg-glass transition-shadow"
                 style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}
               >
                 <ChevronRight className="relative z-10 h-4 w-4" />
