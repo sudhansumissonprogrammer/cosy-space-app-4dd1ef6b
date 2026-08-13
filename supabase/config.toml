@@ -109,3 +109,6 @@ verify_jwt = false
 
 [functions.merchant-otp-verify]
 verify_jwt = false
+
+[functions.wristlife-import]
+verify_jwt = false
