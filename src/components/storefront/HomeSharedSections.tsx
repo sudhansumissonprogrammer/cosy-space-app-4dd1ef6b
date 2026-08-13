@@ -7,6 +7,7 @@ import BestSellerBadge from "@/components/storefront/BestSellerBadge";
 
 const BestSellingCarousel = lazy(() => import("@/components/storefront/BestSellingCarousel"));
 const ShopByVideoCarousel = lazy(() => import("@/components/storefront/ShopByVideoCarousel"));
+const HeroVideo = lazy(() => import("@/components/storefront/HeroVideo"));
 
 type StoreData = Tables<"stores">;
 
