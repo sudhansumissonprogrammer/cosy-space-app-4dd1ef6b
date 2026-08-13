@@ -236,7 +236,7 @@ export default function StorefrontHomeV17() {
   const allProducts = [...products, ...bestSellers].map((p: any) => ({ id: p.id, has_variants: p.has_variants }));
 
   const hasBanner = !!(store as any).banner_url;
-  const hasMobileHero = !!(store as any).mobile_hero_url || !!(store as any).mobile_hero_images;
+  const hasMobileHero = !!(store as any).mobile_hero_url || !!(store as any).mobile_hero_images || !!(store as any).mobile_hero_video_url;
 
   return (
     <VariantCountProvider products={allProducts}>

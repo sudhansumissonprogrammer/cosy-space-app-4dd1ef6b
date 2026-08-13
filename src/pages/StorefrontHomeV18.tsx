@@ -110,7 +110,7 @@ export default function StorefrontHomeV18() {
 
   const allProducts = products.map((p: any) => ({ id: p.id, has_variants: p.has_variants }));
   const hasBanner = !!(store as any).banner_url;
-  const hasMobileHero = !!(store as any).mobile_hero_url || !!(store as any).mobile_hero_images;
+  const hasMobileHero = !!(store as any).mobile_hero_url || !!(store as any).mobile_hero_images || !!(store as any).mobile_hero_video_url;
 
   const btnStyle: React.CSSProperties = {
     color: V18_TEXT,
