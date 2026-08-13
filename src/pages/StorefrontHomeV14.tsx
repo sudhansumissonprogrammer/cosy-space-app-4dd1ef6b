@@ -218,7 +218,7 @@ export function ClassicCenterHome({ defaultCardStyle = "style-2", defaultCategor
       )}
 
       {/* Mobile hero (mobile only) */}
-      {(store as any).mobile_hero_url || (store as any).mobile_hero_images ? (
+      {(store as any).mobile_hero_url || (store as any).mobile_hero_images || (store as any).mobile_hero_video_url ? (
         <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} videoUrl={(store as any).mobile_hero_video_url} videoPoster={(store as any).mobile_hero_video_poster} />
       ) : null}
       {/* Desktop hero banner (desktop only) */}
