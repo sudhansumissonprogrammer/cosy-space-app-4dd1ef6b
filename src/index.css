@@ -989,25 +989,9 @@ body:has(.storefront-font) {
 .header-shrink.is-shrunk .logo-shrink { transform: scale(0.88); transform-origin: left center; }
 .logo-shrink { transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform; }
 
-/* ── Liquid Glass material ────────────────────────────────────────────────
-   Reusable "regular glass" surface: blurs + saturates what's behind it,
-   carries a specular top highlight, an inner rim light, and an optional
-   theme tint. One blur layer per element — never nest two of these.
-   Variants:
-     .lg-glass         → light/neutral glass, reads over page background
-     .lg-glass-media   → dark glass, for icons floating over photos/video
-     .lg-interactive   → touch/pointer reaction (lift + press)
-   Tint override: style={{ "--lg-tint": "..." }} or --lg-tint-strength.
---------------------------------------------------------------------------- */
-.lg-glass,
-.lg-glass-media {
-  position: relative;
+/* P6 — BackToTop bounce in/out */
+.back-to-top-glass {
   isolation: isolate;
-  -webkit-backdrop-filter: blur(22px) saturate(185%) contrast(108%);
-  backdrop-filter: blur(22px) saturate(185%) contrast(108%);
-}
-
-.lg-glass {
   border: 1px solid color-mix(in srgb, hsl(var(--background)) 65%, transparent);
   background:
     linear-gradient(145deg,
@@ -1017,96 +1001,36 @@ body:has(.storefront-font) {
     0 10px 28px -10px color-mix(in srgb, hsl(var(--foreground)) 34%, transparent),
     inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 85%, transparent),
     inset 0 -1px 0 color-mix(in srgb, hsl(var(--foreground)) 10%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(185%) contrast(108%);
+  backdrop-filter: blur(22px) saturate(185%) contrast(108%);
 }
-
-.lg-glass-media {
-  border: 1px solid color-mix(in srgb, hsl(var(--background)) 28%, transparent);
-  background:
-    linear-gradient(145deg,
-      color-mix(in srgb, hsl(var(--foreground)) 46%, transparent),
-      color-mix(in srgb, hsl(var(--foreground)) 30%, transparent));
-  box-shadow:
-    0 8px 24px -10px color-mix(in srgb, hsl(var(--foreground)) 55%, transparent),
-    inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 40%, transparent),
-    inset 0 -1px 0 color-mix(in srgb, hsl(var(--foreground)) 25%, transparent);
-}
-
-/* Specular highlight — the "light catch" along the top edge */
-.lg-glass::before,
-.lg-glass-media::before {
+.back-to-top-glass::before {
   content: "";
   position: absolute;
   inset: 2px 5px auto;
   height: 38%;
   z-index: -1;
-  border-radius: inherit;
+  border-radius: 9999px;
+  background: color-mix(in srgb, hsl(var(--background)) 58%, transparent);
   filter: blur(1px);
   pointer-events: none;
 }
-.lg-glass::before {
-  background: color-mix(in srgb, hsl(var(--background)) 58%, transparent);
-}
-.lg-glass-media::before {
-  background: color-mix(in srgb, hsl(var(--background)) 30%, transparent);
-}
-
-/* Colour tint pulled from the storefront theme */
-.lg-glass::after,
-.lg-glass-media::after {
+.back-to-top-glass::after {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -2;
   border-radius: inherit;
-  background: color-mix(
-    in srgb,
-    var(--lg-tint, var(--storefront-primary, hsl(var(--primary)))) var(--lg-tint-strength, 7%),
-    transparent
-  );
+  background: color-mix(in srgb, var(--storefront-primary, hsl(var(--primary))) 7%, transparent);
   pointer-events: none;
 }
-
-/* Interactive reaction — reserve for buttons, not static surfaces */
-.lg-interactive {
-  transition:
-    background-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.lg-interactive:hover {
-  transform: translateY(-1px);
-}
-.lg-glass.lg-interactive:hover {
-  background: color-mix(in srgb, hsl(var(--background)) 30%, transparent);
+.back-to-top-glass:hover {
+  background: color-mix(in srgb, hsl(var(--background)) 28%, transparent);
   box-shadow:
     0 14px 32px -10px color-mix(in srgb, hsl(var(--foreground)) 38%, transparent),
     inset 0 1px 0 color-mix(in srgb, hsl(var(--background)) 90%, transparent);
 }
-.lg-glass-media.lg-interactive:hover {
-  background: color-mix(in srgb, hsl(var(--foreground)) 55%, transparent);
-}
-.lg-interactive:active {
-  transform: scale(0.94);
-}
 
-/* Fallback: no backdrop-filter → opaque surface so contrast never breaks */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .lg-glass { background: hsl(var(--background)); }
-  .lg-glass-media { background: color-mix(in srgb, hsl(var(--foreground)) 78%, transparent); }
-  .lg-glass::before, .lg-glass-media::before { display: none; }
-}
-
-/* Respect reduced-transparency users */
-@media (prefers-reduced-transparency: reduce) {
-  .lg-glass, .lg-glass-media {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-  .lg-glass { background: hsl(var(--background)); }
-  .lg-glass-media { background: color-mix(in srgb, hsl(var(--foreground)) 80%, transparent); }
-}
-
-/* P6 — BackToTop bounce in/out */
 
 .back-to-top-enter { animation: btt-in 360ms cubic-bezier(0.34, 1.56, 0.64, 1); }
 .back-to-top-exit  { animation: btt-out 160ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
