@@ -38,14 +38,19 @@ export interface HeroVideoUploadOptions {
   onProgress?: (pct: number) => void;
 }
 
-/** Long-edge cap per surface. */
-const MAX_DIMENSION: Record<HeroVideoTarget, number> = { mobile: 720, desktop: 1280 };
+/**
+ * Long-edge cap per surface. Kept at native phone/desktop resolution — phones
+ * are 3x DPR, so a 720px hero looked soft. We only cap truly oversized 4K
+ * uploads.
+ */
+const MAX_DIMENSION: Record<HeroVideoTarget, number> = { mobile: 1080, desktop: 1920 };
 /** Hard ceiling on what we accept from the picker. */
 const MAX_INPUT_BYTES = 80 * 1024 * 1024;
-/** Ceiling for uploading an un-re-encoded original (no WebCodecs). */
-const MAX_PASSTHROUGH_BYTES = 8 * 1024 * 1024;
+/** Files at/below this stay byte-identical — no re-encode, zero quality loss. */
+const MAX_PASSTHROUGH_BYTES = 24 * 1024 * 1024;
 /** Hero clips should be short loops. */
 const MAX_DURATION_SEC = 30;
+
 
 function probe(file: File): Promise<{ duration: number; width: number; height: number }> {
   return new Promise((resolve, reject) => {
@@ -103,7 +108,7 @@ function generatePoster(file: File, maxWidth: number): Promise<Blob | null> {
         const ctx = canvas.getContext("2d");
         if (!ctx) return finish(null);
         ctx.drawImage(v, 0, 0, w, h);
-        canvas.toBlob((b) => finish(b), "image/jpeg", 0.8);
+        canvas.toBlob((b) => finish(b), "image/jpeg", 0.92);
       } catch {
         finish(null);
       }
@@ -157,7 +162,7 @@ export async function uploadHeroVideo(
   }
 
   const maxDim = MAX_DIMENSION[opts.target];
-  const posterMaxWidth = opts.target === "mobile" ? 800 : 1200;
+  const posterMaxWidth = opts.target === "mobile" ? 1080 : 1600;
 
   const posterBlob = await generatePoster(file, posterMaxWidth);
   opts.onProgress?.(0.1);
@@ -183,8 +188,9 @@ export async function uploadHeroVideo(
           maxDimension: maxDim,
           onProgress: (p) => opts.onProgress?.(0.1 + p * 0.55),
         });
-        // Only keep the re-encode if it actually helped.
-        if (result.blob.size < file.size) {
+        // Keep the re-encode only if it saved real bytes (>15%). Otherwise the
+        // original is uploaded untouched — no generation loss for a tiny win.
+        if (result.blob.size < file.size * 0.85) {
           uploadBlob = result.blob;
           ext = "mp4";
           width = result.width;
