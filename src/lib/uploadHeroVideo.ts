@@ -108,7 +108,7 @@ function generatePoster(file: File, maxWidth: number): Promise<Blob | null> {
         const ctx = canvas.getContext("2d");
         if (!ctx) return finish(null);
         ctx.drawImage(v, 0, 0, w, h);
-        canvas.toBlob((b) => finish(b), "image/jpeg", 0.8);
+        canvas.toBlob((b) => finish(b), "image/jpeg", 0.92);
       } catch {
         finish(null);
       }
