@@ -245,7 +245,7 @@ export default function StorefrontHome() {
         <>
           {/* Mobile hero */}
           {(store as any).mobile_hero_url || (store as any).mobile_hero_images ? (
-            <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
+            <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} videoUrl={(store as any).mobile_hero_video_url} videoPoster={(store as any).mobile_hero_video_poster} />
           ) : null}
           {/* Desktop hero banner */}
           {(store as any).banner_url && (
@@ -260,7 +260,7 @@ export default function StorefrontHome() {
           <UniversalCategories categories={storeCategories} storeSlug={slug!} isLoading={!storeCategories} categoryStyle={categoryStyle} />
           {/* Mobile hero */}
           {(store as any).mobile_hero_url || (store as any).mobile_hero_images ? (
-            <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} />
+            <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} videoUrl={(store as any).mobile_hero_video_url} videoPoster={(store as any).mobile_hero_video_poster} />
           ) : null}
           {/* Desktop hero banner */}
           {(store as any).banner_url && (
