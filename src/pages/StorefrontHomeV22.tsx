@@ -285,7 +285,7 @@ export default function StorefrontHomeV22() {
         )}
 
         {/* Hero Banner */}
-        {((store as any).mobile_hero_url || (store as any).mobile_hero_images) && (
+        {((store as any).mobile_hero_url || (store as any).mobile_hero_images || (store as any).mobile_hero_video_url) && (
           <StorefrontMobileHero mobileHeroUrl={(store as any).mobile_hero_url} mobileHeroImages={(store as any).mobile_hero_images} storeName={store.name} videoUrl={(store as any).mobile_hero_video_url} videoPoster={(store as any).mobile_hero_video_poster} />
         )}
         {(store as any).banner_url && (
