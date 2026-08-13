@@ -1862,7 +1862,7 @@ function ImageGallery({
 
         {/* Thumbnail strip — mobile + desktop */}
         {showMultiUi && (
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide px-3 sm:px-0.5 py-2 sm:py-1">
+          <div className="flex min-w-0 max-w-full gap-2 overflow-x-auto scrollbar-hide px-3 sm:px-0.5 py-2 sm:py-1">
             {slides.map((slide, i) => {
               const thumbSrc = slide.kind === "video" ? (slide.poster || "") : slide.url;
               return (
