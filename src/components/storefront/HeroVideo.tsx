@@ -122,7 +122,7 @@ export default function HeroVideo({
   }, [mountVideo]);
 
   const posterSrc = poster ? optimizeImageUrl(poster, posterWidth) : undefined;
-  const posterSrcSet = poster ? getImageSrcSet(poster, [400, 600, 800, 1200]) : "";
+  const posterSrcSet = poster ? getImageSrcSet(poster, [600, 800, 1080, 1600]) : "";
 
   return (
     <div
