@@ -163,6 +163,10 @@ export default function HeroVideo({
         />
       )}
 
+      {linkTo && (
+        <Link to={linkTo} aria-label={`${storeName} — shop now`} className="absolute inset-0 z-10" />
+      )}
+
       {overlay}
     </div>
   );
