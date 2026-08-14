@@ -112,27 +112,37 @@ type GroupItem =
 
 function buildActivityItems(ledger: any[]): GroupItem[] {
   const items: GroupItem[] = [];
-  const groupMap = new Map<string, GroupItem & { type: "wa_group" }>();
+  // Group ONLY consecutive WhatsApp charges so the displayed running balance
+  // stays consistent with the ledger (a day-wide group would show a big total
+  // next to a balance that only moved by the last entry's amount).
+  let current: (GroupItem & { type: "wa_group" }) | null = null;
 
   for (const l of ledger) {
     if (l.kind === "wa_conversation") {
       const d = new Date(l.created_at);
       const dayKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-      let g = groupMap.get(dayKey);
-      if (!g) {
-        g = { type: "wa_group", dayKey, date: l.created_at, entries: [], total: 0, balance_after: Number(l.balance_after) };
-        groupMap.set(dayKey, g);
-        items.push(g);
+      if (!current) {
+        current = {
+          type: "wa_group",
+          dayKey: `${dayKey}-${l.id}`,
+          date: l.created_at,
+          entries: [],
+          total: 0,
+          // ledger is ordered desc → first entry of the run holds the latest balance
+          balance_after: Number(l.balance_after),
+        };
+        items.push(current);
       }
-      g.entries.push(l);
-      g.total += Number(l.amount);
-      // ledger is ordered desc → first seen has latest balance_after; keep it
+      current.entries.push(l);
+      current.total += Number(l.amount);
     } else {
+      current = null;
       items.push({ type: "single", entry: l });
     }
   }
   return items;
 }
+
 
 function WalletActivityList({ ledger, invoiceFor }: { ledger: any[]; invoiceFor: (l: any) => void }) {
   const items = useMemo(() => buildActivityItems(ledger).slice(0, 30), [ledger]);
