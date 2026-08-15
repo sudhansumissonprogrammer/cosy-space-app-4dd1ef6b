@@ -170,7 +170,54 @@ export default function DeliveryTimeline({ storeId }: { storeId?: string } = {})
         }
       `}</style>
 
+      {/* ── Pincode delivery-date checker (sits on top of the timeline) ── */}
+      <div className="mb-4 border-b border-border pb-4">
+        <div className="flex items-center gap-2 text-[12px] font-semibold text-foreground">
+          <MapPin className="h-3.5 w-3.5 text-primary" />
+          Check your exact delivery date
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <input
+            type="tel"
+            inputMode="numeric"
+            maxLength={6}
+            value={pin}
+            placeholder="Enter 6-digit pincode"
+            aria-label="Delivery pincode"
+            onChange={(e) => {
+              const v = e.target.value.replace(/\D/g, "").slice(0, 6);
+              setPin(v); setInfo(null); setNotFound(false);
+              if (v.length === 6) runCheck(v);
+            }}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); runCheck(pin); } }}
+            className="h-10 flex-1 min-w-0 rounded-lg border border-border bg-background px-3 text-[14px] outline-none focus:border-primary"
+          />
+          <button
+            type="button"
+            onClick={() => runCheck(pin)}
+            disabled={pin.length !== 6 || checking}
+            className="h-10 shrink-0 rounded-lg bg-primary px-4 text-[13px] font-semibold text-primary-foreground disabled:opacity-50"
+          >
+            {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check"}
+          </button>
+        </div>
+        {info && (
+          <div className="mt-2 text-[12px] leading-snug text-foreground">
+            <span className="font-semibold text-green-600">Delivery by {fmt(deliv).day}</span>
+            {(info.city || info.state) && (
+              <span className="text-muted-foreground"> · {[info.city, info.state].filter(Boolean).join(", ")}</span>
+            )}
+          </div>
+        )}
+        {notFound && (
+          <div className="mt-2 text-[12px] text-destructive">
+            We couldn't find this pincode. Please re-check it.
+          </div>
+        )}
+      </div>
+
       <div className="relative flex items-start justify-between">
+
         {/* ── Dashed base lines (gray) ── */}
         <div aria-hidden="true" className="dt-line dt-line-1 pointer-events-none absolute top-6 h-px"
              style={{ left: "16.66%", right: "50%",
