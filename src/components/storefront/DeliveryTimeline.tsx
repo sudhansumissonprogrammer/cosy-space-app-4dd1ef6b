@@ -23,14 +23,17 @@ import { lookupPincode, saveDeliveryPincode, getSavedPincode, type PincodeInfo }
  *
  * Respects prefers-reduced-motion (renders static state).
  */
-function fmt(d: Date) {
+function dateDay(d: Date) {
   const day = d.getDate();
-  const month = d.toLocaleString("en-IN", { month: "short" });
   const suffix =
     day % 10 === 1 && day !== 11 ? "st" :
     day % 10 === 2 && day !== 12 ? "nd" :
     day % 10 === 3 && day !== 13 ? "rd" : "th";
-  return { day: `${month} ${day}${suffix}`, raw: d };
+  return `${day}${suffix}`;
+}
+function fmt(d: Date) {
+  const month = d.toLocaleString("en-IN", { month: "short" });
+  return { day: `${month} ${dateDay(d)}`, raw: d };
 }
 
 export default function DeliveryTimeline({ storeId }: { storeId?: string } = {}) {
@@ -68,7 +71,7 @@ export default function DeliveryTimeline({ storeId }: { storeId?: string } = {})
   const shipLabel = fmt(ship).day;
   const delivLabel = exact
     ? fmt(deliv).day
-    : `${fmt(deliv).day}–${delivLate.getDate()}`;
+    : `${fmt(deliv).day}–${dateDay(delivLate)}`;
 
   const steps = [
     { icon: ShoppingBag,  date: orderLabel, label: "Order Today" },
