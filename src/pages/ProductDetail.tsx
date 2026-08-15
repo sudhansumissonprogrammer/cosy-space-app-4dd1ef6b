@@ -1067,7 +1067,7 @@ export default function ProductDetail() {
           )}
 
           {/* Delivery timeline (Order → Shipping → Delivery) */}
-          {!isOutOfStock && <DeliveryTimeline />}
+          {!isOutOfStock && <DeliveryTimeline storeId={store.id} />}
 
           {/* Partial payment trust card, checkout trust block & wishlist — removed per user request */}
 

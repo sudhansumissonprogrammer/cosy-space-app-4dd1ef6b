@@ -1,10 +1,15 @@
-import { ShoppingBag, Truck, PackageCheck, Check } from "lucide-react";
+import { ShoppingBag, Truck, PackageCheck, Check, MapPin, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { addDeliveryDays } from "@/lib/deliveryEstimate";
+import { lookupPincode, saveDeliveryPincode, getSavedPincode, type PincodeInfo } from "@/lib/pincodeLookup";
 
 /**
- * Cinematic 3-step delivery timeline.
- * One choreographed 2.5s sequence on scroll-in, then quiet ambient state.
+ * Cinematic 3-step delivery timeline + pincode delivery-date checker.
+ *
+ * The checker sits on top of the animated timeline. Before a pincode is
+ * entered the delivery step shows a soft range (today+5 → today+6); once a
+ * valid pincode resolves it locks to the exact promised date (today+5) and the
+ * pincode/city/state are persisted so checkout auto-fills them.
  *
  * Timeline:
  *   0.00s  Card rises + fades in
@@ -28,21 +33,49 @@ function fmt(d: Date) {
   return { day: `${month} ${day}${suffix}`, raw: d };
 }
 
-export default function DeliveryTimeline() {
+export default function DeliveryTimeline({ storeId }: { storeId?: string } = {}) {
   const today = new Date();
   const ship = new Date(today); ship.setDate(today.getDate() + 1);
   // Single promised date — must match PDP + checkout (today + 5 days).
   const deliv = addDeliveryDays(today);
+  const delivLate = new Date(deliv); delivLate.setDate(deliv.getDate() + 1);
 
+  // ─── Pincode delivery-date checker ────────────────────────────────────
+  const [pin, setPin] = useState<string>(() => getSavedPincode(storeId));
+  const [checking, setChecking] = useState(false);
+  const [info, setInfo] = useState<PincodeInfo | null>(null);
+  const [notFound, setNotFound] = useState(false);
+
+  const runCheck = async (value: string) => {
+    const p = value.replace(/\D/g, "");
+    if (!/^\d{6}$/.test(p)) return;
+    setChecking(true); setNotFound(false);
+    const res = await lookupPincode(p);
+    setChecking(false);
+    if (!res) { setInfo(null); setNotFound(true); return; }
+    setInfo(res);
+    saveDeliveryPincode(storeId, p, res);
+  };
+
+  // Auto-resolve an already-saved pincode on mount (no user action needed)
+  useEffect(() => {
+    const saved = getSavedPincode(storeId);
+    if (saved) runCheck(saved);
+  }, [storeId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const exact = !!info;
   const orderLabel = fmt(today).day;
   const shipLabel = fmt(ship).day;
-  const delivLabel = fmt(deliv).day;
+  const delivLabel = exact
+    ? fmt(deliv).day
+    : `${fmt(deliv).day}–${delivLate.getDate()}`;
 
   const steps = [
     { icon: ShoppingBag,  date: orderLabel, label: "Order Today" },
-    { icon: Truck,        date: shipLabel,  label: "Shipping" },
-    { icon: PackageCheck, date: delivLabel, label: "Delivery" },
+    { icon: Truck,        date: shipLabel,  label: "Next-day Shipping" },
+    { icon: PackageCheck, date: delivLabel, label: exact ? "Delivery" : "Est. Delivery" },
   ];
+
 
   const ref = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
@@ -137,7 +170,54 @@ export default function DeliveryTimeline() {
         }
       `}</style>
 
+      {/* ── Pincode delivery-date checker (sits on top of the timeline) ── */}
+      <div className="mb-4 border-b border-border pb-4">
+        <div className="flex items-center gap-2 text-[12px] font-semibold text-foreground">
+          <MapPin className="h-3.5 w-3.5 text-primary" />
+          Check your exact delivery date
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <input
+            type="tel"
+            inputMode="numeric"
+            maxLength={6}
+            value={pin}
+            placeholder="Enter 6-digit pincode"
+            aria-label="Delivery pincode"
+            onChange={(e) => {
+              const v = e.target.value.replace(/\D/g, "").slice(0, 6);
+              setPin(v); setInfo(null); setNotFound(false);
+              if (v.length === 6) runCheck(v);
+            }}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); runCheck(pin); } }}
+            className="h-10 flex-1 min-w-0 rounded-lg border border-border bg-background px-3 text-[14px] outline-none focus:border-primary"
+          />
+          <button
+            type="button"
+            onClick={() => runCheck(pin)}
+            disabled={pin.length !== 6 || checking}
+            className="h-10 shrink-0 rounded-lg bg-primary px-4 text-[13px] font-semibold text-primary-foreground disabled:opacity-50"
+          >
+            {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check"}
+          </button>
+        </div>
+        {info && (
+          <div className="mt-2 text-[12px] leading-snug text-foreground">
+            <span className="font-semibold text-green-600">Delivery by {fmt(deliv).day}</span>
+            {(info.city || info.state) && (
+              <span className="text-muted-foreground"> · {[info.city, info.state].filter(Boolean).join(", ")}</span>
+            )}
+          </div>
+        )}
+        {notFound && (
+          <div className="mt-2 text-[12px] text-destructive">
+            We couldn't find this pincode. Please re-check it.
+          </div>
+        )}
+      </div>
+
       <div className="relative flex items-start justify-between">
+
         {/* ── Dashed base lines (gray) ── */}
         <div aria-hidden="true" className="dt-line dt-line-1 pointer-events-none absolute top-6 h-px"
              style={{ left: "16.66%", right: "50%",
