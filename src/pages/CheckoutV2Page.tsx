@@ -5100,18 +5100,6 @@ export default function CheckoutV2Page() {
                   </div>
                 )}
 
-                <button
-                  type="button"
-                  onClick={handleUseMyLocation}
-                  disabled={geoLoading}
-                  className="w-full h-11 rounded-lg border border-dashed border-primary/50 bg-primary/5 text-primary flex items-center justify-center gap-2 text-[13px] font-semibold active:scale-[0.99] disabled:opacity-60"
-                >
-                  {geoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
-                  {geoLoading ? "Detecting your location…" : "Use my current location"}
-                </button>
-                <p className="-mt-1 text-[11px] text-muted-foreground text-center">
-                  अपना पता अपने आप भरने के लिए दबाएँ
-                </p>
 
 
                 <form
