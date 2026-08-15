@@ -71,7 +71,7 @@ export default function DeliveryTimeline({ storeId }: { storeId?: string } = {})
   const shipLabel = fmt(ship).day;
   const delivLabel = exact
     ? fmt(deliv).day
-    : `${fmt(deliv).day}–${delivLate.getDate()}`;
+    : `${fmt(deliv).day}–${dateDay(delivLate)}`;
 
   const steps = [
     { icon: ShoppingBag,  date: orderLabel, label: "Order Today" },
