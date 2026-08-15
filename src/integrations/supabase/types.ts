@@ -5706,10 +5706,6 @@ export type Database = {
         Returns: boolean
       }
       is_user_blocked: { Args: never; Returns: boolean }
-      jd_bulk_import: {
-        Args: { p_action: string; p_payload: Json; p_token: string }
-        Returns: Json
-      }
       log_partner_audit: {
         Args: {
           _action: string

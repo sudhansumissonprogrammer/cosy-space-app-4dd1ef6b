@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.jd_bulk_import(text, text, jsonb);
