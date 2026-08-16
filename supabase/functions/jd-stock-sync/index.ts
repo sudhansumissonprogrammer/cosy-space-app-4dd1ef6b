@@ -226,8 +226,11 @@ Deno.serve(async (req) => {
       if (!src) { failed++; continue; }
       checked++;
 
-      const nextStock = src.quantity <= OOS_THRESHOLD ? 0 : src.quantity;
-      const nextActive = src.delisted ? false : true;
+      // Delisted / unavailable at source → keep the product visible but Sold
+      // Out, so it reappears automatically the moment the source restocks it.
+      const nextStock = src.delisted || src.quantity <= OOS_THRESHOLD ? 0 : src.quantity;
+      const nextActive = true;
+
 
       const stockChanged = (p.stock_quantity ?? 0) !== nextStock;
       const activeChanged = p.is_active !== nextActive;
