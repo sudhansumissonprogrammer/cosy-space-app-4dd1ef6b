@@ -195,6 +195,10 @@ export default function ProductsList() { // v2
       case "title-desc": result.sort((a, b) => b.name.localeCompare(a.name)); break;
       case "date-new": result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); break;
       case "date-old": result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); break;
+      case "stock-high": result.sort((a, b) => (Number(b.stock_quantity) || 0) - (Number(a.stock_quantity) || 0)); break;
+      case "stock-low": result.sort((a, b) => (Number(a.stock_quantity) || 0) - (Number(b.stock_quantity) || 0)); break;
+      case "category-asc": result.sort((a, b) => (a.category || "\uffff").localeCompare(b.category || "\uffff") || a.name.localeCompare(b.name)); break;
+      case "category-desc": result.sort((a, b) => (b.category || "").localeCompare(a.category || "") || a.name.localeCompare(b.name)); break;
     }
     return result;
   }, [allProducts, search, statusFilter, stockFilter, categoryFilter, sort]);
