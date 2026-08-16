@@ -45,13 +45,13 @@ const ASSETS = "https://assets.jdwebnship.in/";
 /** Pages of the listing walked per run while backfilling. */
 const PAGE_BUDGET = 120;
 /** Listing pages fetched in parallel (their WAF tolerates ~6). */
-const PAGE_CONCURRENCY = 6;
+const PAGE_CONCURRENCY = 2;
 /** Newest pages re-scanned every run once backfill is done. */
 const STEADY_PAGES = 8;
 /** Max new products imported in one run (each costs 1 detail request). */
 const IMPORT_BUDGET = 420;
-const CONCURRENCY = 5;
-const REQ_GAP_MS = 40;
+const CONCURRENCY = 3;
+const REQ_GAP_MS = 100;
 const REQ_TIMEOUT_MS = 12_000;
 /** Stop starting new work after this many ms so the run always finishes. */
 const TIME_BUDGET_MS = 105_000;
@@ -74,23 +74,32 @@ const srcHeaders = {
 };
 
 async function srcFetch(path: string): Promise<any | null> {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), REQ_TIMEOUT_MS);
-  try {
-    const res = await fetch(`${SOURCE_BASE}/${path}`, { headers: srcHeaders, signal: ctrl.signal });
-    if (!res.ok) return null;
-    return await res.json().catch(() => null);
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(t);
+  // The wholesaler applies a rolling burst limit shared by catalog and stock
+  // requests. Retry throttled/transient responses with backoff; returning null
+  // after one 403 previously made valid in-stock products look permanently
+  // absent from the import walk.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), REQ_TIMEOUT_MS);
+    try {
+      const res = await fetch(`${SOURCE_BASE}/${path}`, { headers: srcHeaders, signal: ctrl.signal });
+      if (res.ok) return await res.json().catch(() => null);
+      if (![403, 429, 500, 502, 503, 504].includes(res.status)) return null;
+    } catch {
+      // Retry timeout/network failures below.
+    } finally {
+      clearTimeout(t);
+    }
+    await new Promise((r) => setTimeout(r, 350 * (attempt + 1)));
   }
+  return null;
 }
 
 interface ListItem {
   id: string;
   name: string;
   quantity: number;
+  sourcePage?: number;
 }
 
 async function fetchListPage(page: number): Promise<ListItem[] | null> {
@@ -238,6 +247,9 @@ Deno.serve(async (req) => {
     let pagesWalked = 0;
     let reachedEnd = false;
     let listErrors = 0;
+    // Earliest page that was not processed completely. Never advance beyond
+    // this page: transient listing/detail/write failures must be retried.
+    let retryFromPage: number | null = null;
     let page = startPage;
 
     outer: while (pagesWalked < maxPages) {
@@ -254,7 +266,9 @@ Deno.serve(async (req) => {
         pagesWalked++;
         if (items === null) {
           listErrors++;
-          continue; // transient throttle — do not treat as end of catalog
+          const failedPage = slice[k];
+          retryFromPage = retryFromPage == null ? failedPage : Math.min(retryFromPage, failedPage);
+          continue; // transient throttle — retry this page on the next run
         }
         if (items.length === 0) {
           reachedEnd = true;
@@ -274,7 +288,7 @@ Deno.serve(async (req) => {
             byName.delete(key); // one legacy row can adopt only one SKU
             continue;
           }
-          candidates.push(it);
+          candidates.push({ ...it, sourcePage: slice[k] });
         }
       }
 
@@ -285,7 +299,10 @@ Deno.serve(async (req) => {
       // Overshoot: rewind the cursor over the last slice so the dropped
       // products are re-walked next run instead of being skipped forever.
       candidates.length = importBudget;
-      page = Math.max(startPage, page - PAGE_CONCURRENCY);
+      const firstDroppedPage = candidates[candidates.length - 1]?.sourcePage;
+      if (firstDroppedPage != null) {
+        retryFromPage = retryFromPage == null ? firstDroppedPage : Math.min(retryFromPage, firstDroppedPage);
+      }
     }
 
 
@@ -296,7 +313,20 @@ Deno.serve(async (req) => {
     }
 
     // ── Fetch details for genuinely new products ─────────────────────────
-    const details = (await mapLimit(candidates, CONCURRENCY, (c) => fetchDetail(c.id))).filter(Boolean);
+    const detailResults = await mapLimit(candidates, CONCURRENCY, async (candidate) => ({
+      candidate,
+      detail: await fetchDetail(candidate.id),
+    }));
+    const details: any[] = [];
+    for (const result of detailResults) {
+      if (result.detail) {
+        details.push(result.detail);
+      } else if (result.candidate.sourcePage != null) {
+        retryFromPage = retryFromPage == null
+          ? result.candidate.sourcePage
+          : Math.min(retryFromPage, result.candidate.sourcePage);
+      }
+    }
 
     // ── Create any missing categories ────────────────────────────────────
     for (const d of details) {
@@ -377,6 +407,9 @@ Deno.serve(async (req) => {
       const { data, error } = await admin.from("products").insert(chunk).select("id, slug, name");
       if (error) {
         console.error("jd-catalog-sync insert", error.message);
+        // Rows are ordered like `details`; retrying the whole scanned range is
+        // safe because successful source IDs are indexed on the next run.
+        retryFromPage = retryFromPage == null ? startPage : Math.min(retryFromPage, startPage);
         continue;
       }
       imported += data?.length || 0;
@@ -394,11 +427,11 @@ Deno.serve(async (req) => {
     let nextPhase = phase;
     let nextCursor = cursor;
     if (phase === "backfill") {
-      if (reachedEnd) {
+      if (reachedEnd && retryFromPage == null) {
         nextPhase = "steady";
         nextCursor = 1;
       } else {
-        nextCursor = page;
+        nextCursor = retryFromPage == null ? page : Math.min(page, retryFromPage);
       }
     } else {
       nextCursor = 1;
@@ -416,6 +449,7 @@ Deno.serve(async (req) => {
       imported,
       images: imgRows.length,
       reached_end: reachedEnd,
+      retry_from_page: retryFromPage,
     };
 
     await admin
