@@ -251,15 +251,21 @@ Deno.serve(async (req) => {
       }
       for (const it of items) {
         if (knownSku.has(it.id)) continue;
-        const match = byName.get(norm(it.name));
-        if (match) {
-          // Product already imported before source_id tracking existed.
-          if (!match.source_id) linked.push({ productId: match.id, sku: it.id });
+        const key = norm(it.name);
+        const match = byName.get(key);
+        // Only adopt a legacy row that has no source_id yet. The source ships
+        // many distinct products under an identical name — treating a name hit
+        // on an ALREADY-linked row as "known" silently skipped those imports
+        // (catalog was stuck at ~26% coverage).
+        if (match && !match.source_id) {
+          linked.push({ productId: match.id, sku: it.id });
           knownSku.add(it.id);
+          byName.delete(key); // one legacy row can adopt only one SKU
           continue;
         }
         if (candidates.length < importBudget) candidates.push(it);
       }
+
       if (candidates.length >= importBudget) {
         page++;
         pagesWalked++;
