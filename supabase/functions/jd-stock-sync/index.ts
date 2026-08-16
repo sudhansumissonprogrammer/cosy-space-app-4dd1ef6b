@@ -142,6 +142,7 @@ Deno.serve(async (req) => {
   const started = Date.now();
   const body = await req.json().catch(() => ({}));
   const chunkSize = Math.min(1500, Math.max(50, Number(body?.chunk) || CHUNK_SIZE));
+  const onlyOos = body?.only_oos === true;
 
   // ── Which stores are synced? ─────────────────────────────────────────────
   const { data: stores, error: storeErr } = await admin
@@ -176,10 +177,14 @@ Deno.serve(async (req) => {
     }
 
     // 2) ROTATING set — least-recently-synced first (NULLs first).
-    const { data: rot, error: rotErr } = await admin
+    //    `only_oos` targets currently sold-out rows instead, used to re-verify
+    //    products after a matching bug wrongly zeroed them.
+    let rotQuery = admin
       .from("products")
       .select("id, slug, source_id, stock_quantity, is_active")
-      .eq("store_id", store.id)
+      .eq("store_id", store.id);
+    if (onlyOos) rotQuery = rotQuery.lte("stock_quantity", 0);
+    const { data: rot, error: rotErr } = await rotQuery
       .order("source_synced_at", { ascending: true, nullsFirst: true })
       .limit(chunkSize);
     if (rotErr) {
