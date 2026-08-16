@@ -338,7 +338,11 @@ Deno.serve(async (req) => {
       const varStock = (Array.isArray(d.variations) ? d.variations : [])
         .reduce((s: number, v: any) => s + Math.max(0, Math.floor(Number(v?.stock) || 0)), 0);
       const parentQty = Math.max(0, Math.floor(Number(d.quantity) || 0));
-      const qty = Number(d.in_stock) === 0 ? 0 : Math.max(parentQty, varStock);
+      const delisted = Number(d.product_status ?? 1) !== 1;
+      // Unavailable / disabled at source → import anyway, listed as Sold Out.
+      // Stock sync puts it back the moment the source restocks it.
+      const qty = Number(d.in_stock) === 0 || delisted ? 0 : Math.max(parentQty, varStock);
+
       const sc = subCats.get(Number(d.sub_category_id));
 
       rows.push({
