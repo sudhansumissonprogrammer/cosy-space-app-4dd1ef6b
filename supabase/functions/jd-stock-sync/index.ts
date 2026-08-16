@@ -83,15 +83,25 @@ async function fetchSourceStock(key: string): Promise<SourceStock | null> {
     const p = (body.data ?? body)?.product ?? body.data ?? body;
     if (!p || typeof p !== "object") return null;
 
-    const rawQty = (p as Record<string, unknown>).quantity;
+    const rec = p as Record<string, unknown>;
+    const rawQty = rec.quantity;
     const qty = typeof rawQty === "number" ? rawQty : Number(rawQty);
-    if (!Number.isFinite(qty)) return null;
+    const variations = Array.isArray(rec.variations) ? (rec.variations as Record<string, unknown>[]) : [];
+    const varStock = variations.reduce(
+      (s, v) => s + Math.max(0, Math.floor(Number(v?.stock) || 0)),
+      0,
+    );
+    // Size/variant products always report parent quantity 0 — the real stock is
+    // the sum of the variation rows. Without this every variant product would
+    // be flipped to "Sold Out".
+    if (!Number.isFinite(qty) && variations.length === 0) return null;
 
-    const inStock = Number((p as Record<string, unknown>).in_stock ?? 1);
-    const status = Number((p as Record<string, unknown>).product_status ?? 1);
+    const inStock = Number(rec.in_stock ?? 1);
+    const status = Number(rec.product_status ?? 1);
+    const effective = Math.max(Number.isFinite(qty) ? Math.max(0, Math.floor(qty)) : 0, varStock);
 
     return {
-      quantity: inStock === 0 ? 0 : Math.max(0, Math.floor(qty)),
+      quantity: inStock === 0 ? 0 : effective,
       delisted: status !== 1,
     };
   } catch {
@@ -132,6 +142,7 @@ Deno.serve(async (req) => {
   const started = Date.now();
   const body = await req.json().catch(() => ({}));
   const chunkSize = Math.min(1500, Math.max(50, Number(body?.chunk) || CHUNK_SIZE));
+  const onlyOos = body?.only_oos === true;
 
   // ── Which stores are synced? ─────────────────────────────────────────────
   const { data: stores, error: storeErr } = await admin
@@ -166,10 +177,14 @@ Deno.serve(async (req) => {
     }
 
     // 2) ROTATING set — least-recently-synced first (NULLs first).
-    const { data: rot, error: rotErr } = await admin
+    //    `only_oos` targets currently sold-out rows instead, used to re-verify
+    //    products after a matching bug wrongly zeroed them.
+    let rotQuery = admin
       .from("products")
       .select("id, slug, source_id, stock_quantity, is_active")
-      .eq("store_id", store.id)
+      .eq("store_id", store.id);
+    if (onlyOos) rotQuery = rotQuery.lte("stock_quantity", 0);
+    const { data: rot, error: rotErr } = await rotQuery
       .order("source_synced_at", { ascending: true, nullsFirst: true })
       .limit(chunkSize);
     if (rotErr) {

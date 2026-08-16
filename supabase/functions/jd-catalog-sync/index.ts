@@ -310,7 +310,13 @@ Deno.serve(async (req) => {
       const fin = num(d.final_price);
       const price = old && fin && old > fin ? old : (fin ?? old ?? 0);
       const sale = old && fin && old > fin ? fin : null;
-      const qty = Number(d.in_stock) === 0 ? 0 : Math.max(0, Math.floor(Number(d.quantity) || 0));
+      // Variation products report parent `quantity: 0` while the real stock
+      // lives on each variation row — take the larger of the two or every
+      // size-based product would land as "Sold Out".
+      const varStock = (Array.isArray(d.variations) ? d.variations : [])
+        .reduce((s: number, v: any) => s + Math.max(0, Math.floor(Number(v?.stock) || 0)), 0);
+      const parentQty = Math.max(0, Math.floor(Number(d.quantity) || 0));
+      const qty = Number(d.in_stock) === 0 ? 0 : Math.max(parentQty, varStock);
       const sc = subCats.get(Number(d.sub_category_id));
 
       rows.push({
