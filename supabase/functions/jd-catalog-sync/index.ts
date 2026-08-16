@@ -43,16 +43,19 @@ const SOURCE_ORIGIN = "https://shodfedf.jdwebshop.com";
 const ASSETS = "https://assets.jdwebnship.in/";
 
 /** Pages of the listing walked per run while backfilling. */
-const PAGE_BUDGET = 45;
+const PAGE_BUDGET = 120;
+/** Listing pages fetched in parallel (their WAF tolerates ~6). */
+const PAGE_CONCURRENCY = 6;
 /** Newest pages re-scanned every run once backfill is done. */
 const STEADY_PAGES = 8;
 /** Max new products imported in one run (each costs 1 detail request). */
-const IMPORT_BUDGET = 260;
-const CONCURRENCY = 4;
+const IMPORT_BUDGET = 420;
+const CONCURRENCY = 5;
 const REQ_GAP_MS = 40;
 const REQ_TIMEOUT_MS = 12_000;
 /** Stop starting new work after this many ms so the run always finishes. */
-const TIME_BUDGET_MS = 110_000;
+const TIME_BUDGET_MS = 105_000;
+
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -237,42 +240,55 @@ Deno.serve(async (req) => {
     let listErrors = 0;
     let page = startPage;
 
-    for (; pagesWalked < maxPages; page++, pagesWalked++) {
+    outer: while (pagesWalked < maxPages) {
       if (Date.now() - started > TIME_BUDGET_MS) break;
-      const items = await fetchListPage(page);
-      if (items === null) {
-        listErrors++;
-        await new Promise((r) => setTimeout(r, 400));
-        continue; // transient throttle — do not treat as end of catalog
-      }
-      if (items.length === 0) {
-        reachedEnd = true;
-        break;
-      }
-      for (const it of items) {
-        if (knownSku.has(it.id)) continue;
-        const key = norm(it.name);
-        const match = byName.get(key);
-        // Only adopt a legacy row that has no source_id yet. The source ships
-        // many distinct products under an identical name — treating a name hit
-        // on an ALREADY-linked row as "known" silently skipped those imports
-        // (catalog was stuck at ~26% coverage).
-        if (match && !match.source_id) {
-          linked.push({ productId: match.id, sku: it.id });
-          knownSku.add(it.id);
-          byName.delete(key); // one legacy row can adopt only one SKU
-          continue;
-        }
-        if (candidates.length < importBudget) candidates.push(it);
-      }
+      // Fetch a slice of listing pages in parallel — sequential paging could
+      // not keep up with a 1,200+ page catalog inside one run's time budget.
+      const slice: number[] = [];
+      for (let k = 0; k < PAGE_CONCURRENCY && pagesWalked + k < maxPages; k++) slice.push(page + k);
+      const pages = await Promise.all(slice.map((n) => fetchListPage(n)));
 
-      if (candidates.length >= importBudget) {
+      for (let k = 0; k < pages.length; k++) {
+        const items = pages[k];
         page++;
         pagesWalked++;
-        break;
+        if (items === null) {
+          listErrors++;
+          continue; // transient throttle — do not treat as end of catalog
+        }
+        if (items.length === 0) {
+          reachedEnd = true;
+          break outer;
+        }
+        for (const it of items) {
+          if (knownSku.has(it.id)) continue;
+          const key = norm(it.name);
+          const match = byName.get(key);
+          // Only adopt a legacy row that has no source_id yet. The source ships
+          // many distinct products under an identical name — treating a name hit
+          // on an ALREADY-linked row as "known" silently skipped those imports
+          // (catalog was stuck at ~26% coverage).
+          if (match && !match.source_id) {
+            linked.push({ productId: match.id, sku: it.id });
+            knownSku.add(it.id);
+            byName.delete(key); // one legacy row can adopt only one SKU
+            continue;
+          }
+          candidates.push(it);
+        }
       }
+
+      if (candidates.length >= importBudget) break;
       await new Promise((r) => setTimeout(r, REQ_GAP_MS));
     }
+    if (candidates.length > importBudget) {
+      // Overshoot: rewind the cursor over the last slice so the dropped
+      // products are re-walked next run instead of being skipped forever.
+      candidates.length = importBudget;
+      page = Math.max(startPage, page - PAGE_CONCURRENCY);
+    }
+
+
 
     // ── Backfill source_id on pre-existing rows ──────────────────────────
     for (const l of linked) {
@@ -322,7 +338,11 @@ Deno.serve(async (req) => {
       const varStock = (Array.isArray(d.variations) ? d.variations : [])
         .reduce((s: number, v: any) => s + Math.max(0, Math.floor(Number(v?.stock) || 0)), 0);
       const parentQty = Math.max(0, Math.floor(Number(d.quantity) || 0));
-      const qty = Number(d.in_stock) === 0 ? 0 : Math.max(parentQty, varStock);
+      const delisted = Number(d.product_status ?? 1) !== 1;
+      // Unavailable / disabled at source → import anyway, listed as Sold Out.
+      // Stock sync puts it back the moment the source restocks it.
+      const qty = Number(d.in_stock) === 0 || delisted ? 0 : Math.max(parentQty, varStock);
+
       const sc = subCats.get(Number(d.sub_category_id));
 
       rows.push({
@@ -334,7 +354,7 @@ Deno.serve(async (req) => {
         sale_price: sale,
         currency: store.currency || "INR",
         stock_quantity: qty,
-        is_active: Number(d.product_status ?? 1) === 1,
+        is_active: true,
         image_url: assetUrl(d.cover_image),
         image_alt: String(d.name || ""),
         category: sc?.name ?? null,

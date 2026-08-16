@@ -37,8 +37,9 @@ const SOURCE_ORIGIN = "https://shodfedf.jdwebshop.com";
 
 /** Products per run. 700 @ ~8 req/s ≈ 90s, and stays under the source's
  *  rolling rate limit (1000/run in one burst produced ~39% throttled 403s). */
-const CHUNK_SIZE = 700;
-const CONCURRENCY = 4;
+const CHUNK_SIZE = 1000;
+const CONCURRENCY = 5;
+
 /** Minimum gap between requests inside one worker — politeness throttle. */
 const REQ_GAP_MS = 40;
 /** Max throttled lookups retried in the slow second pass (time budget). */
@@ -225,8 +226,11 @@ Deno.serve(async (req) => {
       if (!src) { failed++; continue; }
       checked++;
 
-      const nextStock = src.quantity <= OOS_THRESHOLD ? 0 : src.quantity;
-      const nextActive = src.delisted ? false : true;
+      // Delisted / unavailable at source → keep the product visible but Sold
+      // Out, so it reappears automatically the moment the source restocks it.
+      const nextStock = src.delisted || src.quantity <= OOS_THRESHOLD ? 0 : src.quantity;
+      const nextActive = true;
+
 
       const stockChanged = (p.stock_quantity ?? 0) !== nextStock;
       const activeChanged = p.is_active !== nextActive;
