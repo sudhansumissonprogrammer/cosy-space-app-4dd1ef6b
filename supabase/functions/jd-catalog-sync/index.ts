@@ -45,7 +45,7 @@ const ASSETS = "https://assets.jdwebnship.in/";
 /** Pages of the listing walked per run while backfilling. */
 const PAGE_BUDGET = 120;
 /** Listing pages fetched in parallel (their WAF tolerates ~6). */
-const PAGE_CONCURRENCY = 6;
+const PAGE_CONCURRENCY = 3;
 /** Newest pages re-scanned every run once backfill is done. */
 const STEADY_PAGES = 8;
 /** Max new products imported in one run (each costs 1 detail request). */
@@ -419,7 +419,7 @@ Deno.serve(async (req) => {
     let nextPhase = phase;
     let nextCursor = cursor;
     if (phase === "backfill") {
-      if (reachedEnd) {
+      if (reachedEnd && retryFromPage == null) {
         nextPhase = "steady";
         nextCursor = 1;
       } else {
