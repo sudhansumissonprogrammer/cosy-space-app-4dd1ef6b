@@ -45,7 +45,15 @@ import { cleanImageUrl } from "@/lib/imageOptimize";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 
-type SortOption = "title-asc" | "title-desc" | "date-new" | "date-old";
+type SortOption =
+  | "title-asc"
+  | "title-desc"
+  | "date-new"
+  | "date-old"
+  | "stock-high"
+  | "stock-low"
+  | "category-asc"
+  | "category-desc";
 type StatusFilter = "all" | "active" | "draft";
 type StockFilter = "all" | "in-stock" | "out-of-stock";
 
@@ -54,7 +62,12 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "title-desc", label: "Product title (Z–A)" },
   { value: "date-new", label: "Created (newest first)" },
   { value: "date-old", label: "Created (oldest first)" },
+  { value: "stock-high", label: "Stock (high → low)" },
+  { value: "stock-low", label: "Stock (low → high)" },
+  { value: "category-asc", label: "Category (A–Z)" },
+  { value: "category-desc", label: "Category (Z–A)" },
 ];
+
 
 export default function ProductsList() { // v2
   const slugStore = useStoreSlugParam();
@@ -182,6 +195,10 @@ export default function ProductsList() { // v2
       case "title-desc": result.sort((a, b) => b.name.localeCompare(a.name)); break;
       case "date-new": result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); break;
       case "date-old": result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); break;
+      case "stock-high": result.sort((a, b) => (Number(b.stock_quantity) || 0) - (Number(a.stock_quantity) || 0)); break;
+      case "stock-low": result.sort((a, b) => (Number(a.stock_quantity) || 0) - (Number(b.stock_quantity) || 0)); break;
+      case "category-asc": result.sort((a, b) => (a.category || "\uffff").localeCompare(b.category || "\uffff") || a.name.localeCompare(b.name)); break;
+      case "category-desc": result.sort((a, b) => (b.category || "").localeCompare(a.category || "") || a.name.localeCompare(b.name)); break;
     }
     return result;
   }, [allProducts, search, statusFilter, stockFilter, categoryFilter, sort]);

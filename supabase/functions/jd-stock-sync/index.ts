@@ -37,7 +37,7 @@ const SOURCE_ORIGIN = "https://shodfedf.jdwebshop.com";
 
 /** Products per run. 700 @ ~8 req/s ≈ 90s, and stays under the source's
  *  rolling rate limit (1000/run in one burst produced ~39% throttled 403s). */
-const CHUNK_SIZE = 500;
+const CHUNK_SIZE = 700;
 const CONCURRENCY = 4;
 /** Minimum gap between requests inside one worker — politeness throttle. */
 const REQ_GAP_MS = 40;
