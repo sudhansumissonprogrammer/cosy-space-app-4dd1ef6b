@@ -240,42 +240,49 @@ Deno.serve(async (req) => {
     let listErrors = 0;
     let page = startPage;
 
-    for (; pagesWalked < maxPages; page++, pagesWalked++) {
+    outer: while (pagesWalked < maxPages) {
       if (Date.now() - started > TIME_BUDGET_MS) break;
-      const items = await fetchListPage(page);
-      if (items === null) {
-        listErrors++;
-        await new Promise((r) => setTimeout(r, 400));
-        continue; // transient throttle — do not treat as end of catalog
-      }
-      if (items.length === 0) {
-        reachedEnd = true;
-        break;
-      }
-      for (const it of items) {
-        if (knownSku.has(it.id)) continue;
-        const key = norm(it.name);
-        const match = byName.get(key);
-        // Only adopt a legacy row that has no source_id yet. The source ships
-        // many distinct products under an identical name — treating a name hit
-        // on an ALREADY-linked row as "known" silently skipped those imports
-        // (catalog was stuck at ~26% coverage).
-        if (match && !match.source_id) {
-          linked.push({ productId: match.id, sku: it.id });
-          knownSku.add(it.id);
-          byName.delete(key); // one legacy row can adopt only one SKU
-          continue;
-        }
-        if (candidates.length < importBudget) candidates.push(it);
-      }
+      // Fetch a slice of listing pages in parallel — sequential paging could
+      // not keep up with a 1,200+ page catalog inside one run's time budget.
+      const slice: number[] = [];
+      for (let k = 0; k < PAGE_CONCURRENCY && pagesWalked + k < maxPages; k++) slice.push(page + k);
+      const pages = await Promise.all(slice.map((n) => fetchListPage(n)));
 
-      if (candidates.length >= importBudget) {
+      for (let k = 0; k < pages.length; k++) {
+        const items = pages[k];
         page++;
         pagesWalked++;
-        break;
+        if (items === null) {
+          listErrors++;
+          continue; // transient throttle — do not treat as end of catalog
+        }
+        if (items.length === 0) {
+          reachedEnd = true;
+          break outer;
+        }
+        for (const it of items) {
+          if (knownSku.has(it.id)) continue;
+          const key = norm(it.name);
+          const match = byName.get(key);
+          // Only adopt a legacy row that has no source_id yet. The source ships
+          // many distinct products under an identical name — treating a name hit
+          // on an ALREADY-linked row as "known" silently skipped those imports
+          // (catalog was stuck at ~26% coverage).
+          if (match && !match.source_id) {
+            linked.push({ productId: match.id, sku: it.id });
+            knownSku.add(it.id);
+            byName.delete(key); // one legacy row can adopt only one SKU
+            continue;
+          }
+          candidates.push(it);
+        }
       }
+
+      if (candidates.length >= importBudget) break;
       await new Promise((r) => setTimeout(r, REQ_GAP_MS));
     }
+    candidates.length = Math.min(candidates.length, importBudget);
+
 
     // ── Backfill source_id on pre-existing rows ──────────────────────────
     for (const l of linked) {
