@@ -45,7 +45,15 @@ import { cleanImageUrl } from "@/lib/imageOptimize";
 import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 
-type SortOption = "title-asc" | "title-desc" | "date-new" | "date-old";
+type SortOption =
+  | "title-asc"
+  | "title-desc"
+  | "date-new"
+  | "date-old"
+  | "stock-high"
+  | "stock-low"
+  | "category-asc"
+  | "category-desc";
 type StatusFilter = "all" | "active" | "draft";
 type StockFilter = "all" | "in-stock" | "out-of-stock";
 
@@ -54,7 +62,12 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "title-desc", label: "Product title (Z–A)" },
   { value: "date-new", label: "Created (newest first)" },
   { value: "date-old", label: "Created (oldest first)" },
+  { value: "stock-high", label: "Stock (high → low)" },
+  { value: "stock-low", label: "Stock (low → high)" },
+  { value: "category-asc", label: "Category (A–Z)" },
+  { value: "category-desc", label: "Category (Z–A)" },
 ];
+
 
 export default function ProductsList() { // v2
   const slugStore = useStoreSlugParam();
