@@ -59,11 +59,15 @@ interface SourceStock {
   delisted: boolean;
 }
 
-async function fetchSourceStock(slug: string): Promise<SourceStock | null> {
+/**
+ * `key` is the source SKU (`products.source_id`) when we have it — the stable
+ * identifier — otherwise the slug, which the source also accepts.
+ */
+async function fetchSourceStock(key: string): Promise<SourceStock | null> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), REQ_TIMEOUT_MS);
   try {
-    const res = await fetch(`${SOURCE_BASE}/products/${SOURCE_HASH}/${encodeURIComponent(slug)}`, {
+    const res = await fetch(`${SOURCE_BASE}/products/${SOURCE_HASH}/${encodeURIComponent(key)}`, {
       headers: {
         "API-KEY": SOURCE_API_KEY,
         Origin: SOURCE_ORIGIN,
@@ -150,12 +154,12 @@ Deno.serve(async (req) => {
       .limit(500);
     const hotIds = [...new Set((hotOrders || []).map((r) => (r as { product_id: string }).product_id).filter(Boolean))];
 
-    const targets = new Map<string, { id: string; slug: string; stock_quantity: number; is_active: boolean }>();
+    const targets = new Map<string, { id: string; slug: string; source_id: string | null; stock_quantity: number; is_active: boolean }>();
 
     if (hotIds.length) {
       const { data: hot } = await admin
         .from("products")
-        .select("id, slug, stock_quantity, is_active")
+        .select("id, slug, source_id, stock_quantity, is_active")
         .eq("store_id", store.id)
         .in("id", hotIds);
       for (const p of hot || []) targets.set(p.id, p as never);
@@ -164,7 +168,7 @@ Deno.serve(async (req) => {
     // 2) ROTATING set — least-recently-synced first (NULLs first).
     const { data: rot, error: rotErr } = await admin
       .from("products")
-      .select("id, slug, stock_quantity, is_active")
+      .select("id, slug, source_id, stock_quantity, is_active")
       .eq("store_id", store.id)
       .order("source_synced_at", { ascending: true, nullsFirst: true })
       .limit(chunkSize);
@@ -174,11 +178,11 @@ Deno.serve(async (req) => {
     }
     for (const p of rot || []) targets.set(p.id, p as never);
 
-    const list = [...targets.values()].filter((p) => !!p.slug);
+    const list = [...targets.values()].filter((p) => !!(p.source_id || p.slug));
 
     // 3) Fetch source stock with capped concurrency + throttle.
     const results = await mapLimit(list, CONCURRENCY, async (p) => {
-      const src = await fetchSourceStock(p.slug);
+      const src = await fetchSourceStock(p.source_id || p.slug);
       await new Promise((r) => setTimeout(r, REQ_GAP_MS));
       return { p, src };
     });
@@ -190,7 +194,7 @@ Deno.serve(async (req) => {
       if (row.src || retried >= MAX_RETRY) continue;
       retried++;
       await new Promise((r) => setTimeout(r, 200));
-      row.src = await fetchSourceStock(row.p.slug);
+      row.src = await fetchSourceStock(row.p.source_id || row.p.slug);
     }
 
     // 4) Apply — only verified rows.

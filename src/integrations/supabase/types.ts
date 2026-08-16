@@ -742,6 +742,54 @@ export type Database = {
           },
         ]
       }
+      jd_sync_state: {
+        Row: {
+          created_at: string
+          imported_total: number
+          last_result: Json | null
+          last_run_at: string | null
+          page_cursor: number
+          phase: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          imported_total?: number
+          last_result?: Json | null
+          last_run_at?: string | null
+          page_cursor?: number
+          phase?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          imported_total?: number
+          last_result?: Json | null
+          last_run_at?: string | null
+          page_cursor?: number
+          phase?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jd_sync_state_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jd_sync_state_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_leads: {
         Row: {
           business: string | null

@@ -1,0 +1,429 @@
+// supabase/functions/jd-catalog-sync/index.ts
+//
+// Catalog sync: imports NEW products from the source store
+// (shodfedf.jdwebshop.com / jdwebnship API) into our catalog.
+//
+// Companion to `jd-stock-sync` (which only refreshes stock of products we
+// already have). This function is what makes the two catalogs behave like a
+// single site: anything they add shows up here automatically.
+//
+// How it works
+//   • The source exposes a paginated "recently added" listing, 12 per page,
+//     covering the WHOLE catalog (page 1 = newest). There is no bulk export.
+//   • Phase `backfill` — walks pages from the stored cursor forward, a budgeted
+//     number of pages per run, until it hits the end of the catalog. Then it
+//     flips to `steady`.
+//   • Phase `steady`  — every run re-scans the first STEADY_PAGES pages (the
+//     newest arrivals) and imports anything we do not have yet.
+//   • Matching: by `source_id` (their SKU) first, then by product NAME so the
+//     2,615 products imported before this function existed get their
+//     `source_id` backfilled instead of being duplicated.
+//   • Only unknown products cost a detail request (slug, gallery, category).
+//
+// Safety
+//   • Never deletes or overwrites existing products — insert-only.
+//   • Any non-200 / timeout from the source is skipped; nothing is written.
+//   • Concurrency capped at 4 with a request gap (their WAF 403s on bursts).
+//   • Kill switch: stores.source_sync_enabled = false.
+//   • Wall-clock budget per run so the function never times out mid-page.
+//
+// Auth: header `x-cron-key` matching a token in public.cron_auth.
+
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-cron-key",
+};
+
+const SOURCE_BASE = "https://byeetjlpwzpy.jdwebnship.in/api";
+const SOURCE_HASH = "360080b0b7289a6080e92018585cf114";
+const SOURCE_API_KEY = "9e5a4f4b49da226ab3b1bc396020bf831cb3c14584ced963";
+const SOURCE_ORIGIN = "https://shodfedf.jdwebshop.com";
+const ASSETS = "https://assets.jdwebnship.in/";
+
+/** Pages of the listing walked per run while backfilling. */
+const PAGE_BUDGET = 45;
+/** Newest pages re-scanned every run once backfill is done. */
+const STEADY_PAGES = 8;
+/** Max new products imported in one run (each costs 1 detail request). */
+const IMPORT_BUDGET = 260;
+const CONCURRENCY = 4;
+const REQ_GAP_MS = 40;
+const REQ_TIMEOUT_MS = 12_000;
+/** Stop starting new work after this many ms so the run always finishes. */
+const TIME_BUDGET_MS = 110_000;
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+const srcHeaders = {
+  "API-KEY": SOURCE_API_KEY,
+  Origin: SOURCE_ORIGIN,
+  Referer: `${SOURCE_ORIGIN}/`,
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
+  Accept: "application/json",
+};
+
+async function srcFetch(path: string): Promise<any | null> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), REQ_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${SOURCE_BASE}/${path}`, { headers: srcHeaders, signal: ctrl.signal });
+    if (!res.ok) return null;
+    return await res.json().catch(() => null);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+interface ListItem {
+  id: string;
+  name: string;
+  quantity: number;
+}
+
+async function fetchListPage(page: number): Promise<ListItem[] | null> {
+  const body = await srcFetch(`products/v2/recent?sortBy=recently_added&page=${page}`);
+  const data = body?.data;
+  if (!Array.isArray(data)) return null;
+  return data
+    .filter((p: any) => p && p.id && p.name)
+    .map((p: any) => ({ id: String(p.id), name: String(p.name), quantity: Number(p.quantity) || 0 }));
+}
+
+async function fetchDetail(sku: string): Promise<any | null> {
+  const body = await srcFetch(`products/${SOURCE_HASH}/${encodeURIComponent(sku)}`);
+  const p = body?.data;
+  if (!p || typeof p !== "object" || !p.slug) return null;
+  return p;
+}
+
+async function mapLimit<T, R>(items: T[], limit: number, worker: (item: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let cursor = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (true) {
+        const i = cursor++;
+        if (i >= items.length) return;
+        out[i] = await worker(items[i]);
+        await new Promise((r) => setTimeout(r, REQ_GAP_MS));
+      }
+    }),
+  );
+  return out;
+}
+
+const assetUrl = (p?: string | null): string | null => {
+  if (!p) return null;
+  const s = String(p).trim();
+  if (!s) return null;
+  if (/^https?:\/\//i.test(s)) return s;
+  return ASSETS + s.replace(/^\/+/, "");
+};
+
+const num = (v: unknown): number | null => {
+  const n = typeof v === "number" ? v : Number(String(v ?? "").replace(/[^0-9.]/g, ""));
+  return Number.isFinite(n) ? n : null;
+};
+
+const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+
+function slugify(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 90) || "product";
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  const cronKey = req.headers.get("x-cron-key") || "";
+  if (!cronKey) return json({ error: "Unauthorized" }, 401);
+  const { data: authRow } = await admin.from("cron_auth").select("secret").eq("secret", cronKey).maybeSingle();
+  if (!authRow) return json({ error: "Unauthorized" }, 401);
+
+  const started = Date.now();
+  const body = await req.json().catch(() => ({}));
+  /** `reset` restarts a full catalog walk from page 1. */
+  const reset = body?.reset === true;
+  const pageBudget = Math.min(200, Math.max(1, Number(body?.pages) || PAGE_BUDGET));
+  const importBudget = Math.min(1200, Math.max(10, Number(body?.limit) || IMPORT_BUDGET));
+
+  const { data: stores, error: storeErr } = await admin
+    .from("stores")
+    .select("id, slug, custom_domain, currency")
+    .eq("source_sync_enabled", true);
+  if (storeErr) return json({ error: storeErr.message }, 500);
+  if (!stores?.length) return json({ ok: true, stores: 0, note: "no store has source_sync_enabled" });
+
+  // Source sub-category map (id → name), fetched once per run.
+  const catBody = await srcFetch("products/categories");
+  const subCats = new Map<number, { name: string; image: string | null }>();
+  for (const c of catBody?.data?.sub_categories || []) {
+    if (c?.sub_category_id != null && c?.sub_category_name) {
+      subCats.set(Number(c.sub_category_id), {
+        name: String(c.sub_category_name),
+        image: assetUrl(c.sub_category_image),
+      });
+    }
+  }
+
+  const report: Record<string, unknown>[] = [];
+
+  for (const store of stores) {
+    // ── State ────────────────────────────────────────────────────────────
+    const { data: stateRow } = await admin
+      .from("jd_sync_state")
+      .select("*")
+      .eq("store_id", store.id)
+      .maybeSingle();
+
+    let phase: string = reset ? "backfill" : (stateRow?.phase || "backfill");
+    let cursor: number = reset ? 1 : Math.max(1, Number(stateRow?.page_cursor) || 1);
+    if (!stateRow) {
+      await admin.from("jd_sync_state").insert({ store_id: store.id, phase, page_cursor: cursor });
+    }
+
+    // ── Existing catalog index (source_id + normalised name) ─────────────
+    const knownSku = new Set<string>();
+    const byName = new Map<string, { id: string; source_id: string | null }>();
+    const knownSlug = new Set<string>();
+    {
+      const PAGE = 1000;
+      for (let off = 0; ; off += PAGE) {
+        const { data, error } = await admin
+          .from("products")
+          .select("id, name, slug, source_id")
+          .eq("store_id", store.id)
+          .range(off, off + PAGE - 1);
+        if (error) break;
+        for (const p of data || []) {
+          if (p.source_id) knownSku.add(p.source_id);
+          if (p.slug) knownSlug.add(p.slug);
+          const k = norm(p.name || "");
+          if (k && !byName.has(k)) byName.set(k, { id: p.id, source_id: p.source_id });
+        }
+        if (!data || data.length < PAGE) break;
+      }
+    }
+
+    // ── Existing categories ──────────────────────────────────────────────
+    const catByName = new Map<string, string>();
+    {
+      const { data } = await admin.from("categories").select("id, name").eq("store_id", store.id);
+      for (const c of data || []) catByName.set(norm(c.name), c.id);
+    }
+
+    // ── Walk listing pages ───────────────────────────────────────────────
+    const startPage = phase === "steady" ? 1 : cursor;
+    const maxPages = phase === "steady" ? STEADY_PAGES : pageBudget;
+
+    const candidates: ListItem[] = [];
+    const linked: { productId: string; sku: string }[] = [];
+    let pagesWalked = 0;
+    let reachedEnd = false;
+    let listErrors = 0;
+    let page = startPage;
+
+    for (; pagesWalked < maxPages; page++, pagesWalked++) {
+      if (Date.now() - started > TIME_BUDGET_MS) break;
+      const items = await fetchListPage(page);
+      if (items === null) {
+        listErrors++;
+        await new Promise((r) => setTimeout(r, 400));
+        continue; // transient throttle — do not treat as end of catalog
+      }
+      if (items.length === 0) {
+        reachedEnd = true;
+        break;
+      }
+      for (const it of items) {
+        if (knownSku.has(it.id)) continue;
+        const match = byName.get(norm(it.name));
+        if (match) {
+          // Product already imported before source_id tracking existed.
+          if (!match.source_id) linked.push({ productId: match.id, sku: it.id });
+          knownSku.add(it.id);
+          continue;
+        }
+        if (candidates.length < importBudget) candidates.push(it);
+      }
+      if (candidates.length >= importBudget) {
+        page++;
+        pagesWalked++;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, REQ_GAP_MS));
+    }
+
+    // ── Backfill source_id on pre-existing rows ──────────────────────────
+    for (const l of linked) {
+      await admin.from("products").update({ source_id: l.sku, source_platform: "jdwebship" }).eq("id", l.productId);
+    }
+
+    // ── Fetch details for genuinely new products ─────────────────────────
+    const details = (await mapLimit(candidates, CONCURRENCY, (c) => fetchDetail(c.id))).filter(Boolean);
+
+    // ── Create any missing categories ────────────────────────────────────
+    for (const d of details) {
+      const sc = subCats.get(Number(d.sub_category_id));
+      if (!sc) continue;
+      const key = norm(sc.name);
+      if (catByName.has(key)) continue;
+      const { data: newCat } = await admin
+        .from("categories")
+        .insert({
+          store_id: store.id,
+          name: sc.name,
+          slug: slugify(sc.name),
+          image_url: sc.image,
+          display_order: 99,
+          show_on_home: true,
+        })
+        .select("id")
+        .maybeSingle();
+      if (newCat?.id) catByName.set(key, newCat.id);
+    }
+
+    // ── Build product rows ───────────────────────────────────────────────
+    const rows: any[] = [];
+    const galleries: Record<string, string[]> = {};
+    for (const d of details) {
+      let slug = String(d.slug);
+      if (knownSlug.has(slug)) slug = `${slug}-${String(d.id).slice(-6).toLowerCase()}`;
+      if (knownSlug.has(slug)) continue;
+      knownSlug.add(slug);
+
+      const old = num(d.old_price);
+      const fin = num(d.final_price);
+      const price = old && fin && old > fin ? old : (fin ?? old ?? 0);
+      const sale = old && fin && old > fin ? fin : null;
+      const qty = Number(d.in_stock) === 0 ? 0 : Math.max(0, Math.floor(Number(d.quantity) || 0));
+      const sc = subCats.get(Number(d.sub_category_id));
+
+      rows.push({
+        store_id: store.id,
+        name: String(d.name || d.alternate_name || "").trim(),
+        slug,
+        description: d.description ? String(d.description) : null,
+        price,
+        sale_price: sale,
+        currency: store.currency || "INR",
+        stock_quantity: qty,
+        is_active: Number(d.product_status ?? 1) === 1,
+        image_url: assetUrl(d.cover_image),
+        image_alt: String(d.name || ""),
+        category: sc?.name ?? null,
+        video_url: assetUrl(d.video),
+        source_id: String(d.id),
+        source_platform: "jdwebship",
+        source_synced_at: new Date().toISOString(),
+      });
+      galleries[slug] = (Array.isArray(d.images) ? d.images : [])
+        .map((im: any) => assetUrl(im?.image))
+        .filter(Boolean)
+        .slice(0, 8) as string[];
+    }
+
+    // ── Insert ───────────────────────────────────────────────────────────
+    let imported = 0;
+    const imgRows: any[] = [];
+    for (let i = 0; i < rows.length; i += 50) {
+      const chunk = rows.slice(i, i + 50);
+      const { data, error } = await admin.from("products").insert(chunk).select("id, slug, name");
+      if (error) {
+        console.error("jd-catalog-sync insert", error.message);
+        continue;
+      }
+      imported += data?.length || 0;
+      for (const p of data || []) {
+        (galleries[p.slug] || []).forEach((u, j) => {
+          imgRows.push({ product_id: p.id, image_url: u, display_order: j, image_alt: p.name });
+        });
+      }
+    }
+    for (let i = 0; i < imgRows.length; i += 200) {
+      await admin.from("product_images").insert(imgRows.slice(i, i + 200));
+    }
+
+    // ── Advance cursor / phase ───────────────────────────────────────────
+    let nextPhase = phase;
+    let nextCursor = cursor;
+    if (phase === "backfill") {
+      if (reachedEnd) {
+        nextPhase = "steady";
+        nextCursor = 1;
+      } else {
+        nextCursor = page;
+      }
+    } else {
+      nextCursor = 1;
+    }
+
+    const result = {
+      phase,
+      next_phase: nextPhase,
+      from_page: startPage,
+      pages_walked: pagesWalked,
+      list_errors: listErrors,
+      candidates: candidates.length,
+      details_ok: details.length,
+      linked_existing: linked.length,
+      imported,
+      images: imgRows.length,
+      reached_end: reachedEnd,
+    };
+
+    await admin
+      .from("jd_sync_state")
+      .upsert({
+        store_id: store.id,
+        phase: nextPhase,
+        page_cursor: nextCursor,
+        last_run_at: new Date().toISOString(),
+        last_result: result,
+        imported_total: (Number(stateRow?.imported_total) || 0) + imported,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "store_id" });
+
+    // ── Purge storefront cache when the catalog actually changed ─────────
+    let purged = false;
+    if (imported > 0) {
+      const secret = Deno.env.get("WORKER_PURGE_SECRET") || "";
+      if (secret) {
+        const domain = (store.custom_domain || "").replace(/^www\./, "").toLowerCase().trim();
+        const params = new URLSearchParams({ slug: store.slug });
+        if (domain) params.set("domain", domain);
+        const bases = [`https://${store.slug}.shopbanao.in`];
+        if (domain) bases.push(`https://${domain}`);
+        const res = await Promise.allSettled(
+          bases.map((b) =>
+            fetch(`${b}/api/purge-store?${params}`, {
+              method: "POST",
+              headers: { "x-purge-secret": secret, "Cache-Control": "no-store" },
+            })
+          ),
+        );
+        purged = res.some((r) => r.status === "fulfilled" && r.value.ok);
+      }
+    }
+
+    report.push({ store: store.slug, ...result, purged });
+  }
+
+  const out = { ok: true, ms: Date.now() - started, stores: report };
+  console.log("jd-catalog-sync", JSON.stringify(out));
+  return json(out);
+});
