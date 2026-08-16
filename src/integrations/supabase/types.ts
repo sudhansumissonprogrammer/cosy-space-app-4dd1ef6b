@@ -2375,6 +2375,7 @@ export type Database = {
           slug: string | null
           source_id: string | null
           source_platform: string | null
+          source_synced_at: string | null
           stock_quantity: number
           store_id: string
           updated_at: string
@@ -2409,6 +2410,7 @@ export type Database = {
           slug?: string | null
           source_id?: string | null
           source_platform?: string | null
+          source_synced_at?: string | null
           stock_quantity?: number
           store_id: string
           updated_at?: string
@@ -2443,6 +2445,7 @@ export type Database = {
           slug?: string | null
           source_id?: string | null
           source_platform?: string | null
+          source_synced_at?: string | null
           stock_quantity?: number
           store_id?: string
           updated_at?: string
@@ -3756,6 +3759,7 @@ export type Database = {
           seo_about_paragraph: string | null
           shipping_policy: string | null
           slug: string
+          source_sync_enabled: boolean
           state: string | null
           suspension_reason: string | null
           theme: string
@@ -3816,6 +3820,7 @@ export type Database = {
           seo_about_paragraph?: string | null
           shipping_policy?: string | null
           slug: string
+          source_sync_enabled?: boolean
           state?: string | null
           suspension_reason?: string | null
           theme?: string
@@ -3876,6 +3881,7 @@ export type Database = {
           seo_about_paragraph?: string | null
           shipping_policy?: string | null
           slug?: string
+          source_sync_enabled?: boolean
           state?: string | null
           suspension_reason?: string | null
           theme?: string

@@ -24,6 +24,7 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
   const { wishlisted, effectivePrice, handleAddToCart, handleToggleWishlist } = useProductCardActions(product);
   const discount = getDiscountPercent(product.price, product.sale_price);
   const rating = getProductRating(product.id);
+  const isOutOfStock = (product.stock_quantity ?? 0) <= 0;
 
   return (
     <div onMouseEnter={() => setHoverLoaded(true)} className="card-tilt group relative overflow-hidden transition-[transform,opacity,colors,box-shadow] active:scale-[0.98]" style={{ borderRadius: "12px", border: "1px solid hsl(var(--border, 0 0% 90%))" }}>
@@ -62,10 +63,18 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
               </>
             );
           })()}
-          {discount && (
+          {discount && !isOutOfStock && (
             <div className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-bold" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "6px" }}>
               -{discount}%
             </div>
+          )}
+          {isOutOfStock && (
+            <>
+              <div className="absolute inset-0 bg-background/55" aria-hidden="true" />
+              <div className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md bg-foreground text-background">
+                Sold Out
+              </div>
+            </>
           )}
           <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleWishlist(e); }} className="absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] active:scale-[0.96] lg:hidden" style={{ backgroundColor: wishlisted ? "color-mix(in srgb, #ef4444 15%, var(--storefront-bg, #fff))" : "color-mix(in srgb, var(--storefront-bg, #fff) 92%, transparent)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
             <span className="relative inline-block h-4 w-4">
@@ -94,9 +103,9 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
       </Link>
       {/* Add to Cart button — outside Link */}
       <div className="px-3 pb-3">
-        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); createRipple(e); if (onVariantRequired) { onVariantRequired(); return; } handleAddToCart(e); }} className="ripple-container w-full flex items-center justify-center gap-1.5 py-2 text-[12px] font-medium uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] active:scale-95" style={{ backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "var(--storefront-button-radius, 0.5rem)" }} aria-label={`Add ${product.name} to cart`}>
-          <ShoppingCart className="h-3.5 w-3.5" aria-hidden="true" />
-          Add to Cart
+        <button disabled={isOutOfStock} onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (isOutOfStock) return; createRipple(e); if (onVariantRequired) { onVariantRequired(); return; } handleAddToCart(e); }} className="ripple-container w-full flex items-center justify-center gap-1.5 py-2 text-[12px] font-medium uppercase tracking-wider transition-[transform,opacity,colors,box-shadow] active:scale-95 disabled:cursor-not-allowed" style={isOutOfStock ? { backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 12%, transparent)", color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)", borderRadius: "var(--storefront-button-radius, 0.5rem)" } : { backgroundColor: "var(--storefront-primary, hsl(var(--primary)))", color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))", borderRadius: "var(--storefront-button-radius, 0.5rem)" }} aria-label={isOutOfStock ? `${product.name} is sold out` : `Add ${product.name} to cart`}>
+          {!isOutOfStock && <ShoppingCart className="h-3.5 w-3.5" aria-hidden="true" />}
+          {isOutOfStock ? "Sold Out" : "Add to Cart"}
         </button>
       </div>
     </div>

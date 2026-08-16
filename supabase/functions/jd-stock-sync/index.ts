@@ -1,0 +1,276 @@
+// supabase/functions/jd-stock-sync/index.ts
+//
+// Periodic stock sync: source store (shodfedf.jdwebshop.com) → our catalog.
+//
+// Design (no realtime, no checkout-time check — by product decision):
+//   • Runs every 15 min via pg_cron.
+//   • Each run refreshes:
+//       1. HOT set  — products ordered/viewed in the last 24h (always checked)
+//       2. ROTATING set — the least-recently-synced products (oldest
+//          `source_synced_at` first), CHUNK_SIZE per run. With ~2.6k products
+//          and 900/run, every product is refreshed at least every ~45 min.
+//   • Matching is by `slug` — our slugs are identical to the source's.
+//
+// Safety rules (important):
+//   • Stock is ONLY written on a valid 200 response with a numeric quantity.
+//     Any 403 / timeout / parse error → product is skipped entirely, so a
+//     source outage can never blank the store.
+//   • Concurrency capped at 6 (their WAF 403s above ~10 parallel).
+//   • `source_synced_at` is only bumped for products we actually verified,
+//     so failures naturally retry on the next run.
+//   • Writes stock_quantity + is_active (delisted) ONLY. Prices untouched.
+//   • Kill switch: stores.source_sync_enabled = false stops everything.
+//
+// Auth: requires header `x-cron-key` matching the token in public.cron_auth.
+
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-cron-key",
+};
+
+const SOURCE_BASE = "https://byeetjlpwzpy.jdwebnship.in/api";
+const SOURCE_HASH = "360080b0b7289a6080e92018585cf114";
+const SOURCE_API_KEY = "9e5a4f4b49da226ab3b1bc396020bf831cb3c14584ced963";
+const SOURCE_ORIGIN = "https://shodfedf.jdwebshop.com";
+
+/** Products per run. 700 @ ~8 req/s ≈ 90s, and stays under the source's
+ *  rolling rate limit (1000/run in one burst produced ~39% throttled 403s). */
+const CHUNK_SIZE = 500;
+const CONCURRENCY = 4;
+/** Minimum gap between requests inside one worker — politeness throttle. */
+const REQ_GAP_MS = 40;
+/** Max throttled lookups retried in the slow second pass (time budget). */
+const MAX_RETRY = 120;
+const REQ_TIMEOUT_MS = 12_000;
+/** Products with source quantity <= this are treated as sold out. */
+const OOS_THRESHOLD = 0;
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+interface SourceStock {
+  quantity: number;
+  delisted: boolean;
+}
+
+async function fetchSourceStock(slug: string): Promise<SourceStock | null> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), REQ_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${SOURCE_BASE}/products/${SOURCE_HASH}/${encodeURIComponent(slug)}`, {
+      headers: {
+        "API-KEY": SOURCE_API_KEY,
+        Origin: SOURCE_ORIGIN,
+        Referer: `${SOURCE_ORIGIN}/`,
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
+        Accept: "application/json",
+      },
+      signal: ctrl.signal,
+    });
+    if (!res.ok) return null; // 403 / 404 / 5xx → skip, never zero stock
+    const body = await res.json().catch(() => null);
+    if (!body) return null;
+    const p = (body.data ?? body)?.product ?? body.data ?? body;
+    if (!p || typeof p !== "object") return null;
+
+    const rawQty = (p as Record<string, unknown>).quantity;
+    const qty = typeof rawQty === "number" ? rawQty : Number(rawQty);
+    if (!Number.isFinite(qty)) return null;
+
+    const inStock = Number((p as Record<string, unknown>).in_stock ?? 1);
+    const status = Number((p as Record<string, unknown>).product_status ?? 1);
+
+    return {
+      quantity: inStock === 0 ? 0 : Math.max(0, Math.floor(qty)),
+      delisted: status !== 1,
+    };
+  } catch {
+    return null; // network error / timeout → skip
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+/** Runs `worker` over `items` with a fixed concurrency ceiling. */
+async function mapLimit<T, R>(items: T[], limit: number, worker: (item: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let cursor = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const i = cursor++;
+      if (i >= items.length) return;
+      out[i] = await worker(items[i]);
+    }
+  });
+  await Promise.all(runners);
+  return out;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+  // ── Auth: shared cron key ────────────────────────────────────────────────
+  const cronKey = req.headers.get("x-cron-key") || "";
+  if (!cronKey) return json({ error: "Unauthorized" }, 401);
+  const { data: authRow } = await admin.from("cron_auth").select("secret").eq("secret", cronKey).maybeSingle();
+  if (!authRow) return json({ error: "Unauthorized" }, 401);
+
+  const started = Date.now();
+  const body = await req.json().catch(() => ({}));
+  const chunkSize = Math.min(1500, Math.max(50, Number(body?.chunk) || CHUNK_SIZE));
+
+  // ── Which stores are synced? ─────────────────────────────────────────────
+  const { data: stores, error: storeErr } = await admin
+    .from("stores")
+    .select("id, slug, custom_domain")
+    .eq("source_sync_enabled", true);
+  if (storeErr) return json({ error: storeErr.message }, 500);
+  if (!stores?.length) return json({ ok: true, stores: 0, note: "no store has source_sync_enabled" });
+
+  const report: Record<string, unknown>[] = [];
+
+  for (const store of stores) {
+    // 1) HOT set — anything ordered in the last 24h for this store.
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: hotOrders } = await admin
+      .from("order_items")
+      .select("product_id, orders!inner(store_id, created_at)")
+      .eq("orders.store_id", store.id)
+      .gte("orders.created_at", since)
+      .limit(500);
+    const hotIds = [...new Set((hotOrders || []).map((r) => (r as { product_id: string }).product_id).filter(Boolean))];
+
+    const targets = new Map<string, { id: string; slug: string; stock_quantity: number; is_active: boolean }>();
+
+    if (hotIds.length) {
+      const { data: hot } = await admin
+        .from("products")
+        .select("id, slug, stock_quantity, is_active")
+        .eq("store_id", store.id)
+        .in("id", hotIds);
+      for (const p of hot || []) targets.set(p.id, p as never);
+    }
+
+    // 2) ROTATING set — least-recently-synced first (NULLs first).
+    const { data: rot, error: rotErr } = await admin
+      .from("products")
+      .select("id, slug, stock_quantity, is_active")
+      .eq("store_id", store.id)
+      .order("source_synced_at", { ascending: true, nullsFirst: true })
+      .limit(chunkSize);
+    if (rotErr) {
+      report.push({ store: store.slug, error: rotErr.message });
+      continue;
+    }
+    for (const p of rot || []) targets.set(p.id, p as never);
+
+    const list = [...targets.values()].filter((p) => !!p.slug);
+
+    // 3) Fetch source stock with capped concurrency + throttle.
+    const results = await mapLimit(list, CONCURRENCY, async (p) => {
+      const src = await fetchSourceStock(p.slug);
+      await new Promise((r) => setTimeout(r, REQ_GAP_MS));
+      return { p, src };
+    });
+
+    // 3b) One retry pass for throttled lookups (403s come in bursts), run
+    // slowly and sequentially so we never make the throttling worse.
+    let retried = 0;
+    for (const row of results) {
+      if (row.src || retried >= MAX_RETRY) continue;
+      retried++;
+      await new Promise((r) => setTimeout(r, 200));
+      row.src = await fetchSourceStock(row.p.slug);
+    }
+
+    // 4) Apply — only verified rows.
+    let checked = 0, failed = 0, changed = 0, nowOos = 0, backInStock = 0, delisted = 0;
+    const touchedIds: string[] = [];
+    const nowIso = new Date().toISOString();
+
+    for (const { p, src } of results) {
+      // Timestamp is bumped for failures too, otherwise permanently-404
+      // products (removed at source) would clog the rotation forever and
+      // starve the rest of the catalog. Their stock is left untouched.
+      touchedIds.push(p.id);
+      if (!src) { failed++; continue; }
+      checked++;
+
+      const nextStock = src.quantity <= OOS_THRESHOLD ? 0 : src.quantity;
+      const nextActive = src.delisted ? false : true;
+
+      const stockChanged = (p.stock_quantity ?? 0) !== nextStock;
+      const activeChanged = p.is_active !== nextActive;
+      if (!stockChanged && !activeChanged) continue;
+
+      const { error: upErr } = await admin
+        .from("products")
+        .update({ stock_quantity: nextStock, is_active: nextActive, source_synced_at: nowIso })
+        .eq("id", p.id);
+      if (upErr) { failed++; continue; }
+
+      changed++;
+      if (stockChanged && nextStock === 0) nowOos++;
+      if (stockChanged && (p.stock_quantity ?? 0) === 0 && nextStock > 0) backInStock++;
+      if (activeChanged && !nextActive) delisted++;
+    }
+
+    // Bump the sync timestamp for every product we attempted (batched) so the
+    // rotation always moves forward, including failures (stock untouched).
+    for (let i = 0; i < touchedIds.length; i += 200) {
+      await admin
+        .from("products")
+        .update({ source_synced_at: nowIso })
+        .in("id", touchedIds.slice(i, i + 200));
+    }
+
+    // 5) Purge the storefront edge cache only when something actually changed.
+    let purged = false;
+    if (changed > 0) {
+      const secret = Deno.env.get("WORKER_PURGE_SECRET") || "";
+      if (secret) {
+        const domain = (store.custom_domain || "").replace(/^www\./, "").toLowerCase().trim();
+        const params = new URLSearchParams({ slug: store.slug });
+        if (domain) params.set("domain", domain);
+        const bases = [`https://${store.slug}.shopbanao.in`];
+        if (domain) bases.push(`https://${domain}`);
+        const res = await Promise.allSettled(
+          bases.map((b) =>
+            fetch(`${b}/api/purge-store?${params}`, {
+              method: "POST",
+              headers: { "x-purge-secret": secret, "Cache-Control": "no-store" },
+            })
+          ),
+        );
+        purged = res.some((r) => r.status === "fulfilled" && r.value.ok);
+      }
+    }
+
+    report.push({
+      store: store.slug,
+      targeted: list.length,
+      hot: hotIds.length,
+      checked,
+      failed,
+      changed,
+      now_out_of_stock: nowOos,
+      back_in_stock: backInStock,
+      delisted,
+      purged,
+    });
+  }
+
+  const out = { ok: true, ms: Date.now() - started, stores: report };
+  console.log("jd-stock-sync", JSON.stringify(out));
+  return json(out);
+});
