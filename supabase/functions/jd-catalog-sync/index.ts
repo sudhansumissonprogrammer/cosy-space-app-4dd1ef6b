@@ -281,7 +281,13 @@ Deno.serve(async (req) => {
       if (candidates.length >= importBudget) break;
       await new Promise((r) => setTimeout(r, REQ_GAP_MS));
     }
-    candidates.length = Math.min(candidates.length, importBudget);
+    if (candidates.length > importBudget) {
+      // Overshoot: rewind the cursor over the last slice so the dropped
+      // products are re-walked next run instead of being skipped forever.
+      candidates.length = importBudget;
+      page = Math.max(startPage, page - PAGE_CONCURRENCY);
+    }
+
 
 
     // ── Backfill source_id on pre-existing rows ──────────────────────────
