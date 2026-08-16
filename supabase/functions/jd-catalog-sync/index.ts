@@ -45,13 +45,13 @@ const ASSETS = "https://assets.jdwebnship.in/";
 /** Pages of the listing walked per run while backfilling. */
 const PAGE_BUDGET = 120;
 /** Listing pages fetched in parallel (their WAF tolerates ~6). */
-const PAGE_CONCURRENCY = 3;
+const PAGE_CONCURRENCY = 2;
 /** Newest pages re-scanned every run once backfill is done. */
 const STEADY_PAGES = 8;
 /** Max new products imported in one run (each costs 1 detail request). */
 const IMPORT_BUDGET = 420;
-const CONCURRENCY = 5;
-const REQ_GAP_MS = 40;
+const CONCURRENCY = 3;
+const REQ_GAP_MS = 100;
 const REQ_TIMEOUT_MS = 12_000;
 /** Stop starting new work after this many ms so the run always finishes. */
 const TIME_BUDGET_MS = 105_000;
@@ -74,17 +74,25 @@ const srcHeaders = {
 };
 
 async function srcFetch(path: string): Promise<any | null> {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), REQ_TIMEOUT_MS);
-  try {
-    const res = await fetch(`${SOURCE_BASE}/${path}`, { headers: srcHeaders, signal: ctrl.signal });
-    if (!res.ok) return null;
-    return await res.json().catch(() => null);
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(t);
+  // The wholesaler applies a rolling burst limit shared by catalog and stock
+  // requests. Retry throttled/transient responses with backoff; returning null
+  // after one 403 previously made valid in-stock products look permanently
+  // absent from the import walk.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), REQ_TIMEOUT_MS);
+    try {
+      const res = await fetch(`${SOURCE_BASE}/${path}`, { headers: srcHeaders, signal: ctrl.signal });
+      if (res.ok) return await res.json().catch(() => null);
+      if (![403, 429, 500, 502, 503, 504].includes(res.status)) return null;
+    } catch {
+      // Retry timeout/network failures below.
+    } finally {
+      clearTimeout(t);
+    }
+    await new Promise((r) => setTimeout(r, 350 * (attempt + 1)));
   }
+  return null;
 }
 
 interface ListItem {
