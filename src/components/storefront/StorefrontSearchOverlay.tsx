@@ -288,51 +288,75 @@ export default function StorefrontSearchOverlay({
                   <p className="text-[11px] opacity-50 mb-1.5 font-medium">
                     {results.length} result{results.length !== 1 ? "s" : ""}
                   </p>
-                  <ul className="space-y-0.5">
-                    {results.map((p) => (
-                      <li key={p.id}>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+                    {results.map((p) => {
+                      const onSale = p.sale_price && p.sale_price < p.price;
+                      const off = onSale
+                        ? Math.round(((Number(p.price) - Number(p.sale_price)) / Number(p.price)) * 100)
+                        : 0;
+                      const soldOut = (p.stock_quantity ?? 0) <= 0;
+                      return (
                         <Link
+                          key={p.id}
                           to={storefrontPath(slug, `product/${p.slug || p.id}`)}
                           onClick={onClose}
-                          className="flex items-center gap-3 px-2 py-2 rounded-xl transition-colors"
-                          style={{ backgroundColor: "transparent" }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--storefront-text, hsl(var(--foreground)))06"}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                          className="group overflow-hidden rounded-xl transition-transform active:scale-[0.98]"
+                          style={{
+                            border: "1px solid color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)",
+                            backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 3%, transparent)",
+                          }}
                         >
-                          {p.image_url ? (
-                            <img
-                              src={optimizeImageUrl(p.image_url, 96)}
-                              alt={p.name}
-                              className="h-14 w-14 rounded-lg object-cover flex-shrink-0"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="flex h-14 w-14 items-center justify-center rounded-lg flex-shrink-0"
-                              style={{ backgroundColor: "var(--storefront-text, hsl(var(--foreground)))08" }}
-                            >
-                              <Package className="h-5 w-5 opacity-30" />
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium truncate">{p.name}</p>
-                            {p.category && (
-                              <p className="text-[11px] opacity-50 truncate">{p.category}</p>
+                          <div className="relative w-full overflow-hidden" style={{ aspectRatio: "4/5" }}>
+                            {p.image_url ? (
+                              <img
+                                src={optimizeImageUrl(p.image_url, 400)}
+                                alt={p.name}
+                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center">
+                                <Package className="h-6 w-6 opacity-30" />
+                              </div>
                             )}
-                            <p className="text-xs mt-0.5">
-                              {p.sale_price && p.sale_price < p.price ? (
+                            {off > 0 && (
+                              <span
+                                className="absolute left-1.5 top-1.5 rounded-md px-1.5 py-0.5 text-[9px] font-bold"
+                                style={{
+                                  backgroundColor: "var(--storefront-primary, hsl(var(--primary)))",
+                                  color: "var(--storefront-btn-text, hsl(var(--primary-foreground)))",
+                                }}
+                              >
+                                {off}% OFF
+                              </span>
+                            )}
+                            {soldOut && (
+                              <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-[10px] font-bold uppercase tracking-wide text-white">
+                                Sold out
+                              </span>
+                            )}
+                          </div>
+                          <div className="px-2 pb-2 pt-1.5">
+                            <p className="line-clamp-2 text-[12px] font-medium leading-snug">{p.name}</p>
+                            {p.category && (
+                              <p className="mt-0.5 truncate text-[10px] opacity-50">{p.category}</p>
+                            )}
+                            <p className="mt-1 text-[12px]">
+                              {onSale ? (
                                 <>
-                                  <span className="font-semibold">₹{Number(p.sale_price).toFixed(0)}</span>
+                                  <span className="font-bold">₹{Number(p.sale_price).toFixed(0)}</span>
                                   <span className="ml-1 line-through opacity-40">₹{Number(p.price).toFixed(0)}</span>
                                 </>
                               ) : (
-                                <span className="font-semibold">₹{Number(p.price).toFixed(0)}</span>
+                                <span className="font-bold">₹{Number(p.price).toFixed(0)}</span>
                               )}
                             </p>
                           </div>
                         </Link>
-                      </li>
-                    ))}
-                  </ul>
+                      );
+                    })}
+                  </div>
+
                   {query.trim() && (
                     <button
                       onClick={() => submitSearch()}
