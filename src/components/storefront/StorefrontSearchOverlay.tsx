@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Link } from "react-router-dom";
-import { Search, X, Package, SlidersHorizontal } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Search, X, Package, SlidersHorizontal, Clock, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
-import { supabase } from "@/integrations/supabase/client";
+import { useProductSearch, useDebounced } from "@/hooks/useProductSearch";
+import { getRecentSearches, pushRecentSearch } from "@/lib/searchSynonyms";
 import { Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
