@@ -64,63 +64,33 @@ export default function StorefrontSearchOverlay({
 
   const resolvedStoreId = storeId || products?.[0]?.store_id || "";
 
-  // Server-side search with debounce
-  const searchServer = useCallback(async (q: string, price: [number, number] | null, sort: SortOption) => {
-    if (!resolvedStoreId) return;
-    setSearching(true);
-    try {
-      let qb = supabase
-        .from("products")
-        .select("id, name, slug, price, sale_price, image_url, category, created_at, is_best_selling")
-        .eq("store_id", resolvedStoreId)
-        .eq("is_active", true);
+  // Ranked, typo-tolerant search via the search_products RPC (debounced).
+  const debouncedQuery = useDebounced(query, 250);
+  const priceFilter = priceRange
+    ? { minPrice: priceRange[0] || null, maxPrice: priceRange[1] === Infinity ? null : priceRange[1] }
+    : { minPrice: null, maxPrice: null };
 
-      if (q.trim()) {
-        qb = qb.or(`name.ilike.%${q.trim()}%,category.ilike.%${q.trim()}%,description.ilike.%${q.trim()}%`);
-      }
+  const { hits, isFetching } = useProductSearch(resolvedStoreId || undefined, debouncedQuery, {
+    sort: sortBy === "popular" ? "relevance" : (sortBy as any),
+    ...priceFilter,
+  });
 
-      if (price) {
-        qb = qb.gte("price", price[0]);
-        if (price[1] !== Infinity) {
-          qb = qb.lt("price", price[1]);
-        }
-      }
-
-      switch (sort) {
-        case "price_asc":
-          qb = qb.order("price", { ascending: true });
-          break;
-        case "price_desc":
-          qb = qb.order("price", { ascending: false });
-          break;
-        case "newest":
-          qb = qb.order("created_at", { ascending: false });
-          break;
-        default:
-          qb = qb.order("is_best_selling", { ascending: false }).order("created_at", { ascending: false });
-      }
-
-      const { data } = await qb.limit(30);
-      setServerResults((data as Tables<"products">[]) || []);
-    } finally {
-      setSearching(false);
-    }
-  }, [resolvedStoreId]);
-
-  // Debounced search trigger
   useEffect(() => {
     if (!open) return;
-    const hasInput = query.trim().length > 0 || priceRange !== null;
-    if (!hasInput) {
-      setServerResults(null);
-      return;
-    }
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      searchServer(query, priceRange, sortBy);
-    }, 300);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [query, priceRange, sortBy, open, searchServer]);
+    setServerResults(query.trim() ? (hits as any[]) : null);
+    setSearching(isFetching && query.trim().length > 0);
+  }, [hits, isFetching, query, open]);
+
+  const submitSearch = useCallback((term?: string) => {
+    const q = (term ?? query).trim();
+    if (!q) return;
+    pushRecentSearch(q);
+    onClose();
+    navigate(`${storefrontPath(slug, "search")}?q=${encodeURIComponent(q)}`);
+  }, [query, navigate, slug, onClose]);
+
+  const recent = open && !query.trim() ? getRecentSearches() : [];
+
 
   // Close on click outside
   useEffect(() => {
