@@ -42,6 +42,7 @@ export default function StorefrontSearchOverlay({
   storeId,
   initialFiltersOpen = false,
 }: StorefrontSearchOverlayProps) {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("popular");
