@@ -333,14 +333,52 @@ export default function StorefrontSearchOverlay({
                       </li>
                     ))}
                   </ul>
+                  {query.trim() && (
+                    <button
+                      onClick={() => submitSearch()}
+                      className="mt-1 flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold"
+                      style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 6%, transparent)" }}
+                    >
+                      <span>See all results for “{query.trim()}”</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 opacity-40">
-                  <Package className="h-8 w-8 mb-2" />
+                <div className="flex flex-col items-center justify-center py-12 px-6 text-center opacity-70">
+                  <Package className="h-8 w-8 mb-2 opacity-40" />
                   <p className="text-sm font-medium">No products found</p>
-                  <p className="text-xs mt-1">Try a different search</p>
+                  <p className="text-xs mt-1 opacity-60">Check the spelling or try a shorter word</p>
+                  {query.trim() && (
+                    <button
+                      onClick={() => submitSearch()}
+                      className="mt-3 rounded-full px-4 py-2 text-xs font-semibold"
+                      style={{ backgroundColor: "var(--storefront-text, hsl(var(--foreground)))", color: "var(--storefront-bg, hsl(var(--background)))" }}
+                    >
+                      Open search page
+                    </button>
+                  )}
                 </div>
               )
+            ) : recent.length > 0 ? (
+              <div className="px-3 py-3">
+                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider opacity-50">
+                  Recent searches
+                </p>
+                <ul className="space-y-0.5">
+                  {recent.map((term) => (
+                    <li key={term}>
+                      <button
+                        onClick={() => submitSearch(term)}
+                        className="flex w-full items-center gap-2.5 rounded-xl px-2 py-2.5 text-left text-sm"
+                      >
+                        <Clock className="h-3.5 w-3.5 opacity-40" />
+                        <span className="truncate">{term}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 opacity-30">
                 <Search className="h-8 w-8 mb-2" />
