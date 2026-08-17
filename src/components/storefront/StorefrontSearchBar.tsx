@@ -1,8 +1,10 @@
-import { useState, useRef, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
-import { Search, X, Package } from "lucide-react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Search, X, Package, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { storefrontPath } from "@/lib/subdomain";
+import { useProductSearch, useDebounced } from "@/hooks/useProductSearch";
+import { pushRecentSearch } from "@/lib/searchSynonyms";
 import type { Tables } from "@/integrations/supabase/types";
 
 interface StorefrontSearchBarProps {
@@ -19,6 +21,7 @@ export default function StorefrontSearchBar({
   onSearchChange,
 }: StorefrontSearchBarProps) {
   const [focused, setFocused] = useState(false);
+  const navigate = useNavigate();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Link } from "react-router-dom";
-import { Search, X, Package, SlidersHorizontal } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Search, X, Package, SlidersHorizontal, Clock, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl } from "@/lib/imageOptimize";
-import { supabase } from "@/integrations/supabase/client";
+import { useProductSearch, useDebounced } from "@/hooks/useProductSearch";
+import { getRecentSearches, pushRecentSearch } from "@/lib/searchSynonyms";
 import { Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -41,6 +42,7 @@ export default function StorefrontSearchOverlay({
   storeId,
   initialFiltersOpen = false,
 }: StorefrontSearchOverlayProps) {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("popular");
@@ -64,63 +66,33 @@ export default function StorefrontSearchOverlay({
 
   const resolvedStoreId = storeId || products?.[0]?.store_id || "";
 
-  // Server-side search with debounce
-  const searchServer = useCallback(async (q: string, price: [number, number] | null, sort: SortOption) => {
-    if (!resolvedStoreId) return;
-    setSearching(true);
-    try {
-      let qb = supabase
-        .from("products")
-        .select("id, name, slug, price, sale_price, image_url, category, created_at, is_best_selling")
-        .eq("store_id", resolvedStoreId)
-        .eq("is_active", true);
+  // Ranked, typo-tolerant search via the search_products RPC (debounced).
+  const debouncedQuery = useDebounced(query, 250);
+  const priceFilter = priceRange
+    ? { minPrice: priceRange[0] || null, maxPrice: priceRange[1] === Infinity ? null : priceRange[1] }
+    : { minPrice: null, maxPrice: null };
 
-      if (q.trim()) {
-        qb = qb.or(`name.ilike.%${q.trim()}%,category.ilike.%${q.trim()}%,description.ilike.%${q.trim()}%`);
-      }
+  const { hits, isFetching } = useProductSearch(resolvedStoreId || undefined, debouncedQuery, {
+    sort: sortBy === "popular" ? "relevance" : (sortBy as any),
+    ...priceFilter,
+  });
 
-      if (price) {
-        qb = qb.gte("price", price[0]);
-        if (price[1] !== Infinity) {
-          qb = qb.lt("price", price[1]);
-        }
-      }
-
-      switch (sort) {
-        case "price_asc":
-          qb = qb.order("price", { ascending: true });
-          break;
-        case "price_desc":
-          qb = qb.order("price", { ascending: false });
-          break;
-        case "newest":
-          qb = qb.order("created_at", { ascending: false });
-          break;
-        default:
-          qb = qb.order("is_best_selling", { ascending: false }).order("created_at", { ascending: false });
-      }
-
-      const { data } = await qb.limit(30);
-      setServerResults((data as Tables<"products">[]) || []);
-    } finally {
-      setSearching(false);
-    }
-  }, [resolvedStoreId]);
-
-  // Debounced search trigger
   useEffect(() => {
     if (!open) return;
-    const hasInput = query.trim().length > 0 || priceRange !== null;
-    if (!hasInput) {
-      setServerResults(null);
-      return;
-    }
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      searchServer(query, priceRange, sortBy);
-    }, 300);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [query, priceRange, sortBy, open, searchServer]);
+    setServerResults(query.trim() ? (hits as any[]) : null);
+    setSearching(isFetching && query.trim().length > 0);
+  }, [hits, isFetching, query, open]);
+
+  const submitSearch = useCallback((term?: string) => {
+    const q = (term ?? query).trim();
+    if (!q) return;
+    pushRecentSearch(q);
+    onClose();
+    navigate(`${storefrontPath(slug, "search")}?q=${encodeURIComponent(q)}`);
+  }, [query, navigate, slug, onClose]);
+
+  const recent = open && !query.trim() ? getRecentSearches() : [];
+
 
   // Close on click outside
   useEffect(() => {
@@ -183,6 +155,8 @@ export default function StorefrontSearchOverlay({
                 placeholder="Search products..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") submitSearch(); }}
+                enterKeyHint="search"
                 className="pl-9 pr-10 rounded-full border-0 focus-visible:ring-1 focus-visible:ring-offset-0"
                 style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 8%, transparent)", color: "var(--storefront-text, hsl(var(--foreground)))" }}
                 maxLength={100}
@@ -359,14 +333,52 @@ export default function StorefrontSearchOverlay({
                       </li>
                     ))}
                   </ul>
+                  {query.trim() && (
+                    <button
+                      onClick={() => submitSearch()}
+                      className="mt-1 flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold"
+                      style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 6%, transparent)" }}
+                    >
+                      <span>See all results for “{query.trim()}”</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 opacity-40">
-                  <Package className="h-8 w-8 mb-2" />
+                <div className="flex flex-col items-center justify-center py-12 px-6 text-center opacity-70">
+                  <Package className="h-8 w-8 mb-2 opacity-40" />
                   <p className="text-sm font-medium">No products found</p>
-                  <p className="text-xs mt-1">Try a different search</p>
+                  <p className="text-xs mt-1 opacity-60">Check the spelling or try a shorter word</p>
+                  {query.trim() && (
+                    <button
+                      onClick={() => submitSearch()}
+                      className="mt-3 rounded-full px-4 py-2 text-xs font-semibold"
+                      style={{ backgroundColor: "var(--storefront-text, hsl(var(--foreground)))", color: "var(--storefront-bg, hsl(var(--background)))" }}
+                    >
+                      Open search page
+                    </button>
+                  )}
                 </div>
               )
+            ) : recent.length > 0 ? (
+              <div className="px-3 py-3">
+                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider opacity-50">
+                  Recent searches
+                </p>
+                <ul className="space-y-0.5">
+                  {recent.map((term) => (
+                    <li key={term}>
+                      <button
+                        onClick={() => submitSearch(term)}
+                        className="flex w-full items-center gap-2.5 rounded-xl px-2 py-2.5 text-left text-sm"
+                      >
+                        <Clock className="h-3.5 w-3.5 opacity-40" />
+                        <span className="truncate">{term}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 opacity-30">
                 <Search className="h-8 w-8 mb-2" />
