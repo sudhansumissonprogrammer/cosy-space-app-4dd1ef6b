@@ -176,99 +176,19 @@ export default function StorefrontSearchBar({
               ))}
             </ul>
           ) : (
-            <>
-              {categories.length > 0 && (
-                <ul className="border-b py-1" style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)" }}>
-                  {categories.slice(0, 3).map((c) => (
-                    <li key={`${c.kind}-${c.term}`}>
-                      <button
-                        onClick={() => {
-                          onSearchChange(c.term);
-                          submit(c.term);
-                        }}
-                        className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm"
-                      >
-                        <Search className="h-3.5 w-3.5 flex-shrink-0" style={{ color: muted }} />
-                        <span className="truncate">{c.term}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              {hits.length > 0 ? (
-                <ul className="max-h-[320px] overflow-y-auto py-1">
-                  {hits.slice(0, 6).map((p) => (
-                    <li key={p.id}>
-                      <Link
-                        to={storefrontPath(slug, `product/${p.slug || p.id}`)}
-                        onClick={() => {
-                          try {
-                            pushRecentSearch(searchQuery.trim());
-                          } catch {}
-                          setFocused(false);
-                          onSearchChange("");
-                        }}
-                        className="flex items-center gap-3 px-3 py-2.5 transition-colors"
-                        style={{ backgroundColor: "transparent" }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.backgroundColor =
-                            "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 6%, transparent)")
-                        }
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                      >
-                        {p.image_url ? (
-                          <img src={p.image_url} alt={p.name} className="h-10 w-10 rounded-lg object-cover flex-shrink-0" loading="lazy" />
-                        ) : (
-                          <div
-                            className="flex h-10 w-10 items-center justify-center rounded-lg flex-shrink-0"
-                            style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 8%, transparent)" }}
-                          >
-                            <Package className="h-4 w-4" style={{ color: muted }} />
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate" style={{ color: textColor }}>
-                            {p.name}
-                          </p>
-                          <p className="text-xs" style={{ color: muted }}>
-                            {p.sale_price && p.sale_price < p.price ? (
-                              <>
-                                <span className="font-semibold" style={{ color: textColor }}>
-                                  ₹{Number(p.sale_price).toFixed(0)}
-                                </span>
-                                <span className="ml-1 line-through">₹{Number(p.price).toFixed(0)}</span>
-                              </>
-                            ) : (
-                              <span className="font-semibold" style={{ color: textColor }}>
-                                ₹{Number(p.price).toFixed(0)}
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="px-4 py-6 text-center text-sm" style={{ color: muted }}>
-                  No products found
-                </div>
-              )}
-
-              <button
-                onClick={() => submit()}
-                className="flex w-full items-center justify-between gap-2 border-t px-4 py-2.5 text-sm font-medium"
-                style={{
-                  borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 12%, transparent)",
-                  color: textColor,
-                }}
-              >
-                <span className="truncate">See all results for "{searchQuery.trim()}"</span>
-                <ArrowRight className="h-4 w-4 flex-shrink-0" />
-              </button>
-            </>
+            <button
+              onClick={() => submit()}
+              className="flex w-full items-center justify-between gap-2 px-4 py-3 text-sm font-medium"
+              style={{ color: textColor }}
+            >
+              <span className="truncate">
+                Show all products for "{searchQuery.trim()}"
+                {hits.length > 0 ? ` (${hits.length})` : ""}
+              </span>
+              <ArrowRight className="h-4 w-4 flex-shrink-0" />
+            </button>
           )}
+
         </div>
       )}
     </div>
