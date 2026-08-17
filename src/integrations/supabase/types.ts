@@ -2419,6 +2419,7 @@ export type Database = {
           partial_payment_value: number | null
           price: number
           sale_price: number | null
+          search_tsv: unknown
           sku: string | null
           slug: string | null
           source_id: string | null
@@ -2454,6 +2455,7 @@ export type Database = {
           partial_payment_value?: number | null
           price?: number
           sale_price?: number | null
+          search_tsv?: unknown
           sku?: string | null
           slug?: string | null
           source_id?: string | null
@@ -2489,6 +2491,7 @@ export type Database = {
           partial_payment_value?: number | null
           price?: number
           sale_price?: number | null
+          search_tsv?: unknown
           sku?: string | null
           slug?: string | null
           source_id?: string | null
@@ -5812,6 +5815,42 @@ export type Database = {
         Args: { target_date?: string }
         Returns: number
       }
+      search_products: {
+        Args: {
+          p_category?: string
+          p_limit?: number
+          p_max_price?: number
+          p_min_price?: number
+          p_offset?: number
+          p_query?: string
+          p_sort?: string
+          p_store_id: string
+        }
+        Returns: {
+          category: string
+          created_at: string
+          currency: string
+          id: string
+          image_url: string
+          is_best_selling: boolean
+          name: string
+          price: number
+          sale_price: number
+          score: number
+          sku: string
+          slug: string
+          stock_quantity: number
+          total_count: number
+        }[]
+      }
+      search_suggest_terms: {
+        Args: { p_limit?: number; p_query?: string; p_store_id: string }
+        Returns: {
+          hits: number
+          kind: string
+          term: string
+        }[]
+      }
       set_store_platform_marketing: {
         Args: { _enabled: boolean; _store_id: string }
         Returns: boolean
@@ -5820,6 +5859,8 @@ export type Database = {
         Args: { _enabled: boolean; _key: string; _store_id: string }
         Returns: boolean
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       store_accepts_reviews: { Args: { _store_id: string }; Returns: boolean }
       store_has_active_coupons: {
         Args: { _store_id: string }
@@ -5895,6 +5936,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      unaccent: { Args: { "": string }; Returns: string }
       validate_store_coupon: {
         Args: { _code: string; _store_id: string }
         Returns: {
