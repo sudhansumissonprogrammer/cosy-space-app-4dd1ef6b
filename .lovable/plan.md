@@ -1,43 +1,49 @@
-# Live stock sync: shodfedf.jdwebshop.com → wristlife
+# Flipkart-style Search for Storefronts
 
-## What I verified on the source (live tests, just now)
+## What's there today
+- The search overlay (`StorefrontSearchOverlay`) queries the DB with a plain `ILIKE %text%` on name/category/description, capped at 30 rows, and only shows a dropdown list.
+- Pressing Enter / "Go" does nothing — there is no search results page, so a shopper cannot see all matching products as a full product grid.
+- No typo tolerance: "sadi" will not find "Saree", "gold rng" finds nothing (multi-word queries fail because ILIKE needs the exact phrase).
+- No relevance ranking: results come back best-seller/newest first, not by how well they match the words typed.
 
-- The source store exposes a public product API. Their per-product endpoint returns exactly what we need: `quantity`, `in_stock`, `product_status` (delisted flag), `final_price`, `old_price`.
-- **Our product slugs are identical to theirs.** I picked 20 random wristlife products and looked each one up on the source — 20/20 matched, no mapping table needed. This is the key finding: sync is a direct slug lookup.
-- Speed: ~210 ms per product. At 6 parallel requests a **full 2,615-product sweep takes ~90 seconds**.
-- Their firewall blocks aggressive scraping: 20 parallel requests → instant `403`. 6 parallel with browser-like headers → 100% success. So the sync must be politely paced.
-- There is also a "recent products" list endpoint (12 per page) that returns quantity for a whole page in one call — cheap for scanning new arrivals.
+## What we will build
 
-Conclusion: real-time-ish sync is fully doable. True per-second real-time is not (they have no webhook/push), so the right design is **tiered polling + a live check at the moment it matters**.
+### 1. A real search results page
+- New route `/search?q=...` rendering the same product-card grid used on Shop/Category (same card, same add-to-cart, wishlist, badges).
+- Enter key, the search icon, and "View all results" in the dropdown all navigate here.
+- Header: "Showing results for **saree**" + result count; filters (price range, category, in-stock) and sort (relevance, price low→high, high→low, newest) like Flipkart.
+- Infinite scroll / load-more, same pattern as Shop.
+- Empty state: "No results for X" plus "Did you mean …" suggestion and a fallback grid of related/best-selling products, so the page is never a dead end.
 
-## The design (3 layers)
+### 2. Matching engine (the core of the request)
+A single Postgres search function (`search_products`) replaces the ILIKE query. Layers, applied in order and merged by score:
 
-**Layer 1 — Live check at purchase time (this is what actually prevents overselling)**
-When a shopper opens a product page and again when the order is placed, we ask the source for that one product's stock (~200 ms). If it is 0, the product shows Sold Out and the order is blocked with a clear message. Even if polling is 5 minutes stale, nobody can buy a sold-out item.
+1. **Exact / phrase match** — full query appears in the name → top score.
+2. **Word-by-word match (AND)** — "gold ring 2 gram" matches products containing all words in any order, across name + category + description + SKU.
+3. **Prefix match** — "necklac" or "ear" matches "Necklace", "Earrings" while typing (half-typed words work).
+4. **Typo tolerance (fuzzy)** — trigram similarity so "sarre", "brasslet", "jwellery" still hit "Saree", "Bracelet", "Jewellery". Threshold tuned so 1–2 letter mistakes match, unrelated words don't.
+5. **Synonyms / Indian spelling map** — a small curated list (saree/sari/sadi, jhumka/jhumki, chain/chein, watch/ghadi, kada/kada, bangle/chudi, anklet/payal, etc.) expanded at query time.
+6. **Relevance ranking** — score = match quality (exact > prefix > fuzzy) + field weight (name > category > SKU > description) + business boost (in-stock, best-seller, has image, recent orders). Ties broken by popularity.
+7. **Similar-title grouping** — products whose titles are near-duplicates of a matched product are pulled in too, so a search that hits one variant surfaces the whole family.
 
-**Layer 2 — Hot sweep every 2 minutes**
-Sync only products that matter right now: anything viewed, added to cart, wishlisted or in a pending order in the last 24 h, plus the newest arrivals page. Roughly 100–200 lookups per run — light and safe.
+### 3. Smarter search bar (autosuggest)
+- Suggestions now come from the same ranked engine, with product thumbnail + price (as today) **plus** keyword and category suggestions ("saree in Sarees", "under ₹999") above the products, Flipkart-style.
+- Recent searches (stored locally) and trending searches (most-searched terms from our existing `storefront_events`) shown when the box is empty.
+- Debounced, keyboard navigable (arrow keys + Enter), and "See all results for X" as the last row.
 
-**Layer 3 — Full sweep every 30 minutes**
-Walks the entire 2,615-product catalog in rotating chunks (~600 products per run, full catalog covered every ~30 min). Updates stock, marks delisted products inactive, and optionally syncs price changes.
+### 4. Analytics already in place
+Existing `search_performed` / `search_no_results` events keep firing, now also from the results page — so the merchant dashboard can later show "top searches with no results" (products to add).
 
-## Safety rules baked in
+## Also possible later (Flipkart parity) — not in this pass unless you want it
+- Filter facets computed from the result set (brand/category/price buckets with counts).
+- "Sponsored"/promoted product slots in search results.
+- Query autocomplete learned from real store searches instead of a static synonym list.
+- Multi-language (Hinglish → Hindi) query handling.
+- Semantic/AI vector search for descriptive queries ("gift for wife under 1000").
 
-- Never zero out stock on an API error, timeout or non-200 — stock only changes on a valid response. A source outage can never blank the store.
-- Concurrency capped at 6 with retry/backoff on 403/429, browser headers, and a kill switch to pause syncing.
-- Only products changed in a run trigger a storefront cache purge, so the site stays fast.
-- Every run logs counts (checked / changed / out-of-stock / errors) so you can see it working.
-
-## Options for you to choose
-
-1. **Price sync on/off** — the source also returns current price. Do you want price + MRP kept in sync too, or stock only (so your own pricing stays untouched)?
-2. **Out-of-stock behaviour** — show the product as "Sold Out" (greyed, not buyable) or hide it from the catalog entirely?
-3. **Stock buffer** — treat source quantity ≤ 1 as sold out (safety margin against a race with their other resellers), or use exact 0?
-
-## Technical outline
-
-- New edge function `jd-stock-sync` with modes `hot` | `full` | `single`, invoked by two cron schedules (2 min / 30 min) and directly from the product page + `place-order`.
-- Columns added to `products`: `source_ref` (source SKU), `source_synced_at`, and a store-level toggle so this only runs for wristlife.
-- Source credentials (API key, host, store hash) stored as backend secrets, not in code.
-- Sync writes: `stock_quantity`, `is_active` (from `product_status`), optional `price`/`sale_price`, `source_synced_at`.
-- Dashboard panel showing last sync time, items changed, and a "Sync now" button.
+## Technical notes
+- Enable `pg_trgm` and `unaccent` extensions; add a generated `search_tsv` (weighted tsvector: name A, category B, sku C, description D) column on `products` plus a GIN index, and a GIN trgm index on `name`. This keeps 15k+ product stores fast.
+- `search_products(p_store_id, p_query, p_limit, p_offset, p_sort, p_min_price, p_max_price, p_category)` — `SECURITY DEFINER`, filtered to `is_active = true`, returns card fields only (reuse `PRODUCT_CARD_FIELDS`).
+- Follow the DROP-FIRST rule for the RPC signature; grant `execute` to `anon` and `authenticated`.
+- Client: new `useProductSearch` hook (React Query, debounced, infinite) used by both the overlay and the results page; synonym map lives in `src/lib/searchSynonyms.ts` so it can be edited without a migration.
+- No Worker/edge changes required in this pass; search hits the RPC directly (cacheable at the edge later if volume grows).
