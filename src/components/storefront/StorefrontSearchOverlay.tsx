@@ -155,6 +155,8 @@ export default function StorefrontSearchOverlay({
                 placeholder="Search products..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") submitSearch(); }}
+                enterKeyHint="search"
                 className="pl-9 pr-10 rounded-full border-0 focus-visible:ring-1 focus-visible:ring-offset-0"
                 style={{ backgroundColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 8%, transparent)", color: "var(--storefront-text, hsl(var(--foreground)))" }}
                 maxLength={100}
