@@ -55,20 +55,32 @@ async function viaZippo(pin: string): Promise<Info> {
   return { city: String(p['place name'] || ''), state: String(p['state'] || '') };
 }
 
-/** First provider that returns a usable result wins; rejects only if all fail. */
+/**
+ * Both providers are STARTED in parallel (so nothing is serialised), but
+ * postalpincode.in is PREFERRED because it returns the real district name,
+ * while zippopotam returns the locality. Zippo is only used when postal
+ * fails or times out — and by then it has already resolved.
+ */
 async function raceProviders(pin: string): Promise<Info | null> {
-  const runners = [viaPostal(pin), viaZippo(pin)].map((p) =>
-    p.then((info) => {
-      if (!info.city && !info.state) throw new Error('empty');
-      return info;
-    }),
-  );
+  const ok = (info: Info) => {
+    if (!info.city && !info.state) throw new Error('empty');
+    return info;
+  };
+  const postal = viaPostal(pin).then(ok);
+  const zippo = viaZippo(pin).then(ok);
+  // Prevent unhandled rejection if postal wins and zippo later fails.
+  zippo.catch(() => {});
   try {
-    return await Promise.any(runners);
+    return await postal;
   } catch {
-    return null;
+    try {
+      return await zippo;
+    } catch {
+      return null;
+    }
   }
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
