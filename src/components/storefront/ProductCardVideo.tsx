@@ -121,7 +121,6 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
       ref={ref}
       preload="none"
       muted
-      defaultMuted
       autoPlay
       loop
       playsInline
