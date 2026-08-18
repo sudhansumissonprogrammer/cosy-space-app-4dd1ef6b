@@ -161,12 +161,6 @@ const FONT_METRICS: Record<string, FontProfile> = {
     head: { tracking: "0.008em", weight: 600, leading: 1.18, adjust: "cap-height 0.636" },
     body: { tracking: "-0.008em", weight: 500, leading: "1.6", adjust: "0.444" },
   },
-  "Cormorant Garamond": {
-    // Same optical family as Cormorant (tiny x-height) — needs the largest
-    // body up-scale and a heavier default weight so it never looks washed out.
-    head: { tracking: "0.008em", weight: 600, leading: 1.18, adjust: "cap-height 0.636" },
-    body: { tracking: "-0.008em", weight: 500, leading: "1.6", adjust: "0.444" },
-  },
   "Cinzel": {
     // adv 0.639 = widest face → the only heading that needs tightening.
     head: { tracking: "-0.005em", weight: 600, leading: 1.22, adjust: "cap-height 0.636" },
@@ -267,7 +261,7 @@ export function getBodyTuning(font: string): BodyTuning {
 /** Serif/display families — used for pairing sanity checks. */
 const DISPLAY_SERIFS = new Set([
   "Playfair Display", "Bodoni Moda", "DM Serif Display", "Fraunces",
-  "Cormorant", "Cormorant Garamond", "Cinzel", "Alegreya SC",
+  "Cormorant", "Cinzel", "Alegreya SC",
 ]);
 const TEXT_SERIFS = new Set(["Lora", "Merriweather"]);
 const NARROW_BODY = new Set(["Oswald", "Cinzel", "Bodoni Moda", "DM Serif Display"]);

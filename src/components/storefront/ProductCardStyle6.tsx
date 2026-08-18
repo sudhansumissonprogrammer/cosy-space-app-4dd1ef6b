@@ -116,7 +116,7 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
             minSize={10}
             lineHeight={1.35}
             style={{
-              fontFamily: "var(--storefront-heading-font, 'Cormorant Garamond'), 'Cormorant Garamond', 'Playfair Display', Georgia, serif",
+              fontFamily: "'Cormorant Garamond', 'Playfair Display', Georgia, serif",
               color: "var(--storefront-text, hsl(var(--foreground)))",
               fontWeight: 500,
             }}
