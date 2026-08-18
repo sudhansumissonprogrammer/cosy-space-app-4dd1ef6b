@@ -44,7 +44,18 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
   const hostRef = useRef<HTMLDivElement>(null);
   // Tap-to-play video is available on every store/theme: it costs nothing
   // until the shopper taps, so it is not gated behind the App Store add-on.
-  const cardVideoUrl = ((product as any)?.video_url as string | null) || null;
+  const inlineVideoUrl = ((product as any)?.video_url as string | null) || null;
+  // Some payloads (edge-cached product lists, shell previews) omit the column
+  // entirely — batch-resolve it so those cards still get the play badge.
+  const needsLookup = !!product?.id && !("video_url" in (product || {}));
+  const [lookedUp, setLookedUp] = useState<string | null>(() =>
+    needsLookup ? getCachedCardVideo(product.id) ?? null : null,
+  );
+  useEffect(() => {
+    if (!needsLookup) return;
+    return requestCardVideo(product.id, (url) => setLookedUp(url));
+  }, [needsLookup, product?.id]);
+  const cardVideoUrl = inlineVideoUrl || lookedUp;
 
   const variantCount = useVariantCount(product.id);
   const hasVariants = variantCount > 0;
