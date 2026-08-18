@@ -29,7 +29,20 @@ interface Props {
   enabled?: boolean;
 }
 
-function ProductCardVideoImpl({ hostRef, videoUrl, poster, enabled = true }: Props) {
+/**
+ * Some imported catalogues contain concatenated URLs
+ * ("https://a.com/https://b.com/x.mp4"). Keep only the last real URL.
+ */
+function sanitizeUrl(u?: string | null): string {
+  if (!u) return "";
+  const i = u.lastIndexOf("https://");
+  const j = u.lastIndexOf("http://");
+  const k = Math.max(i, j);
+  return k > 0 ? u.slice(k) : u;
+}
+
+function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, poster, enabled = true }: Props) {
+  const videoUrl = sanitizeUrl(rawUrl);
   const ref = useRef<HTMLVideoElement | null>(null);
   const [mountTo, setMountTo] = useState<HTMLElement | null>(null);
   const [playing, setPlaying] = useState(false);
