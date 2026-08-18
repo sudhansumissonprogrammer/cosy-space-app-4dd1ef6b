@@ -187,12 +187,17 @@ function activateEntry(e: Entry) {
     stallTimer = window.setTimeout(() => {
       if (active !== e) return;
       if (v.readyState >= 2) return;
+      // Only give up when literally nothing arrived. A slow but progressing
+      // download keeps its turn so shoppers on 4G still get the clip.
+      const buffered = v.buffered.length > 0 ? v.buffered.end(v.buffered.length - 1) : 0;
+      if (buffered > 0) return;
       skipped.add(e.src);
       detachEntry(e);
       e.onActiveChange?.(false);
       active = null;
       schedule();
     }, STALL_MS);
+
   } catch {}
 }
 
