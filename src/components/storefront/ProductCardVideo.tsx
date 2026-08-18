@@ -36,6 +36,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
   const [fit, setFit] = useState({ objectFit: "cover", objectPosition: "center", borderRadius: "inherit" });
   const [open, setOpen] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [muted, setMuted] = useState(false);
   const eligible = enabled && !!videoUrl && !failed;
 
   // Find the image container of whichever card style rendered. Lazy card
