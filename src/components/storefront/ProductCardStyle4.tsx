@@ -3,6 +3,8 @@ import { Minus, Plus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { Tables } from "@/integrations/supabase/types";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
+import ProductCardTitle from "./ProductCardTitle";
+
 
 /* ── Veg / Non-Veg indicator ── */
 function DietBadge({ category }: { category: string | null }) {
@@ -110,15 +112,17 @@ export default function ProductCardStyle4({ product, slug, store, priority = fal
         <div>
           <div className="flex items-center gap-1.5">
             <DietBadge category={product.category} />
-            <h3
-              className="text-sm font-semibold leading-tight line-clamp-2"
+            <ProductCardTitle
+              name={product.name}
+              className="font-semibold"
+              baseSize={14}
+              minSize={11}
               style={{
                 color: "var(--storefront-text, hsl(var(--foreground)))",
                 fontFamily: "var(--storefront-heading-font, inherit)",
               }}
-            >
-              {product.name}
-            </h3>
+            />
+
           </div>
           {product.description && (
             <p
