@@ -146,7 +146,12 @@ export default function ShopByVideoConfig() {
       title="Shop by Video"
       subtitle="Reels-style carousel under Best Sellers"
       enabled={enabled}
-      onEnabledChange={setEnabled}
+      onEnabledChange={(v) => {
+        // Persist immediately — otherwise the switch only lives in local state
+        // and the app looks enabled until the page is refreshed.
+        setEnabled(v);
+        upsert.mutate({ enabled: v, config: cfg });
+      }}
       onSave={() => upsert.mutate({ enabled, config: cfg })}
       saving={upsert.isPending}
       saveLabel="Save changes"
