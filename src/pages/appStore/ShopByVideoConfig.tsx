@@ -123,6 +123,7 @@ export default function ShopByVideoConfig() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["store-app", storeId, APP_ID] });
       qc.invalidateQueries({ queryKey: ["store-apps", storeId] });
+      qc.invalidateQueries({ queryKey: ["store-enabled-apps"] });
       toast.success("Saved");
     },
     onError: (e: any) => toast.error(e?.message || "Save failed"),
@@ -146,7 +147,12 @@ export default function ShopByVideoConfig() {
       title="Shop by Video"
       subtitle="Reels-style carousel under Best Sellers"
       enabled={enabled}
-      onEnabledChange={setEnabled}
+      onEnabledChange={(v) => {
+        // Persist immediately — otherwise the switch only lives in local state
+        // and the app looks enabled until the page is refreshed.
+        setEnabled(v);
+        upsert.mutate({ enabled: v, config: cfg });
+      }}
       onSave={() => upsert.mutate({ enabled, config: cfg })}
       saving={upsert.isPending}
       saveLabel="Save changes"
