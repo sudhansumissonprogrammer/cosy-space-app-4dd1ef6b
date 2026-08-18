@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Play } from "lucide-react";
 import { VideoControlBar } from "./VideoControlBar";
+import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
 
 interface Props {
   url: string;
@@ -15,6 +16,8 @@ interface Props {
  */
 export function SnapVideoSlide({ url, poster, className = "h-full w-full object-contain bg-black" }: Props) {
   const ref = useRef<HTMLVideoElement | null>(null);
+  const source = normalizeProductVideoUrl(url);
+  const [failed, setFailed] = useState(!source);
   const [playing, setPlaying] = useState(false);
   const [started, setStarted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -49,11 +52,19 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
     setCurrentTime(value);
   };
 
+  if (!source || failed) {
+    return (
+      <div className="relative h-full w-full bg-black">
+        {poster && <img src={poster} alt="" aria-hidden className="h-full w-full object-contain" />}
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-full w-full bg-black" onClick={(e) => e.stopPropagation()}>
       <video
         ref={ref}
-        src={url}
+        src={source}
         poster={poster}
         className={className}
         disablePictureInPicture
@@ -66,6 +77,10 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
         onLoadedMetadata={() => setDuration(ref.current?.duration || 0)}
         onDurationChange={() => setDuration(ref.current?.duration || 0)}
         onTimeUpdate={() => setCurrentTime(ref.current?.currentTime || 0)}
+        onError={() => {
+          setPlaying(false);
+          setFailed(true);
+        }}
       />
 
 
