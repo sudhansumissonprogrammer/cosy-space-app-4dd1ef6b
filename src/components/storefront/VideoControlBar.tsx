@@ -57,6 +57,18 @@ export function VideoControlBar({ playing, currentTime, duration, onToggle, onSe
         <span className="min-w-[3.5rem] text-right text-[10px] font-medium tabular-nums text-white/90">
           {formatTime(safeCurrent)} / {formatTime(safeDuration)}
         </span>
+
+        {onToggleMute && (
+          <button
+            type="button"
+            onClick={onToggleMute}
+            aria-label={muted ? "Unmute video" : "Mute video"}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/20 backdrop-blur-sm transition-transform active:scale-[0.96]"
+          >
+            {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+          </button>
+        )}
+
       </div>
     </div>
   );
