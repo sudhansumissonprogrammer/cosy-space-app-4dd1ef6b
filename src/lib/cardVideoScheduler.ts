@@ -132,27 +132,35 @@ function activateEntry(e: Entry) {
     pendingRelease.delete(v);
   }
   try {
+    // Set every autoplay-critical property before attaching the source. iOS
+    // and several Android in-app browsers make their autoplay decision when
+    // load() starts; setting `muted` afterwards can leave a valid video
+    // permanently paused even though the later play() call is allowed.
+    v.muted = true;
+    v.defaultMuted = true;
+    v.autoplay = true;
+    v.playsInline = true;
     if (v.getAttribute("src") !== e.src) {
       v.setAttribute("src", e.src);
       v.preload = "auto";
       v.load();
     }
-    v.muted = true;
-    v.defaultMuted = true;
     const tryPlay = () => {
       if (active !== e || document.hidden) return;
       v.muted = true;
-      v.play().catch(() => {});
+      const retry = v.play();
+      if (retry && typeof retry.catch === "function") retry.catch(() => {});
     };
+    // Register readiness retries before the first attempt. Older embedded
+    // Android WebViews return `undefined` from play() instead of a Promise, so
+    // a catch-only fallback never ran there and left the card paused forever.
+    v.addEventListener("loadeddata", tryPlay, { once: true });
+    v.addEventListener("canplay", tryPlay, { once: true });
     const p = v.play();
-    // Some mobile browsers reject the first autoplay attempt while the source
-    // is still loading. Retry from canplay instead of leaving the card inert.
+    // Modern browsers expose the rejection as a Promise. Readiness listeners
+    // above cover both this case and legacy implementations with no Promise.
     if (p && typeof p.catch === "function") {
-      p.catch(() => {
-        if (active !== e || document.hidden) return;
-        v.addEventListener("loadeddata", tryPlay, { once: true });
-        v.addEventListener("canplay", tryPlay, { once: true });
-      });
+      p.catch(() => {});
     }
     e.onActiveChange?.(true);
 
@@ -274,6 +282,19 @@ function ensureObserver(): IntersectionObserver {
 
   // Scrolling changes which visible card is most centred.
   window.addEventListener("scroll", schedule, { passive: true });
+  // Low Power Mode and some Instagram/Facebook WebViews can reject even a
+  // muted programmatic autoplay. The shopper's first touch is a user gesture,
+  // so retry the already-selected card synchronously in that gesture without
+  // starting any additional stream.
+  const resumeActive = () => {
+    const current = active;
+    if (!current || document.hidden || !current.el.paused) return;
+    current.el.muted = true;
+    const retry = current.el.play();
+    if (retry && typeof retry.catch === "function") retry.catch(() => {});
+  };
+  window.addEventListener("touchstart", resumeActive, { passive: true });
+  window.addEventListener("pointerdown", resumeActive, { passive: true });
   document.addEventListener(
     "visibilitychange",
     () => {
