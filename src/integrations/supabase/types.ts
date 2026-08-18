@@ -745,6 +745,7 @@ export type Database = {
       jd_sync_state: {
         Row: {
           created_at: string
+          extra_cursor: Json
           imported_total: number
           last_result: Json | null
           last_run_at: string | null
@@ -755,6 +756,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          extra_cursor?: Json
           imported_total?: number
           last_result?: Json | null
           last_run_at?: string | null
@@ -765,6 +767,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          extra_cursor?: Json
           imported_total?: number
           last_result?: Json | null
           last_run_at?: string | null
