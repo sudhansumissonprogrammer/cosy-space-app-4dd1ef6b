@@ -143,7 +143,13 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
       aria-hidden="true"
       tabIndex={-1}
       onPlaying={() => setPlaying(true)}
+      // Some Android WebViews render frames without ever firing `playing`.
+      // Reveal the layer as soon as the clock actually advances.
+      onTimeUpdate={(e) => {
+        if (e.currentTarget.currentTime > 0 && !e.currentTarget.paused) setPlaying(true);
+      }}
       onPause={() => setPlaying(false)}
+
       onError={() => {
         setPlaying(false);
         // Releasing the buffer (removeAttribute("src") + load()) legitimately
