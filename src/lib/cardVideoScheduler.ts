@@ -30,6 +30,7 @@ interface Entry {
   src: string;
   ratio: number;
   onActiveChange?: (active: boolean) => void;
+  playRetry?: number;
 }
 
 let observer: IntersectionObserver | null = null;
@@ -87,6 +88,9 @@ const STALL_MS = 12_000;
 const KEEP_BUFFER_MS = 4000;
 /** Ignore candidates while the finger is still flinging past cards. */
 const SWITCH_DELAY_MS = 180;
+/** Retry muted autoplay while the selected video becomes ready. */
+const PLAY_RETRY_MS = 700;
+const MAX_PLAY_RETRIES = 6;
 
 let switchTimer: number | undefined;
 let stallTimer: number | undefined;
@@ -94,6 +98,10 @@ const pendingRelease = new Map<HTMLVideoElement, number>();
 
 function detachEntry(e: Entry) {
   const v = e.el;
+  if (e.playRetry) {
+    window.clearTimeout(e.playRetry);
+    e.playRetry = undefined;
+  }
   try {
     v.pause();
     if (v.getAttribute("src")) {
@@ -110,6 +118,10 @@ function releaseEntry(e: Entry) {
     v.pause();
   } catch {}
   e.onActiveChange?.(false);
+  if (e.playRetry) {
+    window.clearTimeout(e.playRetry);
+    e.playRetry = undefined;
+  }
   // Do NOT drop the buffer immediately: a shopper scrolling one row down and
   // back would otherwise restart a multi-megabyte download from zero.
   const existing = pendingRelease.get(v);
@@ -145,23 +157,30 @@ function activateEntry(e: Entry) {
       v.preload = "auto";
       v.load();
     }
+    let attempts = 0;
     const tryPlay = () => {
       if (active !== e || document.hidden) return;
       v.muted = true;
+      v.defaultMuted = true;
+      v.setAttribute("muted", "");
+      v.setAttribute("playsinline", "");
+      v.setAttribute("webkit-playsinline", "");
       const retry = v.play();
-      if (retry && typeof retry.catch === "function") retry.catch(() => {});
+      if (retry && typeof retry.catch === "function") {
+        retry.catch(() => {
+          if (active !== e || attempts >= MAX_PLAY_RETRIES) return;
+          attempts += 1;
+          if (e.playRetry) window.clearTimeout(e.playRetry);
+          e.playRetry = window.setTimeout(tryPlay, PLAY_RETRY_MS);
+        });
+      }
     };
     // Register readiness retries before the first attempt. Older embedded
     // Android WebViews return `undefined` from play() instead of a Promise, so
     // a catch-only fallback never ran there and left the card paused forever.
     v.addEventListener("loadeddata", tryPlay, { once: true });
     v.addEventListener("canplay", tryPlay, { once: true });
-    const p = v.play();
-    // Modern browsers expose the rejection as a Promise. Readiness listeners
-    // above cover both this case and legacy implementations with no Promise.
-    if (p && typeof p.catch === "function") {
-      p.catch(() => {});
-    }
+    tryPlay();
     e.onActiveChange?.(true);
 
     // Watchdog: some imported files only expose their moov atom at the very
@@ -189,6 +208,7 @@ function pickBest(): Entry | null {
   let best: Entry | null = null;
   let bestScore = -1;
   const centerY = window.innerHeight / 2;
+  const centerX = window.innerWidth / 2;
 
   entries.forEach((e) => {
     if (skipped.has(e.src)) return;
@@ -200,8 +220,10 @@ function pickBest(): Entry | null {
     // entries, but only an actually visible card may own playback.
     if (visibleRatio < MIN_RATIO) return;
     const dist = Math.abs(r.top + r.height / 2 - centerY);
-    // Prefer the card closest to the viewport centre; ratio breaks ties.
-    const score = 1_000_000 - dist * 100 + e.ratio;
+    const horizontalDist = Math.abs(r.left + r.width / 2 - centerX);
+    // Prefer the card closest to the true viewport centre. Including the X
+    // axis prevents the left column from permanently winning every tied row.
+    const score = 1_000_000 - dist * 100 - horizontalDist + e.ratio;
     if (score > bestScore) {
       bestScore = score;
       best = e;

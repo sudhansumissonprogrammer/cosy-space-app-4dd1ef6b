@@ -172,6 +172,7 @@ export default function StorefrontShop() {
                   store={store}
                   priority={index < 4}
                   cardStyle={cardStyle}
+                  index={index}
                 />
               ))}
             </div>
