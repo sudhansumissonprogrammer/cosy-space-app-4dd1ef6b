@@ -44,11 +44,7 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
   const [variantOpen, setVariantOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   const { enabled: cardVideoOn } = useAppEnabled(slug, "card-video");
-  const cardVideoUrl = useProductCardVideoUrl(
-    product?.id,
-    (product as any)?.video_url,
-    cardVideoOn,
-  );
+  const cardVideoUrl = ((product as any)?.video_url as string | null) || null;
   const variantCount = useVariantCount(product.id);
   const hasVariants = variantCount > 0;
 
