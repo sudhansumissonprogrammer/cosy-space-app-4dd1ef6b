@@ -24,11 +24,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-import { currencySymbol } from "@/lib/productUtils";
   ArrowLeft, Package, MapPin, Phone, CreditCard, Banknote, Smartphone,
   FileDown, MessageCircle, XCircle, RotateCcw, ShoppingBag,
   Loader2, ShieldCheck, Receipt, Truck,
 } from "lucide-react";
+import { currencySymbol } from "@/lib/productUtils";
 
 const CANCEL_REASONS = [
   "Changed my mind",
