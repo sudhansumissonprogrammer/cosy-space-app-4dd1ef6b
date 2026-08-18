@@ -29,6 +29,13 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
     if (!isActive && videoRef.current) videoRef.current.pause();
   }, [isActive]);
 
+  // Fetch metadata only when the video slide is selected. This keeps the first
+  // product image as LCP, but makes playback immediate after the shopper swipes
+  // to the video instead of leaving the poster looking like a static photo.
+  useEffect(() => {
+    if (isActive && source && videoRef.current) videoRef.current.load();
+  }, [isActive, source]);
+
   if (!source || failed) {
     return (
       <div className="relative flex-[0_0_100%] min-w-0 bg-black aspect-[4/5] sm:aspect-square overflow-hidden">
@@ -84,7 +91,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         ref={videoRef}
         src={source}
         poster={poster}
-        preload="metadata"
+        preload={isActive ? "metadata" : "none"}
         playsInline
         disablePictureInPicture
         className="relative z-[1] w-full h-full object-contain bg-black"

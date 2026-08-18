@@ -121,10 +121,12 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
       ref={ref}
       preload="none"
       muted
+      defaultMuted
       autoPlay
       loop
       playsInline
       disablePictureInPicture
+      controls={false}
       aria-hidden="true"
       tabIndex={-1}
       onPlaying={() => setPlaying(true)}

@@ -23,7 +23,7 @@ const MOBILE_MAX_WIDTH = 768;
 /** Never arm earlier than this after the first registration. */
 const ARM_FLOOR_MS = 1200;
 /** A card must be at least this visible to be a playback candidate. */
-const MIN_RATIO = 0.5;
+const MIN_RATIO = 0.35;
 
 interface Entry {
   el: HTMLVideoElement;
@@ -45,9 +45,9 @@ export function isCardVideoEligible(): boolean {
   let ok = true;
   try {
     if (window.innerWidth > MOBILE_MAX_WIDTH) ok = false;
-    // Coarse pointer is the real "mobile" signal; a narrow desktop window
-    // shouldn't start pulling video.
-    if (ok && window.matchMedia && !window.matchMedia("(pointer: coarse)").matches) ok = false;
+    // Width is the dependable mobile signal. Some Android in-app browsers
+    // (Instagram/Facebook and a few WebViews) incorrectly report a fine or
+    // missing pointer, which previously disabled every card video there.
     if (ok && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) ok = false;
     if (ok && (isSaveDataMode() || isSlowConnection())) ok = false;
   } catch {
@@ -160,7 +160,10 @@ function ensureObserver(): IntersectionObserver {
       });
       schedule();
     },
-    { threshold: [0, 0.25, 0.5, 0.75, 1] },
+    // Start observing just outside the viewport. This gives the selected card
+    // enough time to attach/load before it becomes visible while still keeping
+    // every other card source-free.
+    { threshold: [0, 0.25, 0.5, 0.75, 1], rootMargin: "120px 0px" },
   );
 
   // Scrolling changes which visible card is most centred.
@@ -196,6 +199,16 @@ export function registerCardVideo(
   entries.set(el, entry);
   ensureObserver().observe(el);
   scheduleArm();
+  // IntersectionObserver callbacks can be delayed in iOS/Android WebViews
+  // until after the next scroll. Reconcile once after layout so an initially
+  // visible card starts without requiring the shopper to touch the page.
+  requestAnimationFrame(() => {
+    if (!entries.has(el)) return;
+    const r = el.getBoundingClientRect();
+    const visiblePx = Math.max(0, Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0));
+    entry.ratio = r.height > 0 ? Math.min(1, visiblePx / r.height) : 0;
+    schedule();
+  });
 
   return () => {
     observer?.unobserve(el);
