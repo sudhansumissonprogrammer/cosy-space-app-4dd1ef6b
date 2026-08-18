@@ -9,7 +9,7 @@ import { fireMetaCAPI } from "@/lib/metaCapi";
 import { fbPixelTrack, generateEventId } from "@/hooks/useFacebookPixel";
 import { shouldFirePixelEvent } from "@/lib/pixelDedupe";
 import { cleanImageUrl, optimizeImageUrl } from "@/lib/imageOptimize";
-import { getDiscountPercent } from "@/lib/productUtils";
+import { getDiscountPercent, currencySymbol } from "@/lib/productUtils";
 
 interface UpsellProps {
   storeId: string;
@@ -143,10 +143,10 @@ export default function PostPurchaseUpsell({ storeId, storeName, orderId, orderN
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold line-clamp-1" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{product.name}</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-sm font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{currency} {Number(price).toFixed(0)}</span>
+                  <span className="text-sm font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{currencySymbol(currency)}{Number(price).toFixed(0)}</span>
                   {hasDiscount && (
                     <>
-                      <span className="text-xs line-through" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>{currency} {Number(product.price).toFixed(0)}</span>
+                      <span className="text-xs line-through" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>{currencySymbol(currency)}{Number(product.price).toFixed(0)}</span>
                       <Badge variant="secondary" className="text-[9px] px-1 py-0">
                         {getDiscountPercent(product.price, product.sale_price!)}% OFF
                       </Badge>

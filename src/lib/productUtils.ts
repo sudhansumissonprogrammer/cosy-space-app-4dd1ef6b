@@ -45,3 +45,11 @@ export function getProductStats(productId: string) {
     soldThisWeek: 10 + (abs % 90),
   };
 }
+
+/** Map a currency code (or symbol) to its display symbol. Always use this for UI. */
+export function currencySymbol(currency?: string | null): string {
+  if (!currency) return "₹";
+  const c = String(currency).trim().toUpperCase();
+  const map: Record<string, string> = { INR: "₹", USD: "$", EUR: "€", GBP: "£", AED: "د.إ", AUD: "A$", CAD: "C$" };
+  return map[c] || currency;
+}

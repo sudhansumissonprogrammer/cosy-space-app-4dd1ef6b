@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { storefrontPath } from "@/lib/subdomain";
 import { ShoppingCart, Plus, Zap } from "lucide-react";
 import { useAppEnabled } from "@/hooks/useAppEnabled";
+import { currencySymbol } from "@/lib/productUtils";
 
 interface Props {
   storeId: string;
@@ -103,7 +104,7 @@ export default function FrequentlyBoughtTogether({
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-foreground line-clamp-1">{p.name}</p>
                 <p className="text-xs font-bold text-primary">
-                  {currency} {(p.sale_price && p.sale_price < p.price ? p.sale_price : p.price).toFixed(0)}
+                  {currencySymbol(currency)}{(p.sale_price && p.sale_price < p.price ? p.sale_price : p.price).toFixed(0)}
                 </p>
               </div>
             </Link>
@@ -112,8 +113,8 @@ export default function FrequentlyBoughtTogether({
       </div>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs text-muted-foreground line-through">{currency} {bundleTotal.toFixed(0)}</p>
-          <p className="text-sm font-extrabold text-emerald-600">{currency} {bundleFinal.toFixed(0)} <span className="text-[10px] font-semibold">(-5% bundle)</span></p>
+          <p className="text-xs text-muted-foreground line-through">{currencySymbol(currency)}{bundleTotal.toFixed(0)}</p>
+          <p className="text-sm font-extrabold text-emerald-600">{currencySymbol(currency)}{bundleFinal.toFixed(0)} <span className="text-[10px] font-semibold">(-5% bundle)</span></p>
         </div>
         <button
           onClick={handleAddBundle}

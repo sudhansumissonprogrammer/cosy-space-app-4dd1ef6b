@@ -5,7 +5,7 @@ import { Package, ShoppingCart, Star, Heart, Check, Plus, Minus, Loader2 } from 
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
-import { getProductRating, getDiscountPercent } from "@/lib/productUtils";
+import { getProductRating, getDiscountPercent, currencySymbol } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { setPdpPreload } from "@/lib/pdpPreload";
@@ -129,12 +129,12 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
         <div className="flex items-center gap-1 min-w-0">
           {product.sale_price ? (
             <>
-              <span className="text-sm sm:text-base font-semibold whitespace-nowrap" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{store.currency || "₹"}{Number(product.sale_price).toFixed(0)}</span>
-              <span className="price-strike-draw text-[10px] sm:text-xs whitespace-nowrap" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
+              <span className="text-sm sm:text-base font-semibold whitespace-nowrap" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{currencySymbol(store.currency)}{Number(product.sale_price).toFixed(0)}</span>
+              <span className="price-strike-draw text-[10px] sm:text-xs whitespace-nowrap" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 50%, transparent)" }}>{currencySymbol(store.currency)}{Number(product.price).toFixed(0)}</span>
               {discountPercent && <span className="rounded-full bg-success px-1 py-0.5 text-[8px] font-bold text-success-foreground whitespace-nowrap shrink-0">{discountPercent}% off</span>}
             </>
           ) : (
-            <span className="text-sm sm:text-base font-semibold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{store.currency || "₹"}{Number(product.price).toFixed(0)}</span>
+            <span className="text-sm sm:text-base font-semibold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{currencySymbol(store.currency)}{Number(product.price).toFixed(0)}</span>
           )}
         </div>
         {cartQty > 0 && !isAdding && !justAdded ? (

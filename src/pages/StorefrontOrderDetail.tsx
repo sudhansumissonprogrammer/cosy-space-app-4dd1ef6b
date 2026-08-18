@@ -28,6 +28,7 @@ import {
   FileDown, MessageCircle, XCircle, RotateCcw, ShoppingBag,
   Loader2, ShieldCheck, Receipt, Truck,
 } from "lucide-react";
+import { currencySymbol } from "@/lib/productUtils";
 
 const CANCEL_REASONS = [
   "Changed my mind",
@@ -289,9 +290,9 @@ export default function StorefrontOrderDetail() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium line-clamp-2">{item.product_name}</p>
                       <p className="text-xs mt-0.5" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}>
-                        Qty: {item.quantity} · {store.currency} {Number(item.unit_price).toFixed(0)} each
+                        Qty: {item.quantity} · {currencySymbol(store.currency)}{Number(item.unit_price).toFixed(0)} each
                       </p>
-                      <p className="text-sm font-semibold mt-1">{store.currency} {Number(item.total).toFixed(0)}</p>
+                      <p className="text-sm font-semibold mt-1">{currencySymbol(store.currency)}{Number(item.total).toFixed(0)}</p>
                       {slug && (order.status === "delivered" || order.status === "cancelled") && (
                         <Button asChild variant="outline" size="sm" className="h-9 px-2.5 text-xs mt-2">
                           <Link to={storefrontPath(store.slug, `product/${slug}`)}>
@@ -371,25 +372,25 @@ export default function StorefrontOrderDetail() {
                     <div key={l.label} className="flex justify-between">
                       <dt style={{ color: dim }}>{l.label}</dt>
                       <dd className={l.kind === "discount" ? "text-emerald-600 font-medium" : undefined}>
-                        {l.amount < 0 ? "− " : ""}{store.currency} {Math.abs(l.amount).toFixed(0)}
+                        {l.amount < 0 ? "− " : ""}{currencySymbol(store.currency)}{Math.abs(l.amount).toFixed(0)}
                       </dd>
                     </div>
                   ))}
                   <Separator className="my-2" />
                   <div className="flex justify-between text-sm font-semibold">
                     <dt>Order total</dt>
-                    <dd>{store.currency} {bd.total.toFixed(0)}</dd>
+                    <dd>{currencySymbol(store.currency)}{bd.total.toFixed(0)}</dd>
                   </div>
                   {bd.paid > 0 && (
                     <div className="flex justify-between">
                       <dt style={{ color: dim }}>{bd.isPartial ? "Advance paid online" : "Paid online"}</dt>
-                      <dd className="font-semibold text-emerald-600">{store.currency} {bd.paid.toFixed(0)}</dd>
+                      <dd className="font-semibold text-emerald-600">{currencySymbol(store.currency)}{bd.paid.toFixed(0)}</dd>
                     </div>
                   )}
                   {bd.dueOnDelivery > 0 && (
                     <div className="mt-2 flex justify-between rounded-lg bg-muted/60 px-2.5 py-2 text-[11px]">
                       <span className="font-medium">Pay on delivery</span>
-                      <span className="font-bold">{store.currency} {bd.dueOnDelivery.toFixed(0)}</span>
+                      <span className="font-bold">{currencySymbol(store.currency)}{bd.dueOnDelivery.toFixed(0)}</span>
                     </div>
                   )}
                 </dl>

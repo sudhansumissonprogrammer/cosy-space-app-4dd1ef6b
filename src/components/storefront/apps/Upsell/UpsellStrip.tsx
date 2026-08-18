@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { cleanImageUrl, optimizeImageUrl } from "@/lib/imageOptimize";
-import { getDiscountPercent, getProductRating } from "@/lib/productUtils";
+import { getDiscountPercent, getProductRating, currencySymbol } from "@/lib/productUtils";
 import { applyIncentivePreview } from "@/lib/appStore/upsell/matchEngine";
 import { trackUpsell } from "@/lib/appStore/upsell/track";
 import type {
@@ -265,7 +265,7 @@ export default function UpsellStrip({
                     className="text-xs font-bold"
                     style={{ color: "var(--storefront-text, inherit)" }}
                   >
-                    {currency} {finalPrice.toFixed(0)}
+                    {currencySymbol(currency)}{finalPrice.toFixed(0)}
                   </span>
                   {showDiscount ? (
                     <span
@@ -275,7 +275,7 @@ export default function UpsellStrip({
                           "color-mix(in srgb, var(--storefront-text, inherit) 50%, transparent)",
                       }}
                     >
-                      {currency} {basePrice.toFixed(0)}
+                      {currencySymbol(currency)}{basePrice.toFixed(0)}
                     </span>
                   ) : null}
                 </div>

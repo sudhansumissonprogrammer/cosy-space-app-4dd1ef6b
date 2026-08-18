@@ -10,7 +10,7 @@ import { Package, Heart, Plus, Check, Loader2, Minus, Star } from "lucide-react"
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
-import { getDiscountPercent, getProductRating } from "@/lib/productUtils";
+import { getDiscountPercent, getProductRating, currencySymbol } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import ProductCardTitle from "./ProductCardTitle";
 import WishlistHeartButton from "./WishlistHeartButton";
@@ -30,7 +30,7 @@ export default function ProductCardStyle7({ product, slug, store, priority = fal
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
-  const currency = store.currency || "₹";
+  const currency = currencySymbol(store.currency);
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();

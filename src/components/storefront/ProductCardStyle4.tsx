@@ -3,6 +3,7 @@ import { Minus, Plus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { Tables } from "@/integrations/supabase/types";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
+import { currencySymbol } from "@/lib/productUtils";
 import ProductCardTitle from "./ProductCardTitle";
 
 
@@ -47,7 +48,7 @@ export default function ProductCardStyle4({ product, slug, store, priority = fal
   const price = product.sale_price || product.price;
   const originalPrice = product.sale_price ? product.price : null;
   const hasDiscount = originalPrice && originalPrice > price;
-  const currency = store.currency === "USD" ? "$" : "₹";
+  const currency = currencySymbol(store.currency);
 
   const handleAdd = useCallback(() => {
     if (onVariantRequired) { onVariantRequired(); return; }
