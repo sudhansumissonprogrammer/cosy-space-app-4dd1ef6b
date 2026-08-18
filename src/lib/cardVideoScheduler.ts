@@ -23,7 +23,7 @@ const MOBILE_MAX_WIDTH = 768;
 /** Never arm earlier than this after the first registration. */
 const ARM_FLOOR_MS = 1200;
 /** A card must be at least this visible to be a playback candidate. */
-const MIN_RATIO = 0.6;
+const MIN_RATIO = 0.5;
 
 interface Entry {
   el: HTMLVideoElement;
@@ -84,7 +84,19 @@ function activateEntry(e: Entry) {
     }
     v.muted = true;
     const p = v.play();
-    if (p && typeof p.catch === "function") p.catch(() => {});
+    // Some mobile browsers reject the first autoplay attempt while the source
+    // is still loading. Retry from canplay instead of leaving the card inert.
+    if (p && typeof p.catch === "function") {
+      p.catch(() => {
+        if (active !== e || document.hidden) return;
+        const retry = () => {
+          if (active !== e || document.hidden) return;
+          v.muted = true;
+          v.play().catch(() => {});
+        };
+        v.addEventListener("canplay", retry, { once: true });
+      });
+    }
     e.onActiveChange?.(true);
   } catch {}
 }
@@ -98,9 +110,12 @@ function reconcile() {
   const centerY = window.innerHeight / 2;
 
   entries.forEach((e) => {
-    if (e.ratio < MIN_RATIO) return;
+    if (e.ratio <= 0) return;
     const r = e.el.getBoundingClientRect();
     if (r.height === 0) return;
+    const visiblePx = Math.max(0, Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0));
+    const visibleRatio = Math.min(1, visiblePx / r.height);
+    if (Math.max(e.ratio, visibleRatio) < MIN_RATIO) return;
     const dist = Math.abs(r.top + r.height / 2 - centerY);
     // Prefer the card closest to the viewport centre; ratio breaks ties.
     const score = 1_000_000 - dist * 100 + e.ratio;
@@ -148,7 +163,7 @@ function ensureObserver(): IntersectionObserver {
       });
       schedule();
     },
-    { threshold: [0, 0.3, 0.6, 0.9] },
+    { threshold: [0, 0.25, 0.5, 0.75, 1] },
   );
 
   // Scrolling changes which visible card is most centred.

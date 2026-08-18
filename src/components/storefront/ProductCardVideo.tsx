@@ -114,8 +114,10 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
       ref={ref}
       preload="none"
       muted
+      autoPlay
       loop
       playsInline
+      webkit-playsinline="true"
       disablePictureInPicture
       aria-hidden="true"
       tabIndex={-1}
