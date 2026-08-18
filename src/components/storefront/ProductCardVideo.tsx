@@ -173,7 +173,6 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
         <video
           ref={ref}
           preload="none"
-          muted
           loop
           playsInline
           disablePictureInPicture
