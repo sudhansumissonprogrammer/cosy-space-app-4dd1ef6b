@@ -210,14 +210,26 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
           className="pointer-events-none absolute inset-0 z-[2] h-full w-full"
         />
       )}
-      <button
-        type="button"
-        onClick={open ? (e) => { e.preventDefault(); e.stopPropagation(); stop(); } : start}
-        aria-label={open ? "Stop video" : "Play product video"}
-        className="absolute bottom-2 left-2 z-[3] grid h-10 w-10 place-items-center rounded-full bg-black/55 text-white shadow-lg ring-1 ring-white/40 backdrop-blur-sm transition-transform active:scale-95"
-      >
-        {open ? <X className="h-5 w-5" /> : <Play className="h-5 w-5 translate-x-[1px] fill-current" />}
-      </button>
+      <div className="absolute bottom-1.5 left-1.5 z-[3] flex items-center gap-1">
+        <button
+          type="button"
+          onClick={open ? (e) => { e.preventDefault(); e.stopPropagation(); stop(); } : start}
+          aria-label={open ? "Stop video" : "Play product video"}
+          className="grid h-7 w-7 place-items-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_8px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90"
+        >
+          {open ? <X className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 translate-x-[1px] fill-current" />}
+        </button>
+        {open && (
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMuted((m) => !m); }}
+            aria-label={muted ? "Unmute video" : "Mute video"}
+            className="grid h-7 w-7 place-items-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_8px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90"
+          >
+            {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+          </button>
+        )}
+      </div>
     </>,
     mountTo,
   );
