@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import { VideoControlBar } from "./VideoControlBar";
 import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
@@ -23,10 +23,18 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
+  useEffect(() => {
+    const video = ref.current;
+    if (!source || !video) return;
+    video.muted = true;
+    video.play().then(() => setStarted(true)).catch(() => {});
+  }, [source]);
+
   const handlePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
     const v = ref.current;
     if (!v) return;
+    v.muted = true;
     setStarted(true);
     v.play().catch(() => {});
   };
@@ -35,6 +43,7 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
     e.stopPropagation();
     const v = ref.current;
     if (!v) return;
+    v.muted = true;
     if (playing) {
       v.pause();
       return;
@@ -68,6 +77,7 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
         poster={poster}
         className={className}
         disablePictureInPicture
+        muted
         playsInline
         preload="metadata"
         onClick={handleToggle}

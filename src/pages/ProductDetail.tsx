@@ -565,6 +565,26 @@ export default function ProductDetail() {
     };
   })();
 
+  // Product-card caches and older Worker payloads can omit media columns. A
+  // tiny media-only lookup repairs the PDP without delaying its initial paint.
+  const { data: freshProductMedia } = useQuery({
+    queryKey: ["product-media", product?.id],
+    enabled: !!product?.id && !(product as any)?.video_url,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("video_url,video_poster_url")
+        .eq("id", product.id)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 30 * 60 * 1000,
+  });
+  const resolvedProductVideo = productVideo || (() => {
+    const url = normalizeProductVideoUrl(freshProductMedia?.video_url);
+    return url ? { url, poster: freshProductMedia?.video_poster_url || allImages[0] || "" } : null;
+  })();
+
 
   // Reviews (incl. photo/video) are fetched inside <ReviewsShowcase />
 
@@ -756,7 +776,7 @@ export default function ProductDetail() {
         <ImageGallery
           key={product.id}
           images={allImages}
-          video={productVideo}
+          video={resolvedProductVideo}
           productName={product.name}
           hasDiscount={hasDiscount}
           discountPct={discountPct}

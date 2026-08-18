@@ -161,6 +161,8 @@ const UniversalProductCard = memo(UniversalProductCardImpl, (prev, next) => {
     prev.product?.price === next.product?.price &&
     prev.product?.sale_price === next.product?.sale_price &&
     prev.product?.stock_quantity === next.product?.stock_quantity &&
+    prev.product?.video_url === next.product?.video_url &&
+    prev.product?.video_poster_url === next.product?.video_poster_url &&
     prev.slug === next.slug &&
     prev.store?.id === next.store?.id &&
     prev.store?.theme === next.store?.theme &&
