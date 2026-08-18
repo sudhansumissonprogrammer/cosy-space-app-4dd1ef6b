@@ -40,6 +40,19 @@ let rafPending = false;
 
 const entries = new Map<HTMLVideoElement, Entry>();
 
+let mp4Support: boolean | null = null;
+/** Browsers without an H.264 decoder must never request a card video. */
+function supportsCardVideo(): boolean {
+  if (mp4Support !== null) return mp4Support;
+  try {
+    const probe = document.createElement("video");
+    mp4Support = probe.canPlayType("video/mp4") !== "";
+  } catch {
+    mp4Support = false;
+  }
+  return mp4Support;
+}
+
 export function isCardVideoEligible(): boolean {
   if (typeof window === "undefined") return false;
   let ok = true;
@@ -53,11 +66,13 @@ export function isCardVideoEligible(): boolean {
     // effectiveType alone: Android frequently labels a usable 4G connection
     // as 3g, which made this feature appear broken for real shoppers.
     if (ok && isSaveDataMode()) ok = false;
+    if (ok && !supportsCardVideo()) ok = false;
   } catch {
     ok = false;
   }
   return ok;
 }
+
 
 /**
  * Sources that can never autoplay well on a phone (oversized imports, files
