@@ -26,8 +26,17 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
   useEffect(() => {
     const video = ref.current;
     if (!source || !video) return;
-    video.muted = true;
-    video.play().then(() => setStarted(true)).catch(() => {});
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry) return;
+      if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+        video.muted = true;
+        video.play().then(() => setStarted(true)).catch(() => {});
+      } else {
+        video.pause();
+      }
+    }, { threshold: [0, 0.6, 1] });
+    observer.observe(video);
+    return () => observer.disconnect();
   }, [source]);
 
   const handlePlay = (e: React.MouseEvent) => {
@@ -78,6 +87,7 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
         className={className}
         disablePictureInPicture
         muted
+        autoPlay
         playsInline
         preload="metadata"
         onClick={handleToggle}

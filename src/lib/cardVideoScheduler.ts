@@ -21,9 +21,9 @@ import { isSaveDataMode } from "@/lib/networkHints";
 
 const MOBILE_MAX_WIDTH = 768;
 /** Never arm earlier than this after the first registration. */
-const ARM_FLOOR_MS = 700;
+const ARM_FLOOR_MS = 500;
 /** A card must be at least this visible to be a playback candidate. */
-const MIN_RATIO = 0.35;
+const MIN_RATIO = 0.15;
 
 interface Entry {
   el: HTMLVideoElement;
@@ -81,18 +81,19 @@ function activateEntry(e: Entry) {
       v.load();
     }
     v.muted = true;
+    const tryPlay = () => {
+      if (active !== e || document.hidden) return;
+      v.muted = true;
+      v.play().catch(() => {});
+    };
     const p = v.play();
     // Some mobile browsers reject the first autoplay attempt while the source
     // is still loading. Retry from canplay instead of leaving the card inert.
     if (p && typeof p.catch === "function") {
       p.catch(() => {
         if (active !== e || document.hidden) return;
-        const retry = () => {
-          if (active !== e || document.hidden) return;
-          v.muted = true;
-          v.play().catch(() => {});
-        };
-        v.addEventListener("canplay", retry, { once: true });
+        v.addEventListener("loadeddata", tryPlay, { once: true });
+        v.addEventListener("canplay", tryPlay, { once: true });
       });
     }
     e.onActiveChange?.(true);
@@ -108,12 +109,13 @@ function reconcile() {
   const centerY = window.innerHeight / 2;
 
   entries.forEach((e) => {
-    if (e.ratio <= 0) return;
     const r = e.el.getBoundingClientRect();
     if (r.height === 0) return;
     const visiblePx = Math.max(0, Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0));
     const visibleRatio = Math.min(1, visiblePx / r.height);
-    if (Math.max(e.ratio, visibleRatio) < MIN_RATIO) return;
+    // IntersectionObserver uses an expanded rootMargin to prepare nearby
+    // entries, but only an actually visible card may own playback.
+    if (visibleRatio < MIN_RATIO) return;
     const dist = Math.abs(r.top + r.height / 2 - centerY);
     // Prefer the card closest to the viewport centre; ratio breaks ties.
     const score = 1_000_000 - dist * 100 + e.ratio;
@@ -144,10 +146,9 @@ function arm() {
 function scheduleArm() {
   if (armScheduled) return;
   armScheduled = true;
-  const kick = arm;
-  const ric = (window as any).requestIdleCallback;
-  if (typeof ric === "function") window.setTimeout(() => ric(kick, { timeout: 1200 }), ARM_FLOOR_MS);
-  else window.setTimeout(arm, ARM_FLOOR_MS);
+  // A deterministic delay still protects LCP without depending on an idle
+  // callback that can be postponed indefinitely on busy category pages.
+  window.setTimeout(arm, ARM_FLOOR_MS);
 }
 
 function ensureObserver(): IntersectionObserver {
