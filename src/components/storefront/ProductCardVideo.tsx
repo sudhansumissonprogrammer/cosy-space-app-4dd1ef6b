@@ -139,14 +139,30 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
     if (!video) return;
     retries.current = 0;
 
-    video.muted = true;
-    video.defaultMuted = true;
+    // Playback starts from a real tap, so sound is allowed. If the browser
+    // still refuses (some in-app webviews), fall back to muted playback.
+    video.muted = muted;
     video.playsInline = true;
     video.src = videoUrl;
     video.load();
     const attempt = video.play();
-    if (attempt && typeof attempt.catch === "function") attempt.catch(() => {});
+    if (attempt && typeof attempt.catch === "function") {
+      attempt.catch(() => {
+        video.muted = true;
+        setMuted(true);
+        const retry = video.play();
+        if (retry && typeof retry.catch === "function") retry.catch(() => {});
+      });
+    }
+    // `muted` intentionally omitted — toggling it must not restart playback.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, videoUrl]);
+
+  // Live mute toggle without touching the buffer.
+  useEffect(() => {
+    const video = ref.current;
+    if (video) video.muted = muted;
+  }, [muted]);
 
   if (!eligible || !mountTo) return null;
 
