@@ -11,6 +11,9 @@ import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { setPdpPreload } from "@/lib/pdpPreload";
 import { resolveProductImages as _resolve } from "@/lib/imageOptimize";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import ProductCardTitle from "./ProductCardTitle";
+import WishlistHeartButton from "./WishlistHeartButton";
+
 
 
 interface Props {
@@ -92,13 +95,8 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
               </span>
             </div>
           )}
-          <button onClick={handleToggleWishlist} className={`heart-burst ${heartBursting ? "bursting" : ""} absolute top-2 z-10 flex items-center justify-center p-1 lg:hidden`} style={{ left: "auto", right: "0.5rem", color: "hsl(var(--destructive))", background: "transparent", border: "none", boxShadow: "none", backdropFilter: "none", WebkitBackdropFilter: "none" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
-            {/* P1.7 — cross-fade two icons instead of toggling fill; cubic-bezier(0.2,0,0,1) */}
-            <span className="relative inline-block h-[20px] w-[20px]" style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.45))" }}>
-              <Heart aria-hidden="true" className="absolute inset-0 h-[20px] w-[20px] fill-transparent text-white stroke-[2.25]" style={{ opacity: wishlisted ? 0 : 1, transform: wishlisted ? "scale(0.25)" : "scale(1)", filter: wishlisted ? "blur(4px)" : "blur(0)", transition: "opacity 200ms cubic-bezier(0.2,0,0,1), transform 200ms cubic-bezier(0.2,0,0,1), filter 200ms cubic-bezier(0.2,0,0,1)" }} />
-              <Heart aria-hidden="true" className="absolute inset-0 h-[20px] w-[20px] fill-destructive text-destructive" style={{ opacity: wishlisted ? 1 : 0, transform: wishlisted ? "scale(1)" : "scale(0.25)", filter: wishlisted ? "blur(0)" : "blur(4px)", transition: "opacity 200ms cubic-bezier(0.2,0,0,1), transform 200ms cubic-bezier(0.2,0,0,1), filter 200ms cubic-bezier(0.2,0,0,1)" }} />
-            </span>
-          </button>
+          <WishlistHeartButton wishlisted={wishlisted} bursting={heartBursting} onClick={handleToggleWishlist} className="absolute top-2 right-2 z-10 lg:hidden" />
+
 
           {(() => {
             const images = resolveProductImages(product);
@@ -121,7 +119,7 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
       <div className="px-3 pt-2 pb-3 sm:px-3.5 sm:pb-3.5 space-y-1">
         <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block">
           <div className="flex items-start justify-between gap-2 border-b pb-1.5" style={{ borderColor: "color-mix(in srgb, var(--storefront-text, hsl(var(--border))) 10%, transparent)" }}>
-            <h3 className="flex-1 text-[13px] font-semibold leading-tight line-clamp-1 transition-colors duration-200" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{product.name}</h3>
+            <ProductCardTitle name={product.name} className="flex-1 font-semibold transition-colors duration-200" baseSize={13} minSize={10} style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
             <div className="flex shrink-0 items-center gap-0.5 pt-0.5">
               <Star className="h-3 w-3 fill-warning text-warning" />
               <span className="text-[10px] font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>{getProductRating(product.id)}</span>

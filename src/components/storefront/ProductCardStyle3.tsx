@@ -8,6 +8,9 @@ import { optimizeImageUrl, getImageSrcSet, resolveProductImages, PRODUCT_CARD_SI
 import { getProductRating, getDiscountPercent, formatPrice } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import StarRating from "./StarRating";
+import ProductCardTitle from "./ProductCardTitle";
+import WishlistHeartButton from "./WishlistHeartButton";
+
 
 
 interface Props {
@@ -76,18 +79,13 @@ export default function ProductCardStyle3({ product, slug, store, priority = fal
               </div>
             </>
           )}
-          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleWishlist(e); }} className="absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full transition-[transform,opacity,colors,box-shadow] active:scale-[0.96] lg:hidden" style={{ backgroundColor: wishlisted ? "color-mix(in srgb, #ef4444 15%, var(--storefront-bg, #fff))" : "color-mix(in srgb, var(--storefront-bg, #fff) 92%, transparent)", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }} aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}>
-            <span className="relative inline-block h-4 w-4">
-              <Heart aria-hidden="true" className="absolute inset-0 h-4 w-4" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 40%, transparent)", opacity: wishlisted ? 0 : 1, transform: wishlisted ? "scale(0.25)" : "scale(1)", filter: wishlisted ? "blur(4px)" : "blur(0)", transition: "opacity 200ms cubic-bezier(0.2,0,0,1), transform 200ms cubic-bezier(0.2,0,0,1), filter 200ms cubic-bezier(0.2,0,0,1)" }} />
-              <Heart aria-hidden="true" className="absolute inset-0 h-4 w-4 fill-current" style={{ color: "#ef4444", opacity: wishlisted ? 1 : 0, transform: wishlisted ? "scale(1)" : "scale(0.25)", filter: wishlisted ? "blur(0)" : "blur(4px)", transition: "opacity 200ms cubic-bezier(0.2,0,0,1), transform 200ms cubic-bezier(0.2,0,0,1), filter 200ms cubic-bezier(0.2,0,0,1)" }} />
-            </span>
-          </button>
+          <WishlistHeartButton wishlisted={wishlisted} onClick={handleToggleWishlist} size={32} className="absolute top-2.5 right-2.5 lg:hidden" />
+
         </div>
 
         <div className="px-3 pt-2.5 pb-3 space-y-1.5">
-          <p className="text-[13px] font-medium leading-tight truncate" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }}>
-            {product.name}
-          </p>
+          <ProductCardTitle name={product.name} className="font-medium" baseSize={13} minSize={10} style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif" }} />
+
           <StarRating rating={rating} showValue textColor="var(--storefront-text, hsl(var(--foreground)))" />
           <div className="flex items-center gap-1.5">
             <span className="text-[15px] font-bold" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>

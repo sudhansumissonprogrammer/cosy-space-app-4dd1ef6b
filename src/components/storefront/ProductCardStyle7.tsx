@@ -12,6 +12,8 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
 import { getDiscountPercent, getProductRating } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
+import ProductCardTitle from "./ProductCardTitle";
+import WishlistHeartButton from "./WishlistHeartButton";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { setPdpPreload } from "@/lib/pdpPreload";
 
@@ -102,14 +104,8 @@ export default function ProductCardStyle7({ product, slug, store, priority = fal
             </div>
           )}
 
-          <button
-            onClick={handleToggleWishlist}
-            className={`heart-burst ${heartBursting ? "bursting" : ""} absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition-transform hh:hover-scale-110 active:scale-[0.96]`}
-            style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
-            aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-          >
-            <Heart className={`h-3.5 w-3.5 ${wishlisted ? "fill-destructive text-destructive" : "fill-transparent text-foreground stroke-[2]"}`} />
-          </button>
+          <WishlistHeartButton wishlisted={wishlisted} bursting={heartBursting} onClick={handleToggleWishlist} size={32} className="absolute right-2.5 top-2.5" />
+
 
           {/* Glass info chip */}
           <div
@@ -120,9 +116,8 @@ export default function ProductCardStyle7({ product, slug, store, priority = fal
               boxShadow: "0 4px 16px -4px rgba(0,0,0,0.15)",
             }}
           >
-            <h3 className="text-[12px] font-semibold leading-tight line-clamp-1" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
-              {product.name}
-            </h3>
+            <ProductCardTitle name={product.name} className="font-semibold" baseSize={12} minSize={9.5} style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+
             <div className="mt-0.5 flex items-baseline justify-between gap-2">
               <div className="flex items-baseline gap-1 min-w-0">
                 {product.sale_price ? (

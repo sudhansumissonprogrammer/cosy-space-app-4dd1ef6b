@@ -9,6 +9,8 @@ import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
 import { getEffectivePrice } from "@/lib/productUtils";
+import ProductCardTitle from "./ProductCardTitle";
+
 
 interface Props {
   product: Tables<"products">;
@@ -55,17 +57,19 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
 
       {/* Text — name + price */}
       <div className="px-3 pt-3 pb-4">
-        <h3
-          className="text-sm leading-snug mb-1"
+        <ProductCardTitle
+          name={product.name}
+          className="mb-1"
+          baseSize={14}
+          minSize={11}
+          lineHeight={1.4}
           style={{
             color: "var(--storefront-text, #ffffff)",
             fontFamily: "var(--storefront-heading-font, 'Alegreya SC'), serif",
             fontWeight: 500,
-            lineHeight: 1.4,
           }}
-        >
-          {product.name}
-        </h3>
+        />
+
         <div className="flex items-center gap-2">
           <span
             className="text-sm"

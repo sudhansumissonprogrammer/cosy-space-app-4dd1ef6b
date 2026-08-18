@@ -12,6 +12,8 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
 import { getDiscountPercent } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
+import ProductCardTitle from "./ProductCardTitle";
+import WishlistHeartButton from "./WishlistHeartButton";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { setPdpPreload } from "@/lib/pdpPreload";
 
@@ -124,21 +126,15 @@ export default function ProductCardStyle10({ product, slug, store, priority = fa
             )}
           </div>
 
-          <button
-            onClick={handleToggleWishlist}
-            className={`heart-burst ${heartBursting ? "bursting" : ""} absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-background/95 backdrop-blur-sm shadow-sm transition-transform hh:hover-scale-110 active:scale-[0.96]`}
-            aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-          >
-            <Heart className={`h-3.5 w-3.5 ${wishlisted ? "fill-destructive text-destructive" : "fill-transparent text-foreground stroke-[2]"}`} />
-          </button>
+          <WishlistHeartButton wishlisted={wishlisted} bursting={heartBursting} onClick={handleToggleWishlist} size={32} className="absolute right-2 top-2" />
+
         </div>
       </Link>
 
       <div className="flex flex-1 flex-col p-3">
         <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block">
-          <h3 className="text-[13px] font-semibold leading-snug line-clamp-1" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
-            {product.name}
-          </h3>
+          <ProductCardTitle name={product.name} className="font-semibold" baseSize={13} minSize={10} style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+
           {(product as any).short_description && (
             <p className="mt-0.5 text-[10px] line-clamp-1" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}>
               {(product as any).short_description}
