@@ -129,6 +129,19 @@ export const APP_REGISTRY: StoreAppMeta[] = [
     },
   },
   {
+    id: "card-video",
+    name: "Card Video (Mobile)",
+    tagline: "Auto-play product videos right inside the product cards on mobile",
+    description:
+      "On phones, any product card whose product has a video plays it silently while it is on screen — exactly one video at a time. Cards without a video are untouched. Videos never download until they actually play, so category and home page load speed stays exactly the same. Automatically skipped on desktop, on data-saver and on slow (2G/3G) connections.",
+    icon: PlayCircle,
+    category: "conversion",
+    status: "live",
+    accent: "from-violet-500 to-sky-500",
+    ConfigComponent: lazy(() => import("@/pages/appStore/CardVideoConfig")),
+    defaultConfig: {},
+  },
+  {
     id: "bundle-builder",
     name: "Bundle Builder",
     tagline: "Pick-N, Fixed Combos & Frequently Bought Together",
