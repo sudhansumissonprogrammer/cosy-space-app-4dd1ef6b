@@ -150,15 +150,16 @@ function activateEntry(e: Entry) {
       v.muted = true;
       v.play().catch(() => {});
     };
+    // Register readiness retries before the first attempt. Older embedded
+    // Android WebViews return `undefined` from play() instead of a Promise, so
+    // a catch-only fallback never ran there and left the card paused forever.
+    v.addEventListener("loadeddata", tryPlay, { once: true });
+    v.addEventListener("canplay", tryPlay, { once: true });
     const p = v.play();
-    // Some mobile browsers reject the first autoplay attempt while the source
-    // is still loading. Retry from canplay instead of leaving the card inert.
+    // Modern browsers expose the rejection as a Promise. Readiness listeners
+    // above cover both this case and legacy implementations with no Promise.
     if (p && typeof p.catch === "function") {
-      p.catch(() => {
-        if (active !== e || document.hidden) return;
-        v.addEventListener("loadeddata", tryPlay, { once: true });
-        v.addEventListener("canplay", tryPlay, { once: true });
-      });
+      p.catch(() => {});
     }
     e.onActiveChange?.(true);
 
