@@ -116,6 +116,11 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
                   <img src={optimizeImageUrl(images[1], 400, 72)} srcSet={getImageSrcSet(images[1], [300, 500, 700, 900], 72)} sizes="(max-width: 640px) 45vw, (max-width: 1024px) 28vw, (max-width: 1440px) 20vw, 16vw" alt={product.name} width={400} height={533} data-no-crop="true" className="absolute inset-0 h-full w-full object-cover object-center opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100" loading="lazy" decoding="async" fetchPriority="low" />
 
                 )}
+                <ProductCardVideo
+                  enabled={cardVideoOn}
+                  videoUrl={(product as any).video_url}
+                  poster={(product as any).video_poster_url || images[0]}
+                />
               </>
             );
           })()}
