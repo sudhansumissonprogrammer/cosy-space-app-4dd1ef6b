@@ -515,6 +515,7 @@ Deno.serve(async (req) => {
         store_id: store.id,
         phase: nextPhase,
         page_cursor: nextCursor,
+        extra_cursor: extraCursor,
         last_run_at: new Date().toISOString(),
         last_result: result,
         imported_total: (Number(stateRow?.imported_total) || 0) + imported,
