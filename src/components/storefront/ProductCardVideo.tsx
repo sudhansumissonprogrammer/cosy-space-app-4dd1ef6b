@@ -13,7 +13,7 @@
  */
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Play, X } from "lucide-react";
+import { Play, X, Volume2, VolumeX } from "lucide-react";
 import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
 
 interface Props {
@@ -36,6 +36,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
   const [fit, setFit] = useState({ objectFit: "cover", objectPosition: "center", borderRadius: "inherit" });
   const [open, setOpen] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [muted, setMuted] = useState(false);
   const eligible = enabled && !!videoUrl && !failed;
 
   // Find the image container of whichever card style rendered. Lazy card
@@ -139,14 +140,30 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
     if (!video) return;
     retries.current = 0;
 
-    video.muted = true;
-    video.defaultMuted = true;
+    // Playback starts from a real tap, so sound is allowed. If the browser
+    // still refuses (some in-app webviews), fall back to muted playback.
+    video.muted = muted;
     video.playsInline = true;
     video.src = videoUrl;
     video.load();
     const attempt = video.play();
-    if (attempt && typeof attempt.catch === "function") attempt.catch(() => {});
+    if (attempt && typeof attempt.catch === "function") {
+      attempt.catch(() => {
+        video.muted = true;
+        setMuted(true);
+        const retry = video.play();
+        if (retry && typeof retry.catch === "function") retry.catch(() => {});
+      });
+    }
+    // `muted` intentionally omitted — toggling it must not restart playback.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, videoUrl]);
+
+  // Live mute toggle without touching the buffer.
+  useEffect(() => {
+    const video = ref.current;
+    if (video) video.muted = muted;
+  }, [muted]);
 
   if (!eligible || !mountTo) return null;
 
@@ -156,7 +173,6 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
         <video
           ref={ref}
           preload="none"
-          muted
           loop
           playsInline
           disablePictureInPicture
@@ -194,14 +210,26 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
           className="pointer-events-none absolute inset-0 z-[2] h-full w-full"
         />
       )}
-      <button
-        type="button"
-        onClick={open ? (e) => { e.preventDefault(); e.stopPropagation(); stop(); } : start}
-        aria-label={open ? "Stop video" : "Play product video"}
-        className="absolute bottom-2 left-2 z-[3] grid h-10 w-10 place-items-center rounded-full bg-black/55 text-white shadow-lg ring-1 ring-white/40 backdrop-blur-sm transition-transform active:scale-95"
-      >
-        {open ? <X className="h-5 w-5" /> : <Play className="h-5 w-5 translate-x-[1px] fill-current" />}
-      </button>
+      <div className="absolute bottom-1.5 left-1.5 z-[3] flex items-center gap-1">
+        <button
+          type="button"
+          onClick={open ? (e) => { e.preventDefault(); e.stopPropagation(); stop(); } : start}
+          aria-label={open ? "Stop video" : "Play product video"}
+          className="grid h-7 w-7 place-items-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_8px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90"
+        >
+          {open ? <X className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 translate-x-[1px] fill-current" />}
+        </button>
+        {open && (
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMuted((m) => !m); }}
+            aria-label={muted ? "Unmute video" : "Mute video"}
+            className="grid h-7 w-7 place-items-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_8px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90"
+          >
+            {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+          </button>
+        )}
+      </div>
     </>,
     mountTo,
   );
