@@ -148,6 +148,7 @@ const FONT_OPTIONS = [
   "Montserrat Alternates",
   "Playfair Display",
   "Cormorant",
+  "Cormorant Garamond",
   "Bodoni Moda",
   "DM Serif Display",
   "Fraunces",
