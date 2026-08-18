@@ -29,7 +29,6 @@ import { useVariantCount } from "@/hooks/useVariantCounts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import WarrantyBadge from "./WarrantyBadge";
 import { useAppEnabled } from "@/hooks/useAppEnabled";
-import { useProductCardVideoUrl } from "@/hooks/useProductCardVideoUrl";
 import ProductCardVideo from "./ProductCardVideo";
 
 interface Props {
