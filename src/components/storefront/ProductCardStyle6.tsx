@@ -15,6 +15,7 @@ import { useProductCardActions } from "@/hooks/useProductCardActions";
 import { useNavIcons } from "@/hooks/useNavIcons";
 import ProductCardTitle from "./ProductCardTitle";
 import WishlistHeartButton from "./WishlistHeartButton";
+import CardRatingBadge from "./CardRatingBadge";
 
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { setPdpPreload } from "@/lib/pdpPreload";
@@ -160,6 +161,8 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
               fontWeight: 500,
             }}
           />
+
+          <CardRatingBadge productId={product.id} />
 
           <div className="mt-1.5 flex items-baseline gap-2">
             {product.sale_price ? (
