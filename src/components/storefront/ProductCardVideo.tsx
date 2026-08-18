@@ -42,10 +42,11 @@ const deadSources = new Set<string>();
 
 function sanitizeUrl(u?: string | null): string {
   if (!u) return "";
-  const i = u.lastIndexOf("https://");
-  const j = u.lastIndexOf("http://");
+  const value = u.trim();
+  const i = value.lastIndexOf("https://");
+  const j = value.lastIndexOf("http://");
   const k = Math.max(i, j);
-  return k > 0 ? u.slice(k) : u;
+  return k > 0 ? value.slice(k) : value;
 }
 
 function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Props) {
@@ -76,7 +77,17 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
     let done = false;
     const attach = () => {
       if (done) return true;
-      const img = host.querySelector("img");
+      // A few card themes render a small badge/logo <img> before the product
+      // photo. Select the largest rendered image instead of blindly taking
+      // the first one, otherwise the video can be portalled into that badge.
+      const images = Array.from(host.querySelectorAll("img"));
+      const img = images.reduce<HTMLImageElement | null>((largest, candidate) => {
+        const box = candidate.getBoundingClientRect();
+        const largestBox = largest?.getBoundingClientRect();
+        return !largestBox || box.width * box.height > largestBox.width * largestBox.height
+          ? candidate
+          : largest;
+      }, null);
       const fallback = host.querySelector<HTMLElement>("[class*='card-img-zoom']");
       const parent = img?.parentElement || fallback || undefined;
       if (!parent) return false;
