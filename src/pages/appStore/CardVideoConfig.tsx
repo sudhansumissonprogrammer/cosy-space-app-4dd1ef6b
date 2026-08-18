@@ -85,7 +85,12 @@ export default function CardVideoConfig() {
       title={appMeta.name}
       subtitle={appMeta.tagline}
       enabled={enabled}
-      onEnabledChange={setEnabled}
+      onEnabledChange={(v) => {
+        // Persist immediately — a toggle that only lives in local state looks
+        // "on" until the next refresh, then silently reverts.
+        setEnabled(v);
+        save.mutate(v);
+      }}
       onSave={() => save.mutate(enabled)}
       saving={save.isPending}
       statusBadge={<AppLiveBadge enabled={!!row?.enabled} />}
