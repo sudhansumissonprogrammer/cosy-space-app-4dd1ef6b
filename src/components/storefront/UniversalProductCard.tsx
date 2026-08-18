@@ -28,7 +28,6 @@ import { resolveProductImages } from "@/lib/imageOptimize";
 import { useVariantCount } from "@/hooks/useVariantCounts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import WarrantyBadge from "./WarrantyBadge";
-import { useAppEnabled } from "@/hooks/useAppEnabled";
 import ProductCardVideo from "./ProductCardVideo";
 
 interface Props {
