@@ -47,6 +47,9 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
   const handlePlay = () => {
     const v = videoRef.current;
     if (!v) return;
+    // Muted inline playback is reliable in Instagram/Facebook WebViews; the
+    // shopper can still use the native/control-bar volume after playback.
+    v.muted = true;
     setHasStarted(true);
     v.play().catch(() => {
       /* user-gesture errors are silent */
@@ -92,6 +95,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         src={source}
         poster={poster}
         preload={isActive ? "metadata" : "none"}
+        muted
         playsInline
         disablePictureInPicture
         className="relative z-[1] w-full h-full object-contain bg-black"
