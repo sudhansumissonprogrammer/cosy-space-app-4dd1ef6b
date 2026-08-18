@@ -132,13 +132,19 @@ function activateEntry(e: Entry) {
     pendingRelease.delete(v);
   }
   try {
+    // Set every autoplay-critical property before attaching the source. iOS
+    // and several Android in-app browsers make their autoplay decision when
+    // load() starts; setting `muted` afterwards can leave a valid video
+    // permanently paused even though the later play() call is allowed.
+    v.muted = true;
+    v.defaultMuted = true;
+    v.autoplay = true;
+    v.playsInline = true;
     if (v.getAttribute("src") !== e.src) {
       v.setAttribute("src", e.src);
       v.preload = "auto";
       v.load();
     }
-    v.muted = true;
-    v.defaultMuted = true;
     const tryPlay = () => {
       if (active !== e || document.hidden) return;
       v.muted = true;
@@ -274,6 +280,18 @@ function ensureObserver(): IntersectionObserver {
 
   // Scrolling changes which visible card is most centred.
   window.addEventListener("scroll", schedule, { passive: true });
+  // Low Power Mode and some Instagram/Facebook WebViews can reject even a
+  // muted programmatic autoplay. The shopper's first touch is a user gesture,
+  // so retry the already-selected card synchronously in that gesture without
+  // starting any additional stream.
+  const resumeActive = () => {
+    const current = active;
+    if (!current || document.hidden || !current.el.paused) return;
+    current.el.muted = true;
+    current.el.play().catch(() => {});
+  };
+  window.addEventListener("touchstart", resumeActive, { passive: true });
+  window.addEventListener("pointerdown", resumeActive, { passive: true });
   document.addEventListener(
     "visibilitychange",
     () => {
