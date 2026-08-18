@@ -1,26 +1,19 @@
 /**
- * ProductCardVideo — mobile-only silent video layer for a product card.
+ * ProductCardVideo — tap-to-play video layer for a product card.
  *
- * It is mounted ONCE per card from `UniversalProductCard`, so it works with
- * every card style (style-1..10, V19, V20) without touching each file. On
- * mount it locates the card's primary <img> and portals a <video> into that
- * image's container, perfectly overlaying the product photo.
+ * No autoplay, no scheduler, no preloading: the card shows a small play
+ * button over the product image, and the <video> element (and therefore the
+ * first byte of video) only exists after the shopper taps it. Cold page load
+ * and category-grid performance are byte-for-byte identical to a card
+ * without video.
  *
- * Renders NOTHING when:
- *   - the product has no `video_url`
- *   - the "Card Video" app is off for the store
- *   - the device/network is not eligible (desktop, save-data, 2G/3G,
- *     reduced motion)
- *
- * The <video> has NO `src`, NO `poster` and `preload="none"` until
- * `cardVideoScheduler` promotes it to the single active card, so cold page
- * load costs exactly zero extra bytes and the <img> stays the LCP element.
- * (A `poster` would be fetched immediately by every card — that is why the
- * product image underneath is used as the placeholder instead.)
+ * Mounted ONCE per card from `UniversalProductCard`, so it works with every
+ * card style (style-1..10, V19, V20) by portalling into the card's own image
+ * container.
  */
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { isCardVideoEligible, registerCardVideo } from "@/lib/cardVideoScheduler";
+import { Play, X } from "lucide-react";
 import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
 
 interface Props {
@@ -31,38 +24,17 @@ interface Props {
   enabled?: boolean;
 }
 
-/**
- * Some imported catalogues contain concatenated URLs
- * ("https://a.com/https://b.com/x.mp4"). Keep only the last real URL.
- */
-/**
- * URLs that failed to decode once (404, bad codec, CORS) are remembered for
- * the page lifetime so a remounted card never re-downloads a dead file.
- */
-const failedAt = new Map<string, number>();
-const FAILURE_RETRY_MS = 30_000;
+/** Only one card video may play at a time across the whole grid. */
+let activeStop: (() => void) | null = null;
 
 function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Props) {
   const videoUrl = normalizeProductVideoUrl(rawUrl) || "";
   const ref = useRef<HTMLVideoElement | null>(null);
   const [mountTo, setMountTo] = useState<HTMLElement | null>(null);
-  // Copied from the card's own <img> so the video matches every theme:
-  // contain-fit jewellery cards stay letterboxed, cover-fit cards stay cropped,
-  // and rounded corners are inherited instead of squared off.
-  const [fit, setFit] = useState<{ objectFit: string; objectPosition: string; borderRadius: string }>({
-    objectFit: "cover",
-    objectPosition: "center",
-    borderRadius: "inherit",
-  });
-  const [playing, setPlaying] = useState(false);
-  // A source that fails to decode (bad import, unsupported codec) is dropped
-  // for good so the scheduler moves on to the next card instead of stalling.
-  const [failed, setFailed] = useState(() => {
-    const initialUrl = normalizeProductVideoUrl(rawUrl);
-    const lastFailure = initialUrl ? failedAt.get(initialUrl) : undefined;
-    return !initialUrl || (lastFailure !== undefined && Date.now() - lastFailure < FAILURE_RETRY_MS);
-  });
-  const eligible = enabled && !!videoUrl && isCardVideoEligible();
+  const [fit, setFit] = useState({ objectFit: "cover", objectPosition: "center", borderRadius: "inherit" });
+  const [open, setOpen] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const eligible = enabled && !!videoUrl && !failed;
 
   // Find the image container of whichever card style rendered. Lazy card
   // styles arrive behind Suspense, so keep watching until the <img> exists.
@@ -75,10 +47,9 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
     let retryTimer: number | undefined;
     const attach = () => {
       if (done) return true;
-      // A few card themes render a small badge/logo <img> before the product
-      // photo. Select the largest rendered image instead of blindly taking
-      // the first one, otherwise the video can be portalled into that badge.
       const preferredStage = host.querySelector<HTMLElement>("[class*='card-img-zoom']");
+      // Some themes render a badge <img> before the product photo — pick the
+      // largest rendered image instead of blindly taking the first one.
       const images = Array.from(host.querySelectorAll("img"));
       const img = images.reduce<HTMLImageElement | null>((largest, candidate) => {
         const box = candidate.getBoundingClientRect();
@@ -88,9 +59,10 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
           : largest;
       }, null);
       const parent = preferredStage || img?.parentElement || undefined;
-      if (!parent || (img && img.getBoundingClientRect().width * img.getBoundingClientRect().height === 0)) return false;
-      const pos = getComputedStyle(parent).position;
-      if (pos === "static") parent.style.position = "relative";
+      if (!parent || (img && img.getBoundingClientRect().width * img.getBoundingClientRect().height === 0)) {
+        return false;
+      }
+      if (getComputedStyle(parent).position === "static") parent.style.position = "relative";
       const cs = img ? getComputedStyle(img) : getComputedStyle(parent);
       setFit({
         objectFit: cs.objectFit || "cover",
@@ -107,8 +79,6 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
       if (attach()) mo.disconnect();
     });
     mo.observe(host, { childList: true, subtree: true });
-    // Lazy images often exist before they receive dimensions, which does not
-    // trigger childList mutations. Retry through the first layout seconds.
     const retry = () => {
       if (done || attach()) return;
       retryTimer = window.setTimeout(retry, 200);
@@ -121,54 +91,87 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
     };
   }, [eligible, hostRef]);
 
-  useEffect(() => {
-    if (!mountTo || failed || !ref.current || !videoUrl) return;
-    return registerCardVideo(ref.current, videoUrl, (isActive) => {
-      if (!isActive) setPlaying(false);
-    });
-  }, [mountTo, videoUrl, failed]);
+  const stop = useCallback(() => {
+    const video = ref.current;
+    if (video) {
+      try {
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+      } catch {}
+    }
+    setOpen(false);
+  }, []);
 
-  if (!eligible || failed || !mountTo) return null;
+  // Release the buffer when the card unmounts (infinite grids recycle a lot).
+  useEffect(() => () => {
+    if (activeStop) activeStop = null;
+  }, []);
+
+  const start = useCallback(
+    (event: React.MouseEvent) => {
+      // Card is wrapped in a link — do not navigate to the PDP.
+      event.preventDefault();
+      event.stopPropagation();
+      if (activeStop) activeStop();
+      activeStop = stop;
+      setOpen(true);
+    },
+    [stop],
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    const video = ref.current;
+    if (!video) return;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.src = videoUrl;
+    video.load();
+    const attempt = video.play();
+    if (attempt && typeof attempt.catch === "function") attempt.catch(() => {});
+  }, [open, videoUrl]);
+
+  if (!eligible || !mountTo) return null;
 
   return createPortal(
-    <video
-      ref={ref}
-      preload="none"
-      muted
-      autoPlay
-      loop
-      playsInline
-      disablePictureInPicture
-      controls={false}
-      aria-hidden="true"
-      tabIndex={-1}
-      onPlaying={() => setPlaying(true)}
-      // Some Android WebViews render frames without ever firing `playing`.
-      // Reveal the layer as soon as the clock actually advances.
-      onTimeUpdate={(e) => {
-        if (e.currentTarget.currentTime > 0 && !e.currentTarget.paused) setPlaying(true);
-      }}
-      onPause={() => setPlaying(false)}
-      onError={(event) => {
-        setPlaying(false);
-        // Releasing the buffer (removeAttribute("src") + load()) legitimately
-        // fires an empty-src error — that is not a broken video.
-        const current = event.currentTarget;
-        const mediaError = current.error;
-        if (current.getAttribute("src") && mediaError?.code !== MediaError.MEDIA_ERR_ABORTED) {
-          failedAt.set(videoUrl, Date.now());
-          setFailed(true);
-        }
-      }}
-      style={{
-        objectFit: fit.objectFit as any,
-        objectPosition: fit.objectPosition,
-        borderRadius: fit.borderRadius,
-      }}
-      className={`pointer-events-none absolute inset-0 z-[2] h-full w-full transition-opacity duration-300 ease-out ${
-        playing ? "opacity-100" : "opacity-0"
-      }`}
-    />,
+    <>
+      {open && (
+        <video
+          ref={ref}
+          preload="none"
+          muted
+          loop
+          playsInline
+          disablePictureInPicture
+          controls={false}
+          aria-hidden="true"
+          tabIndex={-1}
+          onError={(event) => {
+            const current = event.currentTarget;
+            if (current.getAttribute("src") && current.error?.code !== MediaError.MEDIA_ERR_ABORTED) {
+              setFailed(true);
+              setOpen(false);
+            }
+          }}
+          style={{
+            objectFit: fit.objectFit as any,
+            objectPosition: fit.objectPosition,
+            borderRadius: fit.borderRadius,
+          }}
+          className="pointer-events-none absolute inset-0 z-[2] h-full w-full"
+        />
+      )}
+      <button
+        type="button"
+        onClick={open ? (e) => { e.preventDefault(); e.stopPropagation(); stop(); } : start}
+        aria-label={open ? "Stop video" : "Play product video"}
+        className="absolute bottom-2 left-2 z-[3] grid h-8 w-8 place-items-center rounded-full bg-background/80 text-foreground shadow-md backdrop-blur-sm transition-transform active:scale-95"
+      >
+        {open ? <X className="h-4 w-4" /> : <Play className="h-4 w-4 translate-x-[1px] fill-current" />}
+      </button>
+    </>,
     mountTo,
   );
 }
