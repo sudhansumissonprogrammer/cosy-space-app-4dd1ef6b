@@ -10,7 +10,7 @@ import { Heart, Package, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
-import { getDiscountPercent, currencySymbol } from "@/lib/productUtils";
+import { currencySymbol } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import { useNavIcons } from "@/hooks/useNavIcons";
 import ProductCardTitle from "./ProductCardTitle";
