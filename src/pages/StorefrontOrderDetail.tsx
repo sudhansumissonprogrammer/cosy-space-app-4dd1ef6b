@@ -360,36 +360,40 @@ export default function StorefrontOrderDetail() {
 
             </div>
 
-            <dl className="space-y-1.5 text-xs">
-              <div className="flex justify-between">
-                <dt style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)" }}>Items subtotal</dt>
-                <dd>{store.currency} {subtotal.toFixed(0)}</dd>
-              </div>
-              {Math.abs(Number(order.total) - subtotal) > 0.5 && (
-                <div className="flex justify-between">
-                  <dt style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)" }}>Shipping & charges</dt>
-                  <dd>{store.currency} {(Number(order.total) - subtotal).toFixed(0)}</dd>
-                </div>
-              )}
-              <Separator className="my-2" />
-              <div className="flex justify-between text-sm font-semibold">
-                <dt>Total</dt>
-                <dd>{store.currency} {Number(order.total).toFixed(0)}</dd>
-              </div>
-              {order.payment_type === "partial" && Number(order.advance_paid) > 0 && (
-                <div className="mt-3 rounded-xl border border-purple-200 bg-purple-50 dark:border-purple-900 dark:bg-purple-950/30 p-2.5 space-y-1">
-                  <p className="text-[10px] font-semibold text-purple-700 dark:text-purple-300">Partial Payment</p>
-                  <div className="flex justify-between text-[11px]">
-                    <span className="opacity-70">Advance paid</span>
-                    <span className="font-semibold text-emerald-600">{store.currency} {Number(order.advance_paid).toFixed(0)}</span>
+            {(() => {
+              const bd = buildOrderBreakdown(order, subtotal);
+              const dim = "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 60%, transparent)";
+              return (
+                <dl className="space-y-1.5 text-xs">
+                  {bd.lines.map((l) => (
+                    <div key={l.label} className="flex justify-between">
+                      <dt style={{ color: dim }}>{l.label}</dt>
+                      <dd className={l.kind === "discount" ? "text-emerald-600 font-medium" : undefined}>
+                        {l.amount < 0 ? "− " : ""}{store.currency} {Math.abs(l.amount).toFixed(0)}
+                      </dd>
+                    </div>
+                  ))}
+                  <Separator className="my-2" />
+                  <div className="flex justify-between text-sm font-semibold">
+                    <dt>Order total</dt>
+                    <dd>{store.currency} {bd.total.toFixed(0)}</dd>
                   </div>
-                  <div className="flex justify-between text-[11px]">
-                    <span className="opacity-70">Balance on delivery</span>
-                    <span className="font-semibold">{store.currency} {Number(order.balance_due).toFixed(0)}</span>
-                  </div>
-                </div>
-              )}
-            </dl>
+                  {bd.paid > 0 && (
+                    <div className="flex justify-between">
+                      <dt style={{ color: dim }}>{bd.isPartial ? "Advance paid online" : "Paid online"}</dt>
+                      <dd className="font-semibold text-emerald-600">{store.currency} {bd.paid.toFixed(0)}</dd>
+                    </div>
+                  )}
+                  {bd.dueOnDelivery > 0 && (
+                    <div className="mt-2 flex justify-between rounded-lg bg-muted/60 px-2.5 py-2 text-[11px]">
+                      <span className="font-medium">Pay on delivery</span>
+                      <span className="font-bold">{store.currency} {bd.dueOnDelivery.toFixed(0)}</span>
+                    </div>
+                  )}
+                </dl>
+              );
+            })()}
+
           </section>
 
           {/* Actions */}
