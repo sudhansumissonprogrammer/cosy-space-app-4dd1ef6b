@@ -34,6 +34,8 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
   const [hoverLoaded, setHoverLoaded] = useState(false);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const bilingualCta = ((store as any).theme === "theme-16" || (store as any).theme === "theme-21" || (store as any).theme === "theme-22") && !!themeConfig?.bilingual_cta;
+  const { enabled: cardVideoOn } = useAppEnabled(slug, "card-video");
+
 
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
   const imageStageBackground = "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 3%, var(--storefront-bg, hsl(var(--background))))";
