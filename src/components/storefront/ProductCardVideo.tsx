@@ -77,11 +77,12 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
     const attach = () => {
       if (done) return true;
       const img = host.querySelector("img");
-      const parent = img?.parentElement as HTMLElement | undefined;
+      const fallback = host.querySelector<HTMLElement>("[class*='card-img-zoom']");
+      const parent = img?.parentElement || fallback || undefined;
       if (!parent) return false;
       const pos = getComputedStyle(parent).position;
       if (pos === "static") parent.style.position = "relative";
-      const cs = getComputedStyle(img!);
+      const cs = img ? getComputedStyle(img) : getComputedStyle(parent);
       setFit({
         objectFit: cs.objectFit || "cover",
         objectPosition: cs.objectPosition || "center",
@@ -114,6 +115,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
       ref={ref}
       preload="none"
       muted
+      autoPlay
       loop
       playsInline
       disablePictureInPicture

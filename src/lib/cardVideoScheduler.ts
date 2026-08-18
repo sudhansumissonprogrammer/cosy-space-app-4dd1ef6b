@@ -23,7 +23,7 @@ const MOBILE_MAX_WIDTH = 768;
 /** Never arm earlier than this after the first registration. */
 const ARM_FLOOR_MS = 1200;
 /** A card must be at least this visible to be a playback candidate. */
-const MIN_RATIO = 0.6;
+const MIN_RATIO = 0.5;
 
 interface Entry {
   el: HTMLVideoElement;
@@ -40,11 +40,7 @@ let rafPending = false;
 
 const entries = new Map<HTMLVideoElement, Entry>();
 
-/** One-shot capability check — cached for the page lifetime. */
-let eligibleCache: boolean | null = null;
-
 export function isCardVideoEligible(): boolean {
-  if (eligibleCache !== null) return eligibleCache;
   if (typeof window === "undefined") return false;
   let ok = true;
   try {
@@ -57,7 +53,6 @@ export function isCardVideoEligible(): boolean {
   } catch {
     ok = false;
   }
-  eligibleCache = ok;
   return ok;
 }
 
@@ -84,7 +79,19 @@ function activateEntry(e: Entry) {
     }
     v.muted = true;
     const p = v.play();
-    if (p && typeof p.catch === "function") p.catch(() => {});
+    // Some mobile browsers reject the first autoplay attempt while the source
+    // is still loading. Retry from canplay instead of leaving the card inert.
+    if (p && typeof p.catch === "function") {
+      p.catch(() => {
+        if (active !== e || document.hidden) return;
+        const retry = () => {
+          if (active !== e || document.hidden) return;
+          v.muted = true;
+          v.play().catch(() => {});
+        };
+        v.addEventListener("canplay", retry, { once: true });
+      });
+    }
     e.onActiveChange?.(true);
   } catch {}
 }
@@ -98,9 +105,12 @@ function reconcile() {
   const centerY = window.innerHeight / 2;
 
   entries.forEach((e) => {
-    if (e.ratio < MIN_RATIO) return;
+    if (e.ratio <= 0) return;
     const r = e.el.getBoundingClientRect();
     if (r.height === 0) return;
+    const visiblePx = Math.max(0, Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0));
+    const visibleRatio = Math.min(1, visiblePx / r.height);
+    if (Math.max(e.ratio, visibleRatio) < MIN_RATIO) return;
     const dist = Math.abs(r.top + r.height / 2 - centerY);
     // Prefer the card closest to the viewport centre; ratio breaks ties.
     const score = 1_000_000 - dist * 100 + e.ratio;
@@ -134,7 +144,9 @@ function scheduleArm() {
   const kick = () => window.setTimeout(arm, ARM_FLOOR_MS);
   const ric = (window as any).requestIdleCallback;
   if (typeof ric === "function") ric(kick, { timeout: 3000 });
-  else window.setTimeout(kick, ARM_FLOOR_MS);
+  // Safari has no requestIdleCallback. It already waits here, so calling kick
+  // would accidentally apply the floor twice and delay playback ~2.4 seconds.
+  else window.setTimeout(arm, ARM_FLOOR_MS);
 }
 
 function ensureObserver(): IntersectionObserver {
@@ -148,7 +160,7 @@ function ensureObserver(): IntersectionObserver {
       });
       schedule();
     },
-    { threshold: [0, 0.3, 0.6, 0.9] },
+    { threshold: [0, 0.25, 0.5, 0.75, 1] },
   );
 
   // Scrolling changes which visible card is most centred.
