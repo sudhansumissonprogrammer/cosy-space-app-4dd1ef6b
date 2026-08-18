@@ -22,6 +22,7 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
   const [started, setStarted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [muted, setMuted] = useState(true);
 
   useEffect(() => {
     const video = ref.current;
@@ -30,6 +31,7 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
       if (!entry) return;
       if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
         video.muted = true;
+        setMuted(true);
         video.play().then(() => setStarted(true)).catch(() => {});
       } else {
         video.pause();
@@ -39,26 +41,43 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
     return () => observer.disconnect();
   }, [source]);
 
-  const handlePlay = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  // Keep the element in sync when the shopper toggles sound.
+  useEffect(() => {
+    if (ref.current) ref.current.muted = muted;
+  }, [muted]);
+
+  /** Play with sound (real user gesture); fall back to muted if blocked. */
+  const playWithSound = () => {
     const v = ref.current;
     if (!v) return;
-    v.muted = true;
+    v.muted = false;
+    setMuted(false);
     setStarted(true);
-    v.play().catch(() => {});
+    const attempt = v.play();
+    if (attempt && typeof attempt.catch === "function") {
+      attempt.catch(() => {
+        v.muted = true;
+        setMuted(true);
+        const retry = v.play();
+        if (retry && typeof retry.catch === "function") retry.catch(() => {});
+      });
+    }
+  };
+
+  const handlePlay = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    playWithSound();
   };
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     const v = ref.current;
     if (!v) return;
-    v.muted = true;
     if (playing) {
       v.pause();
       return;
     }
-    setStarted(true);
-    v.play().catch(() => {});
+    playWithSound();
   };
 
   const showOverlay = !started || !playing;
@@ -124,6 +143,11 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
           duration={duration}
           onToggle={handleToggle}
           onSeek={handleSeek}
+          muted={muted}
+          onToggleMute={(e) => {
+            e.stopPropagation();
+            setMuted((m) => !m);
+          }}
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-import { Pause, Play } from "lucide-react";
+import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 
 interface VideoControlBarProps {
   playing: boolean;
@@ -6,7 +6,10 @@ interface VideoControlBarProps {
   duration: number;
   onToggle: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onSeek: (value: number) => void;
+  muted?: boolean;
+  onToggleMute?: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }
+
 
 const formatTime = (seconds: number) => {
   if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
@@ -15,7 +18,7 @@ const formatTime = (seconds: number) => {
   return `${minutes}:${secs}`;
 };
 
-export function VideoControlBar({ playing, currentTime, duration, onToggle, onSeek }: VideoControlBarProps) {
+export function VideoControlBar({ playing, currentTime, duration, onToggle, onSeek, muted, onToggleMute }: VideoControlBarProps) {
   const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
   const safeCurrent = safeDuration > 0 ? Math.min(currentTime, safeDuration) : 0;
   const progress = safeDuration > 0 ? (safeCurrent / safeDuration) * 100 : 0;
@@ -54,6 +57,18 @@ export function VideoControlBar({ playing, currentTime, duration, onToggle, onSe
         <span className="min-w-[3.5rem] text-right text-[10px] font-medium tabular-nums text-white/90">
           {formatTime(safeCurrent)} / {formatTime(safeDuration)}
         </span>
+
+        {onToggleMute && (
+          <button
+            type="button"
+            onClick={onToggleMute}
+            aria-label={muted ? "Unmute video" : "Mute video"}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/20 backdrop-blur-sm transition-transform active:scale-[0.96]"
+          >
+            {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+          </button>
+        )}
+
       </div>
     </div>
   );

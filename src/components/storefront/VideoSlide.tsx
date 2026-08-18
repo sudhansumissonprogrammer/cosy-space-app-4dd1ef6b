@@ -22,12 +22,18 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
   const [hasStarted, setHasStarted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [muted, setMuted] = useState(true);
 
   const showOverlay = !hasStarted || !videoPlaying;
 
   useEffect(() => {
     if (!isActive && videoRef.current) videoRef.current.pause();
   }, [isActive]);
+
+  // Keep the element in sync when the shopper toggles sound.
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.muted = muted;
+  }, [muted]);
 
   // Fetch metadata only when the video slide is selected. This keeps the first
   // product image as LCP, but makes playback immediate after the shopper swipes
@@ -36,10 +42,12 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
     const video = videoRef.current;
     if (!isActive || !source || !video) return;
     video.muted = true;
+    setMuted(true);
     video.play().then(() => setHasStarted(true)).catch(() => {
       // The visible play button remains available if a browser blocks autoplay.
     });
   }, [isActive, source]);
+
 
   if (!source || failed) {
     return (
@@ -52,14 +60,22 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
   const handlePlay = () => {
     const v = videoRef.current;
     if (!v) return;
-    // Muted inline playback is reliable in Instagram/Facebook WebViews; the
-    // shopper can still use the native/control-bar volume after playback.
-    v.muted = true;
+    // The tap is a real user gesture, so sound is allowed. If the browser
+    // still refuses (some in-app webviews), fall back to muted playback.
+    v.muted = false;
+    setMuted(false);
     setHasStarted(true);
-    v.play().catch(() => {
-      /* user-gesture errors are silent */
-    });
+    const attempt = v.play();
+    if (attempt && typeof attempt.catch === "function") {
+      attempt.catch(() => {
+        v.muted = true;
+        setMuted(true);
+        const retry = v.play();
+        if (retry && typeof retry.catch === "function") retry.catch(() => {});
+      });
+    }
   };
+
 
   const handleToggle = () => {
     const v = videoRef.current;
@@ -153,6 +169,12 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
             handleToggle();
           }}
           onSeek={handleSeek}
+          muted={muted}
+          onToggleMute={(e) => {
+            e.stopPropagation();
+            setMuted((m) => !m);
+          }}
+
         />
       )}
     </div>
