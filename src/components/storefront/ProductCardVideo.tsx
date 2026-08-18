@@ -46,6 +46,9 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, poster, enabled = tru
   const ref = useRef<HTMLVideoElement | null>(null);
   const [mountTo, setMountTo] = useState<HTMLElement | null>(null);
   const [playing, setPlaying] = useState(false);
+  // A source that fails to decode (bad import, unsupported codec) is dropped
+  // for good so the scheduler moves on to the next card instead of stalling.
+  const [failed, setFailed] = useState(false);
   const eligible = enabled && !!videoUrl && isCardVideoEligible();
 
   // Find the image container of whichever card style rendered. Lazy card
@@ -83,7 +86,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, poster, enabled = tru
     });
   }, [mountTo, videoUrl]);
 
-  if (!eligible || !mountTo) return null;
+  if (!eligible || failed || !mountTo) return null;
 
   return createPortal(
     <video
@@ -98,7 +101,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, poster, enabled = tru
       tabIndex={-1}
       onPlaying={() => setPlaying(true)}
       onPause={() => setPlaying(false)}
-      onError={() => setPlaying(false)}
+      onError={() => { setPlaying(false); setFailed(true); }}
       className={`pointer-events-none absolute inset-0 z-[2] h-full w-full object-cover object-center transition-opacity duration-300 ease-out ${
         playing ? "opacity-100" : "opacity-0"
       }`}
