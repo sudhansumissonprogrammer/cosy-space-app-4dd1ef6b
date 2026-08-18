@@ -40,7 +40,7 @@ const BEST_SELLER_COLS =
   "id,category,currency,description,image_url,is_active,is_best_selling,name,price,sale_price,slug,stock_quantity,store_id,display_order";
 
 const CATEGORY_PRODUCT_COLS =
-  "id,name,slug,price,sale_price,image_url,currency,is_best_selling,stock_quantity,category,display_order,product_images:product_images(id,image_url,display_order)";
+  "id,name,slug,price,sale_price,image_url,currency,is_best_selling,stock_quantity,category,display_order,video_url,video_poster_url,product_images:product_images(id,image_url,display_order)";
 
 /* ─── Infinite-scroll sentinel ─── */
 function ScrollSentinel({ onVisible, loading }: { onVisible: () => void; loading: boolean }) {

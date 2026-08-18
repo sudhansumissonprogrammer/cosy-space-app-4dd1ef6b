@@ -4,7 +4,7 @@ import { useMemo } from "react";
 export const PDP_POOL_PAGE_SIZE = 12;
 
 const FIELDS =
-  "id,name,slug,price,sale_price,image_url,category,stock_quantity,is_best_selling,has_variants";
+  "id,name,slug,price,sale_price,image_url,category,stock_quantity,is_best_selling,has_variants,video_url,video_poster_url";
 
 type Pool = "same" | "best" | "other";
 
