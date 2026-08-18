@@ -1,4 +1,4 @@
-import { useState, useCallback, lazy, Suspense, memo } from "react";
+import { useState, useCallback, useRef, lazy, Suspense, memo } from "react";
 import ProductCardStyle1 from "./ProductCardStyle1";
 import ProductCardSkeleton from "./ProductCardSkeleton";
 
@@ -28,6 +28,8 @@ import { resolveProductImages } from "@/lib/imageOptimize";
 import { useVariantCount } from "@/hooks/useVariantCounts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import WarrantyBadge from "./WarrantyBadge";
+import { useAppEnabled } from "@/hooks/useAppEnabled";
+import ProductCardVideo from "./ProductCardVideo";
 
 interface Props {
   product: any;
@@ -40,6 +42,8 @@ interface Props {
 
 function UniversalProductCardImpl({ product, slug, store, priority = false, cardStyle = "style-1", index = 0 }: Props) {
   const [variantOpen, setVariantOpen] = useState(false);
+  const hostRef = useRef<HTMLDivElement>(null);
+  const { enabled: cardVideoOn } = useAppEnabled(slug, "card-video");
   const variantCount = useVariantCount(product.id);
   const hasVariants = variantCount > 0;
 
@@ -113,6 +117,7 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
 
   return (
     <div
+      ref={hostRef}
       className="stagger-card relative"
       style={{ "--i": index } as React.CSSProperties}
       onMouseEnter={prime}
@@ -120,6 +125,14 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
       onPointerDown={prime}
     >
       {wrapped}
+      {cardVideoOn && (product as any)?.video_url && (
+        <ProductCardVideo
+          hostRef={hostRef}
+          enabled={cardVideoOn}
+          videoUrl={(product as any).video_url}
+          poster={(product as any).video_poster_url || resolveProductImages(product)[0]}
+        />
+      )}
       {hasVariants && variantOpen && (
         <Suspense fallback={null}>
           <VariantPickerDialog
