@@ -961,23 +961,33 @@ export default function StoreThemeSettings() {
       setDirty(false);
 
       // Purge edge cache so storefront visitors see new theme immediately.
-      if (store?.slug) {
-        import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
-          purgeStoreCache(store.slug, (store as any).custom_domain, { shell: true })
-        );
-      }
-
-      // Push the freshly-saved config to the preview iframes (live update) AND
-      // hard-reload them so cached HTML/Worker-injected theme is replaced too.
+      // `force: true` bypasses the 90s dashboard cooldown — theme saves are
+      // rare, manual clicks, so the extra KV delete is negligible and the
+      // merchant no longer waits up to 90s to see the change go live.
+      // We AWAIT the purge before reloading the preview iframes, otherwise the
+      // reload races the purge and re-renders the stale edge HTML.
       sendToIframe(config);
-      setTimeout(() => {
+      (async () => {
+        if (store?.slug) {
+          try {
+            const { purgeStoreCache } = await import("@/lib/purgeStoreCache");
+            await purgeStoreCache(store.slug, (store as any).custom_domain, {
+              shell: true,
+              force: true,
+            });
+            // Re-warm immediately so the next shopper hit is a warm cache and
+            // page-load speed is unaffected by the purge.
+            const { prewarmStore } = await import("@/lib/prewarmStore");
+            prewarmStore(store.slug, (store as any).custom_domain);
+          } catch {}
+        }
         try {
           iframeRef.current?.contentWindow?.location.reload();
           iframeDesktopRef.current?.contentWindow?.location.reload();
         } catch {
           setIframeKey((k) => k + 1);
         }
-      }, 200);
+      })();
 
       toast.success("Theme settings saved!");
     },
