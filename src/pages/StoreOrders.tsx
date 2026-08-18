@@ -44,6 +44,7 @@ import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 
 import { ORDER_STATUS_OPTIONS, orderStatusBadgeClass, orderStatusLabel } from "@/lib/orderStatus";
+import { buildOrderBreakdown } from "@/lib/orderPaymentBreakdown";
 const STATUS_OPTIONS = ORDER_STATUS_OPTIONS.map(o => o.value);
 const statusColor = (status: string) => orderStatusBadgeClass(status);
 
