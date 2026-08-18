@@ -337,7 +337,7 @@ export default function CategoryDetail() {
           <>
             <div className={gridClass}>
               {products.map((product, idx) => (
-                <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} />
+                <UniversalProductCard key={product.id} product={product} slug={slug!} store={store} priority={idx < 4} cardStyle={cardStyle} index={idx} />
               ))}
             </div>
 

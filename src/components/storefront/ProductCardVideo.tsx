@@ -78,6 +78,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
       // A few card themes render a small badge/logo <img> before the product
       // photo. Select the largest rendered image instead of blindly taking
       // the first one, otherwise the video can be portalled into that badge.
+      const preferredStage = host.querySelector<HTMLElement>("[class*='card-img-zoom']");
       const images = Array.from(host.querySelectorAll("img"));
       const img = images.reduce<HTMLImageElement | null>((largest, candidate) => {
         const box = candidate.getBoundingClientRect();
@@ -86,8 +87,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
           ? candidate
           : largest;
       }, null);
-      const fallback = host.querySelector<HTMLElement>("[class*='card-img-zoom']");
-      const parent = img?.parentElement || fallback || undefined;
+      const parent = preferredStage || img?.parentElement || undefined;
       if (!parent || (img && img.getBoundingClientRect().width * img.getBoundingClientRect().height === 0)) return false;
       const pos = getComputedStyle(parent).position;
       if (pos === "static") parent.style.position = "relative";
@@ -149,12 +149,13 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
         if (e.currentTarget.currentTime > 0 && !e.currentTarget.paused) setPlaying(true);
       }}
       onPause={() => setPlaying(false)}
-
-      onError={() => {
+      onError={(event) => {
         setPlaying(false);
         // Releasing the buffer (removeAttribute("src") + load()) legitimately
         // fires an empty-src error — that is not a broken video.
-        if (ref.current?.getAttribute("src")) {
+        const current = event.currentTarget;
+        const mediaError = current.error;
+        if (current.getAttribute("src") && mediaError?.code !== MediaError.MEDIA_ERR_ABORTED) {
           failedAt.set(videoUrl, Date.now());
           setFailed(true);
         }
