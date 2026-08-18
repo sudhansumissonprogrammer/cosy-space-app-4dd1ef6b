@@ -148,7 +148,8 @@ function activateEntry(e: Entry) {
     const tryPlay = () => {
       if (active !== e || document.hidden) return;
       v.muted = true;
-      v.play().catch(() => {});
+      const retry = v.play();
+      if (retry && typeof retry.catch === "function") retry.catch(() => {});
     };
     // Register readiness retries before the first attempt. Older embedded
     // Android WebViews return `undefined` from play() instead of a Promise, so
@@ -289,7 +290,8 @@ function ensureObserver(): IntersectionObserver {
     const current = active;
     if (!current || document.hidden || !current.el.paused) return;
     current.el.muted = true;
-    current.el.play().catch(() => {});
+    const retry = current.el.play();
+    if (retry && typeof retry.catch === "function") retry.catch(() => {});
   };
   window.addEventListener("touchstart", resumeActive, { passive: true });
   window.addEventListener("pointerdown", resumeActive, { passive: true });
