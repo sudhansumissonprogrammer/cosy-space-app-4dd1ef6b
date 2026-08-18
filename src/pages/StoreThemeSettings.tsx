@@ -668,7 +668,7 @@ export default function StoreThemeSettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stores")
-        .select("id, name, theme, slug")
+        .select("id, name, theme, slug, custom_domain")
         .eq("id", storeId!)
         .single();
       if (error) throw error;
@@ -917,17 +917,25 @@ export default function StoreThemeSettings() {
       // Purge edge cache (forced — bypasses the 90s cooldown) and only THEN
       // soft-reload the preview, so the iframe never re-reads stale edge HTML.
       (async () => {
+        let canReloadPreview = true;
         if (store?.slug) {
           try {
             const { purgeStoreCache } = await import("@/lib/purgeStoreCache");
-            await purgeStoreCache(store.slug, (store as any).custom_domain, {
+            const purged = await purgeStoreCache(store.slug, (store as any).custom_domain, {
               shell: true,
               force: true,
             });
-            const { prewarmStore } = await import("@/lib/prewarmStore");
-            await prewarmStore(store.slug, (store as any).custom_domain, { force: true });
-          } catch {}
+            if (purged) {
+              const { prewarmStore } = await import("@/lib/prewarmStore");
+              await prewarmStore(store.slug, (store as any).custom_domain, { force: true });
+            } else {
+              canReloadPreview = false;
+            }
+          } catch {
+            canReloadPreview = false;
+          }
         }
+        if (!canReloadPreview) return;
         const activeRef = previewMode === "mobile" ? iframeRef : iframeDesktopRef;
         try {
           activeRef.current?.contentWindow?.location.reload();
@@ -990,18 +998,32 @@ export default function StoreThemeSettings() {
       // reload races the purge and re-renders the stale edge HTML.
       sendToIframe(savedConfig);
       (async () => {
+        let canReloadPreview = true;
         if (store?.slug) {
           try {
             const { purgeStoreCache } = await import("@/lib/purgeStoreCache");
-            await purgeStoreCache(store.slug, (store as any).custom_domain, {
+            const purged = await purgeStoreCache(store.slug, (store as any).custom_domain, {
               shell: true,
               force: true,
             });
-            // Re-warm immediately so the next shopper hit is a warm cache and
-            // page-load speed is unaffected by the purge.
-            const { prewarmStore } = await import("@/lib/prewarmStore");
-            await prewarmStore(store.slug, (store as any).custom_domain, { force: true });
-          } catch {}
+            if (purged) {
+              // Re-warm immediately so the next shopper hit is a warm cache and
+              // page-load speed is unaffected by the purge.
+              const { prewarmStore } = await import("@/lib/prewarmStore");
+              await prewarmStore(store.slug, (store as any).custom_domain, { force: true });
+            } else {
+              canReloadPreview = false;
+            }
+          } catch {
+            canReloadPreview = false;
+          }
+        }
+        // The postMessage above already applied the saved style live. If edge
+        // invalidation fails, keep that correct preview instead of reloading
+        // stale injected shell data over it.
+        if (!canReloadPreview) {
+          toast.warning("Settings saved. Storefront cache refresh will retry shortly.");
+          return;
         }
         try {
           iframeRef.current?.contentWindow?.location.reload();
