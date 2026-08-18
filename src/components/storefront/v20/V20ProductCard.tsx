@@ -3,6 +3,7 @@
  * with `v20-` CSS prefix so it can evolve independently.
  * Adds: +1 fly-to-cart and brief checkmark morph on add.
  */
+import ProductCardTitle from "../ProductCardTitle";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Minus, Package, Check } from "lucide-react";

@@ -3,6 +3,7 @@
  * Adds: low-stock + out-of-stock badges, disabled ADD on OOS, desktop hover lift,
  * +1 fly-to-cart and brief checkmark morph on add.
  */
+import ProductCardTitle from "../ProductCardTitle";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Minus, Package, Check } from "lucide-react";

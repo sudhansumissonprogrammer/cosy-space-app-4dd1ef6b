@@ -11,6 +11,8 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
 import { getDiscountPercent } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
+import ProductCardTitle from "./ProductCardTitle";
+import WishlistHeartButton from "./WishlistHeartButton";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { setPdpPreload } from "@/lib/pdpPreload";
 
