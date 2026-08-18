@@ -15,6 +15,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, resolveProductImages } from "@/lib/imageOptimize";
+import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
 import { getDiscountPercent } from "@/lib/productUtils";
 import V20ProductCard from "@/components/storefront/v20/V20ProductCard";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
@@ -160,7 +161,8 @@ export default function V20ProductDetail() {
   const gallerySlides = useMemo(() => {
     const slides: Array<{ kind: "image"; url: string } | { kind: "video"; url: string; poster: string }> = [];
     if (images[0]) slides.push({ kind: "image", url: images[0] });
-    if ((product as any)?.video_url) slides.push({ kind: "video", url: (product as any).video_url, poster: (product as any).video_poster_url || images[0] || "" });
+    const videoUrl = normalizeProductVideoUrl((product as any)?.video_url);
+    if (videoUrl) slides.push({ kind: "video", url: videoUrl, poster: (product as any).video_poster_url || images[0] || "" });
     for (let i = 1; i < images.length; i++) slides.push({ kind: "image", url: images[i] });
     return slides;
   }, [images, product]);

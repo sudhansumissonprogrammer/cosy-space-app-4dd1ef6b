@@ -21,6 +21,7 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { isCardVideoEligible, registerCardVideo } from "@/lib/cardVideoScheduler";
+import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
 
 interface Props {
   /** Wrapper element that contains the rendered product card. */
@@ -40,17 +41,8 @@ interface Props {
  */
 const deadSources = new Set<string>();
 
-function sanitizeUrl(u?: string | null): string {
-  if (!u) return "";
-  const value = u.trim();
-  const i = value.lastIndexOf("https://");
-  const j = value.lastIndexOf("http://");
-  const k = Math.max(i, j);
-  return k > 0 ? value.slice(k) : value;
-}
-
 function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Props) {
-  const videoUrl = sanitizeUrl(rawUrl);
+  const videoUrl = normalizeProductVideoUrl(rawUrl) || "";
   const ref = useRef<HTMLVideoElement | null>(null);
   const [mountTo, setMountTo] = useState<HTMLElement | null>(null);
   // Copied from the card's own <img> so the video matches every theme:
@@ -64,7 +56,10 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
   const [playing, setPlaying] = useState(false);
   // A source that fails to decode (bad import, unsupported codec) is dropped
   // for good so the scheduler moves on to the next card instead of stalling.
-  const [failed, setFailed] = useState(() => deadSources.has(sanitizeUrl(rawUrl)));
+  const [failed, setFailed] = useState(() => {
+    const initialUrl = normalizeProductVideoUrl(rawUrl);
+    return !initialUrl || deadSources.has(initialUrl);
+  });
   const eligible = enabled && !!videoUrl && isCardVideoEligible();
 
   // Find the image container of whichever card style rendered. Lazy card

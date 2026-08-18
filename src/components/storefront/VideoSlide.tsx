@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import { VideoControlBar } from "./VideoControlBar";
+import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
 
 interface VideoSlideProps {
   url: string;
@@ -16,11 +17,25 @@ interface VideoSlideProps {
  */
 export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlaying }: VideoSlideProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const source = normalizeProductVideoUrl(url);
+  const [failed, setFailed] = useState(!source);
   const [hasStarted, setHasStarted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
   const showOverlay = !hasStarted || !videoPlaying;
+
+  useEffect(() => {
+    if (!isActive && videoRef.current) videoRef.current.pause();
+  }, [isActive]);
+
+  if (!source || failed) {
+    return (
+      <div className="relative flex-[0_0_100%] min-w-0 bg-black aspect-[4/5] sm:aspect-square overflow-hidden">
+        {poster && <img src={poster} alt="" aria-hidden className="h-full w-full object-contain" />}
+      </div>
+    );
+  }
 
   const handlePlay = () => {
     const v = videoRef.current;
@@ -67,7 +82,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
       )}
       <video
         ref={videoRef}
-        src={url}
+        src={source}
         poster={poster}
         preload="metadata"
         playsInline
@@ -83,6 +98,10 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         }}
         onPause={() => setVideoPlaying(false)}
         onEnded={() => setVideoPlaying(false)}
+        onError={() => {
+          setVideoPlaying(false);
+          setFailed(true);
+        }}
         onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
         onDurationChange={() => setDuration(videoRef.current?.duration || 0)}
         onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime || 0)}

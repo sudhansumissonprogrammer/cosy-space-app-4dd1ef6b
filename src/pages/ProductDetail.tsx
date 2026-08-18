@@ -30,6 +30,7 @@ import { useWishlist } from "@/contexts/WishlistContext";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, splitImageUrls } from "@/lib/imageOptimize";
+import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
 // UniversalProductCard removed from PDP critical path — reached via lazy RelatedProducts
 import { VariantCountProvider } from "@/hooks/useVariantCounts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
@@ -556,9 +557,10 @@ export default function ProductDetail() {
 
   const productVideo = (() => {
     const p = product as any;
-    if (!p?.video_url) return null;
+    const url = normalizeProductVideoUrl(p?.video_url);
+    if (!url) return null;
     return {
-      url: p.video_url as string,
+      url,
       poster: (p.video_poster_url as string | null) || allImages[0] || "",
     };
   })();

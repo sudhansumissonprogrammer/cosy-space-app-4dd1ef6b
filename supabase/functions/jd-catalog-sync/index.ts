@@ -142,6 +142,19 @@ const assetUrl = (p?: string | null): string | null => {
   return ASSETS + s.replace(/^\/+/, "");
 };
 
+const videoAssetUrl = (p?: string | null): string | null => {
+  const raw = assetUrl(p);
+  if (!raw) return null;
+  const start = Math.max(raw.lastIndexOf("https://"), raw.lastIndexOf("http://"));
+  const normalized = start > 0 ? raw.slice(start) : raw;
+  try {
+    const parsed = new URL(normalized);
+    return /\.(mp4|m4v|mov|webm)$/i.test(parsed.pathname) ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+};
+
 const num = (v: unknown): number | null => {
   const n = typeof v === "number" ? v : Number(String(v ?? "").replace(/[^0-9.]/g, ""));
   return Number.isFinite(n) ? n : null;
@@ -388,7 +401,7 @@ Deno.serve(async (req) => {
         image_url: assetUrl(d.cover_image),
         image_alt: String(d.name || ""),
         category: sc?.name ?? null,
-        video_url: assetUrl(d.video),
+        video_url: videoAssetUrl(d.video),
         source_id: String(d.id),
         source_platform: "jdwebship",
         source_synced_at: new Date().toISOString(),
