@@ -29,6 +29,7 @@ import { useVariantCount } from "@/hooks/useVariantCounts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import WarrantyBadge from "./WarrantyBadge";
 import { useAppEnabled } from "@/hooks/useAppEnabled";
+import { useProductCardVideoUrl } from "@/hooks/useProductCardVideoUrl";
 import ProductCardVideo from "./ProductCardVideo";
 
 interface Props {
@@ -44,6 +45,11 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
   const [variantOpen, setVariantOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   const { enabled: cardVideoOn } = useAppEnabled(slug, "card-video");
+  const cardVideoUrl = useProductCardVideoUrl(
+    product?.id,
+    (product as any)?.video_url,
+    cardVideoOn,
+  );
   const variantCount = useVariantCount(product.id);
   const hasVariants = variantCount > 0;
 
@@ -125,11 +131,11 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
       onPointerDown={prime}
     >
       {wrapped}
-      {cardVideoOn && (product as any)?.video_url && (
+      {cardVideoOn && cardVideoUrl && (
         <ProductCardVideo
           hostRef={hostRef}
           enabled={cardVideoOn}
-          videoUrl={(product as any).video_url}
+          videoUrl={cardVideoUrl}
         />
       )}
       {hasVariants && variantOpen && (
