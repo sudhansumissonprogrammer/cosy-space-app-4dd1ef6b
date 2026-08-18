@@ -6,12 +6,13 @@
  */
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, Package } from "lucide-react";
+import { Heart, Package, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
 import { getDiscountPercent, currencySymbol } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
+import { useNavIcons } from "@/hooks/useNavIcons";
 import ProductCardTitle from "./ProductCardTitle";
 import WishlistHeartButton from "./WishlistHeartButton";
 
@@ -26,11 +27,34 @@ interface Props {
   onVariantRequired?: () => void;
 }
 
-export default function ProductCardStyle6({ product, slug, store, priority = false }: Props) {
-  const { wishlisted, handleToggleWishlist, heartBursting } = useProductCardActions(product);
+export default function ProductCardStyle6({ product, slug, store, priority = false, onVariantRequired }: Props) {
+  const { wishlisted, handleToggleWishlist, handleAddToCart, heartBursting } = useProductCardActions(product);
   const [hoverLoaded, setHoverLoaded] = useState(false);
+  const [adding, setAdding] = useState(false);
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
   const currency = currencySymbol(store.currency);
+  const getIcon = useNavIcons(store.id);
+  const CartIcon = getIcon("cart");
+
+  const onAddClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (adding) return;
+    setAdding(true);
+    const source = e.currentTarget as Element;
+    const rect = source.getBoundingClientRect();
+    // Brief "loading" beat on the icon, then the item flies to the cart and
+    // the side cart opens (via the cart:fly-landed listener).
+    window.setTimeout(() => {
+      setAdding(false);
+      handleAddToCart({
+        preventDefault() {},
+        stopPropagation() {},
+        currentTarget: { getBoundingClientRect: () => rect } as any,
+      } as any, onVariantRequired);
+    }, 420);
+  };
+
 
   const primePdp = () => {
     try {
