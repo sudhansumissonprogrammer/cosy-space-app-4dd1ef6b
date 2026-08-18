@@ -198,9 +198,9 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
         type="button"
         onClick={open ? (e) => { e.preventDefault(); e.stopPropagation(); stop(); } : start}
         aria-label={open ? "Stop video" : "Play product video"}
-        className="absolute bottom-2 left-2 z-[3] grid h-8 w-8 place-items-center rounded-full bg-background/80 text-foreground shadow-md backdrop-blur-sm transition-transform active:scale-95"
+        className="absolute bottom-2 left-2 z-[3] grid h-10 w-10 place-items-center rounded-full bg-black/55 text-white shadow-lg ring-1 ring-white/40 backdrop-blur-sm transition-transform active:scale-95"
       >
-        {open ? <X className="h-4 w-4" /> : <Play className="h-4 w-4 translate-x-[1px] fill-current" />}
+        {open ? <X className="h-5 w-5" /> : <Play className="h-5 w-5 translate-x-[1px] fill-current" />}
       </button>
     </>,
     mountTo,

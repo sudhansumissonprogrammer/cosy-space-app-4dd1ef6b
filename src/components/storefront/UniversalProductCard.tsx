@@ -28,7 +28,6 @@ import { resolveProductImages } from "@/lib/imageOptimize";
 import { useVariantCount } from "@/hooks/useVariantCounts";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
 import WarrantyBadge from "./WarrantyBadge";
-import { useAppEnabled } from "@/hooks/useAppEnabled";
 import ProductCardVideo from "./ProductCardVideo";
 
 interface Props {
@@ -43,8 +42,10 @@ interface Props {
 function UniversalProductCardImpl({ product, slug, store, priority = false, cardStyle = "style-1", index = 0 }: Props) {
   const [variantOpen, setVariantOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
-  const { enabled: cardVideoOn } = useAppEnabled(slug, "card-video");
+  // Tap-to-play video is available on every store/theme: it costs nothing
+  // until the shopper taps, so it is not gated behind the App Store add-on.
   const cardVideoUrl = ((product as any)?.video_url as string | null) || null;
+
   const variantCount = useVariantCount(product.id);
   const hasVariants = variantCount > 0;
 
@@ -126,13 +127,10 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
       onPointerDown={prime}
     >
       {wrapped}
-      {cardVideoOn && cardVideoUrl && (
-        <ProductCardVideo
-          hostRef={hostRef}
-          enabled={cardVideoOn}
-          videoUrl={cardVideoUrl}
-        />
+      {cardVideoUrl && (
+        <ProductCardVideo hostRef={hostRef} enabled videoUrl={cardVideoUrl} />
       )}
+
       {hasVariants && variantOpen && (
         <Suspense fallback={null}>
           <VariantPickerDialog
