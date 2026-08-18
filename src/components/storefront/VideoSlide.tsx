@@ -35,7 +35,6 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
   useEffect(() => {
     const video = videoRef.current;
     if (!isActive || !source || !video) return;
-    video.load();
     video.muted = true;
     video.play().then(() => setHasStarted(true)).catch(() => {
       // The visible play button remains available if a browser blocks autoplay.
@@ -101,6 +100,7 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
         src={source}
         poster={poster}
         preload={isActive ? "metadata" : "none"}
+        autoPlay={isActive}
         muted
         playsInline
         disablePictureInPicture

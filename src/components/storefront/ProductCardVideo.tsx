@@ -39,7 +39,8 @@ interface Props {
  * URLs that failed to decode once (404, bad codec, CORS) are remembered for
  * the page lifetime so a remounted card never re-downloads a dead file.
  */
-const deadSources = new Set<string>();
+const failedAt = new Map<string, number>();
+const FAILURE_RETRY_MS = 30_000;
 
 function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Props) {
   const videoUrl = normalizeProductVideoUrl(rawUrl) || "";
@@ -58,7 +59,8 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
   // for good so the scheduler moves on to the next card instead of stalling.
   const [failed, setFailed] = useState(() => {
     const initialUrl = normalizeProductVideoUrl(rawUrl);
-    return !initialUrl || deadSources.has(initialUrl);
+    const lastFailure = initialUrl ? failedAt.get(initialUrl) : undefined;
+    return !initialUrl || (lastFailure !== undefined && Date.now() - lastFailure < FAILURE_RETRY_MS);
   });
   const eligible = enabled && !!videoUrl && isCardVideoEligible();
 
@@ -70,6 +72,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
     if (!host) return;
 
     let done = false;
+    let retryTimer: number | undefined;
     const attach = () => {
       if (done) return true;
       // A few card themes render a small badge/logo <img> before the product
@@ -85,7 +88,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
       }, null);
       const fallback = host.querySelector<HTMLElement>("[class*='card-img-zoom']");
       const parent = img?.parentElement || fallback || undefined;
-      if (!parent) return false;
+      if (!parent || (img && img.getBoundingClientRect().width * img.getBoundingClientRect().height === 0)) return false;
       const pos = getComputedStyle(parent).position;
       if (pos === "static") parent.style.position = "relative";
       const cs = img ? getComputedStyle(img) : getComputedStyle(parent);
@@ -104,7 +107,18 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
       if (attach()) mo.disconnect();
     });
     mo.observe(host, { childList: true, subtree: true });
-    return () => mo.disconnect();
+    // Lazy images often exist before they receive dimensions, which does not
+    // trigger childList mutations. Retry through the first layout seconds.
+    const retry = () => {
+      if (done || attach()) return;
+      retryTimer = window.setTimeout(retry, 200);
+    };
+    retryTimer = window.setTimeout(retry, 100);
+    return () => {
+      done = true;
+      mo.disconnect();
+      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+    };
   }, [eligible, hostRef]);
 
   useEffect(() => {
@@ -135,7 +149,7 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
         // Releasing the buffer (removeAttribute("src") + load()) legitimately
         // fires an empty-src error — that is not a broken video.
         if (ref.current?.getAttribute("src")) {
-          deadSources.add(videoUrl);
+          failedAt.set(videoUrl, Date.now());
           setFailed(true);
         }
       }}
