@@ -137,6 +137,8 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
     if (!open) return;
     const video = ref.current;
     if (!video) return;
+    retries.current = 0;
+
     video.muted = true;
     video.defaultMuted = true;
     video.playsInline = true;
