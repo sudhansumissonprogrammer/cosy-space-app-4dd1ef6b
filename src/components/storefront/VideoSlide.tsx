@@ -60,14 +60,22 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
   const handlePlay = () => {
     const v = videoRef.current;
     if (!v) return;
-    // Muted inline playback is reliable in Instagram/Facebook WebViews; the
-    // shopper can still use the native/control-bar volume after playback.
-    v.muted = true;
+    // The tap is a real user gesture, so sound is allowed. If the browser
+    // still refuses (some in-app webviews), fall back to muted playback.
+    v.muted = false;
+    setMuted(false);
     setHasStarted(true);
-    v.play().catch(() => {
-      /* user-gesture errors are silent */
-    });
+    const attempt = v.play();
+    if (attempt && typeof attempt.catch === "function") {
+      attempt.catch(() => {
+        v.muted = true;
+        setMuted(true);
+        const retry = v.play();
+        if (retry && typeof retry.catch === "function") retry.catch(() => {});
+      });
+    }
   };
+
 
   const handleToggle = () => {
     const v = videoRef.current;
