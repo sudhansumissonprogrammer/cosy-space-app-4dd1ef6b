@@ -33,7 +33,13 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
   // product image as LCP, but makes playback immediate after the shopper swipes
   // to the video instead of leaving the poster looking like a static photo.
   useEffect(() => {
-    if (isActive && source && videoRef.current) videoRef.current.load();
+    const video = videoRef.current;
+    if (!isActive || !source || !video) return;
+    video.load();
+    video.muted = true;
+    video.play().then(() => setHasStarted(true)).catch(() => {
+      // The visible play button remains available if a browser blocks autoplay.
+    });
   }, [isActive, source]);
 
   if (!source || failed) {
