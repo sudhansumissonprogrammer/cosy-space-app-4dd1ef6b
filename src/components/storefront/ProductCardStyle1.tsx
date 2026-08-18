@@ -11,8 +11,6 @@ import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { setPdpPreload } from "@/lib/pdpPreload";
 import { resolveProductImages as _resolve } from "@/lib/imageOptimize";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
-import { useAppEnabled } from "@/hooks/useAppEnabled";
-import ProductCardVideo from "./ProductCardVideo";
 
 
 interface Props {
@@ -34,7 +32,6 @@ function ProductCardStyle1Impl({ product, slug, store, priority = false, onVaria
   const [hoverLoaded, setHoverLoaded] = useState(false);
   const themeConfig = useStorefrontThemeConfig(store.id);
   const bilingualCta = ((store as any).theme === "theme-16" || (store as any).theme === "theme-21" || (store as any).theme === "theme-22") && !!themeConfig?.bilingual_cta;
-  const { enabled: cardVideoOn } = useAppEnabled(slug, "card-video");
 
 
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
