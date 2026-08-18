@@ -128,13 +128,10 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
       onPointerDown={prime}
     >
       {wrapped}
-      {cardVideoOn && cardVideoUrl && (
-        <ProductCardVideo
-          hostRef={hostRef}
-          enabled={cardVideoOn}
-          videoUrl={cardVideoUrl}
-        />
+      {cardVideoUrl && (
+        <ProductCardVideo hostRef={hostRef} enabled videoUrl={cardVideoUrl} />
       )}
+
       {hasVariants && variantOpen && (
         <Suspense fallback={null}>
           <VariantPickerDialog
