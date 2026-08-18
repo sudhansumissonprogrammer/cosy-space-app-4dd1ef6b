@@ -45,18 +45,10 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
   const [variantOpen, setVariantOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   const { enabled: cardVideoOn } = useAppEnabled(slug, "card-video");
-  // A real product video is authoritative and must not be hidden behind the
-  // optional app-registry round trip. That query can arrive several seconds
-  // after a large storefront renders (or the store may predate the app row),
-  // which made cards with valid video_url look permanently image-only. The
-  // app toggle is still used to enable the metadata fallback for older cached
-  // listing payloads that omit video_url.
-  const hasInlineCardVideo = typeof product?.video_url === "string" && product.video_url.trim().length > 0;
-  const cardVideoEnabled = cardVideoOn || hasInlineCardVideo;
   const cardVideoUrl = useProductCardVideoUrl(
     product?.id,
     (product as any)?.video_url,
-    cardVideoEnabled,
+    cardVideoOn,
   );
   const variantCount = useVariantCount(product.id);
   const hasVariants = variantCount > 0;
@@ -139,10 +131,10 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
       onPointerDown={prime}
     >
       {wrapped}
-      {cardVideoEnabled && cardVideoUrl && (
+      {cardVideoOn && cardVideoUrl && (
         <ProductCardVideo
           hostRef={hostRef}
-          enabled={cardVideoEnabled}
+          enabled={cardVideoOn}
           videoUrl={cardVideoUrl}
         />
       )}
