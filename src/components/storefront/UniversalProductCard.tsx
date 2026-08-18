@@ -130,7 +130,6 @@ function UniversalProductCardImpl({ product, slug, store, priority = false, card
           hostRef={hostRef}
           enabled={cardVideoOn}
           videoUrl={(product as any).video_url}
-          poster={(product as any).video_poster_url || resolveProductImages(product)[0]}
         />
       )}
       {hasVariants && variantOpen && (
