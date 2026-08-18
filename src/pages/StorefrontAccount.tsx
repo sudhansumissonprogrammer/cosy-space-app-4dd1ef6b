@@ -21,6 +21,7 @@ import { storefrontPath } from "@/lib/subdomain";
 import type { StoreData } from "@/layouts/StorefrontLayout";
 import { normalizePhone } from "@/lib/phoneUtils";
 import OrderCard from "@/components/storefront/OrderCard";
+import { currencySymbol } from "@/lib/productUtils";
 
 function OrdersTab({ customerId, store }: { customerId: string; store: StoreData }) {
   const { data: orders, isLoading } = useQuery({
@@ -305,7 +306,7 @@ function WishlistTab({ customerId, store }: { customerId: string; store: StoreDa
                   {product.name}
                 </Link>
                 <p className="text-sm font-semibold text-primary">
-                  {store.currency} {product.sale_price || product.price}
+                  {currencySymbol(store.currency)}{product.sale_price || product.price}
                 </p>
               </div>
               <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive shrink-0" onClick={() => removeMutation.mutate(item.id)}>
