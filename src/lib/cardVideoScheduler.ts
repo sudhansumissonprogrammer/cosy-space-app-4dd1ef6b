@@ -59,7 +59,49 @@ export function isCardVideoEligible(): boolean {
   return ok;
 }
 
-function releaseEntry(e: Entry) {
+/**
+ * Sources that can never autoplay well on a phone (oversized imports, files
+ * whose metadata sits at the end of the container, 404s). They are skipped
+ * for the page lifetime so the scheduler moves to the next card instead of
+ * burning the shopper's data on a download that will never start playing.
+ */
+const skipped = new Set<string>();
+/** Cached HEAD probes: src → allowed. */
+const sizeChecked = new Map<string, boolean>();
+/** Card autoplay must stay cheap on mobile data. */
+const MAX_BYTES = 12_000_000;
+/** If the source has not produced a frame by then, move on. */
+const STALL_MS = 6000;
+/** Keep a just-deactivated buffer this long so scroll-back resumes instantly. */
+const KEEP_BUFFER_MS = 4000;
+/** Ignore candidates while the finger is still flinging past cards. */
+const SWITCH_DELAY_MS = 180;
+
+let switchTimer: number | undefined;
+let stallTimer: number | undefined;
+const pendingRelease = new Map<HTMLVideoElement, number>();
+
+async function isAllowedSource(src: string): Promise<boolean> {
+  const cached = sizeChecked.get(src);
+  if (cached !== undefined) return cached;
+  let allowed = true;
+  try {
+    const res = await fetch(src, { method: "HEAD", mode: "cors" });
+    if (!res.ok) allowed = false;
+    else {
+      const len = Number(res.headers.get("content-length") || 0);
+      if (len > MAX_BYTES) allowed = false;
+    }
+  } catch {
+    // CORS-blocked HEAD is not a signal about the file — let the element try.
+    allowed = true;
+  }
+  sizeChecked.set(src, allowed);
+  if (!allowed) skipped.add(src);
+  return allowed;
+}
+
+function detachEntry(e: Entry) {
   const v = e.el;
   try {
     v.pause();
@@ -69,11 +111,35 @@ function releaseEntry(e: Entry) {
       v.load();
     }
   } catch {}
+}
+
+function releaseEntry(e: Entry) {
+  const v = e.el;
+  try {
+    v.pause();
+  } catch {}
   e.onActiveChange?.(false);
+  // Do NOT drop the buffer immediately: a shopper scrolling one row down and
+  // back would otherwise restart a multi-megabyte download from zero.
+  const existing = pendingRelease.get(v);
+  if (existing) window.clearTimeout(existing);
+  pendingRelease.set(
+    v,
+    window.setTimeout(() => {
+      pendingRelease.delete(v);
+      if (active?.el === v) return;
+      detachEntry(e);
+    }, KEEP_BUFFER_MS),
+  );
 }
 
 function activateEntry(e: Entry) {
   const v = e.el;
+  const pending = pendingRelease.get(v);
+  if (pending) {
+    window.clearTimeout(pending);
+    pendingRelease.delete(v);
+  }
   try {
     if (v.getAttribute("src") !== e.src) {
       v.setAttribute("src", e.src);
@@ -81,6 +147,7 @@ function activateEntry(e: Entry) {
       v.load();
     }
     v.muted = true;
+    v.defaultMuted = true;
     const tryPlay = () => {
       if (active !== e || document.hidden) return;
       v.muted = true;
@@ -97,18 +164,30 @@ function activateEntry(e: Entry) {
       });
     }
     e.onActiveChange?.(true);
+
+    // Watchdog: some imported files only expose their moov atom at the very
+    // end, so the browser downloads tens of megabytes before the first frame.
+    // Give up, blacklist the source and let the next card have a turn.
+    if (stallTimer) window.clearTimeout(stallTimer);
+    stallTimer = window.setTimeout(() => {
+      if (active !== e) return;
+      if (v.readyState >= 2) return;
+      skipped.add(e.src);
+      detachEntry(e);
+      e.onActiveChange?.(false);
+      active = null;
+      schedule();
+    }, STALL_MS);
   } catch {}
 }
 
-function reconcile() {
-  rafPending = false;
-  if (!armed) return;
-
+function pickBest(): Entry | null {
   let best: Entry | null = null;
   let bestScore = -1;
   const centerY = window.innerHeight / 2;
 
   entries.forEach((e) => {
+    if (skipped.has(e.src)) return;
     const r = e.el.getBoundingClientRect();
     if (r.height === 0) return;
     const visiblePx = Math.max(0, Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0));
@@ -125,11 +204,47 @@ function reconcile() {
     }
   });
 
+  return best;
+}
+
+function applyBest(best: Entry | null) {
   if (best === active) return;
   if (active) releaseEntry(active);
   active = best;
-  if (active) activateEntry(active);
+  if (!active) return;
+  const chosen = active;
+  // Probe the source before committing to a download so a 40 MB import never
+  // eats mobile data. Cached after the first probe, so scrolling stays cheap.
+  void isAllowedSource(chosen.src).then((ok) => {
+    if (active !== chosen) return;
+    if (!ok) {
+      chosen.onActiveChange?.(false);
+      active = null;
+      schedule();
+      return;
+    }
+    activateEntry(chosen);
+  });
 }
+
+function reconcile() {
+  rafPending = false;
+  if (!armed) return;
+
+  const best = pickBest();
+  if (best === active) return;
+
+  // Debounce the switch: mid-fling every row would otherwise start (and
+  // abort) its own download. Waiting for the scroll to settle means exactly
+  // one file is ever fetched.
+  if (switchTimer) window.clearTimeout(switchTimer);
+  const delay = active ? SWITCH_DELAY_MS : 0;
+  switchTimer = window.setTimeout(() => {
+    switchTimer = undefined;
+    applyBest(pickBest());
+  }, delay);
+}
+
 
 function schedule() {
   if (rafPending) return;
