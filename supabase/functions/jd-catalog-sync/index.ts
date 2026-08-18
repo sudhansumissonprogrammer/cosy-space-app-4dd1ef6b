@@ -64,16 +64,16 @@ function json(body: unknown, status = 200) {
   });
 }
 
-const srcHeaders = {
+const headersFor = (origin: string) => ({
   "API-KEY": SOURCE_API_KEY,
-  Origin: SOURCE_ORIGIN,
-  Referer: `${SOURCE_ORIGIN}/`,
+  Origin: origin,
+  Referer: `${origin}/`,
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
   Accept: "application/json",
-};
+});
 
-async function srcFetch(path: string): Promise<any | null> {
+async function srcFetch(path: string, origin: string = SOURCE_ORIGIN): Promise<any | null> {
   // The wholesaler applies a rolling burst limit shared by catalog and stock
   // requests. Retry throttled/transient responses with backoff; returning null
   // after one 403 previously made valid in-stock products look permanently
@@ -82,7 +82,7 @@ async function srcFetch(path: string): Promise<any | null> {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), REQ_TIMEOUT_MS);
     try {
-      const res = await fetch(`${SOURCE_BASE}/${path}`, { headers: srcHeaders, signal: ctrl.signal });
+      const res = await fetch(`${SOURCE_BASE}/${path}`, { headers: headersFor(origin), signal: ctrl.signal });
       if (res.ok) return await res.json().catch(() => null);
       if (![403, 429, 500, 502, 503, 504].includes(res.status)) return null;
     } catch {
@@ -102,8 +102,8 @@ interface ListItem {
   sourcePage?: number;
 }
 
-async function fetchListPage(page: number): Promise<ListItem[] | null> {
-  const body = await srcFetch(`products/v2/recent?sortBy=recently_added&page=${page}`);
+async function fetchListPage(page: number, origin: string = SOURCE_ORIGIN): Promise<ListItem[] | null> {
+  const body = await srcFetch(`products/v2/recent?sortBy=recently_added&page=${page}`, origin);
   const data = body?.data;
   if (!Array.isArray(data)) return null;
   return data
