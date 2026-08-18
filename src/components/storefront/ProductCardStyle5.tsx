@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
-import { getEffectivePrice } from "@/lib/productUtils";
+import { getEffectivePrice, currencySymbol } from "@/lib/productUtils";
 import ProductCardTitle from "./ProductCardTitle";
 
 
@@ -28,8 +28,7 @@ export default function ProductCardStyle5({ product, slug, store, priority = fal
   const srcSet = getImageSrcSet(mainImg, [300, 450, 600]);
   const effectivePrice = getEffectivePrice(product.price, product.sale_price);
   const hasSale = product.sale_price && product.sale_price < product.price;
-  const currency = store.currency || "INR";
-  const symbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
+  const symbol = currencySymbol(store.currency);
 
   const formatAmount = (amt: number) => {
     return Number(amt).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

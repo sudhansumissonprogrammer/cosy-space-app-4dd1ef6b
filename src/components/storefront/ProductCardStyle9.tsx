@@ -10,7 +10,7 @@ import { Package, Heart, ShoppingBag, Star, Check, Loader2, Plus, Minus } from "
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
-import { getDiscountPercent, getProductRating } from "@/lib/productUtils";
+import { getDiscountPercent, getProductRating, currencySymbol } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import ProductCardTitle from "./ProductCardTitle";
 import WishlistHeartButton from "./WishlistHeartButton";

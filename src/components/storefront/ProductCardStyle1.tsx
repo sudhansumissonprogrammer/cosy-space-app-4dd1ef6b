@@ -5,7 +5,7 @@ import { Package, ShoppingCart, Star, Heart, Check, Plus, Minus, Loader2 } from 
 import type { Tables } from "@/integrations/supabase/types";
 import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
-import { getProductRating, getDiscountPercent } from "@/lib/productUtils";
+import { getProductRating, getDiscountPercent, currencySymbol } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { setPdpPreload } from "@/lib/pdpPreload";

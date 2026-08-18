@@ -47,7 +47,7 @@ export default function ProductCardStyle4({ product, slug, store, priority = fal
   const price = product.sale_price || product.price;
   const originalPrice = product.sale_price ? product.price : null;
   const hasDiscount = originalPrice && originalPrice > price;
-  const currency = store.currency === "USD" ? "$" : "₹";
+  const currency = currencySymbol(store.currency);
 
   const handleAdd = useCallback(() => {
     if (onVariantRequired) { onVariantRequired(); return; }
