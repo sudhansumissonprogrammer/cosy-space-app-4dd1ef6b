@@ -5599,25 +5599,8 @@ export default function CheckoutV2Page() {
 
           {/* UPI card */}
           {mobile && (
-            <div className="relative bg-white rounded-xl border border-[#ECECEC] p-3.5 pt-5 mt-2">
-              {/* Cashback ribbon — premium 3D pill, amount depends on pay mode */}
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                <div
-                  className="relative text-white text-[11px] font-extrabold tracking-tight px-3 py-1 rounded-full whitespace-nowrap"
-                  style={{
-                    background: "linear-gradient(180deg,#FF5F52 0%,#E53935 55%,#C62828 100%)",
-                    boxShadow:
-                      "0 3px 8px -2px rgba(198,40,40,0.55), inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -1px 0 rgba(0,0,0,0.18)",
-                    textShadow: "0 1px 1px rgba(0,0,0,0.25)",
-                  }}
-                >
-                  Upto ₹{isPartialOrder ? 50 : 100} Cashback
-                  <div
-                    className="absolute left-1/2 -translate-x-1/2 -bottom-[5px] h-2.5 w-2.5 rotate-45 rounded-[2px]"
-                    style={{ background: "#C62828" }}
-                  />
-                </div>
-              </div>
+            <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5 mt-2">
+
 
 
               <div className="flex items-center justify-between mb-3">
@@ -5667,7 +5650,18 @@ export default function CheckoutV2Page() {
                       aria-busy={busy}
                       className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-[0.92] transition-[transform,box-shadow,opacity] duration-150 ease-out p-2.5 min-h-[92px] relative overflow-hidden select-none touch-manipulation cursor-pointer ${pressed ? "scale-[0.96] ring-2 ring-primary shadow-[0_6px_16px_-6px_rgba(0,0,0,0.35)]" : "shadow-[0_1px_2px_rgba(0,0,0,0.04)]"} ${busy ? "opacity-70" : ""} ${retryable ? "opacity-70" : ""}`}
                     >
-
+                      {(app.key === "gpay" || app.key === "phonepe") && (
+                        <span
+                          className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 text-white text-[8px] leading-none font-extrabold tracking-tight px-1.5 py-[3px] rounded-b-[5px] whitespace-nowrap"
+                          style={{
+                            background: "linear-gradient(180deg,#FF5F52 0%,#E53935 60%,#C62828 100%)",
+                            boxShadow: "0 1px 3px -1px rgba(198,40,40,0.6), inset 0 1px 0 rgba(255,255,255,0.4)",
+                            textShadow: "0 1px 1px rgba(0,0,0,0.25)",
+                          }}
+                        >
+                          ₹{isPartialOrder ? 50 : 100} Cashback
+                        </span>
+                      )}
 
                       {pressed && (
                         <span className="pointer-events-none absolute inset-0 rounded-lg bg-primary/10 animate-[fade-in_0.15s_ease-out]" aria-hidden="true" />
