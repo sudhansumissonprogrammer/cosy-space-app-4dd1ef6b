@@ -84,6 +84,7 @@ interface Props {
 }
 
 function UniversalProductCardImpl({ product, slug, store, priority = false, cardStyle = "style-1", index = 0 }: Props) {
+  preloadCardStyle(store?.theme === "theme-19" || store?.theme === "theme-20" ? store.theme : cardStyle);
   const [variantOpen, setVariantOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   // Tap-to-play video is available on every store/theme: it costs nothing
