@@ -40,6 +40,12 @@ const SOURCE_BASE = "https://byeetjlpwzpy.jdwebnship.in/api";
 const SOURCE_HASH = "360080b0b7289a6080e92018585cf114";
 const SOURCE_API_KEY = "9e5a4f4b49da226ab3b1bc396020bf831cb3c14584ced963";
 const SOURCE_ORIGIN = "https://shodfedf.jdwebshop.com";
+/** Extra reseller storefronts on the same JD backend. The listing endpoint is
+ *  tenant-scoped by Origin, so each one exposes SKUs the primary store does not
+ *  carry; product detail + stock resolve on any origin, so discovery only. */
+const EXTRA_ORIGINS = ["https://fashionshub.co.in"];
+/** Listing pages walked per extra origin each run (their catalogs are small). */
+const EXTRA_PAGES = 6;
 const ASSETS = "https://assets.jdwebnship.in/";
 
 /** Pages of the listing walked per run while backfilling. */
