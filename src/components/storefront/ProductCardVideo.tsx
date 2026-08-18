@@ -103,9 +103,20 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
     setOpen(false);
   }, []);
 
+  const stopRef = useRef(stop);
+  stopRef.current = stop;
+
   // Release the buffer when the card unmounts (infinite grids recycle a lot).
+  // Only clear the global slot if THIS card currently owns it.
   useEffect(() => () => {
-    if (activeStop) activeStop = null;
+    if (activeStop === stopRef.current) activeStop = null;
+    const video = ref.current;
+    if (video) {
+      try {
+        video.pause();
+        video.removeAttribute("src");
+      } catch {}
+    }
   }, []);
 
   const start = useCallback(
