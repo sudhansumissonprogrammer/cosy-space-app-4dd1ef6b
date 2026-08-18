@@ -1626,7 +1626,12 @@ function ImageGallery({
     align: "center",
     skipSnaps: false,
     dragFree: false,
-    duration: 22,
+    duration: 20,
+    // Shoppers swipe diagonally over tall product photos — a low threshold plus
+    // free drag angle makes the gallery respond to those gestures instead of
+    // handing them to the page scroller.
+    dragThreshold: 4,
+    watchDrag: true,
   });
 
   // Sync activeIndex with Embla — pause video when sliding away.
@@ -1862,21 +1867,24 @@ function ImageGallery({
             </div>
           )}
 
-          {/* Desktop arrows */}
+          {/* Glass arrows — visible on mobile and desktop */}
           {showMultiUi && (
             <>
               <button
+                type="button"
                 onClick={(e) => { e.stopPropagation(); scrollPrev(); }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-[transform,opacity,colors,box-shadow]"
+                aria-label="Previous image"
+                className="absolute left-2 top-1/2 z-20 -translate-y-1/2 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90 hover:bg-white/30"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
               <button
+                type="button"
                 onClick={(e) => { e.stopPropagation(); scrollNext(); }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-[transform,opacity,colors,box-shadow]"
+                aria-label="Next image"
+                className="absolute right-2 top-1/2 z-20 -translate-y-1/2 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-white/40 bg-white/20 text-white shadow-[0_2px_10px_rgba(0,0,0,0.25)] backdrop-blur-md transition-transform active:scale-90 hover:bg-white/30"
               >
-                <ChevronRight className="h-4 w-4" />
-
+                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </>
           )}
