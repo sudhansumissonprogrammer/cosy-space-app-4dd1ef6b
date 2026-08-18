@@ -31,7 +31,7 @@ export default function ProductCardStyle9({ product, slug, store, priority = fal
   const [justAdded, setJustAdded] = useState(false);
   const [hoverLoaded, setHoverLoaded] = useState(false);
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
-  const currency = store.currency || "₹";
+  const currency = currencySymbol(store.currency);
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();

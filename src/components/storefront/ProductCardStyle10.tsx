@@ -31,7 +31,7 @@ export default function ProductCardStyle10({ product, slug, store, priority = fa
   const [justAdded, setJustAdded] = useState(false);
   const [hoverLoaded, setHoverLoaded] = useState(false);
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
-  const currency = store.currency || "₹";
+  const currency = currencySymbol(store.currency);
   const savings = product.sale_price ? Math.round(Number(product.price) - Number(product.sale_price)) : 0;
   const isNew = (() => {
     const createdAt = (product as any).created_at;

@@ -30,7 +30,7 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
   const { wishlisted, handleToggleWishlist, heartBursting } = useProductCardActions(product);
   const [hoverLoaded, setHoverLoaded] = useState(false);
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
-  const currency = store.currency || "₹";
+  const currency = currencySymbol(store.currency);
 
   const primePdp = () => {
     try {

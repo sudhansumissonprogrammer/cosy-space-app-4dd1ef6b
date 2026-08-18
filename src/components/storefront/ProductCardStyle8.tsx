@@ -28,7 +28,7 @@ export default function ProductCardStyle8({ product, slug, store, priority = fal
   const { wishlisted, cartQty, handleAddToCart, handleToggleWishlist, heartBursting, updateQuantity } = useProductCardActions(product);
   const [justAdded, setJustAdded] = useState(false);
   const discountPercent = getDiscountPercent(product.price, product.sale_price);
-  const currency = store.currency || "₹";
+  const currency = currencySymbol(store.currency);
   const savings = product.sale_price ? Math.round(Number(product.price) - Number(product.sale_price)) : 0;
 
   const handleAdd = (e: React.MouseEvent) => {
