@@ -5567,13 +5567,25 @@ export default function CheckoutV2Page() {
           {/* UPI card */}
           {mobile && (
             <div className="relative bg-white rounded-xl border border-[#ECECEC] p-3.5 pt-5 mt-2">
-              {/* Discount ribbon */}
-              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10">
-                <div className="relative bg-[#E53935] text-white text-[10.5px] font-bold px-2.5 py-1 rounded-md shadow-sm whitespace-nowrap">
-                  Get Extra Discount
-                  <div className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-[#E53935]" />
+              {/* Cashback ribbon — premium 3D pill, amount depends on pay mode */}
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                <div
+                  className="relative text-white text-[11px] font-extrabold tracking-tight px-3 py-1 rounded-full whitespace-nowrap"
+                  style={{
+                    background: "linear-gradient(180deg,#FF5F52 0%,#E53935 55%,#C62828 100%)",
+                    boxShadow:
+                      "0 3px 8px -2px rgba(198,40,40,0.55), inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -1px 0 rgba(0,0,0,0.18)",
+                    textShadow: "0 1px 1px rgba(0,0,0,0.25)",
+                  }}
+                >
+                  Upto ₹{isPartialOrder ? 50 : 100} Cashback
+                  <div
+                    className="absolute left-1/2 -translate-x-1/2 -bottom-[5px] h-2.5 w-2.5 rotate-45 rounded-[2px]"
+                    style={{ background: "#C62828" }}
+                  />
                 </div>
               </div>
+
 
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2.5">
