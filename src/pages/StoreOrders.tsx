@@ -44,6 +44,7 @@ import { useDashboardStore } from "@/contexts/DashboardStoreContext";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 
 import { ORDER_STATUS_OPTIONS, orderStatusBadgeClass, orderStatusLabel } from "@/lib/orderStatus";
+import { buildOrderBreakdown } from "@/lib/orderPaymentBreakdown";
 const STATUS_OPTIONS = ORDER_STATUS_OPTIONS.map(o => o.value);
 const statusColor = (status: string) => orderStatusBadgeClass(status);
 
@@ -931,23 +932,41 @@ function MobileOrderDetail({ order, store, onStatusChange, onInvoice, onSendInvo
             ))}
           </div>
           <Separator className="my-3" />
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-foreground">Total</span>
-            <span className="text-lg font-bold text-foreground">{order.currency} {Number(order.total).toFixed(0)}</span>
-          </div>
-          {order.payment_type === "partial" && (
-            <div className="mt-2 rounded-lg border border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-950/30 p-2.5 space-y-1">
-              <p className="text-xs font-semibold text-purple-700 dark:text-purple-400">💰 Partial Payment</p>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Advance Paid</span>
-                <span className="font-semibold text-emerald-600">{order.currency} {Number(order.advance_paid || 0).toFixed(0)}</span>
+          {(() => {
+            const itemsSubtotal = items.reduce(
+              (s: number, it: any) => s + Number(it.total ?? Number(it.unit_price || 0) * Number(it.quantity || 1)),
+              0,
+            );
+            const bd = buildOrderBreakdown(order, itemsSubtotal);
+            const fmt = (v: number) => `${order.currency} ${Math.round(v)}`;
+            return (
+              <div className="space-y-1.5">
+                {bd.lines.map((l, i) => (
+                  <div key={i} className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">{l.label}</span>
+                    <span className={l.kind === "discount" ? "font-medium text-emerald-600" : "text-foreground"}>
+                      {l.amount < 0 ? `− ${fmt(-l.amount)}` : fmt(l.amount)}
+                    </span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between border-t pt-2">
+                  <span className="text-sm font-semibold text-foreground">Total</span>
+                  <span className="text-lg font-bold text-foreground">{fmt(bd.total)}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">{bd.isPartial ? "Advance paid" : "Paid online"}</span>
+                  <span className="font-semibold text-emerald-600">{fmt(bd.paid)}</span>
+                </div>
+                {bd.dueOnDelivery > 0 && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">{bd.isPartial ? "Balance due (COD)" : "Due on delivery"}</span>
+                    <span className="font-semibold text-foreground">{fmt(bd.dueOnDelivery)}</span>
+                  </div>
+                )}
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Balance Due (COD)</span>
-                <span className="font-semibold text-foreground">{order.currency} {Number(order.balance_due || 0).toFixed(0)}</span>
-              </div>
-            </div>
-          )}
+            );
+          })()}
+
         </section>
 
         <Separator />

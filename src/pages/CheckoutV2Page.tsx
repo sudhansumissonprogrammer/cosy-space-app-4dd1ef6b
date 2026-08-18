@@ -4320,9 +4320,32 @@ export default function CheckoutV2Page() {
           <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Payment</div>
           <div className="mt-3 space-y-2">
             <div className="flex items-center justify-between text-[13px]">
-              <span className="text-muted-foreground">Order total</span>
-              <span className="font-semibold tabular-nums text-foreground">{formatPrice(total, currency)}</span>
+              <span className="text-muted-foreground">Items subtotal</span>
+              <span className="tabular-nums text-foreground">{formatPrice(subtotal, currency)}</span>
             </div>
+            {couponDiscount > 0 && (
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-muted-foreground">Coupon discount</span>
+                <span className="tabular-nums text-emerald-600">− {formatPrice(couponDiscount, currency)}</span>
+              </div>
+            )}
+            {tyPrepaidDiscount > 0 && (
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-muted-foreground">Prepaid discount</span>
+                <span className="tabular-nums text-emerald-600">− {formatPrice(tyPrepaidDiscount, currency)}</span>
+              </div>
+            )}
+            {tyCharges > 0 && (
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-muted-foreground">Shipping &amp; charges</span>
+                <span className="tabular-nums text-foreground">{formatPrice(tyCharges, currency)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between border-t pt-2 text-[13px]">
+              <span className="font-semibold text-foreground">Order total</span>
+              <span className="font-semibold tabular-nums text-foreground">{formatPrice(grandTotal, currency)}</span>
+            </div>
+
             {paidNow > 0 && (
               <div className="flex items-center justify-between text-[13px]">
                 <span className="text-muted-foreground">{isPartialOrder ? "Advance paid" : "Paid online"}</span>
