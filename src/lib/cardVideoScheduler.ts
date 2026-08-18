@@ -81,12 +81,8 @@ export function isCardVideoEligible(): boolean {
  * burning the shopper's data on a download that will never start playing.
  */
 const skipped = new Set<string>();
-/** Cached HEAD probes: src → allowed. */
-const sizeChecked = new Map<string, boolean>();
-/** Card autoplay must stay cheap on mobile data. */
-const MAX_BYTES = 12_000_000;
 /** If the source has not produced a frame by then, move on. */
-const STALL_MS = 6000;
+const STALL_MS = 12_000;
 /** Keep a just-deactivated buffer this long so scroll-back resumes instantly. */
 const KEEP_BUFFER_MS = 4000;
 /** Ignore candidates while the finger is still flinging past cards. */
@@ -95,26 +91,6 @@ const SWITCH_DELAY_MS = 180;
 let switchTimer: number | undefined;
 let stallTimer: number | undefined;
 const pendingRelease = new Map<HTMLVideoElement, number>();
-
-async function isAllowedSource(src: string): Promise<boolean> {
-  const cached = sizeChecked.get(src);
-  if (cached !== undefined) return cached;
-  let allowed = true;
-  try {
-    const res = await fetch(src, { method: "HEAD", mode: "cors" });
-    if (!res.ok) allowed = false;
-    else {
-      const len = Number(res.headers.get("content-length") || 0);
-      if (len > MAX_BYTES) allowed = false;
-    }
-  } catch {
-    // CORS-blocked HEAD is not a signal about the file — let the element try.
-    allowed = true;
-  }
-  sizeChecked.set(src, allowed);
-  if (!allowed) skipped.add(src);
-  return allowed;
-}
 
 function detachEntry(e: Entry) {
   const v = e.el;
@@ -232,19 +208,12 @@ function applyBest(best: Entry | null) {
   if (active) releaseEntry(active);
   active = best;
   if (!active) return;
-  const chosen = active;
-  // Probe the source before committing to a download so a 40 MB import never
-  // eats mobile data. Cached after the first probe, so scrolling stays cheap.
-  void isAllowedSource(chosen.src).then((ok) => {
-    if (active !== chosen) return;
-    if (!ok) {
-      chosen.onActiveChange?.(false);
-      active = null;
-      schedule();
-      return;
-    }
-    activateEntry(chosen);
-  });
+  // Do not reject a catalogue video based on its total file size. Many legacy
+  // imports are 12–50 MB but still support HTTP range streaming and start from
+  // a tiny initial response. The old HEAD size gate silently skipped those
+  // cards, making the feature appear completely broken on affected categories.
+  // Cold load remains unchanged because only this single chosen card gets src.
+  activateEntry(active);
 }
 
 function reconcile() {
