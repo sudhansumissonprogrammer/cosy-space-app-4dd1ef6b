@@ -161,11 +161,27 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
           tabIndex={-1}
           onError={(event) => {
             const current = event.currentTarget;
-            if (current.getAttribute("src") && current.error?.code !== MediaError.MEDIA_ERR_ABORTED) {
-              setFailed(true);
-              setOpen(false);
+            if (!current.getAttribute("src") || current.error?.code === MediaError.MEDIA_ERR_ABORTED) return;
+            // Network hiccups (and cold CDN edges on big .mov files) surface as
+            // a hard error on the first byte. Retry once before giving up so a
+            // transient blip does not permanently remove the play button.
+            if (retries.current < 1) {
+              retries.current += 1;
+              const url = videoUrl;
+              window.setTimeout(() => {
+                const video = ref.current;
+                if (!video) return;
+                video.src = url;
+                video.load();
+                const attempt = video.play();
+                if (attempt && typeof attempt.catch === "function") attempt.catch(() => {});
+              }, 400);
+              return;
             }
+            setFailed(true);
+            setOpen(false);
           }}
+
           style={{
             objectFit: fit.objectFit as any,
             objectPosition: fit.objectPosition,
