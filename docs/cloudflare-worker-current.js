@@ -2672,7 +2672,7 @@ const PRODUCT_COLUMNS =
   // including it caused PostgREST to 401 the whole row, so /api/products
   // silently returned []). cost_price is private/merchant-only data and must
   // never be served to anonymous storefront visitors anyway.
-  "id,category,created_at,currency,description,image_url,is_active,is_best_selling,is_category_pinned,category_pinned_at,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at";
+  "id,category,created_at,currency,description,image_url,is_active,is_best_selling,is_category_pinned,category_pinned_at,name,price,sale_price,sku,slug,stock_quantity,store_id,updated_at,video_url,video_poster_url";
 
 async function _getInlineProductsOrNull(hostname, slug, env, ctx) {
   try {
