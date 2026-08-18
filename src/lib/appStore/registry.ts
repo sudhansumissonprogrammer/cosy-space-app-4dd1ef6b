@@ -1,5 +1,5 @@
 import { lazy, type LazyExoticComponent, type ComponentType } from "react";
-import { Disc3, Gift, Timer, Heart, DownloadCloud, Film, Package, ShoppingBag, type LucideIcon } from "lucide-react";
+import { Disc3, Gift, Timer, Heart, DownloadCloud, Film, PlayCircle, Package, ShoppingBag, type LucideIcon } from "lucide-react";
 
 export type AppId =
   | "spin-wheel"
@@ -8,6 +8,7 @@ export type AppId =
   | "wishlist-reminder"
   | "migrate-store"
   | "shop-by-video"
+  | "card-video"
   | "bundle-builder"
   | "upsell-crosssell";
 
