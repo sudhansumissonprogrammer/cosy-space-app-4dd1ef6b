@@ -31,7 +31,7 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
   const { wishlisted, handleToggleWishlist, handleAddToCart, heartBursting } = useProductCardActions(product);
   const [hoverLoaded, setHoverLoaded] = useState(false);
   const [adding, setAdding] = useState(false);
-  const discountPercent = getDiscountPercent(product.price, product.sale_price);
+  // Discount badge intentionally removed for this style (trust: no 90%-off badges).
   const currency = currencySymbol(store.currency);
   const getIcon = useNavIcons(store.id);
   const CartIcon = getIcon("cart");
