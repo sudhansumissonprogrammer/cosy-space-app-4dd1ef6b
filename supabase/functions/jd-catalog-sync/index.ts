@@ -324,6 +324,44 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Discovery pass over sibling reseller storefronts ─────────────────
+    // Same backend + same catalog hash, but the listing endpoint is scoped by
+    // Origin, so each sibling exposes SKUs the primary store never lists.
+    // Detail + stock lookups work on the default origin, so this is purely a
+    // discovery walk with its own per-origin page cursor.
+    const extraCursor: Record<string, number> =
+      (stateRow?.extra_cursor && typeof stateRow.extra_cursor === "object")
+        ? { ...(stateRow.extra_cursor as Record<string, number>) }
+        : {};
+
+    for (const origin of EXTRA_ORIGINS) {
+      if (candidates.length >= importBudget) break;
+      if (Date.now() - started > TIME_BUDGET_MS) break;
+      let p = Math.max(1, Number(extraCursor[origin]) || 1);
+      for (let n = 0; n < EXTRA_PAGES; n++) {
+        if (candidates.length >= importBudget) break;
+        if (Date.now() - started > TIME_BUDGET_MS) break;
+        const items = await fetchListPage(p, origin);
+        if (items === null) break; // transient throttle — retry same page next run
+        if (items.length === 0) { p = 1; break; } // wrapped around; restart next run
+        for (const it of items) {
+          if (knownSku.has(it.id)) continue;
+          const key = norm(it.name);
+          const match = byName.get(key);
+          if (match && !match.source_id) {
+            linked.push({ productId: match.id, sku: it.id });
+            knownSku.add(it.id);
+            byName.delete(key);
+            continue;
+          }
+          knownSku.add(it.id); // dedupe against the primary walk within this run
+          candidates.push({ ...it });
+        }
+        p++;
+        await new Promise((r) => setTimeout(r, REQ_GAP_MS));
+      }
+      extraCursor[origin] = p;
+    }
 
 
     // ── Backfill source_id on pre-existing rows ──────────────────────────
