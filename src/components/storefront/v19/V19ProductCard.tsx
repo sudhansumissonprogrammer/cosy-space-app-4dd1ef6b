@@ -96,9 +96,8 @@ export default function V19ProductCard({ product, slug, store, priority = false 
       </Link>
       <div className="pt-2.5 flex-1 flex flex-col">
         <Link to={productPath}>
-          <h3 className="text-[13px] font-semibold text-gray-900 line-clamp-2 leading-snug min-h-[34px]">
-            {product.name}
-          </h3>
+          <ProductCardTitle name={product.name} className="font-semibold text-gray-900" baseSize={13} minSize={10} lineHeight={1.3} />
+
         </Link>
         <div className="text-[11px] text-gray-500 font-medium mt-1">{weightLine}</div>
         <div className="flex items-center justify-between mt-auto pt-2 gap-2">

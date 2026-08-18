@@ -108,21 +108,15 @@ export default function ProductCardStyle9({ product, slug, store, priority = fal
             </div>
           )}
 
-          <button
-            onClick={handleToggleWishlist}
-            className={`heart-burst ${heartBursting ? "bursting" : ""} absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-background/95 backdrop-blur-sm shadow-sm transition-transform hh:hover-scale-110 active:scale-[0.96]`}
-            aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-          >
-            <Heart className={`h-4 w-4 ${wishlisted ? "fill-destructive text-destructive" : "fill-transparent text-foreground stroke-[2]"}`} />
-          </button>
+          <WishlistHeartButton wishlisted={wishlisted} bursting={heartBursting} onClick={handleToggleWishlist} size={34} className="absolute right-3 top-3" />
+
         </div>
       </Link>
 
       <div className="mt-3 px-0.5 flex-1 flex flex-col">
         <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block">
-          <h3 className="text-[14px] font-semibold leading-snug line-clamp-1" style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, inherit)" }}>
-            {product.name}
-          </h3>
+          <ProductCardTitle name={product.name} className="font-semibold" baseSize={14} minSize={11} style={{ color: "var(--storefront-text, hsl(var(--foreground)))", fontFamily: "var(--storefront-heading-font, inherit)" }} />
+
           {(product as any).short_description && (
             <p className="mt-0.5 text-[11px] line-clamp-1" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}>
               {(product as any).short_description}

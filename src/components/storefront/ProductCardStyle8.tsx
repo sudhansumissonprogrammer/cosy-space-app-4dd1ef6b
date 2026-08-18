@@ -99,20 +99,14 @@ export default function ProductCardStyle8({ product, slug, store, priority = fal
             </div>
           )}
 
-          <button
-            onClick={handleToggleWishlist}
-            className={`heart-burst ${heartBursting ? "bursting" : ""} absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm transition-transform hh:hover-scale-110 active:scale-[0.96]`}
-            aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-          >
-            <Heart className={`h-3 w-3 ${wishlisted ? "fill-destructive text-destructive" : "fill-transparent text-foreground stroke-[2]"}`} />
-          </button>
+          <WishlistHeartButton wishlisted={wishlisted} bursting={heartBursting} onClick={handleToggleWishlist} size={28} className="absolute right-1 top-1" />
+
         </div>
       </Link>
 
       <Link to={storefrontPath(slug, `product/${product.slug || product.id}`)} className="block mt-2 flex-1">
-        <h3 className="text-[12px] font-semibold leading-tight line-clamp-2 min-h-[2.1em]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
-          {product.name}
-        </h3>
+        <ProductCardTitle name={product.name} className="font-semibold" baseSize={12} minSize={9.5} style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }} />
+
         {(product as any).short_description && (
           <p className="mt-0.5 text-[10px] line-clamp-1" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}>
             {(product as any).short_description}

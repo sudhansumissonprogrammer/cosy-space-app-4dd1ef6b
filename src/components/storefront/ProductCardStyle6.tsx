@@ -12,6 +12,9 @@ import { storefrontPath } from "@/lib/subdomain";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
 import { getDiscountPercent } from "@/lib/productUtils";
 import { useProductCardActions } from "@/hooks/useProductCardActions";
+import ProductCardTitle from "./ProductCardTitle";
+import WishlistHeartButton from "./WishlistHeartButton";
+
 import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { setPdpPreload } from "@/lib/pdpPreload";
 
@@ -101,26 +104,24 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
             </div>
           )}
 
-          <button
-            onClick={handleToggleWishlist}
-            className={`heart-burst ${heartBursting ? "bursting" : ""} absolute right-2 top-2 flex h-7 w-7 items-center justify-center transition-opacity duration-200 opacity-0 group-hover:opacity-100 lg:opacity-0`}
-            aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-          >
-            <Heart className={`h-4 w-4 ${wishlisted ? "fill-destructive text-destructive" : "fill-transparent text-foreground stroke-[1.5]"}`} />
-          </button>
+          <WishlistHeartButton wishlisted={wishlisted} bursting={heartBursting} onClick={handleToggleWishlist} size={30} className="absolute right-2 top-2" />
+
         </div>
 
         <div className="pt-3 pb-1">
-          <h3
-            className="text-[13px] italic leading-snug line-clamp-2 transition-[transform,opacity,colors,box-shadow] duration-300 group-hover:underline underline-offset-4"
+          <ProductCardTitle
+            name={product.name}
+            className="italic transition-[transform,opacity,colors,box-shadow] duration-300 group-hover:underline underline-offset-4"
+            baseSize={13}
+            minSize={10}
+            lineHeight={1.35}
             style={{
               fontFamily: "'Cormorant Garamond', 'Playfair Display', Georgia, serif",
               color: "var(--storefront-text, hsl(var(--foreground)))",
               fontWeight: 500,
             }}
-          >
-            {product.name}
-          </h3>
+          />
+
           <div className="mt-1.5 flex items-baseline gap-2">
             {product.sale_price ? (
               <>
