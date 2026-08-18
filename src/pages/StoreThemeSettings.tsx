@@ -842,6 +842,7 @@ export default function StoreThemeSettings() {
       // independent of the theme template (category_style, mobile_nav_style, etc.)
       const preservedSettings: Partial<ThemeConfig> = themeConfig
         ? {
+            product_card_style: themeConfig.product_card_style ?? config.product_card_style,
             category_style: themeConfig.category_style ?? config.category_style,
             mobile_nav_style: (themeConfig as any).mobile_nav_style ?? config.mobile_nav_style,
             mobile_nav_enabled: themeConfig.mobile_nav_enabled ?? config.mobile_nav_enabled,
@@ -940,12 +941,13 @@ export default function StoreThemeSettings() {
   });
 
   const saveConfigMutation = useMutation({
-    mutationFn: async () => {
-      const payload = { store_id: storeId!, ...config };
+    mutationFn: async (nextConfig?: ThemeConfig) => {
+      const configToSave = nextConfig ?? config;
+      const payload = { store_id: storeId!, ...configToSave };
       if (themeConfig?.id) {
         const { error } = await supabase
           .from("store_theme_config")
-          .update(config)
+          .update(configToSave)
           .eq("id", themeConfig.id)
           .eq("store_id", storeId!);
         if (error) throw error;
@@ -955,8 +957,25 @@ export default function StoreThemeSettings() {
           .insert(payload);
         if (error) throw error;
       }
+      return configToSave;
     },
-    onSuccess: () => {
+    onSuccess: (savedConfig) => {
+      // Keep both dashboard and storefront caches on the exact value that was
+      // persisted. This prevents a stale shell response from restoring the
+      // previous product card while the edge purge is still completing.
+      queryClient.setQueryData(["store-theme-config", storeId], (old: any) => ({
+        ...old,
+        ...savedConfig,
+      }));
+      queryClient.setQueryData(["storefront-theme-config", storeId], (old: any) => ({
+        ...old,
+        ...savedConfig,
+      }));
+      if (storeId) {
+        try {
+          localStorage.setItem(`sf_tc_${storeId}`, JSON.stringify({ ...(themeConfig || {}), ...savedConfig }));
+        } catch {}
+      }
       queryClient.invalidateQueries({ queryKey: ["store-theme-config", storeId] });
       // Also invalidate the storefront-side cache key so any in-app preview re-fetches.
       queryClient.invalidateQueries({ queryKey: ["storefront-theme-config", storeId] });
@@ -969,7 +988,7 @@ export default function StoreThemeSettings() {
       // merchant no longer waits up to 90s to see the change go live.
       // We AWAIT the purge before reloading the preview iframes, otherwise the
       // reload races the purge and re-renders the stale edge HTML.
-      sendToIframe(config);
+      sendToIframe(savedConfig);
       (async () => {
         if (store?.slug) {
           try {
@@ -981,7 +1000,7 @@ export default function StoreThemeSettings() {
             // Re-warm immediately so the next shopper hit is a warm cache and
             // page-load speed is unaffected by the purge.
             const { prewarmStore } = await import("@/lib/prewarmStore");
-            prewarmStore(store.slug, (store as any).custom_domain);
+            await prewarmStore(store.slug, (store as any).custom_domain, { force: true });
           } catch {}
         }
         try {
@@ -997,6 +1016,17 @@ export default function StoreThemeSettings() {
 
     onError: () => toast.error("Failed to save settings"),
   });
+
+  const selectProductCardStyle = (style: string) => {
+    const nextConfig = { ...config, product_card_style: style };
+    setConfig(nextConfig);
+    setDirty(false);
+    sendToIframe(nextConfig);
+    // Product-card choices are direct selections, not a multi-field form.
+    // Persist immediately so merchants cannot accidentally leave with a
+    // preview-only selection that never reaches the live storefront.
+    saveConfigMutation.mutate(nextConfig);
+  };
 
   const resetToDefaults = () => {
     setConfig(defaults);
@@ -1678,7 +1708,7 @@ export default function StoreThemeSettings() {
           ].map((s) => (
             <button
               key={s.value}
-              onClick={() => updateField("product_card_style", s.value)}
+              onClick={() => selectProductCardStyle(s.value)}
               className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-[transform,opacity,colors,box-shadow] ${
                 config.product_card_style === s.value
                   ? "border-foreground bg-muted shadow-sm"
