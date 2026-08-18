@@ -12,9 +12,11 @@
  *   - the device/network is not eligible (desktop, save-data, 2G/3G,
  *     reduced motion)
  *
- * The <video> has NO `src` and `preload="none"` until `cardVideoScheduler`
- * promotes it to the single active card, so cold page load costs exactly
- * zero extra bytes and the <img> stays the LCP element.
+ * The <video> has NO `src`, NO `poster` and `preload="none"` until
+ * `cardVideoScheduler` promotes it to the single active card, so cold page
+ * load costs exactly zero extra bytes and the <img> stays the LCP element.
+ * (A `poster` would be fetched immediately by every card — that is why the
+ * product image underneath is used as the placeholder instead.)
  */
 import { memo, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -24,7 +26,6 @@ interface Props {
   /** Wrapper element that contains the rendered product card. */
   hostRef: React.RefObject<HTMLElement>;
   videoUrl?: string | null;
-  poster?: string | null;
   /** Set false to skip entirely (e.g. app disabled for the store). */
   enabled?: boolean;
 }
@@ -33,6 +34,12 @@ interface Props {
  * Some imported catalogues contain concatenated URLs
  * ("https://a.com/https://b.com/x.mp4"). Keep only the last real URL.
  */
+/**
+ * URLs that failed to decode once (404, bad codec, CORS) are remembered for
+ * the page lifetime so a remounted card never re-downloads a dead file.
+ */
+const deadSources = new Set<string>();
+
 function sanitizeUrl(u?: string | null): string {
   if (!u) return "";
   const i = u.lastIndexOf("https://");
@@ -41,14 +48,22 @@ function sanitizeUrl(u?: string | null): string {
   return k > 0 ? u.slice(k) : u;
 }
 
-function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, poster, enabled = true }: Props) {
+function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Props) {
   const videoUrl = sanitizeUrl(rawUrl);
   const ref = useRef<HTMLVideoElement | null>(null);
   const [mountTo, setMountTo] = useState<HTMLElement | null>(null);
+  // Copied from the card's own <img> so the video matches every theme:
+  // contain-fit jewellery cards stay letterboxed, cover-fit cards stay cropped,
+  // and rounded corners are inherited instead of squared off.
+  const [fit, setFit] = useState<{ objectFit: string; objectPosition: string; borderRadius: string }>({
+    objectFit: "cover",
+    objectPosition: "center",
+    borderRadius: "inherit",
+  });
   const [playing, setPlaying] = useState(false);
   // A source that fails to decode (bad import, unsupported codec) is dropped
   // for good so the scheduler moves on to the next card instead of stalling.
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState(() => deadSources.has(sanitizeUrl(rawUrl)));
   const eligible = enabled && !!videoUrl && isCardVideoEligible();
 
   // Find the image container of whichever card style rendered. Lazy card
@@ -66,6 +81,12 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, poster, enabled = tru
       if (!parent) return false;
       const pos = getComputedStyle(parent).position;
       if (pos === "static") parent.style.position = "relative";
+      const cs = getComputedStyle(img!);
+      setFit({
+        objectFit: cs.objectFit || "cover",
+        objectPosition: cs.objectPosition || "center",
+        borderRadius: cs.borderRadius || "inherit",
+      });
       done = true;
       setMountTo(parent);
       return true;
@@ -80,18 +101,17 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, poster, enabled = tru
   }, [eligible, hostRef]);
 
   useEffect(() => {
-    if (!mountTo || !ref.current || !videoUrl) return;
+    if (!mountTo || failed || !ref.current || !videoUrl) return;
     return registerCardVideo(ref.current, videoUrl, (isActive) => {
       if (!isActive) setPlaying(false);
     });
-  }, [mountTo, videoUrl]);
+  }, [mountTo, videoUrl, failed]);
 
   if (!eligible || failed || !mountTo) return null;
 
   return createPortal(
     <video
       ref={ref}
-      poster={poster || undefined}
       preload="none"
       muted
       loop
@@ -101,8 +121,21 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, poster, enabled = tru
       tabIndex={-1}
       onPlaying={() => setPlaying(true)}
       onPause={() => setPlaying(false)}
-      onError={() => { setPlaying(false); setFailed(true); }}
-      className={`pointer-events-none absolute inset-0 z-[2] h-full w-full object-cover object-center transition-opacity duration-300 ease-out ${
+      onError={() => {
+        setPlaying(false);
+        // Releasing the buffer (removeAttribute("src") + load()) legitimately
+        // fires an empty-src error — that is not a broken video.
+        if (ref.current?.getAttribute("src")) {
+          deadSources.add(videoUrl);
+          setFailed(true);
+        }
+      }}
+      style={{
+        objectFit: fit.objectFit as any,
+        objectPosition: fit.objectPosition,
+        borderRadius: fit.borderRadius,
+      }}
+      className={`pointer-events-none absolute inset-0 z-[2] h-full w-full transition-opacity duration-300 ease-out ${
         playing ? "opacity-100" : "opacity-0"
       }`}
     />,
