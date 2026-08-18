@@ -17,11 +17,11 @@
  *     prefers-reduced-motion. In those cases nothing is ever requested.
  */
 
-import { isSaveDataMode, isSlowConnection } from "@/lib/networkHints";
+import { isSaveDataMode } from "@/lib/networkHints";
 
 const MOBILE_MAX_WIDTH = 768;
 /** Never arm earlier than this after the first registration. */
-const ARM_FLOOR_MS = 1200;
+const ARM_FLOOR_MS = 700;
 /** A card must be at least this visible to be a playback candidate. */
 const MIN_RATIO = 0.35;
 
@@ -49,7 +49,10 @@ export function isCardVideoEligible(): boolean {
     // (Instagram/Facebook and a few WebViews) incorrectly report a fine or
     // missing pointer, which previously disabled every card video there.
     if (ok && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) ok = false;
-    if (ok && (isSaveDataMode() || isSlowConnection())) ok = false;
+    // Respect an explicit data-saving choice. Do not disable playback from
+    // effectiveType alone: Android frequently labels a usable 4G connection
+    // as 3g, which made this feature appear broken for real shoppers.
+    if (ok && isSaveDataMode()) ok = false;
   } catch {
     ok = false;
   }
@@ -141,11 +144,9 @@ function arm() {
 function scheduleArm() {
   if (armScheduled) return;
   armScheduled = true;
-  const kick = () => window.setTimeout(arm, ARM_FLOOR_MS);
+  const kick = arm;
   const ric = (window as any).requestIdleCallback;
-  if (typeof ric === "function") ric(kick, { timeout: 3000 });
-  // Safari has no requestIdleCallback. It already waits here, so calling kick
-  // would accidentally apply the floor twice and delay playback ~2.4 seconds.
+  if (typeof ric === "function") window.setTimeout(() => ric(kick, { timeout: 1200 }), ARM_FLOOR_MS);
   else window.setTimeout(arm, ARM_FLOOR_MS);
 }
 

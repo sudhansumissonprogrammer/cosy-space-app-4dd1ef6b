@@ -27,6 +27,7 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
     e.stopPropagation();
     const v = ref.current;
     if (!v) return;
+    v.muted = true;
     setStarted(true);
     v.play().catch(() => {});
   };
@@ -35,6 +36,7 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
     e.stopPropagation();
     const v = ref.current;
     if (!v) return;
+    v.muted = true;
     if (playing) {
       v.pause();
       return;
@@ -68,6 +70,7 @@ export function SnapVideoSlide({ url, poster, className = "h-full w-full object-
         poster={poster}
         className={className}
         disablePictureInPicture
+        muted
         playsInline
         preload="metadata"
         onClick={handleToggle}
