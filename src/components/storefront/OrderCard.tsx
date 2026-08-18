@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ChevronRight, Package } from "lucide-react";
 import { storefrontPath } from "@/lib/subdomain";
 import { getOrderStatusMeta } from "@/lib/orderStatus";
+import { currencySymbol } from "@/lib/productUtils";
 
 let detailChunkLoaded = false;
 const prefetchOrderDetail = () => {
@@ -72,7 +73,7 @@ export default function OrderCard({ order, storeSlug, currency }: { order: any; 
             {more > 0 && <span className="font-normal opacity-60"> + {more} more</span>}
           </p>
           <p className="text-[11px] mt-0.5" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)" }}>
-            {subtitle(order.status, order.created_at)} · {currency} {Number(order.total).toFixed(0)}
+            {subtitle(order.status, order.created_at)} · {currencySymbol(currency)}{Number(order.total).toFixed(0)}
           </p>
         </div>
 

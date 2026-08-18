@@ -3,6 +3,7 @@ import { Minus, Plus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import type { Tables } from "@/integrations/supabase/types";
 import { optimizeImageUrl, getImageSrcSet, resolveProductImages } from "@/lib/imageOptimize";
+import { currencySymbol } from "@/lib/productUtils";
 import ProductCardTitle from "./ProductCardTitle";
 
 

@@ -6,7 +6,7 @@ import { Plus, Star, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 import { cleanImageUrl, optimizeImageUrl } from "@/lib/imageOptimize";
-import { getDiscountPercent, getProductRating } from "@/lib/productUtils";
+import { getDiscountPercent, getProductRating, currencySymbol } from "@/lib/productUtils";
 
 interface CartUpsellProps {
   storeId: string;
@@ -126,11 +126,11 @@ export default function CartUpsell({ storeId, currency }: CartUpsellProps) {
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-xs font-bold" style={{ color: "var(--storefront-text, inherit)" }}>
-                    {currency} {displayPrice.toFixed(0)}
+                    {currencySymbol(currency)}{displayPrice.toFixed(0)}
                   </span>
                   {hasDiscount && (
                     <span className="text-[9px] line-through" style={{ color: "color-mix(in srgb, var(--storefront-text, inherit) 50%, transparent)" }}>
-                      {currency} {Number(product.price).toFixed(0)}
+                      {currencySymbol(currency)}{Number(product.price).toFixed(0)}
                     </span>
                   )}
                 </div>
