@@ -35,18 +35,32 @@ function ProductCardVideoImpl({ hostRef, videoUrl, poster, enabled = true }: Pro
   const [playing, setPlaying] = useState(false);
   const eligible = enabled && !!videoUrl && isCardVideoEligible();
 
-  // Find the image container of whichever card style rendered.
+  // Find the image container of whichever card style rendered. Lazy card
+  // styles arrive behind Suspense, so keep watching until the <img> exists.
   useEffect(() => {
     if (!eligible) return;
     const host = hostRef.current;
     if (!host) return;
-    const img = host.querySelector("img");
-    const parent = img?.parentElement as HTMLElement | undefined;
-    if (!parent) return;
-    // Every card style already positions the image box; make sure of it.
-    const pos = getComputedStyle(parent).position;
-    if (pos === "static") parent.style.position = "relative";
-    setMountTo(parent);
+
+    let done = false;
+    const attach = () => {
+      if (done) return true;
+      const img = host.querySelector("img");
+      const parent = img?.parentElement as HTMLElement | undefined;
+      if (!parent) return false;
+      const pos = getComputedStyle(parent).position;
+      if (pos === "static") parent.style.position = "relative";
+      done = true;
+      setMountTo(parent);
+      return true;
+    };
+
+    if (attach()) return;
+    const mo = new MutationObserver(() => {
+      if (attach()) mo.disconnect();
+    });
+    mo.observe(host, { childList: true, subtree: true });
+    return () => mo.disconnect();
   }, [eligible, hostRef]);
 
   useEffect(() => {
