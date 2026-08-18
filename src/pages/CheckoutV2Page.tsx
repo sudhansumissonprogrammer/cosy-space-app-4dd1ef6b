@@ -2242,15 +2242,29 @@ export default function CheckoutV2Page() {
   const canShowExplicitExitOfferRef = useRef(canShowExplicitExitOffer);
   canShowExplicitExitOfferRef.current = canShowExplicitExitOffer;
 
+  // While the shopper is actively filling a sheet (address / phone) or typing
+  // in any field, an automatic exit popup is pure interruption — it stole the
+  // screen mid-typing and stacked a second overlay on top of the sheet.
+  const sheetBusyRef = useRef(false);
+  sheetBusyRef.current = showAddressFormSheet || showAddressDialog;
+  const isTypingNow = () => {
+    const el = document.activeElement as HTMLElement | null;
+    if (!el) return false;
+    const tag = el.tagName;
+    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+  };
+
   const triggerExitOffer = useCallback((explicit = false) => {
     if (explicit ? !canShowExplicitExitOfferRef.current : !canShowExitOfferRef.current) return false;
     // Idle/mouse-leave is once per checkout session. A deliberate back action
     // must always work, even when an earlier automatic popup was dismissed or
     // stale sessionStorage from HMR/Instagram WebView remains in the tab.
     if (!explicit) {
+      if (sheetBusyRef.current || isTypingNow()) return false;
       if (exitOfferShownRef.current) return false;
       try { if (sessionStorage.getItem(exitSessionKey)) return false; } catch { /* noop */ }
     }
+
     exitOfferShownRef.current = true;
     try { sessionStorage.setItem(exitSessionKey, "1"); } catch { /* noop */ }
     setExitOfferOpen(true);
