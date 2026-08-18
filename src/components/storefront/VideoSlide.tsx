@@ -22,12 +22,18 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
   const [hasStarted, setHasStarted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [muted, setMuted] = useState(true);
 
   const showOverlay = !hasStarted || !videoPlaying;
 
   useEffect(() => {
     if (!isActive && videoRef.current) videoRef.current.pause();
   }, [isActive]);
+
+  // Keep the element in sync when the shopper toggles sound.
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.muted = muted;
+  }, [muted]);
 
   // Fetch metadata only when the video slide is selected. This keeps the first
   // product image as LCP, but makes playback immediate after the shopper swipes
@@ -36,10 +42,12 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
     const video = videoRef.current;
     if (!isActive || !source || !video) return;
     video.muted = true;
+    setMuted(true);
     video.play().then(() => setHasStarted(true)).catch(() => {
       // The visible play button remains available if a browser blocks autoplay.
     });
   }, [isActive, source]);
+
 
   if (!source || failed) {
     return (
