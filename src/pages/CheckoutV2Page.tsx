@@ -2306,17 +2306,19 @@ export default function CheckoutV2Page() {
     return () => document.removeEventListener("mouseleave", onLeave);
   }, [canShowExitOffer, triggerExitOffer]);
 
-  // 30s idle while sitting on the payment step.
+  // Idle nudge while sitting on the payment step (never while a sheet is open
+  // or the shopper is typing — see triggerExitOffer guards).
   useEffect(() => {
-    if (!canShowExitOffer || !showPayment) return;
+    if (!canShowExitOffer || !showPayment || showAddressFormSheet || showAddressDialog) return;
     let timer = 0;
     const arm = () => {
       window.clearTimeout(timer);
-      timer = window.setTimeout(() => { if (document.visibilityState === "visible") triggerExitOffer(); }, 30000);
+      timer = window.setTimeout(() => { if (document.visibilityState === "visible") triggerExitOffer(); }, 90000);
     };
     arm();
-    const events: (keyof DocumentEventMap)[] = ["touchstart", "click", "keydown", "scroll"];
+    const events: (keyof DocumentEventMap)[] = ["touchstart", "touchmove", "pointerdown", "click", "keydown", "input", "focusin", "scroll", "mousemove"];
     events.forEach((ev) => document.addEventListener(ev, arm, { passive: true } as any));
+
     return () => {
       window.clearTimeout(timer);
       events.forEach((ev) => document.removeEventListener(ev, arm as any));
