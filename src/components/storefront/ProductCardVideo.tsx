@@ -124,7 +124,6 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
       // Card is wrapped in a link — do not navigate to the PDP.
       event.preventDefault();
       event.stopPropagation();
-      console.log("[cv] start tap");
       if (activeStop) activeStop();
       activeStop = stop;
       setOpen(true);
@@ -145,7 +144,6 @@ function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Pro
     if (attempt && typeof attempt.catch === "function") attempt.catch(() => {});
   }, [open, videoUrl]);
 
-  console.log("[cv] render", { open, eligible, hasMount: !!mountTo });
   if (!eligible || !mountTo) return null;
 
   return createPortal(
