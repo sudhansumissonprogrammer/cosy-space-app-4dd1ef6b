@@ -40,6 +40,12 @@ const SOURCE_BASE = "https://byeetjlpwzpy.jdwebnship.in/api";
 const SOURCE_HASH = "360080b0b7289a6080e92018585cf114";
 const SOURCE_API_KEY = "9e5a4f4b49da226ab3b1bc396020bf831cb3c14584ced963";
 const SOURCE_ORIGIN = "https://shodfedf.jdwebshop.com";
+/** Extra reseller storefronts on the same JD backend. The listing endpoint is
+ *  tenant-scoped by Origin, so each one exposes SKUs the primary store does not
+ *  carry; product detail + stock resolve on any origin, so discovery only. */
+const EXTRA_ORIGINS = ["https://fashionshub.co.in"];
+/** Listing pages walked per extra origin each run (their catalogs are small). */
+const EXTRA_PAGES = 6;
 const ASSETS = "https://assets.jdwebnship.in/";
 
 /** Pages of the listing walked per run while backfilling. */
@@ -64,16 +70,16 @@ function json(body: unknown, status = 200) {
   });
 }
 
-const srcHeaders = {
+const headersFor = (origin: string) => ({
   "API-KEY": SOURCE_API_KEY,
-  Origin: SOURCE_ORIGIN,
-  Referer: `${SOURCE_ORIGIN}/`,
+  Origin: origin,
+  Referer: `${origin}/`,
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
   Accept: "application/json",
-};
+});
 
-async function srcFetch(path: string): Promise<any | null> {
+async function srcFetch(path: string, origin: string = SOURCE_ORIGIN): Promise<any | null> {
   // The wholesaler applies a rolling burst limit shared by catalog and stock
   // requests. Retry throttled/transient responses with backoff; returning null
   // after one 403 previously made valid in-stock products look permanently
@@ -82,7 +88,7 @@ async function srcFetch(path: string): Promise<any | null> {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), REQ_TIMEOUT_MS);
     try {
-      const res = await fetch(`${SOURCE_BASE}/${path}`, { headers: srcHeaders, signal: ctrl.signal });
+      const res = await fetch(`${SOURCE_BASE}/${path}`, { headers: headersFor(origin), signal: ctrl.signal });
       if (res.ok) return await res.json().catch(() => null);
       if (![403, 429, 500, 502, 503, 504].includes(res.status)) return null;
     } catch {
@@ -102,8 +108,8 @@ interface ListItem {
   sourcePage?: number;
 }
 
-async function fetchListPage(page: number): Promise<ListItem[] | null> {
-  const body = await srcFetch(`products/v2/recent?sortBy=recently_added&page=${page}`);
+async function fetchListPage(page: number, origin: string = SOURCE_ORIGIN): Promise<ListItem[] | null> {
+  const body = await srcFetch(`products/v2/recent?sortBy=recently_added&page=${page}`, origin);
   const data = body?.data;
   if (!Array.isArray(data)) return null;
   return data
@@ -318,6 +324,44 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Discovery pass over sibling reseller storefronts ─────────────────
+    // Same backend + same catalog hash, but the listing endpoint is scoped by
+    // Origin, so each sibling exposes SKUs the primary store never lists.
+    // Detail + stock lookups work on the default origin, so this is purely a
+    // discovery walk with its own per-origin page cursor.
+    const extraCursor: Record<string, number> =
+      (stateRow?.extra_cursor && typeof stateRow.extra_cursor === "object")
+        ? { ...(stateRow.extra_cursor as Record<string, number>) }
+        : {};
+
+    for (const origin of EXTRA_ORIGINS) {
+      if (candidates.length >= importBudget) break;
+      if (Date.now() - started > TIME_BUDGET_MS) break;
+      let p = Math.max(1, Number(extraCursor[origin]) || 1);
+      for (let n = 0; n < EXTRA_PAGES; n++) {
+        if (candidates.length >= importBudget) break;
+        if (Date.now() - started > TIME_BUDGET_MS) break;
+        const items = await fetchListPage(p, origin);
+        if (items === null) break; // transient throttle — retry same page next run
+        if (items.length === 0) { p = 1; break; } // wrapped around; restart next run
+        for (const it of items) {
+          if (knownSku.has(it.id)) continue;
+          const key = norm(it.name);
+          const match = byName.get(key);
+          if (match && !match.source_id) {
+            linked.push({ productId: match.id, sku: it.id });
+            knownSku.add(it.id);
+            byName.delete(key);
+            continue;
+          }
+          knownSku.add(it.id); // dedupe against the primary walk within this run
+          candidates.push({ ...it });
+        }
+        p++;
+        await new Promise((r) => setTimeout(r, REQ_GAP_MS));
+      }
+      extraCursor[origin] = p;
+    }
 
 
     // ── Backfill source_id on pre-existing rows ──────────────────────────
@@ -471,6 +515,7 @@ Deno.serve(async (req) => {
         store_id: store.id,
         phase: nextPhase,
         page_cursor: nextCursor,
+        extra_cursor: extraCursor,
         last_run_at: new Date().toISOString(),
         last_result: result,
         imported_total: (Number(stateRow?.imported_total) || 0) + imported,

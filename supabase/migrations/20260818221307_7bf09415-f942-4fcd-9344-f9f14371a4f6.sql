@@ -1,0 +1,1 @@
+ALTER TABLE public.jd_sync_state ADD COLUMN IF NOT EXISTS extra_cursor jsonb NOT NULL DEFAULT '{}'::jsonb;
