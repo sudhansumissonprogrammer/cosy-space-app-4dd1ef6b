@@ -4240,8 +4240,14 @@ export default function CheckoutV2Page() {
 
   // ─── Thank-you screen ───────────────────────────────────────────────────
   if (orderPlaced) {
-    const codDue = isPartialOrder ? balanceDue : (lastPaidMethodRef.current === "cod" ? total : 0);
-    const paidNow = isPartialOrder ? advancePaid : (lastPaidMethodRef.current === "cod" ? 0 : total);
+    // `total` is BEFORE the prepaid discount. What the customer is actually
+    // charged is `prepaidTotal` on full prepaid orders (prepaid discount applied)
+    // and `total` for partial/COD orders.
+    const tyPrepaidDiscount = isPartialOrder ? 0 : Math.max(0, total - prepaidTotal);
+    const grandTotal = Math.max(0, isPartialOrder ? total : prepaidTotal);
+    const codDue = isPartialOrder ? balanceDue : (lastPaidMethodRef.current === "cod" ? grandTotal : 0);
+    const paidNow = isPartialOrder ? advancePaid : (lastPaidMethodRef.current === "cod" ? 0 : grandTotal);
+    const tyCharges = (taxInclusive ? 0 : taxAmount) + shippingCharge;
     const addressLine = [streetAddress, apartment, city, state, pincode].filter(Boolean).join(", ");
     const previewItems = checkoutItems.slice(0, 3);
     const extraItems = checkoutItems.length - previewItems.length;
