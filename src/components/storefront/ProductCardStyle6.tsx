@@ -121,7 +121,7 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
 
           {discountPercent && (
             <div className="absolute left-2 top-2">
-              <span className="text-[9px] font-medium uppercase tracking-[0.15em]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+              <span className="text-[9px] font-semibold uppercase tracking-[0.15em]" style={{ color: "#D0021B" }}>
                 −{discountPercent}%
               </span>
             </div>
@@ -171,13 +171,14 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
           <div className="mt-1.5 flex items-baseline gap-2">
             {product.sale_price ? (
               <>
-                <span className="text-[12px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+                <span className="text-[12px] font-semibold uppercase tracking-[0.14em]" style={{ color: "#D0021B" }}>
                   {currency} {Number(product.sale_price).toFixed(0)}
                 </span>
                 <span className="text-[11px] uppercase tracking-[0.14em] line-through" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 45%, transparent)" }}>
                   {currency} {Number(product.price).toFixed(0)}
                 </span>
               </>
+
             ) : (
               <span className="text-[12px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
                 {currency} {Number(product.price).toFixed(0)}
