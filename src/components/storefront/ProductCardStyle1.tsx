@@ -11,6 +11,8 @@ import { prefetchProductDetail } from "@/lib/prefetchProductDetail";
 import { setPdpPreload } from "@/lib/pdpPreload";
 import { resolveProductImages as _resolve } from "@/lib/imageOptimize";
 import { useStorefrontThemeConfig } from "@/hooks/useStorefrontThemeConfig";
+import { useAppEnabled } from "@/hooks/useAppEnabled";
+import ProductCardVideo from "./ProductCardVideo";
 
 
 interface Props {
