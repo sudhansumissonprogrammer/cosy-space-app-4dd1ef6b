@@ -43,8 +43,10 @@ interface Props {
 function UniversalProductCardImpl({ product, slug, store, priority = false, cardStyle = "style-1", index = 0 }: Props) {
   const [variantOpen, setVariantOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
-  const { enabled: cardVideoOn } = useAppEnabled(slug, "card-video");
+  // Tap-to-play video is available on every store/theme: it costs nothing
+  // until the shopper taps, so it is not gated behind the App Store add-on.
   const cardVideoUrl = ((product as any)?.video_url as string | null) || null;
+
   const variantCount = useVariantCount(product.id);
   const hasVariants = variantCount > 0;
 
