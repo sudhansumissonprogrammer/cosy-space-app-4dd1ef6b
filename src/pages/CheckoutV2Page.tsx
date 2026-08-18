@@ -967,10 +967,13 @@ export default function CheckoutV2Page() {
   useEffect(() => {
     const anySheetOpen = showAddressFormSheet || showAddressDialog;
     if (!anySheetOpen) return;
-    const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    // Always restore to the natural value — capturing the previous value can
+    // permanently freeze the page when two overlays overlap (the second lock
+    // records "hidden" as its "previous" state).
+    return () => { document.body.style.overflow = ""; };
   }, [showAddressFormSheet, showAddressDialog]);
+
 
   // Safety net: never leave the page scroll-locked when checkout unmounts.
   useEffect(() => () => { document.body.style.overflow = ""; }, []);
