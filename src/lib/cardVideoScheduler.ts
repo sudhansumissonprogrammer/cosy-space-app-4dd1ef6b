@@ -40,11 +40,7 @@ let rafPending = false;
 
 const entries = new Map<HTMLVideoElement, Entry>();
 
-/** One-shot capability check — cached for the page lifetime. */
-let eligibleCache: boolean | null = null;
-
 export function isCardVideoEligible(): boolean {
-  if (eligibleCache !== null) return eligibleCache;
   if (typeof window === "undefined") return false;
   let ok = true;
   try {
@@ -57,7 +53,6 @@ export function isCardVideoEligible(): boolean {
   } catch {
     ok = false;
   }
-  eligibleCache = ok;
   return ok;
 }
 
@@ -149,7 +144,9 @@ function scheduleArm() {
   const kick = () => window.setTimeout(arm, ARM_FLOOR_MS);
   const ric = (window as any).requestIdleCallback;
   if (typeof ric === "function") ric(kick, { timeout: 3000 });
-  else window.setTimeout(kick, ARM_FLOOR_MS);
+  // Safari has no requestIdleCallback. It already waits here, so calling kick
+  // would accidentally apply the floor twice and delay playback ~2.4 seconds.
+  else window.setTimeout(arm, ARM_FLOOR_MS);
 }
 
 function ensureObserver(): IntersectionObserver {
