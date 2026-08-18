@@ -925,7 +925,7 @@ export default function StoreThemeSettings() {
               force: true,
             });
             const { prewarmStore } = await import("@/lib/prewarmStore");
-            prewarmStore(store.slug, (store as any).custom_domain);
+            await prewarmStore(store.slug, (store as any).custom_domain, { force: true });
           } catch {}
         }
         const activeRef = previewMode === "mobile" ? iframeRef : iframeDesktopRef;
@@ -2287,7 +2287,7 @@ export default function StoreThemeSettings() {
         <ThemeStickySaveBar
           dirty={dirty}
           saving={saveConfigMutation.isPending}
-          onSave={() => saveConfigMutation.mutate()}
+          onSave={() => saveConfigMutation.mutate(undefined)}
           onReset={resetToDefaults}
         />
       </div>
