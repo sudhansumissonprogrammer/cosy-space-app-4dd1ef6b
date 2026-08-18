@@ -1,4 +1,4 @@
-import { Pause, Play } from "lucide-react";
+import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 
 interface VideoControlBarProps {
   playing: boolean;
@@ -6,7 +6,10 @@ interface VideoControlBarProps {
   duration: number;
   onToggle: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onSeek: (value: number) => void;
+  muted?: boolean;
+  onToggleMute?: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }
+
 
 const formatTime = (seconds: number) => {
   if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
