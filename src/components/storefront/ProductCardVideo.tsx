@@ -13,7 +13,7 @@
  */
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Play, X } from "lucide-react";
+import { Play, X, Volume2, VolumeX } from "lucide-react";
 import { normalizeProductVideoUrl } from "@/lib/productVideoUrl";
 
 interface Props {

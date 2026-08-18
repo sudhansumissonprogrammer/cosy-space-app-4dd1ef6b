@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef, lazy, Suspense, memo } from "react";
+import { useState, useCallback, useEffect, useRef, lazy, Suspense, memo } from "react";
+import { getCachedCardVideo, requestCardVideo } from "@/lib/cardVideoLookup";
 import ProductCardStyle1 from "./ProductCardStyle1";
 import ProductCardSkeleton from "./ProductCardSkeleton";
 
