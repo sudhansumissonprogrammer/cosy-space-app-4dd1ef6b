@@ -30,6 +30,8 @@ let activeStop: (() => void) | null = null;
 function ProductCardVideoImpl({ hostRef, videoUrl: rawUrl, enabled = true }: Props) {
   const videoUrl = normalizeProductVideoUrl(rawUrl) || "";
   const ref = useRef<HTMLVideoElement | null>(null);
+  const retries = useRef(0);
+
   const [mountTo, setMountTo] = useState<HTMLElement | null>(null);
   const [fit, setFit] = useState({ objectFit: "cover", objectPosition: "center", borderRadius: "inherit" });
   const [open, setOpen] = useState(false);
