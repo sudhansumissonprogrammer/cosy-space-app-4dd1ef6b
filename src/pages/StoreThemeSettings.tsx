@@ -910,27 +910,30 @@ export default function StoreThemeSettings() {
         } catch {}
       }
 
-      // Purge edge cache so storefront visitors see new theme immediately
-      if (store?.slug) {
-        import("@/lib/purgeStoreCache").then(({ purgeStoreCache }) =>
-          purgeStoreCache(store.slug, (store as any).custom_domain, { shell: true })
-        );
-        import("@/lib/prewarmStore").then(({ prewarmStore }) =>
-          prewarmStore(store.slug, (store as any).custom_domain)
-        );
-      }
-
       setConfig(newConfig);
       setDirty(false);
-      // Soft-reload: reuse cached JS/CSS instead of destroying iframe
-      setTimeout(() => {
+
+      // Purge edge cache (forced — bypasses the 90s cooldown) and only THEN
+      // soft-reload the preview, so the iframe never re-reads stale edge HTML.
+      (async () => {
+        if (store?.slug) {
+          try {
+            const { purgeStoreCache } = await import("@/lib/purgeStoreCache");
+            await purgeStoreCache(store.slug, (store as any).custom_domain, {
+              shell: true,
+              force: true,
+            });
+            const { prewarmStore } = await import("@/lib/prewarmStore");
+            prewarmStore(store.slug, (store as any).custom_domain);
+          } catch {}
+        }
         const activeRef = previewMode === "mobile" ? iframeRef : iframeDesktopRef;
         try {
           activeRef.current?.contentWindow?.location.reload();
         } catch {
           setIframeKey((k) => k + 1);
         }
-      }, 300);
+      })();
       toast.success("Theme applied with best color combination!");
     },
     onError: () => toast.error("Failed to apply theme"),
