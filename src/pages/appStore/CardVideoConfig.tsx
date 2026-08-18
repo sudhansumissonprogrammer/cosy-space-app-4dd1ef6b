@@ -88,7 +88,7 @@ export default function CardVideoConfig() {
       onEnabledChange={setEnabled}
       onSave={() => save.mutate(enabled)}
       saving={save.isPending}
-      statusBadge={row?.enabled ? <AppLiveBadge /> : undefined}
+      statusBadge={<AppLiveBadge enabled={!!row?.enabled} />}
     >
       <div className="mx-auto max-w-5xl space-y-4 px-4 py-4 md:px-6">
         <Card>
