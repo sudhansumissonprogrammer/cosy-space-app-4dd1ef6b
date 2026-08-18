@@ -978,6 +978,20 @@ export default function CheckoutV2Page() {
   // Safety net: never leave the page scroll-locked when checkout unmounts.
   useEffect(() => () => { document.body.style.overflow = ""; }, []);
 
+  // Watchdog: if no overlay is open but the body is still locked (nested
+  // overlays, an aborted animation, a Radix dialog that lost its cleanup),
+  // unfreeze the page so shoppers can always scroll.
+  useEffect(() => {
+    if (showAddressFormSheet || showAddressDialog) return;
+    const id = window.setInterval(() => {
+      if (document.body.style.overflow === "hidden" && !document.querySelector("[data-radix-dialog-content],[data-sf-lock]")) {
+        document.body.style.overflow = "";
+      }
+    }, 1200);
+    return () => window.clearInterval(id);
+  }, [showAddressFormSheet, showAddressDialog]);
+
+
 
   // ─── Keyboard-safe sheet height ────────────────────────────────────────
   // `dvh` does NOT shrink when the mobile keyboard opens on Android Chrome /
