@@ -42,7 +42,6 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
     if (adding) return;
     setAdding(true);
     const source = e.currentTarget as Element;
-    const rect = source.getBoundingClientRect();
     // Brief "loading" beat on the icon, then the item flies to the cart and
     // the side cart opens (via the cart:fly-landed listener).
     window.setTimeout(() => {
@@ -50,7 +49,7 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
       handleAddToCart({
         preventDefault() {},
         stopPropagation() {},
-        currentTarget: { getBoundingClientRect: () => rect } as any,
+        currentTarget: source,
       } as any, onVariantRequired);
     }, 420);
   };
