@@ -18,7 +18,7 @@ const formatTime = (seconds: number) => {
   return `${minutes}:${secs}`;
 };
 
-export function VideoControlBar({ playing, currentTime, duration, onToggle, onSeek }: VideoControlBarProps) {
+export function VideoControlBar({ playing, currentTime, duration, onToggle, onSeek, muted, onToggleMute }: VideoControlBarProps) {
   const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
   const safeCurrent = safeDuration > 0 ? Math.min(currentTime, safeDuration) : 0;
   const progress = safeDuration > 0 ? (safeCurrent / safeDuration) * 100 : 0;
