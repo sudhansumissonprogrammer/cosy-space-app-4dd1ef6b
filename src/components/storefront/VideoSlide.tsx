@@ -169,6 +169,12 @@ export function VideoSlide({ url, poster, isActive, videoPlaying, setVideoPlayin
             handleToggle();
           }}
           onSeek={handleSeek}
+          muted={muted}
+          onToggleMute={(e) => {
+            e.stopPropagation();
+            setMuted((m) => !m);
+          }}
+
         />
       )}
     </div>
