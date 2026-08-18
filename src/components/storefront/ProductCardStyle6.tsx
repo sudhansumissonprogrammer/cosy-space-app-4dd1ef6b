@@ -121,7 +121,7 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
 
           {discountPercent && (
             <div className="absolute left-2 top-2">
-              <span className="text-[9px] font-medium uppercase tracking-[0.15em]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+              <span className="text-[9px] font-semibold uppercase tracking-[0.15em]" style={{ color: "#D0021B" }}>
                 −{discountPercent}%
               </span>
             </div>
