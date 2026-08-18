@@ -1626,7 +1626,12 @@ function ImageGallery({
     align: "center",
     skipSnaps: false,
     dragFree: false,
-    duration: 22,
+    duration: 20,
+    // Shoppers swipe diagonally over tall product photos — a low threshold plus
+    // free drag angle makes the gallery respond to those gestures instead of
+    // handing them to the page scroller.
+    dragThreshold: 4,
+    watchDrag: true,
   });
 
   // Sync activeIndex with Embla — pause video when sliding away.
