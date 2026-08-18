@@ -129,6 +129,29 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
 
           <WishlistHeartButton wishlisted={wishlisted} bursting={heartBursting} onClick={handleToggleWishlist} size={30} className="absolute right-2 top-2" />
 
+          <button
+            type="button"
+            onClick={onAddClick}
+            aria-label={adding ? "Adding to cart" : "Add to cart"}
+            className="absolute right-2 bottom-2 flex items-center justify-center rounded-full transition-transform duration-200 active:scale-[0.92]"
+            style={{
+              height: 30,
+              width: 30,
+              backgroundColor: "color-mix(in srgb, var(--storefront-bg, #fff) 78%, transparent)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              border: "1px solid color-mix(in srgb, var(--storefront-text, #000) 8%, transparent)",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+              color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 70%, transparent)",
+            }}
+          >
+            {adding ? (
+              <Loader2 className="animate-spin" style={{ height: 16, width: 16 }} strokeWidth={2} aria-hidden="true" />
+            ) : (
+              <CartIcon style={{ height: 16, width: 16 }} strokeWidth={2} aria-hidden="true" />
+            )}
+          </button>
+
         </div>
 
         <div className="pt-3 pb-1">
@@ -148,20 +171,21 @@ export default function ProductCardStyle6({ product, slug, store, priority = fal
           <div className="mt-1.5 flex items-baseline gap-2">
             {product.sale_price ? (
               <>
-                <span className="text-[10px] uppercase tracking-[0.18em]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+                <span className="text-[12px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
                   {currency} {Number(product.sale_price).toFixed(0)}
                 </span>
-                <span className="text-[9px] uppercase tracking-[0.18em] line-through" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 45%, transparent)" }}>
+                <span className="text-[11px] uppercase tracking-[0.14em] line-through" style={{ color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 45%, transparent)" }}>
                   {currency} {Number(product.price).toFixed(0)}
                 </span>
               </>
             ) : (
-              <span className="text-[10px] uppercase tracking-[0.18em]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
+              <span className="text-[12px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--storefront-text, hsl(var(--foreground)))" }}>
                 {currency} {Number(product.price).toFixed(0)}
               </span>
             )}
           </div>
         </div>
+
       </Link>
     </div>
   );
