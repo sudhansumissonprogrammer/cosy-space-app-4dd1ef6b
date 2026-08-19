@@ -132,8 +132,8 @@ export default function StoreTracking() {
         updatePayload.facebook_pixel_id = trimmedPixel || null;
       }
       // Do not wipe a saved CAPI token if the secure token RPC has not loaded yet.
+      const trimmedToken = metaAccessToken.trim();
       if (metaTokenFromDb !== undefined || metaAccessTokenTouched) {
-        const trimmedToken = metaAccessToken.trim();
         if (trimmedToken) {
           // Meta System User CAPI tokens always start with "EAA" and are 150+ chars long.
           // Reject passwords, short strings, and anything with spaces — this prevents
@@ -146,11 +146,49 @@ export default function StoreTracking() {
         }
         updatePayload.meta_access_token = trimmedToken || null;
       }
+
+      // SAVE-GUARD 1: an empty payload makes PostgREST reject the request with
+      // a confusing "failed to update". Tell the merchant nothing changed
+      // instead, and let onSuccess still refresh the storefront cache.
+      if (Object.keys(updatePayload).length === 0) {
+        return { pixelOk: true, tokenOk: true, noop: true as const };
+      }
+
       const { error } = await (supabase as any)
         .from("stores")
         .update(updatePayload)
         .eq("id", storeId!);
       if (error) throw error;
+
+      // SAVE-GUARD 2: read back from the database and confirm the values really
+      // landed. RLS / column-grant / trigger failures can make an update apply
+      // to ZERO rows without raising an error — that is exactly how a merchant
+      // ends up seeing "saved" while the pixel is still missing in the DB and
+      // their ads run untracked. Now a silent no-write is impossible.
+      const { data: verifyRow, error: verifyErr } = await (supabase as any)
+        .from("stores")
+        .select("facebook_pixel_id")
+        .eq("id", storeId!)
+        .maybeSingle();
+      if (verifyErr) throw verifyErr;
+
+      const pixelOk =
+        !("facebook_pixel_id" in updatePayload) ||
+        ((verifyRow?.facebook_pixel_id || "") === (trimmedPixel || ""));
+
+      let tokenOk = true;
+      if ("meta_access_token" in updatePayload) {
+        const { data: savedToken } = await supabase.rpc("get_own_store_meta_token", { _store_id: storeId! });
+        tokenOk = ((savedToken as string) || "") === trimmedToken;
+      }
+
+      if (!pixelOk || !tokenOk) {
+        throw new Error(
+          `Save did not persist (${!pixelOk ? "Pixel ID" : "CAPI token"}). You may not have permission on this store — reload the page and try again, or contact support.`
+        );
+      }
+
+      return { pixelOk, tokenOk, noop: false as const };
     },
     onSuccess: async () => {
       await Promise.all([
@@ -164,15 +202,28 @@ export default function StoreTracking() {
         // prebuilt HTML shell (__STOREFRONT_DATA__.store.facebook_pixel_id).
         // Without it the cached HTML keeps the OLD pixel id and Meta Pixel
         // Helper still shows "No Pixels found" after a save.
-        const purged = await purgeStoreCache(store.slug, (store as any).custom_domain, { shell: true, force: true });
+        //
+        // Retry: one failed purge used to leave the whole storefront serving a
+        // pixel-less shell until the 24h edge TTL expired — the single biggest
+        // cause of "I saved my pixel but Meta sees nothing".
+        let purged = false;
+        for (let attempt = 0; attempt < 3 && !purged; attempt++) {
+          if (attempt > 0) await new Promise((r) => setTimeout(r, 1200));
+          purged = await purgeStoreCache(store.slug, (store as any).custom_domain, { shell: true, force: true });
+        }
         await prewarmStore(store.slug, (store as any).custom_domain, { force: true });
-        if (!purged) toast.warning("Tracking saved, but cache purge was delayed. Refresh again if the old pixel appears for a few minutes.");
+        if (!purged) {
+          toast.warning(
+            "Saved to your account, but the storefront cache purge failed. Your pixel still activates on the next page load — refresh your store to confirm."
+          );
+        }
       }
 
       toast.success("Tracking settings saved and pixel is live on your storefront!");
     },
     onError: (err: any) => toast.error(err.message || "Failed to update"),
   });
+
 
   const feedBaseUrl = store?.slug
     ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seo-page?type=feed&slug=${store.slug}`
