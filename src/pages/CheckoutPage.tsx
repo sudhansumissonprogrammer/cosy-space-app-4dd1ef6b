@@ -1651,23 +1651,23 @@ function CheckoutPageInner() {
     // All four use the SAME event_id (purchaseEventIdRef) so Meta dedupes Pixel↔CAPI.
     // Server side has its own DB-stamp idempotency (orders.meta_purchase_fired_at)
     // so refresh / webhook retries / multi-gateway races never double-fire.
-    const purchaseDedupKey = `meta_purchase_fired_${newOrderId}`;
-    let alreadyFired = false;
-    try { alreadyFired = sessionStorage.getItem(purchaseDedupKey) === "1"; } catch {}
-    if (!alreadyFired) {
-      try { sessionStorage.setItem(purchaseDedupKey, "1"); } catch {}
-      fbPixelTrack(
-        "Purchase",
-        {
-          ...pixelPayloadFromItems(checkoutItems),
-          content_type: "product",
-          content_name: checkoutItems.map((i) => i.name).join(", "),
-          value: total,
-          currency,
-        },
-        purchaseEventIdRef.current,
-      );
-    }
+    // Same durable path the new checkout uses: localStorage dedupe (survives the
+    // Instagram/FB in-app-browser sessionStorage wipe), store-isolated
+    // fbq("trackSingle") and a forced fbevents.js load so the event is never
+    // stranded in the shim queue when the shopper closes the tab.
+    flushCapiIdentity();
+    firePixelPurchase({
+      orderId: newOrderId,
+      eventId: purchaseEventIdRef.current,
+      value: total,
+      currency,
+      payload: {
+        ...pixelPayloadFromItems(checkoutItems),
+        content_name: checkoutItems.map((i) => i.name).join(", "),
+        order_id: newOrderId,
+      },
+    });
+    clearPendingPurchase(newOrderId);
     // GA4 purchase — for Google Ads conversion tracking + GA4 ecommerce reports.
     try {
       ga4Track("purchase", {
