@@ -492,7 +492,16 @@ Deno.serve(async (req) => {
         nextPhase = complete ? "steady" : "backfill";
         nextCursor = 1;
       } else nextCursor = page;
+    } else if (
+      // Steady only re-scans the newest pages. If the source catalog has grown
+      // well beyond what we hold (merchant bulk-uploaded), drop back into a
+      // full backfill walk automatically instead of waiting for a manual reset.
+      totalAtSource && (ourCount || 0) < totalAtSource - 25
+    ) {
+      nextPhase = "backfill";
+      nextCursor = 1;
     }
+
 
 
     const result = {
