@@ -297,58 +297,75 @@ Deno.serve(async (req) => {
     }
 
     // ── Walk listing pages ───────────────────────────────────────────────
+    // The global /allproduct feed stops early (~2.6k), so we page through each
+    // category feed (/store_product_loadmore, 12 per page) — their union is the
+    // complete catalog. Pages are indexed globally across categories so the
+    // stored cursor can resume anywhere.
+    const CAT_PAGE = 12;
+    const segments: { slug: string; pages: number }[] = [];
+    for (const cslug of catSlugs) {
+      const first = await fetchText(`${base}/${cslug}.html`, { cookie });
+      if (!first) continue;
+      const total = Number(first.text.match(/total_result_cnt"?>?\s*([0-9]+)/i)?.[1] || 0);
+      if (!total) continue;
+      segments.push({ slug: cslug, pages: Math.ceil(total / CAT_PAGE) });
+    }
+    const totalPages = segments.reduce((a, s) => a + s.pages, 0);
+
+    const locate = (globalPage: number) => {
+      let n = globalPage;
+      for (const s of segments) {
+        if (n <= s.pages) return { slug: s.slug, offset: (n - 1) * CAT_PAGE };
+        n -= s.pages;
+      }
+      return null;
+    };
+
     const pagesToWalk = phase === "backfill" ? pageBudget : STEADY_PAGES;
     const found = new Map<string, Candidate>();
-    let page = startPage;
+    let page = phase === "backfill" ? startPage : 1;
     let pagesWalked = 0;
     let reachedEnd = false;
     let listErrors = 0;
-    if (phase !== "backfill") page = 1;
 
     while (
       pagesWalked < pagesToWalk &&
       Date.now() - started < TIME_BUDGET_MS &&
       found.size < importBudget
     ) {
-      const offset = (page - 1) * PAGE_SIZE;
-      let html: string | null = null;
-      if (offset === 0) {
-        html = boot.text;
-      } else {
-        const form = new URLSearchParams({
-          getresult: String(offset),
-          searchkey: "",
-          orderby: "",
-          cat_ids: "",
-          min_price: "",
-          max_price: "",
-          size_ids: "",
-          variant_status: "0",
-          web_token: webToken,
-        });
-        const res = await fetchText(`${base}/allproductoadmore`, {
-          method: "POST",
-          cookie,
-          referer: `${base}/allproduct.html`,
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "X-Requested-With": "XMLHttpRequest",
-          },
-          body: form.toString(),
-        });
-        html = res?.text ?? null;
-      }
+      const loc = locate(page);
+      if (!loc) { reachedEnd = true; break; }
+      const form = new URLSearchParams({
+        getresult: String(loc.offset),
+        category_slug: loc.slug,
+        searchkeyword: "",
+        orderby: "",
+        min_price: "",
+        max_price: "",
+        size_ids: "",
+        variant_status: "0",
+        web_token: webToken,
+      });
+      const res = await fetchText(`${base}/store_product_loadmore`, {
+        method: "POST",
+        cookie,
+        referer: `${base}/${loc.slug}.html`,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: form.toString(),
+      });
+      const html = res?.text ?? null;
       if (html == null) { listErrors++; page++; pagesWalked++; await new Promise((r) => setTimeout(r, 250)); continue; }
 
-      const items = parseListing(html);
-      if (items.length === 0) { reachedEnd = true; break; }
-      for (const it of items) if (!found.has(it.sourceId)) found.set(it.sourceId, it);
-      if (items.length < PAGE_SIZE) { reachedEnd = true; page++; pagesWalked++; break; }
-
+      for (const it of parseListing(html)) if (!found.has(it.sourceId)) found.set(it.sourceId, it);
       page++;
       pagesWalked++;
+      if (page > totalPages) { reachedEnd = true; break; }
       await new Promise((r) => setTimeout(r, REQ_GAP_MS));
     }
+
 
     // ── Filter out what we already have ──────────────────────────────────
     const ids = [...found.keys()];
