@@ -4300,11 +4300,12 @@ export default function CheckoutV2Page() {
   const supportPhone = String((store as any)?.secondary_phone || (store as any)?.whatsapp_number || "").trim();
   const storeSupportBar = (
     <div className="sticky top-0 z-20 -mx-4 mb-4 flex items-center gap-2 border-b border-[#ECECEC] bg-white px-3 py-1.5">
-      {store?.logo_url ? (
-        <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[100px] shrink-0 object-contain" />
-      ) : null}
       <div className="flex min-w-0 flex-1 flex-col justify-center">
-        <div className="truncate text-[15px] font-bold leading-tight">{store?.name || "Store"}</div>
+        {store?.logo_url ? (
+          <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[120px] self-start object-contain" />
+        ) : (
+          <div className="truncate text-[15px] font-bold leading-tight">{store?.name || "Store"}</div>
+        )}
         {supportPhone ? (
           <a
             href={`tel:${supportPhone.replace(/\s/g, "")}`}
@@ -4316,6 +4317,7 @@ export default function CheckoutV2Page() {
           </a>
         ) : null}
       </div>
+
       {supportPhone ? (
         <a
           href={`tel:${supportPhone.replace(/\s/g, "")}`}
@@ -4745,24 +4747,25 @@ export default function CheckoutV2Page() {
           <ArrowLeft className="h-5 w-5" />
         </button>
 
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="flex flex-col justify-center min-w-0 flex-1">
+
           {store?.logo_url ? (
-            <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[100px] object-contain shrink-0" />
-          ) : null}
-          <div className="flex flex-col justify-center min-w-0">
+            <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[120px] self-start object-contain" />
+          ) : (
             <div className="text-[15px] font-bold leading-tight truncate">{store?.name || "Store"}</div>
-            {(store?.secondary_phone || store?.whatsapp_number) && (
-              <a
-                href={`tel:${(store?.secondary_phone || store?.whatsapp_number || "").replace(/\s/g, "")}`}
-                className="mt-0.5 inline-flex items-center gap-1 text-[11px] leading-none text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={`Customer care ${store?.secondary_phone || store?.whatsapp_number}`}
-              >
-                <Headset className="h-3 w-3" />
-                <span className="truncate">{store?.secondary_phone || store?.whatsapp_number}</span>
-              </a>
-            )}
-          </div>
+          )}
+          {(store?.secondary_phone || store?.whatsapp_number) && (
+            <a
+              href={`tel:${(store?.secondary_phone || store?.whatsapp_number || "").replace(/\s/g, "")}`}
+              className="mt-0.5 inline-flex items-center gap-1 text-[11px] leading-none text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={`Customer care ${store?.secondary_phone || store?.whatsapp_number}`}
+            >
+              <Headset className="h-3 w-3" />
+              <span className="truncate">{store?.secondary_phone || store?.whatsapp_number}</span>
+            </a>
+          )}
         </div>
+
 
         <div className="flex items-center -space-x-2">
           <img
