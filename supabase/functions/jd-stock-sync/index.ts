@@ -149,7 +149,8 @@ Deno.serve(async (req) => {
   const { data: stores, error: storeErr } = await admin
     .from("stores")
     .select("id, slug, custom_domain")
-    .eq("source_sync_enabled", true);
+    .eq("source_sync_enabled", true)
+    .or("source_platform.is.null,source_platform.eq.jdwebship");
   if (storeErr) return json({ error: storeErr.message }, 500);
   if (!stores?.length) return json({ ok: true, stores: 0, note: "no store has source_sync_enabled" });
 

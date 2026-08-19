@@ -118,3 +118,9 @@ verify_jwt = false
 
 [functions.jd-stock-sync]
 verify_jwt = false
+
+[functions.cartpe-catalog-sync]
+verify_jwt = false
+
+[functions.cartpe-stock-sync]
+verify_jwt = false
