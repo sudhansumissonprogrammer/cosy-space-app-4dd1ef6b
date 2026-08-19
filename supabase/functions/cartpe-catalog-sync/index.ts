@@ -181,6 +181,7 @@ type Detail = {
   price: number | null;
   sale: number | null;
   inStock: boolean;
+  video: string | null;
 };
 
 function parseDetail(html: string): Detail | null {
@@ -214,7 +215,13 @@ function parseDetail(html: string): Detail | null {
     gallery.push(u);
   }
 
-  return { name, category, images: gallery.slice(0, 10), cover: gallery[0] ?? null, price, sale, inStock };
+  // Product video lives in the "View Video" modal at the bottom of the PDP.
+  const video =
+    html.match(/<video[^>]*>[\s\S]{0,400}?<source[^>]*src="(https?:\/\/[^"]+\.(?:mp4|webm|mov))"/i)?.[1] ??
+    html.match(/https?:\/\/cdn\.cartpe\.in\/images\/video_upload\/[^"'\s\\)]+\.(?:mp4|webm|mov)/i)?.[0] ??
+    null;
+
+  return { name, category, images: gallery.slice(0, 10), cover: gallery[0] ?? null, price, sale, inStock, video };
 }
 
 Deno.serve(async (req) => {
@@ -441,6 +448,8 @@ Deno.serve(async (req) => {
         is_active: true,
         image_url: cover,
         image_alt: name,
+        video_url: d?.video ?? null,
+        video_poster_url: d?.video ? cover : null,
         category: categoryName,
         source_id: c.sourceId,
         source_path: c.path,
