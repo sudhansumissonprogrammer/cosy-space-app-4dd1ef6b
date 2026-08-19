@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
       updated,
       no_video: noVideo,
       failed,
-      next_offset: recheck ? offset + prods.length : offset,
+      last_id: prods[prods.length - 1]?.id ?? null,
       exhausted: prods.length < batch,
     });
 
