@@ -5,6 +5,7 @@ import {
   Users, UserCheck, Globe, Store, Plus, CreditCard, Tag, Truck, Receipt,
   ShoppingCart, Palette, BarChart3, MessageSquare, FolderOpen, Image as ImageIcon,
   Clock, FileText, Star, Wallet, TrendingDown, Blocks, MessageCircle,
+  Lock,
 } from "lucide-react";
 import { prefetchDashboardRoutes } from "@/lib/prefetchDashboardRoutes";
 import { NavLink } from "@/components/NavLink";
@@ -14,6 +15,7 @@ import { useMyStore } from "@/hooks/useMyStore";
 import { useAdminStoreView } from "@/hooks/useAdminStoreView";
 import { supabase } from "@/integrations/supabase/client";
 import { useMenuConfig } from "@/hooks/useMenuConfig";
+import { useFirstRechargeDone } from "@/hooks/useFirstRechargeDone";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
