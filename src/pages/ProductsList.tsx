@@ -151,60 +151,69 @@ export default function ProductsList() { // v2
     enabled: !!user,
   });
 
-  const { data: allProducts, isLoading } = useQuery({
-    queryKey: ["products-all", storeId],
+  // Debounce search so each keystroke doesn't hit the server
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const [totalCount, setTotalCount] = useState(0);
+  const pagination = usePagination(totalCount);
+
+  // Server-side paged/filtered/sorted products (was: fetch 1000 rows + filter on client)
+  const { data: pageData, isLoading } = useQuery({
+    queryKey: [
+      "products-all", storeId, debouncedSearch, statusFilter, stockFilter,
+      [...categoryFilter].sort().join("|"), sort, pagination.page,
+    ],
     staleTime: 2 * 60 * 1000,
+    placeholderData: (prev) => prev,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("id, name, slug, image_url, price, sale_price, stock_quantity, is_active, is_best_selling, is_category_pinned, category_pinned_at, category, sku, currency, created_at")
-        .eq("store_id", storeId!)
-        .order("created_at", { ascending: false })
-        .limit(1000);
+      const { data, error } = await supabase.rpc("get_products_page", {
+        _store_id: storeId!,
+        _search: debouncedSearch || null,
+        _status: statusFilter === "all" ? null : statusFilter,
+        _stock: stockFilter === "all" ? null : stockFilter,
+        _categories: categoryFilter.length > 0 ? categoryFilter : null,
+        _sort: sort,
+        _limit: pagination.pageSize,
+        _offset: (pagination.page - 1) * pagination.pageSize,
+      });
       if (error) throw error;
-      return data;
+      const payload = (data as any) || {};
+      return {
+        total: Number(payload.total ?? 0),
+        rows: (payload.rows ?? []) as any[],
+      };
     },
     enabled: !!storeId,
   });
 
-  const categories = useMemo(() => {
-    if (!allProducts) return [];
-    const cats = new Set<string>();
-    allProducts.forEach(p => { if (p.category) cats.add(p.category); });
-    return Array.from(cats).sort();
-  }, [allProducts]);
+  useEffect(() => {
+    if (pageData) setTotalCount(pageData.total);
+  }, [pageData]);
 
-  const filteredProducts = useMemo(() => {
-    if (!allProducts) return [];
-    let result = [...allProducts];
-    if (search.trim()) {
-      const q = search.toLowerCase().trim();
-      result = result.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        p.category?.toLowerCase().includes(q) ||
-        p.sku?.toLowerCase().includes(q)
-      );
-    }
-    if (statusFilter === "active") result = result.filter(p => p.is_active);
-    if (statusFilter === "draft") result = result.filter(p => !p.is_active);
-    if (stockFilter === "in-stock") result = result.filter(p => p.stock_quantity > 0);
-    if (stockFilter === "out-of-stock") result = result.filter(p => p.stock_quantity <= 0 && p.stock_quantity < 999999);
-    if (categoryFilter.length > 0) result = result.filter(p => p.category && categoryFilter.includes(p.category));
-    switch (sort) {
-      case "title-asc": result.sort((a, b) => a.name.localeCompare(b.name)); break;
-      case "title-desc": result.sort((a, b) => b.name.localeCompare(a.name)); break;
-      case "date-new": result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()); break;
-      case "date-old": result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); break;
-      case "stock-high": result.sort((a, b) => (Number(b.stock_quantity) || 0) - (Number(a.stock_quantity) || 0)); break;
-      case "stock-low": result.sort((a, b) => (Number(a.stock_quantity) || 0) - (Number(b.stock_quantity) || 0)); break;
-      case "category-asc": result.sort((a, b) => (a.category || "\uffff").localeCompare(b.category || "\uffff") || a.name.localeCompare(b.name)); break;
-      case "category-desc": result.sort((a, b) => (b.category || "").localeCompare(a.category || "") || a.name.localeCompare(b.name)); break;
-    }
-    return result;
-  }, [allProducts, search, statusFilter, stockFilter, categoryFilter, sort]);
+  const paginatedProducts = pageData?.rows ?? [];
+  const filteredProducts = { length: totalCount } as { length: number };
+  const allProducts = paginatedProducts;
 
-  const pagination = usePagination(filteredProducts.length);
-  const paginatedProducts = filteredProducts.slice(pagination.from, pagination.to + 1);
+  // Category filter options — small dedicated query instead of deriving from the whole catalog
+  const { data: categories = [] } = useQuery({
+    queryKey: ["product-categories-list", storeId],
+    staleTime: 10 * 60 * 1000,
+    enabled: !!storeId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("name")
+        .eq("store_id", storeId!)
+        .order("name");
+      if (error) throw error;
+      return Array.from(new Set((data || []).map((c: any) => c.name).filter(Boolean))).sort() as string[];
+    },
+  });
+
 
   const deleteMutation = useMutation({
     mutationFn: async (productId: string) => {

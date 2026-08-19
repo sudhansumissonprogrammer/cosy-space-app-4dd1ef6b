@@ -28,17 +28,6 @@ import { useCountUp } from "@/hooks/useCountUp";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 import { endOfMonth, startOfMonth, subMonths } from "date-fns";
 
-interface SalesAnalyticsPayload {
-  total_revenue?: number | string;
-  total_orders?: number | string;
-}
-
-type RpcClient = {
-  rpc: <T>(fn: string, args: Record<string, unknown>) => Promise<{
-    data: T | null;
-    error: Error | null;
-  }>;
-};
 
 function ShimmerBlock({ className }: { className?: string }) {
   return (
@@ -137,38 +126,23 @@ export default function Dashboard() {
     queryKey: ["dashboard-monthly-sales-exact", storeId],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const now = new Date();
-      const months = Array.from({ length: 12 }, (_, i) => {
-        const d = subMonths(now, 11 - i);
-        const start = startOfMonth(d);
-        const end = i === 11 ? now : endOfMonth(d);
-        return {
-          key: start.toISOString().slice(0, 7),
-          start,
-          end,
-        };
+      // One RPC for all 12 months (was: 12 separate get_store_sales_analytics calls).
+      const { data, error } = await supabase.rpc("get_store_monthly_sales", {
+        _store_id: storeId!,
+        _months: 12,
       });
-
-      const results = await Promise.all(months.map(async (m) => {
-        const { data, error } = await (supabase as unknown as RpcClient).rpc<SalesAnalyticsPayload>("get_store_sales_analytics", {
-          _store_id: storeId!,
-          _range_start: m.start.toISOString(),
-          _range_end: m.end.toISOString(),
-          _prior_start: m.start.toISOString(),
-          _prior_end: m.start.toISOString(),
-        });
-        if (error) throw error;
-        return {
-          month: m.key,
-          orders: Number(data?.total_orders ?? 0),
-          revenue: Number(data?.total_revenue ?? 0),
-        };
-      }));
-
-      return results.filter((m) => m.orders > 0 || m.revenue > 0);
+      if (error) throw error;
+      return ((data || []) as Array<{ month: string; orders: number | string; revenue: number | string }>)
+        .map((m) => ({
+          month: m.month,
+          orders: Number(m.orders ?? 0),
+          revenue: Number(m.revenue ?? 0),
+        }))
+        .filter((m) => m.orders > 0 || m.revenue > 0);
     },
     enabled: !!storeId && !isWhatsAppOnly,
   });
+
 
   const { data: walletSummary } = useQuery({
     queryKey: ["store-wallet", storeId],

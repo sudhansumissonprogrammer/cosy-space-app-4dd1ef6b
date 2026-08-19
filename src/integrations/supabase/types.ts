@@ -5676,6 +5676,19 @@ export type Database = {
         Args: { _product_slug: string; _store_slug: string }
         Returns: Json
       }
+      get_products_page: {
+        Args: {
+          _categories?: string[]
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _sort?: string
+          _status?: string
+          _stock?: string
+          _store_id: string
+        }
+        Returns: Json
+      }
       get_shipment_tracking: { Args: { _order_id: string }; Returns: Json }
       get_store_as_admin: { Args: { _slug: string }; Returns: Json }
       get_store_auto_apply_coupon: {
@@ -5731,6 +5744,14 @@ export type Database = {
         Returns: {
           app_id: string
           config: Json
+        }[]
+      }
+      get_store_monthly_sales: {
+        Args: { _months?: number; _store_id: string }
+        Returns: {
+          month: string
+          orders: number
+          revenue: number
         }[]
       }
       get_store_payment_config: { Args: { _store_id: string }; Returns: Json }
