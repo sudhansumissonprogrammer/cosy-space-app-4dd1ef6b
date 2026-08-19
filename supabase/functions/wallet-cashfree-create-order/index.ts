@@ -106,10 +106,21 @@ Deno.serve(async (req) => {
 
     const { data: cfg } = await supabase
       .from("store_commission_config")
-      .select("min_recharge")
+      .select("min_recharge, first_recharge_min")
       .eq("store_id", storeId)
       .maybeSingle();
-    const minRecharge = Number(cfg?.min_recharge ?? 600);
+    let minRecharge = Number(cfg?.min_recharge ?? 600);
+    // Optional per-store first-time recharge minimum (applies until the store
+    // has at least one paid recharge).
+    const firstMin = Number(cfg?.first_recharge_min ?? 0);
+    if (firstMin > 0) {
+      const { count } = await supabase
+        .from("store_wallet_recharges")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", storeId)
+        .eq("status", "paid");
+      if (!count) minRecharge = firstMin;
+    }
     if (!Number.isFinite(amount) || amount < minRecharge) {
       return j({ error: `Minimum recharge is ₹${minRecharge}` }, 400);
     }

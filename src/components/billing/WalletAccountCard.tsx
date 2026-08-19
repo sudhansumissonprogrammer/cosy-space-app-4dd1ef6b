@@ -108,12 +108,21 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
   const lowBalanceThreshold = Number(config.low_balance_threshold ?? 100);
   const lowBalance = balanceNum < lowBalanceThreshold;
 
+  // Optional per-store first-time recharge minimum: applies until the store
+  // has completed at least one paid recharge.
+  const hasPaidRecharge =
+    Number(wallet.total_recharged ?? 0) > 0 ||
+    ((data as any)?.recharges ?? []).some((r: any) => r?.status === "paid");
+  const firstMin = Number((config as any).first_recharge_min ?? 0);
+  const effectiveMin =
+    !hasPaidRecharge && firstMin > 0 ? firstMin : Number(config.min_recharge);
+
   const handleRecharge = async () => {
     const n = Number(amount);
-    if (!Number.isFinite(n) || n < Number(config.min_recharge)) {
+    if (!Number.isFinite(n) || n < effectiveMin) {
       toast({
         title: "Invalid amount",
-        description: `Minimum ₹${config.min_recharge}`,
+        description: `Minimum ₹${effectiveMin}`,
         variant: "destructive",
       });
       return;
@@ -214,7 +223,8 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
           <p className="text-[11px] text-muted-foreground pt-1">
             Commission:{" "}
             <span className="font-semibold">{config.commission_percentage}%</span> per
-            confirmed/shipped/delivered order · Min recharge ₹{config.min_recharge}
+            confirmed/shipped/delivered order · Min recharge ₹{effectiveMin}
+            {!hasPaidRecharge && firstMin > 0 ? " (first recharge)" : ""}
           </p>
 
           <div className="flex items-center gap-2 pt-1">
@@ -239,12 +249,12 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
             <label className="text-xs font-semibold text-muted-foreground">Amount (₹)</label>
             <Input
               type="number"
-              min={config.min_recharge}
+              min={effectiveMin}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
             <p className="text-[11px] text-muted-foreground">
-              Minimum ₹{config.min_recharge}. Payment via Cashfree (UPI / cards / netbanking).
+              Minimum ₹{effectiveMin}. Payment via Cashfree (UPI / cards / netbanking).
             </p>
             <div className="flex gap-2">
               {[500, 1500, 3000, 5000].map((v) => (
