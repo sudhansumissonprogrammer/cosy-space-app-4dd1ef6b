@@ -3557,7 +3557,15 @@ export default function CheckoutV2Page() {
           const url: string | undefined = payload?.intent_url;
           if (!url) {
             const errMsg: string = payload?.error || intErr?.message || "UPI temporarily unavailable";
+            // Gateways other than PayU commonly lack S2S UPI approval. Rather
+            // than dead-ending the shopper, switch to the hosted gateway page.
+            if (activeGateway !== "payu") {
+              enableGatewayOnly();
+              setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "idle" }; }); return next; });
+              return;
+            }
             setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: errMsg }; }); return next; });
+
           } else {
             if (payload?.pg) {
               gatewayRef.current = {
