@@ -161,7 +161,7 @@ const StorefrontLogin = lazy(() => import("./pages/StorefrontLogin"));
 const StorefrontSignup = lazy(() => import("./pages/StorefrontSignup"));
 const StorefrontAccount = lazy(() => import("./pages/StorefrontAccount"));
 const StorefrontOrderDetail = lazy(() => import("./pages/StorefrontOrderDetail"));
-const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
+const CheckoutPage = lazy(() => import("./pages/CheckoutV2Page"));
 const UnsubscribePage = lazy(() => import("./pages/UnsubscribePage"));
 
 const CartPage = lazy(() => import("./pages/CartPage"));
@@ -313,7 +313,7 @@ const _path = window.location.pathname;
     } else if (/\/cart\/?$/.test(path)) {
       import("./pages/CartPage").catch(() => {});
     } else if (/\/checkout\/?$/.test(path)) {
-      import("./pages/CheckoutPage").catch(() => {});
+      import("./pages/CheckoutV2Page").catch(() => {});
     }
   } catch {}
 })();
