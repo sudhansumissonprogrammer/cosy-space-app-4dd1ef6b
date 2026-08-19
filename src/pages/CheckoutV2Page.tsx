@@ -5861,7 +5861,7 @@ export default function CheckoutV2Page() {
             </button>
           )}
 
-          {!hasOnline && !hasCod && paymentConfigLoaded && (
+          {!hasOnline && !codAvailable && paymentConfigLoaded && (
             <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
               {tCritical("This store has no payment methods configured. Please contact the store.", "इस स्टोर के लिए भुगतान विधि उपलब्ध नहीं है।")}
             </div>
