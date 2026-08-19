@@ -105,9 +105,19 @@ export function useStorefront(slugOverride?: string) {
     // purgeStoreCache({ shell: true }), so injected data IS fresh enough.
     // Within-session admin previews still update via direct setQueryData /
     // invalidateQueries, so live preview is unaffected.
+    // PIXEL-FIX: when the injected shell carries NO facebook_pixel_id we cannot
+    // tell "merchant has no pixel" apart from "shell HTML was cached before the
+    // pixel was added". Treating that payload as fresh froze the pixel as null
+    // for the whole visit (staleTime 2min) → zero Pixel/CAPI events on stores
+    // that had just configured tracking. Paint still uses the injected data
+    // instantly; we only allow an immediate background revalidate.
     ...(useInjectedInitialData
-      ? { initialData: injected, initialDataUpdatedAt: Date.now() }
+      ? {
+          initialData: injected,
+          initialDataUpdatedAt: (injected as any)?.store?.facebook_pixel_id ? Date.now() : 0,
+        }
       : {}),
+
   });
 
 
