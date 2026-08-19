@@ -5689,9 +5689,21 @@ export default function CheckoutV2Page() {
                   return (
                     <a
                       key={app.key}
-                      href={busy || retryable || needsMint || !addressReady ? undefined : s.url}
-                      onClick={(e) => tapUpiApp(app.key, e)}
+                      href={gatewayOnly || busy || retryable || needsMint || !addressReady ? undefined : s.url}
+                      onClick={(e) => {
+                        // Hosted-gateway store (e.g. Cashfree without S2S UPI):
+                        // the tile opens the gateway's own UPI page instead of a
+                        // direct app deep-link.
+                        if (gatewayOnly) {
+                          e.preventDefault();
+                          flashUpiTap(app.key, 1800);
+                          void startGatewayPayment();
+                          return;
+                        }
+                        tapUpiApp(app.key, e);
+                      }}
                       aria-busy={busy}
+
                       className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-[0.92] transition-[transform,box-shadow,opacity] duration-150 ease-out p-2.5 min-h-[92px] relative overflow-hidden select-none touch-manipulation cursor-pointer ${pressed ? "scale-[0.96] ring-2 ring-primary shadow-[0_6px_16px_-6px_rgba(0,0,0,0.35)]" : "shadow-[0_1px_2px_rgba(0,0,0,0.04)]"} ${busy ? "opacity-70" : ""} ${retryable ? "opacity-70" : ""}`}
                     >
                       {(app.key === "gpay" || app.key === "phonepe") && (
