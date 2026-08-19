@@ -651,6 +651,34 @@ export default function CheckoutV2Page() {
   const hasOnline = hasRazorpay || hasCashfree || hasPayu;
   const activeGateway: "razorpay" | "cashfree" | "payu" | null =
     hasRazorpay ? "razorpay" : hasCashfree ? "cashfree" : hasPayu ? "payu" : null;
+  const gatewayLabel = activeGateway === "razorpay" ? "Razorpay" : activeGateway === "cashfree" ? "Cashfree" : "PayU";
+
+  /** HOSTED-GATEWAY MODE.
+   *  Direct `upi://` intents are minted through a server-to-server API that most
+   *  Cashfree / Razorpay merchant accounts are NOT approved for
+   *  (`s2s_enabled_not_approved`). On those stores every UPI tile fails and the
+   *  shopper dead-ends on an amber error panel — checkout is effectively broken
+   *  unless PayU is configured. When we detect that, flip into hosted-gateway
+   *  mode: the tiles keep their familiar look but hand off to the gateway's own
+   *  UPI page (Cashfree drop-in), which every account can use. Sticky for the
+   *  session per store+gateway so later taps skip the failing round-trip. */
+  const gatewayOnlyKey = store?.id ? `sb_pgonly_${store.id}_${activeGateway || "none"}` : "";
+  const [gatewayOnly, setGatewayOnly] = useState(false);
+  const gatewayOnlyRef = useRef(false);
+  useEffect(() => {
+    if (!gatewayOnlyKey) return;
+    let on = false;
+    try { on = sessionStorage.getItem(gatewayOnlyKey) === "1"; } catch { /* noop */ }
+    gatewayOnlyRef.current = on;
+    setGatewayOnly(on);
+  }, [gatewayOnlyKey]);
+  const enableGatewayOnly = () => {
+    if (gatewayOnlyRef.current) return;
+    gatewayOnlyRef.current = true;
+    setGatewayOnly(true);
+    try { if (gatewayOnlyKey) sessionStorage.setItem(gatewayOnlyKey, "1"); } catch { /* noop */ }
+  };
+
 
   const { data: hasActiveCoupons } = useQuery({
     queryKey: ["store-has-coupons", store?.id],
