@@ -823,11 +823,33 @@ function CheckoutPageInner() {
   // Firing on /checkout mount used to balloon IC counts (every page-view = 1 IC),
   // which made Meta's IC→Purchase ratio look ~34% and triggered "deceptive funnel"
   // ad-account flags. Gating to real intent brings the ratio to a healthy 75-90%.
+  // Flush the debounced Advanced-Matching registry so em/ph/fn/ln/ct/st/zp are
+  // present BEFORE any Pixel/CAPI event reads `__SF_CAPI_USER__` (parity with
+  // the new checkout — a shopper can tap Pay <400ms after the last keystroke).
+  const flushCapiIdentity = () => {
+    try {
+      const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
+      const hasAny = !!(email || phone || fullName || city || state || pincode);
+      if (!hasAny) return;
+      setCapiUser({
+        email: email.trim() || undefined,
+        phone: normalizePhone(phone) || undefined,
+        externalId: customer?.id || undefined,
+        firstName: parts[0],
+        lastName: parts.length > 1 ? parts.slice(1).join(" ") : undefined,
+        city: city.trim() || undefined,
+        state: state.trim() || undefined,
+        zipCode: pincode.trim() || undefined,
+      });
+    } catch { /* noop */ }
+  };
+
   const initiateCheckoutFiredRef = useRef(false);
   const fireInitiateCheckoutOnce = () => {
     if (initiateCheckoutFiredRef.current) return;
     if (!store?.id || checkoutItems.length === 0) return;
     initiateCheckoutFiredRef.current = true;
+    flushCapiIdentity();
     const eid = generateEventId();
     const eventData = {
       ...pixelPayloadFromItems(checkoutItems),
