@@ -3931,9 +3931,25 @@ export default function CheckoutV2Page() {
       window.dispatchEvent(new CustomEvent("payment-in-progress"));
       fireInitiateCheckoutOnce();
       fireAddPaymentInfoOnce(isPartialOrder ? "partial_cod_cashfree" : "cashfree", chargeAmount);
+      // MOBILE: never use the "_modal" drop-in. Cashfree renders it in a
+      // sandboxed iframe, so tapping a UPI app inside it cannot fire the
+      // `upi://`/`intent://` handoff — the shopper taps GPay/PhonePe and
+      // nothing opens. A full-page redirect to Cashfree's hosted page is the
+      // supported mobile flow; the `return_url` (cf_order/order params) brings
+      // the shopper straight back into the recovery effect above.
+      const useRedirect = isMobile();
+      if (useRedirect) {
+        setWaitingApp("Cashfree");
+        persistWaiting("any", "Cashfree", { orderId: order.id, orderNumber: order.number ?? null });
+        await cashfree.checkout({
+          paymentSessionId: cfData.payment_session_id, redirectTarget: "_self",
+        });
+        return;
+      }
       const result = await cashfree.checkout({
         paymentSessionId: cfData.payment_session_id, redirectTarget: "_modal",
       });
+
       if (result?.error) {
         const isCancel = result.error.code === "user_cancelled";
         const ok = await verifyAndFinalize(
