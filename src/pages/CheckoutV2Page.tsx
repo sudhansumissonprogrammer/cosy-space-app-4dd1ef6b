@@ -661,21 +661,24 @@ export default function CheckoutV2Page() {
    *  unless PayU is configured. When we detect that, flip into hosted-gateway
    *  mode: the tiles keep their familiar look but hand off to the gateway's own
    *  UPI page (Cashfree drop-in), which every account can use. Sticky for the
-   *  session per store+gateway so later taps skip the failing round-trip. */
+   *  session per store+gateway so later taps skip the failing round-trip.
+   *  Only PayU stores keep direct intents (their S2S mint is reliable); every
+   *  other gateway goes hosted from the very first tap — no failed round-trip. */
   const gatewayOnlyKey = store?.id ? `sb_pgonly_${store.id}_${activeGateway || "none"}` : "";
-  const [gatewayOnly, setGatewayOnly] = useState(false);
-  const gatewayOnlyRef = useRef(false);
+  const nonPayuGateway = Boolean(activeGateway) && activeGateway !== "payu";
+  const [gatewayOnlyFlag, setGatewayOnlyFlag] = useState(false);
+  const gatewayOnly = nonPayuGateway || gatewayOnlyFlag;
+  const gatewayOnlyRef = useRef(nonPayuGateway);
   useEffect(() => {
-    if (!gatewayOnlyKey) return;
-    let on = false;
-    try { on = sessionStorage.getItem(gatewayOnlyKey) === "1"; } catch { /* noop */ }
+    let on = nonPayuGateway;
+    try { if (gatewayOnlyKey && sessionStorage.getItem(gatewayOnlyKey) === "1") on = true; } catch { /* noop */ }
     gatewayOnlyRef.current = on;
-    setGatewayOnly(on);
-  }, [gatewayOnlyKey]);
+    setGatewayOnlyFlag(on);
+  }, [gatewayOnlyKey, nonPayuGateway]);
   const enableGatewayOnly = () => {
     if (gatewayOnlyRef.current) return;
     gatewayOnlyRef.current = true;
-    setGatewayOnly(true);
+    setGatewayOnlyFlag(true);
     try { if (gatewayOnlyKey) sessionStorage.setItem(gatewayOnlyKey, "1"); } catch { /* noop */ }
   };
 
