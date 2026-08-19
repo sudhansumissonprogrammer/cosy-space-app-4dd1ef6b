@@ -212,6 +212,21 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
     enabled: !!productId,
   });
 
+  // ── Multi-category: extra categories this product also appears in ──
+  const { data: existingProductCategories } = useQuery({
+    queryKey: ["product-categories", productId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("product_categories")
+        .select("category_id")
+        .eq("product_id", productId!);
+      if (error) throw error;
+      return (data || []).map((r: any) => r.category_id as string);
+    },
+    enabled: !!productId,
+  });
+
+
   // Load existing additional images
   const { data: existingImages } = useQuery({
     queryKey: ["product-images", productId],
