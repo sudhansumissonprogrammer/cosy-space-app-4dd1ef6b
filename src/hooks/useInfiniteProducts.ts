@@ -55,7 +55,33 @@ async function fetchPageFromSupabase({ storeId, category, page, sort: _sort }: F
   return data || [];
 }
 
+/**
+ * Category pages resolve through the `get_category_products_page` RPC so a
+ * product that lives in MULTIPLE categories (products.category = primary +
+ * product_categories links) shows up on every category it belongs to. The
+ * Worker /api/products path can only filter on the single `category` column,
+ * so it is skipped whenever a category filter is active.
+ */
+async function fetchCategoryPageRpc({ storeId, category, page }: FetchOpts): Promise<any[]> {
+  const { data, error } = await (supabase as any).rpc("get_category_products_page", {
+    _store_id: storeId,
+    _category_name: category,
+    _offset: page * PAGE_SIZE,
+    _limit: PAGE_SIZE,
+  });
+  if (error) throw error;
+  return (data as any[]) || [];
+}
+
 async function fetchPage({ storeId, category, page, sort }: FetchOpts): Promise<any[]> {
+  if (category && storeId) {
+    try {
+      return await fetchCategoryPageRpc({ storeId, category, page });
+    } catch {
+      return await fetchPageFromSupabase({ storeId, category, page, sort });
+    }
+  }
+
   if (isProductionHost()) {
     // ── Production: use Worker /api/products (cached, KV-backed) ──
     const params = new URLSearchParams();
