@@ -1608,6 +1608,24 @@ function CheckoutPageInner() {
     }
   };
 
+  // Hydrate pincode saved on the PDP delivery checker (express_checkout_* /
+  // checkout_address) and instantly resolve city+state from the shared cache.
+  useEffect(() => {
+    const saved = getSavedPincode(store.id);
+    if (!/^\d{6}$/.test(saved)) return;
+    let cancelled = false;
+    setPincode((p) => (/^\d{6}$/.test(p) ? p : saved));
+    (async () => {
+      const info = await lookupPincode(saved);
+      if (cancelled || !info) return;
+      setCity((c) => c || info.city || "");
+      setState((s) => s || info.state || "");
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.id]);
+
+
 
 
   // Browser geolocation + Google Geocoding for accurate address
