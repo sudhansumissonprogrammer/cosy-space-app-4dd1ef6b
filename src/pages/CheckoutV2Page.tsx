@@ -5607,7 +5607,9 @@ export default function CheckoutV2Page() {
 
           {(() => {
             const allFailed = (["gpay","phonepe","paytm","bhim","any"] as UpiApp[]).every((k) => intents[k].status === "failed");
+            if (gatewayOnly) return null;
             if (!allFailed) return null;
+
             const firstErr = intents.any.error || intents.gpay.error || "UPI is temporarily unavailable";
             return (
               <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
