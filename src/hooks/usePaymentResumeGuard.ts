@@ -34,6 +34,11 @@ export function usePaymentResumeGuard(storeId?: string | null, slug?: string | n
 
     const waitKey = `sf_wait_v2_${storeId}`;
     const payuKey = `payu_pending_${storeId}`;
+    // Legacy (old) checkout persists its Cashfree hand-off here. Without it a
+    // shopper on the OLD checkout who pays via Cashfree and gets dropped on a
+    // random storefront page is never bounced back — the exact gap the V2 keys
+    // already close.
+    const cfKey = `cf_pending_${storeId}`;
 
     const read = (k: string) => {
       try { return sessionStorage.getItem(k) || localStorage.getItem(k); } catch { return null; }
@@ -58,6 +63,14 @@ export function usePaymentResumeGuard(storeId?: string | null, slug?: string | n
           orderId = saved?.order_id || null;
           ts = Number(saved?.ts) || 0;
         }
+        if (!orderId) {
+          const cfRaw = read(cfKey);
+          if (cfRaw) {
+            const saved = JSON.parse(cfRaw);
+            orderId = saved?.order?.id || null;
+            ts = Number(saved?.ts) || 0;
+          }
+        }
       }
     } catch { /* corrupt payload — treat as absent */ }
 
@@ -65,8 +78,10 @@ export function usePaymentResumeGuard(storeId?: string | null, slug?: string | n
     if (!ts || Date.now() - ts > WAIT_TTL_MS) {
       clear(waitKey);
       clear(payuKey);
+      clear(cfKey);
       return;
     }
+
 
     let cancelled = false;
     void supabase.functions
@@ -77,7 +92,9 @@ export function usePaymentResumeGuard(storeId?: string | null, slug?: string | n
         if (status !== "success" && status !== "pending" && status !== "failed") {
           clear(waitKey);
           clear(payuKey);
+          clear(cfKey);
           return;
+
         }
         // Bounce at most ONCE per order — for EVERY status, not just pending.
         // Without a once-guard on `success` the shopper who presses Back from
