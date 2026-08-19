@@ -83,8 +83,10 @@ export default function StoreCustomers() {
       // use the typed `.eq()` builder instead so values are properly escaped.
       let query = (supabase as any)
         .from("orders")
-        .select("*, order_items(*)")
+        // Only the columns this panel renders — no order_items join, no select *
+        .select("id, created_at, status, total, currency")
         .eq("store_id", storeId!);
+
 
       if (phone) {
         query = query.eq("customer_phone", phone);

@@ -68,6 +68,17 @@ export default function StoreOrders() {
   const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null);
   const [createOrderOpen, setCreateOrderOpen] = useState(false);
 
+  // Full line-items are fetched on demand (the list only carries product names)
+  const ORDER_ITEM_COLUMNS = "id, product_name, quantity, unit_price, total, product_id, image_url";
+  const fetchOrderItems = async (orderId: string) => {
+    const { data, error } = await supabase
+      .from("order_items")
+      .select(ORDER_ITEM_COLUMNS)
+      .eq("order_id", orderId);
+    if (error) throw error;
+    return (data || []) as any[];
+  };
+
   const handleSendInvoice = async (order: any) => {
     if (!order?.customer_phone) {
       toast.error("No customer phone number on this order");
@@ -76,12 +87,17 @@ export default function StoreOrders() {
     setSendingInvoiceId(order.id);
     const t = toast.loading("Generating invoice…");
     const { sendInvoiceToWhatsApp } = await import("@/lib/sendInvoiceWhatsApp");
-    const res = await sendInvoiceToWhatsApp({ order, store });
+    let fullOrder = order;
+    try {
+      fullOrder = { ...order, order_items: await fetchOrderItems(order.id) };
+    } catch (_) { /* fall back to whatever the list already has */ }
+    const res = await sendInvoiceToWhatsApp({ order: fullOrder, store });
     toast.dismiss(t);
     if (res.success) toast.success("WhatsApp opened — tap Send to deliver invoice ✅");
     else toast.error(res.error || "Failed to generate invoice");
     setSendingInvoiceId(null);
   };
+
 
   // Search & filter state
   const [search, setSearch] = useState("");
@@ -116,8 +132,11 @@ export default function StoreOrders() {
       let query = supabase
         .from("orders")
         .select(
-          "id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, payment_type, advance_paid, balance_due, order_items(id, product_name, quantity, unit_price, total, product_id, image_url)",
+          // Slim list payload: only product names are shown in the list; full
+          // line-items are fetched on demand when a detail/invoice view opens.
+          "id, order_number, created_at, status, total, currency, customer_name, customer_phone, payment_method, tracking_number, tracking_url, street_address, city, state, pincode, notes, storefront_customer_id, payment_type, advance_paid, balance_due, order_items(product_name, quantity)",
           { count: "estimated" }
+
         )
         .eq("store_id", storeId!)
         .order("created_at", { ascending: false })
@@ -150,6 +169,17 @@ export default function StoreOrders() {
     },
     enabled: !!storeId,
   });
+
+  // Lazily load full line-items for whichever order is open (detail sheet or invoice)
+  const detailOrderId = mobileDetailOrder?.id || invoiceOrder?.id || null;
+  const { data: detailItems } = useQuery({
+    queryKey: ["order-items", detailOrderId],
+    enabled: !!detailOrderId,
+    staleTime: 60_000,
+    queryFn: () => fetchOrderItems(detailOrderId!),
+  });
+  const withItems = (o: any) =>
+    o ? { ...o, order_items: (detailItems && detailItems.length ? detailItems : o.order_items) || [] } : o;
 
 
   // Server already filtered by search + date range; no further client-side filtering needed.
@@ -783,7 +813,7 @@ export default function StoreOrders() {
         <SheetContent side="bottom" className="h-[92vh] rounded-t-2xl px-0 overflow-hidden flex flex-col">
           {mobileDetailOrder && (
             <MobileOrderDetail
-              order={mobileDetailOrder}
+              order={withItems(mobileDetailOrder)}
               store={store}
               onStatusChange={(v) => {
                 handleStatusChange(mobileDetailOrder, v);
@@ -819,7 +849,7 @@ export default function StoreOrders() {
       {/* Invoice Dialog */}
       <Dialog open={!!invoiceOrder} onOpenChange={(v) => { if (!v) setInvoiceOrder(null); }}>
         <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-          {invoiceOrder && <OrderInvoice order={invoiceOrder} store={store} onClose={() => setInvoiceOrder(null)} />}
+          {invoiceOrder && <OrderInvoice order={withItems(invoiceOrder)} store={store} onClose={() => setInvoiceOrder(null)} />}
         </DialogContent>
       </Dialog>
     </div>

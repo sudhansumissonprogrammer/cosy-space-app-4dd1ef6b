@@ -60,6 +60,7 @@ export default function AdminUptime() {
   const targetsQ = useQuery({
     queryKey: ["admin-uptime-targets"],
     refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("uptime_targets")
@@ -74,6 +75,7 @@ export default function AdminUptime() {
   const incidentsQ = useQuery({
     queryKey: ["admin-uptime-incidents"],
     refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("uptime_incidents")

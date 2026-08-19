@@ -44,6 +44,7 @@ export function AdminPlatformAnalyticsTab() {
       return data as unknown as Analytics;
     },
     refetchInterval: 60000,
+    refetchIntervalInBackground: false,
     retry: 1,
   });
 
