@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
 import { sendOrderWhatsApp } from "@/lib/whatsappAutomation";
 import { getOrCreateCheckoutToken, writeCheckoutTokenCookie, clearCheckoutTokenCookie } from "@/lib/checkoutTokenStore";
-import { purchaseEventIdFor } from "@/lib/pixelOutbox";
+import { purchaseEventIdFor, firePixelPurchase, stagePendingPurchase, clearPendingPurchase } from "@/lib/pixelOutbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
