@@ -432,17 +432,28 @@ Deno.serve(async (req) => {
     // ── Insert ───────────────────────────────────────────────────────────
     let imported = 0;
     const imgRows: Record<string, unknown>[] = [];
-    for (let i = 0; i < rows.length; i += 50) {
-      const chunk = rows.slice(i, i + 50);
-      const { data, error } = await admin.from("products").insert(chunk).select("id, slug, name");
-      if (error) { console.error("cartpe-catalog-sync insert", error.message); continue; }
-      imported += data?.length || 0;
+    const collect = (data: { id: string; slug: string; name: string }[] | null) => {
       for (const p of data || []) {
         (galleries[p.slug] || []).forEach((u, j) => {
           imgRows.push({ product_id: p.id, image_url: u, display_order: j, image_alt: p.name });
         });
       }
+      imported += data?.length || 0;
+    };
+    for (let i = 0; i < rows.length; i += 50) {
+      const chunk = rows.slice(i, i + 50);
+      const { data, error } = await admin.from("products").insert(chunk).select("id, slug, name");
+      if (!error) { collect(data as never); continue; }
+      // One bad row must not drop the whole chunk — retry row by row.
+      console.error("cartpe-catalog-sync chunk insert", error.message);
+      for (const row of chunk) {
+        const { data: one, error: e1 } = await admin
+          .from("products").insert(row).select("id, slug, name");
+        if (e1) console.error("cartpe-catalog-sync row insert", row.slug, e1.message);
+        else collect(one as never);
+      }
     }
+
     for (let i = 0; i < imgRows.length; i += 200) {
       await admin.from("product_images").insert(imgRows.slice(i, i + 200));
     }
