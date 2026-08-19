@@ -68,6 +68,17 @@ export default function StoreOrders() {
   const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null);
   const [createOrderOpen, setCreateOrderOpen] = useState(false);
 
+  // Full line-items are fetched on demand (the list only carries product names)
+  const ORDER_ITEM_COLUMNS = "id, product_name, quantity, unit_price, total, product_id, image_url";
+  const fetchOrderItems = async (orderId: string) => {
+    const { data, error } = await supabase
+      .from("order_items")
+      .select(ORDER_ITEM_COLUMNS)
+      .eq("order_id", orderId);
+    if (error) throw error;
+    return (data || []) as any[];
+  };
+
   const handleSendInvoice = async (order: any) => {
     if (!order?.customer_phone) {
       toast.error("No customer phone number on this order");
@@ -76,12 +87,17 @@ export default function StoreOrders() {
     setSendingInvoiceId(order.id);
     const t = toast.loading("Generating invoice…");
     const { sendInvoiceToWhatsApp } = await import("@/lib/sendInvoiceWhatsApp");
-    const res = await sendInvoiceToWhatsApp({ order, store });
+    let fullOrder = order;
+    try {
+      fullOrder = { ...order, order_items: await fetchOrderItems(order.id) };
+    } catch (_) { /* fall back to whatever the list already has */ }
+    const res = await sendInvoiceToWhatsApp({ order: fullOrder, store });
     toast.dismiss(t);
     if (res.success) toast.success("WhatsApp opened — tap Send to deliver invoice ✅");
     else toast.error(res.error || "Failed to generate invoice");
     setSendingInvoiceId(null);
   };
+
 
   // Search & filter state
   const [search, setSearch] = useState("");
