@@ -1022,8 +1022,8 @@ export default function StorePayments() {
         </Card>
       )}
 
-      {/* Section 4: Checkout V2 (Beta) — GoKwik-style one-page UPI checkout */}
-      {showPaymentConfig && (
+      {/* Fast Checkout is now the only checkout for every store — toggle retired. */}
+      {false && showPaymentConfig && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
