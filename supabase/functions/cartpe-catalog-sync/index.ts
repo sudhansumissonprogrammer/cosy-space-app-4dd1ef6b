@@ -269,16 +269,20 @@ Deno.serve(async (req) => {
       .from("categories").select("id, name").eq("store_id", store.id);
     for (const c of existingCats || []) catByName.set(norm(c.name), c.id);
 
+    const catSlugs: string[] = [];
     const catPage = await fetchText(`${base}/allcategory.html`, { cookie });
     if (catPage) {
       const blocks = catPage.text.split(/<a class="category-block"/).slice(1);
       let order = 1;
       for (const b of blocks) {
+        const href = b.match(/href="https?:\/\/[^"]*?\/([^"\/]+)\.html"/i)?.[1];
+        if (href && !catSlugs.includes(href)) catSlugs.push(href);
         const img = b.match(/<img src="([^"]+)"/i)?.[1] ?? null;
         const title = decodeEntities(b.match(/class="category-title"[^>]*>([\s\S]*?)<\/div>/i)?.[1]?.replace(/<[^>]+>/g, " ") ?? "");
         if (!title) continue;
         const key = norm(title);
         if (catByName.has(key)) { order++; continue; }
+
         const { data: newCat } = await admin
           .from("categories")
           .insert({
@@ -297,58 +301,75 @@ Deno.serve(async (req) => {
     }
 
     // ── Walk listing pages ───────────────────────────────────────────────
+    // The global /allproduct feed stops early (~2.6k), so we page through each
+    // category feed (/store_product_loadmore, 12 per page) — their union is the
+    // complete catalog. Pages are indexed globally across categories so the
+    // stored cursor can resume anywhere.
+    const CAT_PAGE = 12;
+    const segments: { slug: string; pages: number }[] = [];
+    for (const cslug of catSlugs) {
+      const first = await fetchText(`${base}/${cslug}.html`, { cookie });
+      if (!first) continue;
+      const total = Number(first.text.match(/total_result_cnt"?>?\s*([0-9]+)/i)?.[1] || 0);
+      if (!total) continue;
+      segments.push({ slug: cslug, pages: Math.ceil(total / CAT_PAGE) });
+    }
+    const totalPages = segments.reduce((a, s) => a + s.pages, 0);
+
+    const locate = (globalPage: number) => {
+      let n = globalPage;
+      for (const s of segments) {
+        if (n <= s.pages) return { slug: s.slug, offset: (n - 1) * CAT_PAGE };
+        n -= s.pages;
+      }
+      return null;
+    };
+
     const pagesToWalk = phase === "backfill" ? pageBudget : STEADY_PAGES;
     const found = new Map<string, Candidate>();
-    let page = startPage;
+    let page = phase === "backfill" ? startPage : 1;
     let pagesWalked = 0;
     let reachedEnd = false;
     let listErrors = 0;
-    if (phase !== "backfill") page = 1;
 
     while (
       pagesWalked < pagesToWalk &&
       Date.now() - started < TIME_BUDGET_MS &&
       found.size < importBudget
     ) {
-      const offset = (page - 1) * PAGE_SIZE;
-      let html: string | null = null;
-      if (offset === 0) {
-        html = boot.text;
-      } else {
-        const form = new URLSearchParams({
-          getresult: String(offset),
-          searchkey: "",
-          orderby: "",
-          cat_ids: "",
-          min_price: "",
-          max_price: "",
-          size_ids: "",
-          variant_status: "0",
-          web_token: webToken,
-        });
-        const res = await fetchText(`${base}/allproductoadmore`, {
-          method: "POST",
-          cookie,
-          referer: `${base}/allproduct.html`,
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "X-Requested-With": "XMLHttpRequest",
-          },
-          body: form.toString(),
-        });
-        html = res?.text ?? null;
-      }
+      const loc = locate(page);
+      if (!loc) { reachedEnd = true; break; }
+      const form = new URLSearchParams({
+        getresult: String(loc.offset),
+        category_slug: loc.slug,
+        searchkeyword: "",
+        orderby: "",
+        min_price: "",
+        max_price: "",
+        size_ids: "",
+        variant_status: "0",
+        web_token: webToken,
+      });
+      const res = await fetchText(`${base}/store_product_loadmore`, {
+        method: "POST",
+        cookie,
+        referer: `${base}/${loc.slug}.html`,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: form.toString(),
+      });
+      const html = res?.text ?? null;
       if (html == null) { listErrors++; page++; pagesWalked++; await new Promise((r) => setTimeout(r, 250)); continue; }
 
-      const items = parseListing(html);
-      if (items.length === 0) { reachedEnd = true; break; }
-      for (const it of items) if (!found.has(it.sourceId)) found.set(it.sourceId, it);
-      if (items.length < PAGE_SIZE) { reachedEnd = true; page++; pagesWalked++; break; }
-
+      for (const it of parseListing(html)) if (!found.has(it.sourceId)) found.set(it.sourceId, it);
       page++;
       pagesWalked++;
+      if (page > totalPages) { reachedEnd = true; break; }
       await new Promise((r) => setTimeout(r, REQ_GAP_MS));
     }
+
 
     // ── Filter out what we already have ──────────────────────────────────
     const ids = [...found.keys()];
@@ -365,8 +386,9 @@ Deno.serve(async (req) => {
     const knownSlug = new Set((allNames || []).map((r) => r.slug));
 
     const candidates = [...found.values()]
-      .filter((c) => !knownIds.has(c.sourceId) && !knownName.has(norm(c.name)))
+      .filter((c) => !knownIds.has(c.sourceId))
       .slice(0, importBudget);
+
 
     // ── PDP details for the new ones ─────────────────────────────────────
     const detailed = await mapLimit(candidates, CONCURRENCY, async (c) => {
@@ -383,10 +405,14 @@ Deno.serve(async (req) => {
     for (const { c, d } of detailed) {
       if (!d) detailFails++;
       const name = d?.name || c.name;
-      let slug = c.sourceSlug || slugify(name);
-      if (knownSlug.has(slug)) slug = `${slug}-${c.sourceId.slice(-6)}`;
+      const baseSlug = (c.sourceSlug || slugify(name)).slice(0, 70);
+      let slug = baseSlug;
+      if (knownSlug.has(slug)) slug = `${baseSlug}-${c.sourceId}`;
+      let guard = 2;
+      while (knownSlug.has(slug) && guard < 12) slug = `${baseSlug}-${c.sourceId}-${guard++}`;
       if (knownSlug.has(slug)) continue;
       knownSlug.add(slug);
+
 
       const price = d?.price ?? c.price ?? 0;
       const sale = d?.sale ?? c.sale ?? null;
@@ -427,28 +453,47 @@ Deno.serve(async (req) => {
     // ── Insert ───────────────────────────────────────────────────────────
     let imported = 0;
     const imgRows: Record<string, unknown>[] = [];
-    for (let i = 0; i < rows.length; i += 50) {
-      const chunk = rows.slice(i, i + 50);
-      const { data, error } = await admin.from("products").insert(chunk).select("id, slug, name");
-      if (error) { console.error("cartpe-catalog-sync insert", error.message); continue; }
-      imported += data?.length || 0;
+    const collect = (data: { id: string; slug: string; name: string }[] | null) => {
       for (const p of data || []) {
         (galleries[p.slug] || []).forEach((u, j) => {
           imgRows.push({ product_id: p.id, image_url: u, display_order: j, image_alt: p.name });
         });
       }
+      imported += data?.length || 0;
+    };
+    for (let i = 0; i < rows.length; i += 50) {
+      const chunk = rows.slice(i, i + 50);
+      const { data, error } = await admin.from("products").insert(chunk).select("id, slug, name");
+      if (!error) { collect(data as never); continue; }
+      // One bad row must not drop the whole chunk — retry row by row.
+      console.error("cartpe-catalog-sync chunk insert", error.message);
+      for (const row of chunk) {
+        const { data: one, error: e1 } = await admin
+          .from("products").insert(row).select("id, slug, name");
+        if (e1) console.error("cartpe-catalog-sync row insert", row.slug, e1.message);
+        else collect(one as never);
+      }
     }
+
     for (let i = 0; i < imgRows.length; i += 200) {
       await admin.from("product_images").insert(imgRows.slice(i, i + 200));
     }
 
     // ── Advance cursor / phase ───────────────────────────────────────────
+    // Only flip to steady once our catalog matches the source count; otherwise
+    // restart the walk from page 1 so anything skipped earlier gets picked up.
+    const { count: ourCount } = await admin
+      .from("products").select("id", { count: "exact", head: true }).eq("store_id", store.id);
     let nextPhase = phase;
     let nextCursor = 1;
     if (phase === "backfill") {
-      if (reachedEnd) { nextPhase = "steady"; nextCursor = 1; }
-      else nextCursor = page;
+      if (reachedEnd) {
+        const complete = totalAtSource ? (ourCount || 0) >= totalAtSource - 5 : true;
+        nextPhase = complete ? "steady" : "backfill";
+        nextCursor = 1;
+      } else nextCursor = page;
     }
+
 
     const result = {
       phase,
