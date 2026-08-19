@@ -951,6 +951,45 @@ function CheckoutPageInner() {
     } catch {}
   };
 
+  // Durable Purchase outbox (parity with the new checkout): the shopper is about
+  // to leave for a UPI app / gateway page. If the tab never comes back the
+  // browser Purchase would be lost. Stage it — the next storefront pageload
+  // verifies the order and fires it with the SAME event_id, so nothing doubles
+  // (firePixelPurchase dedupes on localStorage per order id).
+  const stagePurchaseOutbox = (ordId?: string | null) => {
+    if (!ordId || !store?.id) return;
+    try {
+      const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
+      stagePendingPurchase({
+        storeId: store.id,
+        orderId: ordId,
+        eventId: purchaseEventIdRef.current,
+        value: total,
+        currency,
+        payload: {
+          ...pixelPayloadFromItems(checkoutItems),
+          content_name: checkoutItems.map((i) => i.name).join(", "),
+          order_id: ordId,
+        },
+        user: Object.fromEntries(
+          Object.entries({
+            email: email.trim(),
+            phone: normalizePhone(phone) || "",
+            firstName: parts[0] || "",
+            lastName: parts.length > 1 ? parts.slice(1).join(" ") : "",
+            city: city.trim(),
+            state: state.trim(),
+            zipCode: pincode.trim(),
+            externalId: customer?.id || "",
+          }).filter(([, v]) => !!v),
+        ) as Record<string, string>,
+        at: Date.now(),
+      });
+    } catch { /* noop */ }
+  };
+
+
+
   // Tracks the in-flight createGuestAccount promise so "View My Orders"
   // can await it and avoid the phone-login fallback / re-prompt.
   const guestAccountPromiseRef = useRef<Promise<void> | null>(null);
