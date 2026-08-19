@@ -365,8 +365,9 @@ Deno.serve(async (req) => {
     const knownSlug = new Set((allNames || []).map((r) => r.slug));
 
     const candidates = [...found.values()]
-      .filter((c) => !knownIds.has(c.sourceId) && !knownName.has(norm(c.name)))
+      .filter((c) => !knownIds.has(c.sourceId))
       .slice(0, importBudget);
+
 
     // ── PDP details for the new ones ─────────────────────────────────────
     const detailed = await mapLimit(candidates, CONCURRENCY, async (c) => {
