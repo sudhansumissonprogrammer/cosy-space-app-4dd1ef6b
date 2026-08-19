@@ -925,6 +925,7 @@ function CheckoutPageInner() {
     }
     if (apiFiredRef.current.has(paymentMethodLabel)) return;
     apiFiredRef.current.add(paymentMethodLabel);
+    flushCapiIdentity();
     const eid = generateEventId();
     // NOTE: `content_category` is reserved for the *product* category in Meta's
     // schema. Putting the payment gateway there confuses Meta's catalog
