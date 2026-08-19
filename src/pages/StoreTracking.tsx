@@ -13,9 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity, ShieldOff } from "lucide-react";
+import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity, ShieldOff, Lock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import MetaCapiSetupWizard from "@/components/dashboard/MetaCapiSetupWizard";
+import { useFirstRechargeDone } from "@/hooks/useFirstRechargeDone";
 
 export default function StoreTracking() {
   const { storeId, storeSlug } = useStoreSlugParam();
@@ -28,6 +29,7 @@ export default function StoreTracking() {
   const [metaAccessTokenTouched, setMetaAccessTokenTouched] = useState(false);
 
   const { data: store, isLoading } = useStoreData(storeId);
+  const { hasRecharged, isLoading: rechargeLoading } = useFirstRechargeDone(storeId);
 
   // Pixel is business-critical and must not depend on the wider store cache.
   // Fetch it directly so the Tracking page never shows blank/"Not configured"
