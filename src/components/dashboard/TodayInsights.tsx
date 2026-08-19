@@ -40,6 +40,7 @@ export default function TodayInsights({ storeId, storeSlug, currencySymbol }: Pr
     // Refetch every 60s while the tab is open so "Today" actually advances
     // through the day instead of freezing on the first snapshot.
     refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     refetchOnMount: "always",
     staleTime: 30_000,

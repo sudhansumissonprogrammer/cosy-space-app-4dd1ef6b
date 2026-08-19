@@ -68,6 +68,7 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
   const { data: liveCount } = useQuery({
     queryKey: ["analytics-live-count", storeId],
     refetchInterval: 20_000,
+    refetchIntervalInBackground: false,
     staleTime: 15_000,
     queryFn: async () => {
       // Paginated fetch — a 5-min window on a busy store can exceed the 1000-row
@@ -135,6 +136,7 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
     queryKey: ["funnel-today", storeId],
     staleTime: 60_000,
     refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       // Paginate today's events so funnels stay accurate on high-volume stores.
       const since = new Date();
@@ -165,6 +167,7 @@ export default function AnalyticsAdvancedSections({ storeId, rangeStart, rangeEn
     queryKey: ["funnel-orders", storeId, rangeStart.toISOString(), rangeEnd.toISOString()],
     staleTime: 60_000,
     refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       const { data } = await supabase
         .from("orders")

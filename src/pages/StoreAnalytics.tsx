@@ -241,6 +241,7 @@ export default function StoreAnalytics() {
     ],
     staleTime: 30_000,
     refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     refetchOnMount: "always",
     enabled: !!storeId,
