@@ -801,43 +801,21 @@ function CheckoutPageInner() {
     },
   });
 
-  // WhatsApp-exclusive auto coupon — only for shoppers arriving from a
-  // WhatsApp marketing/recovery message (parity with the new checkout).
-  const { data: waCoupon } = useQuery({
-    queryKey: ["store-wa-coupon", store?.id],
-    enabled: !!store?.id,
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data } = await (supabase as any).rpc("get_store_wa_coupon", { _store_id: store.id });
-      return Array.isArray(data) ? data[0] ?? null : data ?? null;
-    },
-  });
-
-  // Auto-apply coupon from URL / sessionStorage / WA-exclusive / owner auto-apply.
+  // Auto-apply coupon from URL / sessionStorage / owner auto-apply.
   useEffect(() => {
     if (autoAppliedCouponRef.current || appliedCoupon) return;
     if (!store?.id || subtotal <= 0) return;
-    const isWaSource = (() => {
-      try {
-        return sessionStorage.getItem("sf_wa_source") === "1"
-          || localStorage.getItem("sf_wa_source") === "1";
-      } catch { return false; }
-    })();
-    const waEligible = isWaSource && waCoupon?.code
-      && Number(waCoupon.min_order_amount || 0) <= subtotal
-      ? waCoupon : null;
-    const picked = waEligible
-      || (!dismissedAutoCouponRef.current && autoApplyCoupon ? autoApplyCoupon : null);
-    const codeToApply = urlCoupon || picked?.code || null;
+    const codeToApply = urlCoupon
+      || (!dismissedAutoCouponRef.current && autoApplyCoupon?.code ? autoApplyCoupon.code : null);
     if (!codeToApply) return;
-    if (!urlCoupon && picked && Number(picked.min_order_amount || 0) > subtotal) return;
+    if (autoApplyCoupon && codeToApply === autoApplyCoupon.code
+        && Number(autoApplyCoupon.min_order_amount || 0) > subtotal) return;
     autoAppliedCouponRef.current = true;
     const code = String(codeToApply).toUpperCase();
     setCouponCode(code);
     applyCoupon(code);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlCoupon, store?.id, subtotal, appliedCoupon, hasActiveCoupons, autoApplyCoupon, waCoupon]);
-
+  }, [urlCoupon, store?.id, subtotal, appliedCoupon, hasActiveCoupons, autoApplyCoupon]);
   // InitiateCheckout — fire ONLY at the moment of real payment intent:
   //   • COD          → when user clicks "Place Order" (after validation passes)
   //   • Razorpay     → just before rzp.open() — gateway about to actually load
