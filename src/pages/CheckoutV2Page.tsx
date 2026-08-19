@@ -3504,7 +3504,15 @@ export default function CheckoutV2Page() {
         try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { step: "continue_to_pay", dev: deviceTag() } as any }); } catch { /* noop */ }
 
         const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
+        // Hosted-gateway mode: this store's gateway cannot mint direct UPI
+        // intents, so skip the round-trip entirely. The order is created (above)
+        // and every tile hands off to the gateway's own UPI page on tap.
+        if (gatewayOnlyRef.current) {
+          setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "idle" }; }); return next; });
+          return;
+        }
         setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "loading" }; }); return next; });
+
         // Fresh intent = fresh QR — allow the desktop auto-poll to arm again.
         desktopQrPollStartedRef.current = false;
 
