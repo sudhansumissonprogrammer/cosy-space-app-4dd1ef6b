@@ -93,7 +93,7 @@ export default function StorefrontAutoLogin({ storeId }: { storeId?: string }) {
     // on route navigation. Non-blocking; failures ignored.
     function prefetchCheckoutChunk() {
       try {
-        import("@/pages/CheckoutPage").catch(() => {});
+        import("@/pages/CheckoutV2Page").catch(() => {});
       } catch { /* noop */ }
     }
 

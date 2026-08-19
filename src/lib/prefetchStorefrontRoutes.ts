@@ -8,7 +8,7 @@ const eagerImports = [
   // Top 4 — accounts for ~95% of navigations
   () => import("@/pages/ProductDetail"),
   () => import("@/pages/CartPage"),
-  () => import("@/pages/CheckoutPage"),
+  () => import("@/pages/CheckoutV2Page"),
   () => import("@/pages/CheckoutV2Page"),
   () => import("@/pages/CategoryDetail"),
   // Search overlay — used across every theme; prefetch so first click opens instantly
