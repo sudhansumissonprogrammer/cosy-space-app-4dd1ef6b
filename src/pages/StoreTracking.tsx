@@ -13,9 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity, ShieldOff } from "lucide-react";
+import { Loader2, ArrowLeft, Copy, Facebook, Server, Rss, ExternalLink, CheckCircle2, AlertTriangle, Activity, ShieldOff, Lock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import MetaCapiSetupWizard from "@/components/dashboard/MetaCapiSetupWizard";
+import { useFirstRechargeDone } from "@/hooks/useFirstRechargeDone";
 
 export default function StoreTracking() {
   const { storeId, storeSlug } = useStoreSlugParam();
@@ -28,6 +29,7 @@ export default function StoreTracking() {
   const [metaAccessTokenTouched, setMetaAccessTokenTouched] = useState(false);
 
   const { data: store, isLoading } = useStoreData(storeId);
+  const { hasRecharged, isLoading: rechargeLoading } = useFirstRechargeDone(storeId);
 
   // Pixel is business-critical and must not depend on the wider store cache.
   // Fetch it directly so the Tracking page never shows blank/"Not configured"
@@ -181,13 +183,36 @@ export default function StoreTracking() {
     toast.success(`${label} copied!`);
   };
 
-  if (isLoading) {
+  if (isLoading || rechargeLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
+
+  if (!hasRecharged) {
+    return (
+      <div className="mx-auto max-w-md py-12">
+        <Card className="text-center">
+          <CardContent className="space-y-4 p-6">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <Lock className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h2 className="text-lg font-semibold">Tracking & Analytics is locked</h2>
+            <p className="text-sm text-muted-foreground">
+              Pixel and Conversions API integration unlocks after your first wallet
+              recharge. Add funds to your wallet to enable it.
+            </p>
+            <Button asChild className="w-full">
+              <Link to={`/dashboard/stores/${storeSlug}/wallet`}>Recharge wallet</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
