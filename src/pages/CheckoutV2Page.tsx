@@ -5750,7 +5750,7 @@ export default function CheckoutV2Page() {
                 const anyPressed = tappedUpiApp === "any";
                 return (
                   <a
-                    href={anyBusy || anyRetryable || anyNeedsMint || !addressReady || isIOS() ? undefined : anyS.url}
+                    href={gatewayOnly || anyBusy || anyRetryable || anyNeedsMint || !addressReady || isIOS() ? undefined : anyS.url}
 
                     onClick={(e) => {
                       // iOS has no Android-style `upi://` chooser. Sending an
@@ -5758,8 +5758,10 @@ export default function CheckoutV2Page() {
                       // arbitrary app), so use the configured hosted gateway,
                       // where PayU/Cashfree/Razorpay presents its supported UPI
                       // choices and reliably returns to this checkout.
-                      if (isIOS()) {
+                      // Same route for hosted-gateway stores on any device.
+                      if (isIOS() || gatewayOnly) {
                         e.preventDefault();
+                        if (gatewayOnly) flashUpiTap("any", 1800);
                         void startGatewayPayment();
                         return;
                       }
@@ -5771,7 +5773,7 @@ export default function CheckoutV2Page() {
 
                     <span className="text-[13px] font-semibold">All UPI Apps</span>
                     <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
-                      {anyPressed ? "Opening…" : isIOS() ? "Choose payment app" : "Pay with any UPI app"}
+                      {anyPressed ? "Opening…" : gatewayOnly ? `Pay with ${gatewayLabel}` : isIOS() ? "Choose payment app" : "Pay with any UPI app"}
                       {anyPressed
                         ? <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         : <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />}
@@ -5780,6 +5782,12 @@ export default function CheckoutV2Page() {
                 );
 
               })()}
+              {gatewayOnly && (
+                <div className="mt-2 flex items-center justify-center gap-1 text-[10.5px] text-muted-foreground">
+                  <Lock className="h-3 w-3" /> Secure UPI payment via {gatewayLabel}
+                </div>
+              )}
+
             </div>
           )}
 
