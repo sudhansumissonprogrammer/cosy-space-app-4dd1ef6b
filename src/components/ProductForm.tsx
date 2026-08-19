@@ -54,6 +54,9 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const [stockQuantity, setStockQuantity] = useState("0");
   const [trackStock, setTrackStock] = useState(false);
   const [category, setCategory] = useState("");
+  /** Additional categories (ids) this product should also appear in. */
+  const [extraCategoryIds, setExtraCategoryIds] = useState<string[]>([]);
+
   const [isActive, setIsActive] = useState(true);
 
   const [isBestSelling, setIsBestSelling] = useState(false);
@@ -212,6 +215,21 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
     enabled: !!productId,
   });
 
+  // ── Multi-category: extra categories this product also appears in ──
+  const { data: existingProductCategories } = useQuery({
+    queryKey: ["product-categories", productId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("product_categories")
+        .select("category_id")
+        .eq("product_id", productId!);
+      if (error) throw error;
+      return (data || []).map((r: any) => r.category_id as string);
+    },
+    enabled: !!productId,
+  });
+
+
   // Load existing additional images
   const { data: existingImages } = useQuery({
     queryKey: ["product-images", productId],
@@ -273,6 +291,16 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
       if (ep.video_poster_url) setVideoPosterUrl(ep.video_poster_url);
     }
   }, [existingProduct]);
+
+  // Seed extra categories once links + category list are loaded (skip primary).
+  useEffect(() => {
+    if (!existingProductCategories || !categories) return;
+    const primaryId = categories.find(
+      (c: any) => c.name?.toLowerCase() === (existingProduct as any)?.category?.toLowerCase(),
+    )?.id;
+    setExtraCategoryIds(existingProductCategories.filter((id: string) => id !== primaryId));
+  }, [existingProductCategories, categories, existingProduct]);
+
 
   useEffect(() => {
     if (existingImages) {
@@ -456,7 +484,49 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         }
       }
 
+      // ── Sync multi-category links ──
+      // The primary category link is maintained by a DB trigger; here we only
+      // reconcile the EXTRA categories the merchant ticked.
+      if (savedProductId && storeId) {
+        const primaryId = categories?.find(
+          (c: any) => c.name?.toLowerCase() === (category || "").toLowerCase(),
+        )?.id;
+        const wanted = extraCategoryIds.filter((id) => id !== primaryId);
+        const { data: currentLinks } = await (supabase as any)
+          .from("product_categories")
+          .select("category_id,is_primary")
+          .eq("product_id", savedProductId);
+        const current = (currentLinks || []) as { category_id: string; is_primary: boolean }[];
+
+        const toRemove = current
+          .filter((l) => !l.is_primary && l.category_id !== primaryId && !wanted.includes(l.category_id))
+          .map((l) => l.category_id);
+        if (toRemove.length > 0) {
+          await (supabase as any)
+            .from("product_categories")
+            .delete()
+            .eq("product_id", savedProductId)
+            .in("category_id", toRemove);
+        }
+
+        const existingIdsSet = new Set(current.map((l) => l.category_id));
+        const toAdd = wanted.filter((id) => !existingIdsSet.has(id));
+        if (toAdd.length > 0) {
+          const { error: linkErr } = await (supabase as any).from("product_categories").insert(
+            toAdd.map((id) => ({
+              product_id: savedProductId,
+              category_id: id,
+              store_id: storeId,
+              is_primary: false,
+            })),
+          );
+          if (linkErr) console.error("[ProductForm] category links:", linkErr.message);
+        }
+        queryClient.invalidateQueries({ queryKey: ["product-categories", savedProductId] });
+      }
+
       // Upload additional images (files + URL-based)
+
       if (savedProductId) {
         const existingCount = additionalPreviews.filter((p) => p.isExisting).length;
         // Handle file uploads
@@ -1040,7 +1110,45 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                     </Button>
                   </div>
                 )}
+                <p className="text-[11px] text-muted-foreground">Main category — used for pinning &amp; breadcrumbs.</p>
+
+                {/* Multi-category: additional categories */}
+                {(categories?.length ?? 0) > 0 && (
+                  <div className="space-y-2 pt-1">
+                    <Label className="text-xs">Also show in (optional)</Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {categories!
+                        .filter((c: any) => c.name?.toLowerCase() !== (category || "").toLowerCase())
+                        .map((c: any) => {
+                          const active = extraCategoryIds.includes(c.id);
+                          return (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() =>
+                                setExtraCategoryIds((prev) =>
+                                  prev.includes(c.id) ? prev.filter((id) => id !== c.id) : [...prev, c.id],
+                                )
+                              }
+                              className={cn(
+                                "rounded-full border px-3 py-1 text-xs transition-colors",
+                                active
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-input bg-background hover:bg-accent",
+                              )}
+                            >
+                              {c.name}
+                            </button>
+                          );
+                        })}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      This product will also appear on the selected category pages.
+                    </p>
+                  </div>
+                )}
               </div>
+
             </div>
 
             <div className="flex flex-wrap items-center gap-6">
