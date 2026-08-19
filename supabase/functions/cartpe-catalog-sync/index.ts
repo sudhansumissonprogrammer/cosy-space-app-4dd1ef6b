@@ -269,16 +269,20 @@ Deno.serve(async (req) => {
       .from("categories").select("id, name").eq("store_id", store.id);
     for (const c of existingCats || []) catByName.set(norm(c.name), c.id);
 
+    const catSlugs: string[] = [];
     const catPage = await fetchText(`${base}/allcategory.html`, { cookie });
     if (catPage) {
       const blocks = catPage.text.split(/<a class="category-block"/).slice(1);
       let order = 1;
       for (const b of blocks) {
+        const href = b.match(/href="https?:\/\/[^"]*?\/([^"\/]+)\.html"/i)?.[1];
+        if (href && !catSlugs.includes(href)) catSlugs.push(href);
         const img = b.match(/<img src="([^"]+)"/i)?.[1] ?? null;
         const title = decodeEntities(b.match(/class="category-title"[^>]*>([\s\S]*?)<\/div>/i)?.[1]?.replace(/<[^>]+>/g, " ") ?? "");
         if (!title) continue;
         const key = norm(title);
         if (catByName.has(key)) { order++; continue; }
+
         const { data: newCat } = await admin
           .from("categories")
           .insert({
