@@ -9,7 +9,39 @@ import { supabase } from "@/integrations/supabase/client";
  * - Pairs with existing 30–120s React Query polling (websocket loss safe).
  * - Filters at subscription level so payloads are scoped to one store.
  * - Single channel per (storeId, scope) to keep connection count low.
+ *
+ * Performance guards (added after the dashboard-load audit):
+ *  - Invalidations are debounced (trailing, 2.5s) so a bulk catalog sync that
+ *    writes thousands of product rows triggers ONE refetch, not thousands.
+ *  - Invalidation is scoped by source table: an `orders` event never refetches
+ *    the (expensive) products list and vice-versa.
+ *  - Nothing refetches while the tab is hidden; a single catch-up invalidation
+ *    runs when the merchant comes back.
  */
+
+const ORDER_KEY_HINTS = [
+  "order",
+  "dashboard",
+  "stats",
+  "sales",
+  "revenue",
+  "customer",
+  "insight",
+  "pending",
+  "analytics",
+];
+const PRODUCT_KEY_HINTS = ["product", "categor", "inventory", "stock", "dashboard", "stats"];
+
+function matchesStore(key: unknown[], storeId: string) {
+  return key.some((k) => k === storeId);
+}
+
+function matchesHints(key: unknown[], hints: string[]) {
+  const head = typeof key[0] === "string" ? (key[0] as string).toLowerCase() : "";
+  if (!head) return true;
+  return hints.some((h) => head.includes(h));
+}
+
 export function useRealtimeStore(
   storeId: string | null | undefined,
   scope: "dashboard" | "orders" | "products" = "dashboard"
@@ -19,12 +51,40 @@ export function useRealtimeStore(
   useEffect(() => {
     if (!storeId) return;
 
-    const invalidate = () => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let pendingOrders = false;
+    let pendingProducts = false;
+    let missedWhileHidden = false;
+
+    const flush = () => {
+      timer = null;
+      if (document.hidden) {
+        missedWhileHidden = true;
+        return;
+      }
+      const orders = pendingOrders;
+      const products = pendingProducts;
+      pendingOrders = false;
+      pendingProducts = false;
+      if (!orders && !products) return;
+
       qc.invalidateQueries({
-        predicate: (q) =>
-          Array.isArray(q.queryKey) &&
-          (q.queryKey as unknown[]).some((k) => k === storeId),
+        predicate: (q) => {
+          if (!Array.isArray(q.queryKey)) return false;
+          const key = q.queryKey as unknown[];
+          if (!matchesStore(key, storeId)) return false;
+          if (orders && matchesHints(key, ORDER_KEY_HINTS)) return true;
+          if (products && matchesHints(key, PRODUCT_KEY_HINTS)) return true;
+          return false;
+        },
       });
+    };
+
+    const schedule = (table: "orders" | "products") => {
+      if (table === "orders") pendingOrders = true;
+      else pendingProducts = true;
+      if (timer) return;
+      timer = setTimeout(flush, 2500);
     };
 
     const channel = supabase
@@ -37,7 +97,7 @@ export function useRealtimeStore(
           table: "orders",
           filter: `store_id=eq.${storeId}`,
         },
-        invalidate
+        () => schedule("orders")
       )
       .on(
         "postgres_changes",
@@ -47,26 +107,24 @@ export function useRealtimeStore(
           table: "products",
           filter: `store_id=eq.${storeId}`,
         },
-        invalidate
+        () => schedule("products")
       )
       .subscribe();
 
-    // Disconnect when tab is hidden for a long time to avoid stale connections.
-    let hiddenSince: number | null = null;
     const onVisibility = () => {
-      if (document.hidden) {
-        hiddenSince = Date.now();
-      } else if (hiddenSince && Date.now() - hiddenSince > 15 * 60 * 1000) {
-        // Force a refetch on return after long absence
-        invalidate();
-        hiddenSince = null;
-      } else {
-        hiddenSince = null;
+      if (document.hidden) return;
+      if (missedWhileHidden || pendingOrders || pendingProducts) {
+        missedWhileHidden = false;
+        pendingOrders = true;
+        pendingProducts = true;
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(flush, 300);
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
+      if (timer) clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVisibility);
       supabase.removeChannel(channel);
     };
