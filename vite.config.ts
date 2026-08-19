@@ -83,7 +83,7 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: null,
-      includeAssets: ["favicon.ico", "pwa-192x192.png", "pwa-512x512.png"],
+      includeAssets: ["pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
         name: "ShopBanao — Online Store",
         short_name: "ShopBanao",
@@ -111,7 +111,7 @@ export default defineConfig(({ mode }) => ({
         // visit. Runtime caching rules below already handle on-demand
         // CacheFirst for /assets/*. SW now only precaches the manifest,
         // favicon, and the two PWA icons that `includeAssets` declares.
-        globPatterns: ["index.html", "manifest.webmanifest", "favicon.ico"],
+        globPatterns: ["index.html", "manifest.webmanifest"],
         // Skip precache integrity check on third-party fonts/images that may
         // legitimately not be in the build output.
         navigationPreload: true,
