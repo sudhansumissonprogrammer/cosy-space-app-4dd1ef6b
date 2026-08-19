@@ -54,6 +54,9 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
   const [stockQuantity, setStockQuantity] = useState("0");
   const [trackStock, setTrackStock] = useState(false);
   const [category, setCategory] = useState("");
+  /** Additional categories (ids) this product should also appear in. */
+  const [extraCategoryIds, setExtraCategoryIds] = useState<string[]>([]);
+
   const [isActive, setIsActive] = useState(true);
 
   const [isBestSelling, setIsBestSelling] = useState(false);
