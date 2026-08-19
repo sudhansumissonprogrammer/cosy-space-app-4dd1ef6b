@@ -2606,24 +2606,19 @@ function CheckoutPageInner() {
               </div>
             )}
 
-            <div className="space-y-1">
-              <Label htmlFor="street" className="text-xs">{tCritical("Street Address", "पता")} *</Label>
-              <Input id="street" autoComplete="street-address" placeholder="House/Flat No., Building, Street" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
-            </div>
+            {/* Pincode → City/State → Complete Address (same order as new checkout) */}
             <div className="space-y-1">
               <Label htmlFor="pincode" className="text-xs">{tCritical("Pincode", "पिनकोड")} * {pincodeLoading && <Loader2 className="inline h-3 w-3 animate-spin ml-1" />}</Label>
-              <Input id="pincode" inputMode="numeric" autoComplete="postal-code" placeholder="Enter pincode to auto-fill city & state" value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
+              <Input id="pincode" inputMode="numeric" autoComplete="postal-code" placeholder="6-digit pincode" value={pincode} onChange={(e) => handlePincodeChange(e.target.value)} maxLength={6} />
               {deliveryEstimate && (
                 <div className="flex items-center gap-1.5 pt-1 text-[11px] font-medium text-primary">
                   <Truck className="h-3.5 w-3.5" />
                   <span>Delivery by <span className="font-semibold">{deliveryEstimate.shortLabel}</span></span>
-                  
                 </div>
               )}
             </div>
-            {/* City + State — always visible, auto-filled from pincode when possible */}
+            {/* City + State — auto-filled from pincode */}
             <div className="grid grid-cols-2 gap-3">
-
               <div className="space-y-1">
                 <Label htmlFor="city" className="text-xs">{t("City", "शहर")} *</Label>
                 <Input id="city" autoComplete="address-level2" placeholder="Mumbai" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
@@ -2632,6 +2627,10 @@ function CheckoutPageInner() {
                 <Label htmlFor="state" className="text-xs">{t("State", "राज्य")} *</Label>
                 <Input id="state" autoComplete="address-level1" placeholder="Maharashtra" value={state} onChange={(e) => setState(e.target.value)} maxLength={100} />
               </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="street" className="text-xs">{tCritical("Complete Address", "पूरा पता")} *</Label>
+              <Input id="street" autoComplete="street-address" placeholder="House no, area, village, landmark" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} maxLength={300} />
             </div>
             {/* Email optional — collapsible */}
             <Collapsible>
