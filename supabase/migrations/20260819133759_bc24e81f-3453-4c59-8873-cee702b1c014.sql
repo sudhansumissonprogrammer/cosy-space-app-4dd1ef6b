@@ -1,0 +1,1 @@
+UPDATE public.stores SET checkout_v2_enabled = false, updated_at = now() WHERE slug = 'serdiyajewels';
