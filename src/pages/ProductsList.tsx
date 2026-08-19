@@ -1153,6 +1153,7 @@ export default function ProductsList() { // v2
         product={quickEditProduct}
         storeId={storeId}
       />
+      <style>{`.no-scrollbar::-webkit-scrollbar{display:none}.no-scrollbar{scrollbar-width:none}`}</style>
     </div>
   );
 }
