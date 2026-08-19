@@ -1851,6 +1851,7 @@ function CheckoutPageInner() {
     // Real intent signal — fire IC + APInfo the instant the Razorpay modal is about to open.
     fireInitiateCheckoutOnce();
     fireAddPaymentInfoOnce();
+    stagePurchaseOutbox(order.id);
     rzp.open();
   };
 
@@ -1921,6 +1922,7 @@ function CheckoutPageInner() {
       // Real intent signal — fire IC + APInfo the instant the Cashfree drop-in is about to open.
       fireInitiateCheckoutOnce();
       fireAddPaymentInfoOnce();
+      stagePurchaseOutbox(order.id);
       const result = await cashfree.checkout({
         paymentSessionId: cfData.payment_session_id,
         redirectTarget: "_modal",
@@ -2040,6 +2042,7 @@ function CheckoutPageInner() {
 
     fireInitiateCheckoutOnce();
     fireAddPaymentInfoOnce();
+    stagePurchaseOutbox(order.id);
 
     // Disable checkout leave guard before loading/opening PayU.
     // PayU can open an iframe, popup, redirect, or UPI deep link depending on merchant config.
