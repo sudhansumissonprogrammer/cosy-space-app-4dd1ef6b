@@ -2251,6 +2251,59 @@ export type Database = {
         }
         Relationships: []
       }
+      product_categories: {
+        Row: {
+          category_id: string
+          created_at: string
+          is_primary: boolean
+          product_id: string
+          store_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          is_primary?: boolean
+          product_id: string
+          store_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          is_primary?: boolean
+          product_id?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_categories_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_categories_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_categories_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_images: {
         Row: {
           created_at: string
@@ -5579,6 +5632,15 @@ export type Database = {
       get_auth_user_id_by_email: { Args: { _email: string }; Returns: string }
       get_category_page: {
         Args: { _category_slug: string; _limit?: number; _store_slug: string }
+        Returns: Json
+      }
+      get_category_products_page: {
+        Args: {
+          _category_name: string
+          _limit?: number
+          _offset?: number
+          _store_id: string
+        }
         Returns: Json
       }
       get_checkout_line_item: {
