@@ -4300,11 +4300,12 @@ export default function CheckoutV2Page() {
   const supportPhone = String((store as any)?.secondary_phone || (store as any)?.whatsapp_number || "").trim();
   const storeSupportBar = (
     <div className="sticky top-0 z-20 -mx-4 mb-4 flex items-center gap-2 border-b border-[#ECECEC] bg-white px-3 py-1.5">
-      {store?.logo_url ? (
-        <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[100px] shrink-0 object-contain" />
-      ) : null}
       <div className="flex min-w-0 flex-1 flex-col justify-center">
-        <div className="truncate text-[15px] font-bold leading-tight">{store?.name || "Store"}</div>
+        {store?.logo_url ? (
+          <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[120px] self-start object-contain" />
+        ) : (
+          <div className="truncate text-[15px] font-bold leading-tight">{store?.name || "Store"}</div>
+        )}
         {supportPhone ? (
           <a
             href={`tel:${supportPhone.replace(/\s/g, "")}`}
@@ -4316,6 +4317,7 @@ export default function CheckoutV2Page() {
           </a>
         ) : null}
       </div>
+
       {supportPhone ? (
         <a
           href={`tel:${supportPhone.replace(/\s/g, "")}`}
