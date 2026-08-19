@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { supabaseStorefront } from "@/integrations/supabase/storefrontClient";
 import { sendOrderWhatsApp } from "@/lib/whatsappAutomation";
 import { getOrCreateCheckoutToken, writeCheckoutTokenCookie, clearCheckoutTokenCookie } from "@/lib/checkoutTokenStore";
-import { purchaseEventIdFor } from "@/lib/pixelOutbox";
+import { purchaseEventIdFor, firePixelPurchase, stagePendingPurchase, clearPendingPurchase } from "@/lib/pixelOutbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -823,11 +823,33 @@ function CheckoutPageInner() {
   // Firing on /checkout mount used to balloon IC counts (every page-view = 1 IC),
   // which made Meta's IC→Purchase ratio look ~34% and triggered "deceptive funnel"
   // ad-account flags. Gating to real intent brings the ratio to a healthy 75-90%.
+  // Flush the debounced Advanced-Matching registry so em/ph/fn/ln/ct/st/zp are
+  // present BEFORE any Pixel/CAPI event reads `__SF_CAPI_USER__` (parity with
+  // the new checkout — a shopper can tap Pay <400ms after the last keystroke).
+  const flushCapiIdentity = () => {
+    try {
+      const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
+      const hasAny = !!(email || phone || fullName || city || state || pincode);
+      if (!hasAny) return;
+      setCapiUser({
+        email: email.trim() || undefined,
+        phone: normalizePhone(phone) || undefined,
+        externalId: customer?.id || undefined,
+        firstName: parts[0],
+        lastName: parts.length > 1 ? parts.slice(1).join(" ") : undefined,
+        city: city.trim() || undefined,
+        state: state.trim() || undefined,
+        zipCode: pincode.trim() || undefined,
+      });
+    } catch { /* noop */ }
+  };
+
   const initiateCheckoutFiredRef = useRef(false);
   const fireInitiateCheckoutOnce = () => {
     if (initiateCheckoutFiredRef.current) return;
     if (!store?.id || checkoutItems.length === 0) return;
     initiateCheckoutFiredRef.current = true;
+    flushCapiIdentity();
     const eid = generateEventId();
     const eventData = {
       ...pixelPayloadFromItems(checkoutItems),
@@ -862,6 +884,18 @@ function CheckoutPageInner() {
     } catch {}
   };
 
+  // Parity with the new checkout: fire IC once when checkout renders with a
+  // non-empty cart (Meta expects IC:Purchase ~3-5:1 — pay-tap-only under-reports
+  // the funnel). The ref guard keeps the later gateway calls from re-firing.
+  useEffect(() => {
+    if (!store?.id) return;
+    if (checkoutItems.length === 0) return;
+    fireInitiateCheckoutOnce();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id, checkoutItems.length]);
+
+
+
   // AddPaymentInfo — fire ONLY at real payment intent (same gate as IC).
   // Previously this fired in a mount-effect whenever a payment method resolved,
   // which meant every checkout page-view = 1 APInfo (even before the user
@@ -891,6 +925,7 @@ function CheckoutPageInner() {
     }
     if (apiFiredRef.current.has(paymentMethodLabel)) return;
     apiFiredRef.current.add(paymentMethodLabel);
+    flushCapiIdentity();
     const eid = generateEventId();
     // NOTE: `content_category` is reserved for the *product* category in Meta's
     // schema. Putting the payment gateway there confuses Meta's catalog
@@ -915,6 +950,45 @@ function CheckoutPageInner() {
       });
     } catch {}
   };
+
+  // Durable Purchase outbox (parity with the new checkout): the shopper is about
+  // to leave for a UPI app / gateway page. If the tab never comes back the
+  // browser Purchase would be lost. Stage it — the next storefront pageload
+  // verifies the order and fires it with the SAME event_id, so nothing doubles
+  // (firePixelPurchase dedupes on localStorage per order id).
+  const stagePurchaseOutbox = (ordId?: string | null) => {
+    if (!ordId || !store?.id) return;
+    try {
+      const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
+      stagePendingPurchase({
+        storeId: store.id,
+        orderId: ordId,
+        eventId: purchaseEventIdRef.current,
+        value: total,
+        currency,
+        payload: {
+          ...pixelPayloadFromItems(checkoutItems),
+          content_name: checkoutItems.map((i) => i.name).join(", "),
+          order_id: ordId,
+        },
+        user: Object.fromEntries(
+          Object.entries({
+            email: email.trim(),
+            phone: normalizePhone(phone) || "",
+            firstName: parts[0] || "",
+            lastName: parts.length > 1 ? parts.slice(1).join(" ") : "",
+            city: city.trim(),
+            state: state.trim(),
+            zipCode: pincode.trim(),
+            externalId: customer?.id || "",
+          }).filter(([, v]) => !!v),
+        ) as Record<string, string>,
+        at: Date.now(),
+      });
+    } catch { /* noop */ }
+  };
+
+
 
   // Tracks the in-flight createGuestAccount promise so "View My Orders"
   // can await it and avoid the phone-login fallback / re-prompt.
@@ -1616,23 +1690,23 @@ function CheckoutPageInner() {
     // All four use the SAME event_id (purchaseEventIdRef) so Meta dedupes Pixel↔CAPI.
     // Server side has its own DB-stamp idempotency (orders.meta_purchase_fired_at)
     // so refresh / webhook retries / multi-gateway races never double-fire.
-    const purchaseDedupKey = `meta_purchase_fired_${newOrderId}`;
-    let alreadyFired = false;
-    try { alreadyFired = sessionStorage.getItem(purchaseDedupKey) === "1"; } catch {}
-    if (!alreadyFired) {
-      try { sessionStorage.setItem(purchaseDedupKey, "1"); } catch {}
-      fbPixelTrack(
-        "Purchase",
-        {
-          ...pixelPayloadFromItems(checkoutItems),
-          content_type: "product",
-          content_name: checkoutItems.map((i) => i.name).join(", "),
-          value: total,
-          currency,
-        },
-        purchaseEventIdRef.current,
-      );
-    }
+    // Same durable path the new checkout uses: localStorage dedupe (survives the
+    // Instagram/FB in-app-browser sessionStorage wipe), store-isolated
+    // fbq("trackSingle") and a forced fbevents.js load so the event is never
+    // stranded in the shim queue when the shopper closes the tab.
+    flushCapiIdentity();
+    firePixelPurchase({
+      orderId: newOrderId,
+      eventId: purchaseEventIdRef.current,
+      value: total,
+      currency,
+      payload: {
+        ...pixelPayloadFromItems(checkoutItems),
+        content_name: checkoutItems.map((i) => i.name).join(", "),
+        order_id: newOrderId,
+      },
+    });
+    clearPendingPurchase(newOrderId);
     // GA4 purchase — for Google Ads conversion tracking + GA4 ecommerce reports.
     try {
       ga4Track("purchase", {
