@@ -4207,7 +4207,7 @@ export default function CheckoutV2Page() {
     // Partial-payment stores collect the configured advance online and only
     // the remaining balance on delivery. Never allow a separate zero-advance
     // COD path, including from a stale tab that rendered older checkout code.
-    if (partialConfigured) {
+    if (partialConfigured && hasOnline) {
       toast.error("Please pay the advance to place this order");
       return;
     }
