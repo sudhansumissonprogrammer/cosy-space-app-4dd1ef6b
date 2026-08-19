@@ -4747,8 +4747,8 @@ export default function CheckoutV2Page() {
           <ArrowLeft className="h-5 w-5" />
         </button>
 
-        <div className="flex items-center gap-2 min-w-0 flex-1">
         <div className="flex flex-col justify-center min-w-0 flex-1">
+
           {store?.logo_url ? (
             <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[120px] self-start object-contain" />
           ) : (
