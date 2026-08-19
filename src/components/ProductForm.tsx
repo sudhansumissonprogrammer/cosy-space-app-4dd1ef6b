@@ -484,7 +484,49 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
         }
       }
 
+      // ── Sync multi-category links ──
+      // The primary category link is maintained by a DB trigger; here we only
+      // reconcile the EXTRA categories the merchant ticked.
+      if (savedProductId && storeId) {
+        const primaryId = categories?.find(
+          (c: any) => c.name?.toLowerCase() === (category || "").toLowerCase(),
+        )?.id;
+        const wanted = extraCategoryIds.filter((id) => id !== primaryId);
+        const { data: currentLinks } = await (supabase as any)
+          .from("product_categories")
+          .select("category_id,is_primary")
+          .eq("product_id", savedProductId);
+        const current = (currentLinks || []) as { category_id: string; is_primary: boolean }[];
+
+        const toRemove = current
+          .filter((l) => !l.is_primary && l.category_id !== primaryId && !wanted.includes(l.category_id))
+          .map((l) => l.category_id);
+        if (toRemove.length > 0) {
+          await (supabase as any)
+            .from("product_categories")
+            .delete()
+            .eq("product_id", savedProductId)
+            .in("category_id", toRemove);
+        }
+
+        const existingIdsSet = new Set(current.map((l) => l.category_id));
+        const toAdd = wanted.filter((id) => !existingIdsSet.has(id));
+        if (toAdd.length > 0) {
+          const { error: linkErr } = await (supabase as any).from("product_categories").insert(
+            toAdd.map((id) => ({
+              product_id: savedProductId,
+              category_id: id,
+              store_id: storeId,
+              is_primary: false,
+            })),
+          );
+          if (linkErr) console.error("[ProductForm] category links:", linkErr.message);
+        }
+        queryClient.invalidateQueries({ queryKey: ["product-categories", savedProductId] });
+      }
+
       // Upload additional images (files + URL-based)
+
       if (savedProductId) {
         const existingCount = additionalPreviews.filter((p) => p.isExisting).length;
         // Handle file uploads
