@@ -1511,41 +1511,28 @@ function CheckoutPageInner() {
     }
   };
 
-  // Pincode auto-fill for Indian pincodes — races two endpoints for fastest fill
-  const handlePincodeChange = async (val: string) => {
+  // Pincode auto-fill — cache-first (instant on repeat), then edge fn / public APIs race
+  const pincodeReqRef = useRef(0);
+  const handlePincodeChange = async (raw: string) => {
+    const val = raw.replace(/\D/g, "").slice(0, 6);
     setPincode(val);
-    if (val.length === 6 && /^\d{6}$/.test(val)) {
-      setPincodeLoading(true);
-      const fromPostalPincode = async () => {
-        const res = await fetch(`https://api.postalpincode.in/pincode/${val}`);
-        const data = await res.json();
-        if (data?.[0]?.Status === "Success" && data[0].PostOffice?.length > 0) {
-          const po = data[0].PostOffice[0];
-          return { city: po.District as string, state: po.State as string };
-        }
-        throw new Error("no data");
-      };
-      const fromZippopotam = async () => {
-        const res = await fetch(`https://api.zippopotam.us/in/${val}`);
-        if (!res.ok) throw new Error("no data");
-        const data = await res.json();
-        const place = data?.places?.[0];
-        if (!place) throw new Error("no data");
-        return { city: place["place name"] as string, state: place.state as string };
-      };
-      try {
-        const result = await new Promise<{ city: string; state: string }>((resolve, reject) => {
-          let rejected = 0;
-          const tryOne = (p: Promise<{ city: string; state: string }>) => p.then(resolve).catch(() => { if (++rejected === 2) reject(new Error("all failed")); });
-          tryOne(fromPostalPincode());
-          tryOne(fromZippopotam());
-        });
-
-        setCity(result.city || "");
-        setState(result.state || "");
-      } catch {} finally { setPincodeLoading(false); }
+    if (val.length !== 6) return;
+    const reqId = ++pincodeReqRef.current;
+    setPincodeLoading(true);
+    try {
+      const info = await lookupPincode(val);
+      if (reqId !== pincodeReqRef.current) return; // stale
+      if (info) {
+        if (info.city) setCity(info.city);
+        if (info.state) setState(info.state);
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      if (reqId === pincodeReqRef.current) setPincodeLoading(false);
     }
   };
+
 
 
   // Browser geolocation + Google Geocoding for accurate address
