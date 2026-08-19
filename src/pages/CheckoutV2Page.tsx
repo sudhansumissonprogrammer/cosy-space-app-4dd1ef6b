@@ -649,6 +649,9 @@ export default function CheckoutV2Page() {
   const hasCashfree = availableMethods.includes("cashfree");
   const hasPayu = availableMethods.includes("payu");
   const hasOnline = hasRazorpay || hasCashfree || hasPayu;
+  /** A store with no online gateway configured must still be orderable:
+   *  fall back to Cash on Delivery so checkout never dead-ends. */
+  const codAvailable = hasCod || (!hasOnline && paymentConfigLoaded);
   const activeGateway: "razorpay" | "cashfree" | "payu" | null =
     hasRazorpay ? "razorpay" : hasCashfree ? "cashfree" : hasPayu ? "payu" : null;
   const gatewayLabel = activeGateway === "razorpay" ? "Razorpay" : activeGateway === "cashfree" ? "Cashfree" : "PayU";
