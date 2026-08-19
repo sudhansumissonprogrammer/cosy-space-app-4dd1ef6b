@@ -223,7 +223,8 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
           <p className="text-[11px] text-muted-foreground pt-1">
             Commission:{" "}
             <span className="font-semibold">{config.commission_percentage}%</span> per
-            confirmed/shipped/delivered order · Min recharge ₹{config.min_recharge}
+            confirmed/shipped/delivered order · Min recharge ₹{effectiveMin}
+            {!hasPaidRecharge && firstMin > 0 ? " (first recharge)" : ""}
           </p>
 
           <div className="flex items-center gap-2 pt-1">
@@ -248,12 +249,12 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
             <label className="text-xs font-semibold text-muted-foreground">Amount (₹)</label>
             <Input
               type="number"
-              min={config.min_recharge}
+              min={effectiveMin}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
             <p className="text-[11px] text-muted-foreground">
-              Minimum ₹{config.min_recharge}. Payment via Cashfree (UPI / cards / netbanking).
+              Minimum ₹{effectiveMin}. Payment via Cashfree (UPI / cards / netbanking).
             </p>
             <div className="flex gap-2">
               {[500, 1500, 3000, 5000].map((v) => (
