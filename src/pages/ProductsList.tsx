@@ -554,11 +554,11 @@ export default function ProductsList() { // v2
           </div>
 
           {/* Inline filter buttons */}
-          <div className="flex gap-1.5 items-center">
+          <div className="flex gap-1.5 items-center overflow-x-auto no-scrollbar pb-0.5">
             <button
               onClick={() => { setStatusFilter(statusFilter === "active" ? "all" : "active"); pagination.setPage(1); }}
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border",
+                "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border shrink-0",
                 statusFilter === "active"
                   ? "bg-foreground text-background border-foreground"
                   : "bg-background text-muted-foreground border-input hover:bg-accent"
@@ -569,7 +569,7 @@ export default function ProductsList() { // v2
             <button
               onClick={() => { setStatusFilter(statusFilter === "draft" ? "all" : "draft"); pagination.setPage(1); }}
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border",
+                "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border shrink-0",
                 statusFilter === "draft"
                   ? "bg-foreground text-background border-foreground"
                   : "bg-background text-muted-foreground border-input hover:bg-accent"
@@ -577,8 +577,22 @@ export default function ProductsList() { // v2
             >
               Inactive
             </button>
+            <button
+              onClick={() => { setSort(sort === "stock-high" ? "stock-low" : "stock-high"); pagination.setPage(1); }}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border shrink-0 flex items-center gap-1",
+                sort === "stock-high" || sort === "stock-low"
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-background text-muted-foreground border-input hover:bg-accent"
+              )}
+            >
+              Stock
+              {sort === "stock-high" && <ArrowUpDown className="h-3 w-3 rotate-180" />}
+              {sort === "stock-low" && <ArrowUpDown className="h-3 w-3" />}
+              {!sort.startsWith("stock") && <ArrowUpDown className="h-3 w-3" />}
+            </button>
             {/* Category button */}
-            <div className="relative">
+            <div className="relative shrink-0">
               <button
                 ref={categoryBtnRef}
                 onClick={() => setCategoryPopupOpen(!categoryPopupOpen)}
