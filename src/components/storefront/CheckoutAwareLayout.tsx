@@ -88,7 +88,8 @@ export default function CheckoutAwareLayout({
   const headerVisible = useSmartHeader();
   const getHeaderIcon = useNavIcons(store.id);
   const SearchIcon = getHeaderIcon("search");
-  const checkoutOwnsHeader = isCheckout && (Boolean((store as any)?.checkout_v2_enabled) || new URLSearchParams(location.search).get("v2") === "1");
+  // Every store now runs the single modern checkout, which renders its own header.
+  const checkoutOwnsHeader = isCheckout;
 
   useEffect(() => {
     // v8: Defer route prefetching by 1.2s (was 3s). Internally uses
