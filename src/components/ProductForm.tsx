@@ -1110,7 +1110,45 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
                     </Button>
                   </div>
                 )}
+                <p className="text-[11px] text-muted-foreground">Main category — used for pinning &amp; breadcrumbs.</p>
+
+                {/* Multi-category: additional categories */}
+                {(categories?.length ?? 0) > 0 && (
+                  <div className="space-y-2 pt-1">
+                    <Label className="text-xs">Also show in (optional)</Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {categories!
+                        .filter((c: any) => c.name?.toLowerCase() !== (category || "").toLowerCase())
+                        .map((c: any) => {
+                          const active = extraCategoryIds.includes(c.id);
+                          return (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() =>
+                                setExtraCategoryIds((prev) =>
+                                  prev.includes(c.id) ? prev.filter((id) => id !== c.id) : [...prev, c.id],
+                                )
+                              }
+                              className={cn(
+                                "rounded-full border px-3 py-1 text-xs transition-colors",
+                                active
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-input bg-background hover:bg-accent",
+                              )}
+                            >
+                              {c.name}
+                            </button>
+                          );
+                        })}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      This product will also appear on the selected category pages.
+                    </p>
+                  </div>
+                )}
               </div>
+
             </div>
 
             <div className="flex flex-wrap items-center gap-6">
