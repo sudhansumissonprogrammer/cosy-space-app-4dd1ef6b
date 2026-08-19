@@ -459,12 +459,20 @@ Deno.serve(async (req) => {
     }
 
     // ── Advance cursor / phase ───────────────────────────────────────────
+    // Only flip to steady once our catalog matches the source count; otherwise
+    // restart the walk from page 1 so anything skipped earlier gets picked up.
+    const { count: ourCount } = await admin
+      .from("products").select("id", { count: "exact", head: true }).eq("store_id", store.id);
     let nextPhase = phase;
     let nextCursor = 1;
     if (phase === "backfill") {
-      if (reachedEnd) { nextPhase = "steady"; nextCursor = 1; }
-      else nextCursor = page;
+      if (reachedEnd) {
+        const complete = totalAtSource ? (ourCount || 0) >= totalAtSource - 5 : true;
+        nextPhase = complete ? "steady" : "backfill";
+        nextCursor = 1;
+      } else nextCursor = page;
     }
+
 
     const result = {
       phase,
