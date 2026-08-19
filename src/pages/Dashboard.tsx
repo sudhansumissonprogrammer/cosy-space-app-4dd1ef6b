@@ -28,17 +28,6 @@ import { useCountUp } from "@/hooks/useCountUp";
 import { useRealtimeStore } from "@/hooks/useRealtimeStore";
 import { endOfMonth, startOfMonth, subMonths } from "date-fns";
 
-interface SalesAnalyticsPayload {
-  total_revenue?: number | string;
-  total_orders?: number | string;
-}
-
-type RpcClient = {
-  rpc: <T>(fn: string, args: Record<string, unknown>) => Promise<{
-    data: T | null;
-    error: Error | null;
-  }>;
-};
 
 function ShimmerBlock({ className }: { className?: string }) {
   return (
