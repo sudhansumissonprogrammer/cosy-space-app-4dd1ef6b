@@ -5655,7 +5655,7 @@ export default function CheckoutV2Page() {
           <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-1">Payment Options</div>
 
           {/* UPI card */}
-          {mobile && (
+          {mobile && hasOnline && (
             <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5 mt-2">
 
 
