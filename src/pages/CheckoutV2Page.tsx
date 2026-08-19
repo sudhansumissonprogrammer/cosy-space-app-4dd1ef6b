@@ -5830,8 +5830,10 @@ export default function CheckoutV2Page() {
 
           {/* Standalone COD is only for stores without partial payment.
               With partial enabled, COD means only the remaining balance after
-              the configured online advance has been paid. */}
-          {hasCod && !partialConfigured && (
+              the configured online advance has been paid — unless the store has
+              no online gateway at all, in which case COD is the only way to
+              order and must always be offered. */}
+          {codAvailable && (!partialConfigured || !hasOnline) && (
             <button
               onClick={placeCod}
               disabled={placingCod || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
