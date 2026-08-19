@@ -884,6 +884,18 @@ function CheckoutPageInner() {
     } catch {}
   };
 
+  // Parity with the new checkout: fire IC once when checkout renders with a
+  // non-empty cart (Meta expects IC:Purchase ~3-5:1 — pay-tap-only under-reports
+  // the funnel). The ref guard keeps the later gateway calls from re-firing.
+  useEffect(() => {
+    if (!store?.id) return;
+    if (checkoutItems.length === 0) return;
+    fireInitiateCheckoutOnce();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id, checkoutItems.length]);
+
+
+
   // AddPaymentInfo — fire ONLY at real payment intent (same gate as IC).
   // Previously this fired in a mount-effect whenever a payment method resolved,
   // which meant every checkout page-view = 1 APInfo (even before the user
