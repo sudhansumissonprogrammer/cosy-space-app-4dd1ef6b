@@ -1,0 +1,1 @@
+UPDATE public.jd_sync_state SET phase = 'backfill', page_cursor = 1, updated_at = now() WHERE store_id = 'd07b0784-4103-494e-b243-8fcbdf5fd473';
