@@ -64,18 +64,19 @@ export default function ProductCardV17({ product, slug, store, priority = false,
           {/* Wishlist button — circle, white, shadow, right-top */}
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleWishlist(e); }}
-            className="absolute z-10 flex items-center justify-center rounded-full shadow-md transition-transform hh:hover-scale-110 active:scale-95"
-            style={{ width: "36px", height: "36px", right: "10px", top: "auto", bottom: "52px", backgroundColor: "var(--storefront-bg, #fff)" }}
+            className="absolute z-10 flex items-center justify-center rounded-full transition-transform active:scale-[0.92]"
+            style={{ width: "36px", height: "36px", right: "10px", top: "auto", bottom: "52px", background: "transparent" }}
             aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
           >
             <Heart
               className="transition-colors"
               style={{
-                width: "14px",
-                height: "14px",
-                fill: wishlisted ? "#e53e3e" : "none",
-                color: wishlisted ? "#e53e3e" : "var(--v17-text, #1a1a1a)",
-                strokeWidth: 1.5,
+                width: "19px",
+                height: "19px",
+                fill: wishlisted ? "#ef4444" : "none",
+                color: wishlisted ? "#ef4444" : "#ffffff",
+                strokeWidth: 2.2,
+                filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.45))",
               }}
             />
           </button>

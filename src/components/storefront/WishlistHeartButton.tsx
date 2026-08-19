@@ -52,7 +52,6 @@ export default function WishlistHeartButton({
             fill: "transparent",
             color: "#ffffff",
             strokeWidth: 2.2,
-            filter: undefined,
             opacity: wishlisted ? 0 : 1,
             transform: wishlisted ? "scale(0.25)" : "scale(1)",
             filter: wishlisted ? "blur(4px)" : "drop-shadow(0 1px 2px rgba(0,0,0,0.45))",
