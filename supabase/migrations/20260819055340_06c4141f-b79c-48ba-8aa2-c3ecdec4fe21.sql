@@ -1,0 +1,2 @@
+ALTER TABLE public.store_commission_config ADD COLUMN IF NOT EXISTS first_recharge_min numeric;
+UPDATE public.store_commission_config SET first_recharge_min = 2000 WHERE store_id = '04010cad-1cbe-40ac-b818-07d9a79c1bf7';

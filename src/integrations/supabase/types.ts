@@ -2775,6 +2775,7 @@ export type Database = {
         Row: {
           commission_percentage: number
           created_at: string
+          first_recharge_min: number | null
           id: string
           is_active: boolean
           low_balance_threshold: number
@@ -2786,6 +2787,7 @@ export type Database = {
         Insert: {
           commission_percentage?: number
           created_at?: string
+          first_recharge_min?: number | null
           id?: string
           is_active?: boolean
           low_balance_threshold?: number
@@ -2797,6 +2799,7 @@ export type Database = {
         Update: {
           commission_percentage?: number
           created_at?: string
+          first_recharge_min?: number | null
           id?: string
           is_active?: boolean
           low_balance_threshold?: number
