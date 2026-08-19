@@ -116,7 +116,8 @@ Deno.serve(async (req) => {
       .eq("source_platform", "cartpe")
       .not("source_path", "is", null)
       .order("id", { ascending: true })
-      .range(offset, offset + batch - 1);
+      .limit(batch);
+    if (afterId) q = q.gt("id", afterId);
     if (!recheck) q = q.is("video_url", null);
 
     const { data: prods, error } = await q;
