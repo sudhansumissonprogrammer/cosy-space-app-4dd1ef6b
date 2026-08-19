@@ -294,7 +294,7 @@ export default function V22ProductDetail() {
   // Prefetch checkout chunk so "Buy Now" is instant on cold visits.
   useEffect(() => {
     const t = setTimeout(() => {
-      import("./CheckoutPage").catch(() => {});
+      import("./CheckoutV2Page").catch(() => {});
       import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
     }, 300);
     return () => clearTimeout(t);
