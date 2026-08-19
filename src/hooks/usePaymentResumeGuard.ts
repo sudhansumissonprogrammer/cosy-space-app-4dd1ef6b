@@ -92,7 +92,9 @@ export function usePaymentResumeGuard(storeId?: string | null, slug?: string | n
         if (status !== "success" && status !== "pending" && status !== "failed") {
           clear(waitKey);
           clear(payuKey);
+          clear(cfKey);
           return;
+
         }
         // Bounce at most ONCE per order — for EVERY status, not just pending.
         // Without a once-guard on `success` the shopper who presses Back from
