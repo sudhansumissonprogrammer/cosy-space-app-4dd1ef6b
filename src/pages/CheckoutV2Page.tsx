@@ -649,6 +649,9 @@ export default function CheckoutV2Page() {
   const hasCashfree = availableMethods.includes("cashfree");
   const hasPayu = availableMethods.includes("payu");
   const hasOnline = hasRazorpay || hasCashfree || hasPayu;
+  /** A store with no online gateway configured must still be orderable:
+   *  fall back to Cash on Delivery so checkout never dead-ends. */
+  const codAvailable = hasCod || (!hasOnline && paymentConfigLoaded);
   const activeGateway: "razorpay" | "cashfree" | "payu" | null =
     hasRazorpay ? "razorpay" : hasCashfree ? "cashfree" : hasPayu ? "payu" : null;
   const gatewayLabel = activeGateway === "razorpay" ? "Razorpay" : activeGateway === "cashfree" ? "Cashfree" : "PayU";
@@ -661,21 +664,24 @@ export default function CheckoutV2Page() {
    *  unless PayU is configured. When we detect that, flip into hosted-gateway
    *  mode: the tiles keep their familiar look but hand off to the gateway's own
    *  UPI page (Cashfree drop-in), which every account can use. Sticky for the
-   *  session per store+gateway so later taps skip the failing round-trip. */
+   *  session per store+gateway so later taps skip the failing round-trip.
+   *  Only PayU stores keep direct intents (their S2S mint is reliable); every
+   *  other gateway goes hosted from the very first tap — no failed round-trip. */
   const gatewayOnlyKey = store?.id ? `sb_pgonly_${store.id}_${activeGateway || "none"}` : "";
-  const [gatewayOnly, setGatewayOnly] = useState(false);
-  const gatewayOnlyRef = useRef(false);
+  const nonPayuGateway = Boolean(activeGateway) && activeGateway !== "payu";
+  const [gatewayOnlyFlag, setGatewayOnlyFlag] = useState(false);
+  const gatewayOnly = nonPayuGateway || gatewayOnlyFlag;
+  const gatewayOnlyRef = useRef(nonPayuGateway);
   useEffect(() => {
-    if (!gatewayOnlyKey) return;
-    let on = false;
-    try { on = sessionStorage.getItem(gatewayOnlyKey) === "1"; } catch { /* noop */ }
+    let on = nonPayuGateway;
+    try { if (gatewayOnlyKey && sessionStorage.getItem(gatewayOnlyKey) === "1") on = true; } catch { /* noop */ }
     gatewayOnlyRef.current = on;
-    setGatewayOnly(on);
-  }, [gatewayOnlyKey]);
+    setGatewayOnlyFlag(on);
+  }, [gatewayOnlyKey, nonPayuGateway]);
   const enableGatewayOnly = () => {
     if (gatewayOnlyRef.current) return;
     gatewayOnlyRef.current = true;
-    setGatewayOnly(true);
+    setGatewayOnlyFlag(true);
     try { if (gatewayOnlyKey) sessionStorage.setItem(gatewayOnlyKey, "1"); } catch { /* noop */ }
   };
 
@@ -4201,7 +4207,7 @@ export default function CheckoutV2Page() {
     // Partial-payment stores collect the configured advance online and only
     // the remaining balance on delivery. Never allow a separate zero-advance
     // COD path, including from a stale tab that rendered older checkout code.
-    if (partialConfigured) {
+    if (partialConfigured && hasOnline) {
       toast.error("Please pay the advance to place this order");
       return;
     }
@@ -5649,7 +5655,7 @@ export default function CheckoutV2Page() {
           <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-1">Payment Options</div>
 
           {/* UPI card */}
-          {mobile && (
+          {mobile && hasOnline && (
             <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5 mt-2">
 
 
@@ -5827,8 +5833,10 @@ export default function CheckoutV2Page() {
 
           {/* Standalone COD is only for stores without partial payment.
               With partial enabled, COD means only the remaining balance after
-              the configured online advance has been paid. */}
-          {hasCod && !partialConfigured && (
+              the configured online advance has been paid — unless the store has
+              no online gateway at all, in which case COD is the only way to
+              order and must always be offered. */}
+          {codAvailable && (!partialConfigured || !hasOnline) && (
             <button
               onClick={placeCod}
               disabled={placingCod || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
@@ -5853,7 +5861,7 @@ export default function CheckoutV2Page() {
             </button>
           )}
 
-          {!hasOnline && !hasCod && paymentConfigLoaded && (
+          {!hasOnline && !codAvailable && paymentConfigLoaded && (
             <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
               {tCritical("This store has no payment methods configured. Please contact the store.", "इस स्टोर के लिए भुगतान विधि उपलब्ध नहीं है।")}
             </div>

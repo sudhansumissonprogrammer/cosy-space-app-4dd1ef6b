@@ -214,7 +214,7 @@ export default function StorePayments() {
         partial_payment_enabled: partialEnabled && onlineEnabled,
         partial_payment_type: partialType,
         partial_payment_value: partialEnabled && partialValue ? Number(partialValue) : null,
-        checkout_v2_enabled: checkoutV2Enabled,
+        checkout_v2_enabled: true,
       };
 
       if (partialEnabled && onlineEnabled && partialValue) {
@@ -1022,8 +1022,8 @@ export default function StorePayments() {
         </Card>
       )}
 
-      {/* Section 4: Checkout V2 (Beta) — GoKwik-style one-page UPI checkout */}
-      {showPaymentConfig && (
+      {/* Fast Checkout is now the only checkout for every store — toggle retired. */}
+      {false && showPaymentConfig && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">

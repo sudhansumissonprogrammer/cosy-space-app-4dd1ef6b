@@ -10,7 +10,7 @@ const accountImports = [
   () => import("@/pages/StorefrontOrderDetail"),
   () => import("@/pages/WishlistPage"),
   () => import("@/pages/CartPage"),
-  () => import("@/pages/CheckoutPage"),
+  () => import("@/pages/CheckoutV2Page"),
   () => import("@/pages/OrderTrackingPage"),
 ];
 

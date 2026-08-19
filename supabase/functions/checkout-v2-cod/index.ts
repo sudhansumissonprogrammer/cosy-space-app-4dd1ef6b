@@ -61,10 +61,15 @@ Deno.serve(async (req) => {
     ]);
 
     const methods = Array.isArray(config?.payment_methods) ? (config!.payment_methods as string[]) : [];
-    if (!methods.includes("cod")) {
+    const hasOnline = ["razorpay", "cashfree", "payu"].some((m) => methods.includes(m));
+    // A store with no online gateway can only ever take COD — allow it even if
+    // `cod` was never explicitly listed, otherwise checkout dead-ends.
+    if (!methods.includes("cod") && hasOnline) {
       return jsonRes({ error: "COD not enabled for this store" }, 400);
     }
-    if (store?.partial_payment_enabled && Number(store.partial_payment_value || 0) > 0) {
+    // Advance-payment stores must collect the advance online — but only if an
+    // online gateway actually exists to collect it.
+    if (hasOnline && store?.partial_payment_enabled && Number(store.partial_payment_value || 0) > 0) {
       return jsonRes({ error: "Advance payment is required for this store" }, 400);
     }
 

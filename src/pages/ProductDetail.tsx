@@ -322,8 +322,7 @@ export default function ProductDetail() {
   const prefetchCheckout = useCallback(() => {
     if (checkoutPrefetchedRef.current) return;
     checkoutPrefetchedRef.current = true;
-    import("./CheckoutPage").catch(() => { checkoutPrefetchedRef.current = false; });
-    import("./CheckoutV2Page").catch(() => {});
+    import("./CheckoutV2Page").catch(() => { checkoutPrefetchedRef.current = false; });
     import("@/components/storefront/CheckoutPhoneStep").catch(() => {});
   }, []);
   useEffect(() => {
