@@ -3560,10 +3560,15 @@ export default function CheckoutV2Page() {
             // Gateways other than PayU commonly lack S2S UPI approval. Rather
             // than dead-ending the shopper, switch to the hosted gateway page.
             if (activeGateway !== "payu") {
+              console.warn("[checkout] UPI intent unavailable — hosted gateway mode:", errMsg);
               enableGatewayOnly();
               setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "idle" }; }); return next; });
+              // A real tap must not end in silence: continue straight into the
+              // gateway's own payment page (runs after `creatingOrder` clears).
+              if (userInitiated) window.setTimeout(() => { void startGatewayPayment(); }, 80);
               return;
             }
+
             setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: errMsg }; }); return next; });
 
           } else {
