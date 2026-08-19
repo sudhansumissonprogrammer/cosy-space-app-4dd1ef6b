@@ -308,7 +308,7 @@ Deno.serve(async (req) => {
     while (
       pagesWalked < pagesToWalk &&
       Date.now() - started < TIME_BUDGET_MS &&
-      found.size < importBudget * 3
+      found.size < importBudget
     ) {
       const offset = (page - 1) * PAGE_SIZE;
       let html: string | null = null;
