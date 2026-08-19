@@ -651,6 +651,34 @@ export default function CheckoutV2Page() {
   const hasOnline = hasRazorpay || hasCashfree || hasPayu;
   const activeGateway: "razorpay" | "cashfree" | "payu" | null =
     hasRazorpay ? "razorpay" : hasCashfree ? "cashfree" : hasPayu ? "payu" : null;
+  const gatewayLabel = activeGateway === "razorpay" ? "Razorpay" : activeGateway === "cashfree" ? "Cashfree" : "PayU";
+
+  /** HOSTED-GATEWAY MODE.
+   *  Direct `upi://` intents are minted through a server-to-server API that most
+   *  Cashfree / Razorpay merchant accounts are NOT approved for
+   *  (`s2s_enabled_not_approved`). On those stores every UPI tile fails and the
+   *  shopper dead-ends on an amber error panel — checkout is effectively broken
+   *  unless PayU is configured. When we detect that, flip into hosted-gateway
+   *  mode: the tiles keep their familiar look but hand off to the gateway's own
+   *  UPI page (Cashfree drop-in), which every account can use. Sticky for the
+   *  session per store+gateway so later taps skip the failing round-trip. */
+  const gatewayOnlyKey = store?.id ? `sb_pgonly_${store.id}_${activeGateway || "none"}` : "";
+  const [gatewayOnly, setGatewayOnly] = useState(false);
+  const gatewayOnlyRef = useRef(false);
+  useEffect(() => {
+    if (!gatewayOnlyKey) return;
+    let on = false;
+    try { on = sessionStorage.getItem(gatewayOnlyKey) === "1"; } catch { /* noop */ }
+    gatewayOnlyRef.current = on;
+    setGatewayOnly(on);
+  }, [gatewayOnlyKey]);
+  const enableGatewayOnly = () => {
+    if (gatewayOnlyRef.current) return;
+    gatewayOnlyRef.current = true;
+    setGatewayOnly(true);
+    try { if (gatewayOnlyKey) sessionStorage.setItem(gatewayOnlyKey, "1"); } catch { /* noop */ }
+  };
+
 
   const { data: hasActiveCoupons } = useQuery({
     queryKey: ["store-has-coupons", store?.id],
@@ -3476,7 +3504,15 @@ export default function CheckoutV2Page() {
         try { fireStorefrontEvent({ storeId: store.id, eventName: "pay_click" as any, metadata: { step: "continue_to_pay", dev: deviceTag() } as any }); } catch { /* noop */ }
 
         const apps: UpiApp[] = ["gpay", "phonepe", "paytm", "bhim", "any"];
+        // Hosted-gateway mode: this store's gateway cannot mint direct UPI
+        // intents, so skip the round-trip entirely. The order is created (above)
+        // and every tile hands off to the gateway's own UPI page on tap.
+        if (gatewayOnlyRef.current) {
+          setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "idle" }; }); return next; });
+          return;
+        }
         setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "loading" }; }); return next; });
+
         // Fresh intent = fresh QR — allow the desktop auto-poll to arm again.
         desktopQrPollStartedRef.current = false;
 
@@ -3521,7 +3557,20 @@ export default function CheckoutV2Page() {
           const url: string | undefined = payload?.intent_url;
           if (!url) {
             const errMsg: string = payload?.error || intErr?.message || "UPI temporarily unavailable";
+            // Gateways other than PayU commonly lack S2S UPI approval. Rather
+            // than dead-ending the shopper, switch to the hosted gateway page.
+            if (activeGateway !== "payu") {
+              console.warn("[checkout] UPI intent unavailable — hosted gateway mode:", errMsg);
+              enableGatewayOnly();
+              setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "idle" }; }); return next; });
+              // A real tap must not end in silence: continue straight into the
+              // gateway's own payment page (runs after `creatingOrder` clears).
+              if (userInitiated) window.setTimeout(() => { void startGatewayPayment(); }, 80);
+              return;
+            }
+
             setIntents((s) => { const next = { ...s }; apps.forEach((a) => { next[a] = { status: "failed", error: errMsg }; }); return next; });
+
           } else {
             if (payload?.pg) {
               gatewayRef.current = {
@@ -5563,7 +5612,9 @@ export default function CheckoutV2Page() {
 
           {(() => {
             const allFailed = (["gpay","phonepe","paytm","bhim","any"] as UpiApp[]).every((k) => intents[k].status === "failed");
+            if (gatewayOnly) return null;
             if (!allFailed) return null;
+
             const firstErr = intents.any.error || intents.gpay.error || "UPI is temporarily unavailable";
             return (
               <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
@@ -5645,9 +5696,21 @@ export default function CheckoutV2Page() {
                   return (
                     <a
                       key={app.key}
-                      href={busy || retryable || needsMint || !addressReady ? undefined : s.url}
-                      onClick={(e) => tapUpiApp(app.key, e)}
+                      href={gatewayOnly || busy || retryable || needsMint || !addressReady ? undefined : s.url}
+                      onClick={(e) => {
+                        // Hosted-gateway store (e.g. Cashfree without S2S UPI):
+                        // the tile opens the gateway's own UPI page instead of a
+                        // direct app deep-link.
+                        if (gatewayOnly) {
+                          e.preventDefault();
+                          flashUpiTap(app.key, 1800);
+                          void startGatewayPayment();
+                          return;
+                        }
+                        tapUpiApp(app.key, e);
+                      }}
                       aria-busy={busy}
+
                       className={`flex flex-col items-center justify-center rounded-lg ${bg} active:scale-[0.92] transition-[transform,box-shadow,opacity] duration-150 ease-out p-2.5 min-h-[92px] relative overflow-hidden select-none touch-manipulation cursor-pointer ${pressed ? "scale-[0.96] ring-2 ring-primary shadow-[0_6px_16px_-6px_rgba(0,0,0,0.35)]" : "shadow-[0_1px_2px_rgba(0,0,0,0.04)]"} ${busy ? "opacity-70" : ""} ${retryable ? "opacity-70" : ""}`}
                     >
                       {(app.key === "gpay" || app.key === "phonepe") && (
@@ -5694,7 +5757,7 @@ export default function CheckoutV2Page() {
                 const anyPressed = tappedUpiApp === "any";
                 return (
                   <a
-                    href={anyBusy || anyRetryable || anyNeedsMint || !addressReady || isIOS() ? undefined : anyS.url}
+                    href={gatewayOnly || anyBusy || anyRetryable || anyNeedsMint || !addressReady || isIOS() ? undefined : anyS.url}
 
                     onClick={(e) => {
                       // iOS has no Android-style `upi://` chooser. Sending an
@@ -5702,8 +5765,10 @@ export default function CheckoutV2Page() {
                       // arbitrary app), so use the configured hosted gateway,
                       // where PayU/Cashfree/Razorpay presents its supported UPI
                       // choices and reliably returns to this checkout.
-                      if (isIOS()) {
+                      // Same route for hosted-gateway stores on any device.
+                      if (isIOS() || gatewayOnly) {
                         e.preventDefault();
+                        if (gatewayOnly) flashUpiTap("any", 1800);
                         void startGatewayPayment();
                         return;
                       }
@@ -5715,7 +5780,7 @@ export default function CheckoutV2Page() {
 
                     <span className="text-[13px] font-semibold">All UPI Apps</span>
                     <span className="flex items-center gap-2 text-[12px] text-muted-foreground font-semibold">
-                      {anyPressed ? "Opening…" : isIOS() ? "Choose payment app" : "Pay with any UPI app"}
+                      {anyPressed ? "Opening…" : gatewayOnly ? `Pay with ${gatewayLabel}` : isIOS() ? "Choose payment app" : "Pay with any UPI app"}
                       {anyPressed
                         ? <Loader2 className="h-4 w-4 animate-spin text-primary" />
                         : <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />}
@@ -5724,6 +5789,12 @@ export default function CheckoutV2Page() {
                 );
 
               })()}
+              {gatewayOnly && (
+                <div className="mt-2 flex items-center justify-center gap-1 text-[10.5px] text-muted-foreground">
+                  <Lock className="h-3 w-3" /> Secure UPI payment via {gatewayLabel}
+                </div>
+              )}
+
             </div>
           )}
 
