@@ -375,15 +375,29 @@ export default function ProductsList() { // v2
     setBulkStockChange("");
   };
 
-  const exportCSV = () => {
-    if (!allProducts || allProducts.length === 0) return;
+  const exportCSV = async () => {
     const headers = ["name","price","sale_price","description","category","stock_quantity","sku","slug","is_active","currency","image_url"];
     const escape = (v: string | null | undefined) => {
       if (v == null) return "";
       const s = String(v);
       return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
     };
-    const rows = allProducts.map(p => headers.map(h => escape((p as any)[h])).join(","));
+    // Export the full catalog (the list itself is server-paged now)
+    const all: any[] = [];
+    const CHUNK = 1000;
+    for (let offset = 0; offset < 50000; offset += CHUNK) {
+      const { data, error } = await supabase
+        .from("products")
+        .select(headers.join(", "))
+        .eq("store_id", storeId!)
+        .order("created_at", { ascending: false })
+        .range(offset, offset + CHUNK - 1);
+      if (error) { toast.error("Export failed"); return; }
+      all.push(...(data || []));
+      if (!data || data.length < CHUNK) break;
+    }
+    if (all.length === 0) { toast.error("No products to export"); return; }
+    const rows = all.map(p => headers.map(h => escape((p as any)[h])).join(","));
     const csv = [headers.join(","), ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -392,8 +406,9 @@ export default function ProductsList() { // v2
     a.download = `${store?.slug || "products"}-export.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Products exported");
+    toast.success(`Exported ${all.length} products`);
   };
+
 
   const currencySymbol = store?.currency === "INR" ? "₹" : store?.currency === "USD" ? "$" : (store?.currency || "$");
 
