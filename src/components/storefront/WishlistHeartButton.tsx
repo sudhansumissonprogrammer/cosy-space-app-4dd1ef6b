@@ -23,7 +23,7 @@ export default function WishlistHeartButton({
   className = "",
   size = 30,
 }: Props) {
-  const icon = Math.round(size * 0.53);
+  const icon = Math.round(size * 0.62);
   return (
     <button
       type="button"
@@ -36,13 +36,9 @@ export default function WishlistHeartButton({
       style={{
         height: size,
         width: size,
-        backgroundColor: wishlisted
-          ? "color-mix(in srgb, #ef4444 14%, var(--storefront-bg, #fff))"
-          : "color-mix(in srgb, var(--storefront-bg, #fff) 78%, transparent)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
-        border: "1px solid color-mix(in srgb, var(--storefront-text, #000) 8%, transparent)",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+        background: "transparent",
+        border: "none",
+        boxShadow: "none",
       }}
       aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
     >
@@ -54,11 +50,12 @@ export default function WishlistHeartButton({
             height: icon,
             width: icon,
             fill: "transparent",
-            color: "color-mix(in srgb, var(--storefront-text, hsl(var(--foreground))) 55%, transparent)",
-            strokeWidth: 2,
+            color: "#ffffff",
+            strokeWidth: 2.2,
+            filter: undefined,
             opacity: wishlisted ? 0 : 1,
             transform: wishlisted ? "scale(0.25)" : "scale(1)",
-            filter: wishlisted ? "blur(4px)" : "blur(0)",
+            filter: wishlisted ? "blur(4px)" : "drop-shadow(0 1px 2px rgba(0,0,0,0.45))",
             transition: `opacity 200ms ${EASE}, transform 200ms ${EASE}, filter 200ms ${EASE}`,
           }}
         />
@@ -71,7 +68,7 @@ export default function WishlistHeartButton({
             color: "#ef4444",
             opacity: wishlisted ? 1 : 0,
             transform: wishlisted ? "scale(1)" : "scale(0.25)",
-            filter: wishlisted ? "blur(0)" : "blur(4px)",
+            filter: wishlisted ? "drop-shadow(0 1px 2px rgba(0,0,0,0.45))" : "blur(4px)",
             transition: `opacity 200ms ${EASE}, transform 200ms ${EASE}, filter 200ms ${EASE}`,
           }}
         />
