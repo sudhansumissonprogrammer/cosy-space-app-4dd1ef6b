@@ -813,7 +813,7 @@ export default function StoreOrders() {
         <SheetContent side="bottom" className="h-[92vh] rounded-t-2xl px-0 overflow-hidden flex flex-col">
           {mobileDetailOrder && (
             <MobileOrderDetail
-              order={mobileDetailOrder}
+              order={withItems(mobileDetailOrder)}
               store={store}
               onStatusChange={(v) => {
                 handleStatusChange(mobileDetailOrder, v);
@@ -849,7 +849,7 @@ export default function StoreOrders() {
       {/* Invoice Dialog */}
       <Dialog open={!!invoiceOrder} onOpenChange={(v) => { if (!v) setInvoiceOrder(null); }}>
         <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-          {invoiceOrder && <OrderInvoice order={invoiceOrder} store={store} onClose={() => setInvoiceOrder(null)} />}
+          {invoiceOrder && <OrderInvoice order={withItems(invoiceOrder)} store={store} onClose={() => setInvoiceOrder(null)} />}
         </DialogContent>
       </Dialog>
     </div>
