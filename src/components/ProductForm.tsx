@@ -292,6 +292,16 @@ export default function ProductForm({ productId, onClose }: ProductFormProps) {
     }
   }, [existingProduct]);
 
+  // Seed extra categories once links + category list are loaded (skip primary).
+  useEffect(() => {
+    if (!existingProductCategories || !categories) return;
+    const primaryId = categories.find(
+      (c: any) => c.name?.toLowerCase() === (existingProduct as any)?.category?.toLowerCase(),
+    )?.id;
+    setExtraCategoryIds(existingProductCategories.filter((id: string) => id !== primaryId));
+  }, [existingProductCategories, categories, existingProduct]);
+
+
   useEffect(() => {
     if (existingImages) {
       setAdditionalPreviews(existingImages.map((img) => ({ url: img.image_url, isExisting: true, id: img.id })));
