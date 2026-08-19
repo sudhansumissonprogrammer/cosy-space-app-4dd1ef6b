@@ -108,12 +108,21 @@ export default function WalletAccountCard({ storeId, storeSlug, variant = "compa
   const lowBalanceThreshold = Number(config.low_balance_threshold ?? 100);
   const lowBalance = balanceNum < lowBalanceThreshold;
 
+  // Optional per-store first-time recharge minimum: applies until the store
+  // has completed at least one paid recharge.
+  const hasPaidRecharge =
+    Number(wallet.total_recharged ?? 0) > 0 ||
+    ((data as any)?.recharges ?? []).some((r: any) => r?.status === "paid");
+  const firstMin = Number((config as any).first_recharge_min ?? 0);
+  const effectiveMin =
+    !hasPaidRecharge && firstMin > 0 ? firstMin : Number(config.min_recharge);
+
   const handleRecharge = async () => {
     const n = Number(amount);
-    if (!Number.isFinite(n) || n < Number(config.min_recharge)) {
+    if (!Number.isFinite(n) || n < effectiveMin) {
       toast({
         title: "Invalid amount",
-        description: `Minimum ₹${config.min_recharge}`,
+        description: `Minimum ₹${effectiveMin}`,
         variant: "destructive",
       });
       return;
