@@ -170,6 +170,17 @@ export default function StoreOrders() {
     enabled: !!storeId,
   });
 
+  // Lazily load full line-items for whichever order is open (detail sheet or invoice)
+  const detailOrderId = mobileDetailOrder?.id || invoiceOrder?.id || null;
+  const { data: detailItems } = useQuery({
+    queryKey: ["order-items", detailOrderId],
+    enabled: !!detailOrderId,
+    staleTime: 60_000,
+    queryFn: () => fetchOrderItems(detailOrderId!),
+  });
+  const withItems = (o: any) =>
+    o ? { ...o, order_items: (detailItems && detailItems.length ? detailItems : o.order_items) || [] } : o;
+
 
   // Server already filtered by search + date range; no further client-side filtering needed.
   const filteredOrders = useMemo(() => allOrders ?? [], [allOrders]);
