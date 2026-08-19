@@ -384,10 +384,14 @@ Deno.serve(async (req) => {
     for (const { c, d } of detailed) {
       if (!d) detailFails++;
       const name = d?.name || c.name;
-      let slug = c.sourceSlug || slugify(name);
-      if (knownSlug.has(slug)) slug = `${slug}-${c.sourceId.slice(-6)}`;
+      const baseSlug = (c.sourceSlug || slugify(name)).slice(0, 70);
+      let slug = baseSlug;
+      if (knownSlug.has(slug)) slug = `${baseSlug}-${c.sourceId}`;
+      let guard = 2;
+      while (knownSlug.has(slug) && guard < 12) slug = `${baseSlug}-${c.sourceId}-${guard++}`;
       if (knownSlug.has(slug)) continue;
       knownSlug.add(slug);
+
 
       const price = d?.price ?? c.price ?? 0;
       const sale = d?.sale ?? c.sale ?? null;
