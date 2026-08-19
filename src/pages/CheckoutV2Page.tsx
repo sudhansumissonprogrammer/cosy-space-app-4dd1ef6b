@@ -4748,23 +4748,24 @@ export default function CheckoutV2Page() {
         </button>
 
         <div className="flex items-center gap-2 min-w-0 flex-1">
+        <div className="flex flex-col justify-center min-w-0 flex-1">
           {store?.logo_url ? (
-            <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[100px] object-contain shrink-0" />
-          ) : null}
-          <div className="flex flex-col justify-center min-w-0">
+            <img src={store.logo_url} alt={store.name || "Store logo"} className="h-8 w-auto max-w-[120px] self-start object-contain" />
+          ) : (
             <div className="text-[15px] font-bold leading-tight truncate">{store?.name || "Store"}</div>
-            {(store?.secondary_phone || store?.whatsapp_number) && (
-              <a
-                href={`tel:${(store?.secondary_phone || store?.whatsapp_number || "").replace(/\s/g, "")}`}
-                className="mt-0.5 inline-flex items-center gap-1 text-[11px] leading-none text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={`Customer care ${store?.secondary_phone || store?.whatsapp_number}`}
-              >
-                <Headset className="h-3 w-3" />
-                <span className="truncate">{store?.secondary_phone || store?.whatsapp_number}</span>
-              </a>
-            )}
-          </div>
+          )}
+          {(store?.secondary_phone || store?.whatsapp_number) && (
+            <a
+              href={`tel:${(store?.secondary_phone || store?.whatsapp_number || "").replace(/\s/g, "")}`}
+              className="mt-0.5 inline-flex items-center gap-1 text-[11px] leading-none text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={`Customer care ${store?.secondary_phone || store?.whatsapp_number}`}
+            >
+              <Headset className="h-3 w-3" />
+              <span className="truncate">{store?.secondary_phone || store?.whatsapp_number}</span>
+            </a>
+          )}
         </div>
+
 
         <div className="flex items-center -space-x-2">
           <img
