@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const storeSlug = String((body as any)?.store || "").trim();
   const batch = Math.min(600, Math.max(1, Number((body as any)?.batch) || 240));
-  const offset = Math.max(0, Number((body as any)?.offset) || 0);
+  const afterId = String((body as any)?.after_id || "").trim();
   const recheck = Boolean((body as any)?.recheck);
 
   const { data: stores } = await admin
