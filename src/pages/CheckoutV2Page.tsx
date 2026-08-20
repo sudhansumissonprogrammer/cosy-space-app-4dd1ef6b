@@ -5659,8 +5659,60 @@ export default function CheckoutV2Page() {
 
           <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1 pt-1">Payment Options</div>
 
-          {/* UPI card */}
-          {mobile && hasOnline && (
+          {/* Hosted-gateway stores (no PayU S2S UPI — e.g. Cashfree / Razorpay
+              only). Showing individual UPI app tiles here is a lie: every tap
+              just opens the gateway's own page where the shopper has to pick
+              UPI again. So render ONE premium "Pay with <Gateway>" card.
+              PayU stores are untouched and keep the direct-intent grid. */}
+          {mobile && hasOnline && gatewayOnly && (
+            <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5 mt-2">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2.5">
+                  <img src="/icons/upi.png" alt="UPI" className="h-8 w-auto object-contain" />
+                  <div className="text-[17px] font-bold tracking-tight">UPI, Cards & More</div>
+                </div>
+                <div className="text-[15px] font-bold">{formatPrice(chargeAmount, currency)}</div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => { flashUpiTap("any", 1800); void startGatewayPayment(); }}
+                disabled={openingGateway || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
+                className="relative w-full overflow-hidden rounded-xl px-4 py-3.5 text-white font-extrabold text-[15px] flex items-center justify-center gap-2 active:scale-[0.97] transition-transform duration-150 disabled:opacity-60"
+                style={{
+                  background: "linear-gradient(180deg,#1f2937 0%,#111827 100%)",
+                  boxShadow: "0 8px 20px -8px rgba(17,24,39,0.65), inset 0 1px 0 rgba(255,255,255,0.18)",
+                }}
+              >
+                <span
+                  className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 text-white text-[9px] leading-none font-extrabold tracking-tight px-2 py-[3px] rounded-b-[6px] whitespace-nowrap"
+                  style={{
+                    background: "linear-gradient(180deg,#FF5F52 0%,#E53935 60%,#C62828 100%)",
+                    boxShadow: "0 1px 3px -1px rgba(198,40,40,0.6), inset 0 1px 0 rgba(255,255,255,0.4)",
+                  }}
+                >
+                  ₹{isPartialOrder ? 50 : 100} Cashback
+                </span>
+                {(openingGateway || tappedUpiApp === "any")
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Opening {gatewayLabel}…</>
+                  : <><Lock className="h-4 w-4" /> Pay with {gatewayLabel}</>}
+              </button>
+
+              <div className="mt-2.5 flex items-center justify-center gap-2 opacity-80">
+                {UPI_APPS.slice(0, 4).map((app) => (
+                  <img key={app.key} src={app.icon} alt={app.label} className="h-5 w-5 object-contain" loading="lazy" />
+                ))}
+                <span className="text-[10.5px] text-muted-foreground font-semibold">& all UPI apps</span>
+              </div>
+              <div className="mt-1.5 flex items-center justify-center gap-1 text-[10.5px] text-muted-foreground">
+                <Lock className="h-3 w-3" /> 100% secure payment via {gatewayLabel}
+              </div>
+            </div>
+          )}
+
+          {/* UPI card (PayU direct-intent stores only) */}
+          {mobile && hasOnline && !gatewayOnly && (
+
             <div className="bg-white rounded-xl border border-[#ECECEC] p-3.5 mt-2">
 
 
@@ -5814,8 +5866,11 @@ export default function CheckoutV2Page() {
               legacy checkout. QR was removed because desktop conversion
               suffered from scan-then-approve friction. */}
 
-          {/* Cards / Netbanking / Wallets — single consolidated gateway tile */}
-          {hasOnline && (
+          {/* Cards / Netbanking / Wallets — single consolidated gateway tile.
+              Hidden on mobile hosted-gateway stores: the "Pay with <Gateway>"
+              card above already opens the exact same hosted page. */}
+          {hasOnline && !(mobile && gatewayOnly) && (
+
             <button
               onClick={startGatewayPayment}
               disabled={openingGateway || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
