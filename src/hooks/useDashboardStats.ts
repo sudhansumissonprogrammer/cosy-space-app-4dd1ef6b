@@ -29,6 +29,8 @@ export interface DashboardStats {
   };
 }
 
+const str = (v: unknown): string | null => (typeof v === "string" && v ? v : null);
+
 export function dashboardStatsKey(storeId: string | undefined) {
   return ["dashboard-stats", storeId];
 }
