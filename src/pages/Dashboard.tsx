@@ -16,6 +16,7 @@ import QuickActions from "@/components/dashboard/QuickActions";
 import HeroRevenue from "@/components/dashboard/HeroRevenue";
 import TodayInsights from "@/components/dashboard/TodayInsights";
 import LiveVisitors from "@/components/dashboard/LiveVisitors";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 import PendingActions from "@/components/dashboard/PendingActions";
 import RecentOrders from "@/components/dashboard/RecentOrders";
 import TopProducts from "@/components/dashboard/TopProducts";
