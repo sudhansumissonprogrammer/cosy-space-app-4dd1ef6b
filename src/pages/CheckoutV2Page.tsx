@@ -5866,8 +5866,11 @@ export default function CheckoutV2Page() {
               legacy checkout. QR was removed because desktop conversion
               suffered from scan-then-approve friction. */}
 
-          {/* Cards / Netbanking / Wallets — single consolidated gateway tile */}
-          {hasOnline && (
+          {/* Cards / Netbanking / Wallets — single consolidated gateway tile.
+              Hidden on mobile hosted-gateway stores: the "Pay with <Gateway>"
+              card above already opens the exact same hosted page. */}
+          {hasOnline && !(mobile && gatewayOnly) && (
+
             <button
               onClick={startGatewayPayment}
               disabled={openingGateway || confirmingPayment || creatingOrder || couponLoading || paymentAmountSyncing}
