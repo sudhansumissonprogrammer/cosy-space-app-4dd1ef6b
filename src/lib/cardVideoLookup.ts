@@ -60,7 +60,11 @@ export function requestCardVideo(id: string, cb: Listener): () => void {
   }
   set.add(cb);
   queue.add(id);
-  if (timer === undefined) timer = window.setTimeout(flush, 120);
+  // 300ms window (was 120ms): rows mount ~100-200ms apart on a home feed, so a
+  // short window produced 3 separate REST calls per page load. A wider window
+  // coalesces them into one without any visible delay — the badge is decorative.
+  if (timer === undefined) timer = window.setTimeout(flush, 300);
+
   return () => {
     set!.delete(cb);
     if (set!.size === 0) listeners.delete(id);
