@@ -23,7 +23,12 @@ export function storeEnabledAppsKey(storeSlug: string | undefined) {
 }
 
 /** Promise-deduped fetch — safe to call from non-React code paths too. */
-export function fetchStoreEnabledApps(storeSlug: string): Promise<EnabledAppRow[]> {
+export function fetchStoreEnabledApps(storeSlug: string | undefined | null): Promise<EnabledAppRow[]> {
+  // Guard: supabase-js strips undefined args, so rpc(..., { _store_slug: undefined })
+  // posts `{}` and PostgREST answers 404 (PGRST202 — no zero-arg overload).
+  // Several callers pass `storeSlug!` from a still-loading context, which is
+  // exactly how one wasted 404 round trip appeared on every storefront load.
+  if (!storeSlug) return Promise.resolve([]);
   const existing = inflight.get(storeSlug);
   if (existing) return existing;
   const p = (async () => {

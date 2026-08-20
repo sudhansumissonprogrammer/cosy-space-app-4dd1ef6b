@@ -180,7 +180,11 @@ function CategorySection({
     queryKey: ["storefront-category-home", storeId, category.slug],
     queryFn: async () => {
       const { fetchCategoryRowQueued } = await import("@/lib/homeRowScheduler");
-      const edge = await fetchCategoryRowQueued(category.slug);
+      // Ask the Worker for exactly what this row renders (11 + 1 "has more"
+      // probe) instead of the 50-item category page. Same endpoint, its own
+      // cache key (":l12"), ~75% smaller payload. If an older Worker ignores
+      // the param it just returns more rows, which the slice below handles.
+      const edge = await fetchCategoryRowQueued(category.slug, HOME_CAT_LIMIT + 1);
       if (edge?.products && Array.isArray(edge.products)) return edge.products;
 
       const { supabase } = await import("@/integrations/supabase/client");
