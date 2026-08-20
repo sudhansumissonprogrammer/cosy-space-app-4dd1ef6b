@@ -14,7 +14,12 @@ const SUPA_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
 const SUPA_ANON =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
 
-const HEARTBEAT_MS = 20_000;
+// v2 (capacity work): 20s → 30s. The DB live window was widened 60s → 90s in
+// the same change, so a visitor still registers 2–3 pings per window while we
+// write 33% fewer rows. Idle tabs (no interaction for 10 min) stop pinging
+// entirely and resume on the next interaction.
+const HEARTBEAT_MS = 30_000;
+const IDLE_CUTOFF_MS = 10 * 60_000;
 
 function deviceOf(): string {
   const u = (typeof navigator !== "undefined" ? navigator.userAgent : "").toLowerCase();
