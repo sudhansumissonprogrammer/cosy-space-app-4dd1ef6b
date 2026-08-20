@@ -5872,6 +5872,10 @@ export type Database = {
         }
         Returns: string
       }
+      move_category_order: {
+        Args: { _direction: string; _id: string }
+        Returns: undefined
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
