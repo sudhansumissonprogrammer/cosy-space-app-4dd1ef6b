@@ -1,6 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { useNavigateTransition } from "@/hooks/useNavigateTransition";
-import { supabase } from "@/integrations/supabase/client";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { Card, CardContent } from "@/components/ui/card";
 import { ShoppingBag, ShoppingCart } from "lucide-react";
 
@@ -12,25 +11,12 @@ interface PendingActionsProps {
 export default function PendingActions({ storeId, storeSlug }: PendingActionsProps) {
   const { navigate } = useNavigateTransition();
 
-  const { data } = useQuery({
-    queryKey: ["pending-actions", storeId],
-    staleTime: 2 * 60 * 1000,
-    queryFn: async () => {
-      const [pendingOrders, carts] = await Promise.all([
-        supabase.from("orders").select("id", { count: "estimated", head: true }).eq("store_id", storeId).eq("status", "pending"),
-        supabase.from("abandoned_carts").select("id", { count: "estimated", head: true }).eq("store_id", storeId).eq("recovered", false),
-      ]);
-      return {
-        pendingOrders: pendingOrders.count ?? 0,
-        abandonedCarts: carts.count ?? 0,
-      };
-    },
-    enabled: !!storeId,
-  });
+  // Shares the dashboard-stats query — no extra request.
+  const { data } = useDashboardStats(storeId);
 
   const items = [
-    { label: "Pending Orders", count: data?.pendingOrders ?? 0, icon: ShoppingBag, color: "bg-amber-100 text-amber-700", url: `/dashboard/stores/${storeSlug}/orders` },
-    { label: "Abandoned Carts", count: data?.abandonedCarts ?? 0, icon: ShoppingCart, color: "bg-red-100 text-red-700", url: `/dashboard/stores/${storeSlug}/abandoned-carts` },
+    { label: "Pending Orders", count: data?.pending_orders ?? 0, icon: ShoppingBag, color: "bg-amber-100 text-amber-700", url: `/dashboard/stores/${storeSlug}/orders` },
+    { label: "Abandoned Carts", count: data?.abandoned_carts ?? 0, icon: ShoppingCart, color: "bg-red-100 text-red-700", url: `/dashboard/stores/${storeSlug}/abandoned-carts` },
   ];
 
   const hasAny = items.some((i) => i.count > 0);

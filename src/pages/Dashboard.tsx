@@ -16,6 +16,7 @@ import QuickActions from "@/components/dashboard/QuickActions";
 import HeroRevenue from "@/components/dashboard/HeroRevenue";
 import TodayInsights from "@/components/dashboard/TodayInsights";
 import LiveVisitors from "@/components/dashboard/LiveVisitors";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 import PendingActions from "@/components/dashboard/PendingActions";
 import RecentOrders from "@/components/dashboard/RecentOrders";
 import TopProducts from "@/components/dashboard/TopProducts";
@@ -104,22 +105,9 @@ export default function Dashboard() {
     }
   }, [storeId]);
 
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ["dashboard-stats", storeId],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_dashboard_stats", { _store_id: storeId! });
-      if (error) throw error;
-      const s = (data as any) || {};
-      return {
-        total_products: Number(s.total_products ?? 0),
-        total_orders: Number(s.total_orders ?? 0),
-        total_customers: Number(s.total_customers ?? 0),
-        total_views: Number(s.total_views ?? 0),
-      };
-    },
-    enabled: !!storeId,
-  });
+  // One shared query — PendingActions and StoreChecklist read the same cache
+  // entry instead of firing their own counts/config reads.
+  const { data: stats, isLoading } = useDashboardStats(storeId);
 
 
   const { data: ordersByMonth = [] } = useQuery({

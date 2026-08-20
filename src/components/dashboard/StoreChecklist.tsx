@@ -1,7 +1,6 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useNavigateTransition } from "@/hooks/useNavigateTransition";
-import { supabase } from "@/integrations/supabase/client";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Check, ChevronRight, Image, FileText, Package, CreditCard, Truck, Palette, Phone, UserRound } from "lucide-react";
@@ -22,22 +21,16 @@ interface CheckItem {
 const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(function StoreChecklist({ storeId, storeSlug }, ref) {
   const { navigate } = useNavigateTransition();
 
-  const { data: checks } = useQuery({
-    queryKey: ["store-checklist", storeId],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const [storeRes, productsRes, paymentsRes, shippingRes, themeRes] = await Promise.all([
-        supabase.from("stores").select("logo_url, banner_url, whatsapp_number, description, order_mode, owner_name").eq("id", storeId).single(),
-        supabase.from("products").select("id", { count: "estimated", head: true }).eq("store_id", storeId),
-        supabase.from("store_payment_config").select("id").eq("store_id", storeId).maybeSingle(),
-        supabase.from("store_shipping_config").select("id").eq("store_id", storeId).maybeSingle(),
-        supabase.from("store_theme_config").select("id").eq("store_id", storeId).maybeSingle(),
-      ]);
+  // Shares the dashboard-stats query — the setup flags and product count now
+  // come from that single RPC instead of five separate reads.
+  const { data: stats } = useDashboardStats(storeId);
 
-      const store = storeRes.data;
-      const isWhatsAppOnly = false;
+  const checks = React.useMemo<CheckItem[] | null>(() => {
+    if (!stats) return null;
+    const store = stats.setup;
+    const isWhatsAppOnly = false;
 
-      const items: CheckItem[] = [
+    const items: CheckItem[] = [
         {
           label: "Add store logo",
           hint: "Go to Settings → Media section",
@@ -48,7 +41,7 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
         {
           label: "Add owner / founder name",
           hint: "Settings → Basic Info (shows “Founded by …” on About)",
-          done: !!(store as any)?.owner_name,
+          done: !!store.owner_name,
           url: `/dashboard/stores/${storeSlug}/settings`,
           icon: UserRound,
         },
@@ -62,7 +55,7 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
         {
           label: "Add your first product",
           hint: "Products → Create Product",
-          done: (productsRes.count ?? 0) > 0,
+          done: stats.total_products > 0,
           url: `/dashboard/stores/${storeSlug}/products/create`,
           icon: Package,
         },
@@ -70,14 +63,14 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
           {
             label: "Set up payments",
             hint: "Payments page in sidebar",
-            done: !!paymentsRes.data || store?.order_mode === 'both',
+            done: store.has_payments || store.order_mode === 'both',
             url: `/dashboard/stores/${storeSlug}/payments`,
             icon: CreditCard,
           },
           {
             label: "Set up shipping",
             hint: "Shipping page in sidebar",
-            done: !!shippingRes.data,
+            done: store.has_shipping,
             url: `/dashboard/stores/${storeSlug}/shipping`,
             icon: Truck,
           },
@@ -85,22 +78,20 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
         {
           label: "Customize theme",
           hint: "Theme page in sidebar",
-          done: !!themeRes.data,
+          done: store.has_theme,
           url: `/dashboard/stores/${storeSlug}/theme`,
           icon: Palette,
         },
         {
           label: "Add WhatsApp number",
           hint: "Go to Settings → Basic Info",
-          done: !!store?.whatsapp_number,
+          done: !!store.whatsapp_number,
           url: `/dashboard/stores/${storeSlug}/settings`,
           icon: Phone,
         },
-      ];
-      return items;
-    },
-    enabled: !!storeId,
-  });
+    ];
+    return items;
+  }, [stats, storeSlug]);
 
   if (!checks) return null;
 
