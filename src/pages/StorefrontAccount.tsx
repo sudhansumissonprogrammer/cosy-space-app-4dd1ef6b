@@ -29,9 +29,13 @@ function OrdersTab({ customerId, store }: { customerId: string; store: StoreData
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("*, order_items(*)")
+        // Only the columns OrderCard renders. The full row is 47 columns and
+        // order_items(*) pulled every item field — this list is ~90% smaller
+        // and the detail page fetches the rest on demand.
+        .select("id,order_number,status,created_at,total,order_items(id,product_name,image_url)")
         .eq("storefront_customer_id", customerId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(50);
       if (error) throw error;
       return data;
     },
