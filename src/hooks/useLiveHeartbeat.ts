@@ -59,10 +59,17 @@ export function useLiveHeartbeat(storeId: string | undefined | null) {
     const vid = getVisitorId();
     const device = deviceOf();
     let stopped = false;
+    let lastActive = Date.now();
 
-    const ping = () => {
+    const markActive = () => {
+      lastActive = Date.now();
+    };
+
+    const ping = (force = false) => {
       if (stopped) return;
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      // Parked tab: visible but untouched for 10+ min — stop writing rows.
+      if (!force && Date.now() - lastActive > IDLE_CUTOFF_MS) return;
       try {
         fetch(`${SUPA_URL}/rest/v1/rpc/touch_live_session`, {
           method: "POST",
