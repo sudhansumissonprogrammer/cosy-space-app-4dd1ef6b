@@ -14,7 +14,12 @@ const SUPA_URL = "https://dqepeywgftbpxeeqfuwt.supabase.co";
 const SUPA_ANON =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxZXBleXdnZnRicHhlZXFmdXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjgxMzksImV4cCI6MjA5MDkwNDEzOX0.OtLtoGBJZuEthQyePzNgAltWJwSUEpWl1z_Bx_FY6Mk";
 
-const HEARTBEAT_MS = 20_000;
+// v2 (capacity work): 20s → 30s. The DB live window was widened 60s → 90s in
+// the same change, so a visitor still registers 2–3 pings per window while we
+// write 33% fewer rows. Idle tabs (no interaction for 10 min) stop pinging
+// entirely and resume on the next interaction.
+const HEARTBEAT_MS = 30_000;
+const IDLE_CUTOFF_MS = 10 * 60_000;
 
 function deviceOf(): string {
   const u = (typeof navigator !== "undefined" ? navigator.userAgent : "").toLowerCase();
@@ -54,10 +59,17 @@ export function useLiveHeartbeat(storeId: string | undefined | null) {
     const vid = getVisitorId();
     const device = deviceOf();
     let stopped = false;
+    let lastActive = Date.now();
 
-    const ping = () => {
+    const markActive = () => {
+      lastActive = Date.now();
+    };
+
+    const ping = (force = false) => {
       if (stopped) return;
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      // Parked tab: visible but untouched for 10+ min — stop writing rows.
+      if (!force && Date.now() - lastActive > IDLE_CUTOFF_MS) return;
       try {
         fetch(`${SUPA_URL}/rest/v1/rpc/touch_live_session`, {
           method: "POST",
@@ -78,17 +90,23 @@ export function useLiveHeartbeat(storeId: string | undefined | null) {
       } catch {}
     };
 
-    ping();
-    const id = window.setInterval(ping, HEARTBEAT_MS);
+    ping(true);
+    const id = window.setInterval(() => ping(), HEARTBEAT_MS);
     const onVis = () => {
-      if (document.visibilityState === "visible") ping();
+      if (document.visibilityState === "visible") {
+        markActive();
+        ping(true);
+      }
     };
     document.addEventListener("visibilitychange", onVis);
+    const acts: Array<keyof DocumentEventMap> = ["pointerdown", "keydown", "scroll", "touchstart"];
+    acts.forEach((e) => window.addEventListener(e, markActive, { passive: true }));
 
     return () => {
       stopped = true;
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVis);
+      acts.forEach((e) => window.removeEventListener(e, markActive));
     };
     // Re-run on path change so the current page is refreshed immediately.
   }, [storeId, pathname]);
