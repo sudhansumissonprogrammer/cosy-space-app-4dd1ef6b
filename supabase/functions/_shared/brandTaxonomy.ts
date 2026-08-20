@@ -96,23 +96,24 @@ export function detectBrand(name: string): string | null {
     .filter(Boolean);
   if (!tokens.length) return null;
 
-  let best: { brand: string; len: number } | null = null;
-  const consider = (key: string) => {
+  let bestBrand: string | null = null;
+  let bestLen = 0;
+  // Short aliases (< 3 chars, e.g. "ap") are only trusted as a standalone token.
+  const consider = (key: string, standalone: boolean) => {
+    if (key.length < 3 && !standalone) return;
     const brand = ALIAS_MAP.get(key);
-    if (brand && (!best || key.length > best.len)) best = { brand, len: key.length };
+    if (brand && key.length > bestLen) {
+      bestBrand = brand;
+      bestLen = key.length;
+    }
   };
 
   for (let i = 0; i < tokens.length; i++) {
-    consider(tokens[i]);
-    if (i + 1 < tokens.length) consider(tokens[i] + tokens[i + 1]);
-    if (i + 2 < tokens.length) consider(tokens[i] + tokens[i + 1] + tokens[i + 2]);
+    consider(tokens[i], true);
+    if (i + 1 < tokens.length) consider(tokens[i] + tokens[i + 1], false);
+    if (i + 2 < tokens.length) consider(tokens[i] + tokens[i + 1] + tokens[i + 2], false);
   }
-  // 2-letter aliases (e.g. "ap") are only trusted as standalone tokens.
-  if (best && best.len < 3) {
-    const ok = tokens.some((t) => t === norm(Object.keys(ALIAS_MAP).find((k) => ALIAS_MAP.get(k) === best!.brand && k.length < 3) || ""));
-    if (!ok) return null;
-  }
-  return best ? best.brand : null;
+  return bestBrand;
 }
 
 export type Taxon = { type: string; gender: "Men" | "Women" | "" };
