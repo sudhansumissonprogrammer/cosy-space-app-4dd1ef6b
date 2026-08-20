@@ -41,7 +41,7 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
         {
           label: "Add owner / founder name",
           hint: "Settings → Basic Info (shows “Founded by …” on About)",
-          done: !!(store as any)?.owner_name,
+          done: !!store.owner_name,
           url: `/dashboard/stores/${storeSlug}/settings`,
           icon: UserRound,
         },
