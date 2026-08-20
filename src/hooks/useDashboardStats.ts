@@ -41,8 +41,8 @@ export function useDashboardStats(storeId: string | undefined) {
     queryFn: async (): Promise<DashboardStats> => {
       const { data, error } = await supabase.rpc("get_dashboard_stats", { _store_id: storeId! });
       if (error) throw error;
-      const s = (data as any) || {};
-      const setup = s.setup || {};
+      const s = (data ?? {}) as Record<string, unknown>;
+      const setup = (s.setup ?? {}) as Record<string, unknown>;
       return {
         total_products: Number(s.total_products ?? 0),
         total_orders: Number(s.total_orders ?? 0),
