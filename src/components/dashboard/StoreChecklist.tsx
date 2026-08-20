@@ -21,22 +21,16 @@ interface CheckItem {
 const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(function StoreChecklist({ storeId, storeSlug }, ref) {
   const { navigate } = useNavigateTransition();
 
-  const { data: checks } = useQuery({
-    queryKey: ["store-checklist", storeId],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const [storeRes, productsRes, paymentsRes, shippingRes, themeRes] = await Promise.all([
-        supabase.from("stores").select("logo_url, banner_url, whatsapp_number, description, order_mode, owner_name").eq("id", storeId).single(),
-        supabase.from("products").select("id", { count: "estimated", head: true }).eq("store_id", storeId),
-        supabase.from("store_payment_config").select("id").eq("store_id", storeId).maybeSingle(),
-        supabase.from("store_shipping_config").select("id").eq("store_id", storeId).maybeSingle(),
-        supabase.from("store_theme_config").select("id").eq("store_id", storeId).maybeSingle(),
-      ]);
+  // Shares the dashboard-stats query — the setup flags and product count now
+  // come from that single RPC instead of five separate reads.
+  const { data: stats } = useDashboardStats(storeId);
 
-      const store = storeRes.data;
-      const isWhatsAppOnly = false;
+  const checks = React.useMemo<CheckItem[] | null>(() => {
+    if (!stats) return null;
+    const store = stats.setup;
+    const isWhatsAppOnly = false;
 
-      const items: CheckItem[] = [
+    const items: CheckItem[] = [
         {
           label: "Add store logo",
           hint: "Go to Settings → Media section",
