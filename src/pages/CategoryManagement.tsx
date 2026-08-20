@@ -68,7 +68,7 @@ export default function CategoryManagement() {
     if (newIndex < 0 || newIndex >= categories.length) return;
     setReordering(true);
     try {
-      const b = categories[newIndex];
+      const a = categories[index];
       const { error } = await (supabase as any).rpc("move_category_order", { _id: a.id, _direction: direction });
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["categories", storeId] });
