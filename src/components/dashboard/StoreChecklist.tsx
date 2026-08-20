@@ -55,7 +55,7 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
         {
           label: "Add your first product",
           hint: "Products → Create Product",
-          done: (productsRes.count ?? 0) > 0,
+          done: stats.total_products > 0,
           url: `/dashboard/stores/${storeSlug}/products/create`,
           icon: Package,
         },
@@ -63,14 +63,14 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
           {
             label: "Set up payments",
             hint: "Payments page in sidebar",
-            done: !!paymentsRes.data || store?.order_mode === 'both',
+            done: store.has_payments || store.order_mode === 'both',
             url: `/dashboard/stores/${storeSlug}/payments`,
             icon: CreditCard,
           },
           {
             label: "Set up shipping",
             hint: "Shipping page in sidebar",
-            done: !!shippingRes.data,
+            done: store.has_shipping,
             url: `/dashboard/stores/${storeSlug}/shipping`,
             icon: Truck,
           },
@@ -78,22 +78,20 @@ const StoreChecklist = React.forwardRef<HTMLDivElement, StoreChecklistProps>(fun
         {
           label: "Customize theme",
           hint: "Theme page in sidebar",
-          done: !!themeRes.data,
+          done: store.has_theme,
           url: `/dashboard/stores/${storeSlug}/theme`,
           icon: Palette,
         },
         {
           label: "Add WhatsApp number",
           hint: "Go to Settings → Basic Info",
-          done: !!store?.whatsapp_number,
+          done: !!store.whatsapp_number,
           url: `/dashboard/stores/${storeSlug}/settings`,
           icon: Phone,
         },
-      ];
-      return items;
-    },
-    enabled: !!storeId,
-  });
+    ];
+    return items;
+  }, [stats, storeSlug]);
 
   if (!checks) return null;
 
