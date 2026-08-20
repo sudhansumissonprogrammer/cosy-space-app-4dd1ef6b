@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { ArrowDownAZ, ArrowUpAZ, IndianRupee, BadgePercent, PackageCheck, Filter } from "lucide-react";
+import { ArrowDownAZ, ArrowUpAZ, IndianRupee, BadgePercent, PackageCheck, Filter, Clock } from "lucide-react";
 
-export type SortKey = "default" | "price-asc" | "price-desc" | "discount" | "in-stock";
+export type SortKey = "default" | "recent" | "price-asc" | "price-desc" | "discount" | "in-stock";
 
 interface ShopFilterBarProps {
   total: number | string;
@@ -16,6 +16,7 @@ interface ShopFilterBarProps {
 
 const PILLS: { key: SortKey; label: string; icon: any }[] = [
   { key: "default", label: "Sort", icon: Filter },
+  { key: "recent", label: "Newest", icon: Clock },
   { key: "price-asc", label: "Price: Low", icon: ArrowDownAZ },
   { key: "price-desc", label: "Price: High", icon: ArrowUpAZ },
   { key: "discount", label: "Discount", icon: BadgePercent },
@@ -71,10 +72,14 @@ export default function ShopFilterBar({ total, showing, sort, onSortChange, topO
 }
 
 /** Apply sort key to product list. Pure utility — no network calls. */
-export function applySort<T extends { price?: number; sale_price?: number | null; stock_quantity?: number | null }>(
-  products: T[],
-  sort: SortKey
-): T[] {
+export function applySort<
+  T extends {
+    price?: number;
+    sale_price?: number | null;
+    stock_quantity?: number | null;
+    created_at?: string | null;
+  }
+>(products: T[], sort: SortKey): T[] {
   if (sort === "default") return products;
   const arr = [...products];
   const eff = (p: T) => {
@@ -82,6 +87,14 @@ export function applySort<T extends { price?: number; sale_price?: number | null
     const bp = Number(p.price || 0);
     return sp && sp < bp ? sp : bp;
   };
+  if (sort === "recent") {
+    // Newest first — products without a timestamp sink to the bottom.
+    arr.sort((a, b) => {
+      const ta = a.created_at ? Date.parse(a.created_at) : 0;
+      const tb = b.created_at ? Date.parse(b.created_at) : 0;
+      return tb - ta;
+    });
+  }
   if (sort === "price-asc") arr.sort((a, b) => eff(a) - eff(b));
   if (sort === "price-desc") arr.sort((a, b) => eff(b) - eff(a));
   if (sort === "discount") {
