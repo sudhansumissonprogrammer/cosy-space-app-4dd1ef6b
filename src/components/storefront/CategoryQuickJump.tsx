@@ -26,7 +26,7 @@ export default function CategoryQuickJump({ storeId, slug, activeCategory }: Pro
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("categories")
-        .select("id, name, slug, image_url")
+        .select("id, name, slug, image_url, display_order")
         .eq("store_id", storeId)
         .order("display_order", { ascending: true })
         .limit(20);

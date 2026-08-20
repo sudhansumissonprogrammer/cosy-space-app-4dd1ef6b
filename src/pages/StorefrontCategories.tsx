@@ -16,7 +16,7 @@ export default function StorefrontCategories() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("categories")
-        .select("id, name, slug, image_url")
+        .select("id, name, slug, image_url, display_order")
         .eq("store_id", store.id)
         .order("display_order" as any)
         .order("name");
