@@ -90,17 +90,23 @@ export function useLiveHeartbeat(storeId: string | undefined | null) {
       } catch {}
     };
 
-    ping();
-    const id = window.setInterval(ping, HEARTBEAT_MS);
+    ping(true);
+    const id = window.setInterval(() => ping(), HEARTBEAT_MS);
     const onVis = () => {
-      if (document.visibilityState === "visible") ping();
+      if (document.visibilityState === "visible") {
+        markActive();
+        ping(true);
+      }
     };
     document.addEventListener("visibilitychange", onVis);
+    const acts: Array<keyof DocumentEventMap> = ["pointerdown", "keydown", "scroll", "touchstart"];
+    acts.forEach((e) => window.addEventListener(e, markActive, { passive: true }));
 
     return () => {
       stopped = true;
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVis);
+      acts.forEach((e) => window.removeEventListener(e, markActive));
     };
     // Re-run on path change so the current page is refreshed immediately.
   }, [storeId, pathname]);
