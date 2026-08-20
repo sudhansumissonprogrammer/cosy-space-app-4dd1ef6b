@@ -78,7 +78,11 @@ export default function AdminOrders() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("orders")
-        .select("*, stores:store_id(name), order_items(*)")
+        // Explicit column list (was `*`, 47 columns): only what the admin
+        // table + detail sheet render.
+        .select(
+          "id,order_number,status,created_at,customer_name,customer_phone,street_address,city,state,pincode,currency,total,payment_method,tracking_number,tracking_url,store_id,stores:store_id(name),order_items(id,product_name,image_url,quantity,unit_price,total)"
+        )
         .order("created_at", { ascending: false })
         .range(webPag.from, webPag.to);
       if (error) throw error;
