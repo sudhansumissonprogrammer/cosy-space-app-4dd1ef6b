@@ -172,7 +172,7 @@ function CategorySection({
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setIsVisible(true); obs.disconnect(); } }, { rootMargin: "400px" });
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setIsVisible(true); obs.disconnect(); } }, { rootMargin: "250px" });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
@@ -182,8 +182,8 @@ function CategorySection({
     queryFn: async () => {
       // Production: hit Worker /api/category (KV+Cache, 24h TTL) — same
       // endpoint and cache key the prewarm cron already warms.
-      const { fetchCategoryEdge } = await import("@/lib/storefrontEdgeApi");
-      const edge = await fetchCategoryEdge(category.slug);
+      const { fetchCategoryRowQueued } = await import("@/lib/homeRowScheduler");
+      const edge = await fetchCategoryRowQueued(category.slug);
       if (edge?.products && Array.isArray(edge.products)) return edge.products;
 
       const { supabase } = await import("@/integrations/supabase/client");
@@ -203,7 +203,7 @@ function CategorySection({
     enabled: isVisible,
   });
 
-  if (!isVisible) return <section ref={sectionRef} style={{ minHeight: 220 }} />;
+  if (!isVisible) return <section ref={sectionRef} style={{ minHeight: 460 }} />;
   if (!isLoading && (!products || products.length === 0)) return null;
 
   const categoryPath = storefrontPath(slug, `category/${category.slug}`);
