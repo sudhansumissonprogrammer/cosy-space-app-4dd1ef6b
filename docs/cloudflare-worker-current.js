@@ -6341,7 +6341,7 @@ async function handlePrewarm(request, url, ctx, env) {
               headers: { Accept: "*/*" },
             });
             warmOps.push(
-              fetch(`https://${ORIGIN_HOST}${path}`, {
+              fetchOriginNoRedirectLoop(`https://${ORIGIN_HOST}${path}`, {
                 method: "GET",
                 cf: { cacheEverything: true, cacheTtl: 2592000 },
               })
