@@ -355,7 +355,12 @@ export async function runSfDarkTransition(
   running = true;
   const host = makeHost();
   let watchdog = 0;
+  let done = false;
   const cleanup = () => {
+    // Idempotent: cancel, watchdog and the finally block can all reach here,
+    // and a late second call must not clobber a newer transition's state.
+    if (done) return;
+    done = true;
     applyOnce();
     try {
       host.remove();
