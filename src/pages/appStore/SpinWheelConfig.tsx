@@ -260,7 +260,7 @@ export default function SpinWheelConfigPage() {
                     <button
                       key={o.v}
                       type="button"
-                      onClick={() => setConfig((c) => ({ ...c, outcome_mode: o.v }))}
+                      onClick={() => applyOutcome({ outcome_mode: o.v })}
                       className={`rounded-xl border-2 p-3 text-left transition-all ${
                         active ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-muted-foreground/40"
                       }`}
