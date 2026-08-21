@@ -3391,8 +3391,6 @@ async function fetchOriginNoRedirectLoop(urlStr, init) {
   } catch {
     return res;
   }
-  if (target.hostname === new URL(urlStr).hostname) return res;
-
   const hopHeaders = new Headers(init?.headers || undefined);
   hopHeaders.set("Host", target.hostname);
   // Single hop only — the target is resolved directly, never followed again.
@@ -3432,6 +3430,16 @@ async function proxyToOrigin(request) {
       cf: cfOpts,
     });
     clearTimeout(timeout);
+
+    // Never forward an unresolved redirect or error response as a JS/CSS
+    // asset. Browsers otherwise report a misleading chunk-load failure and
+    // enter recovery. The response is deliberately non-cacheable.
+    if (!res.ok) {
+      return new Response("Upstream asset unavailable", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+      });
+    }
 
 
     const newRes = new Response(res.body, res);
@@ -3492,6 +3500,7 @@ async function proxyToOriginCached(request, ctx) {
       cf: { cacheTtl: 2592000, cacheEverything: true },
     });
     clearTimeout(timeout);
+    if (!res.ok) return proxyToOrigin(request);
     const newRes = new Response(request.method === "HEAD" ? null : res.body, res);
     if (newRes.ok) {
       newRes.headers.set("Cache-Control", "public, max-age=2592000, immutable");

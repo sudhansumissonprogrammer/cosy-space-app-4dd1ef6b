@@ -9,6 +9,8 @@ type RecoveryState = {
   ts: number;
 };
 
+let recoveryNavigationStarted = false;
+
 const PRIMARY_CHUNK_ERROR_PATTERNS = [
   /Failed to fetch dynamically imported module/i,
   /error loading dynamically imported module/i,
@@ -123,6 +125,9 @@ export function isRecoverableChunkLoadError(error: unknown): boolean {
 
 export function recoverFromChunkLoadError(error: unknown): boolean {
   if (typeof window === "undefined" || !isRecoverableChunkLoadError(error)) return false;
+  // Several failed lazy imports can reject in the same event-loop turn. Only
+  // one of them should consume an attempt and initiate navigation.
+  if (recoveryNavigationStarted) return true;
 
   try {
     const now = Date.now();
@@ -141,12 +146,14 @@ export function recoverFromChunkLoadError(error: unknown): boolean {
     }
 
     writeRecoveryState({ attempts, signature, ts: now });
+    recoveryNavigationStarted = true;
 
     const nextUrl = new URL(window.location.href);
     nextUrl.searchParams.set("__r", `${now.toString(36)}-${attempts}`);
     window.location.replace(nextUrl.toString());
     return true;
   } catch {
+    recoveryNavigationStarted = true;
     window.location.reload();
     return true;
   }
