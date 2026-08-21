@@ -170,7 +170,7 @@ export default function BundleBuilderConfig() {
       const { error } = await (supabase as any)
         .from("store_apps")
         .upsert(
-          { store_id: storeId, app_id: APP_ID, enabled, config: { bundles } },
+          { store_id: storeId, app_id: APP_ID, enabled: nextEnabled, config: { bundles } },
           { onConflict: "store_id,app_id" },
         );
       if (error) throw error;
@@ -181,6 +181,7 @@ export default function BundleBuilderConfig() {
       qc.invalidateQueries({ queryKey: ["store-app", storeId, APP_ID] });
       qc.invalidateQueries({ queryKey: ["store-apps", storeId] });
       qc.invalidateQueries({ queryKey: ["storefront-bundles"] });
+      qc.invalidateQueries({ queryKey: ["store-enabled-apps"] });
       toast.success("Saved");
     },
     onError: (e: any) => toast.error(e?.message || "Save failed"),
@@ -214,8 +215,11 @@ export default function BundleBuilderConfig() {
       title="Bundle Builder"
       subtitle="Pick N, fixed combos & frequently bought together"
       enabled={enabled}
-      onEnabledChange={setEnabled}
-      onSave={() => upsert.mutate()}
+      onEnabledChange={(v) => {
+        setEnabled(v);
+        upsert.mutate({ enabled: v });
+      }}
+      onSave={() => upsert.mutate({})}
       saving={upsert.isPending}
       saveLabel="Save changes"
       statusBadge={<AppLiveBadge enabled={enabled} />}
@@ -303,7 +307,7 @@ export default function BundleBuilderConfig() {
 
       {cfg.bundles.length > 0 && (
         <div className="hidden justify-end px-0 pt-2 md:flex">
-          <Button onClick={() => upsert.mutate()} disabled={upsert.isPending} className="gap-2">
+          <Button onClick={() => upsert.mutate({})} disabled={upsert.isPending} className="gap-2">
             {upsert.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save changes
           </Button>

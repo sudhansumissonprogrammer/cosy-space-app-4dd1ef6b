@@ -110,8 +110,9 @@ export default function UpsellCrossSellConfig() {
   }, [row]);
 
   const save = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (opts?: { enabled?: boolean }) => {
       if (!storeId) throw new Error("Missing store");
+      const nextEnabled = opts?.enabled ?? enabled;
       // Basic validation
       for (const o of offers) {
         if (!o.name.trim()) throw new Error("Every offer needs a name");
@@ -120,7 +121,7 @@ export default function UpsellCrossSellConfig() {
       const payload = {
         store_id: storeId,
         app_id: UPSELL_APP_ID,
-        enabled,
+        enabled: nextEnabled,
         config: { offers } as any,
       };
       const { error } = await (supabase as any).from("store_apps").upsert(payload, {
@@ -131,6 +132,8 @@ export default function UpsellCrossSellConfig() {
     onSuccess: () => {
       toast.success("Upsell settings saved");
       qc.invalidateQueries({ queryKey: ["store-app", storeId, UPSELL_APP_ID] });
+      qc.invalidateQueries({ queryKey: ["store-apps", storeId] });
+      qc.invalidateQueries({ queryKey: ["store-enabled-apps"] });
     },
     onError: (e: any) => toast.error(e.message || "Save failed"),
   });
@@ -176,8 +179,11 @@ export default function UpsellCrossSellConfig() {
       title="Upsell & Cross-sell"
       subtitle="Layer discounts on PDP, cart, checkout & thank-you"
       enabled={enabled}
-      onEnabledChange={setEnabled}
-      onSave={() => save.mutate()}
+      onEnabledChange={(v) => {
+        setEnabled(v);
+        save.mutate({ enabled: v });
+      }}
+      onSave={() => save.mutate({})}
       saving={save.isPending}
       saveLabel="Save changes"
       statusBadge={<AppLiveBadge enabled={enabled} />}
