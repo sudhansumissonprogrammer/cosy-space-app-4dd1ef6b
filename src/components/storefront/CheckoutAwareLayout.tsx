@@ -24,6 +24,7 @@ const LazyShareStoreDialog = lazy(() => import("@/components/ShareStoreDialog"))
 import { StorefrontContentSkeleton } from "@/components/ContentSkeleton";
 import { storefrontPath } from "@/lib/subdomain";
 
+const LazySfDarkToggle = lazy(() => import("@/components/storefront/SfDarkToggle"));
 const LazySearchOverlay = lazy(() => import("@/components/storefront/StorefrontSearchOverlay"));
 const LazyDesktopNavBar = lazy(() => import("@/components/storefront/DesktopNavBar"));
 const LazyHamburgerMenu = lazy(() => import("@/components/storefront/HamburgerMenu"));
@@ -58,6 +59,8 @@ interface CheckoutAwareLayoutProps {
    * normally sits) and move the WhatsApp button into the bottom nav.
    */
   swapCartWhatsApp?: boolean;
+  /** Theme-16 only: show the Dark Streetwear night-mode toggle in the header */
+  showDarkToggle?: boolean;
 }
 
 export default function CheckoutAwareLayout({
@@ -74,6 +77,7 @@ export default function CheckoutAwareLayout({
   headerIconColor,
   showPremiumBadge = false,
   swapCartWhatsApp = false,
+  showDarkToggle = false,
 }: CheckoutAwareLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -174,6 +178,11 @@ export default function CheckoutAwareLayout({
 
   const ActionButtons = !isCheckout ? (
     <div className="flex items-center gap-1 sm:gap-2" style={{ minHeight: 40, contain: "layout", ...(iconStyle || {}) }}>
+      {showDarkToggle && (
+        <Suspense fallback={<div className="h-10 w-10" aria-hidden />}>
+          <LazySfDarkToggle />
+        </Suspense>
+      )}
       {useSearchInHeader ? (
         <button onClick={() => setSearchOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md transition-opacity hover:opacity-70" aria-label="Search products" style={iconStyle}>
           <SearchIcon className={iconSize} />
@@ -202,7 +211,7 @@ export default function CheckoutAwareLayout({
       {/* Desktop nav bar — hidden on mobile, hidden during checkout */}
       {!isCheckout && (
         <Suspense fallback={null}>
-          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} style={headerBgOverride ? { backgroundColor: headerBgOverride, color: headerIconColor || undefined, borderBottom: `1px solid ${headerIconColor || '#fff'}12` } : undefined} />
+          <LazyDesktopNavBar store={store} onSearchOpen={() => setSearchOpen(true)} extra={showDarkToggle ? <Suspense fallback={<div className="h-9 w-9" aria-hidden />}><LazySfDarkToggle size={36} /></Suspense> : undefined} style={headerBgOverride ? { backgroundColor: headerBgOverride, color: headerIconColor || undefined, borderBottom: `1px solid ${headerIconColor || '#fff'}12` } : undefined} />
         </Suspense>
       )}
 
