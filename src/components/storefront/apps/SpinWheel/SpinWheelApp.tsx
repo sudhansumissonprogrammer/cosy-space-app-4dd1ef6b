@@ -6,7 +6,7 @@ import CouponReveal from "./CouponReveal";
 import Confetti from "./Confetti";
 import { useWheelAudio } from "./useWheelAudio";
 import { useSpinAnimation } from "./useSpinAnimation";
-import { pickWeightedIndex, type SpinWheelConfig, type WheelSegment, type WheelStyle } from "./types";
+import { resolveWinningIndex, type SpinWheelConfig, type WheelSegment, type WheelStyle } from "./types";
 
 interface Props {
   storeId: string;
