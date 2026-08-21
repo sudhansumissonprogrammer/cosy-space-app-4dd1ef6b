@@ -23,6 +23,10 @@ const PRIMARY_CHUNK_ERROR_PATTERNS = [
   // recoverable so the user sees a fresh reload, not a white error screen.
   /Cannot read propert(y|ies) of undefined \(reading ['"]default['"]\)/i,
   /undefined is not an object \(evaluating .*['"]default['"]\)/i,
+  // Same root cause, but for lazy imports that read a *named* export off the
+  // module namespace (e.g. `m.VideoSlide`) — the namespace is undefined.
+  /Cannot read propert(y|ies) of undefined \(reading ['"][A-Z][A-Za-z0-9_]*['"]\)/,
+
 ];
 
 const FOLLOW_UP_RECOVERY_PATTERNS = [
