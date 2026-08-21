@@ -49,6 +49,35 @@ const WATCHDOG_MS = 2600;
 
 let running = false;
 
+/**
+ * Cleanup handle for the transition currently in flight. The overlay lives on
+ * document.body (outside React), so an SPA route change during the animation
+ * would otherwise leave a full-viewport, click-eating layer on top of the new
+ * page until the watchdog fires. Callers tear it down via
+ * `cancelSfDarkTransition()` on unmount / navigation.
+ */
+let activeCleanup: (() => void) | null = null;
+
+/** Removes any in-flight (or orphaned) transition overlay immediately. */
+export function cancelSfDarkTransition() {
+  if (typeof document === "undefined") return;
+  try {
+    activeCleanup?.();
+  } catch {
+    /* ignore */
+  }
+  activeCleanup = null;
+  running = false;
+  // Belt and braces: sweep orphans left behind by a hard teardown.
+  document.querySelectorAll("[data-sf-dark-overlay]").forEach((node) => {
+    try {
+      node.remove();
+    } catch {
+      /* ignore */
+    }
+  });
+}
+
 /** Destination background: the dark surface, or the store's own light background. */
 function targetColor(toDark: boolean): string {
   if (toDark) return DARK_SURFACE;
