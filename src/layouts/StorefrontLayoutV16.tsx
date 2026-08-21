@@ -6,6 +6,7 @@ import { Suspense, lazy, useLayoutEffect } from "react";
 import { useLocation } from "react-router-dom";
 import "@/styles/sf-dark.css";
 import { applySfDarkClass, readSfDark } from "@/lib/sfDarkMode";
+import { cancelSfDarkTransition } from "@/lib/sfDarkTransition";
 import StorefrontMarquee from "@/components/storefront/StorefrontMarquee";
 import CheckoutAwareLayout from "@/components/storefront/CheckoutAwareLayout";
 import StorefrontShell from "@/layouts/StorefrontShell";
