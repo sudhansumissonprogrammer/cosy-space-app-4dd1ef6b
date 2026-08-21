@@ -1656,6 +1656,46 @@ export default function StoreThemeSettings() {
             </div>
           </Section>
 
+          {currentTheme === "theme-16" && (
+            <Section
+              title="Night Mode Switch Effect"
+              hint="Your header has a night-mode toggle. Pick the animation shoppers see when they switch. Light mode stays the default and checkout is never affected."
+            >
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {[
+                  { value: "spotlight", label: "Spotlight Reveal", desc: "Dark ink expands from the toggle" },
+                  { value: "curtain", label: "Velvet Curtain", desc: "Panel drops down, then slides away" },
+                  { value: "blinds", label: "Shutter Blinds", desc: "Editorial slats close and open" },
+                  { value: "eclipse", label: "Solar Eclipse", desc: "Glowing disc swallows the screen" },
+                  { value: "dissolve", label: "Ink Dissolve", desc: "Frosted blur crossfade" },
+                  { value: "none", label: "Instant", desc: "No animation at all" },
+                ].map((s) => {
+                  const isActive = (config.dark_toggle_effect || "spotlight") === s.value;
+                  return (
+                    <button
+                      key={s.value}
+                      onClick={() => updateField("dark_toggle_effect" as any, s.value as any)}
+                      className={`relative flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-[transform,opacity,colors,box-shadow] ${
+                        isActive ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"
+                      }`}
+                    >
+                      {isActive && (
+                        <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                          <Check className="h-3 w-3" />
+                        </div>
+                      )}
+                      <DarkEffectPreview variant={s.value} active={isActive} />
+                      <span className="text-[11px] font-semibold">{s.label}</span>
+                      <span className="text-[9px] text-muted-foreground text-center leading-tight">{s.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </Section>
+          )}
+
+
+
           <Section title="Mobile Bottom Navigation" hint="The fixed bottom bar shoppers see on phones.">
             <div className="grid grid-cols-2 gap-3">
               {[
