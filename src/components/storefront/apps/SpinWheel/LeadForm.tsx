@@ -16,7 +16,6 @@ interface LeadFormProps {
   heading: string;
   subheading: string;
   consentLabel: string;
-  requireOtp?: boolean;
   previewMode?: boolean;
   onSubmitted: () => void;
 }
@@ -44,7 +43,6 @@ export default function LeadForm({
   heading,
   subheading,
   consentLabel,
-  requireOtp = false,
   previewMode = false,
   onSubmitted,
 }: LeadFormProps) {
@@ -79,24 +77,6 @@ export default function LeadForm({
     onSubmitted();
   };
 
-  /** Plain (no-OTP) capture — unchanged behaviour. */
-  const saveLead = async () => {
-    const { error } = await supabase.functions.invoke("store-app-lead", {
-      body: {
-        store_id: storeId,
-        app_id: APP_ID,
-        phone,
-        country_code: "+91",
-        marketing_opt_in: consent,
-        coupon_code: couponCode ?? null,
-        segment_label: segmentLabel,
-        metadata: { source: "spin-wheel", ua: navigator.userAgent.slice(0, 200) },
-      },
-    });
-    if (error) throw error;
-    finish();
-  };
-
   const sendOtp = async () => {
     const { data, error } = await supabase.functions.invoke("store-lead-otp-send", {
       body: { store_id: storeId, app_id: APP_ID, phone },
@@ -118,11 +98,11 @@ export default function LeadForm({
     try {
       if (previewMode) {
         await new Promise((r) => setTimeout(r, 350));
-        if (requireOtp) { setStep("otp"); setResendIn(30); } else onSubmitted();
+        setStep("otp");
+        setResendIn(30);
         return;
       }
-      if (requireOtp) await sendOtp();
-      else await saveLead();
+      await sendOtp();
     } catch (e: any) {
       toast.error(e?.message || "Could not save. Try again.");
     } finally {
@@ -171,6 +151,14 @@ export default function LeadForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, step]);
 
+  const changeNumber = () => {
+    setStep("phone");
+    setCode("");
+    setOtpError(null);
+    setResendIn(0);
+    setPhone("");
+  };
+
   if (step === "otp") {
     return (
       <div className="rounded-2xl bg-white p-5 shadow-xl">
@@ -200,21 +188,26 @@ export default function LeadForm({
         </Button>
 
         <div className="mt-3 flex items-center justify-between text-[11px]">
-          <button
+          <Button
             type="button"
-            onClick={() => { setStep("phone"); setCode(""); setOtpError(null); }}
-            className="font-medium text-slate-500 hover:text-slate-800"
+            variant="link"
+            size="sm"
+            onClick={changeNumber}
+            disabled={submitting}
+            className="h-auto p-0 text-[11px] font-medium text-slate-500 hover:text-slate-800"
           >
             Change number
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="link"
+            size="sm"
             disabled={resendIn > 0 || submitting}
             onClick={() => { setSubmitting(true); sendOtp().catch((e) => toast.error(e?.message || "Resend failed")).finally(() => setSubmitting(false)); }}
-            className="font-semibold text-slate-700 disabled:text-slate-400"
+            className="h-auto p-0 text-[11px] font-semibold text-slate-700 disabled:text-slate-400"
           >
             {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -255,18 +248,12 @@ export default function LeadForm({
         disabled={!canSubmit}
         className="mt-4 w-full h-12 rounded-xl text-base font-bold"
       >
-        {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : requireOtp ? "Send OTP on WhatsApp" : "Unlock Discount"}
+        {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send OTP on WhatsApp"}
       </Button>
 
-      {requireOtp ? (
-        <p className="mt-3 flex items-center justify-center gap-1 text-center text-[10px] text-slate-400">
-          <ShieldCheck className="h-3 w-3" /> We'll WhatsApp a 6-digit code to confirm it's you
-        </p>
-      ) : (
-        <p className="mt-3 text-center text-[10px] text-slate-400">
-          By continuing you agree to receive offers via WhatsApp/SMS
-        </p>
-      )}
+      <p className="mt-3 flex items-center justify-center gap-1 text-center text-[10px] text-slate-400">
+        <ShieldCheck className="h-3 w-3" /> We'll WhatsApp a 6-digit code to confirm it's you
+      </p>
     </div>
   );
 }

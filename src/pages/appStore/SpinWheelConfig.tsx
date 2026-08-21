@@ -56,26 +56,29 @@ export default function SpinWheelConfigPage() {
     },
   });
 
-  const [enabled, setEnabled] = useState(false);
+  // Spin Wheel is live whenever it is installed. There is deliberately no
+  // separate off state: uninstalling is the only way to remove it.
+  const enabled = true;
   const [config, setConfig] = useState<SpinWheelConfig>(defaults);
   const [previewKey, setPreviewKey] = useState(0);
 
   useEffect(() => {
     if (row) {
-      setEnabled(!!row.enabled);
-      setConfig({ ...defaults, ...(row.config || {}) });
+      setConfig({ ...defaults, ...(row.config || {}), require_otp: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [row]);
 
   const upsert = useMutation({
-    mutationFn: async (payload: { enabled: boolean; config: SpinWheelConfig }) => {
+    mutationFn: async (payload: { config: SpinWheelConfig }) => {
       if (!storeId) throw new Error("Store is still loading. Please try again.");
+
+      const permanentConfig = { ...payload.config, require_otp: true };
 
       const { data: saved, error } = await (supabase as any)
         .from("store_apps")
         .upsert(
-          { store_id: storeId, app_id: APP_ID, enabled: payload.enabled, config: payload.config },
+          { store_id: storeId, app_id: APP_ID, enabled: true, config: permanentConfig },
           { onConflict: "store_id,app_id" }
         )
         .select("*")
@@ -85,14 +88,15 @@ export default function SpinWheelConfigPage() {
       const savedMode = saved?.config?.outcome_mode ?? "random";
       if (
         !saved ||
-        saved.enabled !== payload.enabled ||
-        savedMode !== (payload.config.outcome_mode ?? "random")
+        saved.enabled !== true ||
+        saved.config?.require_otp !== true ||
+        savedMode !== (permanentConfig.outcome_mode ?? "random")
       ) {
         throw new Error("Settings did not save. Please reload and try again.");
       }
 
 
-      const couponSegs = payload.config.segments.filter(
+      const couponSegs = permanentConfig.segments.filter(
         (s) => s.type === "coupon" && s.code && (s.discount_value ?? 0) > 0
       );
       if (couponSegs.length > 0) {
@@ -121,8 +125,7 @@ export default function SpinWheelConfigPage() {
       return saved;
     },
     onSuccess: (saved) => {
-      setEnabled(!!saved.enabled);
-      setConfig({ ...defaults, ...(saved.config || {}) });
+      setConfig({ ...defaults, ...(saved.config || {}), require_otp: true });
       qc.setQueryData(["store-app", storeId, APP_ID], saved);
       qc.invalidateQueries({ queryKey: ["store-app", storeId, APP_ID] });
       qc.invalidateQueries({ queryKey: ["store-apps", storeId] });
@@ -131,7 +134,6 @@ export default function SpinWheelConfigPage() {
       toast.success("Saved");
     },
     onError: (e: any) => {
-      setEnabled(!!row?.enabled);
       toast.error(e?.message || "Save failed");
     },
   });
@@ -198,7 +200,7 @@ export default function SpinWheelConfigPage() {
   const applyOutcome = (patch: Partial<SpinWheelConfig>) => {
     setConfig((c) => {
       const merged = stampedConfig({ ...c, ...patch } as SpinWheelConfig);
-      if (row) upsert.mutate({ enabled, config: merged });
+      if (row) upsert.mutate({ config: merged });
       return merged;
     });
   };
@@ -237,26 +239,17 @@ export default function SpinWheelConfigPage() {
       accent="from-indigo-500 to-fuchsia-500"
       title={appMeta.name}
       subtitle={appMeta.tagline}
-      enabled={enabled}
-      onEnabledChange={(v) => {
-        if (upsert.isPending) return;
-        // Persist immediately — otherwise the toggle looks on but the app was
-        // never installed (no store_apps row) until the user pressed Save.
-        setEnabled(v);
-        upsert.mutate({ enabled: v, config: stampedConfig(config) });
-      }}
-      onSave={() => upsert.mutate({ enabled, config: stampedConfig(config) })}
+      onSave={() => upsert.mutate({ config: stampedConfig(config) })}
 
       saving={upsert.isPending}
       saveDisabled={(config.outcome_mode || "random") !== "fixed" && totalWeight <= 0}
       saveLabel={isInstalled ? "Save" : "Install"}
       statusBadge={<AppLiveBadge enabled={enabled} />}
     >
-      {!enabled && (
-        <div className="mx-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 md:mx-0">
-          The wheel is not shown to shoppers until you toggle <strong>Enabled</strong>. The toggle saves automatically.
-        </div>
-      )}
+      <div className="mx-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900 md:mx-0">
+        <ShieldCheck className="h-4 w-4 shrink-0" />
+        Spin Wheel stays live after installation, and WhatsApp OTP verification is always required.
+      </div>
 
       <div className="grid gap-3 md:gap-6 lg:grid-cols-3">
         <div className="space-y-3 md:space-y-6 lg:col-span-2">
@@ -553,25 +546,16 @@ export default function SpinWheelConfigPage() {
               </div>
 
               <div className="rounded-lg border p-3">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
                   <div>
-                    <Label className="text-sm font-semibold">Verify mobile with WhatsApp OTP</Label>
+                    <Label className="text-sm font-semibold">WhatsApp OTP is mandatory</Label>
                     <p className="text-[11px] text-muted-foreground">
-                      Shopper gets a 6-digit code on WhatsApp before the coupon unlocks. Blocks fake numbers and
-                      guarantees every lead is reachable.
+                      Every shopper must verify their number with a 6-digit WhatsApp code before the coupon unlocks.
+                      Codes expire in 5 minutes, allow 5 attempts, and are rate-limited per number and device.
                     </p>
                   </div>
-                  <Switch
-                    checked={config.require_otp === true}
-                    onCheckedChange={(v) => setConfig((c) => ({ ...c, require_otp: v }))}
-                  />
                 </div>
-                {config.require_otp === true && (
-                  <p className="mt-2 rounded-md bg-muted p-2 text-[11px] text-muted-foreground">
-                    Each OTP is charged as a WhatsApp authentication message from your wallet. Codes expire in 5
-                    minutes, allow 5 attempts, and are rate-limited per number and device.
-                  </p>
-                )}
               </div>
             </CardContent>
           </Card>

@@ -45,7 +45,7 @@ export const APP_REGISTRY: StoreAppMeta[] = [
       trigger_delay_ms: 11000,
       show_on_mobile: true,
       show_on_desktop: true,
-      require_otp: false,
+      require_otp: true,
       wheel_style: "classic",
       sound_enabled: true,
       time_trigger_enabled: true,

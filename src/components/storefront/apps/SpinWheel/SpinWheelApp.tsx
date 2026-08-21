@@ -122,7 +122,6 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
     trigger_delay_ms: 11000,
     show_on_mobile: true,
     show_on_desktop: true,
-    require_otp: false,
     wheel_style: "classic",
     sound_enabled: true,
     time_trigger_enabled: true,
@@ -139,6 +138,10 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
     marketing_consent_label: "Notify me for offers & updates on WhatsApp",
     segments: [],
     ...config,
+    // OTP is a permanent security requirement for Spin Wheel leads. Keep this
+    // after the stored config spread so legacy `require_otp: false` rows cannot
+    // bypass verification.
+    require_otp: true,
   } as SpinWheelConfig;
 
   const segments = (cfg.segments || []).filter(Boolean);
@@ -411,7 +414,6 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
                 heading={cfg.lead_heading}
                 subheading={cfg.lead_subheading}
                 consentLabel={cfg.marketing_consent_label}
-                requireOtp={cfg.require_otp === true}
                 previewMode={previewMode}
 
                 onSubmitted={() => setPhase("reveal")}
