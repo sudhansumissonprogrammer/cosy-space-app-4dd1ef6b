@@ -47,20 +47,27 @@ export default function SfDarkToggle({
 
   if (isCheckoutPath(pathname)) return null;
 
-  const handleClick = async () => {
+  const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     if (busyRef.current) return;
     busyRef.current = true;
     const next = !dark;
+    // Prefer the exact tap point (finger position on mobile), fall back to the
+    // button's own centre for keyboard/synthetic activation. Both are viewport
+    // coordinates; the transition maps them onto the overlay.
     const rect = btnRef.current?.getBoundingClientRect();
-    const origin = rect
-      ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
-      : null;
+    const fromPointer = e.detail > 0 && (e.clientX !== 0 || e.clientY !== 0);
+    const origin = fromPointer
+      ? { x: e.clientX, y: e.clientY }
+      : rect && rect.width > 0
+        ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+        : null;
     try {
       await runSfDarkTransition(chosen, origin, next, () => setSfDark(next));
     } finally {
       busyRef.current = false;
     }
   };
+
 
   return (
     <button
