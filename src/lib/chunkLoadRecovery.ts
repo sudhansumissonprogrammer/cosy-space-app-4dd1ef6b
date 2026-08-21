@@ -1,13 +1,15 @@
 const RECOVERY_STORAGE_KEY = "chunk_recovery_state";
 const LEGACY_RECOVERY_STORAGE_KEY = "chunk_recovery_ts";
-const RECOVERY_COOLDOWN_MS = 2 * 60 * 1000;
-const MAX_RECOVERY_ATTEMPTS = 3;
+const RECOVERY_COOLDOWN_MS = 10 * 60 * 1000;
+const MAX_RECOVERY_ATTEMPTS = 2;
 
 type RecoveryState = {
   attempts: number;
   signature: string;
   ts: number;
 };
+
+let recoveryNavigationStarted = false;
 
 const PRIMARY_CHUNK_ERROR_PATTERNS = [
   /Failed to fetch dynamically imported module/i,
@@ -123,6 +125,9 @@ export function isRecoverableChunkLoadError(error: unknown): boolean {
 
 export function recoverFromChunkLoadError(error: unknown): boolean {
   if (typeof window === "undefined" || !isRecoverableChunkLoadError(error)) return false;
+  // Several failed lazy imports can reject in the same event-loop turn. Only
+  // one of them should consume an attempt and initiate navigation.
+  if (recoveryNavigationStarted) return true;
 
   try {
     const now = Date.now();
@@ -132,17 +137,23 @@ export function recoverFromChunkLoadError(error: unknown): boolean {
     const attempts = isSameRecoveryFlow ? previous.attempts + 1 : 1;
 
     if (attempts > MAX_RECOVERY_ATTEMPTS) {
-      clearChunkLoadRecoveryState();
+      // Keep an exhausted marker for the cooldown window. Clearing it here
+      // made the next chunk error start a brand-new recovery flow, producing
+      // an endless cycle of three reloads whenever the shared origin stayed
+      // unavailable.
+      writeRecoveryState({ attempts: MAX_RECOVERY_ATTEMPTS, signature, ts: previous?.ts || now });
       return false;
     }
 
     writeRecoveryState({ attempts, signature, ts: now });
+    recoveryNavigationStarted = true;
 
     const nextUrl = new URL(window.location.href);
     nextUrl.searchParams.set("__r", `${now.toString(36)}-${attempts}`);
     window.location.replace(nextUrl.toString());
     return true;
   } catch {
+    recoveryNavigationStarted = true;
     window.location.reload();
     return true;
   }

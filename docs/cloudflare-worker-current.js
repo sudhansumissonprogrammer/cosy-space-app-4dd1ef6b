@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.77.0-origin-redirect-loop-fix";
+const WORKER_VERSION = "8.78.0-direct-preview-origin";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -447,7 +447,12 @@ const ROOT_DOMAIN = "shopbanao.in";
 // storefront/root routing. Keep `go.shopbanao.in` here because Cloudflare may
 // route it to this Worker even when the main root host is still on Lovable.
 const WA_REDIRECT_HOSTS = new Set([ROOT_DOMAIN, `www.${ROOT_DOMAIN}`, `go.${ROOT_DOMAIN}`]);
-const ORIGIN_HOST = "cosy-space-app.lovable.app";
+// v8.78.0: The published .lovable.app hostname redirects every path to the
+// primary shopbanao.in domain. Using it as an origin sends asset subrequests
+// back through this Worker and can time out across every storefront. The
+// project preview hostname serves the same current build directly and does
+// not perform the primary-domain redirect, so it is the stable upstream.
+const ORIGIN_HOST = "id-preview--9e0e1986-9137-471c-8208-6cea82b9c0a2.lovable.app";
 // v8.58.0: Decoupled from WORKER_VERSION. Bump ONLY when HTML output shape
 // changes (head injection, skeleton, JSON-LD, inline data markers). Previously
 // every worker deploy invalidated 100% of HTML cache globally → 5-10x Supabase
@@ -3386,8 +3391,6 @@ async function fetchOriginNoRedirectLoop(urlStr, init) {
   } catch {
     return res;
   }
-  if (target.hostname === new URL(urlStr).hostname) return res;
-
   const hopHeaders = new Headers(init?.headers || undefined);
   hopHeaders.set("Host", target.hostname);
   // Single hop only — the target is resolved directly, never followed again.
@@ -3427,6 +3430,16 @@ async function proxyToOrigin(request) {
       cf: cfOpts,
     });
     clearTimeout(timeout);
+
+    // Never forward an unresolved redirect or error response as a JS/CSS
+    // asset. Browsers otherwise report a misleading chunk-load failure and
+    // enter recovery. The response is deliberately non-cacheable.
+    if (!res.ok) {
+      return new Response("Upstream asset unavailable", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+      });
+    }
 
 
     const newRes = new Response(res.body, res);
@@ -3487,6 +3500,7 @@ async function proxyToOriginCached(request, ctx) {
       cf: { cacheTtl: 2592000, cacheEverything: true },
     });
     clearTimeout(timeout);
+    if (!res.ok) return proxyToOrigin(request);
     const newRes = new Response(request.method === "HEAD" ? null : res.body, res);
     if (newRes.ok) {
       newRes.headers.set("Cache-Control", "public, max-age=2592000, immutable");
