@@ -22,6 +22,12 @@ export interface SpinWheelConfig {
   time_trigger_enabled?: boolean;
   exit_intent_enabled?: boolean;
   exit_intent_scope?: "all" | "product";
+  /**
+   * "random" = weighted draw using each slice's weight (default).
+   * "fixed"  = every shopper always lands on `fixed_segment_index`.
+   */
+  outcome_mode?: "random" | "fixed";
+  fixed_segment_index?: number;
   heading: string;
   subheading: string;
   button_label: string;
@@ -30,6 +36,7 @@ export interface SpinWheelConfig {
   marketing_consent_label: string;
   segments: WheelSegment[];
 }
+
 
 export function pickWeightedIndex(segments: WheelSegment[]): number {
   const total = segments.reduce((s, x) => s + Math.max(0, x.weight || 0), 0);

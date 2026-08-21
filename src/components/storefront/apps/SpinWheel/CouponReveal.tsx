@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -14,19 +14,29 @@ interface CouponRevealProps {
 export default function CouponReveal({ code, discountText, minOrder, onClose }: CouponRevealProps) {
   const [copied, setCopied] = useState(false);
 
+  // Park the coupon the moment it is revealed — checkout auto-applies whatever
+  // sits in `pending_coupon`. Waiting for a "Copy Code" tap silently lost the
+  // reward for every shopper who just closed the popup.
+  useEffect(() => {
+    if (!code) return;
+    try {
+      sessionStorage.setItem("pending_coupon", code);
+      localStorage.setItem("pending_coupon", code);
+    } catch {}
+  }, [code]);
+
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(code);
-      try {
-        sessionStorage.setItem("pending_coupon", code);
-        localStorage.setItem("pending_coupon", code);
-      } catch {}
       setCopied(true);
       toast.success("Coupon copied — it'll auto-apply at checkout");
     } catch {
-      toast.error("Copy failed");
+      // Clipboard can be blocked; the coupon is already saved for checkout.
+      setCopied(true);
+      toast.success("Coupon saved — it'll auto-apply at checkout");
     }
   };
+
 
   return (
     <div className="text-center">

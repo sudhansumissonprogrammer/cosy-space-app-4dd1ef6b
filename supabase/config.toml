@@ -110,6 +110,14 @@ verify_jwt = false
 [functions.merchant-otp-verify]
 verify_jwt = false
 
+[functions.store-lead-otp-send]
+verify_jwt = false
+
+[functions.store-lead-otp-verify]
+verify_jwt = false
+
+
+
 [functions.wristlife-import]
 verify_jwt = false
 

@@ -51,6 +51,9 @@ export const APP_REGISTRY: StoreAppMeta[] = [
       time_trigger_enabled: true,
       exit_intent_enabled: true,
       exit_intent_scope: "all",
+      outcome_mode: "random",
+      fixed_segment_index: 0,
+
       heading: "Spin to win exclusive coupons",
       subheading: "Try your luck — one spin per visit",
       button_label: "Spin Now",

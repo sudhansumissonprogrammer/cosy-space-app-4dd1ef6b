@@ -128,6 +128,9 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
     time_trigger_enabled: true,
     exit_intent_enabled: true,
     exit_intent_scope: "all",
+    outcome_mode: "random",
+    fixed_segment_index: 0,
+
     heading: "Spin to win exclusive coupons",
     subheading: "",
     button_label: "Spin Now",
@@ -310,7 +313,15 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
 
   const spin = () => {
     if (spinning || segments.length < 2) return;
-    const idx = pickWeightedIndex(segments);
+    // "fixed" mode: the merchant decided the prize — every shopper lands on the
+    // same slice. Guard the index so a stale config (slice deleted after being
+    // pinned) silently degrades to the weighted draw instead of breaking.
+    const pinned = Number(cfg.fixed_segment_index);
+    const idx =
+      cfg.outcome_mode === "fixed" && Number.isFinite(pinned) && pinned >= 0 && pinned < segments.length
+        ? Math.floor(pinned)
+        : pickWeightedIndex(segments);
+
     const sliceAngle = 360 / segments.length;
     const targetSlice = (idx + 0.5) * sliceAngle;
     const spins = 6 + Math.floor(Math.random() * 3);
