@@ -529,6 +529,8 @@ interface ThemeConfig {
   trust_badges?: { emoji: string; label: string }[];
   nav_icons?: Record<string, string>;
   pdp_trust_seals?: string[];
+  /** Theme 16 only — night-mode switch animation */
+  dark_toggle_effect?: string;
 }
 
 const DEFAULT_MARQUEE_TEXT = "🚚 Free Delivery • 🔄 Easy Returns • 🔒 Secure Payments • 💰 Cash On Delivery • 👜 Premium Quality";
@@ -747,6 +749,7 @@ export default function StoreThemeSettings() {
         pdp_trust_seals: Array.isArray((themeConfig as any).pdp_trust_seals)
           ? (themeConfig as any).pdp_trust_seals
           : DEFAULT_TRUST_SEAL_KEYS,
+        dark_toggle_effect: (themeConfig as any).dark_toggle_effect || "spotlight",
       });
     } else {
       setConfig(defaults);
@@ -850,6 +853,7 @@ export default function StoreThemeSettings() {
             header_style: themeConfig.header_style ?? config.header_style,
             marquee_text: themeConfig.marquee_text ?? config.marquee_text,
             marquee_enabled: themeConfig.marquee_enabled ?? config.marquee_enabled,
+            dark_toggle_effect: (themeConfig as any).dark_toggle_effect ?? config.dark_toggle_effect,
           }
         : {};
 
