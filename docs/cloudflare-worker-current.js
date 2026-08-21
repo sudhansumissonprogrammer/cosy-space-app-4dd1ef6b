@@ -225,7 +225,7 @@
  *  FIX #15 — Cron fetches SPA shell ONCE before the loop, reuses for all.
  */
 
-const WORKER_VERSION = "8.77.0-origin-redirect-loop-fix";
+const WORKER_VERSION = "8.78.0-direct-preview-origin";
 
 /* ============================================================
    v8.33.0 — Meta-ban-prevention layer (P0 + P1)
@@ -447,7 +447,12 @@ const ROOT_DOMAIN = "shopbanao.in";
 // storefront/root routing. Keep `go.shopbanao.in` here because Cloudflare may
 // route it to this Worker even when the main root host is still on Lovable.
 const WA_REDIRECT_HOSTS = new Set([ROOT_DOMAIN, `www.${ROOT_DOMAIN}`, `go.${ROOT_DOMAIN}`]);
-const ORIGIN_HOST = "cosy-space-app.lovable.app";
+// v8.78.0: The published .lovable.app hostname redirects every path to the
+// primary shopbanao.in domain. Using it as an origin sends asset subrequests
+// back through this Worker and can time out across every storefront. The
+// project preview hostname serves the same current build directly and does
+// not perform the primary-domain redirect, so it is the stable upstream.
+const ORIGIN_HOST = "id-preview--9e0e1986-9137-471c-8208-6cea82b9c0a2.lovable.app";
 // v8.58.0: Decoupled from WORKER_VERSION. Bump ONLY when HTML output shape
 // changes (head injection, skeleton, JSON-LD, inline data markers). Previously
 // every worker deploy invalidated 100% of HTML cache globally → 5-10x Supabase

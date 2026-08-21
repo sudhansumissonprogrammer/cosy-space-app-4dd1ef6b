@@ -1,7 +1,7 @@
 const RECOVERY_STORAGE_KEY = "chunk_recovery_state";
 const LEGACY_RECOVERY_STORAGE_KEY = "chunk_recovery_ts";
-const RECOVERY_COOLDOWN_MS = 2 * 60 * 1000;
-const MAX_RECOVERY_ATTEMPTS = 3;
+const RECOVERY_COOLDOWN_MS = 10 * 60 * 1000;
+const MAX_RECOVERY_ATTEMPTS = 2;
 
 type RecoveryState = {
   attempts: number;
@@ -132,7 +132,11 @@ export function recoverFromChunkLoadError(error: unknown): boolean {
     const attempts = isSameRecoveryFlow ? previous.attempts + 1 : 1;
 
     if (attempts > MAX_RECOVERY_ATTEMPTS) {
-      clearChunkLoadRecoveryState();
+      // Keep an exhausted marker for the cooldown window. Clearing it here
+      // made the next chunk error start a brand-new recovery flow, producing
+      // an endless cycle of three reloads whenever the shared origin stayed
+      // unavailable.
+      writeRecoveryState({ attempts: MAX_RECOVERY_ATTEMPTS, signature, ts: previous?.ts || now });
       return false;
     }
 
