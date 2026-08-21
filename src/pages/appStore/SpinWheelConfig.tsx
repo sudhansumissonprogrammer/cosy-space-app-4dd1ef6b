@@ -167,28 +167,35 @@ export default function SpinWheelConfigPage() {
   );
 
   /**
+   * Re-stamps the pinned slice's identity (index + code + label) so the
+   * storefront resolves the exact slice the merchant sees here, even after
+   * slices are renamed or reordered.
+   */
+  const stampedConfig = (c: SpinWheelConfig): SpinWheelConfig => {
+    if ((c.outcome_mode || "random") !== "fixed") return c;
+    const i = Math.min(Math.max(0, Number(c.fixed_segment_index) || 0), Math.max(0, c.segments.length - 1));
+    const seg = c.segments[i];
+    return {
+      ...c,
+      fixed_segment_index: i,
+      fixed_segment_code: seg?.code || "",
+      fixed_segment_label: seg?.label || "",
+    };
+  };
+
+  /**
    * The outcome choice decides which prize every shopper gets, so it persists
    * the moment it is picked (same reasoning as the Enabled toggle) instead of
-   * waiting for Save. It also stamps the slice code + label so the storefront
-   * can resolve the pinned slice even after segments are reordered.
+   * waiting for Save.
    */
   const applyOutcome = (patch: Partial<SpinWheelConfig>) => {
     setConfig((c) => {
-      const merged = { ...c, ...patch } as SpinWheelConfig;
-      if ((merged.outcome_mode || "random") === "fixed") {
-        const i = Math.min(
-          Math.max(0, Number(merged.fixed_segment_index) || 0),
-          Math.max(0, merged.segments.length - 1),
-        );
-        const seg = merged.segments[i];
-        merged.fixed_segment_index = i;
-        merged.fixed_segment_code = seg?.code || "";
-        merged.fixed_segment_label = seg?.label || "";
-      }
+      const merged = stampedConfig({ ...c, ...patch } as SpinWheelConfig);
       if (row) upsert.mutate({ enabled, config: merged });
       return merged;
     });
   };
+
 
 
   const updateSegment = (i: number, patch: Partial<WheelSegment>) => {
