@@ -5,7 +5,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { IndiaFlagIcon } from "@/components/ui/IndiaFlagIcon";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizePhone } from "@/lib/phoneUtils";
 import { toast } from "sonner";
+
 
 interface LeadFormProps {
   storeId: string;
