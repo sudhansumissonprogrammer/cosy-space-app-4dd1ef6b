@@ -337,14 +337,23 @@ export async function runSfDarkTransition(
   const watchdog = window.setTimeout(cleanup, WATCHDOG_MS);
 
   try {
-    const point = origin ?? { x: window.innerWidth / 2, y: 0 };
-    const phase = buildEffect(effect, host, targetColor(toDark), toDark, point);
+    // Mount first, then measure: the host is the exact surface the effects
+    // paint on, so its own box (not the window) defines the coordinate space.
     document.body.appendChild(host);
+    const hostRect = host.getBoundingClientRect();
+    hostSize = { w: hostRect.width || window.innerWidth, h: hostRect.height || window.innerHeight };
+    const raw = origin ?? { x: hostRect.left + hostSize.w / 2, y: hostRect.top };
+    const point = {
+      x: Math.min(Math.max(raw.x - hostRect.left, 0), hostSize.w),
+      y: Math.min(Math.max(raw.y - hostRect.top, 0), hostSize.h),
+    };
+    const phase = buildEffect(effect, host, targetColor(toDark), toDark, point);
     await phase.cover();
     applyOnce();
     await nextPaint();
     await phase.reveal();
   } catch {
+
     /* fall through to cleanup — the theme still flips */
   } finally {
     window.clearTimeout(watchdog);
