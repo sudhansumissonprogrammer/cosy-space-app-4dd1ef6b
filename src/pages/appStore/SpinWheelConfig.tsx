@@ -192,7 +192,7 @@ export default function SpinWheelConfigPage() {
       }}
       onSave={() => upsert.mutate({ enabled, config })}
       saving={upsert.isPending}
-      saveDisabled={totalWeight <= 0}
+      saveDisabled={(config.outcome_mode || "random") !== "fixed" && totalWeight <= 0}
       saveLabel={isInstalled ? "Save" : "Install"}
       statusBadge={<AppLiveBadge enabled={enabled} />}
     >
