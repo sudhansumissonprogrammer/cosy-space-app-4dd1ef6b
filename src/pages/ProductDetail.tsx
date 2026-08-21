@@ -58,9 +58,10 @@ const PdpCarousels = lazy(() => import("@/components/storefront/pdp/PdpCarousels
 // A stale/partial chunk after a deploy can resolve to an undefined module
 // namespace — reading `m.VideoSlide` then throws and kills the whole PDP.
 // Retry once, and if it still fails render nothing instead of crashing.
+type VideoSlideModule = typeof import("@/components/storefront/VideoSlide");
 const VideoSlide = lazy(async () => {
   const load = () => import("@/components/storefront/VideoSlide");
-  let mod: any;
+  let mod: VideoSlideModule | undefined;
   try {
     mod = await load();
   } catch {
@@ -73,8 +74,10 @@ const VideoSlide = lazy(async () => {
       mod = undefined;
     }
   }
-  return { default: mod?.VideoSlide ?? (() => null) };
+  const Fallback: VideoSlideModule["VideoSlide"] = () => null;
+  return { default: mod?.VideoSlide ?? Fallback };
 });
+
 
 
 
