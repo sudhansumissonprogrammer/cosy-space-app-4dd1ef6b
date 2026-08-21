@@ -1063,7 +1063,56 @@ export default function StoreThemeSettings() {
     setConfig(nextConfig);
     setDirty(false);
     sendToIframe(nextConfig);
-    saveConfigMutation.mutate(nextConfig);
+    // Persist only this field. Reusing the full-form mutation here allowed an
+    // older, in-flight settings save to overwrite a freshly selected effect.
+    // The focused write also makes rapid effect changes deterministic.
+    (async () => {
+      if (!storeId) return;
+      const { error } = themeConfig?.id
+        ? await supabase
+            .from("store_theme_config")
+            .update({ dark_toggle_effect: value } as any)
+            .eq("id", themeConfig.id)
+            .eq("store_id", storeId)
+        : await supabase
+            .from("store_theme_config")
+            .insert({ store_id: storeId, ...nextConfig });
+      if (error) {
+        toast.error("Failed to save switch effect");
+        return;
+      }
+
+      queryClient.setQueryData(["store-theme-config", storeId], (old: any) => ({
+        ...old,
+        dark_toggle_effect: value,
+      }));
+      queryClient.setQueryData(["storefront-theme-config", storeId], (old: any) => ({
+        ...old,
+        dark_toggle_effect: value,
+      }));
+      try {
+        const raw = localStorage.getItem(`sf_tc_${storeId}`);
+        const cached = raw ? JSON.parse(raw) : {};
+        localStorage.setItem(`sf_tc_${storeId}`, JSON.stringify({ ...cached, dark_toggle_effect: value }));
+      } catch {}
+
+      if (store?.slug) {
+        try {
+          const { purgeStoreCache } = await import("@/lib/purgeStoreCache");
+          const purged = await purgeStoreCache(store.slug, (store as any).custom_domain, {
+            shell: true,
+            force: true,
+          });
+          if (purged) {
+            const { prewarmStore } = await import("@/lib/prewarmStore");
+            await prewarmStore(store.slug, (store as any).custom_domain, { force: true });
+          }
+        } catch {
+          toast.warning("Effect saved. Live-store cache refresh will retry shortly.");
+        }
+      }
+      toast.success("Switch effect saved");
+    })();
   };
 
 

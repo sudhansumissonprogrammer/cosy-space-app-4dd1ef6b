@@ -19,10 +19,29 @@ export function isCheckoutPath(
   return pathname.includes("/checkout");
 }
 
+/**
+ * Store-scoped preference key. Path storefronts share one origin, while
+ * subdomains/custom domains have their own host; including the resolved store
+ * identity prevents one preview/store from switching another one to dark.
+ */
+export function getSfDarkKey(): string {
+  if (typeof window === "undefined") return SF_DARK_KEY;
+  try {
+    const pathSlug = window.location.pathname.match(/^\/store\/([^/?#]+)/)?.[1];
+    const host = window.location.hostname.toLowerCase();
+    const injectedSlug = window.__STORE_SLUG__;
+    const platformSlug = host.endsWith(".shopbanao.in") ? host.slice(0, -".shopbanao.in".length) : "";
+    const identity = injectedSlug || pathSlug || platformSlug || host;
+    return `${SF_DARK_KEY}:${identity || "default"}`;
+  } catch {
+    return `${SF_DARK_KEY}:default`;
+  }
+}
+
 export function readSfDark(): boolean {
   if (typeof window === "undefined") return false;
   try {
-    return localStorage.getItem(SF_DARK_KEY) === "1";
+    return localStorage.getItem(getSfDarkKey()) === "1";
   } catch {
     return false;
   }
@@ -75,7 +94,10 @@ export function applySfDarkClass(on: boolean) {
 
 export function setSfDark(on: boolean) {
   try {
-    localStorage.setItem(SF_DARK_KEY, on ? "1" : "0");
+    localStorage.setItem(getSfDarkKey(), on ? "1" : "0");
+    // Remove the old global preference so it can never leak into another
+    // storefront that shares this browser origin.
+    localStorage.removeItem(SF_DARK_KEY);
   } catch {
     /* private mode — session only */
   }
