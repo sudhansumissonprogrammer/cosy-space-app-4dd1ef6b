@@ -354,6 +354,7 @@ export async function runSfDarkTransition(
 
   running = true;
   const host = makeHost();
+  let watchdog = 0;
   const cleanup = () => {
     applyOnce();
     try {
@@ -361,9 +362,12 @@ export async function runSfDarkTransition(
     } catch {
       /* already detached */
     }
+    if (watchdog) window.clearTimeout(watchdog);
+    if (activeCleanup === cleanup) activeCleanup = null;
     running = false;
   };
-  const watchdog = window.setTimeout(cleanup, WATCHDOG_MS);
+  activeCleanup = cleanup;
+  watchdog = window.setTimeout(cleanup, WATCHDOG_MS);
 
   try {
     // Mount first, then measure: the host is the exact surface the effects
