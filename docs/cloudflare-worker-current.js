@@ -2208,7 +2208,7 @@ async function _fetchSpaShellFromOrigin(request, ctx, env, shellCacheKey) {
 
   let response;
   try {
-    response = await fetch(shellUrl.toString(), {
+    response = await fetchOriginNoRedirectLoop(shellUrl.toString(), {
       method: "GET",
       headers: shellHeaders,
       signal: controller.signal,
