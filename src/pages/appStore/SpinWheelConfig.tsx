@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Disc3, Loader2, Plus, Trash2, Eye, Save } from "lucide-react";
+import { ArrowLeft, Disc3, Loader2, Plus, Trash2, Eye, Save, ShieldCheck } from "lucide-react";
 import { getApp } from "@/lib/appStore/registry";
 import SpinWheelApp from "@/components/storefront/apps/SpinWheel/SpinWheelApp";
 import type { SpinWheelConfig, WheelSegment, WheelStyle } from "@/components/storefront/apps/SpinWheel/types";
@@ -136,7 +136,7 @@ export default function SpinWheelConfigPage() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("store_app_leads")
-        .select("id, phone, country_code, coupon_code, segment_label, marketing_opt_in, created_at")
+        .select("id, phone, country_code, coupon_code, segment_label, marketing_opt_in, phone_verified, created_at")
         .eq("store_id", storeId!)
         .eq("app_id", APP_ID)
         .order("created_at", { ascending: false })
