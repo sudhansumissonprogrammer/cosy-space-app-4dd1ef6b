@@ -282,7 +282,7 @@ export default function SpinWheelConfigPage() {
                     value={String(
                       Math.min(Math.max(0, Number(config.fixed_segment_index) || 0), Math.max(0, config.segments.length - 1)),
                     )}
-                    onValueChange={(v) => setConfig((c) => ({ ...c, fixed_segment_index: Number(v) }))}
+                    onValueChange={(v) => applyOutcome({ fixed_segment_index: Number(v) })}
                   >
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
