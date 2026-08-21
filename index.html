@@ -303,10 +303,6 @@
           document.documentElement.classList.add("sf-dark");
           var m = document.querySelector('meta[name="theme-color"]');
           if (m) { m.setAttribute("data-sf-light", m.content || ""); m.content = "#0a0a0a"; }
-          document.addEventListener("DOMContentLoaded", function () {
-            var s = document.getElementById("inline-skel");
-            if (s) s.style.background = "#0a0a0a";
-          });
         } catch (e) { /* private mode — light stays the default */ }
       })();
     </script>
