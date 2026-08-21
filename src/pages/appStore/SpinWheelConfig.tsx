@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Disc3, Loader2, Plus, Trash2, Eye, Save } from "lucide-react";
+import { ArrowLeft, Disc3, Loader2, Plus, Trash2, Eye, Save, ShieldCheck } from "lucide-react";
 import { getApp } from "@/lib/appStore/registry";
 import SpinWheelApp from "@/components/storefront/apps/SpinWheel/SpinWheelApp";
 import type { SpinWheelConfig, WheelSegment, WheelStyle } from "@/components/storefront/apps/SpinWheel/types";
@@ -136,7 +136,7 @@ export default function SpinWheelConfigPage() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("store_app_leads")
-        .select("id, phone, country_code, coupon_code, segment_label, marketing_opt_in, created_at")
+        .select("id, phone, country_code, coupon_code, segment_label, marketing_opt_in, phone_verified, created_at")
         .eq("store_id", storeId!)
         .eq("app_id", APP_ID)
         .order("created_at", { ascending: false })
@@ -192,7 +192,7 @@ export default function SpinWheelConfigPage() {
       }}
       onSave={() => upsert.mutate({ enabled, config })}
       saving={upsert.isPending}
-      saveDisabled={totalWeight <= 0}
+      saveDisabled={(config.outcome_mode || "random") !== "fixed" && totalWeight <= 0}
       saveLabel={isInstalled ? "Save" : "Install"}
       statusBadge={<AppLiveBadge enabled={enabled} />}
     >
@@ -206,9 +206,68 @@ export default function SpinWheelConfigPage() {
         <div className="space-y-3 md:space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
+              <CardTitle className="text-base">Spin Outcome</CardTitle>
+              <CardDescription>Decide whether the prize is random or always the same slice.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-2 sm:grid-cols-2">
+                {([
+                  { v: "random", t: "Random (weighted)", d: "Each slice wins based on its weight below." },
+                  { v: "fixed", t: "Always one slice", d: "Every shopper lands on the slice you pick." },
+                ] as const).map((o) => {
+                  const active = (config.outcome_mode || "random") === o.v;
+                  return (
+                    <button
+                      key={o.v}
+                      type="button"
+                      onClick={() => setConfig((c) => ({ ...c, outcome_mode: o.v }))}
+                      className={`rounded-xl border-2 p-3 text-left transition-all ${
+                        active ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-muted-foreground/40"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold">{o.t}</span>
+                        {active && <Badge className="text-[10px]">Active</Badge>}
+                      </div>
+                      <p className="mt-1 text-[11px] text-muted-foreground">{o.d}</p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {(config.outcome_mode || "random") === "fixed" && (
+                <div>
+                  <Label className="text-xs">Winning slice</Label>
+                  <Select
+                    value={String(
+                      Math.min(Math.max(0, Number(config.fixed_segment_index) || 0), Math.max(0, config.segments.length - 1)),
+                    )}
+                    onValueChange={(v) => setConfig((c) => ({ ...c, fixed_segment_index: Number(v) }))}
+                  >
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {config.segments.map((s, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          Slice {i + 1} — {s.label}
+                          {s.type === "coupon" && s.code ? ` (${s.code})` : " (no prize)"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    Weights are ignored in this mode. The wheel still animates realistically before stopping here.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle className="text-base">Wheel Segments</CardTitle>
               <CardDescription>2–8 slices. Higher weight = higher chance of landing there.</CardDescription>
             </CardHeader>
+
             <CardContent className="space-y-3">
               {config.segments.map((seg, i) => (
                 <div key={i} className="rounded-lg border p-3">
@@ -436,8 +495,32 @@ export default function SpinWheelConfigPage() {
                   <Input value={config.marketing_consent_label} onChange={(e) => setConfig((c) => ({ ...c, marketing_consent_label: e.target.value }))} />
                 </div>
               </div>
+
+              <div className="rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <Label className="text-sm font-semibold">Verify mobile with WhatsApp OTP</Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      Shopper gets a 6-digit code on WhatsApp before the coupon unlocks. Blocks fake numbers and
+                      guarantees every lead is reachable.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={config.require_otp === true}
+                    onCheckedChange={(v) => setConfig((c) => ({ ...c, require_otp: v }))}
+                  />
+                </div>
+                {config.require_otp === true && (
+                  <p className="mt-2 rounded-md bg-muted p-2 text-[11px] text-muted-foreground">
+                    Each OTP is charged as a WhatsApp authentication message from your wallet. Codes expire in 5
+                    minutes, allow 5 attempts, and are rate-limited per number and device.
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
+
+
 
           <Card>
             <CardHeader>
@@ -450,6 +533,7 @@ export default function SpinWheelConfigPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Phone</TableHead>
+                      <TableHead>Verified</TableHead>
                       <TableHead>Coupon</TableHead>
                       <TableHead>Segment</TableHead>
                       <TableHead>Opt-in</TableHead>
@@ -458,14 +542,22 @@ export default function SpinWheelConfigPage() {
                   </TableHeader>
                   <TableBody>
                     {(leads ?? []).length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center text-xs text-muted-foreground py-6">No leads yet</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center text-xs text-muted-foreground py-6">No leads yet</TableCell></TableRow>
                     ) : (leads ?? []).map((l: any) => (
                       <TableRow key={l.id}>
                         <TableCell className="font-mono text-xs">{l.country_code} {l.phone}</TableCell>
+                        <TableCell>
+                          {l.phone_verified ? (
+                            <Badge className="gap-1 text-[10px]"><ShieldCheck className="h-3 w-3" /> OTP</Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                         <TableCell><Badge variant="outline">{l.coupon_code ?? "—"}</Badge></TableCell>
                         <TableCell className="text-xs">{l.segment_label ?? "—"}</TableCell>
                         <TableCell>{l.marketing_opt_in ? "✓" : "—"}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{new Date(l.created_at).toLocaleString()}</TableCell>
+
                       </TableRow>
                     ))}
                   </TableBody>

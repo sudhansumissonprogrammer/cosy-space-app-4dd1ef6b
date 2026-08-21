@@ -414,7 +414,9 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
                 heading={cfg.lead_heading}
                 subheading={cfg.lead_subheading}
                 consentLabel={cfg.marketing_consent_label}
+                requireOtp={cfg.require_otp === true}
                 previewMode={previewMode}
+
                 onSubmitted={() => setPhase("reveal")}
               />
             ) : (
