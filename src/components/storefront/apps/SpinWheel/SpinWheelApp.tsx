@@ -128,6 +128,9 @@ export default function SpinWheelApp({ storeId, storeName, primaryColor, accentC
     time_trigger_enabled: true,
     exit_intent_enabled: true,
     exit_intent_scope: "all",
+    outcome_mode: "random",
+    fixed_segment_index: 0,
+
     heading: "Spin to win exclusive coupons",
     subheading: "",
     button_label: "Spin Now",
