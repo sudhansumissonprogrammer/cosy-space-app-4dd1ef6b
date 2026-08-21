@@ -3355,6 +3355,45 @@ async function _getSlugIndex(env) {
    ORIGIN PROXY
    ============================================================ */
 
+/**
+ * v8.77.0 — REDIRECT-SAFE ORIGIN FETCH.
+ *
+ * Since a primary custom domain was attached to the project, the published
+ * origin (`cosy-space-app.lovable.app`) 302-redirects EVERY request to
+ * `https://shopbanao.in/<path>`. With the default `redirect: "follow"`, that
+ * second hop re-enters Cloudflare (and, on subdomain routes, this Worker),
+ * so a single cold `/assets/*.js` request became a multi-hop chain that
+ * regularly blew past ORIGIN_TIMEOUT_MS → the catch block returned the
+ * 503 "Store Temporarily Unavailable" HTML for a JS chunk → the browser
+ * threw "Failed to fetch dynamically imported module" → chunkLoadRecovery
+ * reloaded the page with `?__r=` → storefronts appeared to auto-refresh
+ * every few seconds.
+ *
+ * Fix: never let the platform follow origin redirects. Resolve at most ONE
+ * hop ourselves, straight to the redirect target (the apex is served by
+ * static hosting directly, ~0.2s), and never loop.
+ */
+async function fetchOriginNoRedirectLoop(urlStr, init) {
+  const res = await fetch(urlStr, { ...init, redirect: "manual" });
+  if (res.status < 300 || res.status > 399) return res;
+
+  const loc = res.headers.get("location");
+  if (!loc) return res;
+
+  let target;
+  try {
+    target = new URL(loc, urlStr);
+  } catch {
+    return res;
+  }
+  if (target.hostname === new URL(urlStr).hostname) return res;
+
+  const hopHeaders = new Headers(init?.headers || undefined);
+  hopHeaders.set("Host", target.hostname);
+  // Single hop only — the target is resolved directly, never followed again.
+  return fetch(target.toString(), { ...init, headers: hopHeaders, redirect: "manual" });
+}
+
 async function proxyToOrigin(request) {
   const url = new URL(request.url);
   url.hostname = ORIGIN_HOST;
@@ -3381,13 +3420,14 @@ async function proxyToOrigin(request) {
   const timeout = setTimeout(() => controller.abort(), ORIGIN_TIMEOUT_MS);
 
   try {
-    const res = await fetch(url.toString(), {
+    const res = await fetchOriginNoRedirectLoop(url.toString(), {
       method: request.method,
       headers,
       signal: controller.signal,
       cf: cfOpts,
     });
     clearTimeout(timeout);
+
 
     const newRes = new Response(res.body, res);
     const contentType = newRes.headers.get("content-type") || "";
