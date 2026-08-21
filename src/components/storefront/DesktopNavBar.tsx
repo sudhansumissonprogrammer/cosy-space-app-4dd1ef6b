@@ -1,4 +1,4 @@
-import { useState, useRef, lazy, Suspense } from "react";
+import { useState, useRef, lazy, Suspense, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
@@ -24,6 +24,8 @@ interface DesktopNavBarProps {
   className?: string;
   /** Inline style for the outer nav */
   style?: React.CSSProperties;
+  /** Extra node rendered at the start of the right-hand icon group */
+  extra?: ReactNode;
 }
 
 /**
@@ -35,7 +37,7 @@ interface DesktopNavBarProps {
  * Includes its own search overlay so all themes get search on desktop automatically.
  * Hidden on mobile (< md).
  */
-export default function DesktopNavBar({ store, onSearchOpen, className = "", style }: DesktopNavBarProps) {
+export default function DesktopNavBar({ store, onSearchOpen, className = "", style, extra }: DesktopNavBarProps) {
   const queryClient = useQueryClient();
   const categories = useStorefrontCategories(store.id) ?? [];
   const customPages = queryClient.getQueryData<any[]>(["storefront-custom-pages", store.id]) ?? [];
@@ -194,6 +196,7 @@ export default function DesktopNavBar({ store, onSearchOpen, className = "", sty
 
           {/* ---- Right: Action Icons ---- */}
           <div className="ml-auto flex items-center gap-1">
+            {extra}
             {/* Search */}
             <button
               onClick={handleSearchOpen}
